@@ -1,0 +1,25 @@
+
+version: '3.8'
+
+services:
+  # تعريف خدمة تطبيق الويب
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:5000 app:app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  # تعريف خدمة قاعدة البيانات
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

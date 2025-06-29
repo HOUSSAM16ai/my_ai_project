@@ -1,4 +1,7 @@
 Flask
+Flask-WTF
+Flask-Login
+Werkzeug
 gunicorn
 numpy
 pandas
