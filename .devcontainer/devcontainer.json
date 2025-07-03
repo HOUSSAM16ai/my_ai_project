@@ -5,6 +5,15 @@
     ],
     "service": "web",
     "workspaceFolder": "/app",
+
+    // === ابدأ الإضافة من هنا ===
+    "features": {
+        "ghcr.io/devcontainers/features/docker-from-docker:1": {
+            "version": "latest"
+        }
+    },
+    // === انتهت الإضافة ===
+
     "customizations": {
         "vscode": {
             "extensions": [
