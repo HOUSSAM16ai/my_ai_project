@@ -9,7 +9,9 @@
     // === ابدأ الإضافة من هنا ===
     "features": {
         "ghcr.io/devcontainers/features/docker-from-docker:1": {
-            "version": "latest"
+            "version": "latest",
+            "enableNonRootDocker": "true",
+            "moby": "false"
         }
     },
     // === انتهت الإضافة ===
