@@ -1,28 +1,29 @@
-# احذف السطر 'version: ...' إذا كان لا يزال موجودًا
+# لا يوجد سطر 'version:' في الأعلى
 
 services:
+  # تعريف خدمة تطبيق الويب
   web:
     build: .
     command: gunicorn --bind 0.0.0.0:5000 app:app
+    volumes:
+      - .:/app  # ربط مجلد مشروعك المحلي بمجلد /app داخل الحاوية
     ports:
-      - "5433:5432" # هذا كان لمنفذ قاعدة البيانات، المنفذ الصحيح لتطبيق الويب هو 5000
-      - "5000:5000"
-    volumes:          # <--- أضف هذا القسم
-      - .:/app          # <--- وهذا السطر
+      - "5000:5000" # ربط منفذ 5000 على جهازك بمنفذ 5000 داخل الحاوية
     env_file:
       - .env
     depends_on:
       - db
+
+  # تعريف خدمة قاعدة البيانات
   db:
     image: postgres:15-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data/ # حفظ بيانات DB بشكل دائم
+    ports:
+      - "5433:5432" # ربط منفذ 5433 على جهازك بمنفذ 5432 داخل الحاوية
     env_file:
       - .env
-    ports:
-      - "5434:5432" # أبقِ هذا للوصول من pgAdmin
 
 volumes:
-  postgres_data:
-
+  postgres_data: # تعريف المجلد المشترك
   
