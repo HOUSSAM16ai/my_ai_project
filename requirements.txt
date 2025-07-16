@@ -1,13 +1,10 @@
 Flask
 Flask-WTF
-email-validator
 Flask-Login
 Werkzeug
 gunicorn
-numpy
-pandas
 psycopg2-binary
 python-dotenv
 pytest
 pytest-flask
-
+email-validator

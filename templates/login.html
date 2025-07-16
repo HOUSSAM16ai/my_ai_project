@@ -1,21 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Create Your Account</h1>
+    <h1>Login</h1>
     <form method="POST" action="">
         {{ form.hidden_tag() }}
         <fieldset>
-            <legend>Join Today</legend>
-            <p>
-                {{ form.full_name.label }}<br>
-                {{ form.full_name(size=30) }}
-                {% if form.full_name.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.full_name.errors %}
-                            <span style="color: red;">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </p>
+            <legend>Log In</legend>
             <p>
                 {{ form.email.label }}<br>
                 {{ form.email(size=30) }}
@@ -38,18 +27,11 @@
                     </div>
                 {% endif %}
             </p>
-            <p>
-                {{ form.confirm_password.label }}<br>
-                {{ form.confirm_password(size=30) }}
-                {% if form.confirm_password.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.confirm_password.errors %}
-                            <span style="color: red;">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </p>
         </fieldset>
         <p>{{ form.submit() }}</p>
     </form>
+    <hr>
+    <p>
+        Need An Account? <a href="{{ url_for('register') }}">Sign Up Now</a>
+    </p>
 {% endblock %}

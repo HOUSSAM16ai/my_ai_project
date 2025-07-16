@@ -1,29 +1,25 @@
-# لا يوجد سطر 'version:' في الأعلى
-
 services:
-  # تعريف خدمة تطبيق الويب
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:5000 app:app
+    command: gunicorn --workers 1 --bind 0.0.0.0:5000 "app:create_app()"
     volumes:
-      - .:/app  # ربط مجلد مشروعك المحلي بمجلد /app داخل الحاوية
+      - .:/app
     ports:
-      - "5000:5000" # ربط منفذ 5000 على جهازك بمنفذ 5000 داخل الحاوية
+      - "5000:5000"
     env_file:
       - .env
     depends_on:
       - db
 
-  # تعريف خدمة قاعدة البيانات
   db:
     image: postgres:15-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/ # حفظ بيانات DB بشكل دائم
+      - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5433:5432" # ربط منفذ 5433 على جهازك بمنفذ 5432 داخل الحاوية
+      - "5433:5432"
     env_file:
       - .env
 
 volumes:
-  postgres_data: # تعريف المجلد المشترك
+  postgres_data:
   
