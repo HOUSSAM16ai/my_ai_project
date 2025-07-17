@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Lessons for: {{ subject_name }}</h1>
+    <ul>
+        {% for lesson in lessons %}
+            <li>
+                <a href="{{ url_for('lesson_detail', lesson_id=lesson.id) }}">
+                    <h3>{{ lesson.title }}</h3>
+                </a>
+            </li>
+        {% else %}
+            <li>No lessons found for this subject.</li>
+        {% endfor %}
+    </ul>
+    <hr>
+    <a href="{{ url_for('subjects_list') }}">Back to all subjects</a>
+{% endblock %}

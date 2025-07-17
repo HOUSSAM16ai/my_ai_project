@@ -2,11 +2,14 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{ title }} - My AI Platform</title>
+    <title>{{ title }} - AI Platform</title>
     <style>
-        .alert-success { background-color: #28a745; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .alert-danger { background-color: #dc3545; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .alert-info { background-color: #17a2b8; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        body { font-family: sans-serif; margin: 2em; line-height: 1.5; }
+        nav a { margin-right: 15px; text-decoration: none; font-weight: bold; }
+        .alert-success { background-color: #28a745; color: white; padding: 10px; margin: 15px 0; border-radius: 5px; }
+        .alert-danger { background-color: #dc3545; color: white; padding: 10px; margin: 15px 0; border-radius: 5px; }
+        .alert-info { background-color: #17a2b8; color: white; padding: 10px; margin: 15px 0; border-radius: 5px; }
+        fieldset { border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
     </style>
 </head>
 <body>
@@ -15,6 +18,7 @@
             <a href="{{ url_for('home') }}">Home</a>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('subjects_list') }}">Subjects</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
@@ -24,6 +28,7 @@
     </header>
     <hr>
     <main>
+        <!-- === هذا هو الجزء الحاسم المفقود === -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -33,6 +38,8 @@
             {% endfor %}
           {% endif %}
         {% endwith %}
+        <!-- === انتهى الجزء المفقود === -->
+        
         {% block content %}{% endblock %}
     </main>
 </body>

@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Create Your Account</h1>
     <form method="POST" action="">
         {{ form.hidden_tag() }}
         <fieldset>
-            <legend>Join Today</legend>
+            <legend><h2>Create Your Account</h2></legend>
             <p>
                 {{ form.full_name.label }}<br>
                 {{ form.full_name(size=30) }}

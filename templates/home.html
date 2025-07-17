@@ -2,6 +2,6 @@
 {% block content %}
     <h1>Welcome to the AI Platform!</h1>
     {% if not current_user.is_authenticated %}
-        <p>Please <a href="{{ url_for('login') }}">log in</a> or <a href="{{ url_for('register') }}">register</a> to continue.</p>
+        <p>Please log in or register to continue.</p>
     {% endif %}
 {% endblock %}

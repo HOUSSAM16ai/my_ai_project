@@ -1,26 +1,19 @@
 {
-	"name": "CogniForge Dev Environment",
-	"dockerComposeFile": [
-		"../docker-compose.yml"
-	],
-	"service": "web",
-	"workspaceFolder": "/app",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-python.python",
-				"ms-python.vscode-pylance",
-				"ms-azuretools.vscode-docker",
-				"eamodio.gitlens"
-			]
-		}
-	},
-    // هذا سيمنح المستخدم الحالي صلاحيات على مقبس Docker
-    // مما قد يساعد في تجنب بعض مشاكل الأذونات
-	"mounts": [
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-	],
-    // هذا يضمن أن VS Code يتصل كمستخدم root داخل الحاوية
-    // مما يحل كل مشاكل الأذونات أثناء التطوير بشكل جذري
-	"remoteUser": "root"
+    "name": "AI Education Platform (Dev Container)",
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
+    "service": "web",
+    "workspaceFolder": "/app",
+    "remoteUser": "root", // مهم لحل مشاكل الأذونات
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens"
+            ]
+        }
+    }
 }

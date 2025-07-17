@@ -33,5 +33,5 @@ EXPOSE 5000
 
 # 9. الأمر الافتراضي لتشغيل التطبيق باستخدام Gunicorn
 #    استخدام worker واحد لتقليل استهلاك الذاكرة
-CMD ["gunicorn", "--workers", "1", "--bind", "0.0.0.0:5000", "app:create_app()"]
+CMD ["gunicorn", "--workers", "1", "--bind", "0.0.0.0:5000", "app:app"]
 
