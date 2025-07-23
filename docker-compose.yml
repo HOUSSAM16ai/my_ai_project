@@ -1,13 +1,17 @@
 services:
   web:
     build: .
-    command: gunicorn --workers 1 --bind 0.0.0.0:5000 "app:app"
+    # اعتمد على الأمر CMD الموجود في Dockerfile بدلاً من كتابته هنا
     volumes:
       - .:/app
     ports:
       - "5000:5000"
-    env_file:
-      - .env
+    # استبدلنا env_file بهذا البلوك لتوفير قيم افتراضية آمنة
+    environment:
+      - SECRET_KEY=a_very_secret_key_for_codespaces
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydb
     depends_on:
       - db
 
@@ -15,11 +19,13 @@ services:
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    ports:
-      - "5433:5432"
-    env_file:
-      - .env
+    # لا نستخدم المنفذ 5433 هنا لأن Codespaces يدير المنافذ تلقائيًا
+    # ports:
+    #   - "5433:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydb
 
 volumes:
   postgres_data:
-  
