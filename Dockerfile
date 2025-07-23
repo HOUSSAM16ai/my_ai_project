@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #    postgresql-dev: ضروري لمكتبة psycopg2 للاتصال بـ PostgreSQL
 #    git: ضروري للتحكم في الإصدار داخل الحاوية
 RUN apk update && \
-    apk add --no-cache build-base postgresql-dev git
+    apk add --no-cache build-base postgresql-dev git bash
 
 # 4. تعيين مجلد العمل
 WORKDIR /app
