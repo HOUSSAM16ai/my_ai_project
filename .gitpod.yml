@@ -1,0 +1,24 @@
+tasks:
+  - name: Initialize and Run Full Stack
+    before: |
+      echo "Starting Database Container..."
+      docker-compose up -d db
+      echo "Waiting for PostgreSQL to be ready..."
+      sleep 15
+    init: |
+      echo "Installing Python packages..."
+      pip install -r requirements.txt
+      echo "Creating database tables..."
+      psql -h localhost -U user -d mydb -f schema.sql <<< "password"
+    command: |
+      echo "Starting Flask Application..."
+      python3 -m flask run --host=0.0.0.0 --port=5000
+
+ports:
+  - name: Web App
+    port: 5000
+    onOpen: open-browser
+    visibility: public
+  - name: Database
+    port: 5432
+    onOpen: ignore
