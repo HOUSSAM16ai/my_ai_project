@@ -1,12 +1,14 @@
 services:
   web:
     build: .
+    # We now use 'entrypoint.sh' to start the service
+    command: sh ./entrypoint.sh
     volumes:
       - .:/app
     ports:
       - "5000:5000"
     environment:
-      - SECRET_KEY=a_default_secret_key_for_codespaces
+      - SECRET_KEY=a_default_secret_key
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
@@ -16,6 +18,8 @@ services:
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    ports: # We keep this for the `psql` command in gitpod.yml
+      - "5432:5432"
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password

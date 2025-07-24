@@ -1,31 +1,21 @@
-# Tell Gitpod to use our custom Dockerfile for the workspace
 image:
   file: .gitpod.Dockerfile
 
-# Define tasks that should run when the workspace starts
 tasks:
-  - name: Initialize and Run Full Stack
-    before: |
-      echo "Starting Database Container..."
-      docker-compose up -d db
-      echo "Waiting for PostgreSQL to be ready (30 seconds)..."
-      sleep 30
+  - name: Setup and Launch
     init: |
       echo "Installing Python packages..."
       pip install -r requirements.txt
+      echo "Starting services via docker-compose..."
+      docker-compose up -d
+      echo "Waiting for services to be ready..."
+      sleep 20
       echo "Creating database tables..."
       psql -h localhost -U user -d mydb -f schema.sql <<< "password"
     command: |
-      echo "Starting Flask Application..."
-      python3 -m flask run --host=0.0.0.0 --port=5000
+      echo "Application is running. Use 'docker-compose logs -f web' to see logs."
 
-# Define which ports to open automatically
 ports:
-  - name: Web App
-    port: 5000
+  - port: 5000
     onOpen: open-browser
-    visibility: public
-  - name: Database
-    port: 5432
-    onOpen: ignore
     
