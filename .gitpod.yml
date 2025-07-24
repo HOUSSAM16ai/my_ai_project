@@ -1,3 +1,8 @@
+# Tell Gitpod to use our custom Dockerfile for the workspace
+image:
+  file: .gitpod.Dockerfile
+
+# Define tasks that should run when the workspace starts
 tasks:
   - name: Initialize and Run Full Stack
     before: |
@@ -14,6 +19,7 @@ tasks:
       echo "Starting Flask Application..."
       python3 -m flask run --host=0.0.0.0 --port=5000
 
+# Define which ports to open automatically
 ports:
   - name: Web App
     port: 5000
