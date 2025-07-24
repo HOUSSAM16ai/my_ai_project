@@ -11,7 +11,9 @@ tasks:
       echo "Waiting for services to be ready..."
       sleep 20
       echo "Creating database tables..."
-      psql -h localhost -U user -d mydb -f schema.sql <<< "password"
+      # This is the new, more robust way to provide the password
+      export PGPASSWORD='password'
+      psql -h localhost -U user -d mydb -f schema.sql
     command: |
       echo "Application is running. Use 'docker-compose logs -f web' to see logs."
 
