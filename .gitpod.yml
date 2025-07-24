@@ -8,8 +8,8 @@ tasks:
     before: |
       echo "Starting Database Container..."
       docker-compose up -d db
-      echo "Waiting for PostgreSQL to be ready..."
-      sleep 15
+      echo "Waiting for PostgreSQL to be ready (30 seconds)..."
+      sleep 30
     init: |
       echo "Installing Python packages..."
       pip install -r requirements.txt
