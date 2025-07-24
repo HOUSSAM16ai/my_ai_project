@@ -22,13 +22,7 @@ class User(UserMixin):
 
 def get_db_connection():
     try:
-        # The host is 'db', which is the service name in docker-compose.yml
-        conn = psycopg2.connect(
-            host="db", # <-- The crucial fix is here
-            database=os.getenv("POSTGRES_DB"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD")
-        )
+        conn = psycopg2.connect(host="db", database=os.getenv("POSTGRES_DB"), user=os.getenv("POSTGRES_USER"), password=os.getenv("POSTGRES_PASSWORD"))
         return conn
     except psycopg2.OperationalError as e:
         app.logger.error(f"DATABASE CONNECTION ERROR: {e}")
@@ -37,16 +31,16 @@ def get_db_connection():
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db_connection()
+    user = None
     if conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
             user_data = cur.fetchone()
         conn.close()
         if user_data: return User(**user_data)
-    return None
+    return user
 
 class RegistrationForm(FlaskForm):
-    # ... (No changes needed in forms)
     full_name = StringField('Full Name', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -71,7 +65,6 @@ class SubmissionForm(FlaskForm):
     submit = SubmitField('Submit Answer')
 
 def get_user_by_email(email):
-    # ... (No changes needed here)
     conn = get_db_connection()
     user = None
     if conn:
@@ -82,10 +75,10 @@ def get_user_by_email(email):
         if user_data: user = User(**user_data)
     return user
 
-# --- Application Routes ---
-# ... (No changes needed in routes) ...
 @app.route('/')
+@app.route('/home')
 def home(): return render_template('home.html', title='Home')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -97,11 +90,12 @@ def register():
             with conn.cursor() as cur:
                 cur.execute("INSERT INTO users (full_name, email, password_hash) VALUES (%s, %s, %s)", (form.full_name.data, form.email.data, hashed_password))
             conn.commit(); conn.close()
-            flash('Your account has been created!', 'success')
+            flash('Your account has been created! You are now able to log in.', 'success')
             return redirect(url_for('login'))
         else:
             flash('Database connection failed.', 'danger')
     return render_template('register.html', title='Register', form=form)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -114,12 +108,61 @@ def login():
         else:
             flash('Login Unsuccessful. Please check email and password.', 'danger')
     return render_template('login.html', title='Login', form=form)
+
 @app.route('/logout')
 def logout():
     logout_user(); return redirect(url_for('home'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard(): return render_template('dashboard.html', title='Dashboard')
+
+@app.route('/subjects')
+@login_required
+def subjects_list():
+    conn = get_db_connection()
+    subjects = []
+    if conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM subjects ORDER BY name;")
+            subjects = cur.fetchall()
+        conn.close()
+    return render_template('subjects.html', title='Subjects', subjects=subjects)
+
+@app.route('/subjects/<int:subject_id>')
+@login_required
+def lessons_list(subject_id):
+    conn = get_db_connection()
+    subject = None
+    lessons = []
+    if conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT name FROM subjects WHERE id = %s;", (subject_id,))
+            subject = cur.fetchone()
+            cur.execute("SELECT * FROM lessons WHERE subject_id = %s ORDER BY id;", (subject_id,))
+            lessons = cur.fetchall()
+        conn.close()
+    if subject is None:
+        flash('Subject not found.', 'danger')
+        return redirect(url_for('subjects_list'))
+    # --- THIS IS THE CORRECTED LINE ---
+    return render_template('lessons_list.html', title=f"Lessons for {subject['name']}", lessons=lessons, subject_name=subject['name'])
+
+@app.route('/lessons/<int:lesson_id>')
+@login_required
+def lesson_detail(lesson_id):
+    conn = get_db_connection()
+    lesson = None
+    if conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT l.*, s.name as subject_name FROM lessons l JOIN subjects s ON l.subject_id = s.id WHERE l.id = %s;", (lesson_id,))
+            lesson = cur.fetchone()
+        conn.close()
+    if lesson is None:
+        flash('Lesson not found.', 'danger')
+        return redirect(url_for('subjects_list'))
+    return render_template('lesson_detail.html', title=lesson['title'], lesson=lesson)
+
 @app.route('/exercise/<int:exercise_id>', methods=['GET', 'POST'])
 @login_required
 def exercise_view(exercise_id):

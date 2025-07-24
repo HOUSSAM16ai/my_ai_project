@@ -8,14 +8,15 @@ services:
     ports:
       - "5000:5000"
     environment:
+      - FLASK_ENV=development
       - SECRET_KEY=a_super_secret_key
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
     depends_on:
       db:
-        condition: service_healthy # ينتظر حتى تكون قاعدة البيانات جاهزة صحيًا
-      
+        condition: service_healthy
+
   db:
     image: postgres:15-alpine
     volumes:
