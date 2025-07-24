@@ -1,12 +1,10 @@
-# Version 1.3 - Professional Entrypoint Setup
+# Version 2.0 - Simplified and Robust
 FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies needed for the app and the entrypoint script
-# netcat-openbsd provides the 'nc' command
-# postgresql-client provides the 'psql' command
+# Install all necessary system dependencies
 RUN apk update && \
     apk add --no-cache build-base postgresql-dev git bash postgresql-client netcat-openbsd
 
@@ -15,14 +13,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
 COPY . .
 
-# Make the entrypoint script executable (this is the chmod +x step)
+# Make the entrypoint script executable (chmod +x)
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 5000
 
-# The CMD is now handled by the entrypoint, but it's good practice to have it here
-# for documentation or if someone runs the container without docker-compose.
-CMD ["/app/entrypoint.sh"]
+# Set the entrypoint to our smart script
+ENTRYPOINT ["/app/entrypoint.sh"]
