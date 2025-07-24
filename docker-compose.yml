@@ -3,18 +3,18 @@ version: '3.8'
 services:
   web:
     build: .
-    # The command to run is now inside the Dockerfile (ENTRYPOINT)
     volumes:
       - .:/app
     ports:
       - "5000:5000"
     environment:
-      - SECRET_KEY=a_super_secret_key_for_gitpod
+      - SECRET_KEY=a_super_secret_key
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
     depends_on:
-      - db
+      db:
+        condition: service_healthy # ينتظر حتى تكون قاعدة البيانات جاهزة صحيًا
       
   db:
     image: postgres:15-alpine
@@ -24,6 +24,11 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

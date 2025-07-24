@@ -22,7 +22,13 @@ class User(UserMixin):
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(host="localhost", database=os.getenv("POSTGRES_DB"), user=os.getenv("POSTGRES_USER"), password=os.getenv("POSTGRES_PASSWORD"))
+        # The host is 'db', which is the service name in docker-compose.yml
+        conn = psycopg2.connect(
+            host="db", # <-- The crucial fix is here
+            database=os.getenv("POSTGRES_DB"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD")
+        )
         return conn
     except psycopg2.OperationalError as e:
         app.logger.error(f"DATABASE CONNECTION ERROR: {e}")
@@ -40,12 +46,12 @@ def load_user(user_id):
     return None
 
 class RegistrationForm(FlaskForm):
+    # ... (No changes needed in forms)
     full_name = StringField('Full Name', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
-
     def validate_email(self, email):
         conn = get_db_connection()
         if conn:
@@ -65,6 +71,7 @@ class SubmissionForm(FlaskForm):
     submit = SubmitField('Submit Answer')
 
 def get_user_by_email(email):
+    # ... (No changes needed here)
     conn = get_db_connection()
     user = None
     if conn:
@@ -75,9 +82,10 @@ def get_user_by_email(email):
         if user_data: user = User(**user_data)
     return user
 
+# --- Application Routes ---
+# ... (No changes needed in routes) ...
 @app.route('/')
 def home(): return render_template('home.html', title='Home')
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -94,7 +102,6 @@ def register():
         else:
             flash('Database connection failed.', 'danger')
     return render_template('register.html', title='Register', form=form)
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -107,15 +114,12 @@ def login():
         else:
             flash('Login Unsuccessful. Please check email and password.', 'danger')
     return render_template('login.html', title='Login', form=form)
-
 @app.route('/logout')
 def logout():
     logout_user(); return redirect(url_for('home'))
-
 @app.route('/dashboard')
 @login_required
 def dashboard(): return render_template('dashboard.html', title='Dashboard')
-
 @app.route('/exercise/<int:exercise_id>', methods=['GET', 'POST'])
 @login_required
 def exercise_view(exercise_id):
@@ -128,7 +132,6 @@ def exercise_view(exercise_id):
         conn.close()
     if not exercise:
         flash('Exercise not found.', 'danger'); return redirect(url_for('dashboard'))
-
     form = SubmissionForm()
     if form.validate_on_submit():
         is_correct = (form.answer.data.strip().lower() == exercise['correct_answer'].strip().lower())
