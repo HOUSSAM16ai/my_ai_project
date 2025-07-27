@@ -10,14 +10,16 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     services:
+      # This starts a PostgreSQL database service for the tests
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres # Start with the default db
         ports:
           - 5432:5432
+        # Health check to wait until the database is ready
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -40,13 +42,11 @@ jobs:
     
     - name: Run tests with pytest
       env:
-        # We tell the app to connect to the postgres service on its localhost
-        # because GitHub Actions maps the service port to the host's localhost.
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432 # Port is mapped from the service
-        POSTGRES_USER: testuser
-        POSTGRES_PASSWORD: testpassword
-        POSTGRES_DB: testdb
+        # These environment variables will be used by the test_app.py file
+        POSTGRES_HOST: localhost 
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+        POSTGRES_DB: mydb_test # We will create and use this test database
         SECRET_KEY: a_test_secret_key
         FLASK_ENV: testing
       run: |

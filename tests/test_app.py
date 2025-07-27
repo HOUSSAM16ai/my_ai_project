@@ -1,6 +1,6 @@
 import pytest
 import os
-import psycopg2  # <-- THIS IS THE FIX
+import psycopg2
 from app import app as flask_app, get_db_connection
 from psycopg2.extras import RealDictCursor
 
@@ -8,14 +8,9 @@ from psycopg2.extras import RealDictCursor
 
 @pytest.fixture
 def app():
-    # Set environment variables for testing
-    os.environ['FLASK_ENV'] = 'testing'
-    os.environ['POSTGRES_HOST'] = 'localhost'
-    os.environ['POSTGRES_DB'] = 'mydb_test'
-    os.environ['POSTGRES_USER'] = 'user'
-    os.environ['POSTGRES_PASSWORD'] = 'password'
-    os.environ['SECRET_KEY'] = 'a_test_secret_key'
-
+    """إنشاء وتهيئة نسخة جديدة من التطبيق لكل اختبار."""
+    # We set the env vars from the ci.yml file, no need to set them here again
+    
     flask_app.config.update({
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
@@ -23,15 +18,20 @@ def app():
 
     # تهيئة قاعدة بيانات نظيفة قبل كل اختبار
     with flask_app.app_context():
-        # Connect to the maintenance database to drop/create the test database
-        conn_maint = psycopg2.connect(host="localhost", user="user", password="password", dbname="postgres")
+        # Connect to the default 'postgres' database to create our test database
+        conn_maint = psycopg2.connect(
+            host=os.getenv("POSTGRES_HOST"), 
+            user=os.getenv("POSTGRES_USER"), 
+            password=os.getenv("POSTGRES_PASSWORD"), 
+            dbname="postgres"
+        )
         conn_maint.autocommit = True
         with conn_maint.cursor() as cur:
-            cur.execute("DROP DATABASE IF EXISTS mydb_test;")
+            cur.execute("DROP DATABASE IF EXISTS mydb_test WITH (FORCE);")
             cur.execute("CREATE DATABASE mydb_test;")
         conn_maint.close()
 
-        # Connect to the newly created test database to apply schema
+        # Connect to the newly created test database to apply the schema
         conn = get_db_connection()
         assert conn is not None, "Failed to connect to the test database after creation."
         with conn.cursor() as cur:
@@ -47,7 +47,6 @@ def client(app):
     """Fixture لعميل اختبار Flask."""
     return app.test_client()
 
-# ... (بقية الكود تبقى كما هي تمامًا) ...
 # --- مجموعة اختبارات المصادقة (Authentication) ---
 class TestAuth:
     def test_home_page_for_anonymous_user(self, client):
