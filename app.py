@@ -20,22 +20,13 @@ class User(UserMixin):
     def __init__(self, id, full_name, email, password_hash, created_at=None):
         self.id = id; self.full_name = full_name; self.email = email; self.password_hash = password_hash; self.created_at = created_at
 
-# --- THIS IS THE CORRECTED FUNCTION ---
 def get_db_connection():
     try:
-        # Use the POSTGRES_HOST env var if it exists, otherwise default to 'db'
-        host = os.getenv("POSTGRES_HOST", "db")
-        conn = psycopg2.connect(
-            host=host,
-            database=os.getenv("POSTGRES_DB"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD")
-        )
+        conn = psycopg2.connect(host="db", database=os.getenv("POSTGRES_DB"), user=os.getenv("POSTGRES_USER"), password=os.getenv("POSTGRES_PASSWORD"))
         return conn
     except psycopg2.OperationalError as e:
         app.logger.error(f"DATABASE CONNECTION ERROR: {e}")
         return None
-# --- END OF CORRECTION ---
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -105,12 +96,14 @@ def register():
             flash('Database connection failed.', 'danger')
     return render_template('register.html', title='Register', form=form)
 
+# --- THIS IS THE CORRECTED FUNCTION ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
         user = get_user_by_email(form.email.data)
+        # --- THE FIX IS HERE ---
         if user and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             return redirect(url_for('dashboard'))
@@ -119,6 +112,7 @@ def login():
     return render_template('login.html', title='Login', form=form)
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user(); return redirect(url_for('home'))
 
@@ -184,7 +178,7 @@ def exercise_view(exercise_id):
         flash('Database connection failed.', 'danger')
         return redirect(url_for('dashboard'))
     if not exercise:
-        flash('Exercise not found.', 'danger')
+        flash('Exercise not found.', 'danger');
         if conn: conn.close()
         return redirect(url_for('dashboard'))
     form = SubmissionForm()

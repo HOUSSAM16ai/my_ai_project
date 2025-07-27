@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Available Subjects</h2>
+    
+    <!-- This is where our JavaScript will insert the subjects -->
+    <div id="subjects-container" class="list-group">
+        <!-- We show a loading message that will be replaced -->
+        <p>Loading subjects, please wait...</p>
+    </div>
+</div>
+
+<!-- This script runs after the page has loaded -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('subjects-container');
+
+        // Fetch data from our new API endpoint
+        fetch('{{ url_for("api_subjects") }}')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Clear the "Loading..." message
+                container.innerHTML = ''; 
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p>No subjects found.</p>';
+                } else {
+                    // Create and add a link for each subject
+                    data.forEach(subject => {
+                        let link = document.createElement('a');
+                        link.className = 'list-group-item list-group-item-action';
+                        // Construct the URL to the lessons list page
+                        link.href = `{{ url_for('subjects_list') }}/${subject.id}`;
+                        link.textContent = subject.name;
+                        container.appendChild(link);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching subjects:', error);
+                container.innerHTML = '<p class="text-danger">Failed to load subjects. Please try again later.</p>';
+            });
+    });
+</script>
+{% endblock content %}
