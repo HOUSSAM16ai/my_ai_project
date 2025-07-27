@@ -22,7 +22,15 @@ class User(UserMixin):
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(host="db", database=os.getenv("POSTGRES_DB"), user=os.getenv("POSTGRES_USER"), password=os.getenv("POSTGRES_PASSWORD"))
+        # This function is now smart. It checks the app config first.
+        host = app.config.get("POSTGRES_HOST") or os.getenv("POSTGRES_HOST", "db")
+        
+        conn = psycopg2.connect(
+            host=host,
+            database=app.config.get("POSTGRES_DB") or os.getenv("POSTGRES_DB"),
+            user=app.config.get("POSTGRES_USER") or os.getenv("POSTGRES_USER"),
+            password=app.config.get("POSTGRES_PASSWORD") or os.getenv("POSTGRES_PASSWORD")
+        )
         return conn
     except psycopg2.OperationalError as e:
         app.logger.error(f"DATABASE CONNECTION ERROR: {e}")
@@ -96,14 +104,12 @@ def register():
             flash('Database connection failed.', 'danger')
     return render_template('register.html', title='Register', form=form)
 
-# --- THIS IS THE CORRECTED FUNCTION ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
         user = get_user_by_email(form.email.data)
-        # --- THE FIX IS HERE ---
         if user and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             return redirect(url_for('dashboard'))
