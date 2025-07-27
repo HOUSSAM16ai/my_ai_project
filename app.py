@@ -20,13 +20,22 @@ class User(UserMixin):
     def __init__(self, id, full_name, email, password_hash, created_at=None):
         self.id = id; self.full_name = full_name; self.email = email; self.password_hash = password_hash; self.created_at = created_at
 
+# --- THIS IS THE CORRECTED FUNCTION ---
 def get_db_connection():
     try:
-        conn = psycopg2.connect(host="db", database=os.getenv("POSTGRES_DB"), user=os.getenv("POSTGRES_USER"), password=os.getenv("POSTGRES_PASSWORD"))
+        # Use the POSTGRES_HOST env var if it exists, otherwise default to 'db'
+        host = os.getenv("POSTGRES_HOST", "db")
+        conn = psycopg2.connect(
+            host=host,
+            database=os.getenv("POSTGRES_DB"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD")
+        )
         return conn
     except psycopg2.OperationalError as e:
         app.logger.error(f"DATABASE CONNECTION ERROR: {e}")
         return None
+# --- END OF CORRECTION ---
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -145,7 +154,6 @@ def lessons_list(subject_id):
     if subject is None:
         flash('Subject not found.', 'danger')
         return redirect(url_for('subjects_list'))
-    # --- THIS IS THE CORRECTED LINE ---
     return render_template('lessons_list.html', title=f"Lessons for {subject['name']}", lessons=lessons, subject_name=subject['name'])
 
 @app.route('/lessons/<int:lesson_id>')
@@ -172,16 +180,35 @@ def exercise_view(exercise_id):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM exercises WHERE id = %s;", (exercise_id,))
             exercise = cur.fetchone()
-        conn.close()
+    else:
+        flash('Database connection failed.', 'danger')
+        return redirect(url_for('dashboard'))
     if not exercise:
-        flash('Exercise not found.', 'danger'); return redirect(url_for('dashboard'))
+        flash('Exercise not found.', 'danger')
+        if conn: conn.close()
+        return redirect(url_for('dashboard'))
     form = SubmissionForm()
     if form.validate_on_submit():
-        is_correct = (form.answer.data.strip().lower() == exercise['correct_answer'].strip().lower())
-        # TODO: Save submission to database
-        flash('Correct!' if is_correct else f"Incorrect. The correct answer was: {exercise['correct_answer']}", 'success' if is_correct else 'danger')
+        student_answer = form.answer.data.strip()
+        is_correct = (student_answer.lower() == exercise['correct_answer'].strip().lower())
+        try:
+            with conn.cursor() as cur:
+                cur.execute("INSERT INTO submissions (student_answer, is_correct, user_id, exercise_id) VALUES (%s, %s, %s, %s)", (student_answer, is_correct, current_user.id, exercise_id))
+            conn.commit()
+            flash('Your answer has been submitted!', 'info')
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error saving submission: {e}")
+            flash('There was an error saving your answer.', 'danger')
+        finally:
+            if conn: conn.close()
+        if is_correct:
+            flash('Correct! Well done!', 'success')
+        else:
+            flash(f"Incorrect. The correct answer was: {exercise['correct_answer']}", 'danger')
         return redirect(url_for('dashboard'))
+    if conn: conn.close()
     return render_template('exercise.html', title='Exercise', exercise=exercise, form=form)
-    
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

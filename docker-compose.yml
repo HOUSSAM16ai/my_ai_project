@@ -21,6 +21,10 @@ services:
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    # --- THIS IS THE NEW SECTION ---
+    ports:
+      - "5432:5432"
+    # --- END OF NEW SECTION ---
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
