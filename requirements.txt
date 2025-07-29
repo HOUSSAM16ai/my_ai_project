@@ -1,10 +1,23 @@
+# requirements.txt
+
+# --- Flask Core & Extensions ---
 Flask
 Flask-WTF
 Flask-Login
 Werkzeug
-gunicorn
+email-validator
+
+# --- Database ORM & Migrations (الإضافات الجديدة) ---
+flask-sqlalchemy
+flask-migrate
 psycopg2-binary
+
+# --- WSGI Server for Production ---
+gunicorn
+
+# --- Utilities ---
 python-dotenv
+
+# --- Testing Libraries (مهمة للاختبارات) ---
 pytest
 pytest-flask
-email-validator

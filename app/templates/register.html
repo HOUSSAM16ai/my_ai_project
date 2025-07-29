@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+    <form method="POST" action="{{ url_for('routes.register') }}"> <!-- === التعديل هنا === -->
+        {{ form.hidden_tag() }}
+        <fieldset>
+            <legend>Join Today</legend>
+            <div>
+                {{ form.full_name.label }}<br>
+                {{ form.full_name(size=32) }}
+            </div>
+            <div>
+                {{ form.email.label }}<br>
+                {{ form.email(size=32) }}
+            </div>
+            <div>
+                {{ form.password.label }}<br>
+                {{ form.password(size=32) }}
+            </div>
+             <div>
+                {{ form.confirm_password.label }}<br>
+                {{ form.confirm_password(size=32) }}
+            </div>
+        </fieldset>
+        <div>
+            {{ form.submit() }}
+        </div>
+    </form>
+    <div style="margin-top: 1em;">
+        Already Have An Account? <a href="{{ url_for('routes.login') }}">Sign In</a> <!-- === التعديل هنا === -->
+    </div>
+{% endblock %}

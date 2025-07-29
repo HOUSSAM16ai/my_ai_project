@@ -1,6 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-    <h1>Welcome to your Dashboard, {{ current_user.full_name }}!</h1>
-    <p>This is your personal space. From here you can access all your learning materials.</p>
-    <p><a href="{{ url_for('subjects_list') }}">Browse All Subjects</a></p>
-{% endblock %}

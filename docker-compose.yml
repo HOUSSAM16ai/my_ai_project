@@ -1,39 +1,49 @@
-version: '3.8'
+# docker-compose.yml - Version 2.0 (Secure & Production-Ready)
+
 
 services:
   web:
     build: .
     volumes:
+      # مزامنة الكود المحلي مع الحاوية لتسهيل التطوير
       - .:/app
     ports:
       - "5000:5000"
     environment:
-      - FLASK_ENV=development
-      - SECRET_KEY=a_super_secret_key
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=mydb
+      # --- قراءة الإعدادات من ملف .env ---
+      # هذا يجعل الكود أكثر أمانًا ومرونة
+      - FLASK_DEBUG=${FLASK_DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db # اسم الخدمة هو اسم المضيف داخل شبكة Docker
     depends_on:
       db:
+        # أفضل ممارسة: لا تبدأ خدمة الويب إلا بعد أن تصبح قاعدة البيانات "صحية"
         condition: service_healthy
 
   db:
     image: postgres:15-alpine
     volumes:
+      # استخدام volume مسمى لضمان بقاء البيانات حتى بعد إيقاف الحاوية
       - postgres_data:/var/lib/postgresql/data/
-    # --- THIS IS THE NEW SECTION ---
     ports:
+      # كشف منفذ قاعدة البيانات إلى الجهاز المضيف (اختياري، لكنه مفيد للتصحيح)
       - "5432:5432"
-    # --- END OF NEW SECTION ---
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=mydb
+      # --- قراءة نفس الإعدادات من ملف .env ---
+      # هذا يضمن أن الإعدادات متطابقة بين الخدمات
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
+      # فحص صحة ممتاز للتأكد من أن PostgreSQL جاهز لاستقبال الاتصالات
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
+  # تعريف الـ volume المسمى
   postgres_data:

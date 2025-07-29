@@ -4,7 +4,8 @@
     <ul>
         {% for lesson in lessons %}
             <li>
-                <a href="{{ url_for('lesson_detail', lesson_id=lesson.id) }}">
+                <!-- === التعديل هنا === -->
+                <a href="{{ url_for('routes.lesson_detail', lesson_id=lesson.id) }}">
                     <h3>{{ lesson.title }}</h3>
                 </a>
             </li>
@@ -13,5 +14,6 @@
         {% endfor %}
     </ul>
     <hr>
-    <a href="{{ url_for('subjects_list') }}">Back to all subjects</a>
+    <!-- === التعديل هنا === -->
+    <a href="{{ url_for('routes.subjects_list') }}">Back to all subjects</a>
 {% endblock %}

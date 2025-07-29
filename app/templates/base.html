@@ -15,20 +15,20 @@
 <body>
     <header>
         <nav>
-            <a href="{{ url_for('home') }}">Home</a>
+            <!-- === التعديلات هنا === -->
+            <a href="{{ url_for('routes.home') }}">Home</a>
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('subjects_list') }}">Subjects</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <a href="{{ url_for('routes.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('routes.subjects_list') }}">Subjects</a>
+                <a href="{{ url_for('routes.logout') }}">Logout</a>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}">Register</a>
+                <a href="{{ url_for('routes.login') }}">Login</a>
+                <a href="{{ url_for('routes.register') }}">Register</a>
             {% endif %}
         </nav>
     </header>
     <hr>
     <main>
-        <!-- === هذا هو الجزء الحاسم المفقود === -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -38,7 +38,6 @@
             {% endfor %}
           {% endif %}
         {% endwith %}
-        <!-- === انتهى الجزء المفقود === -->
         
         {% block content %}{% endblock %}
     </main>

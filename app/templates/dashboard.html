@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Welcome, {{ current_user.full_name }}!</h1>
+    <p>This is your dashboard. You can start learning from here.</p>
+    <!-- === التعديل هنا === -->
+    <p><a href="{{ url_for('routes.subjects_list') }}">Browse All Subjects</a></p>
+{% endblock %}

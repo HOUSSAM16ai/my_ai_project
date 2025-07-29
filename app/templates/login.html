@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+    <form method="POST" action="{{ url_for('routes.login') }}"> <!-- === التعديل هنا === -->
+        {{ form.hidden_tag() }}
+        <fieldset>
+            <legend>Log In</legend>
+            <div>
+                {{ form.email.label }}<br>
+                {{ form.email(size=32) }}
+            </div>
+            <div>
+                {{ form.password.label }}<br>
+                {{ form.password(size=32) }}
+            </div>
+        </fieldset>
+        <div>
+            {{ form.submit() }}
+        </div>
+    </form>
+    <div style="margin-top: 1em;">
+        Need An Account? <a href="{{ url_for('routes.register') }}">Sign Up Now</a> <!-- === التعديل هنا === -->
+    </div>
+{% endblock %}

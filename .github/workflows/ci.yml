@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml - Version 2.0 (Simplified for SQLite tests)
 name: Python Application CI
 
 on:
@@ -9,22 +10,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    services:
-      # This starts a PostgreSQL database service for the tests
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres # Start with the default db
-        ports:
-          - 5432:5432
-        # Health check to wait until the database is ready
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
     - name: Check out repository code
@@ -41,13 +26,7 @@ jobs:
         pip install -r requirements.txt
     
     - name: Run tests with pytest
-      env:
-        # These environment variables will be used by the test_app.py file
-        POSTGRES_HOST: localhost 
-        POSTGRES_USER: user
-        POSTGRES_PASSWORD: password
-        POSTGRES_DB: mydb_test # We will create and use this test database
-        SECRET_KEY: a_test_secret_key
-        FLASK_ENV: testing
+      # لم نعد بحاجة لمتغيرات بيئة خاصة بقاعدة البيانات
+      # لأن الاختبارات تستخدم SQLite في الذاكرة
       run: |
         pytest

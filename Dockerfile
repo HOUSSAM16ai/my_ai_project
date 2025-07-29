@@ -1,24 +1,32 @@
-# Version 2.0 - Simplified and Robust
+# Dockerfile - Version 4.0 (Final & Corrected)
 FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install all necessary system dependencies
 RUN apk update && \
-    apk add --no-cache build-base postgresql-dev git bash postgresql-client netcat-openbsd
+    apk add --no-cache --virtual .build-deps build-base postgresql-dev && \
+    apk add --no-cache postgresql-client netcat-openbsd bash && \
+    pip install --no-cache-dir gunicorn && \
+    apk del .build-deps
 
 WORKDIR /app
+
+# إنشاء المجموعة والمستخدم، لكن لا نستخدمه الآن
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Make the entrypoint script executable (chmod +x)
-RUN chmod +x /app/entrypoint.sh
+# --- هذا السطر لم نعد بحاجة إليه، لقد تسبب في مشاكل الصلاحيات ---
+# RUN chown -R appuser:appgroup /app
+
+# --- هذا هو السطر الأهم الذي سنقوم بحذفه أو التعليق عليه ---
+# USER appuser
 
 EXPOSE 5000
 
-# Set the entrypoint to our smart script
+# سيتم تشغيل هذا السكربت الآن بصلاحيات root
 ENTRYPOINT ["/app/entrypoint.sh"]
