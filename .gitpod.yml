@@ -1,51 +1,54 @@
-# .gitpod.yml - Version 2.0 (Docker-Compose based)
-# هذا الملف يقوم بتشغيل كامل المشروع باستخدام Docker Compose داخل Gitpod.
+# .gitpod.yml - Version 3.1 (Validated Structure)
+# هذا الملف يقوم بتشغيل كامل المشروع ويضمن أن كل طرفية جديدة تستخدم البيئة الصحيحة.
 
 # --- 1. كشف المنافذ ---
-# تحديد المنافذ التي يجب أن تكون متاحة من بيئة العمل.
 ports:
   # منفذ تطبيق الويب الرئيسي (Flask/Gunicorn)
   - port: 5000
-    onOpen: open-browser # فتح التطبيق تلقائيًا في نافذة متصفح جديدة
+    onOpen: open-browser
     visibility: public
     name: Web App
 
-  # منفذ قاعدة بيانات PostgreSQL (مفيد للتصحيح باستخدام أدوات خارجية)
+  # منفذ قاعدة بيانات PostgreSQL
   - port: 5432
     onOpen: ignore
     visibility: private
     name: Database
 
 # --- 2. مهام بيئة العمل ---
-# تعريف الأوامر التي يتم تشغيلها عند إنشاء أو بدء بيئة العمل.
 tasks:
-  # `before` يتم تشغيله قبل `init` أو `command`.
-  # نستخدمه لإعداد ملف البيئة.
-  - name: Setup Environment
+  # `before` يتم تشغيله قبل أي شيء آخر.
+  - name: Setup Environment & Dependencies
     before: |
       echo "Setting up environment file..."
-      # إنشاء ملف .env من المثال إذا لم يكن موجودًا.
       if [ ! -f .env ]; then
         cp .env.example .env
       fi
-      echo "Environment file is ready."
+      
+      echo "Installing Python dependencies for the workspace..."
+      pip install -r requirements.txt
+      
+      echo "Workspace environment is ready."
 
-  # `init` يتم تشغيله مرة واحدة فقط عند إنشاء بيئة العمل لأول مرة.
-  # نستخدمه لبناء صور Docker وتهيئة قاعدة البيانات لأول مرة.
+  # `init` يتم تشغيله مرة واحدة فقط عند إنشاء بيئة العمل.
   - name: Build & Init DB
     init: |
       echo "Building Docker images..."
       docker-compose build
       echo "Images built. Initializing database..."
-      # تشغيل الهجرة وقاعدة البيانات باستخدام حاوية مؤقتة
       docker-compose run --rm web sh -c "export FLASK_APP=cogniforge.py && flask db upgrade && flask seed-db"
       echo "Database initialized and seeded."
 
   # `command` يتم تشغيله في كل مرة تبدأ فيها بيئة العمل.
-  # هذا هو الأمر الرئيسي لبدء جميع خدماتنا.
   - name: Start Services
     command: |
       echo "Starting application services..."
       docker-compose up
+
+# --- 3. إعدادات VS Code ---
+vscode:
+  extensions:
+    - ms-python.python
+    - ms-azuretools.vscode-docker
 
 
