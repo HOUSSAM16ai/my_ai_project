@@ -1,17 +1,20 @@
-# docker-compose.yml - Version 2.0 (Secure & Production-Ready)
-
+# docker-compose.yml - v3.0 (Multi-service Architecture)
+# هذا الملف ينسق تشغيل نظام الخدمات المصغرة بأكمله.
 
 services:
+  # --- 1. خدمة الواجهة الأمامية (Flask) ---
   web:
-    build: .
-    volumes:
-      # مزامنة الكود المحلي مع الحاوية لتسهيل التطوير
-      - .:/app
+    build:
+      # مسار البناء هو المجلد الحالي (حيث يوجد Dockerfile الرئيسي)
+      context: . 
+    container_name: flask-frontend
     ports:
       - "5000:5000"
+    volumes:
+      # مزامنة كل الكود. هذا مفيد الآن، لكن يمكن تحسينه لاحقًا
+      - .:/app
     environment:
-      # --- قراءة الإعدادات من ملف .env ---
-      # هذا يجعل الكود أكثر أمانًا ومرونة
+      # قراءة الإعدادات من ملف .env
       - FLASK_DEBUG=${FLASK_DEBUG}
       - SECRET_KEY=${SECRET_KEY}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -20,30 +23,39 @@ services:
       - POSTGRES_HOST=db # اسم الخدمة هو اسم المضيف داخل شبكة Docker
     depends_on:
       db:
-        # أفضل ممارسة: لا تبدأ خدمة الويب إلا بعد أن تصبح قاعدة البيانات "صحية"
         condition: service_healthy
 
+  # --- 2. خدمة الذكاء الاصطناعي (FastAPI) - الجزء الجديد والخارق ---
+  ai_service:
+    build:
+      # نخبره أن يبحث عن Dockerfile داخل مجلد ai_service
+      context: ./ai_service
+    container_name: fastapi-ai-service
+    ports:
+      # نكشف منفذًا مختلفًا (8000) للخدمة الجديدة
+      - "8000:8000"
+    volumes:
+      # مزامنة كود خدمة الذكاء الاصطناعي فقط للتطوير السريع
+      - ./ai_service:/code
+
+  # --- 3. خدمة قاعدة البيانات (لا تغيير هنا) ---
   db:
     image: postgres:15-alpine
+    container_name: postgres-db
     volumes:
-      # استخدام volume مسمى لضمان بقاء البيانات حتى بعد إيقاف الحاوية
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      # كشف منفذ قاعدة البيانات إلى الجهاز المضيف (اختياري، لكنه مفيد للتصحيح)
       - "5432:5432"
     environment:
-      # --- قراءة نفس الإعدادات من ملف .env ---
-      # هذا يضمن أن الإعدادات متطابقة بين الخدمات
+      # قراءة نفس الإعدادات من ملف .env
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
-      # فحص صحة ممتاز للتأكد من أن PostgreSQL جاهز لاستقبال الاتصالات
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  # تعريف الـ volume المسمى
   postgres_data:
