@@ -1,42 +1,42 @@
-# docker-compose.yml - v3.0 (Multi-service Architecture)
+# docker-compose.yml - v3.1 (With Environment Variables for AI Service)
 # هذا الملف ينسق تشغيل نظام الخدمات المصغرة بأكمله.
 
 services:
   # --- 1. خدمة الواجهة الأمامية (Flask) ---
   web:
     build:
-      # مسار البناء هو المجلد الحالي (حيث يوجد Dockerfile الرئيسي)
       context: . 
     container_name: flask-frontend
     ports:
       - "5000:5000"
     volumes:
-      # مزامنة كل الكود. هذا مفيد الآن، لكن يمكن تحسينه لاحقًا
       - .:/app
     environment:
-      # قراءة الإعدادات من ملف .env
       - FLASK_DEBUG=${FLASK_DEBUG}
       - SECRET_KEY=${SECRET_KEY}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=db # اسم الخدمة هو اسم المضيف داخل شبكة Docker
+      - POSTGRES_HOST=db 
     depends_on:
       db:
         condition: service_healthy
 
-  # --- 2. خدمة الذكاء الاصطناعي (FastAPI) - الجزء الجديد والخارق ---
+  # --- 2. خدمة الذكاء الاصطناعي (FastAPI) ---
   ai_service:
     build:
-      # نخبره أن يبحث عن Dockerfile داخل مجلد ai_service
       context: ./ai_service
     container_name: fastapi-ai-service
     ports:
-      # نكشف منفذًا مختلفًا (8000) للخدمة الجديدة
       - "8000:8000"
     volumes:
-      # مزامنة كود خدمة الذكاء الاصطناعي فقط للتطوير السريع
       - ./ai_service:/code
+    # --- هذا هو الجزء الجديد والمهم الذي يحل المشكلة ---
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db # اسم الخدمة هو اسم المضيف داخل شبكة Docker
 
   # --- 3. خدمة قاعدة البيانات (لا تغيير هنا) ---
   db:
@@ -47,7 +47,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      # قراءة نفس الإعدادات من ملف .env
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
