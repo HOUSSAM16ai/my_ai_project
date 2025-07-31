@@ -1,8 +1,9 @@
-# docker-compose.yml - v3.1 (With Environment Variables for AI Service)
-# هذا الملف ينسق تشغيل نظام الخدمات المصغرة بأكمله.
+# docker-compose.yml - v4.0 (Fully Standardized on Bullseye)
+# هذا الملف ينسق تشغيل نظام خدمات مصغرة متجانس ومقاوم للمستقبل.
 
 services:
   # --- 1. خدمة الواجهة الأمامية (Flask) ---
+  # مبنية على Bullseye من خلال Dockerfile الخاص بها.
   web:
     build:
       context: . 
@@ -23,6 +24,7 @@ services:
         condition: service_healthy
 
   # --- 2. خدمة الذكاء الاصطناعي (FastAPI) ---
+  # مبنية على Bullseye من خلال Dockerfile الخاص بها.
   ai_service:
     build:
       context: ./ai_service
@@ -31,16 +33,16 @@ services:
       - "8000:8000"
     volumes:
       - ./ai_service:/code
-    # --- هذا هو الجزء الجديد والمهم الذي يحل المشكلة ---
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=db # اسم الخدمة هو اسم المضيف داخل شبكة Docker
+      - POSTGRES_HOST=db
 
-  # --- 3. خدمة قاعدة البيانات (لا تغيير هنا) ---
+  # --- 3. خدمة قاعدة البيانات (تمت الترقية إلى Bullseye) ---
+  # تستخدم الآن الصورة الرسمية المبنية على Bullseye لتحقيق التجانس.
   db:
-    image: postgres:15-alpine
+    image: postgres:15-bullseye # <-- هذا هو التعديل الوحيد والمهم
     container_name: postgres-db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
