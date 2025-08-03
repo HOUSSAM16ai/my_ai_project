@@ -1,54 +1,43 @@
-# .gitpod.yml - Version 3.1 (Validated Structure)
-# هذا الملف يقوم بتشغيل كامل المشروع ويضمن أن كل طرفية جديدة تستخدم البيئة الصحيحة.
+# .gitpod.yml - v4.1 (Validated & Standardized)
+# This file orchestrates the Gitpod workspace startup sequence.
 
-# --- 1. كشف المنافذ ---
 ports:
-  # منفذ تطبيق الويب الرئيسي (Flask/Gunicorn)
   - port: 5000
     onOpen: open-browser
-    visibility: public
-    name: Web App
-
-  # منفذ قاعدة بيانات PostgreSQL
+    name: Flask Frontend
+  - port: 8000
+    onOpen: open-preview
+    name: FastAPI Service
   - port: 5432
     onOpen: ignore
-    visibility: private
     name: Database
 
-# --- 2. مهام بيئة العمل ---
 tasks:
-  # `before` يتم تشغيله قبل أي شيء آخر.
   - name: Setup Environment & Dependencies
     before: |
-      echo "Setting up environment file..."
+      echo ">>> [BEFORE] Setting up environment file..."
       if [ ! -f .env ]; then
         cp .env.example .env
       fi
       
-      echo "Installing Python dependencies for the workspace..."
+      echo ">>> [BEFORE] Installing Python dependencies for the workspace shell..."
       pip install -r requirements.txt
       
-      echo "Workspace environment is ready."
-
-  # `init` يتم تشغيله مرة واحدة فقط عند إنشاء بيئة العمل.
-  - name: Build & Init DB
+      echo ">>> [BEFORE] Workspace shell is ready."
+  
+  - name: Build Images & Initialize Database
     init: |
-      echo "Building Docker images..."
+      echo ">>> [INIT] Building Docker images..."
       docker-compose build
-      echo "Images built. Initializing database..."
+      
+      echo ">>> [INIT] Initializing database..."
       docker-compose run --rm web sh -c "export FLASK_APP=cogniforge.py && flask db upgrade && flask seed-db"
-      echo "Database initialized and seeded."
+      
+      echo ">>> [INIT] Pre-build complete."
 
-  # `command` يتم تشغيله في كل مرة تبدأ فيها بيئة العمل.
-  - name: Start Services
+  - name: Start All Services
     command: |
-      echo "Starting application services..."
+      echo ">>> [COMMAND] Starting all application services..."
       docker-compose up
-
-# --- 3. إعدادات VS Code ---
-vscode:
-  extensions:
-    - ms-python.python
-    - ms-azuretools.vscode-docker
 
 
