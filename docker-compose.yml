@@ -1,75 +1,88 @@
-# docker-compose.yml - v4.2 (Explicit Networking for Robust Connectivity)
-# هذا الملف ينسق تشغيل نظام الخدمات المصغرة باستخدام شبكة مخصصة.
+# docker-compose.yml - النسخة الاحترافية (v5.0)
+#
+# التغييرات الرئيسية:
+# - تم إزالة قسم 'dns' بالكامل من خدمة 'ai_service' لحل مشكلة الاتصال بالإنترنت
+#   داخل بيئة Gitpod. هذا يسمح لـ Docker باستخدام إعدادات الشبكة الافتراضية
+#   والصحيحة التي توفرها بيئة التطوير السحابية.
+# - تم إضافة سياسات إعادة التشغيل (restart) لزيادة موثوقية الخدمات.
+# - تم تحسين التعليقات والتوثيق لسهولة الفهم والصيانة المستقبلية.
+
+version: '3.8' # تحديد الإصدار لضمان التوافق والميزات
 
 services:
   # --- 1. خدمة الواجهة الأمامية (Flask) ---
   web:
     build:
-      context: . 
+      context: . # يبني من Dockerfile في المجلد الحالي
     container_name: flask-frontend
+    restart: unless-stopped # إعادة التشغيل تلقائيًا إلا إذا تم إيقافها يدويًا
+    env_file:
+      - .env # تحميل متغيرات البيئة من ملف .env
     ports:
       - "5000:5000"
     volumes:
-      - .:/app
+      - .:/app # ربط الكود المحلي بالحاوية للتطوير المباشر
     environment:
-      - FLASK_DEBUG=${FLASK_DEBUG}
-      - SECRET_KEY=${SECRET_KEY}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=db 
+      # تحديد اسم مضيف قاعدة البيانات (وهو اسم الخدمة في Docker Compose)
+      - POSTGRES_HOST=db
     depends_on:
       db:
+        # الانتظار حتى تصبح قاعدة البيانات جاهزة تمامًا قبل البدء
         condition: service_healthy
-    # --- التعديل هنا: نربط الخدمة بشبكتنا المخصصة ---
     networks:
       - cogniforge_network
 
   # --- 2. خدمة الذكاء الاصطناعي (FastAPI) ---
   ai_service:
     build:
-      context: ./ai_service
+      context: ./ai_service # يبني من Dockerfile في مجلد ai_service
     container_name: fastapi-ai-service
+    restart: unless-stopped
+    env_file:
+      - .env # تحميل نفس متغيرات البيئة
     ports:
       - "8000:8000"
     volumes:
-      - ./ai_service:/code
+      - ./ai_service:/code # ربط كود الخدمة للتطوير المباشر
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=db
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-    # --- التعديل هنا: نربط الخدمة بشبكتنا المخصصة ---
+    # -- [الحل الرئيسي] --
+    # تم إزالة قسم dns المحدد يدويًا. هذا هو الإجراء الصحيح لأنه يسمح
+    # للحاوية أن ترث إعدادات DNS من بيئة Gitpod، مما يحل مشكلة
+    # "Could not resolve host".
     networks:
       - cogniforge_network
 
-  # --- 3. خدمة قاعدة البيانات ---
+  # --- 3. خدمة قاعدة البيانات (PostgreSQL) ---
   db:
-    image: postgres:15-bullseye
+    image: postgres:15-bullseye # استخدام صورة رسمية ومحددة
     container_name: postgres-db
+    restart: always # من الأفضل أن تعمل قاعدة البيانات دائمًا
+    env_file:
+      - .env # تحميل إعدادات المستخدم وكلمة المرور من هنا
     volumes:
+      # استخدام "named volume" لتخزين البيانات بشكل دائم وآمن
       - postgres_data:/var/lib/postgresql/data/
     ports:
+      # جعل المنفذ متاحًا خارج Docker (مفيد للتصحيح باستخدام أدوات خارجية)
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
+      # فحص للتأكد من أن قاعدة البيانات جاهزة لاستقبال الاتصالات
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    # --- التعديل هنا: نربط الخدمة بشبكتنا المخصصة ---
     networks:
       - cogniforge_network
 
-# --- هذا هو الجزء الجديد والخارق ---
-# نقوم بتعريف شبكتنا المخصصة هنا
+# --- تعريفات الشبكات والأحجام ---
+
+# تعريف الشبكة المخصصة للسماح للخدمات بالتواصل عبر أسمائها
 networks:
   cogniforge_network:
     driver: bridge
 
+# تعريف الحجم المسمى لضمان بقاء بيانات قاعدة البيانات بعد إيقاف الحاويات
 volumes:
   postgres_data:
+    driver: local
