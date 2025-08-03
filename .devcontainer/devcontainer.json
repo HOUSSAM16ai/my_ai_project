@@ -1,12 +1,42 @@
 {
-    "name": "my_ai_project - Dev Container",
-    "dockerComposeFile": [
-        "../docker-compose.yml"
-    ],
-    "service": "web",
-    "workspaceFolder": "/app",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    },
-    "remoteUser": "root"
+  "name": "CogniForge: Supercharged Learning Environment",
+  
+  // يخبر Dev Container باستخدام docker-compose لبناء وتشغيل البيئة
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  
+  // الخدمة التي سيعمل VS Code بداخلها
+  "service": "web",
+  
+  // المجلد الذي سيتم فتحه داخل الحاوية
+  "workspaceFolder": "/app",
+  
+  // تخصيص تجربة VS Code
+  "customizations": {
+    "vscode": {
+      // الامتدادات التي سيتم تثبيتها تلقائيًا
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens"
+      ],
+      // إعدادات المحرر لتوحيد المعايير
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestArgs": ["tests"],
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestEnabled": true
+      }
+    }
+  },
+  
+  // أمر يتم تشغيله بعد إنشاء الحاوية (لتثبيت المكتبات في بيئة VS Code)
+  "postCreateCommand": "pip install -r requirements.txt",
+  
+  // المنافذ التي سيتم كشفها تلقائيًا
+  "forwardPorts": [5000, 8000, 5432],
+  
+  // المستخدم الذي ستعمل به (مهم للأذونات)
+  "remoteUser": "root"
 }
