@@ -3,5 +3,5 @@ uvicorn[standard]
 sqlalchemy
 psycopg2-binary
 python-dotenv
-openai # <-- المكتبة الجديدة
-python-multipart  # <-- هذا هو السطر الجديد الذي يحل المشكلة
+openai
+python-multipart
