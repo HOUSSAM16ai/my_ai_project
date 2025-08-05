@@ -1,33 +1,33 @@
-# config.py - Final Version with TestingConfig
+# config.py - The Central Constitution of the System v2.0
+
 import os
 from dotenv import load_dotenv
 
-# تحميل متغيرات البيئة من ملف .env
+# The Constitution is loaded ONCE at the very top.
 load_dotenv()
 
 class Config:
-    """
-    الإعدادات الأساسية للتطبيق. يتم تحميل القيم من متغيرات البيئة،
-    مع توفير قيم افتراضية للتطوير المحلي.
-    """
-    # مفتاح سري لحماية الجلسات والكوكيز، مهم جدًا للأمان
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-super-secret-key-that-you-should-change'
-
-    # رابط قاعدة بيانات SQLAlchemy للإنتاج والتطوير
-    # يبني الرابط باستخدام متغيرات البيئة الخاصة بـ PostgreSQL
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f"postgresql://{os.environ.get('POSTGRES_USER')}:{os.environ.get('POSTGRES_PASSWORD')}@" \
-        f"{os.environ.get('POSTGRES_HOST', 'db')}/{os.environ.get('POSTGRES_DB')}"
-
-    # إيقاف تتبع التعديلات غير الضرورية في SQLAlchemy لتحسين الأداء
+    """Base configuration settings. Shared by all environments."""
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-super-secret-key-that-must-be-changed'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# --- هذا هو الجزء الجديد والمهم الذي يحل المشكلة ---
+    # --- THE SUPERCHARGED FIX: The API Key is now an official part of the constitution ---
+    OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY')
+
+
+class DevelopmentConfig(Config):
+    """Configuration for the local development environment."""
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = (
+        f"postgresql://{os.environ.get('POSTGRES_USER')}:"
+        f"{os.environ.get('POSTGRES_PASSWORD')}@"
+        f"{os.environ.get('POSTGRES_HOST', 'db')}/"
+        f"{os.environ.get('POSTGRES_DB')}"
+    )
+
 class TestingConfig(Config):
-    """
-    إعدادات مخصصة لبيئة الاختبار باستخدام Pytest.
-    """
+    """Configuration for automated tests."""
     TESTING = True
-    # استخدام قاعدة بيانات SQLite في الذاكرة لجعل الاختبارات سريعة جدًا ومنعزلة
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    WTF_CSRF_ENABLED = False  # تعطيل حماية CSRF في الاختبارات
+    # Use an in-memory SQLite database for lightning-fast, isolated tests.
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:" 
+    WTF_CSRF_ENABLED = False # Disable CSRF forms for simpler testing

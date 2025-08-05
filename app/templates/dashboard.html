@@ -1,7 +1,66 @@
 {% extends "base.html" %}
+
 {% block content %}
-    <h1>Welcome, {{ current_user.full_name }}!</h1>
-    <p>This is your dashboard. You can start learning from here.</p>
-    <!-- === التعديل هنا === -->
-    <p><a href="{{ url_for('routes.subjects_list') }}">Browse All Subjects</a></p>
-{% endblock %}
+    <div class="dashboard-header">
+        <!-- The system personally greets the Architect of their own learning. -->
+        <h1>Welcome, {{ current_user.full_name }}!</h1>
+        <p>This is your Command Center. From here, you begin your journey to master new universes of knowledge.</p>
+    </div>
+
+    <div class="dashboard-actions">
+        <h2>Primary Directives:</h2>
+        
+        <div class="action-card">
+            <h3>Explore Knowledge Constellations</h3>
+            <p>Begin your exploration by browsing all available subjects.</p>
+            
+            <!-- 
+              THE SUPERCHARGED FIX & THE HEART OF THE DASHBOARD:
+              This link now uses the correct blueprint name 'main'.
+              It is the main call-to-action, the gateway to all learning content.
+            -->
+            <a href="{{ url_for('main.subjects_list') }}" class="action-button">Browse All Subjects</a>
+        </div>
+
+        <div class="action-card" style="margin-top: 2em;">
+            <h3>Review Mission Logs</h3>
+            <p>Check your past submissions and track your progress. (Feature coming soon)</p>
+            <!-- In the future, this will link to a new route, e.g., url_for('main.progress_view') -->
+            <a href="#" class="action-button disabled">View My Progress</a>
+        </div>
+
+    </div>
+
+    <!-- A simple style block to make the dashboard feel more epic -->
+    <style>
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2em;
+            padding: 1em;
+            background-color: #f4f4f9;
+            border-radius: 8px;
+        }
+        .dashboard-actions {
+            margin-top: 2em;
+        }
+        .action-card {
+            border: 1px solid #ddd;
+            padding: 1.5em;
+            border-radius: 8px;
+        }
+        .action-button {
+            display: inline-block;
+            margin-top: 1em;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .action-button.disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+{% endblock content %}

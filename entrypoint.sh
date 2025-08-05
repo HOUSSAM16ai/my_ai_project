@@ -1,40 +1,25 @@
 #!/bin/sh
-# entrypoint.sh - Final Professional Version
-# Exit immediately if a command exits with a non-zero status.
+# entrypoint.sh - The Supercharged Ignition Protocol v5.1 (UTF-8 Force)
 set -e
 
-# هذا السكربت يعمل الآن بالكامل بصلاحيات root، مما يسمح له بإنشاء الملفات.
+# --- THE SUPERCHARGED FIX for ENCODING ---
+# We are EXPORTING these environment variables. This tells ANY Python script
+# that runs in this container to use UTF-8 as its default encoding for
+# everything, from reading files to printing to the console.
+# This is a more powerful and fundamental fix.
+export PYTHONIOENCODING=UTF-8
+export LANG=C.UTF-8
 
-# --- 1. انتظار قاعدة البيانات ---
-echo "Waiting for PostgreSQL..."
+echo ">>> [IGNITION PROTOCOL] Awaiting PostgreSQL handshake on db:5432..."
 while ! nc -z db 5432; do
   sleep 0.1
 done
-echo "PostgreSQL started!"
+echo ">>> [IGNITION PROTOCOL] Handshake successful. PostgreSQL core is online."
 
-# --- 2. تحديد تطبيق Flask ---
-export FLASK_APP=cogniforge.py
-
-# --- 3. تهيئة وترقية قاعدة البيانات (تُنفذ كـ root) ---
-echo "Initializing database migrations (if needed)..."
-# التحقق من وجود مجلد migrations. إذا لم يكن موجودًا، قم بإنشائه.
-if [ ! -d "migrations" ]; then
-    flask db init
-    flask db migrate -m "Initial database structure"
-    echo "Migrations directory created."
-fi
-
-echo "Running database upgrades..."
+echo ">>> [IGNITION PROTOCOL] Synchronizing database schema to latest version..."
 flask db upgrade
-echo "Database is up to date."
 
-# --- 4. إضافة البيانات الأولية (تُنفذ كـ root) ---
-echo "Seeding database with initial data..."
-flask seed-db
-echo "Seeding complete."
-
-# --- 5. تشغيل الخادم مع إسقاط الصلاحيات (الأهم) ---
-# نستخدم خيارات Gunicorn لتشغيل التطبيق بالمستخدم والمجموعة المحددين.
-# هذا هو النمط الآمن والاحترافي.
-echo "Starting Gunicorn server as non-root user 'appuser'..."
-exec gunicorn --workers 1 --bind 0.0.0.0:5000 --user appuser --group appgroup --reload "app:create_app()"
+echo ">>> [IGNITION PROTOCOL] Igniting Gunicorn engine..."
+echo ">>> [SECURITY PROTOCOL] Dropping privileges to 'appuser:appgroup'..."
+echo ">>> [SYSTEM STATUS] All systems go. CogniForge is now online."
+exec gunicorn --bind 0.0.0.0:5000 --user appuser --group appgroup "run:app"
