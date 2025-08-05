@@ -21,3 +21,5 @@ python-dotenv
 # --- Testing Libraries (مهمة للاختبارات) ---
 pytest
 pytest-flask
+openai
+python-dotenv

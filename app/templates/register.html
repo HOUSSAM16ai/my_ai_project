@@ -1,31 +1,60 @@
 {% extends "base.html" %}
+
 {% block content %}
-    <form method="POST" action="{{ url_for('routes.register') }}"> <!-- === التعديل هنا === -->
-        {{ form.hidden_tag() }}
-        <fieldset>
-            <legend>Join Today</legend>
-            <div>
-                {{ form.full_name.label }}<br>
-                {{ form.full_name(size=32) }}
+    <div class="content-section">
+        <!-- THE SUPERCHARGED FIX (v3.0): action now points to 'main.register' -->
+        <form method="POST" action="{{ url_for('main.register') }}">
+            {{ form.hidden_tag() }}
+            <fieldset>
+                <legend>Join Today</legend>
+                
+                <div>
+                    {{ form.full_name.label }}<br>
+                    {{ form.full_name(size=32) }}
+                    {% if form.full_name.errors %}
+                        {% for error in form.full_name.errors %}
+                            <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div>
+                    {{ form.email.label }}<br>
+                    {{ form.email(size=32) }}
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div>
+                    {{ form.password.label }}<br>
+                    {{ form.password(size=32) }}
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div>
+                    {{ form.confirm_password.label }}<br>
+                    {{ form.confirm_password(size=32) }}
+                    {% if form.confirm_password.errors %}
+                        {% for error in form.confirm_password.errors %}
+                            <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div style="margin-top: 1em;">
+                {{ form.submit() }}
             </div>
-            <div>
-                {{ form.email.label }}<br>
-                {{ form.email(size=32) }}
-            </div>
-            <div>
-                {{ form.password.label }}<br>
-                {{ form.password(size=32) }}
-            </div>
-             <div>
-                {{ form.confirm_password.label }}<br>
-                {{ form.confirm_password(size=32) }}
-            </div>
-        </fieldset>
-        <div>
-            {{ form.submit() }}
-        </div>
-    </form>
-    <div style="margin-top: 1em;">
-        Already Have An Account? <a href="{{ url_for('routes.login') }}">Sign In</a> <!-- === التعديل هنا === -->
+        </form>
     </div>
-{% endblock %}
+    <div style="margin-top: 1em;">
+        <!-- THE SUPERCHARGED FIX (v3.0): Link also points to 'main.login' -->
+        Already Have An Account? <a href="{{ url_for('main.login') }}">Sign In</a>
+    </div>
+{% endblock content %}
