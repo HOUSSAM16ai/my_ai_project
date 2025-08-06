@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Admin Command Center</h1>
+    <p>Welcome, Architect. Real-time data feed from the AI Core is online.</p>
+    
+    {% if error_message %}
+        <div class="alert-danger">
+            <strong>System Alert:</strong> {{ error_message }}
+        </div>
+    {% endif %}
+
+    <h2>System Vitals:</h2>
+    <ul>
+        <li>Total Registered Users: <strong>{{ user_count }}</strong></li>
+    </ul>
+
+    <hr style="margin-top: 2em; margin-bottom: 2em;">
+
+    <h2>Live User Roster</h2>
+    
+    {% if all_users %}
+        <table border="1" style="width:100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 8px;">ID</th>
+                    <th style="padding: 8px;">Full Name</th>
+                    <th style="padding: 8px;">Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                <tr>
+                    <td style="padding: 8px;">{{ user.id }}</td>
+                    <td style="padding: 8px;">{{ user.full_name }}</td>
+                    <td style="padding: 8px;">{{ user.email }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No user data available or there was an error fetching data from the AI Core service.</p>
+    {% endif %}
+
+{% endblock %}

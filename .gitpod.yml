@@ -1,43 +1,13 @@
-# .gitpod.yml - v4.1 (Validated & Standardized)
-# This file orchestrates the Gitpod workspace startup sequence.
+# .gitpod.yml - v6.0 (Silent Helper)
+# This project is now 100% controlled by the universal .devcontainer.json standard.
+# This file is intentionally left almost empty to prevent any conflicts.
+# Its only job is to provide a better user experience by opening ports.
 
 ports:
   - port: 5000
     onOpen: open-browser
-    name: Flask Frontend
+    name: Flask Web App
   - port: 8000
     onOpen: open-preview
-    name: FastAPI Service
-  - port: 5432
-    onOpen: ignore
-    name: Database
-
-tasks:
-  - name: Setup Environment & Dependencies
-    before: |
-      echo ">>> [BEFORE] Setting up environment file..."
-      if [ ! -f .env ]; then
-        cp .env.example .env
-      fi
-      
-      echo ">>> [BEFORE] Installing Python dependencies for the workspace shell..."
-      pip install -r requirements.txt
-      
-      echo ">>> [BEFORE] Workspace shell is ready."
-  
-  - name: Build Images & Initialize Database
-    init: |
-      echo ">>> [INIT] Building Docker images..."
-      docker-compose build
-      
-      echo ">>> [INIT] Initializing database..."
-      docker-compose run --rm web sh -c "export FLASK_APP=cogniforge.py && flask db upgrade && flask seed-db"
-      
-      echo ">>> [INIT] Pre-build complete."
-
-  - name: Start All Services
-    command: |
-      echo ">>> [COMMAND] Starting all application services..."
-      docker-compose up
-
+    name: FastAPI AI Core
 

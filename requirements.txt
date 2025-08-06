@@ -23,3 +23,4 @@ pytest
 pytest-flask
 openai
 python-dotenv
+requests

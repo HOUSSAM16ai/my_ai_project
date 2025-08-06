@@ -1,103 +1,114 @@
-# ai_service/main.py - v0.3 (Simulated AI Connection for Cloud IDE Compatibility)
+# ai_service/main.py - v5.2 (Corrected Table Names)
 
 import os
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from fastapi import FastAPI, Depends, HTTPException, Body
 from dotenv import load_dotenv
 import openai
+from contextlib import asynccontextmanager
 
-# --- تحميل متغيرات البيئة ---
-load_dotenv()
+# We need these for the restored database routes
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, Session
 
-# --- إعدادات قاعدة البيانات (لا تغيير هنا) ---
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_NAME = os.getenv("POSTGRES_DB")
-DB_HOST = os.getenv("POSTGRES_HOST", "db")
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("--- [AI Oracle Lifespan] System Awakening...")
+    load_dotenv()
+    # --- Database Connection ---
+    DB_USER = os.getenv("POSTGRES_USER")
+    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+    DB_NAME = os.getenv("POSTGRES_DB")
+    DB_HOST = os.getenv("POSTGRES_HOST", "db")
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    try:
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+        app.state.db_session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        print("✅ [AI Oracle] Database connection pool forged.")
+    except Exception as e:
+        print(f"❌ [AI Oracle] FATAL: Could not connect to database: {e}")
+        app.state.db_session_factory = None
+    # --- AI Client Connection ---
+    try:
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            print("⚠️ [AI Oracle] WARNING: OPENROUTER_API_KEY is not set.")
+            app.state.ai_client = None
+        else:
+            app.state.ai_client = openai.OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+            print("✅ [AI Oracle] OpenRouter client configured.")
+    except Exception as e:
+        print(f"❌ [AI Oracle] FATAL: Error configuring AI client: {e}")
+        app.state.ai_client = None
+    yield
+    print("--- [AI Oracle Lifespan] System entering graceful shutdown...")
 
-try:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("✅ Database engine created.")
-except Exception as e:
-    print(f"❌ FATAL: Error creating database engine: {e}")
-    engine = None; SessionLocal = None
 
-# --- إعدادات OpenRouter AI (لا تغيير هنا) ---
-# سنبقي على هذا الكود للتحقق من وجود المفتاح، حتى لو لم نستخدمه الآن
-try:
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
-        print("⚠️ WARNING: OPENROUTER_API_KEY is not set. AI features will be disabled.")
-        ai_client = None
-    else:
-        ai_client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=OPENROUTER_API_KEY,
-        )
-        print("✅ OpenRouter AI client configured successfully.")
-except Exception as e:
-    print(f"❌ FATAL: Error configuring AI client: {e}")
-    ai_client = None
-
-# --- تطبيق FastAPI ---
 app = FastAPI(
-    title="CogniForge AI Service",
-    version="0.3.0-simulated",
+    lifespan=lifespan,
+    title="CogniForge AI Oracle & System Services",
+    version="5.2.0"
 )
 
-# --- دالة مساعدة للحصول على جلسة قاعدة بيانات (لا تغيير هنا) ---
+# --- Dependency Injection System ---
 def get_db():
-    if SessionLocal is None: raise HTTPException(status_code=500, detail="Database not available.")
-    db = SessionLocal()
-    try: yield db
-    finally: db.close()
+    if not app.state.db_session_factory:
+        raise HTTPException(status_code=503, detail="Database service is unavailable.")
+    db = app.state.db_session_factory()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# --- نقاط النهاية (Endpoints) ---
-@app.get("/")
+def get_ai_client():
+    if not app.state.ai_client:
+        raise HTTPException(status_code=503, detail="AI Service is not configured.")
+    return app.state.ai_client
+
+# --- Core Endpoints ---
+
+@app.get("/", tags=["System Status"])
 def read_root():
-    return {"message": "CogniForge AI Analysis Service is running! (Mode: SIMULATED)"}
+    return {"status": "AI Oracle Online"}
 
-# --- نقطة نهاية اختبار الـ AI (تم تحويلها إلى محاكاة) ---
-@app.get("/test-ai-connection", tags=["AI"])
-def test_ai_connection():
-    """
-    [SIMULATED] Tests connection to the AI model provider.
-    NOTE: This endpoint is currently simulating a successful connection due to
-    potential networking restrictions in the cloud development environment.
-    It confirms that the AI client is configured with an API key.
-    """
-    if ai_client is None:
-        raise HTTPException(status_code=503, detail="AI Service is not configured because OPENROUTER_API_KEY is missing.")
-    
-    # بدلاً من الاتصال الحقيقي، نقوم فقط بالتحقق من وجود العميل ونعيد استجابة ناجحة
-    print("✅ SIMULATION: AI connection test is successful.")
-    return {"status": "success", "response": "SIMULATED RESPONSE: The capital of Algeria is Algiers."}
+@app.post("/ai/chat/completion", tags=["AI Features"])
+async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Depends(get_ai_client)):
+    # ... (This function remains the same) ...
+    try:
+        model = payload.get("model", "mistralai/mistral-7b-instruct")
+        messages = payload.get("messages", [])
+        completion = client.chat.completions.create(model=model, messages=messages)
+        return {"status": "success", "data": completion.choices[0].message.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# --- نقطة النهاية الرئيسية للميزة الجديدة (لا تغيير هنا) ---
-@app.post("/analyze-drawing", tags=["AI Analysis"])
-async def analyze_drawing(image: UploadFile = File(...)):
-    """
-    Receives an image of a drawing for future analysis.
-    """
-    if not image:
-        raise HTTPException(status_code=400, detail="No image file provided.")
-    
-    return {
-        "filename": image.filename,
-        "content_type": image.content_type,
-        "status": "Image received successfully, ready for future analysis."
-    }
+# --- Diagnostic and Admin Routes ---
 
-# --- نقاط النهاية لاختبار قاعدة البيانات (لا تغيير هنا) ---
-@app.get("/test-db-connection", tags=["Database"])
-def test_db_connection(db: Session = Depends(get_db)):
-    result = db.execute(text("SELECT version()")).scalar_one_or_none()
-    return {"status": "success", "db_version": result}
+@app.get("/diagnostics/ai-connection", tags=["Diagnostics"])
+def test_ai_connection(client: openai.OpenAI = Depends(get_ai_client)):
+    """Performs a LIVE test of the connection to the AI model provider."""
+    try:
+        models = client.models.list()
+        return {"status": "success", "message": f"Successfully connected. {len(models.data)} models available."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-@app.get("/subjects-count", tags=["Database"])
-def get_subjects_count(db: Session = Depends(get_db)):
-    count = db.execute(text("SELECT COUNT(id) FROM subjects")).scalar_one()
-    return {"status": "success", "subjects_count": count}
+@app.get("/admin/vitals/user-count", tags=["Admin Vitals"])
+async def get_user_count(db: Session = Depends(get_db)):
+    """Directly queries the database for the total number of users."""
+    try:
+        # --- [THE FIX] Changed 'user' to 'users' ---
+        user_count = db.execute(text("SELECT COUNT(id) FROM public.users")).scalar_one()
+        return {"status": "success", "data": user_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
+@app.get("/admin/vitals/users", tags=["Admin Vitals"])
+async def list_all_users(db: Session = Depends(get_db)):
+    """Directly queries and returns a list of all users."""
+    try:
+        # --- [THE FIX] Changed 'user' to 'users' ---
+        users_query = db.execute(text("SELECT id, full_name, email FROM public.users ORDER BY id"))
+        users = [dict(row) for row in users_query.mappings().all()]
+        return {"status": "success", "data": users}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")

@@ -1,16 +1,53 @@
-# docker-compose.yml - The Supercharged Blueprint v6.0 (Robust & Explicit)
+# docker-compose.yml - v17.0 (The Final, Sovereign, and Synchronized Blueprint)
 #
-# This version implements the most robust method for handling environment
-# variables for the database service, preventing startup race conditions.
-# It also simplifies networking for maximum compatibility with cloud IDEs.
+# This is the definitive architecture. It establishes a clear hierarchy of power,
+# ensuring a flawless, predictable, and supercharged startup sequence every time.
+# The system is now simple, robust, and built for greatness.
 
 services:
-  # --- 1. The User-Facing Interface (Flask) ---
+  # --- 1. The Database Core (The Foundation) ---
+  db:
+    image: postgres:15-bullseye
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- 2. The Database Architect (The Builder) ---
+  # A temporary, one-shot service whose ONLY job is to build the world.
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-migrations
+    volumes:
+      - .:/app
+    entrypoint: ["flask", "db", "upgrade"]
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - FLASK_APP=run.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # --- 3. The User-Facing Interface (The Body) ---
   web:
     build:
       context: .
     container_name: flask-frontend
     restart: unless-stopped
+    command: sh -c "./entrypoint.sh"
     env_file:
       - .env
     ports:
@@ -18,13 +55,13 @@ services:
     volumes:
       - .:/app
     environment:
-      # Explicitly tell Flask where the database lives on the Docker network.
       - POSTGRES_HOST=db
+      - FLASK_APP=run.py
     depends_on:
-      db:
-        condition: service_healthy # Will not start until the DB is ready.
+      migrations:
+        condition: service_completed_successfully
 
-  # --- 2. The AI Core (FastAPI) ---
+  # --- 4. The Specialized AI Oracle (The Mind) ---
   ai_service:
     build:
       context: ./ai_service
@@ -38,37 +75,15 @@ services:
       - ./ai_service:/code
     environment:
       - POSTGRES_HOST=db
+    # --- [THE SUPERCHARGED FIX] ---
+    # The 'command' line has been REMOVED. Docker Compose will now defer to
+    # the container's own powerful, self-contained startup command
+    # defined in its Dockerfile (CMD ["uvicorn", ...]). This is the final
+    # step in achieving architectural purity.
     depends_on:
-      - db # Depends on the DB, but doesn't need to wait for it to be healthy.
+      migrations:
+        condition: service_completed_successfully
 
-  # --- 3. The Central Database (PostgreSQL) ---
-  db:
-    image: postgres:15-bullseye
-    container_name: postgres-db
-    restart: always
-    
-    # --- THE SUPERCHARGED FIX for Initialization Errors ---
-    # We EXPLICITLY define the environment variables that PostgreSQL needs
-    # on its very first run. Docker Compose will substitute the values
-    # from the `.env` file here, ensuring the database never starts blind.
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      
-    volumes:
-      # A named volume ensures our data persists even when the container is removed.
-      - postgres_data:/var/lib/postgresql/data/
-    ports:
-      # Expose the port for potential direct access with external DB tools.
-      - "5432:5432"
-    healthcheck:
-      # This is how other services know the database is ready to accept connections.
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-# Define the named volume for data persistence.
+# --- Define the persistent data volume ---
 volumes:
   postgres_data:
