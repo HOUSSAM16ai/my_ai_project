@@ -1,4 +1,4 @@
-# ai_service/main.py - v5.2 (Corrected Table Names)
+# ai_service/main.py - The All-Knowing AI Oracle v5.1 (Routes Restored)
 
 import os
 from fastapi import FastAPI, Depends, HTTPException, Body
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="CogniForge AI Oracle & System Services",
-    version="5.2.0"
+    version="5.1.0"
 )
 
 # --- Dependency Injection System ---
@@ -81,7 +81,7 @@ async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Diagnostic and Admin Routes ---
+# --- [THE SUPERCHARGED FIX] Restored Diagnostic and Admin Routes ---
 
 @app.get("/diagnostics/ai-connection", tags=["Diagnostics"])
 def test_ai_connection(client: openai.OpenAI = Depends(get_ai_client)):
@@ -96,8 +96,7 @@ def test_ai_connection(client: openai.OpenAI = Depends(get_ai_client)):
 async def get_user_count(db: Session = Depends(get_db)):
     """Directly queries the database for the total number of users."""
     try:
-        # --- [THE FIX] Changed 'user' to 'users' ---
-        user_count = db.execute(text("SELECT COUNT(id) FROM public.users")).scalar_one()
+        user_count = db.execute(text("SELECT COUNT(id) FROM public.user")).scalar_one()
         return {"status": "success", "data": user_count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
@@ -106,8 +105,7 @@ async def get_user_count(db: Session = Depends(get_db)):
 async def list_all_users(db: Session = Depends(get_db)):
     """Directly queries and returns a list of all users."""
     try:
-        # --- [THE FIX] Changed 'user' to 'users' ---
-        users_query = db.execute(text("SELECT id, full_name, email FROM public.users ORDER BY id"))
+        users_query = db.execute(text("SELECT id, full_name, email FROM public.user ORDER BY id"))
         users = [dict(row) for row in users_query.mappings().all()]
         return {"status": "success", "data": users}
     except Exception as e:
