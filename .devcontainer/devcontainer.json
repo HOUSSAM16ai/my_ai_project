@@ -9,7 +9,7 @@
   "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker compose build",
   "postStartCommand": "echo '>>> [DevContainer] Starting all services & installing host dependencies...' && pip install -r requirements.txt && docker compose up -d",
   "postAttachCommand": {
-    "db-setup": "echo '>>> [DevContainer] Migrating database...' && docker compose run --rm migrations"
+    "db-setup": "echo '>>> [DevContainer] Migrating database...'; if command -v docker >/dev/null 2>&1; then docker compose run --rm migrations; else flask db upgrade; fi"
   },
   "customizations": {
     "vscode": {
