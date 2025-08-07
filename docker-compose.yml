@@ -1,11 +1,4 @@
-# docker-compose.yml - v17.0 (The Final, Sovereign, and Synchronized Blueprint)
-#
-# This is the definitive architecture. It establishes a clear hierarchy of power,
-# ensuring a flawless, predictable, and supercharged startup sequence every time.
-# The system is now simple, robust, and built for greatness.
-
 services:
-  # --- 1. The Database Core (The Foundation) ---
   db:
     image: postgres:15-bullseye
     container_name: postgres-db
@@ -22,15 +15,13 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- 2. The Database Architect (The Builder) ---
-  # A temporary, one-shot service whose ONLY job is to build the world.
   migrations:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: flask-migrations
     volumes:
-      - .:/app
+      - .:/app # <-- The CRITICAL FIX
     entrypoint: ["flask", "db", "upgrade"]
     env_file:
       - .env
@@ -41,13 +32,11 @@ services:
       db:
         condition: service_healthy
 
-  # --- 3. The User-Facing Interface (The Body) ---
   web:
     build:
       context: .
     container_name: flask-frontend
     restart: unless-stopped
-    command: sh -c "./entrypoint.sh"
     env_file:
       - .env
     ports:
@@ -61,7 +50,6 @@ services:
       migrations:
         condition: service_completed_successfully
 
-  # --- 4. The Specialized AI Oracle (The Mind) ---
   ai_service:
     build:
       context: ./ai_service
@@ -75,15 +63,10 @@ services:
       - ./ai_service:/code
     environment:
       - POSTGRES_HOST=db
-    # --- [THE SUPERCHARGED FIX] ---
-    # The 'command' line has been REMOVED. Docker Compose will now defer to
-    # the container's own powerful, self-contained startup command
-    # defined in its Dockerfile (CMD ["uvicorn", ...]). This is the final
-    # step in achieving architectural purity.
+    command: sh -c "./entrypoint.sh"
     depends_on:
       migrations:
         condition: service_completed_successfully
 
-# --- Define the persistent data volume ---
 volumes:
   postgres_data:
