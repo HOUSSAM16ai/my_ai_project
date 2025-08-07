@@ -1,46 +1,26 @@
 {
-  "name": "CogniForge: The Definitive Supercharged Environment v2.0",
+  "name": "CogniForge: The Definitive Supercharged Environment v3.0",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
   "service": "web",
   "workspaceFolder": "/app",
   
-  // --- [THE SUPERCHARGED ORCHESTRATION PROTOCOL] ---
-  // This is the single source of truth for workspace startup.
+  // The 'initializeCommand' has been removed and its logic moved to .gitpod.yml
+  // for maximum compatibility.
   
-  // Phase 1: Create the .env file if it doesn't exist.
-  // This runs BEFORE anything else.
-  "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
-  
-  // Phase 2: Build the core infrastructure.
-  // This runs only once when the workspace is first created.
   "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker-compose build",
   
-  // Phase 3: Bring all systems online.
-  // This runs every time the workspace starts.
   "postStartCommand": "echo '>>> [DevContainer] Starting all services in detached mode...' && docker-compose up -d",
   
-  // Phase 4: Run the database architect.
-  // This runs after services are up and VS Code has connected. It uses
-  // the dedicated 'migrations' service to build the database schema correctly.
   "postAttachCommand": {
-    "db-setup": "echo '>>> [DevContainer] Initializing and migrating database via dedicated service...' && docker-compose run --rm migrations"
+    "db-setup": "echo '>>> [DevContainer] Initializing and migrating database...' && docker-compose run --rm migrations"
   },
 
   "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-python.python",
-        "ms-azuretools.vscode-docker",
-        "eamodio.gitlens"
-      ],
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
-      }
-    }
+    "vscode": { /* ... your extensions and settings ... */ }
   },
   
-  "forwardPorts": [5000, 8000], // 5432 is not needed here as we don't connect to it from outside
+  "forwardPorts": [5000, 8000],
   "remoteUser": "root"
 }

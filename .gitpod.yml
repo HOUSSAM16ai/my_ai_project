@@ -1,7 +1,17 @@
-# .gitpod.yml - v6.0 (Silent Helper)
-# This project is now 100% controlled by the universal .devcontainer.json standard.
-# This file is intentionally left almost empty to prevent any conflicts.
-# Its only job is to provide a better user experience by opening ports.
+# .gitpod.yml - v7.0 (The Smart Helper)
+# This file now has ONE critical task: ensure the .env file exists before
+# the Dev Container protocol begins. This solves the startup failure.
+
+tasks:
+  - name: Prepare Environment
+    before: |
+      echo ">>> [Gitpod] Ensuring .env file exists..."
+      if [ ! -f .env ]; then
+        cp .env.example .env
+        echo ">>> [Gitpod] .env file created from template."
+      else
+        echo ">>> [Gitpod] .env file already exists."
+      fi
 
 ports:
   - port: 5000
