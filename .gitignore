@@ -1,2 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Environment variables
+# Never commit secrets, keys, or passwords!
 .env
+
+# Gitpod-specific configuration
+# This project is 100% controlled by the universal .devcontainer standard.
+.gitpod.yml
+
+# VS Code specific settings
+.vscode/
