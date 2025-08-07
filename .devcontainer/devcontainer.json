@@ -6,19 +6,31 @@
   "service": "web",
   "workspaceFolder": "/app",
   
-  // The 'initializeCommand' has been removed and its logic moved to .gitpod.yml
-  // for maximum compatibility.
+  // Phase 1: Create the .env file if it doesn't exist.
+  "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
   
+  // Phase 2: Build the core infrastructure.
   "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker-compose build",
   
+  // Phase 3: Bring all systems online.
   "postStartCommand": "echo '>>> [DevContainer] Starting all services in detached mode...' && docker-compose up -d",
   
+  // Phase 4: Run the database architect.
   "postAttachCommand": {
     "db-setup": "echo '>>> [DevContainer] Initializing and migrating database...' && docker-compose run --rm migrations"
   },
 
   "customizations": {
-    "vscode": { /* ... your extensions and settings ... */ }
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
   },
   
   "forwardPorts": [5000, 8000],
