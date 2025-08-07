@@ -5,25 +5,12 @@
   ],
   "service": "web",
   "workspaceFolder": "/app",
-  
-  // --- [THE ABSOLUTE UNIVERSAL ORCHESTRATION PROTOCOL] ---
-  // This startup sequence is designed to be robust and universally compatible.
-
-  // Phase 1: This is the first and most critical step, run by the host.
   "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
-  
-  // Phase 2: This runs only once when the workspace is first created.
-  // We use `docker compose` (modern syntax) for universal compatibility.
   "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker compose build",
-  
-  // Phase 3: This runs every time the workspace starts.
   "postStartCommand": "echo '>>> [DevContainer] Starting all services & installing host dependencies...' && pip install -r requirements.txt && docker compose up -d",
-  
-  // Phase 4: This runs after VS Code connects.
   "postAttachCommand": {
     "db-setup": "echo '>>> [DevContainer] Migrating database...' && docker compose run --rm migrations"
   },
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -36,7 +23,6 @@
       }
     }
   },
-  
   "forwardPorts": [5000, 8000],
   "remoteUser": "root"
 }
