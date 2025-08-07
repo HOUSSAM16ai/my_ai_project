@@ -1,23 +1,35 @@
 {
-  "name": "CogniForge: The Definitive Self-Building Environment v4.0",
+  "name": "CogniForge: The Absolute Universal Environment v9.0",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
+  
+  // The service where VS Code and the terminal will run.
   "service": "web",
   "workspaceFolder": "/app",
   
+  // --- [THE ABSOLUTE UNIVERSAL ORCHESTRATION PROTOCOL] ---
+  // This startup sequence is designed to be robust and universally compatible.
+
+  // Phase 1: Create the .env file if it doesn't exist.
+  // This is the first and most critical step, run by the host machine.
   "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
   
-  // --- [THE SUPERCHARGED FIX] ---
-  // We combine the build and dependency installation into one robust command.
-  "postCreateCommand": "echo '>>> Building images and installing host dependencies...' && docker-compose build && pip install -r requirements.txt",
+  // Phase 2: Build the core infrastructure.
+  // This runs only once when the workspace is first created.
+  "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker compose build",
   
-  "postStartCommand": "echo '>>> Starting all services...' && docker-compose up -d",
+  // Phase 3: Bring all systems online & prepare the host.
+  // This runs every time the workspace starts.
+  "postStartCommand": "echo '>>> [DevContainer] Starting all services & installing host dependencies...' && pip install -r requirements.txt && docker compose up -d",
   
+  // Phase 4: Run the database architect after VS Code connects.
+  // This ensures the database is fully migrated before you start working.
   "postAttachCommand": {
-    "db-setup": "echo '>>> Migrating database...' && docker-compose run --rm migrations"
+    "db-setup": "echo '>>> [DevContainer] Migrating database via dedicated service...' && docker compose run --rm migrations"
   },
 
+  // --- VS Code Customization ---
   "customizations": {
     "vscode": {
       "extensions": [
@@ -31,6 +43,9 @@
     }
   },
   
+  // --- Port Forwarding ---
   "forwardPorts": [5000, 8000],
+  
+  // The user to run as inside the container.
   "remoteUser": "root"
 }
