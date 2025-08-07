@@ -1,23 +1,21 @@
 {
-  "name": "CogniForge: The Definitive Supercharged Environment v3.0",
+  "name": "CogniForge: The Definitive Self-Building Environment v4.0",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
   "service": "web",
   "workspaceFolder": "/app",
   
-  // Phase 1: Create the .env file if it doesn't exist.
   "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
   
-  // Phase 2: Build the core infrastructure.
-  "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...' && docker-compose build",
+  // --- [THE SUPERCHARGED FIX] ---
+  // We combine the build and dependency installation into one robust command.
+  "postCreateCommand": "echo '>>> Building images and installing host dependencies...' && docker-compose build && pip install -r requirements.txt",
   
-  // Phase 3: Bring all systems online.
-  "postStartCommand": "echo '>>> [DevContainer] Starting all services in detached mode...' && docker-compose up -d",
+  "postStartCommand": "echo '>>> Starting all services...' && docker-compose up -d",
   
-  // Phase 4: Run the database architect.
   "postAttachCommand": {
-    "db-setup": "echo '>>> [DevContainer] Initializing and migrating database...' && docker-compose run --rm migrations"
+    "db-setup": "echo '>>> Migrating database...' && docker-compose run --rm migrations"
   },
 
   "customizations": {
