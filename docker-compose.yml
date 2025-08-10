@@ -1,3 +1,4 @@
+# docker-compose.yml (The Perfected Final Form)
 services:
   db:
     image: postgres:15-bullseye
@@ -21,7 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: flask-migrations
     volumes:
-      - .:/app # <-- The CRITICAL FIX
+      - .:/app
     entrypoint: ["flask", "db", "upgrade"]
     env_file:
       - .env
@@ -68,5 +69,17 @@ services:
       migrations:
         condition: service_completed_successfully
 
+  # --- الإضافة الجديدة: دماغ الذاكرة ---
+  chroma:
+    image: chromadb/chroma
+    container_name: chroma-db
+    restart: unless-stopped # بنفس سياسة باقي الخدمات لضمان الموثوقية
+    ports:
+      - "8001:8000" # نستخدم 8001 لتجنب التعارض مع منفذ 8000 الذي تستخدمه ai_service
+    volumes:
+      - chroma_data:/chroma/.chroma/index # لضمان بقاء الذاكرة بعد إعادة التشغيل
+
+# --- الإضافة الجديدة: تعريف وحدة تخزين الذاكرة ---
 volumes:
   postgres_data:
+  chroma_data:

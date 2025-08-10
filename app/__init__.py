@@ -1,4 +1,4 @@
-# app/__init__.py - The Central Nervous System v7.0 (Admin-Aware)
+# app/__init__.py - The Central Nervous System v7.1 (System-Aware)
 
 import os
 from flask import Flask
@@ -63,5 +63,11 @@ def create_app(config_class_string="config.DevelopmentConfig"):
     from app.cli.mindgate_commands import mindgate_cli
     app.register_blueprint(mindgate_cli)
 
-    # The final, fully assembled, and admin-aware system is born.
+    # --- الإضافة الخارقة: تفعيل وزارة الهندسة المعمارية ---
+    # Ministry of System Architecture
+    from app.cli.system_commands import system_cli
+    app.register_blueprint(system_cli)
+    # --- نهاية الإضافة ---
+
+    # The final, fully assembled, and self-aware system is born.
     return app

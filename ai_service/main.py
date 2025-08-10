@@ -1,7 +1,8 @@
-# ai_service/main.py - The All-Knowing AI Oracle v5.1 (Routes Restored)
+# ai_service/main.py - The All-Knowing AI Oracle v5.2 (Code Generation Enabled)
 
 import os
 from fastapi import FastAPI, Depends, HTTPException, Body
+from pydantic import BaseModel
 from dotenv import load_dotenv
 import openai
 from contextlib import asynccontextmanager
@@ -46,7 +47,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="CogniForge AI Oracle & System Services",
-    version="5.1.0"
+    version="5.2.0"
 )
 
 # --- Dependency Injection System ---
@@ -64,7 +65,12 @@ def get_ai_client():
         raise HTTPException(status_code=503, detail="AI Service is not configured.")
     return app.state.ai_client
 
-# --- Core Endpoints ---
+# --- Data Models for Payloads ---
+class GenerateCodePayload(BaseModel):
+    prompt: str
+    context: str
+
+# --- Core & AI Endpoints ---
 
 @app.get("/", tags=["System Status"])
 def read_root():
@@ -72,7 +78,6 @@ def read_root():
 
 @app.post("/ai/chat/completion", tags=["AI Features"])
 async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Depends(get_ai_client)):
-    # ... (This function remains the same) ...
     try:
         model = payload.get("model", "mistralai/mistral-7b-instruct")
         messages = payload.get("messages", [])
@@ -81,7 +86,50 @@ async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- [THE SUPERCHARGED FIX] Restored Diagnostic and Admin Routes ---
+# --- [THE ULTIMATE ADDITION] The Context-Aware Creation Endpoint ---
+@app.post("/ai/generate/code", tags=["AI Features"])
+async def generate_code_with_context(
+    payload: GenerateCodePayload = Body(...),
+    client: openai.OpenAI = Depends(get_ai_client)
+):
+    """
+    Receives a prompt and code context, then generates new, complete code.
+    This is the core of the system's creative power.
+    """
+    system_prompt = f"""
+    You are an expert Flask and Python developer. Your task is to generate clean,
+    efficient, and complete Python code based on a user's prompt and relevant
+    code context provided from the existing codebase.
+
+    **User's Request:**
+    {payload.prompt}
+
+    **Relevant Code Context from the project:**
+    ---
+    {payload.context}
+    ---
+
+    Based on the request and the context, provide the complete, ready-to-use
+    Python code for the new feature or modification. Only output the raw code,
+    without any explanations, comments, or markdown formatting like ```python or ```.
+    """
+    
+    try:
+        completion = client.chat.completions.create(
+            model="openai/gpt-4o",  # Using a powerful model for code generation
+            messages=[
+                {"role": "system", "content": "You are a world-class code generation engine."},
+                {"role": "user", "content": system_prompt},
+            ],
+            temperature=0.2, # Low temperature for precise and deterministic code
+            max_tokens=4000  # Generous token limit for larger files
+        )
+        generated_code = completion.choices[0].message.content
+        return {"status": "success", "generated_code": generated_code}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Diagnostic and Admin Routes ---
 
 @app.get("/diagnostics/ai-connection", tags=["Diagnostics"])
 def test_ai_connection(client: openai.OpenAI = Depends(get_ai_client)):
