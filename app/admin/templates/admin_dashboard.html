@@ -1,45 +1,105 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Admin Command Center</h1>
-    <p>Welcome, Architect. Real-time data feed from the AI Core is online.</p>
-    
-    {% if error_message %}
-        <div class="alert-danger">
-            <strong>System Alert:</strong> {{ error_message }}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h1 class="h4 mb-0">AI Command Console</h1>
+                    <p class="mb-0 small">Forge the future. Your direct interface to the system's creative core.</p>
+                </div>
+                <div class="card-body" id="chat-container" style="height: 65vh; display: flex; flex-direction: column;">
+                    <div id="chat-output" style="flex-grow: 1; overflow-y: auto; padding-right: 15px;">
+                        <div class="alert alert-info small">
+                            <strong>Welcome, Architect.</strong> System online. Awaiting creation protocol...
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light p-3">
+                    <div class="input-group">
+                        <input type="text" id="prompt-input" class="form-control form-control-lg" placeholder="Enter your creation directive...">
+                        <button class="btn btn-primary" id="send-btn" type="button">
+                            <i class="fas fa-bolt"></i> Forge
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% endif %}
+    </div>
+</div>
+{% endblock %}
 
-    <h2>System Vitals:</h2>
-    <ul>
-        <li>Total Registered Users: <strong>{{ user_count }}</strong></li>
-    </ul>
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Adding the console.log for definitive proof
+    console.log("✅ Admin Dashboard Script Loaded & Listeners Attached!");
 
-    <hr style="margin-top: 2em; margin-bottom: 2em;">
+    const promptInput = document.getElementById('prompt-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatOutput = document.getElementById('chat-output');
 
-    <h2>Live User Roster</h2>
-    
-    {% if all_users %}
-        <table border="1" style="width:100%; border-collapse: collapse; text-align: left;">
-            <thead>
-                <tr style="background-color: #f2f2f2;">
-                    <th style="padding: 8px;">ID</th>
-                    <th style="padding: 8px;">Full Name</th>
-                    <th style="padding: 8px;">Email</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in all_users %}
-                <tr>
-                    <td style="padding: 8px;">{{ user.id }}</td>
-                    <td style="padding: 8px;">{{ user.full_name }}</td>
-                    <td style="padding: 8px;">{{ user.email }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No user data available or there was an error fetching data from the AI Core service.</p>
-    {% endif %}
+    function addMessage(content, type = 'system', sources = []) {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.classList.add('mb-3');
 
+        if (type === 'user') {
+            messageWrapper.innerHTML = `<div class="p-2 bg-light text-dark rounded text-end"><strong>></strong> ${content}</div>`;
+        } else if (type === 'ai') {
+            const sourcesText = sources.length ? `<div class="text-muted small mt-1">Context from: ${sources.join(', ')}</div>` : '';
+            messageWrapper.innerHTML = `
+                <div class="p-3 bg-primary bg-opacity-10 text-dark rounded">
+                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; margin: 0;">${content}</pre>
+                    ${sourcesText}
+                </div>`;
+        } else if (type === 'error') {
+            messageWrapper.innerHTML = `<div class="alert alert-danger small"><strong>Error:</strong> ${content}</div>`;
+        } else {
+             messageWrapper.innerHTML = `<div class="alert alert-info small">${content}</div>`;
+        }
+        
+        chatOutput.appendChild(messageWrapper);
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+
+    async function handleForge() {
+        const prompt = promptInput.value.trim();
+        if (!prompt) return;
+
+        addMessage(prompt, 'user');
+        promptInput.value = '';
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Forging...';
+
+        try {
+            const response = await fetch("{{ url_for('admin.handle_generate_code_from_ui') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const result = await response.json();
+            if (response.ok && result.status === 'success') {
+                addMessage(result.code, 'ai', result.sources);
+            } else {
+                addMessage(result.message || 'An unknown error occurred.', 'error');
+            }
+        } catch (error) {
+            addMessage(error.toString(), 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-bolt"></i> Forge';
+        }
+    }
+
+    sendBtn.addEventListener('click', handleForge);
+    promptInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleForge();
+        }
+    });
+});
+</script>
 {% endblock %}

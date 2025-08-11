@@ -8,7 +8,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    """
+    دالة أساسية لـ Flask-Login لاسترداد المستخدم من قاعدة البيانات
+    بناءً على الـ ID المخزن في الجلسة.
+    """
+    # استخدام .get أسرع وأكثر مباشرة من .query.filter_by(id=...).
+    return db.session.get(User, int(user_id))
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -16,10 +21,15 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    
-    # --- 2. التعديل الثاني: استخدام الطريقة الجديدة هنا ---
-    # نستخدم lambda لضمان استدعاء الدالة في كل مرة يتم فيها إنشاء سجل جديد
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
+    
+    # --- [THE SUPERCHARGED UPGRADE] ---
+    # إضافة حقل المشرف.
+    # nullable=False: يجب أن يكون لكل مستخدم قيمة (إما True أو False).
+    # default=False: أي مستخدم جديد يتم إنشاؤه سيكون مستخدمًا عاديًا بشكل افتراضي.
+    # server_default='f': تحديد القيمة الافتراضية على مستوى قاعدة البيانات نفسها لزيادة الموثوقية.
+    is_admin = db.Column(db.Boolean, nullable=False, default=False, server_default='f')
+    # --- نهاية الترقية ---
     
     submissions = db.relationship('Submission', backref='author', lazy='dynamic')
 
@@ -32,7 +42,7 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.full_name}>'
 
-# ... (كلاسات Subject, Lesson, Exercise تبقى كما هي) ...
+# --- باقي النماذج تبقى كما هي دون تغيير ---
 
 class Subject(db.Model):
     __tablename__ = 'subjects'
@@ -67,10 +77,7 @@ class Submission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_answer = db.Column(db.Text, nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False)
-    
-    # --- 3. التعديل الثالث: استخدام الطريقة الجديدة هنا أيضًا ---
     submitted_at = db.Column(db.DateTime, index=True, default=lambda: datetime.now(UTC))
-    
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
 

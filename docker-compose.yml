@@ -1,4 +1,3 @@
-# docker-compose.yml (The Perfected Final Form)
 services:
   db:
     image: postgres:15-bullseye
@@ -11,16 +10,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      # تصحيح الصيغة: أمر واحد مع CMD-SHELL
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks: [appnet]
 
   migrations:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: flask-migrations
+    init: true
     volumes:
       - .:/app
     entrypoint: ["flask", "db", "upgrade"]
@@ -32,54 +40,119 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-  web:
-    build:
-      context: .
-    container_name: flask-frontend
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "5000:5000"
-    volumes:
-      - .:/app
-    environment:
-      - POSTGRES_HOST=db
-      - FLASK_APP=run.py
-    depends_on:
-      migrations:
-        condition: service_completed_successfully
+    # يجب أن تنتهي بنجاح قبل تشغيل باقي الخدمات
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks: [appnet]
 
   ai_service:
     build:
       context: ./ai_service
     container_name: fastapi-ai-service
+    init: true
     restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./ai_service:/code
     environment:
       - POSTGRES_HOST=db
+    volumes:
+      - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
     depends_on:
+      # انتظر اكتمال المايغريشن بنجاح
       migrations:
         condition: service_completed_successfully
+      # احتياطًا أيضًا على صحة قاعدة البيانات
+      db:
+        condition: service_healthy
+      # الذاكرة (Chroma) مطلوبة لبعض الميزات
+      chroma:
+        condition: service_started
+    healthcheck:
+      # لا نعتمد على curl/wget (قد لا تكون مثبتة). نستخدم بايثون القياسي.
+      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\nu='http://localhost:8000/'\ntry:\n  urllib.request.urlopen(u, timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    ports:
+      - "8000:8000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks: [appnet]
 
-  # --- الإضافة الجديدة: دماغ الذاكرة ---
+  web:
+    build:
+      context: .
+    container_name: flask-frontend
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - FLASK_APP=run.py
+      # تمهيد متغيرات للاتصال بالخدمات الأخرى من داخل التطبيق
+      - AI_SERVICE_BASE_URL=http://fastapi-ai-service:8000
+      - CHROMA_HOST=chroma-db
+      - CHROMA_PORT=8000
+    volumes:
+      - .:/app
+    depends_on:
+      # انتظر اكتمال المايغريشن
+      migrations:
+        condition: service_completed_successfully
+      # ولا تبدأ إلا بعد أن يصبح الذكاء الاصطناعي "صحيًا"
+      ai_service:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+    healthcheck:
+      # تحقق HTTP عبر بايثون لتفادي الاعتماد على أدوات إضافية
+      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\nu='http://localhost:5000/'\ntry:\n  urllib.request.urlopen(u, timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "5000:5000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks: [appnet]
+
   chroma:
     image: chromadb/chroma
     container_name: chroma-db
-    restart: unless-stopped # بنفس سياسة باقي الخدمات لضمان الموثوقية
-    ports:
-      - "8001:8000" # نستخدم 8001 لتجنب التعارض مع منفذ 8000 الذي تستخدمه ai_service
+    restart: unless-stopped
+    # حفظ بيانات Chroma على قرص دائم
     volumes:
-      - chroma_data:/chroma/.chroma/index # لضمان بقاء الذاكرة بعد إعادة التشغيل
+      - chroma_data:/chroma/.chroma/index
+    # منفذ داخلي 8000، نعرضه خارجيًا على 8001 للوصل من المضيف
+    ports:
+      - "8001:8000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks: [appnet]
 
-# --- الإضافة الجديدة: تعريف وحدة تخزين الذاكرة ---
 volumes:
   postgres_data:
   chroma_data:
+
+networks:
+  appnet:
+    driver: bridge
