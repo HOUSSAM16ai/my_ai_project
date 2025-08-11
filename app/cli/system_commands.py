@@ -1,4 +1,4 @@
-# app/cli/system_commands.py - The CLI Presentation Layer
+# app/cli/system_commands.py - The CLI Presentation Layer (v2.0 - All-Seeing)
 
 import click
 import os
@@ -19,11 +19,9 @@ system_cli = Blueprint('system', __name__, cli_group="system")
 def index_project_files(force):
     """
     A CLI wrapper for the core project indexing logic.
+    Gives the system its "memory".
     """
-    # ... (منطق هذا الأمر لم يتغير، لذلك يبقى هنا لأنه خاص بالـ CLI)
-    # ملاحظة: في المستقبل، يمكننا أيضًا نقل هذا المنطق إلى service layer إذا احتجنا إليه في مكان آخر.
     click.secho("--- Initiating Self-Awareness Protocol: Indexing... ---", fg="cyan")
-    # ... (الكود الكامل لأمر index يبقى كما هو)
     try:
         click.echo("Connecting to ChromaDB memory core...")
         chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)
@@ -74,20 +72,69 @@ def index_project_files(force):
 def generate_code(prompt):
     """
     A clean CLI wrapper that calls the central generation service.
-    Its only job is to handle input and format output for the terminal.
+    Gives the system its "creative will".
     """
     click.secho(f"--- Calling Core Generation Service for: '{prompt}' ---", fg="magenta")
-    
-    # --- استدعاء دالة واحدة فقط! ---
     result = forge_new_code(prompt)
-    
-    # --- التعامل مع النتائج وعرضها ---
     if result.get("status") == "error":
         click.secho(f"An error occurred in the generation service: {result['message']}", fg="red")
         return
-    
     click.secho(f"Context retrieved from: {', '.join(result.get('sources', []))}")
     click.secho("--- [Generated Code] ---", fg="cyan")
     click.echo(result.get("code", "No code was generated."))
     click.secho("--- [End of Generated Code] ---", fg="cyan")
     click.secho("\nReview the code above. In the future, this will be written to a file automatically.", fg="green")
+
+
+# --- [THE ALL-SEEING EYE PROTOCOL] ---
+@system_cli.cli.command("query")
+@click.argument('file_path')
+@click.option('--line', default=None, type=int, help="Specify a line number to retrieve.")
+def query_file_content(file_path, line):
+    """
+    Retrieves and displays the content of a specific file from memory or disk.
+    Gives the system the ability to "see" its own code on demand.
+    """
+    click.secho(f"--- Initiating Code Query Protocol for: {file_path} ---", fg="cyan")
+
+    content = None
+    source = "disk"
+
+    # --- الخطوة 1: محاولة القراءة من "الذاكرة" أولاً ---
+    try:
+        chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)
+        collection = chroma_client.get_or_create_collection(name="cogniforge_codebase")
+        result = collection.get(ids=[file_path])
+        
+        if result and result.get('documents'):
+            content = result['documents'][0]
+            source = "indexed memory"
+    except Exception:
+        click.secho("Could not connect to memory core. Falling back to direct disk access.", fg="yellow")
+
+    # --- الخطوة 2: القراءة من القرص مباشرة كخطة بديلة ---
+    if content is None:
+        if not os.path.exists(file_path):
+            click.secho(f"Error: File '{file_path}' not found in memory or on disk.", fg="red")
+            return
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as e:
+            click.secho(f"Error reading file from disk: {e}", fg="red")
+            return
+            
+    # --- الخطوة 3: معالجة الطلب وعرض النتيجة ---
+    click.secho(f"Content retrieved from {source}.", fg="blue")
+    lines = content.splitlines()
+    
+    if line is not None:
+        if 1 <= line <= len(lines):
+            line_content = lines[line - 1]
+            click.secho(f"Line {line} in '{file_path}':", fg="green")
+            click.echo(line_content)
+        else:
+            click.secho(f"Error: Line {line} is out of range. File has {len(lines)} lines.", fg="red")
+    else:
+        click.secho(f"Full content of '{file_path}':", fg="green")
+        click.echo(content)

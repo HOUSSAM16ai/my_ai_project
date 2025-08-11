@@ -1,4 +1,14 @@
-# requirements.txt
+# requirements.txt (The Resource-Optimized Final Form)
+
+# --- [RESOURCE OPTIMIZATION PROTOCOL] ---
+# 1. نخبر pip بالبحث عن حزم torch المخصصة لوحدات المعالجة المركزية (CPU) من مستودع PyTorch الرسمي.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# 2. نقوم بتثبيت torch CPU-only بشكل صريح. هذا يمنع sentence-transformers من سحب النسخة العملاقة
+#    الخاصة بوحدات معالجة الرسومات (GPU).
+torch
+# --- نهاية البروتوكول ---
+
 
 # --- Flask Core & Extensions ---
 Flask
@@ -7,7 +17,7 @@ Flask-Login
 Werkzeug
 email-validator
 
-# --- Database ORM & Migrations (الإضافات الجديدة) ---
+# --- Database ORM & Migrations ---
 flask-sqlalchemy
 flask-migrate
 psycopg2-binary
@@ -18,11 +28,12 @@ gunicorn
 # --- Utilities ---
 python-dotenv
 
-# --- Testing Libraries (مهمة للاختبارات) ---
+# --- AI & Vector DB Libraries ---
+openai
+chromadb-client
+sentence-transformers # هذا سيكتشف أن torch مثبت بالفعل وسيستخدمه
+
+# --- Testing & HTTP ---
 pytest
 pytest-flask
-openai
-python-dotenv
 requests
-chromadb-client
-sentence-transformers

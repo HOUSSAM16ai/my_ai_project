@@ -1,3 +1,4 @@
+# docker-compose.yml (The Dual-Authority Final Form v3.0)
 services:
   db:
     image: postgres:15-bullseye
@@ -10,7 +11,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      # تصحيح الصيغة: أمر واحد مع CMD-SHELL
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
       interval: 10s
       timeout: 5s
@@ -18,9 +18,7 @@ services:
       start_period: 10s
     logging:
       driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
   migrations:
@@ -31,7 +29,7 @@ services:
     init: true
     volumes:
       - .:/app
-    entrypoint: ["flask", "db", "upgrade"]
+    command: ["flask", "db", "upgrade"] # استخدام صيغة القائمة أفضل من entrypoint
     env_file:
       - .env
     environment:
@@ -40,13 +38,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # يجب أن تنتهي بنجاح قبل تشغيل باقي الخدمات
     restart: "no"
     logging:
       driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
+      options: { max-size: "5m", max-file: "2" }
     networks: [appnet]
 
   ai_service:
@@ -63,18 +58,14 @@ services:
       - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
     depends_on:
-      # انتظر اكتمال المايغريشن بنجاح
       migrations:
         condition: service_completed_successfully
-      # احتياطًا أيضًا على صحة قاعدة البيانات
       db:
         condition: service_healthy
-      # الذاكرة (Chroma) مطلوبة لبعض الميزات
       chroma:
         condition: service_started
     healthcheck:
-      # لا نعتمد على curl/wget (قد لا تكون مثبتة). نستخدم بايثون القياسي.
-      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\nu='http://localhost:8000/'\ntry:\n  urllib.request.urlopen(u, timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      test: ["CMD-SHELL", "python -c 'import sys, urllib.request; u=\"http://localhost:8000/\"; sys.exit(0) if urllib.request.urlopen(u, timeout=3).getcode() == 200 else sys.exit(1)'"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -83,9 +74,7 @@ services:
       - "8000:8000"
     logging:
       driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
   web:
@@ -96,57 +85,34 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - POSTGRES_HOST=db
-      - FLASK_APP=run.py
-      # تمهيد متغيرات للاتصال بالخدمات الأخرى من داخل التطبيق
-      - AI_SERVICE_BASE_URL=http://fastapi-ai-service:8000
-      - CHROMA_HOST=chroma-db
-      - CHROMA_PORT=8000
+    # --- [THE DUAL-AUTHORITY COMMAND] ---
+    # entrypoint.sh سيقوم بتشغيل هذا الأمر كـ appuser
+    command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
     volumes:
       - .:/app
     depends_on:
-      # انتظر اكتمال المايغريشن
       migrations:
         condition: service_completed_successfully
-      # ولا تبدأ إلا بعد أن يصبح الذكاء الاصطناعي "صحيًا"
       ai_service:
         condition: service_healthy
-      db:
-        condition: service_healthy
-      chroma:
-        condition: service_started
-    healthcheck:
-      # تحقق HTTP عبر بايثون لتفادي الاعتماد على أدوات إضافية
-      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\nu='http://localhost:5000/'\ntry:\n  urllib.request.urlopen(u, timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
     ports:
       - "5000:5000"
     logging:
       driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
   chroma:
     image: chromadb/chroma
     container_name: chroma-db
     restart: unless-stopped
-    # حفظ بيانات Chroma على قرص دائم
     volumes:
       - chroma_data:/chroma/.chroma/index
-    # منفذ داخلي 8000، نعرضه خارجيًا على 8001 للوصل من المضيف
     ports:
       - "8001:8000"
     logging:
       driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
 volumes:
