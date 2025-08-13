@@ -1,16 +1,23 @@
 {
-  "name": "CogniForge: The Hyper-Modular Singularity v12.0",
+  "name": "CogniForge: The Universal Singularity v14.0",
+  
+  // --- [THE CORE ORCHESTRATION] ---
+  // We define the docker-compose file and the primary service for VS Code.
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
   "service": "web",
   "workspaceFolder": "/app",
 
+  // --- [THE AUTOMATED LIFECYCLE] ---
+  // Clean, modular scripts control the environment's lifecycle.
   "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
   "postCreateCommand": "bash .devcontainer/on-create.sh",
   "postStartCommand": "bash .devcontainer/on-start.sh",
   "postAttachCommand": "bash .devcontainer/on-attach.sh",
 
+  // --- [THE ARCHITECT'S COCKPIT] ---
+  // All customizations for a superior VS Code experience.
   "customizations": {
     "vscode": {
       "extensions": [
@@ -37,11 +44,15 @@
         "python.analysis.typeCheckingMode": "basic",
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.fontSize": 14,
-        "terminal.integrated.persistentSessionReviveProcess": "never"
+        "terminal.integrated.persistentSessionReviveProcess": "never",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        }
       }
     }
   },
 
+  // --- [NAMED PORTS FOR CLARITY] ---
   "portsAttributes": {
     "5000": { "label": "Flask Frontend (Web)" },
     "8000": { "label": "FastAPI (AI Core)" },
@@ -49,8 +60,11 @@
     "5432": { "label": "PostgreSQL (Database)" }
   },
 
+  // --- [THE UNIVERSAL CITIZEN PROTOCOL] ---
+  // Ensures seamless operation in GitHub Codespaces.
   "remoteUser": "gitpod",
-
+  
+  // --- [FUTURE-PROOF FEATURES] ---
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
