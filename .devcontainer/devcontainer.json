@@ -1,24 +1,60 @@
 {
-  "name": "CogniForge: The Absolute Universal Environment v9.0",
+  "name": "CogniForge: The Hyper-Modular Singularity v12.0",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "web",
   "workspaceFolder": "/app",
+
   "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
-  "postCreateCommand": "echo '>>> [DevContainer] Building base Docker images...'; if command -v docker >/dev/null 2>&1; then docker compose build; else echo 'docker not found, skipping build'; fi",
-  "postStartCommand": "echo '>>> [DevContainer] Starting all services & installing host dependencies...'; pip install -r requirements.txt; if command -v docker >/dev/null 2>&1; then docker compose up -d; else echo 'docker not found, skipping docker compose up'; fi",
-  "postAttachCommand": {
-    "db-setup": "echo '>>> [DevContainer] Migrating database...'; if command -v docker >/dev/null 2>&1; then docker compose run --rm migrations; else flask db upgrade; fi"
-  },
+  "postCreateCommand": "bash .devcontainer/on-create.sh",
+  "postStartCommand": "bash .devcontainer/on-start.sh",
+  "postAttachCommand": "bash .devcontainer/on-attach.sh",
+
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
+        "ms-python.vscode-pylance",
+        "github.copilot",
+        "github.copilot-chat",
         "ms-azuretools.vscode-docker",
-        "eamodio.gitlens"
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "streetsidesoftware.code-spell-checker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "humao.rest-client"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "editor.formatOnSave": true,
+        "files.autoSave": "onFocusChange",
+        "git.autofetch": true,
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.fontSize": 14,
+        "terminal.integrated.persistentSessionReviveProcess": "never"
       }
     }
   },
-  "forwardPorts": [5000, 8000],
-  "remoteUser": "root"
+
+  "portsAttributes": {
+    "5000": { "label": "Flask Frontend (Web)" },
+    "8000": { "label": "FastAPI (AI Core)" },
+    "8001": { "label": "ChromaDB (Vector Memory)" },
+    "5432": { "label": "PostgreSQL (Database)" }
+  },
+
+  "remoteUser": "gitpod",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  }
 }
