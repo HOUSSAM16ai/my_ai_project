@@ -1,4 +1,4 @@
-# app/cli/user_commands.py - The User Management Division v2.1 (Bulletproof Seeding)
+# app/cli/user_commands.py - The User Management Division v2.2 (Final Fix)
 
 import click
 import os
@@ -24,7 +24,6 @@ def list_users():
     headers = ["ID", "Full Name", "Email", "Is Admin"]
     rows = [[user.id, user.full_name, user.email, user.is_admin] for user in all_users]
     
-    # --- Dynamic Column Width Calculation ---
     col_widths = [len(h) for h in headers]
     for row in rows:
         for i, cell in enumerate(row):
@@ -84,30 +83,30 @@ def initialize_admin_user():
     admin_password = os.getenv("ADMIN_PASSWORD")
     admin_name = os.getenv("ADMIN_NAME")
 
-    if not all_admin_email or not admin_password or not admin_name:
+    # --- [THE FINAL FIX] ---
+    # Corrected the typo from 'all_admin_email' to 'admin_email'.
+    if not admin_email or not admin_password or not admin_name:
         click.secho("Error: ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_NAME must be set in the .env file.", fg="red")
         return
+    # --- نهاية الإصلاح النهائي ---
 
     try:
         user = db.session.scalar(db.select(User).filter_by(email=admin_email))
         
         if user:
-            # المستخدم موجود. تحقق من صلاحياته.
             if user.is_admin:
                 click.secho(f"Admin user '{admin_email}' already configured. Protocol complete.", fg="yellow")
             else:
-                # المستخدم موجود ولكنه ليس مشرفًا. قم بترقيته!
                 click.secho(f"User '{admin_email}' found. Promoting to admin status...", fg="cyan")
                 user.is_admin = True
                 db.session.commit()
                 click.secho(f"✅ User '{admin_email}' has been successfully promoted to admin.", fg="green")
         else:
-            # المستخدم غير موجود. قم بإنشائه.
             click.secho(f"Admin user '{admin_email}' not found. Creating new admin user...", fg="cyan")
             new_admin = User(
                 full_name=admin_name,
                 email=admin_email,
-                is_admin=True # منحه صلاحيات المشرف مباشرة
+                is_admin=True
             )
             new_admin.set_password(admin_password)
             db.session.add(new_admin)
