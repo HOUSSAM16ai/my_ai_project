@@ -1,23 +1,20 @@
 {
   "name": "CogniForge: The Universal Singularity v14.0",
-  
-  // --- [THE CORE ORCHESTRATION] ---
-  // We define the docker-compose file and the primary service for VS Code.
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
   "service": "web",
   "workspaceFolder": "/app",
-
-  // --- [THE AUTOMATED LIFECYCLE] ---
-  // Clean, modular scripts control the environment's lifecycle.
-  "initializeCommand": "if [ ! -f .env ]; then cp .env.example .env; fi",
-  "postCreateCommand": "bash .devcontainer/on-create.sh",
-  "postStartCommand": "bash .devcontainer/on-start.sh",
-  "postAttachCommand": "bash .devcontainer/on-attach.sh",
-
-  // --- [THE ARCHITECT'S COCKPIT] ---
-  // All customizations for a superior VS Code experience.
+  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+  "remoteUser": "root",
+  "containerUser": "root",
+  "overrideCommand": false,
+  "initializeCommand": "bash -lc 'if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi'",
+  "postCreateCommand": "bash -lc '.devcontainer/on-create.sh'",
+  "postStartCommand": "bash -lc '.devcontainer/on-start.sh'",
+  "postAttachCommand": "bash -lc '.devcontainer/on-attach.sh'",
+  "userEnvProbe": "loginInteractiveShell",
+  "waitFor": "postCreateCommand",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -51,24 +48,32 @@
       }
     }
   },
-
-  // --- [NAMED PORTS FOR CLARITY] ---
+  "forwardPorts": [5000, 8000, 8001, 5432],
   "portsAttributes": {
     "5000": { "label": "Flask Frontend (Web)" },
     "8000": { "label": "FastAPI (AI Core)" },
     "8001": { "label": "ChromaDB (Vector Memory)" },
     "5432": { "label": "PostgreSQL (Database)" }
   },
-
-  // --- [THE UNIVERSAL CITIZEN PROTOCOL] ---
-  // Ensures seamless operation in GitHub Codespaces.
-  "remoteUser": "gitpod",
-  
-  // --- [FUTURE-PROOF FEATURES] ---
+  "containerEnv": {
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PIP_NO_CACHE_DIR": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "FORCE_COLOR": "1"
+  },
+  "mounts": [
+    "source=devcontainer-dind,target=/var/lib/docker,type=volume"
+  ],
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
     "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "16gb"
   }
 }
