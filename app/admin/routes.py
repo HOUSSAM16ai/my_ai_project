@@ -1,73 +1,69 @@
-# app/admin/routes.py - The Absolute Commander v5.1 (Hotfix for User Model Compatibility)
+# app/admin/routes.py - The Absolute Commander v6.0 (The Unified Protocol)
 
 from flask import render_template, abort, request, jsonify, flash
 from flask_login import current_user, login_required
+from functools import wraps  # <-- استيراد ضروري للمزخرف
 
 from app.admin import bp
 from app.models import User
 from app import db
-
-# --- [THE SUPERCHARGED ADDITION] ---
-# استيراد "العقل" المركزي مباشرة من طبقة الخدمات
 from app.services.generation_service import forge_new_code
 
-# --- The Dashboard, now serving the interactive UI ---
-@bp.route('/dashboard')
-@login_required
+
+# --- [THE UNIFIED AUTHENTICATION PROTOCOL] ---
+# We create a simple decorator to check for admin status.
+# This avoids code repetition and creates a single source of truth for admin access.
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            abort(403)  # Access Forbidden
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+# --- نهاية البروتوكول ---
+
+
+# --- The Dashboard, now protected by the unified protocol ---
+@bp.route("/dashboard")
+@admin_required  # <-- استخدام البروتوكول الجديد
 def dashboard():
     """
-    يعرض لوحة التحكم الرئيسية للمشرف، والتي تحتوي الآن
-    على واجهة الدردشة التفاعلية للـ AI.
+    Displays the main admin command center, now protected by the unified admin check.
     """
-    # --- [HOTFIX] نعود مؤقتًا إلى التحقق من الإيميل لأن نموذج User لا يحتوي على is_admin بعد ---
-    if current_user.email != "benmerahhoussam16@gmail.com":
-        abort(403)
-    # --- نهاية الإصلاح السريع ---
-
-    return render_template('admin_dashboard.html', title='Admin Command Center')
+    return render_template("admin_dashboard.html", title="Admin Command Center")
 
 
-# --- [THE API FOR THE UI] ---
-@bp.route('/api/generate-code', methods=['POST'])
-@login_required
+# --- The API for the UI, also protected by the unified protocol ---
+@bp.route("/api/generate-code", methods=["POST"])
+@admin_required  # <-- استخدام نفس البروتوكول
 def handle_generate_code_from_ui():
     """
-    هذه هي بوابة الـ API الآمنة التي تستخدمها واجهة الدردشة.
-    إنها تتلقى الطلبات من المتصفح وتستدعي "العقل" المركزي.
+    The secure API gateway for the AI Command Console.
     """
-    # --- [HOTFIX] نعود مؤقتًا إلى التحقق من الإيميل هنا أيضًا ---
-    if current_user.email != "benmerahhoussam16@gmail.com":
-        return jsonify({"status": "error", "message": "Forbidden"}), 403
-    # --- نهاية الإصلاح السريع ---
-
-    # التأكد من أن الطلب يحتوي على prompt
-    prompt = request.json.get('prompt')
+    prompt = request.json.get("prompt")
     if not prompt:
         return jsonify({"status": "error", "message": "Prompt is required."}), 400
 
-    # استدعاء "العقل" المركزي (نفس الدالة التي يستخدمها الـ CLI)
     result = forge_new_code(prompt)
-    
-    # إعادة النتيجة كـ JSON إلى المتصفح
     return jsonify(result)
 
 
-# --- [LEGACY SUPPORT] Example of other admin routes ---
-@bp.route('/users')
-@login_required
+# --- Example of other admin routes, also protected ---
+@bp.route("/users")
+@admin_required  # <-- استخدام نفس البروتوكول
 def list_users():
     """
-    مثال على صفحة إدارية أخرى تعرض قائمة المستخدمين.
+    Displays a list of all users in the system.
     """
-    # --- [HOTFIX] نعود مؤقتًا إلى التحقق من الإيميل هنا أيضًا ---
-    if current_user.email != "benmerahhoussam16@gmail.com":
-        abort(403)
-    # --- نهاية الإصلاح السريع ---
-    
     try:
-        all_users = db.session.query(User).order_by(User.id).all()
+        # Use the modern, recommended way to query
+        all_users = db.session.scalars(db.select(User).order_by(User.id)).all()
     except Exception as e:
         flash(f"Error fetching users: {e}", "danger")
         all_users = []
-        
-    return render_template('admin_users.html', title='User Roster', users=all_users)
+
+    return render_template("admin_users.html", title="User Roster", users=all_users)
