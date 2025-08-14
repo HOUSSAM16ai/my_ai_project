@@ -1,5 +1,5 @@
 {
-  "name": "CogniForge: The Universal Singularity v14.0",
+  "name": "CogniForge: The Architect's Control v15.0",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
@@ -9,10 +9,16 @@
   "remoteUser": "root",
   "containerUser": "root",
   "overrideCommand": false,
-  "initializeCommand": "bash -lc 'if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi'",
+
+  // --- [THE ARCHITECT'S CONTROL PROTOCOL] ---
+  // We perform only the most essential setup, then hand over control
+  // to the architect for manual build and execution.
+  "initializeCommand": "bash -lc 'if [ ! -f .env ] && [ -f .-env.example ]; then cp .env.example .env; fi'",
   "postCreateCommand": "bash -lc '.devcontainer/on-create.sh'",
-  "postStartCommand": "bash -lc '.devcontainer/on-start.sh'",
-  "postAttachCommand": "bash -lc '.devcontainer/on-attach.sh'",
+  "postAttachCommand": "echo '✅ Welcome, Architect. Your environment is ready. Modify your .env file, then run: docker-compose up --build'",
+  // "postStartCommand" has been intentionally removed to prevent automatic startup.
+  // --- نهاية البروتوكول ---
+
   "userEnvProbe": "loginInteractiveShell",
   "waitFor": "postCreateCommand",
   "customizations": {
