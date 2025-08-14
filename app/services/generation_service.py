@@ -1,107 +1,80 @@
-# app/services/generation_service.py - The Multi-Task Aware Central Logic Ministry (v2.0)
+# app/services/generation_service.py - The Thinking Agent (v3.0)
 
 import openai
 import chromadb
-from sentence_transformers import SentenceTransformer
+import json
 from flask import current_app
-
-# --- تحميل نموذج الفهم مسبقًا ليكون جاهزًا دائمًا ---
-try:
-    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    print("✅ [Generation Service] Embedding model loaded successfully.")
-except Exception as e:
-    embedding_model = None
-    print(f"⚠️ [Generation Service] WARNING: Could not preload embedding model: {e}")
+from . import agent_tools # <-- استيراد ترسانة الأدوات الجديدة
 
 def get_model():
-    """ يضمن أن النموذج متاح، ويقوم بتحميله عند الطلب إذا فشل التحميل المسبق. """
-    global embedding_model
-    if embedding_model is None:
-        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    return embedding_model
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer('all-MiniLM-L6-v2')
 
 def forge_new_code(prompt: str) -> dict:
     """
-    الدالة الأساسية للخلق، أصبحت الآن قادرة على التمييز بين
-    طلبات توليد الكود والمحادثة العامة.
+    Core function, now acting as an intelligent agent that uses tools.
     """
     try:
-        # --- [THE MULTI-TASK INTELLIGENCE UPGRADE] ---
-        # الخطوة 1: تهيئة العميل أولاً
         api_key = current_app.config.get("OPENROUTER_API_KEY")
         if not api_key:
             return {"status": "error", "message": "CRITICAL: OPENROUTER_API_KEY is not configured."}
 
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-            timeout=90.0,
+        client = openai.OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=90.0)
+        messages = [{"role": "user", "content": prompt}]
+
+        # --- [THE THINKING AGENT PROTOCOL] ---
+        # 1. First call to the AI: "Decide if you need a tool"
+        response = client.chat.completions.create(
+            model="openai/gpt-4o",
+            messages=messages,
+            tools=agent_tools.tools_schema,
+            tool_choice="auto",
         )
+        response_message = response.choices[0].message
 
-        # الخطوة 2: نطلب من الذكاء الاصطناعي تصنيف النية
-        intent_classifier_prompt = f"""
-        Analyze the user's prompt and classify its primary intent.
-        Is the user asking for code generation, modification, or a technical implementation?
-        Or is it a general conversational question (like a greeting, a question about its status, etc.)?
-        Respond with a single word in uppercase: CODE or CHAT.
+        # 2. Check if the AI decided to use a tool
+        if response_message.tool_calls:
+            tool_call = response_message.tool_calls[0]
+            function_name = tool_call.function.name
+            
+            if function_name in agent_tools.available_tools:
+                function_to_call = agent_tools.available_tools[function_name]
+                function_args = json.loads(tool_call.function.arguments)
+                
+                # Execute the local tool
+                function_response = function_to_call(**function_args)
+                
+                # Return the direct result from the tool
+                return {"status": "success", "code": function_response, "sources": [f"local_tool:{function_name}"], "type": "chat"}
+            else:
+                return {"status": "error", "message": f"AI tried to call an unknown tool: {function_name}"}
 
-        User prompt: "{prompt}"
-        """
-        
-        intent_completion = client.chat.completions.create(
-            model="openai/gpt-4o-mini", # نموذج سريع ورخيص للتصنيف
-            messages=[{"role": "user", "content": intent_classifier_prompt}],
-            max_tokens=5,
-            temperature=0.0
-        )
-        intent = intent_completion.choices[0].message.content.strip().upper()
+        # 3. If no tool was called, proceed with the "slow path" (Code/Chat Generation)
+        else:
+            # Fetch context from ChromaDB for general queries
+            collection = chromadb.HttpClient(host='chroma-db', port=8000).get_or_create_collection(name="cogniforge_codebase")
+            query_embedding = get_model().encode([prompt])
+            results = collection.query(query_embeddings=query_embedding.tolist(), n_results=5)
+            context = "\n---\n".join(results['documents'][0]) if results.get('documents') else "No specific code context found."
+            sources = [meta['source'] for meta in results['metadatas'][0]] if results.get('metadatas') else []
 
-        # --- نهاية الترقية ---
+            # Use a simple heuristic for intent, but now it's less critical
+            code_keywords = ["create", "implement", "generate", "refactor", "add", "write", "fix"]
+            intent = "CODE" if any(k in prompt.lower() for k in code_keywords) else "CHAT"
 
-        if "CHAT" in intent:
-            # إذا كان الطلب محادثة، نستخدم prompt مختلف تمامًا
-            chat_prompt = f"You are CogniForge's Architect Assistant, a helpful and professional AI. Respond to the user's message concisely. User: '{prompt}'"
-            chat_completion = client.chat.completions.create(
-                model="openai/gpt-4o-mini", # نموذج سريع للمحادثة
-                messages=[{"role": "user", "content": chat_prompt}]
+            if intent == "CHAT":
+                final_prompt = f"You are CogniForge's Architect Assistant. Use the provided context to answer the user's question.\n\nCONTEXT:\n{context}\n\nQUESTION:\n{prompt}"
+                model_to_use = "openai/gpt-4o-mini"
+            else: # CODE
+                final_prompt = f"You are an expert Flask developer. Use the context to fulfill the request.\n\nCONTEXT:\n{context}\n\nREQUEST:\n{prompt}\n\nOnly output raw code."
+                model_to_use = "openai/gpt-4o"
+
+            final_completion = client.chat.completions.create(
+                model=model_to_use,
+                messages=[{"role": "user", "content": final_prompt}]
             )
-            response_text = chat_completion.choices[0].message.content
-            return {"status": "success", "code": response_text, "sources": [], "type": "chat"}
-
-        # --- إذا كان الطلب CODE، نستمر في المنطق الأصلي ---
-        # 1. جلب السياق من الذاكرة
-        chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)
-        collection = chroma_client.get_or_create_collection(name="cogniforge_codebase")
-        model = get_model()
-        query_embedding = model.encode([prompt])
-        results = collection.query(query_embeddings=query_embedding.tolist(), n_results=5)
-        context = "\n---\n".join(results['documents'][0]) if results['documents'] else "No relevant context found."
-        sources = [meta['source'] for meta in results['metadatas'][0]] if results['metadatas'] else []
-
-        # 2. الاتصال بالذكاء الاصطناعي مع prompt توليد الكود
-        system_prompt = f"""
-        You are an expert Flask and Python developer... (نفس الـ prompt الطويل)
-
-        **User's Request:**
-        {prompt}
-        **Relevant Code Context from the project:**
-        ---
-        {context}
-        ---
-        ...
-        """
-        
-        completion = client.chat.completions.create(
-            model="openai/gpt-4o", # نموذج قوي لتوليد الكود
-            messages=[
-                {"role": "system", "content": "You are a world-class code generation engine."},
-                {"role": "user", "content": system_prompt},
-            ],
-            temperature=0.2
-        )
-        generated_code = completion.choices[0].message.content
-        
-        return {"status": "success", "code": generated_code, "sources": sources, "type": "code"}
+            response_text = final_completion.choices[0].message.content
+            return {"status": "success", "code": response_text, "sources": sources, "type": intent.lower()}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
