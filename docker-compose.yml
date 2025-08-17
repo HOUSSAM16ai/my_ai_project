@@ -1,4 +1,4 @@
-# docker-compose.yml (The Dual-Authority Final Form v3.0)
+# docker-compose.yml (Gitpod-Optimized v4.2)
 services:
   db:
     image: postgres:15-bullseye
@@ -11,7 +11,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+      # استخدم $$ لتأجيل التوسيع داخل الحاوية (وليس على المضيف)
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -29,7 +30,7 @@ services:
     init: true
     volumes:
       - .:/app
-    command: ["flask", "db", "upgrade"] # استخدام صيغة القائمة أفضل من entrypoint
+    command: ["flask", "db", "upgrade"]
     env_file:
       - .env
     environment:
@@ -85,8 +86,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    # --- [THE DUAL-AUTHORITY COMMAND] ---
-    # entrypoint.sh سيقوم بتشغيل هذا الأمر كـ appuser
     command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
     volumes:
       - .:/app
@@ -95,6 +94,13 @@ services:
         condition: service_completed_successfully
       ai_service:
         condition: service_healthy
+    # Healthcheck اختياري للتأكد من جاهزية الواجهة
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import sys, urllib.request; u=\"http://localhost:5000/\"; sys.exit(0) if urllib.request.urlopen(u, timeout=3).getcode() == 200 else sys.exit(1)'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     ports:
       - "5000:5000"
     logging:
@@ -107,7 +113,8 @@ services:
     container_name: chroma-db
     restart: unless-stopped
     volumes:
-      - chroma_data:/chroma/.chroma/index
+      # حسب اللوغات السابقة، Chroma يحفظ في /data
+      - chroma_data:/data
     ports:
       - "8001:8000"
     logging:
