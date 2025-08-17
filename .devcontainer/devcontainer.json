@@ -1,4 +1,18 @@
 {
-  "name": "Recovery Mode",
-  "image": "mcr.microsoft.com/devcontainers/base:latest"
+  // ... (كل إعداداتك الخارقة الأخرى) ...
+
+  "features": {
+    // --- [THE ULTIMATE FIX] ---
+    // We are now explicitly installing the latest Docker Compose v2.
+    // This guarantees that the `docker compose` (with a space) command is
+    // available and correctly configured in any environment.
+    "ghcr.io/devcontainers/features/docker-compose:1": {
+        "version": "latest"
+    },
+    // --- نهاية الإصلاح ---
+    
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
+    // ... (باقي الميزات)
+  }
 }
