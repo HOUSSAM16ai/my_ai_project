@@ -1,18 +1,76 @@
 {
-  // ... (كل إعداداتك الخارقة الأخرى) ...
+  "name": "CogniForge: The Architect's Control v15.2",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  "remoteUser": "vscode",
+  "overrideCommand": false,
+  "userEnvProbe": "loginInteractiveShell",
 
   "features": {
-    // --- [THE ULTIMATE FIX] ---
-    // We are now explicitly installing the latest Docker Compose v2.
-    // This guarantees that the `docker compose` (with a space) command is
-    // available and correctly configured in any environment.
-    "ghcr.io/devcontainers/features/docker-compose:1": {
-        "version": "latest"
-    },
-    // --- نهاية الإصلاح ---
-    
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
-    // ... (باقي الميزات)
-  }
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  },
+
+  "containerEnv": {
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PIP_NO_CACHE_DIR": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "FORCE_COLOR": "1"
+  },
+
+  "mounts": [
+    "source=devcontainer-dind,target=/var/lib/docker,type=volume"
+  ],
+
+  "forwardPorts": [5000, 8000, 8001, 5432],
+  "portsAttributes": {
+    "5000": { "label": "Flask Frontend (Web)" },
+    "8000": { "label": "FastAPI (AI Core)" },
+    "8001": { "label": "ChromaDB (Vector Memory)" },
+    "5432": { "label": "PostgreSQL (Database)" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "streetsidesoftware.code-spell-checker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "humao.rest-client"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "files.autoSave": "onFocusChange",
+        "git.autofetch": true,
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.fontSize": 14,
+        "terminal.integrated.persistentSessionReviveProcess": "never",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        }
+      }
+    }
+  },
+
+  "initializeCommand": "",
+  "postCreateCommand": "",
+  "postStartCommand": "",
+  "postAttachCommand": "echo '✅ Create your .env (cp .env.example .env), then run: docker compose up --build'"
 }
