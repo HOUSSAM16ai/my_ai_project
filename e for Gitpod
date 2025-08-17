@@ -1,0 +1,140 @@
+[1mdiff --git a/app/services/generation_service.py b/app/services/generation_service.py[m
+[1mindex 52e96c2..7c2d4f8 100644[m
+[1m--- a/app/services/generation_service.py[m
+[1m+++ b/app/services/generation_service.py[m
+[36m@@ -1,10 +1,11 @@[m
+[31m-# app/services/generation_service.py - The Thinking Agent (v3.0)[m
+[32m+[m[32m# app/services/generation_service.py - The Proactive Agent (v3.1)[m
+ [m
+ import openai[m
+ import chromadb[m
+ import json[m
+ from flask import current_app[m
+[31m-from . import agent_tools # <-- استيراد ترسانة الأدوات الجديدة[m
+[32m+[m[32mfrom . import agent_tools[m[41m [m
+[32m+[m[32mfrom .repo_inspector_service import get_project_summary # استيراد مباشر[m
+ [m
+ def get_model():[m
+     from sentence_transformers import SentenceTransformer[m
+[36m@@ -12,69 +13,69 @@[m [mdef get_model():[m
+ [m
+ def forge_new_code(prompt: str) -> dict:[m
+     """[m
+[31m-    Core function, now acting as an intelligent agent that uses tools.[m
+[32m+[m[32m    Core function, now with the Active Memory Protocol. It ALWAYS fetches[m
+[32m+[m[32m    context first to provide the AI with a project-aware mindset.[m
+     """[m
+     try:[m
+[32m+[m[32m        # --- [ACTIVE MEMORY PROTOCOL] ---[m
+[32m+[m[32m        # الخطوة 1: جلب السياق من الذاكرة **أولاً وقبل كل شيء**.[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)[m
+[32m+[m[32m            collection = chroma_client.get_or_create_collection(name="cogniforge_codebase")[m
+[32m+[m[32m            model = get_model()[m
+[32m+[m[32m            query_embedding = model.encode([prompt])[m
+[32m+[m[32m            results = collection.query([m
+[32m+[m[32m                query_embeddings=query_embedding.tolist(),[m
+[32m+[m[32m                n_results=5 # نحصل على سياق غني[m
+[32m+[m[32m            )[m
+[32m+[m[32m            context = "\n---\n".join(results['documents'][0]) if results.get('documents') and results['documents'][0] else "No specific code context found."[m
+[32m+[m[32m            sources = [meta['source'] for meta in results['metadatas'][0]] if results.get('metadatas') and results['metadatas'][0] else [][m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            context = f"Could not connect to vector memory. Error: {e}"[m
+[32m+[m[32m            sources = [][m
+[32m+[m[32m        # --- نهاية البروتوكول ---[m
+[32m+[m
+[32m+[m[32m        # الخطوة 2: تهيئة العميل[m
+         api_key = current_app.config.get("OPENROUTER_API_KEY")[m
+         if not api_key:[m
+             return {"status": "error", "message": "CRITICAL: OPENROUTER_API_KEY is not configured."}[m
+[31m-[m
+         client = openai.OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=90.0)[m
+[31m-        messages = [{"role": "user", "content": prompt}][m
+ [m
+[31m-        # --- [THE THINKING AGENT PROTOCOL] ---[m
+[31m-        # 1. First call to the AI: "Decide if you need a tool"[m
+[31m-        response = client.chat.completions.create([m
+[31m-            model="openai/gpt-4o",[m
+[31m-            messages=messages,[m
+[31m-            tools=agent_tools.tools_schema,[m
+[31m-            tool_choice="auto",[m
+[31m-        )[m
+[31m-        response_message = response.choices[0].message[m
+[32m+[m[32m        # الخطوة 3: بناء "العقل العامل" للذكاء الاصطناعي[m
+[32m+[m[32m        # نحن نجمع كل المعرفة المتاحة في prompt واحد قوي.[m
+[32m+[m[32m        system_prompt = f"""[m
+[32m+[m[32m        You are CogniForge's Architect AI, a hyper-intelligent agent responsible for analyzing, improving, and generating code for this project.[m
+ [m
+[31m-        # 2. Check if the AI decided to use a tool[m
+[31m-        if response_message.tool_calls:[m
+[31m-            tool_call = response_message.tool_calls[0][m
+[31m-            function_name = tool_call.function.name[m
+[31m-            [m
+[31m-            if function_name in agent_tools.available_tools:[m
+[31m-                function_to_call = agent_tools.available_tools[function_name][m
+[31m-                function_args = json.loads(tool_call.function.arguments)[m
+[31m-                [m
+[31m-                # Execute the local tool[m
+[31m-                function_response = function_to_call(**function_args)[m
+[31m-                [m
+[31m-                # Return the direct result from the tool[m
+[31m-                return {"status": "success", "code": function_response, "sources": [f"local_tool:{function_name}"], "type": "chat"}[m
+[31m-            else:[m
+[31m-                return {"status": "error", "message": f"AI tried to call an unknown tool: {function_name}"}[m
+[32m+[m[32m        ### PRIMARY DIRECTIVE:[m
+[32m+[m[32m        Always think within the context of the current project. Use the provided context to give specific, actionable, and relevant answers. Do not act like a generic assistant.[m
+ [m
+[31m-        # 3. If no tool was called, proceed with the "slow path" (Code/Chat Generation)[m
+[31m-        else:[m
+[31m-            # Fetch context from ChromaDB for general queries[m
+[31m-            collection = chromadb.HttpClient(host='chroma-db', port=8000).get_or_create_collection(name="cogniforge_codebase")[m
+[31m-            query_embedding = get_model().encode([prompt])[m
+[31m-            results = collection.query(query_embeddings=query_embedding.tolist(), n_results=5)[m
+[31m-            context = "\n---\n".join(results['documents'][0]) if results.get('documents') else "No specific code context found."[m
+[31m-            sources = [meta['source'] for meta in results['metadatas'][0]] if results.get('metadatas') else [][m
+[32m+[m[32m        ### AVAILABLE CONTEXT FROM PROJECT MEMORY:[m
+[32m+[m[32m        ---[m
+[32m+[m[32m        {context}[m
+[32m+[m[32m        ---[m
+ [m
+[31m-            # Use a simple heuristic for intent, but now it's less critical[m
+[31m-            code_keywords = ["create", "implement", "generate", "refactor", "add", "write", "fix"][m
+[31m-            intent = "CODE" if any(k in prompt.lower() for k in code_keywords) else "CHAT"[m
+[32m+[m[32m        ### USER'S REQUEST:[m
+[32m+[m[32m        ---[m
+[32m+[m[32m        {prompt}[m
+[32m+[m[32m        ---[m
+ [m
+[31m-            if intent == "CHAT":[m
+[31m-                final_prompt = f"You are CogniForge's Architect Assistant. Use the provided context to answer the user's question.\n\nCONTEXT:\n{context}\n\nQUESTION:\n{prompt}"[m
+[31m-                model_to_use = "openai/gpt-4o-mini"[m
+[31m-            else: # CODE[m
+[31m-                final_prompt = f"You are an expert Flask developer. Use the context to fulfill the request.\n\nCONTEXT:\n{context}\n\nREQUEST:\n{prompt}\n\nOnly output raw code."[m
+[31m-                model_to_use = "openai/gpt-4o"[m
+[32m+[m[32m        ### YOUR TASK:[m
+[32m+[m[32m        Analyze the user's request based on the provided context and respond with the most helpful, expert-level answer possible. If the request is to generate code, provide only the raw code. If it's a question, provide a clear, concise explanation.[m
+[32m+[m[32m        """[m
+ [m
+[31m-            final_completion = client.chat.completions.create([m
+[31m-                model=model_to_use,[m
+[31m-                messages=[{"role": "user", "content": final_prompt}][m
+[31m-            )[m
+[31m-            response_text = final_completion.choices[0].message.content[m
+[31m-            return {"status": "success", "code": response_text, "sources": sources, "type": intent.lower()}[m
+[32m+[m[32m        # الخطوة 4: استدعاء الذكاء الاصطناعي مرة واحدة فقط[m
+[32m+[m[32m        # لم نعد بحاجة إلى "مصنف النية". العقل الموحد سيفهم المهمة من السياق.[m
+[32m+[m[32m        completion = client.chat.completions.create([m
+[32m+[m[32m            model="openai/gpt-4o", # نستخدم دائمًا النموذج الأقوى[m
+[32m+[m[32m            messages=[[m
+[32m+[m[32m                {"role": "system", "content": "You are a world-class software architect integrated into a specific project."},[m
+[32m+[m[32m                {"role": "user", "content": system_prompt}[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            temperature=0.2[m
+[32m+[m[32m        )[m
+[32m+[m[32m        response_text = completion.choices[0].message.content[m
+[32m+[m
+[32m+[m[32m        return {"status": "success", "code": response_text, "sources": sources, "type": "response"}[m
+ [m
+     except Exception as e:[m
+         return {"status": "error", "message": str(e)}[m
+\ No newline at end of file[m
