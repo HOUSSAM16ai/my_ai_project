@@ -1,19 +1,15 @@
 {
-  "name": "CogniForge: The Architect's Control v15.2",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "name": "CogniForge: Slim Manual Mode",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
 
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-
   "remoteUser": "vscode",
   "overrideCommand": false,
   "userEnvProbe": "loginInteractiveShell",
 
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
-    "ghcr.io/devcontainers/features/aws-cli:1": {},
-    "ghcr.io/devcontainers/features/azure-cli:1": {},
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true }
   },
 
   "containerEnv": {
@@ -43,15 +39,11 @@
         "github.copilot",
         "github.copilot-chat",
         "ms-azuretools.vscode-docker",
-        "ms-kubernetes-tools.vscode-kubernetes-tools",
         "eamodio.gitlens",
         "esbenp.prettier-vscode",
         "ms-python.flake8",
         "ms-python.black-formatter",
-        "streetsidesoftware.code-spell-checker",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "humao.rest-client"
+        "streetsidesoftware.code-spell-checker"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -59,12 +51,7 @@
         "git.autofetch": true,
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.analysis.typeCheckingMode": "basic",
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "terminal.integrated.fontSize": 14,
-        "terminal.integrated.persistentSessionReviveProcess": "never",
-        "[python]": {
-          "editor.defaultFormatter": "ms-python.black-formatter"
-        }
+        "terminal.integrated.defaultProfile.linux": "bash"
       }
     }
   },
@@ -72,5 +59,5 @@
   "initializeCommand": "",
   "postCreateCommand": "",
   "postStartCommand": "",
-  "postAttachCommand": "echo '✅ Create your .env (cp .env.example .env), then run: docker compose up --build'"
+  "postAttachCommand": "echo '✅ Manual mode: 1) cp .env.example .env  2) edit .env  3) docker compose up --build'"
 }
