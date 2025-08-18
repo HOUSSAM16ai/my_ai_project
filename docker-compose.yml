@@ -1,27 +1,12 @@
-# docker-compose.yml (Gitpod-Optimized v4.2)
+# docker-compose.yml (Cloud-Native Development v5.0)
 services:
-  db:
-    image: postgres:15-bullseye
-    container_name: postgres-db
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    healthcheck:
-      # استخدم $$ لتأجيل التوسيع داخل الحاوية (وليس على المضيف)
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
-    networks: [appnet]
+  # --- [REMOVED] The local db service is no longer needed. ---
+  # db: ...
 
+  # --- [REMOVED] The local chroma service is no longer needed. ---
+  # chroma: ...
+  
+  # Migrations will now run against the Azure DB
   migrations:
     build:
       context: .
@@ -34,17 +19,11 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_HOST=db
+      # We no longer need POSTGRES_HOST, as the full URL is in .env
       - FLASK_APP=run.py
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
-    logging:
-      driver: json-file
-      options: { max-size: "5m", max-file: "2" }
     networks: [appnet]
 
+  # AI service remains for now, but its role might change
   ai_service:
     build:
       context: ./ai_service
@@ -53,31 +32,18 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - POSTGRES_HOST=db
     volumes:
       - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
     depends_on:
+      # It now only depends on migrations completing successfully against Azure
       migrations:
         condition: service_completed_successfully
-      db:
-        condition: service_healthy
-      chroma:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "python -c 'import sys, urllib.request; u=\"http://localhost:8000/\"; sys.exit(0) if urllib.request.urlopen(u, timeout=3).getcode() == 200 else sys.exit(1)'"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
     ports:
       - "8000:8000"
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
+  # Web service will now connect to Azure services
   web:
     build:
       context: .
@@ -93,38 +59,14 @@ services:
       migrations:
         condition: service_completed_successfully
       ai_service:
-        condition: service_healthy
-    # Healthcheck اختياري للتأكد من جاهزية الواجهة
-    healthcheck:
-      test: ["CMD-SHELL", "python -c 'import sys, urllib.request; u=\"http://localhost:5000/\"; sys.exit(0) if urllib.request.urlopen(u, timeout=3).getcode() == 200 else sys.exit(1)'"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+        condition: service_started # No longer needs to be healthy, just started
     ports:
       - "5000:5000"
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
     networks: [appnet]
 
-  chroma:
-    image: chromadb/chroma
-    container_name: chroma-db
-    restart: unless-stopped
-    volumes:
-      # حسب اللوغات السابقة، Chroma يحفظ في /data
-      - chroma_data:/data
-    ports:
-      - "8001:8000"
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
-    networks: [appnet]
 
-volumes:
-  postgres_data:
-  chroma_data:
+# We no longer need local volumes for databases
+volumes: {}
 
 networks:
   appnet:

@@ -1,73 +1,62 @@
-# app/__init__.py - The Central Nervous System v7.1 (System-Aware)
+# app/__init__.py - The Unified & Environment-Aware Factory (v8.0)
 
-import os
 from flask import Flask
+from config import config_by_name # <-- نستورد "الدساتير" المتعددة
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from dotenv import load_dotenv
 
-# --- PHASE 1: SYSTEM AWAKENING ---
-# The system becomes self-aware by loading its environment.
+# Load environment variables from .env file
 load_dotenv()
 
-# --- PHASE 2: FORGING THE CORE ORGANS ---
-# The core components are forged in a detached, universal state,
-# waiting to be connected to a central consciousness.
+# --- [PHASE 1: FORGING THE CORE ORGANS] ---
+# Core components are created in a universal state.
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-
-# The system's prime directive for unauthenticated entities:
-# Redirect them to the 'login' function within the 'main' neural network.
 login_manager.login_view = 'main.login' 
 login_manager.login_message_category = 'info'
 
-# --- PHASE 3: THE GREAT FACTORY OF CONSCIOUSNESS ---
-def create_app(config_class_string="config.DevelopmentConfig"):
+# --- [PHASE 2: THE GREAT FACTORY OF CONSCIOUSNESS] ---
+def create_app(config_name: str = "development"):
     """
-    This is the heart of creation. It forges a fully-aware, supercharged
-    system by assembling all its independent parts.
+    The heart of creation. It assembles all parts of the system
+    based on the specified environment (development, production, etc.).
     """
     app = Flask(__name__)
     
-    # --- PHASE 3.1: CONSTITUTIONAL IMPRINTING ---
-    # The system reads its core laws from the specified configuration.
-    app.config.from_object(config_class_string)
+    # --- [STEP 2.1: CONSTITUTIONAL IMPRINTING] ---
+    # The system reads its laws from the correct configuration class.
+    config_object = config_by_name.get(config_name)
+    app.config.from_object(config_object)
 
-    # --- PHASE 3.2: ORGAN-TO-BRAIN SYNAPTIC CONNECTION ---
-    # The organs are now activated and neurally linked to the application.
+    # --- [STEP 2.2: ORGAN-TO-BRAIN SYNAPTIC CONNECTION] ---
+    # Core organs are now activated and linked to the application.
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    # --- PHASE 3.3: ACTIVATING ALL FUNCTIONAL BLUEPRINTS ---
-    # The factory now scans for and plugs in all functional parts of the system,
-    # from public-facing routes to secret command centers.
+    # --- [STEP 2.3: ACTIVATING ALL FUNCTIONAL BLUEPRINTS] ---
+    # All functional parts of the system are now plugged in.
+    # This must be done within an app context to avoid circular imports.
+    with app.app_context():
+        # 1. The Primary Nervous System (User-Facing Routes)
+        from . import routes
+        app.register_blueprint(routes.bp)
+        
+        # 2. The Secret Command Center (Admin Routes)
+        from .admin import routes as admin_routes
+        app.register_blueprint(admin_routes.bp, url_prefix='/admin')
+        
+        # 3. The Supercharged CMD Ministries (The God Hand)
+        from .cli import user_commands, system_commands, mindgate_commands
+        app.register_blueprint(user_commands.users_cli)
+        app.register_blueprint(system_commands.system_cli)
+        app.register_blueprint(mindgate_commands.mindgate_cli)
 
-    # 1. The Primary Nervous System (User-Facing Routes)
-    from app.routes import bp as main_blueprint
-    app.register_blueprint(main_blueprint)
-    
-    # 2. THE SUPERCHARGED ADDITION: The Secret Command Center (Admin Routes)
-    # The system is now aware of its administrative wing.
-    from app.admin.routes import bp as admin_blueprint
-    app.register_blueprint(admin_blueprint, url_prefix='/admin')
-    
-    # 3. The Supercharged CMD Ministries (The God Hand)
-    # Ministry of User Affairs
-    from app.cli.user_commands import users_cli
-    app.register_blueprint(users_cli)
-    
-    # Ministry of the Mind Gate (AI Interaction)
-    from app.cli.mindgate_commands import mindgate_cli
-    app.register_blueprint(mindgate_cli)
+    # We must import models at the end, after db is defined, to make them known to SQLAlchemy.
+    from . import models
 
-    # --- الإضافة الخارقة: تفعيل وزارة الهندسة المعمارية ---
-    # Ministry of System Architecture
-    from app.cli.system_commands import system_cli
-    app.register_blueprint(system_cli)
-    # --- نهاية الإضافة ---
-
-    # The final, fully assembled, and self-aware system is born.
+    # The final, fully assembled, and environment-aware system is born.
     return app
