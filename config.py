@@ -1,4 +1,4 @@
-# config.py - The Multi-Environment Constitution
+# config.py - The Multi-Environment Constitution (v2.0 - Test-Aware)
 
 import os
 from dotenv import load_dotenv
@@ -8,14 +8,13 @@ load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
     """Base configuration."""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-super-secret-key-that-you-should-change'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Add other base configurations here
+    # TESTING = False # Good practice to set defaults in the base class
 
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    # We prioritize DATABASE_URL for cloud, but fall back to Docker variables for simplicity
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'postgresql://' + os.environ.get('POSTGRES_USER', 'user') + \
         ':' + os.environ.get('POSTGRES_PASSWORD', 'password') + \
@@ -25,15 +24,20 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:' # Use an in-memory DB for fast tests
+    # --- [THE ULTIMATE FIX] ---
+    # We provide a database URI for the testing environment.
+    # Using SQLite in-memory is the fastest and cleanest way to run tests.
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # --- نهاية الإصلاح الخارق ---
+    WTF_CSRF_ENABLED = False # Disable CSRF forms for simpler testing
     
 class ProductionConfig(Config):
     """Production configuration."""
+    # Production config should be carefully set
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') # In production, DATABASE_URL is mandatory
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') # Mandatory in production
 
-# This dictionary maps the string names to the actual config classes
 config_by_name = dict(
     development=DevelopmentConfig,
     testing=TestingConfig,
