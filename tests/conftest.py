@@ -11,7 +11,7 @@ def test_app():
     """
     # --- 2. هذا هو التعديل الحاسم ---
     # نمرر فئة الإعدادات مباشرة إلى مصنع التطبيقات
-    app = create_app(TestingConfig) 
+    app = create_app('testing') 
 
     with app.app_context():
         db.create_all()
