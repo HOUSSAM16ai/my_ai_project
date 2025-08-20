@@ -1,33 +1,37 @@
-# app/services/system_service.py - The System Logic Ministry (v2.0 - The Smart Hand)
+# app/services/system_service.py - The System Logic Ministry (v3.1 - The Atomic Scribe)
 
 import os
-import chromadb
+from pathlib import Path
 from sentence_transformers import SentenceTransformer
-from pathlib import Path # <-- [THE SMART HAND UPGRADE] - Import the powerful Path object
+from sqlalchemy import text
+from app import db # <-- The central database object
 
 # --- أدوات الوزارة ---
 IGNORED_DIRS = {"__pycache__", ".git", ".idea", "venv", ".vscode", "migrations", "instance", "tmp"}
 TARGET_EXTENSIONS = {".py", ".html", ".css", ".js", ".md", ".yml", ".json", ".sh"}
 
+# --- [Singleton Pattern] Load the model once to save resources ---
+_embedding_model = None
+
 def get_embedding_model():
-    """Helper to load the embedding model."""
-    print("Loading embedding model for system service...")
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    """Helper to load the embedding model once and reuse it."""
+    global _embedding_model
+    if _embedding_model is None:
+        print("Loading embedding model for the first and only time...")
+        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _embedding_model
 
 def index_project(force=False):
     """
-    Pure logic for indexing the project. Returns a dict with the result.
-    This is the "memory" function of the system.
+    Indexes the project into the immortal Supabase/pgvector memory using a single,
+    atomic transaction for safety and efficiency.
     """
     try:
-        chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)
-        collection = chroma_client.get_or_create_collection(name="cogniforge_codebase")
         model = get_embedding_model()
         
-        documents, metadatas, ids = [], [], []
-        existing_ids = set(collection.get(include=[])['ids'])
-
-        # Using Pathlib for more robust path handling
+        documents_to_add = []
+        # --- Pre-computation outside the transaction ---
+        # We gather all file data before starting the database conversation.
         root_path = Path(".")
         for path_obj in root_path.rglob("*"):
             if any(ignored in path_obj.parts for ignored in IGNORED_DIRS):
@@ -35,90 +39,145 @@ def index_project(force=False):
 
             if path_obj.is_file() and path_obj.suffix.lower() in TARGET_EXTENSIONS:
                 file_path = str(path_obj)
-                if not force and file_path in existing_ids:
-                    continue
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         content = f.read()
                         if content.strip():
-                            documents.append(content)
-                            metadatas.append({'source': file_path})
-                            ids.append(file_path)
+                            documents_to_add.append({
+                                "id": file_path,
+                                "content": content,
+                                "source": file_path
+                            })
                 except Exception:
                     pass
         
-        if not documents:
-            return {"status": "success", "indexed_count": 0, "message": "No new files to index."}
+        # --- [THE SINGLE, ATOMIC TRANSACTION PROTOCOL] ---
+        # The entire conversation with the database happens here.
+        # If any part fails, the whole thing is rolled back.
+        with db.session.begin():
+            # 1. Create the table if it doesn't exist
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS code_documents (
+                    id TEXT PRIMARY KEY,
+                    content TEXT,
+                    source TEXT,
+                    embedding VECTOR(384)
+                );
+            """))
 
-        if force and collection.count() > 0:
-            collection.delete(ids=list(existing_ids))
+            # 2. If forcing, delete all existing documents
+            if force:
+                print("Force re-indexing: Deleting all existing documents...")
+                db.session.execute(text("DELETE FROM code_documents;"))
 
-        collection.add(
-            embeddings=model.encode(documents, show_progress_bar=True),
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
-        )
-        return {"status": "success", "indexed_count": len(documents), "total_count": collection.count()}
+            # 3. Filter out documents that already exist (if not forcing)
+            if not force:
+                existing_ids = set(row[0] for row in db.session.execute(text("SELECT id FROM code_documents;")).fetchall())
+                documents_to_add = [doc for doc in documents_to_add if doc['id'] not in existing_ids]
+
+            if not documents_to_add:
+                # We need to commit the CREATE TABLE even if there's nothing to add.
+                # The 'with db.session.begin()' handles this automatically.
+                return {"status": "success", "indexed_count": 0, "message": "No new files to index."}
+            
+            # 4. Batch embedding and insertion for performance
+            print(f"Embedding and inserting {len(documents_to_add)} new documents...")
+            contents = [doc['content'] for doc in documents_to_add]
+            embeddings = model.encode(contents, show_progress_bar=True)
+            
+            for i, doc in enumerate(documents_to_add):
+                db.session.execute(text("""
+                    INSERT INTO code_documents (id, content, source, embedding)
+                    VALUES (:id, :content, :source, :embedding)
+                """), {
+                    "id": doc['id'], 
+                    "content": doc['content'], 
+                    "source": doc['source'], 
+                    "embedding": str(embeddings[i].tolist())
+                })
+            
+            # 5. Get the final count from within the transaction
+            total_count = db.session.execute(text("SELECT COUNT(*) FROM code_documents;")).scalar()
+        
+        # The transaction is automatically committed here upon successful exit.
+        return {"status": "success", "indexed_count": len(documents_to_add), "total_count": total_count}
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        # The transaction is automatically rolled back here if any error occurred.
+        return {"status": "error", "message": f"Indexing failed: {e}"}
 
-def query_file(file_path: str, line: int = None):
+
+def find_related_context(prompt_text: str, n_results: int = 5) -> str:
     """
-    Retrieves the content of a file. If the exact path is not found,
-    it performs a fuzzy search for the filename across the entire project.
-    This is the "seeing" function of the system.
+    Finds relevant context from the immortal memory using vector search.
+    This is the "memory retrieval" function.
+    """
+    try:
+        model = get_embedding_model()
+        prompt_embedding = model.encode(prompt_text)
+
+        # --- [PGVECTOR MAGIC] - Perform a semantic search query ---
+        sql = text("""
+            SELECT content
+            FROM code_documents
+            ORDER BY embedding <=> :query_embedding
+            LIMIT :limit;
+        """)
+        # Use a new session for read-only queries for safety
+        with db.session.begin():
+            results = db.session.execute(sql, {
+                "query_embedding": str(prompt_embedding.tolist()),
+                "limit": n_results
+            }).fetchall()
+        
+        if not results:
+            return "No relevant context found in the eternal memory."
+            
+        context = "\n\n---\n\n".join([row[0] for row in results])
+        return context
+
+    except Exception as e:
+        print(f"Context retrieval failed: {e}")
+        return f"Error retrieving context: {e}"
+
+def query_file(file_path: str):
+    """
+    Retrieves a file's content, prioritizing memory, then disk, with fuzzy search fallback.
     """
     p = Path(file_path)
-    content = None
-    source = "disk" # Default source
-
-    # --- [THE SMART HAND PROTOCOL] ---
-    # 1. Try the exact path first.
-    if p.exists() and p.is_file():
-        pass # Path is correct, proceed.
-    else:
-        # 2. If it fails, perform a fuzzy search for the filename.
+    
+    # --- [THE SMART HAND PROTOCOL - FUZZY SEARCH] ---
+    # This logic remains the same. First, we find the correct path.
+    if not (p.exists() and p.is_file()):
         file_name_to_find = p.name
         found_path = None
-        
         for potential_path in Path(".").rglob(f"*{file_name_to_find}*"):
             if potential_path.is_file() and not any(ignored in potential_path.parts for ignored in IGNORED_DIRS):
                 found_path = potential_path
-                break # Stop at the first match
-        
-        if found_path:
-            p = found_path # Use the correct path we found
-        else:
+                break
+        if not found_path:
             return {"status": "error", "message": f"File containing '{file_path}' not found anywhere in the project."}
-    # --- نهاية البروتوكول ---
+        p = found_path
+    
+    # Now that we have the definite path `p`, we can proceed.
+    file_path_str = str(p)
 
-    # --- Attempt to read from memory first (faster) ---
+    # --- [TWO-LAYER MEMORY PROTOCOL] ---
+    # 1. Attempt to read from Supabase immortal memory first
     try:
-        chroma_client = chromadb.HttpClient(host='chroma-db', port=8000)
-        collection = chroma_client.get_or_create_collection(name="cogniforge_codebase")
-        result = collection.get(ids=[str(p)])
-        if result and result.get('documents'):
-            content = result['documents'][0]
-            source = "indexed memory"
-    except Exception:
-        pass # Fail silently and fall back to disk read
+        with db.session.begin():
+            sql = text("SELECT content FROM code_documents WHERE id = :file_path")
+            result = db.session.execute(sql, {"file_path": file_path_str}).scalar_one_or_none()
+        
+        if result is not None:
+            return {"status": "success", "content": result, "source": "immortal_memory", "path": file_path_str}
+    except Exception as e:
+        print(f"Memory read for {file_path_str} failed: {e}") # Log error but continue
 
-    # --- Fallback to reading directly from disk ---
-    if content is None:
-        try:
-            with p.open('r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    # --- Process and return the final content ---
-    lines = content.splitlines()
-    if line is not None:
-        if 1 <= line <= len(lines):
-            return {"status": "success", "content": lines[line - 1], "source": source, "path": str(p), "line": line, "total_lines": len(lines)}
-        else:
-            return {"status": "error", "message": f"Line {line} is out of range."}
-    else:
-        return {"status": "success", "content": content, "source": source, "path": str(p), "total_lines": len(lines)}
+    # 2. Fallback to reading directly from disk
+    try:
+        with p.open('r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        return {"status": "success", "content": content, "source": "disk", "path": file_path_str}
+    except Exception as e:
+        return {"status": "error", "message": f"Disk read for {file_path_str} failed: {e}"}
