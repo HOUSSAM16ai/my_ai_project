@@ -1,29 +1,18 @@
-# docker-compose.yml (Cloud-Native Development v5.0)
+# docker-compose.yml (Cloud-Native & Clean Architecture v7.0)
 services:
-  # --- [REMOVED] The local db service is no longer needed. ---
-  # db: ...
-
-  # --- [REMOVED] The local chroma service is no longer needed. ---
-  # chroma: ...
-  
-  # Migrations will now run against the Azure DB
+  # Migrations will run against the Supabase DB via the Session Pooler.
   migrations:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: flask-migrations
     init: true
-    volumes:
-      - .:/app
     command: ["flask", "db", "upgrade"]
     env_file:
       - .env
-    environment:
-      # We no longer need POSTGRES_HOST, as the full URL is in .env
-      - FLASK_APP=run.py
     networks: [appnet]
 
-  # AI service remains for now, but its role might change
+  # AI service remains on its own network, depending on the main services.
   ai_service:
     build:
       context: ./ai_service
@@ -36,14 +25,14 @@ services:
       - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
     depends_on:
-      # It now only depends on migrations completing successfully against Azure
+      # It depends on the successful completion of the migrations.
       migrations:
         condition: service_completed_successfully
     ports:
-      - "8000:8000"
+      - "8001:8000"
     networks: [appnet]
 
-  # Web service will now connect to Azure services
+  # Web service connects to Supabase and depends on other services.
   web:
     build:
       context: .
@@ -59,13 +48,11 @@ services:
       migrations:
         condition: service_completed_successfully
       ai_service:
-        condition: service_started # No longer needs to be healthy, just started
+        condition: service_started
     ports:
       - "5000:5000"
     networks: [appnet]
 
-
-# We no longer need local volumes for databases
 volumes: {}
 
 networks:

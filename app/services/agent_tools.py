@@ -1,4 +1,4 @@
-# app/services/agent_tools.py - The Context-Aware Tool Arsenal (v2.3 - Final & Complete)
+# app/services/agent_tools.py - The Context-Aware Tool Arsenal (v2.4 - Final)
 
 import json
 from . import repo_inspector_service
@@ -6,14 +6,14 @@ from . import system_service
 from .refactoring_tool import RefactorTool
 from .llm_client_service import get_llm_client
 
+# --- [CONTEXT-AWARE INITIALIZATION PROTOCOL] ---
+# We define helper functions to initialize tools that need the app context
+# ONLY when they are actually called. This solves the startup error.
+
 def _get_refactor_tool():
-    """
-    Initializes and returns the refactor tool. This is a helper function
-    to ensure the LLM client is created within the application context.
-    """
+    """Initializes and returns the refactor tool just-in-time."""
     llm_client = get_llm_client()
-    # In the future, you can pass formatters here, e.g., [["black", "{file}"]]
-    return RefactorTool(llm_client, formatter_cmds=[])
+    return RefactorTool(llm_client)
 
 # --- Tool Implementations (The functions the AI can call) ---
 
@@ -31,7 +31,8 @@ def apply_code_refactoring(file_path: str, requested_changes: str):
     """
     Intelligently refactors a file and returns a preview of the changes.
     """
-    refactor_tool = _get_refactor_tool() # Initialize the tool on demand
+    # Initialize the tool on demand, inside the function call.
+    refactor_tool = _get_refactor_tool()
     
     result = refactor_tool.apply_code_refactoring(
         file_path=file_path,
@@ -45,12 +46,14 @@ def apply_code_refactoring(file_path: str, requested_changes: str):
 
 # --- Tool Definitions for the AI ---
 
+# This maps the AI-callable function names to our Python functions.
 available_tools = {
     "get_project_summary": get_project_summary,
     "query_file_content": query_file_content,
     "apply_code_refactoring": apply_code_refactoring,
 }
 
+# This is the schema definition that the AI model sees.
 tools_schema = [
     {
         "type": "function",
