@@ -10,9 +10,15 @@
                     <p class="mb-0 small">Forge the future. Your direct interface to the system's creative core.</p>
                 </div>
                 <div class="card-body" id="chat-container" style="height: 65vh; display: flex; flex-direction: column;">
+                    <!-- [IMMORTAL MEMORY PROTOCOL] - The conversation ID is embedded in the DOM -->
+                    <input type="hidden" id="conversation-id" value="{{ conversation_id }}">
+                    
                     <div id="chat-output" style="flex-grow: 1; overflow-y: auto; padding-right: 15px;">
                         <div class="alert alert-info small">
                             <strong>Welcome, Architect.</strong> System online. Awaiting creation protocol...
+                            {% if not conversation_id %}
+                                <br><strong class="text-danger">Warning:</strong> Could not start an immortal conversation session. History will not be saved.
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -34,24 +40,42 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Adding the console.log for definitive proof
+    // --- [DIAGNOSTIC & MEMORY PROTOCOL] ---
     console.log("✅ Admin Dashboard Script Loaded & Listeners Attached!");
 
     const promptInput = document.getElementById('prompt-input');
     const sendBtn = document.getElementById('send-btn');
     const chatOutput = document.getElementById('chat-output');
+    
+    // --- [THE LIVING MEMORY - STEP 1: CAPTURE THE IDENTITY] ---
+    const conversationIdElement = document.getElementById('conversation-id');
+    const conversationId = conversationIdElement ? conversationIdElement.value : null;
+    let chatHistory = []; // The short-term, working memory for the session.
+    
+    console.log(`🧠 Immortal Conversation Session ID: ${conversationId}`);
+    if (!conversationId) {
+        console.error("CRITICAL: conversation_id is missing from the DOM. History will fail.");
+    }
 
     function addMessage(content, type = 'system', sources = []) {
+        // --- [LIVING MEMORY - STEP 2: RECORD TO WORKING MEMORY] ---
+        if (type === 'user') {
+            chatHistory.push({ "role": "user", "content": content });
+        } else if (type === 'ai') {
+            chatHistory.push({ "role": "assistant", "content": content });
+        }
+        
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('mb-3');
 
         if (type === 'user') {
             messageWrapper.innerHTML = `<div class="p-2 bg-light text-dark rounded text-end"><strong>></strong> ${content}</div>`;
         } else if (type === 'ai') {
-            const sourcesText = sources.length ? `<div class="text-muted small mt-1">Context from: ${sources.join(', ')}</div>` : '';
+            const sourcesText = sources && sources.length ? `<div class="text-muted small mt-1">Context from: ${sources.join(', ')}</div>` : '';
+            const escapedContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             messageWrapper.innerHTML = `
                 <div class="p-3 bg-primary bg-opacity-10 text-dark rounded">
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; margin: 0;">${content}</pre>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; margin: 0;">${escapedContent}</pre>
                     ${sourcesText}
                 </div>`;
         } else if (type === 'error') {
@@ -65,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleForge() {
+        console.log("--- [STEP 1] Forge initiated. ---");
         const prompt = promptInput.value.trim();
         if (!prompt) return;
 
@@ -74,32 +99,51 @@ document.addEventListener('DOMContentLoaded', () => {
         sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Forging...';
 
         try {
+            console.log("--- [STEP 2] Preparing to send fetch request... ---");
+            // --- [LIVING MEMORY - STEP 3: TRANSMIT THE FULL CONTEXT] ---
+            const payload = { 
+                prompt: prompt,
+                history: chatHistory,
+                conversation_id: conversationId 
+            };
+            console.log("Payload to be sent:", JSON.stringify(payload, null, 2));
+
             const response = await fetch("{{ url_for('admin.handle_generate_code_from_ui') }}", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt })
+                body: JSON.stringify(payload)
             });
+            
+            console.log("--- [STEP 3] Received response from server. Status:", response.status);
             const result = await response.json();
+            console.log("--- [STEP 4] Parsed JSON result:", result);
+
             if (response.ok && result.status === 'success') {
                 addMessage(result.code, 'ai', result.sources);
             } else {
                 addMessage(result.message || 'An unknown error occurred.', 'error');
             }
         } catch (error) {
+            console.error("--- [CRITICAL ERROR] A JavaScript error occurred! ---", error);
             addMessage(error.toString(), 'error');
         } finally {
+            console.log("--- [STEP 5] Finalizing forge operation. ---");
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-bolt"></i> Forge';
         }
     }
 
-    sendBtn.addEventListener('click', handleForge);
-    promptInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            handleForge();
-        }
-    });
+    if (promptInput && sendBtn) {
+        sendBtn.addEventListener('click', handleForge);
+        promptInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleForge();
+            }
+        });
+    } else {
+        console.error("CRITICAL: Could not find prompt-input or send-btn. Listeners not attached.");
+    }
 });
 </script>
 {% endblock %}

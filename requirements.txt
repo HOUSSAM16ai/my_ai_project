@@ -1,41 +1,42 @@
-# requirements.txt (The Resource-Optimized Final Form)
+# requirements.txt - The Strict Compatibility & Optimized Resource Protocol (vFinal)
 
-# --- [RESOURCE OPTIMIZATION PROTOCOL] ---
-# 1. نخبر pip بالبحث عن حزم torch المخصصة لوحدات المعالجة المركزية (CPU) من مستودع PyTorch الرسمي.
+# --- [RESOURCE OPTIMIZATION & COMPATIBILITY PROTOCOL] ---
+# 1. We tell pip to find CPU-specific torch packages first.
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 2. نقوم بتثبيت torch CPU-only بشكل صريح. هذا يمنع sentence-transformers من سحب النسخة العملاقة
-#    الخاصة بوحدات معالجة الرسومات (GPU).
-torch
-# --- نهاية البروتوكول ---
+# 2. We pin specific, known-to-be-compatible versions to prevent dependency conflicts.
+#    This is the key to solving the 'NoneType' error in SentenceTransformer.
+torch==2.3.1
+transformers==4.41.2
+sentence-transformers>=2.6.1 # This will now use the exact torch/transformers versions above.
+numpy>=1.26 # Explicitly required by the AI stack.
+openai>=1.40.0
+# --- نهاية البروتوكوك- ---
 
 
-# --- Flask Core & Extensions ---
+# --- Core Web Framework & Extensions ---
 Flask
 Flask-WTF
 Flask-Login
 Werkzeug
 email-validator
+gunicorn
 
-# --- Database ORM & Migrations ---
+# --- Database Layer ---
 flask-sqlalchemy
 flask-migrate
 psycopg2-binary
 
-# --- WSGI Server for Production ---
-gunicorn
+# --- New Supercharged CLI ---
+typer>=0.12.3
+rich>=13.7.0
 
-# --- Utilities ---
+# --- Asynchronous Services (for ai_service) ---
+fastapi
+uvicorn
+
+# --- Development & Testing ---
 python-dotenv
-
-# --- AI & Vector DB Libraries ---
-openai
-chromadb-client
-sentence-transformers # هذا سيكتشف أن torch مثبت بالفعل وسيستخدمه
-
-# --- Testing & HTTP ---
 pytest
 pytest-flask
 requests
-fastapi
-uvicorn

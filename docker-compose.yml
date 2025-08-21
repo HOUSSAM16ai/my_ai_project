@@ -1,6 +1,6 @@
-# docker-compose.yml (Cloud-Native & Clean Architecture v7.0)
+# docker-compose.yml (The Loop-Breaker Protocol - TEMPORARY)
 services:
-  # Migrations will run against the Supabase DB via the Session Pooler.
+  # Migrations service remains unchanged.
   migrations:
     build:
       context: .
@@ -12,7 +12,7 @@ services:
       - .env
     networks: [appnet]
 
-  # AI service remains on its own network, depending on the main services.
+  # AI service - DEPENDENCIES TEMPORARILY DISABLED
   ai_service:
     build:
       context: ./ai_service
@@ -24,15 +24,16 @@ services:
     volumes:
       - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
-    depends_on:
-      # It depends on the successful completion of the migrations.
-      migrations:
-        condition: service_completed_successfully
+    # --- [THE LOOP-BREAKER FIX] ---
+    # We comment out the 'depends_on' section to break the chain.
+    # depends_on:
+    #   migrations:
+    #     condition: service_completed_successfully
     ports:
       - "8001:8000"
     networks: [appnet]
 
-  # Web service connects to Supabase and depends on other services.
+  # Web service - DEPENDENCIES TEMPORARILY DISABLED
   web:
     build:
       context: .
@@ -44,11 +45,13 @@ services:
     command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
     volumes:
       - .:/app
-    depends_on:
-      migrations:
-        condition: service_completed_successfully
-      ai_service:
-        condition: service_started
+    # --- [THE LOOP-BREAKER FIX] ---
+    # We comment out the 'depends_on' section to break the chain.
+    # depends_on:
+    #   migrations:
+    #     condition: service_completed_successfully
+    #   ai_service:
+    #     condition: service_started
     ports:
       - "5000:5000"
     networks: [appnet]

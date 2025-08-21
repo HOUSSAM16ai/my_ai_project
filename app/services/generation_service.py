@@ -1,17 +1,39 @@
-# app/services/generation_service.py - The Synthesizing Architect (v7.2 - Object-Aware & Final)
+# app/services/generation_service.py - The Self-Archiving, Enterprise-Ready Architect (v9.0)
 
-from .llm_client_service import get_llm_client
-from .system_service import find_related_context # We no longer need this direct import
-from . import agent_tools
 import json
+from flask import current_app
+from app import db
+from app.models import Message
+from .llm_client_service import get_llm_client
+from . import agent_tools
 
-def forge_new_code(prompt: str, conversation_history: list = None) -> dict:
+def _save_message_to_db(conversation_id: str, role: str, content: str, tool_name: str = None):
+    """A helper function to write a message to the immortal memory."""
+    if not conversation_id:
+        current_app.logger.warning("Attempted to save message but conversation_id is missing.")
+        return
+    try:
+        new_message = Message(
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            tool_name=tool_name
+        )
+        db.session.add(new_message)
+        current_app.logger.info(f"Message (Role: {role}) queued for conversation {conversation_id}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to queue message for conversation {conversation_id}: {e}", exc_info=True)
+
+def forge_new_code(prompt: str, conversation_history: list = None, conversation_id: str = None) -> dict:
     """
-    The synthesizing core of our AI. It uses a multi-step reasoning loop,
-    guided by a master prompt and a disciplined tool schema, to achieve the user's true intent.
-    This version is object-aware, correctly handling modern API responses.
+    The synthesizing core of our AI. It archives its entire thought process
+    into the immortal database for future learning, using enterprise-grade best practices.
     """
-    # Initialize the conversation with the master instructions that define the AI's persona and logic.
+    # --- [CENTRALIZED COMMAND PROTOCOL] ---
+    # Load strategic configuration from the central constitution (config.py).
+    model_name = current_app.config.get('DEFAULT_AI_MODEL', 'openai/gpt-4o')
+    max_steps = current_app.config.get('AGENT_MAX_STEPS', 5)
+
     if conversation_history is None:
         master_prompt = f"""
         You are the hyper-intelligent Strategic Architect AI of the CogniForge project.
@@ -25,84 +47,77 @@ def forge_new_code(prompt: str, conversation_history: list = None) -> dict:
         - For direct commands (e.g., "get the content of..."), you may use a tool and return the result directly.
         """
         conversation_history = [{"role": "system", "content": master_prompt}]
+    
+    # --- [IMMORTAL MEMORY PROTOCOL] - Record the user's initial prompt ---
+    _save_message_to_db(conversation_id, "user", prompt)
 
     try:
         client = get_llm_client()
-        # The 'messages' list will be a mix of dicts (our history) and pydantic models (from OpenAI)
         messages: list = conversation_history + [{"role": "user", "content": prompt}]
         
-        # --- [MULTI-STEP REASONING LOOP] ---
-        for i in range(5):
-            print(f"--- Thinking Step {i+1} ---")
+        for i in range(max_steps):
+            current_app.logger.info(f"--- Thinking Step {i+1}/{max_steps} for ConvID: {conversation_id} ---")
 
-            # Convert all messages to dictionaries before sending, ensuring compatibility.
             messages_for_api = [
-                msg if isinstance(msg, dict) else msg.dict() for msg in messages
+                msg if isinstance(msg, dict) else msg.model_dump() if hasattr(msg, 'model_dump') else msg.dict()
+                for msg in messages
             ]
 
-            response = client.chat.completions.create(
-                model="openai/gpt-4o",
-                messages=messages_for_api,
-                tools=agent_tools.tools_schema,
-                tool_choice="auto",
-            )
+            response = client.chat.completions.create(model=model_name, messages=messages_for_api, tools=agent_tools.tools_schema, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
-
-            # Append the AI's response (which is a model object) to our list
             messages.append(response_message)
 
+            # Record the AI's thought process to the immortal archive
+            _save_message_to_db(conversation_id, "assistant", response_message.model_dump_json())
+
             if tool_calls:
-                print(f"Decision: Tool usage identified. Executing {len(tool_calls)} tool(s).")
+                current_app.logger.info(f"Decision: Tool usage identified. Executing {len(tool_calls)} tool(s).")
                 
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
-                    if function_name in agent_tools.available_tools:
-                        function_to_call = agent_tools.available_tools[function_name]
-                        function_args = json.loads(tool_call.function.arguments)
-                        
-                        function_response = function_to_call(**function_args)
-                        
-                        # Append the tool's result as a dictionary
-                        messages.append({
-                            "tool_call_id": tool_call.id,
-                            "role": "tool",
-                            "name": function_name,
-                            "content": json.dumps(function_response, indent=2, ensure_ascii=False) if isinstance(function_response, dict) else str(function_response),
-                        })
-                    else:
-                        messages.append({
-                            "tool_call_id": tool_call.id, "role": "tool", "name": function_name,
-                            "content": f"Error: Tool '{function_name}' not found.",
-                        })
+                    try:
+                        if function_name in agent_tools.available_tools:
+                            function_to_call = agent_tools.available_tools[function_name]
+                            function_args = json.loads(tool_call.function.arguments)
+                            
+                            function_response = function_to_call(**function_args)
+                            
+                            tool_content = json.dumps(function_response, indent=2, ensure_ascii=False) if isinstance(function_response, dict) else str(function_response)
+                            
+                            _save_message_to_db(conversation_id, "tool", tool_content, tool_name=function_name)
+                            messages.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": tool_content})
+                        else:
+                            raise ValueError(f"Tool '{function_name}' not found in available_tools.")
+                    except (json.JSONDecodeError, TypeError, ValueError) as e:
+                        error_content = f"Error: Failed to process tool '{function_name}'. Details: {e}"
+                        current_app.logger.warning(error_content)
+                        _save_message_to_db(conversation_id, "tool", error_content, tool_name=function_name)
+                        messages.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": error_content})
                 
                 continue
 
             else:
-                print("Decision: Deep reasoning complete. Final answer generated.")
+                current_app.logger.info("Decision: Deep reasoning complete. Final answer generated.")
                 final_answer = response_message.content
                 
-                # --- [THE OBJECT-AWARE FIX] ---
-                # Check for tool usage by iterating through the mixed list of dicts and objects.
+                # Record the final answer
+                _save_message_to_db(conversation_id, "assistant", final_answer)
+                db.session.commit()
+
                 sources = ["reasoning"]
                 for msg in messages:
-                    # Check if it's a dict with the right role, OR an object with the right attribute
-                    is_tool_dict = isinstance(msg, dict) and msg.get("role") == "tool"
-                    is_tool_object = hasattr(msg, 'tool_calls') and msg.tool_calls is not None
-                    
-                    if is_tool_dict or is_tool_object:
+                    is_tool_msg = (isinstance(msg, dict) and msg.get("role") == "tool") or (hasattr(msg, 'tool_calls') and msg.tool_calls is not None)
+                    if is_tool_msg:
                         sources.append("local_tool")
-                        break # Found one, no need to check further
-                # --- نهاية الإصلاح الخارق ---
+                        break
                     
-                return {
-                    "status": "success",
-                    "code": final_answer,
-                    "sources": list(set(sources)),
-                    "type": "synthesized_response"
-                }
+                return {"status": "success", "code": final_answer, "sources": list(set(sources)), "type": "synthesized_response"}
         
-        return {"status": "error", "message": "Agent exceeded maximum thinking steps."}
+        db.session.commit()
+        return {"status": "error", "message": f"Agent exceeded maximum thinking steps ({max_steps})."}
 
     except Exception as e:
+        current_app.logger.error(f"Forge operation failed catastrophically: {e}", exc_info=True)
+        db.session.rollback()
         return {"status": "error", "message": f"Forge operation failed: {e}"}

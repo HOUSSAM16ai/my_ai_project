@@ -1,0 +1,8 @@
+{
+  "root": "/app",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "dim": 384,
+  "count": 141,
+  "chunk_chars": 1200,
+  "overlap": 200
+}
