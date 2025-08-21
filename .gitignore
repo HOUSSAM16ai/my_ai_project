@@ -57,3 +57,5 @@ docker-compose.override.yml
 # 7. Generic OS files
 .DS_Store
 Thumbs.db
+# Ignore the locally generated Cogni CLI index
+.cogni/
