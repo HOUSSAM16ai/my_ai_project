@@ -1,32 +1,31 @@
 # ======================================================================================
 # tests/conftest.py
-# == COGNIFORGE TEST UNIVERSE – HYPER ISOLATED DATA RIG (v3) ==========================
+# == COGNIFORGE TEST UNIVERSE – HYPER ISOLATED DATA RIG (v4 - Finalized) ==============
 # مبادئ:
-#   1) السرعة: create_all مرة واحدة في بداية جلسة الاختبارات.
-#   2) العزل: كل اختبار داخل Transaction + SAVEPOINT (لا تسرّب للحالة).
-#   3) المرونة: Factories ديناميكية + Seed اختياري.
-#   4) الوضوح: تعليقات دقيقة + Fail Fast على النماذج.
-#   5) القابلية للتوسعة: أضف أي نموذج جديد عبر Factory بنفس النمط.
+#   1) السرعة: إنشاء الجداول مرة واحدة في بداية جلسة الاختبارات.
+#   2) العزل المطلق: كل اختبار داخل معاملة متداخلة (SAVEPOINT) متوافقة مع Flask.
+#   3) المرونة: مصانع ديناميكية للبيانات تتوافق مع أحدث مخطط (Schema).
+#   4) الوضوح: تعليقات دقيقة وآليات فشل مبكر.
+#   5) التوافقية: دعم الأسماء القديمة للـ fixtures (test_client) لتجنب كسر الاختبارات.
 #
-# ملاحظات:
-#   - لا تُحمِّل بيانات افتراضية "دائمة" داخل إنشاء الجداول.
-#   - استخدم seed_basic_course أو factories عند الحاجة فقط.
-#   - أي commit يجري في كود التطبيق أثناء الاختبار يُعزل داخل المعاملة.
+# هذا الإصدار يحل كل المشاكل المعروفة: `ImportError`, `AttributeError: Session.remove`,
+# و `fixture name mismatch`.
 # ======================================================================================
 
 import os
 import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
+from werkzeug.security import generate_password_hash
 
 from app import create_app, db
 
-# Fail Fast: استيراد النماذج الأساسية (اعتمد على تعريفك الحالي)
+# Fail Fast: استيراد النماذج الأساسية (يفترض أن models.py هجين الآن)
 try:
-    from app.models import Subject, Lesson, Exercise
+    from app.models import Subject, Lesson, Exercise, User
 except ImportError as e:
     raise RuntimeError(
-        "فشل استيراد النماذج Subject/Lesson/Exercise. تأكد أن app.models يحتويها قبل تشغيل الاختبارات."
+        "فشل استيراد النماذج. تأكد أن app/models.py يحتوي على كل النماذج (التعليمية والوكيل)."
     ) from e
 
 # --------------------------------------------------------------------------------------
@@ -34,8 +33,6 @@ except ImportError as e:
 # --------------------------------------------------------------------------------------
 os.environ.setdefault("FLASK_ENV", "testing")
 os.environ["TESTING"] = "1"
-# إن كنت تريد فرض قاعدة بيانات مخصصة للاختبار (مثلاً PostgreSQL منفصلة):
-# os.environ.setdefault("DATABASE_URL", "postgresql://user:pass@localhost/test_db")
 
 # --------------------------------------------------------------------------------------
 # تطبيق الاختبار (يُنشأ مرة واحدة)
@@ -44,14 +41,13 @@ os.environ["TESTING"] = "1"
 def app():
     """
     إنشاء تطبيق Flask بوضع الاختبار.
-    يفترض أن create_app('testing') يطبّق TestingConfig (قاعدة بيانات منفصلة).
     """
     application = create_app("testing")
     with application.app_context():
         yield application
 
 # --------------------------------------------------------------------------------------
-# محرك / اتصال / مصنع جلسات (Session Factory)
+# محرك / اتصال / مصنع جلسات
 # --------------------------------------------------------------------------------------
 @pytest.fixture(scope="session")
 def _engine(app):
@@ -60,7 +56,7 @@ def _engine(app):
 @pytest.fixture(scope="session")
 def _connection(_engine, app):
     """
-    فتح اتصال واحد، إنشاء الجداول مرة واحدة، وإسقاطها في نهاية الجلسة.
+    فتح اتصال واحد، إنشاء الجداول مرة واحدة، وإسقاطها في النهاية.
     """
     conn = _engine.connect()
     with app.app_context():
@@ -70,67 +66,55 @@ def _connection(_engine, app):
         db.metadata.drop_all(bind=conn)
     conn.close()
 
-@pytest.fixture(scope="session")
-def _SessionFactory(_connection):
-    return sessionmaker(bind=_connection)
-
 # --------------------------------------------------------------------------------------
-# جلسة معزولة لكل اختبار (Transaction + Nested SAVEPOINT)
+# جلسة معزولة لكل اختبار (الحل النهائي لمشكلة Session.remove)
 # --------------------------------------------------------------------------------------
 @pytest.fixture(autouse=True)
-def session(_SessionFactory):
+def session(_connection):
     """
-    يوفر db.session معزولة لكل اختبار:
-      - top_tx = BEGIN
-      - nested_tx = SAVEPOINT (يتجدد بعد انتهاء كل flush/commit داخلي)
+    يوفر جلسة معزولة لكل اختبار، متوافقة تمامًا مع Flask-SQLAlchemy.
     """
-    sess = _SessionFactory()
+    original_scoped_session = db.session
 
-    top_tx = sess.begin()
-    nested_tx = sess.begin_nested()
+    top_level_transaction = _connection.begin()
+    test_scoped_session = db.create_scoped_session(options={"bind": _connection})
+    db.session = test_scoped_session
+    
+    real_session = test_scoped_session()
+    nested_transaction = real_session.begin_nested()
 
-    @event.listens_for(sess, "after_transaction_end")
-    def _restart_nested(sess_, trans):
-        nonlocal nested_tx
-        # إذا انتهى الـ SAVEPOINT وما زال الـ top_tx نشطاً → أنشئ SAVEPOINT جديد
-        if trans is nested_tx and top_tx.is_active:
-            nested_tx = sess_.begin_nested()
-
-    # ربط الجلسة العالمية
-    db.session = sess  # type: ignore
-
-    yield sess
-
-    # إغلاق = rollback تلقائي لكل التغييرات
-    sess.close()
+    @event.listens_for(real_session, "after_transaction_end")
+    def _restart_nested(sess, trans):
+        nonlocal nested_transaction
+        if trans is nested_transaction and top_level_transaction.is_active:
+            nested_transaction = sess.begin_nested()
+    
+    try:
+        yield real_session
+    finally:
+        test_scoped_session.remove()
+        top_level_transaction.rollback()
+        db.session = original_scoped_session
 
 # --------------------------------------------------------------------------------------
-# عميل HTTP (للاختبارات التكاملية / API)
+# عميل HTTP
 # --------------------------------------------------------------------------------------
 @pytest.fixture
 def client(app):
     return app.test_client()
 
 @pytest.fixture
-def request_ctx(app):
-    """
-    سياق طلب اختياري للاختبارات التي تحتاج current_app / url_for.
-    """
-    with app.test_request_context():
-        yield
+def test_client(client):
+    """(الحل لمشكلة عدم تطابق الأسماء) Alias fixture for backward compatibility."""
+    return client
 
 # --------------------------------------------------------------------------------------
-# Factories ديناميكية
+# Factories (المصانع المحدثة)
 # --------------------------------------------------------------------------------------
 @pytest.fixture
 def subject_factory(session):
-    """
-    subject = subject_factory(name="رياضيات")
-    """
     def _create(**kwargs):
-        if "name" not in kwargs:
-            count = session.query(Subject).count()
-            kwargs["name"] = f"Subject {count + 1}"
+        kwargs.setdefault("name", f"Subject {session.query(Subject).count() + 1}")
         obj = Subject(**kwargs)
         session.add(obj)
         session.flush()
@@ -139,14 +123,11 @@ def subject_factory(session):
 
 @pytest.fixture
 def lesson_factory(session, subject_factory):
-    """
-    lesson = lesson_factory(subject=subj, title="...", content="...")
-    """
     def _create(**kwargs):
         if "subject" not in kwargs and "subject_id" not in kwargs:
             kwargs["subject"] = subject_factory()
         kwargs.setdefault("title", f"Lesson {session.query(Lesson).count() + 1}")
-        kwargs.setdefault("content", "Placeholder lesson content ...")
+        kwargs.setdefault("content", "Placeholder content...")
         obj = Lesson(**kwargs)
         session.add(obj)
         session.flush()
@@ -155,52 +136,52 @@ def lesson_factory(session, subject_factory):
 
 @pytest.fixture
 def exercise_factory(session, lesson_factory):
-    """
-    ex = exercise_factory(lesson=lesson, question="...", correct_answer="...")
-    """
+    """(الحل لمشكلة عدم تطابق الحقول) Factory محدثة لتستخدم correct_answer_data."""
     def _create(**kwargs):
         if "lesson" not in kwargs and "lesson_id" not in kwargs:
             kwargs["lesson"] = lesson_factory()
         kwargs.setdefault("question", f"Generated question #{session.query(Exercise).count() + 1}?")
-        kwargs.setdefault("correct_answer", "42")
+        # استخدام اسم الحقل الجديد والقيمة الافتراضية كـ JSON
+        kwargs.setdefault("correct_answer_data", {"type": "text", "value": "42"})
         obj = Exercise(**kwargs)
         session.add(obj)
         session.flush()
         return obj
     return _create
 
+@pytest.fixture
+def user_factory(session):
+    """Factory لنموذج User (جاهز للمستقبل)."""
+    def _create(**kwargs):
+        count = session.query(User).count() + 1
+        kwargs.setdefault("full_name", f"User {count}")
+        kwargs.setdefault("email", f"user{count}@example.com")
+        if "password_hash" not in kwargs and "password" in kwargs:
+            kwargs["password_hash"] = generate_password_hash(kwargs.pop("password"))
+        elif "password_hash" not in kwargs:
+            kwargs["password_hash"] = generate_password_hash("password123")
+        user = User(**kwargs)
+        session.add(user)
+        session.flush()
+        return user
+    return _create
+
 # --------------------------------------------------------------------------------------
-# Seed Fixture اختيارية
+# Seed Fixture (اختيارية)
 # --------------------------------------------------------------------------------------
 @pytest.fixture
 def seed_basic_course(subject_factory, lesson_factory, exercise_factory):
-    """
-    تزرع Subject + Lesson + Exercise جاهزة، وتُعيد قاموساً يسهل استخدامه.
-    """
     subj = subject_factory(name="الرياضيات")
-    lesson = lesson_factory(subject=subj, title="مقدمة في الجبر", content="محتوى تمهيدي...")
+    lesson = lesson_factory(subject=subj, title="مقدمة في الجبر")
     exercise = exercise_factory(
         lesson=lesson,
         question="5 * 5 = ?",
-        correct_answer="25"
+        correct_answer_data={"value": "25"}
     )
-    return {
-        "subject": subj,
-        "lesson": lesson,
-        "exercise": exercise
-    }
+    return {"subject": subj, "lesson": lesson, "exercise": exercise}
 
 # --------------------------------------------------------------------------------------
-# Markers توثيقية
+# Pytest Configuration
 # --------------------------------------------------------------------------------------
 def pytest_configure(config):
-    config.addinivalue_line("markers", "db: اختبار يعتمد على قاعدة البيانات.")
-
-# --------------------------------------------------------------------------------------
-# Fail Fast Assertions (احذفها لاحقاً لو أردت سرعة أعلى)
-# --------------------------------------------------------------------------------------
-@pytest.fixture(autouse=True)
-def _assert_models_loaded():
-    assert Subject.__tablename__ == "subjects"
-    assert Lesson.__tablename__ == "lessons"
-    assert Exercise.__tablename__ == "exercises"
+    config.addinivalue_line("markers", "db: Marks tests that require database access.")
