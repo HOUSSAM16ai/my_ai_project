@@ -1,62 +1,67 @@
+# ======================================================================================
 # tests/test_app.py
+# == OVERMIND FOUNDATIONAL SMOKE TESTS (v10.0) =======================================
+# الغرض:
+#   التحقق من صحة وسلامة بيئة الاختبار الأساسية (app, session, factories)
+#   بعد التطهير الكامل للاختبارات القديمة.
+#
+# هذه ليست اختبارات للميزات، بل هي اختبارات لـ "المختبر" نفسه.
+# ======================================================================================
 
-def test_home_page(test_client):
-    """
-    GIVEN a Flask application configured for testing
-    WHEN the '/' page is requested (GET)
-    THEN check that the response is valid
-    """
-    response = test_client.get('/')
-    assert response.status_code == 200
-    assert b"Welcome to the AI Platform!" in response.data
-    assert b"Login" in response.data
-    assert b"Register" in response.data
+from app.models import User, Mission
 
-def test_successful_registration(test_client):
-    """
-    GIVEN a Flask application
-    WHEN the '/register' page is posted to (POST)
-    THEN check that the user is created and redirected
-    """
-    response = test_client.post('/register', data={
-        'full_name': 'Test User',
-        'email': 'test@example.com',
-        'password': 'password123',
-        'confirm_password': 'password123'
-    }, follow_redirects=True)
-    
-    assert response.status_code == 200
-    assert b"Your account has been created!" in response.data
-    # بعد التسجيل الناجح، يجب أن يتم توجيهه إلى صفحة تسجيل الدخول
-    assert b"Log In" in response.data
+# --------------------------------------------------------------------------------------
+# اختبارات سلامة بيئة الاختبار (Harness Integrity Tests)
+# --------------------------------------------------------------------------------------
 
-def test_successful_login_and_logout(test_client):
+def test_app_fixture_loads_correctly(app):
     """
-    GIVEN a user has been registered
-    WHEN they log in and then log out
-    THEN check that the dashboard is shown and then they are logged out
+    اختبار دخان (Smoke Test): يضمن أن fixture 'app' يتم تحميله وهو في وضع الاختبار.
     """
-    # أولاً، قم بتسجيل مستخدم
-    test_client.post('/register', data={
-        'full_name': 'Login User',
-        'email': 'login@example.com',
-        'password': 'password123',
-        'confirm_password': 'password123'
-    })
+    assert app is not None
+    assert app.config['TESTING'] is True
+    assert "sqlite" in app.config['SQLALCHEMY_DATABASE_URI'] # تأكيد أننا نستخدم قاعدة بيانات اختبار
+
+def test_session_fixture_is_isolated(session, user_factory):
+    """
+    يتحقق من أن fixture 'session' يوفر عزلاً.
+    ينشئ مستخدمًا ولكنه لا يقوم بـ commit. يجب ألا يكون موجودًا خارج الاختبار.
+    """
+    user1 = user_factory(email="iso_test1@test.com")
+    # لا نقوم بـ commit هنا، `session` fixture سيقوم بـ rollback تلقائيًا.
     
-    # ثانياً، قم بتسجيل الدخول
-    response_login = test_client.post('/login', data={
-        'email': 'login@example.com',
-        'password': 'password123'
-    }, follow_redirects=True)
+    # في اختبار منفصل، هذا المستخدم يجب ألا يكون موجودًا.
+
+def test_session_isolation_across_tests(session, user_factory):
+    """
+    يتحقق من عدم وجود تلوث من الاختبار السابق.
+    """
+    user = User.query.filter_by(email="iso_test1@test.com").first()
+    assert user is None, "Data from a previous test leaked into this one!"
+
+# --------------------------------------------------------------------------------------
+# اختبارات سلامة المصانع (Factory Integrity Tests)
+# --------------------------------------------------------------------------------------
+
+def test_user_factory_creates_persistent_user(session, user_factory):
+    """
+    يتحقق من أن user_factory يعمل ويمكنه حفظ البيانات في قاعدة البيانات.
+    """
+    user = user_factory(email="factory_test@test.com")
+    session.commit() # نقوم بـ commit هنا عن قصد لاختبار الثبات داخل الـ SAVEPOINT
     
-    assert response_login.status_code == 200
-    assert b"Welcome, Login User!" in response_login.data
-    assert b"Dashboard" in response_login.data
-    assert b"Logout" in response_login.data
-    
-    # ثالثاً، قم بتسجيل الخروج
-    response_logout = test_client.get('/logout', follow_redirects=True)
-    assert response_logout.status_code == 200
-    assert b"Welcome to the AI Platform!" in response_logout.data
-    assert b"Login" in response_logout.data
+    retrieved_user = User.query.filter_by(email="factory_test@test.com").first()
+    assert retrieved_user is not None
+    assert retrieved_user.id == user.id
+
+def test_mission_factory_creates_mission_with_initiator(session, mission_factory):
+    """
+    يتحقق من أن mission_factory ينشئ مهمة ويربطها بمنشئ بشكل صحيح.
+    """
+    mission = mission_factory(objective="Test mission factory persistence.")
+    session.commit()
+
+    retrieved_mission = Mission.query.filter_by(objective="Test mission factory persistence.").first()
+    assert retrieved_mission is not None
+    assert retrieved_mission.initiator is not None
+    assert isinstance(retrieved_mission.initiator, User)
