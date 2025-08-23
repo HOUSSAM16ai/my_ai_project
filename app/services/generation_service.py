@@ -1,7 +1,7 @@
 # app/services/generation_service.py
 #
 # ======================================================================================
-# ==                          MAESTRO COGNITIVE ORCHESTRATOR (v13.0.0)               ==
+# ==                          MAESTRO COGNITIVE ORCHESTRATOR (v13.0.1)               ==
 # ==                    Hyper-Iterative Synthetic Reasoning Subsystem                ==
 # ======================================================================================
 #
@@ -24,7 +24,9 @@
 #   5. Fail-Fast Safety: Detect stagnation / runaway loops & stop gracefully.
 #   6. Extensibility: Clear TODO anchors for critic passes, strategy modules, planners.
 #
-# REMOVABLE EPIC: All narrative comments are decorative—safe to excise in production.
+# NOTE:
+#   This version fixes a bug where assistant messages with content=None (e.g. tool-only
+#   responses) were appended as raw SDK objects causing downstream JSON + front-end errors.
 #
 
 from __future__ import annotations
@@ -47,7 +49,7 @@ from . import system_service  # optional: for pre-step context heuristics
 # --------------------------------------------------------------------------------------
 # Version
 # --------------------------------------------------------------------------------------
-__version__ = "13.0.0"
+__version__ = "13.0.1"
 
 # --------------------------------------------------------------------------------------
 # Data Contracts
@@ -56,7 +58,7 @@ __version__ = "13.0.0"
 class StepState:
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
-    decision: str = ""                 # "tool" | "final" | "reason"
+    decision: str = ""                 # "tool" | "final"
     tool_calls: List[Dict[str, Any]] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
     duration_ms: Optional[float] = None
@@ -105,7 +107,8 @@ def _serialize_safe(obj: Any) -> str:
         return repr(obj)
 
 
-def _save_message(conversation_id: Optional[str], role: str, content: Any, tool_name: Optional[str] = None, tool_ok: Optional[bool] = None):
+def _save_message(conversation_id: Optional[str], role: str, content: Any,
+                  tool_name: Optional[str] = None, tool_ok: Optional[bool] = None):
     """
     Queues a message for persistence. Commit handled outside for batch efficiency.
     """
@@ -137,7 +140,7 @@ def _maybe_compress_history(messages: List[Dict[str, Any]], cfg: OrchestratorCon
 
     total_chars = 0
     for m in messages:
-        total_chars += len(m.get("content", ""))
+        total_chars += len(m.get("content", "") or "")
 
     if total_chars < cfg.history_compress_threshold_chars:
         return False
@@ -152,7 +155,7 @@ def _maybe_compress_history(messages: List[Dict[str, Any]], cfg: OrchestratorCon
         "fragments": [
             {
                 "role": m.get("role"),
-                "excerpt": m.get("content", "")[:600]
+                "excerpt": (m.get("content") or "")[:600]
             }
             for m in to_compress
         ]
@@ -174,7 +177,7 @@ def _maybe_compress_history(messages: List[Dict[str, Any]], cfg: OrchestratorCon
             model=model_name,
             messages=compression_prompt
         )
-        compressed = resp.choices[0].message.content.strip()
+        compressed = (resp.choices[0].message.content or "").strip()
     except Exception as e:
         current_app.logger.warning("History compression failed: %s", e)
         return False
@@ -234,7 +237,51 @@ Relevant Historical Dialogue Fragments:
 ---
 {_serialize_safe(wisdom_context)}
 ---
-"""
+""".strip()
+
+
+def _normalize_assistant_message(raw_msg) -> Dict[str, Any]:
+    """
+    Converts the SDK assistant message object to a plain dict safe for:
+      - Reuse in the next API call
+      - Front-end rendering
+      - Persistence
+    Guarantees 'content' is a string ("" if None).
+    Preserves tool_calls in expected schema for Azure/OpenAI.
+    """
+    # raw_msg could be an SDK object with attributes:
+    #   role, content, tool_calls
+    content = raw_msg.content if getattr(raw_msg, "content", None) is not None else ""
+    base = {
+        "role": getattr(raw_msg, "role", "assistant"),
+        "content": content
+    }
+    tool_calls_out = []
+    raw_tool_calls = getattr(raw_msg, "tool_calls", None) or []
+    for tc in raw_tool_calls:
+        # tc.function.arguments is expected to be a JSON string (per OpenAI spec)
+        function_name = getattr(getattr(tc, "function", None), "name", None)
+        function_args = getattr(getattr(tc, "function", None), "arguments", None)
+        tool_calls_out.append({
+            "id": getattr(tc, "id", ""),
+            "type": "function",
+            "function": {
+                "name": function_name or "unknown_function",
+                "arguments": function_args or "{}"
+            }
+        })
+    if tool_calls_out:
+        base["tool_calls"] = tool_calls_out
+    return base
+
+
+def _sanitize_messages_for_api(messages: List[Dict[str, Any]]):
+    """
+    Ensures every message has a string content (never None) before sending to the API.
+    """
+    for m in messages:
+        if "content" not in m or m["content"] is None:
+            m["content"] = ""
 
 
 # --------------------------------------------------------------------------------------
@@ -254,8 +301,8 @@ def forge_new_code(
         max_steps=current_app.config.get("AGENT_MAX_STEPS", 6),
         max_repeated_tool=3,
         max_consecutive_no_progress=2,
-        history_compress_threshold_chars= current_app.config.get("AGENT_HISTORY_COMPRESS_THRESHOLD", 18000),
-        history_compress_keep_tail= current_app.config.get("AGENT_HISTORY_COMPRESS_KEEP_TAIL", 30),
+        history_compress_threshold_chars=current_app.config.get("AGENT_HISTORY_COMPRESS_THRESHOLD", 18000),
+        history_compress_keep_tail=current_app.config.get("AGENT_HISTORY_COMPRESS_KEEP_TAIL", 30),
         enable_context_bootstrap=True,
         allow_history_compression=True
     )
@@ -265,6 +312,7 @@ def forge_new_code(
     tool_usage_sequence: List[str] = []
     previous_tool_names_snapshot: List[str] = []
     consecutive_no_progress = 0
+    final_answer = "(no answer produced)"
 
     current_app.logger.info("[Maestro] Begin orchestration (ConvID=%s)", conversation_id)
 
@@ -300,7 +348,6 @@ def forge_new_code(
 
         messages: List[Dict[str, Any]] = []
         if conversation_history:
-            # Ensure first is system, else prepend identity
             if not conversation_history or conversation_history[0].get("role") != "system":
                 messages.append(identity_system_prompt)
             messages.extend(conversation_history)
@@ -329,7 +376,8 @@ def forge_new_code(
 
             current_app.logger.info("[Maestro] Step %d/%d", step_idx + 1, cfg.max_steps)
 
-            # Prepare messages for API (they are already dicts)
+            # Sanitize before API call
+            _sanitize_messages_for_api(messages)
             api_messages = messages
 
             # LLM Decision
@@ -340,10 +388,13 @@ def forge_new_code(
                 tool_choice="auto"
             )
 
-            response_message = llm_response.choices[0].message
-            tool_calls = response_message.tool_calls
-            messages.append(response_message)
-            _save_message(conversation_id, "assistant", response_message.model_dump_json())
+            raw_response_message = llm_response.choices[0].message
+            tool_calls = getattr(raw_response_message, "tool_calls", None) or []
+
+            # Normalize assistant message FIRST (even when tool calls present)
+            assistant_dict = _normalize_assistant_message(raw_response_message)
+            messages.append(assistant_dict)
+            _save_message(conversation_id, "assistant", assistant_dict)
 
             # TOOL PHASE
             if tool_calls:
@@ -385,7 +436,9 @@ def forge_new_code(
                         "meta": tool_result.meta
                     })
 
-                    tool_payload = tool_result.to_dict() if hasattr(tool_result, "to_dict") else {"raw": _serialize_safe(tool_result)}
+                    tool_payload = tool_result.to_dict() if hasattr(tool_result, "to_dict") else {
+                        "raw": _serialize_safe(tool_result)
+                    }
                     messages.append({
                         "role": "tool",
                         "name": t_name,
@@ -413,7 +466,7 @@ def forge_new_code(
 
             # NO TOOL BRANCH → Final answer
             state.decision = "final"
-            final_answer = response_message.content or "(no content)"
+            final_answer = assistant_dict.get("content") or "(no content)"
             telemetry.finalization_reason = "model_concluded"
             _save_message(conversation_id, "assistant", final_answer)
             state.finish()
