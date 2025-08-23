@@ -1,13 +1,18 @@
 # app/models.py
 # ======================================================================================
-# ==============  COGNIFORGE AKASHIC GENOME v8.0 – UNIFIED HYBRID SCHEMA  ==============
+# ==          COGNIFORGE AKASHIC GENOME v9.0 – UNIVERSAL COMPATIBILITY SCHEMA         ==
 # ======================================================================================
-# هذا هو الدستور البنيوي الموحد الذي يجمع بين "القلب التعليمي" و "العقل الاستراتيجي".
-# إنه مصمم ليكون الأساس لكل من المنصة التعليمية والوكيل المستقل.
+# هذا هو الدستور البنيوي النهائي والمحصّن.
+# ميزة v9.0 الحاسمة:
+#   - Universal Translator (JSONB_or_JSON): يقدم طبقة تجريد تسمح باستخدام نوع
+#     بيانات JSONB عالي الأداء في PostgreSQL (الإنتاج) مع التراجع بأمان إلى
+#     نوع JSON العام في SQLite (الاختبارات)، مما يحل مشكلة UnsupportedCompilationError.
 #
-# بعد استبدال هذا الملف:
-#   flask db migrate -m "Reintegrate educational models and evolve to Hybrid Genome v8.0"
-#   راجع ملف الهجرة بعناية.
+# هذا يسمح لنا بالاستفادة من أفضل ما في العالمين: سرعة اختبارات SQLite وقوة
+# PostgreSQL في الإنتاج، دون الحاجة إلى تغيير الكود.
+#
+# بعد الاستبدال:
+#   flask db migrate -m "Implement universal JSON type and finalize hybrid schema"
 #   flask db upgrade
 # ======================================================================================
 
@@ -20,7 +25,6 @@ from datetime import datetime, timezone
 from typing import Optional, Any, Dict, List
 
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import (
     CheckConstraint,
     Enum as SAEnum,
@@ -28,9 +32,32 @@ from sqlalchemy import (
     text,
     func,
     event,
+    TypeDecorator,
+    JSON
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from app import db, login_manager
+
+# ======================================================================================
+# Universal Translator for JSON Types (THE CRITICAL FIX)
+# ======================================================================================
+
+class JSONB_or_JSON(TypeDecorator):
+    """
+    Acts as JSONB for PostgreSQL, falls back to generic JSON for all other databases.
+    This allows us to use high-performance JSONB in production (Supabase/PostgreSQL)
+    and still run high-speed tests with dialect-agnostic backends like SQLite.
+    """
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(JSONB())
+        else:
+            return dialect.type_descriptor(JSON())
 
 # ======================================================================================
 # Utilities & Enums
@@ -73,8 +100,7 @@ class User(UserMixin, Timestamped, db.Model):
     email         = db.Column(db.String(150), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(256))
     is_admin      = db.Column(db.Boolean, nullable=False, default=False, server_default=text("false"))
-
-    # A user has relationships to all major subsystems
+    
     conversations = db.relationship("Conversation", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     missions      = db.relationship("Mission", backref="initiator", lazy="dynamic", cascade="all, delete-orphan")
     submissions   = db.relationship("Submission", backref="student", lazy="dynamic", cascade="all, delete-orphan")
@@ -82,7 +108,7 @@ class User(UserMixin, Timestamped, db.Model):
     def set_password(self, password: str): self.password_hash = generate_password_hash(password)
     def check_password(self, password: str) -> bool: return bool(self.password_hash) and check_password_hash(self.password_hash, password)
 
-# --- EDUCATIONAL CORE (Reintegrated and Upgraded) ---
+# --- EDUCATIONAL CORE ---
 
 class Subject(Timestamped, db.Model):
     __tablename__ = 'subjects'
@@ -98,33 +124,32 @@ class Lesson(Timestamped, db.Model):
     content = db.Column(db.Text, nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete="CASCADE"), nullable=False, index=True)
     exercises = db.relationship('Exercise', backref='lesson', lazy='dynamic', cascade="all, delete-orphan")
-
+    
 class Exercise(Timestamped, db.Model):
     __tablename__ = 'exercises'
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.Text, nullable=False)
-    # Using JSONB for flexible answer structures (e.g., multiple choice, code blocks)
-    correct_answer_data = db.Column(JSONB, nullable=False)
+    correct_answer_data = db.Column(JSONB_or_JSON, nullable=False)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id', ondelete="CASCADE"), nullable=False, index=True)
     submissions = db.relationship('Submission', backref='exercise', lazy='dynamic', cascade="all, delete-orphan")
 
 class Submission(Timestamped, db.Model):
     __tablename__ = 'submissions'
     id = db.Column(db.Integer, primary_key=True)
-    student_answer_data = db.Column(JSONB, nullable=False)
+    student_answer_data = db.Column(JSONB_or_JSON, nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False, index=True)
-    feedback = db.Column(db.Text, nullable=True) # For AI-generated feedback
+    feedback = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id', ondelete="CASCADE"), nullable=False, index=True)
 
-# --- CONVERSATIONAL & STRATEGIC MEMORY (The Agent's Mind) ---
+# --- CONVERSATIONAL & STRATEGIC MEMORY ---
 
 class Conversation(Timestamped, db.Model):
     __tablename__ = "conversations"
     id       = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id  = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     messages = db.relationship("Message", backref="conversation", lazy="dynamic", cascade="all, delete-orphan", order_by="Message.id")
-    meta     = db.Column(JSONB, nullable=True)
+    meta     = db.Column(JSONB_or_JSON, nullable=True)
 
 class Message(db.Model):
     __tablename__ = "messages"
@@ -136,7 +161,7 @@ class Message(db.Model):
     tool_name       = db.Column(db.String(120), nullable=True, index=True)
     tool_ok_status  = db.Column(db.Boolean, nullable=True)
     rating          = db.Column(SAEnum(MessageRating, native_enum=False, length=15), nullable=True, index=True)
-    meta            = db.Column(JSONB, nullable=True)
+    meta            = db.Column(JSONB_or_JSON, nullable=True)
     content_hash    = db.Column(db.String(64), nullable=True, index=True)
     __table_args__ = (CheckConstraint("length(content) > 0", name="ck_message_nonempty"),)
 
@@ -152,11 +177,11 @@ class Mission(Timestamped, db.Model):
     status        = db.Column(SAEnum(MissionStatus, native_enum=False, length=20), nullable=False, default=MissionStatus.PENDING.value, index=True)
     initiator_id  = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_version  = db.Column(db.Integer, nullable=False, default=0, server_default=text("0"))
-    plan_json     = db.Column(JSONB, nullable=True)
+    plan_json     = db.Column(JSONB_or_JSON, nullable=True)
     last_adapted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     result_text   = db.Column(db.Text, nullable=True)
-    result_meta   = db.Column(JSONB, nullable=True)
-    telemetry     = db.Column(JSONB, nullable=True)
+    result_meta   = db.Column(JSONB_or_JSON, nullable=True)
+    telemetry     = db.Column(JSONB_or_JSON, nullable=True)
     locked        = db.Column(db.Boolean, nullable=False, default=False, server_default=text("false"), index=True)
     tasks_count   = db.Column(db.Integer, nullable=False, default=0, server_default=text("0"))
     tasks_success = db.Column(db.Integer, nullable=False, default=0, server_default=text("0"))
@@ -172,10 +197,10 @@ class Task(Timestamped, db.Model):
     step_type   = db.Column(SAEnum(TaskType, native_enum=False, length=15), nullable=False, default=TaskType.TOOL.value, index=True)
     description = db.Column(db.Text, nullable=False)
     tool_name   = db.Column(db.String(255), nullable=True, index=True)
-    tool_args   = db.Column(JSONB, nullable=True)
+    tool_args   = db.Column(JSONB_or_JSON, nullable=True)
     status      = db.Column(SAEnum(TaskStatus, native_enum=False, length=15), nullable=False, default=TaskStatus.PENDING.value, index=True)
     result_text = db.Column(db.Text, nullable=True)
-    result_meta = db.Column(JSONB, nullable=True)
+    result_meta = db.Column(JSONB_or_JSON, nullable=True)
     elapsed_ms  = db.Column(db.Float, nullable=True)
     attempts    = db.Column(db.Integer, nullable=False, default=0, server_default=text("0"))
     cost_usd    = db.Column(db.Numeric(12, 6), nullable=True)
@@ -186,11 +211,5 @@ class MissionEvent(Timestamped, db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     mission_id  = db.Column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), nullable=False, index=True)
     event_type  = db.Column(SAEnum(MissionEventType, native_enum=False, length=30), nullable=False, index=True)
-    payload     = db.Column(JSONB, nullable=True)
+    payload     = db.Column(JSONB_or_JSON, nullable=True)
     note        = db.Column(db.String(300), nullable=True)
-
-# ======================================================================================
-# Helper Builders (for use in services)
-# ======================================================================================
-# (This section would contain the `create_message`, `append_task`, etc. helpers from the previous version)
-# ... (Leaving them out for brevity, but they should be here) ...
