@@ -1,149 +1,647 @@
 {% extends "base.html" %}
-
+{% block title %}Admin Command Center{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-10 mx-auto">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h1 class="h4 mb-0">AI Command Console</h1>
-                    <p class="mb-0 small">Forge the future. Your direct interface to the system's creative core.</p>
-                </div>
-                <div class="card-body" id="chat-container" style="height: 65vh; display: flex; flex-direction: column;">
-                    <!-- [IMMORTAL MEMORY PROTOCOL] - The conversation ID is embedded in the DOM -->
-                    <input type="hidden" id="conversation-id" value="{{ conversation_id }}">
-                    
-                    <div id="chat-output" style="flex-grow: 1; overflow-y: auto; padding-right: 15px;">
-                        <div class="alert alert-info small">
-                            <strong>Welcome, Architect.</strong> System online. Awaiting creation protocol...
-                            {% if not conversation_id %}
-                                <br><strong class="text-danger">Warning:</strong> Could not start an immortal conversation session. History will not be saved.
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-light p-3">
-                    <div class="input-group">
-                        <input type="text" id="prompt-input" class="form-control form-control-lg" placeholder="Enter your creation directive...">
-                        <button class="btn btn-primary" id="send-btn" type="button">
-                            <i class="fas fa-bolt"></i> Forge
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<style>
+:root {
+  --cf-bg: #f8f9fb;
+  --cf-bg-alt: #ffffff;
+  --cf-border: #d0d7de;
+  --cf-radius: 10px;
+  --cf-text: #1f2328;
+  --cf-text-dim: #57606a;
+  --cf-accent: #0d6efd;
+  --cf-accent-rgb: 13,110,253;
+  --cf-danger: #dc3545;
+  --cf-success: #198754;
+  --cf-warning: #ffc107;
+  --cf-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+[data-theme="dark"] {
+  --cf-bg: #0e1116;
+  --cf-bg-alt: #161b22;
+  --cf-border: #30363d;
+  --cf-text: #e6edf3;
+  --cf-text-dim: #8b949e;
+  --cf-accent: #58a6ff;
+  --cf-accent-rgb: 88,166,255;
+  --cf-danger: #f85149;
+  --cf-success: #3fb950;
+  --cf-warning: #d29922;
+}
+body[data-theme="dark"] {
+  background: radial-gradient(circle at 20% 20%, #1d2630, #0e1116);
+}
+body {
+  background: linear-gradient(135deg, var(--cf-bg) 0%, var(--cf-bg-alt) 100%);
+  transition: background .5s;
+}
+.cf-panel {
+  background: var(--cf-bg-alt);
+  border: 1px solid var(--cf-border);
+  border-radius: var(--cf-radius);
+  padding: 1rem 1.1rem;
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+.cf-panel:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 10%, rgba(var(--cf-accent-rgb),0.08), transparent 60%);
+  pointer-events: none;
+  opacity: .8;
+}
+.cf-heading {
+  font-weight: 600;
+  letter-spacing: .5px;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+.cf-badge {
+  font-size: .65rem;
+  text-transform: uppercase;
+  padding: .25rem .45rem;
+  border-radius: 4px;
+  background: rgba(var(--cf-accent-rgb), .15);
+  color: var(--cf-accent);
+  letter-spacing: .7px;
+}
+#chat-output {
+  height: 480px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  font-size: .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding-right: .4rem;
+}
+#chat-output::-webkit-scrollbar {
+  width: 8px;
+}
+#chat-output::-webkit-scrollbar-track {
+  background: transparent;
+}
+#chat-output::-webkit-scrollbar-thumb {
+  background: rgba(var(--cf-accent-rgb), .35);
+  border-radius: 4px;
+}
+.message {
+  max-width: 95%;
+  position: relative;
+  line-height: 1.4;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--cf-accent) 0%, rgba(var(--cf-accent-rgb), .8) 80%);
+  color: #fff;
+  padding: .6rem .75rem .55rem;
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: 0 4px 14px -4px rgba(var(--cf-accent-rgb), .5);
+  font-weight: 500;
+}
+.message.ai {
+  align-self: flex-start;
+  background: var(--cf-bg-alt);
+  border: 1px solid var(--cf-border);
+  padding: .65rem .75rem .7rem;
+  border-radius: 14px 14px 14px 4px;
+  font-family: var(--cf-font-mono);
+  font-size: .8rem;
+}
+.message.error {
+  align-self: center;
+  background: rgba(220,53,69,.1);
+  border: 1px solid var(--cf-danger);
+  color: var(--cf-danger);
+  padding: .55rem .7rem;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.message meta-time {
+  font-size: .55rem;
+  opacity: .6;
+  display:block;
+  margin-top: .35rem;
+  font-family: var(--cf-font-mono);
+  letter-spacing: .5px;
+}
+.msg-sources {
+  margin-top: .35rem;
+  font-size: .6rem;
+  color: var(--cf-text-dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+#prompt-input {
+  resize: vertical;
+  min-height: 70px;
+  max-height: 200px;
+  font-family: var(--cf-font-mono);
+  line-height:1.3;
+}
+.cf-toolbar {
+  display:flex;
+  gap:.5rem;
+  flex-wrap: wrap;
+  align-items:center;
+  font-size:.75rem;
+  margin-bottom:.3rem;
+}
+.cf-toolbar button, .cf-toolbar .filter-btn {
+  border:1px solid var(--cf-border);
+  background: var(--cf-bg-alt);
+  color: var(--cf-text-dim);
+  padding:.25rem .55rem;
+  border-radius:6px;
+  cursor:pointer;
+  transition:.2s;
+  font-size:.65rem;
+}
+.cf-toolbar button.active, .cf-toolbar .filter-btn.active {
+  background: var(--cf-accent);
+  color:#fff;
+  border-color: var(--cf-accent);
+}
+.cf-toolbar button:hover {
+  background: var(--cf-accent);
+  color:#fff;
+}
+#send-btn {
+  position:relative;
+  font-weight:600;
+  letter-spacing:.5px;
+}
+#send-btn.sending {
+  opacity:.75;
+  pointer-events:none;
+}
+.spinner-inline {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius:50%;
+  animation: spin .7s linear infinite;
+  display:inline-block;
+  vertical-align: middle;
+  margin-right:4px;
+}
+@keyframes spin { to { transform: rotate(360deg);} }
+.theming-toggle {
+  cursor:pointer;
+  padding:.35rem .6rem;
+  border:1px solid var(--cf-border);
+  background: var(--cf-bg-alt);
+  border-radius: 6px;
+  font-size: .65rem;
+  display:flex;
+  gap:.4rem;
+  align-items:center;
+  color: var(--cf-text-dim);
+  transition:.25s;
+}
+.theming-toggle:hover {
+  background: var(--cf-accent);
+  color:#fff;
+  border-color: var(--cf-accent);
+}
+.telemetry-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill,minmax(110px,1fr));
+  gap:.5rem;
+  margin-top:.5rem;
+}
+.telemetry-box {
+  background: var(--cf-bg-alt);
+  border:1px solid var(--cf-border);
+  border-radius:6px;
+  padding:.4rem .5rem .5rem;
+  font-size:.6rem;
+  display:flex;
+  flex-direction:column;
+  gap:.2rem;
+}
+.telemetry-box .label {
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color: var(--cf-text-dim);
+  font-size:.55rem;
+}
+.telemetry-box .value {
+  font-family: var(--cf-font-mono);
+  font-weight:600;
+  font-size:.75rem;
+}
+.action-strip {
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+  margin-top:.4rem;
+}
+.copy-btn {
+  border:1px solid var(--cf-border);
+  background: var(--cf-bg-alt);
+  font-size:.6rem;
+  padding:.25rem .45rem;
+  border-radius:6px;
+  cursor:pointer;
+  transition:.2s;
+}
+.copy-btn:hover {
+  background: var(--cf-accent);
+  color:#fff;
+  border-color: var(--cf-accent);
+}
+footer.cf-footer {
+  margin-top:2rem;
+  font-size:.6rem;
+  text-align:center;
+  color: var(--cf-text-dim);
+  letter-spacing:.5px;
+}
+@media (max-width: 992px) {
+  #chat-output { height: 400px; }
+}
+@media (max-width: 576px) {
+  .telemetry-grid { grid-template-columns: repeat(auto-fill,minmax(90px,1fr)); }
+  #chat-output { height: 360px; }
+}
+</style>
+
+<header class="mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <h1 class="h4 mb-1 cf-heading">
+      <span>CogniForge Console</span>
+      <span class="cf-badge">v13.0.1</span>
+    </h1>
+    <div class="text-muted small">
+      Conversation ID:
+      <code id="conversation-id">{{ conversation_id or "N/A" }}</code>
     </div>
-</div>
-{% endblock %}
+  </div>
+  <button id="theme-toggle" class="theming-toggle" aria-label="Toggle theme" type="button">
+    <span id="theme-label">🌙 Dark</span>
+  </button>
+</header>
 
-{% block scripts %}
-{{ super() }}
+<main class="row g-4">
+  <section class="col-lg-8">
+    <div class="cf-panel mb-3" aria-label="Chat Panel">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Dialogue Stream</h2>
+        <div class="cf-toolbar" id="filter-toolbar" role="toolbar" aria-label="Message filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="user">User</button>
+            <button class="filter-btn" data-filter="ai">AI</button>
+          <button class="filter-btn" data-filter="error">Errors</button>
+        </div>
+      </div>
+      <div id="chat-output" aria-live="polite" aria-label="Conversation transcript"></div>
+      <div class="action-strip">
+        <button id="copy-last" class="copy-btn" disabled>Copy Last AI</button>
+        <button id="clear-chat" class="copy-btn">Clear</button>
+        <button id="export-chat" class="copy-btn">Export JSON</button>
+      </div>
+    </div>
+    <div class="cf-panel" aria-label="Prompt Composer">
+      <h2 class="h6 mb-2">Creation Directive</h2>
+      <textarea id="prompt-input" class="form-control mb-2" placeholder="اكتب توجيهك هنا... (Enter للإرسال، Ctrl+Enter لسطر جديد)"></textarea>
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="char-count">0 chars</small>
+        <button id="send-btn" class="btn btn-primary">
+          <i class="fas fa-bolt"></i> Forge
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="col-lg-4">
+    <div class="cf-panel mb-3">
+      <h2 class="h6 mb-2">Telemetry</h2>
+      <div class="telemetry-grid" id="telemetry">
+        <!-- Dynamic -->
+      </div>
+    </div>
+    <div class="cf-panel">
+      <h2 class="h6 mb-2">Guidance</h2>
+      <ul class="small mb-2" style="padding-left:1rem;">
+        <li>استعمل توجيهات واضحة وقصيرة أولاً.</li>
+        <li>يمكنك أن تطلب: "اقرأ الملف X" قبل تعديلات.</li>
+        <li>الأداة ستتوقف ذاتياً عند الركود.</li>
+        <li>Dark/Light للتناسب مع تركيزك.</li>
+      </ul>
+      <div class="small text-muted">
+        Optimization hooks متاحة داخل namespace JS إن أردت حقن أدوات مستقبلية.
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="cf-footer">
+  CogniForge Orchestrator · Adaptive Cognitive Surface · {{ conversation_id or "" }}
+</footer>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- [DIAGNOSTIC & MEMORY PROTOCOL] ---
-    console.log("✅ Admin Dashboard Script Loaded & Listeners Attached!");
+/*
+ * CogniForge Dashboard Front-End Orchestrator
+ * Features:
+ *  - Safe escaping
+ *  - Filter system
+ *  - Telemetry live update
+ *  - Copy / Export / Clear
+ *  - Theming toggle
+ *  - Future-ready streaming hooks
+ */
+(function(){
+  const conversationId = document.getElementById('conversation-id').textContent.trim();
+  const chatOutput      = document.getElementById('chat-output');
+  const promptInput     = document.getElementById('prompt-input');
+  const sendBtn         = document.getElementById('send-btn');
+  const telemetryBox    = document.getElementById('telemetry');
+  const copyLastBtn     = document.getElementById('copy-last');
+  const clearBtn        = document.getElementById('clear-chat');
+  const exportBtn       = document.getElementById('export-chat');
+  const charCount       = document.getElementById('char-count');
+  const themeToggle     = document.getElementById('theme-toggle');
+  const themeLabel      = document.getElementById('theme-label');
+  const filterToolbar   = document.getElementById('filter-toolbar');
 
-    const promptInput = document.getElementById('prompt-input');
-    const sendBtn = document.getElementById('send-btn');
-    const chatOutput = document.getElementById('chat-output');
-    
-    // --- [THE LIVING MEMORY - STEP 1: CAPTURE THE IDENTITY] ---
-    const conversationIdElement = document.getElementById('conversation-id');
-    const conversationId = conversationIdElement ? conversationIdElement.value : null;
-    let chatHistory = []; // The short-term, working memory for the session.
-    
-    console.log(`🧠 Immortal Conversation Session ID: ${conversationId}`);
-    if (!conversationId) {
-        console.error("CRITICAL: conversation_id is missing from the DOM. History will fail.");
+  const STATE = {
+    messages: [],
+    filter: 'all',
+    lastAiMessageIndex: null,
+    telemetry: {},
+    sending: false
+  };
+
+  const Hooks = {
+    onBeforeSend(payload){ /* extension point */ },
+    onAfterSend(result){ /* extension */ },
+    onStreamChunk(chunk){ /* for future streaming */ }
+  };
+
+  function escapeHTML(str){
+    if (str == null) return '';
+    return str
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#39;");
+  }
+
+  function relativeTime(ts){
+    const diff = Date.now() - ts;
+    if (diff < 1000) return 'now';
+    const sec = Math.floor(diff/1000);
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec/60);
+    if (min < 60) return min + 'm';
+    const hr  = Math.floor(min/60);
+    if (hr < 24) return hr + 'h';
+    const d   = Math.floor(hr/24);
+    return d + 'd';
+  }
+
+  function addMessage({role, content, sources, error, ts}){
+    const timestamp = ts || Date.now();
+    const entry = {
+      role,
+      content: content ?? '',
+      sources: sources || [],
+      error: !!error,
+      ts: timestamp
+    };
+    STATE.messages.push(entry);
+    if (role === 'ai' && !error) {
+      STATE.lastAiMessageIndex = STATE.messages.length -1;
+      copyLastBtn.disabled = false;
     }
+    renderMessages();
+  }
 
-    function addMessage(content, type = 'system', sources = []) {
-        // --- [LIVING MEMORY - STEP 2: RECORD TO WORKING MEMORY] ---
-        if (type === 'user') {
-            chatHistory.push({ "role": "user", "content": content });
-        } else if (type === 'ai') {
-            chatHistory.push({ "role": "assistant", "content": content });
-        }
-        
-        const messageWrapper = document.createElement('div');
-        messageWrapper.classList.add('mb-3');
+  function filteredMessages(){
+    if (STATE.filter === 'all') return STATE.messages;
+    if (STATE.filter === 'error') return STATE.messages.filter(m => m.error);
+    return STATE.messages.filter(m => m.role === STATE.filter);
+  }
 
-        if (type === 'user') {
-            messageWrapper.innerHTML = `<div class="p-2 bg-light text-dark rounded text-end"><strong>></strong> ${content}</div>`;
-        } else if (type === 'ai') {
-            const sourcesText = sources && sources.length ? `<div class="text-muted small mt-1">Context from: ${sources.join(', ')}</div>` : '';
-            const escapedContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            messageWrapper.innerHTML = `
-                <div class="p-3 bg-primary bg-opacity-10 text-dark rounded">
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; margin: 0;">${escapedContent}</pre>
-                    ${sourcesText}
-                </div>`;
-        } else if (type === 'error') {
-            messageWrapper.innerHTML = `<div class="alert alert-danger small"><strong>Error:</strong> ${content}</div>`;
-        } else {
-             messageWrapper.innerHTML = `<div class="alert alert-info small">${content}</div>`;
-        }
-        
-        chatOutput.appendChild(messageWrapper);
-        chatOutput.scrollTop = chatOutput.scrollHeight;
-    }
+  function renderMessages(){
+    chatOutput.innerHTML = '';
+    const list = filteredMessages();
+    list.forEach(m => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message ' + (m.error ? 'error' : (m.role === 'user' ? 'user' : 'ai'));
+      const safe = escapeHTML(m.content);
+      if (m.error){
+        wrapper.innerHTML = safe + `<meta-time>${relativeTime(m.ts)}</meta-time>`;
+      } else if (m.role === 'user'){
+        wrapper.innerHTML = safe + `<meta-time>${relativeTime(m.ts)}</meta-time>`;
+      } else {
+        const src = m.sources && m.sources.length ?
+          `<div class="msg-sources">SOURCES: ${escapeHTML(m.sources.join(', '))}</div>` : '';
+        wrapper.innerHTML =
+          safe + src + `<meta-time>${relativeTime(m.ts)}</meta-time>`;
+      }
+      chatOutput.appendChild(wrapper);
+    });
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+  }
 
-    async function handleForge() {
-        console.log("--- [STEP 1] Forge initiated. ---");
-        const prompt = promptInput.value.trim();
-        if (!prompt) return;
+  function updateTelemetry(newData){
+    STATE.telemetry = {...STATE.telemetry, ...newData};
+    const t = STATE.telemetry;
+    const map = {
+      Steps: t.steps_taken,
+      Tools: t.tools_invoked,
+      Distinct: t.distinct_tools,
+      Repeats: t.repeated_tool_blocks,
+      Compress: t.compression_events,
+      Reason: t.finalization_reason,
+      Error: t.error ? 'Yes' : 'No'
+    };
+    telemetryBox.innerHTML = Object.entries(map).map(([k,v]) => `
+      <div class="telemetry-box">
+        <div class="label">${k}</div>
+        <div class="value">${escapeHTML((v ?? '-').toString())}</div>
+      </div>`).join('');
+  }
 
-        addMessage(prompt, 'user');
-        promptInput.value = '';
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Forging...';
-
-        try {
-            console.log("--- [STEP 2] Preparing to send fetch request... ---");
-            // --- [LIVING MEMORY - STEP 3: TRANSMIT THE FULL CONTEXT] ---
-            const payload = { 
-                prompt: prompt,
-                history: chatHistory,
-                conversation_id: conversationId 
-            };
-            console.log("Payload to be sent:", JSON.stringify(payload, null, 2));
-
-            const response = await fetch("{{ url_for('admin.handle_generate_code_from_ui') }}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            
-            console.log("--- [STEP 3] Received response from server. Status:", response.status);
-            const result = await response.json();
-            console.log("--- [STEP 4] Parsed JSON result:", result);
-
-            if (response.ok && result.status === 'success') {
-                addMessage(result.code, 'ai', result.sources);
-            } else {
-                addMessage(result.message || 'An unknown error occurred.', 'error');
-            }
-        } catch (error) {
-            console.error("--- [CRITICAL ERROR] A JavaScript error occurred! ---", error);
-            addMessage(error.toString(), 'error');
-        } finally {
-            console.log("--- [STEP 5] Finalizing forge operation. ---");
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="fas fa-bolt"></i> Forge';
-        }
-    }
-
-    if (promptInput && sendBtn) {
-        sendBtn.addEventListener('click', handleForge);
-        promptInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                handleForge();
-            }
-        });
+  function setSending(sending){
+    STATE.sending = sending;
+    if (sending){
+      sendBtn.classList.add('sending');
+      sendBtn.innerHTML = `<span class="spinner-inline"></span>Forging`;
+      sendBtn.setAttribute('aria-busy','true');
     } else {
-        console.error("CRITICAL: Could not find prompt-input or send-btn. Listeners not attached.");
+      sendBtn.classList.remove('sending');
+      sendBtn.innerHTML = `<i class="fas fa-bolt"></i> Forge`;
+      sendBtn.removeAttribute('aria-busy');
     }
-});
+  }
+
+  async function sendPrompt(){
+    const raw = promptInput.value;
+    const trimmed = raw.trim();
+    if (!trimmed || STATE.sending) return;
+    addMessage({role:'user', content: trimmed});
+    promptInput.value = '';
+    charCount.textContent = '0 chars';
+    setSending(true);
+
+    const payload = {
+      prompt: trimmed,
+      history: STATE.messages
+        .filter(m => !m.error)
+        .map(m => ({
+          role: m.role === 'ai' ? 'assistant' : m.role,
+          content: m.content
+        })),
+      conversation_id: conversationId
+    };
+
+    Hooks.onBeforeSend(payload);
+    let result;
+    try {
+      const response = await fetch("{{ url_for('admin.handle_generate_code_from_ui') }}", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      result = await response.json();
+      console.groupCollapsed('%c[Forge Result]', 'color: #0af; font-weight:600;');
+      console.log('Status', response.status);
+      console.log('Result', result);
+      console.groupEnd();
+
+      if (response.ok && (result.status === 'success' || result.status === 'partial')){
+        const content = (result.answer ?? result.message ?? '(no content)').toString();
+        addMessage({
+          role:'ai',
+            content,
+          sources: result.sources || []
+        });
+        if (result.telemetry) updateTelemetry(result.telemetry);
+      } else {
+        addMessage({role:'ai', content: result.message || 'Unexpected failure.', error:true});
+        if (result.telemetry) updateTelemetry(result.telemetry);
+      }
+    } catch (err){
+      console.error('[CRITICAL]', err);
+      addMessage({role:'ai', content: 'Network/JS error: ' + err, error:true});
+    } finally {
+      Hooks.onAfterSend(result);
+      setSending(false);
+    }
+  }
+
+  function initFilters(){
+    filterToolbar.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterToolbar.querySelectorAll('.filter-btn').forEach(b=> b.classList.remove('active'));
+        btn.classList.add('active');
+        STATE.filter = btn.dataset.filter;
+        renderMessages();
+      });
+    });
+  }
+
+  function initCopy(){
+    copyLastBtn.addEventListener('click', () => {
+      if (STATE.lastAiMessageIndex == null) return;
+      const msg = STATE.messages[STATE.lastAiMessageIndex];
+      navigator.clipboard.writeText(msg.content).then(()=>{
+        copyLastBtn.textContent='Copied!';
+        setTimeout(()=> copyLastBtn.textContent='Copy Last AI', 1200);
+      });
+    });
+  }
+
+  function initClear(){
+    clearBtn.addEventListener('click', () => {
+      if (!confirm('Clear current chat view? This does NOT erase server history.')) return;
+      STATE.messages = [];
+      STATE.lastAiMessageIndex = null;
+      copyLastBtn.disabled = true;
+      renderMessages();
+    });
+  }
+
+  function initExport(){
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(STATE.messages,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversation_${conversationId || 'session'}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  function initCharCount(){
+    promptInput.addEventListener('input', () => {
+      charCount.textContent = `${promptInput.value.length} chars`;
+    });
+  }
+
+  function initKeys(){
+    promptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){
+        if (e.ctrlKey || e.metaKey){
+          // Insert newline
+          const {selectionStart, selectionEnd, value} = promptInput;
+          promptInput.value = value.slice(0,selectionStart) + "\n" + value.slice(selectionEnd);
+          promptInput.selectionStart = promptInput.selectionEnd = selectionStart + 1;
+          e.preventDefault();
+        } else {
+          e.preventDefault();
+          sendPrompt();
+        }
+      }
+    });
+    sendBtn.addEventListener('click', sendPrompt);
+  }
+
+  function initTheme(){
+    const saved = localStorage.getItem('cf-theme');
+    if (saved === 'dark') {
+      document.body.setAttribute('data-theme','dark');
+      themeLabel.textContent = '☀️ Light';
+    }
+    themeToggle.addEventListener('click', () => {
+      const current = document.body.getAttribute('data-theme');
+      if (current === 'dark'){
+        document.body.removeAttribute('data-theme');
+        localStorage.setItem('cf-theme','light');
+        themeLabel.textContent = '🌙 Dark';
+      } else {
+        document.body.setAttribute('data-theme','dark');
+        localStorage.setItem('cf-theme','dark');
+        themeLabel.textContent = '☀️ Light';
+      }
+    });
+  }
+
+  // Initialize
+  initFilters();
+  initCopy();
+  initClear();
+  initExport();
+  initCharCount();
+  initKeys();
+  initTheme();
+
+  // Expose for console-based diagnostics
+  window.CogniForgeDashboard = { STATE, Hooks };
+})();
 </script>
 {% endblock %}
