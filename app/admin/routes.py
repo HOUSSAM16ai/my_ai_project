@@ -1,67 +1,68 @@
 # app/admin/routes.py
 # ======================================================================================
-# ==                        OVERMIND MISSION CONTROL (v10.0)                          ==
+# ==                        OVERMIND COMMAND GATEWAY (v11.1)                          ==
 # ======================================================================================
 # PRIME DIRECTIVE:
-#   This blueprint serves as the primary command & control interface for the Overmind
-#   and Maestro systems. It has been re-architected to be Mission-centric,
-#   replacing the legacy Conversation-based model.
+#   This blueprint serves as the SOLE administrative gateway. It renders the Mission
+#   Control UI and provides secure, well-defined API endpoints.
 #
-#   It provides the administrative surface for initiating, monitoring, and analyzing
-#   strategic AI missions.
+# ARCHITECTURAL FIX (v11.1):
+#   - Simplified `render_template` calls (e.g., "admin_dashboard.html" instead of
+#     "admin/admin_dashboard.html") to correctly leverage the blueprint's scoped
+#     `template_folder`.
 
-from flask import render_template, abort, request, jsonify, flash, current_app
+from flask import render_template, abort, request, jsonify, flash, current_app, url_for
 from flask_login import current_user, login_required
 from functools import wraps
 
 from app.admin import bp
 from app import db
 
-# --- [THE NEW REALITY] ---
-# We now import the models that define our new strategic architecture.
+# --- [THE GRAND BLUEPRINT IMPORTS] ---
 from app.models import User, Mission, Task
 
-# --- [THE STRATEGIC ORCHESTRATORS] ---
-# We import the high-level services that drive the AI's actions.
-from app.services import generation_service as maestro
-from app.services import master_agent_service as overmind
+# --- [THE COGNITIVE ENGINE IMPORTS] ---
+try:
+    from app.services import master_agent_service as overmind
+except ImportError:
+    overmind = None
+try:
+    from app.services import generation_service as maestro
+except ImportError:
+    maestro = None
 
 # --------------------------------------------------------------------------------------
-# Authentication & Authorization
+# Authorization Decorator
 # --------------------------------------------------------------------------------------
-
 def admin_required(f):
     """Decorator to ensure the user is logged in and is an administrator."""
     @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
-        if not current_user.is_admin:
-            # Forbid access for non-admin users.
-            abort(403)
+        if not getattr(current_user, 'is_admin', False):
+            abort(403) # Forbidden
         return f(*args, **kwargs)
     return decorated_function
 
 # --------------------------------------------------------------------------------------
-# Mission Control Routes
+# UI Rendering Routes
 # --------------------------------------------------------------------------------------
 
 @bp.route("/dashboard")
 @admin_required
 def admin_dashboard():
-    """
-    Displays the main admin command center, showing a list of all active and
-    past missions.
-    """
+    """Renders the main Mission Control dashboard."""
+    missions = []
     try:
-        # The dashboard is now a mission roster.
         missions = Mission.query.order_by(Mission.updated_at.desc()).all()
     except Exception as e:
         current_app.logger.error(f"Failed to fetch missions for dashboard: {e}", exc_info=True)
         flash("Could not retrieve mission list from the Akashic Records.", "danger")
-        missions = []
-
+    
+    # --- [THE CRITICAL FIX] ---
+    # The path is now relative to the blueprint's `template_folder`.
     return render_template(
-        "admin/admin_dashboard.html", # Assuming template is in app/admin/templates
+        "admin_dashboard.html",
         title="Overmind Mission Control",
         missions=missions
     )
@@ -69,36 +70,32 @@ def admin_dashboard():
 @bp.route("/mission/<int:mission_id>")
 @admin_required
 def mission_detail(mission_id):
-    """
-    Displays the detailed view of a single mission, including its objective,
-    status, plan, and all associated tasks and events.
-    """
+    """Renders the detailed view for a single mission."""
     mission = Mission.query.get_or_404(mission_id)
-    # This will be used to render the full mission log in the template.
-    return render_template("admin/mission_detail.html", title=f"Mission #{mission.id}", mission=mission)
+    # --- [THE CRITICAL FIX] ---
+    # Also corrected here for consistency.
+    return render_template("mission_detail.html", title=f"Mission #{mission.id}", mission=mission)
 
 # --------------------------------------------------------------------------------------
-# API Gateways (The Conduits to the AI Minds)
+# API Gateways to the AI Minds
 # --------------------------------------------------------------------------------------
 
 @bp.route("/api/start-mission", methods=["POST"])
 @admin_required
 def handle_start_mission():
-    """
-    API Gateway to the Overmind. Receives a high-level objective and initiates
-    a new strategic mission.
-    """
+    """API Gateway to the Overmind."""
+    if not overmind:
+        return jsonify({"status": "error", "message": "The Overmind service is not available."}), 503
+
     data = request.json
     objective = data.get("objective")
 
-    if not objective:
-        return jsonify({"status": "error", "message": "Objective is required."}), 400
+    if not objective or not isinstance(objective, str) or len(objective.strip()) == 0:
+        return jsonify({"status": "error", "message": "A valid objective is required."}), 400
 
     try:
         current_app.logger.info(f"API: Received objective '{objective}' from user {current_user.id}.")
-        # Engage the Overmind to start the mission.
-        # The Overmind service handles all the complex logic internally.
-        mission = overmind.start_mission(objective=objective, initiator=current_user)
+        mission = overmind.start_mission(objective=objective, initiator=current_user._get_current_object())
         return jsonify({
             "status": "success",
             "message": "Mission initiated successfully.",
@@ -107,34 +104,7 @@ def handle_start_mission():
         })
     except Exception as e:
         current_app.logger.error(f"Failed to start mission via API: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": f"Failed to start mission: {e}"}), 500
-
-
-@bp.route("/api/maestro-chat", methods=["POST"])
-@admin_required
-def handle_maestro_chat():
-    """
-    API Gateway to the Maestro. This provides a direct, tactical chat interface
-    for quick tasks, debugging, or direct interaction, bypassing the Overmind's
-    strategic layer. It now requires a conversation_id.
-    """
-    data = request.json
-    prompt = data.get("prompt")
-    conversation_id = data.get("conversation_id") # Must be provided by the front-end
-    history = data.get("history", [])
-
-    if not prompt:
-        return jsonify({"status": "error", "message": "Prompt is required."}), 400
-    if not conversation_id:
-        return jsonify({"status": "error", "message": "Conversation ID is required for Maestro chat."}), 400
-    
-    # Engage the Maestro tactical engine directly.
-    result = maestro.forge_new_code(
-        prompt=prompt,
-        conversation_history=history,
-        conversation_id=conversation_id
-    )
-    return jsonify(result)
+        return jsonify({"status": "error", "message": f"An unexpected error occurred: {e}"}), 500
 
 # --------------------------------------------------------------------------------------
 # Administrative Utility Routes
@@ -143,13 +113,13 @@ def handle_maestro_chat():
 @bp.route("/users")
 @admin_required
 def list_users():
-    """
-    Displays a list of all users in the system. (Functionality retained).
-    """
+    """Displays a list of all users in the system."""
+    all_users = []
     try:
         all_users = db.session.scalars(db.select(User).order_by(User.id)).all()
     except Exception as e:
         flash(f"Error fetching users: {e}", "danger")
-        all_users = []
-
-    return render_template("admin/admin_users.html", title="User Roster", users=all_users)
+    
+    # --- [THE CRITICAL FIX] ---
+    # Assuming `admin_users.html` is also in the `admin/templates` folder.
+    return render_template("admin_users.html", title="User Roster", users=all_users)

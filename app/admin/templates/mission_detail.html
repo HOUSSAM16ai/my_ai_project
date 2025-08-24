@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+  <h1 class="h4">Mission #{{ mission.id }}: {{ mission.objective }}</h1>
+  <p class="text-muted">
+    Status: <span class="badge bg-primary">{{ mission.status.value if mission.status else 'N/A' }}</span> |
+    Initiated by: {{ mission.initiator.email if mission.initiator else 'N/A' }} |
+    Last Updated: {{ mission.updated_at.strftime('%Y-%m-%d %H:%M') }}
+  </p>
+</header>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        Task List & Plan
+      </div>
+      <div class="card-body">
+        {% if mission.tasks and mission.tasks.all() %}
+          <ul class="list-group list-group-flush">
+            {% for task in mission.tasks.all() %}
+              <li class="list-group-item">
+                <strong>Task #{{ task.sequence_id or task.id }}:</strong> {{ task.description }}
+                <span class="badge float-end bg-secondary">{{ task.status.value if task.status else 'N/A' }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-center text-muted">The Overmind has not generated a task plan for this mission yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        Mission Log (Events)
+      </div>
+      <div class="card-body">
+         {% if mission.events and mission.events.all() %}
+          <ul class="list-group list-group-flush small">
+            {% for event in mission.events.all() %}
+              <li class="list-group-item">
+                <strong>{{ event.event_type.value if event.event_type else 'UNKNOWN' }}</strong>
+                <small class="text-muted d-block">{{ event.created_at.strftime('%H:%M:%S') }} - {{ event.note or '' }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-center text-muted">No events logged for this mission yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary mt-4">&larr; Back to Mission Roster</a>
+{% endblock %}
