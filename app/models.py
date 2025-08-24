@@ -1,17 +1,18 @@
 # app/models.py
 # ======================================================================================
-# ==        COGNIFORGE AKASHIC GENOME v10.1 – GRAND BLUEPRINT WITH HELPERS            ==
+# ==      COGNIFORGE AKASHIC GENOME v10.3 – CIRCULAR DEPENDENCY RESOLVED SCHEMA       ==
 # ======================================================================================
 # هذا هو الدستور البنيوي النهائي الذي يجسد "المخطط الأعظم" (The Grand Blueprint).
 #
-# ميزات v10.1 الحاسمة:
-#   - Integrated Helper Functions: إضافة دوال `log_mission_event`, `finalize_task`, etc.
-#     مباشرة في هذا الملف. هذا يحل `ImportError` في الخدمات ويجعل النماذج
-#     مكتفية ذاتيًا أكثر.
-#   - Full Educational Core: إعادة دمج `Exercise` و `Submission` بشكل كامل.
+# ميزات v10.3 الحاسمة:
+#   - Circular Dependency Resolution: تم حل `SAWarning` المتعلق بالتبعية الدائرية
+#     بين `Mission` و `MissionPlan` عبر إضافة `use_alter=True` إلى المفتاح الأجنبي
+#     الحاسم، مما يسمح لـ Alembic بإدارة هذه العلاقة المعقدة بأمان.
+#   - Ambiguity Resolution: الحفاظ على `primaryjoin` الصريح لضمان عدم وجود أي
+#     غموض في العلاقات.
 #
 # بعد الاستبدال:
-#   flask db migrate -m "Finalize Grand Blueprint schema with integrated helpers"
+#   flask db migrate -m "Resolve circular dependency between Mission and MissionPlan"
 #   flask db upgrade
 # ======================================================================================
 
@@ -108,16 +109,36 @@ class Mission(Timestamped, db.Model):
     objective     = db.Column(db.Text, nullable=False)
     status        = db.Column(SAEnum(MissionStatus, native_enum=False), default=MissionStatus.PENDING, index=True)
     initiator_id  = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    active_plan_id = db.Column(db.Integer, db.ForeignKey("mission_plans.id"), nullable=True)
+    
+    # --- [THE WARNING FIX] ---
+    # We add `use_alter=True` to the foreign key that "completes" the circular dependency.
+    # This tells Alembic how to handle the creation and deletion order gracefully.
+    active_plan_id = db.Column(db.Integer, ForeignKey("mission_plans.id", use_alter=True), nullable=True)
+    # --- END FIX ---
+
     locked        = db.Column(db.Boolean, default=False, server_default=text("false"))
     result_summary = db.Column(db.Text, nullable=True)
     total_cost_usd = db.Column(db.Numeric(12, 6), nullable=True)
     adaptive_cycles = db.Column(db.Integer, default=0)
     
-    plans         = relationship("MissionPlan", backref="mission", cascade="all, delete-orphan", order_by="MissionPlan.version.desc()")
+    # Relationships with explicit joins to resolve ambiguity
+    plans = relationship(
+        "MissionPlan",
+        primaryjoin="foreign(MissionPlan.mission_id) == Mission.id",
+        backref="mission",
+        cascade="all, delete-orphan",
+        order_by="desc(MissionPlan.version)"
+    )
+    
+    active_plan = relationship(
+        "MissionPlan",
+        primaryjoin="foreign(Mission.active_plan_id) == MissionPlan.id",
+        post_update=True,
+        uselist=False
+    )
+    
     tasks         = relationship("Task", backref="mission", cascade="all, delete-orphan")
     events        = relationship("MissionEvent", backref="mission", cascade="all, delete-orphan", order_by="MissionEvent.id")
-    active_plan   = relationship("MissionPlan", foreign_keys=[active_plan_id])
 
 class MissionPlan(Timestamped, db.Model):
     __tablename__ = "mission_plans"
@@ -159,42 +180,23 @@ class MissionEvent(Timestamped, db.Model):
 # ======================================================================================
 
 def log_mission_event(
-    mission: Mission,
-    event_type: MissionEventType,
-    *,
-    task: Optional[Task] = None,
-    payload: Optional[Dict[str, Any]] = None,
-    note: Optional[str] = None
+    mission: Mission, event_type: MissionEventType, *, task: Optional[Task] = None,
+    payload: Optional[Dict[str, Any]] = None, note: Optional[str] = None
 ) -> MissionEvent:
-    """Creates and logs a new MissionEvent, adding it to the session."""
-    evt = MissionEvent(
-        mission_id=mission.id,
-        task_id=task.id if task else None,
-        event_type=event_type,
-        payload=payload,
-        note=note
-    )
+    evt = MissionEvent(mission_id=mission.id, task_id=task.id if task else None, event_type=event_type, payload=payload, note=note)
     db.session.add(evt)
     return evt
 
 def finalize_task(
-    task: Task,
-    *,
-    status: TaskStatus,
-    result: Optional[Dict[str, Any]] = None
+    task: Task, *, status: TaskStatus, result: Optional[Dict[str, Any]] = None
 ) -> Task:
-    """Finalizes a task by setting its terminal status and results."""
     if status not in {TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED}:
         raise ValueError("finalize_task expects a terminal status.")
-    
     task.status = status
     task.result = result
     task.attempts = (task.attempts or 0) + 1
-
     log_mission_event(
-        task.mission,
-        MissionEventType.TASK_STATUS_CHANGE,
-        task=task,
+        task.mission, MissionEventType.TASK_STATUS_CHANGE, task=task,
         payload={"status": status.value, "result_ok": (result or {}).get("ok")},
         note=f"Task {task.id} finalized with status {status.value}."
     )

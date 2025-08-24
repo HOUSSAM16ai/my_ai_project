@@ -1,18 +1,57 @@
-# docker-compose.yml (The Loop-Breaker Protocol - TEMPORARY)
+# ======================================================================================
+# ==          COGNIFORGE UNIFIED ORCHESTRATION BLUEPRINT (v5.1 - Local DB)            ==
+# ======================================================================================
+version: '3.8'
+
 services:
-  # Migrations service remains unchanged.
-  migrations:
+  # ----------------------------------------------------------------------------------
+  # The Local Database Service
+  # ----------------------------------------------------------------------------------
+  db:
+    image: supabase/postgres:15.1.0.118
+    container_name: cogniforge-db
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+    environment:
+      # This now correctly reads the password from your .env file
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------------
+  # The Web Service (Main App)
+  # ----------------------------------------------------------------------------------
+  web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: flask-migrations
+    container_name: flask-frontend
     init: true
-    command: ["flask", "db", "upgrade"]
+    restart: unless-stopped
     env_file:
       - .env
-    networks: [appnet]
+    command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    networks:
+      - appnet
+    depends_on:
+      db:
+        condition: service_healthy # Wait for the DB to be ready before starting the app
 
-  # AI service - DEPENDENCIES TEMPORARILY DISABLED
+  # ----------------------------------------------------------------------------------
+  # The AI Service
+  # ----------------------------------------------------------------------------------
   ai_service:
     build:
       context: ./ai_service
@@ -24,39 +63,13 @@ services:
     volumes:
       - ./ai_service:/code
     command: sh -c "./entrypoint.sh"
-    # --- [THE LOOP-BREAKER FIX] ---
-    # We comment out the 'depends_on' section to break the chain.
-    # depends_on:
-    #   migrations:
-    #     condition: service_completed_successfully
     ports:
       - "8001:8000"
-    networks: [appnet]
+    networks:
+      - appnet
 
-  # Web service - DEPENDENCIES TEMPORARILY DISABLED
-  web:
-    build:
-      context: .
-    container_name: flask-frontend
-    init: true
-    restart: unless-stopped
-    env_file:
-      - .env
-    command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
-    volumes:
-      - .:/app
-    # --- [THE LOOP-BREAKER FIX] ---
-    # We comment out the 'depends_on' section to break the chain.
-    # depends_on:
-    #   migrations:
-    #     condition: service_completed_successfully
-    #   ai_service:
-    #     condition: service_started
-    ports:
-      - "5000:5000"
-    networks: [appnet]
-
-volumes: {}
+volumes:
+  pgdata:
 
 networks:
   appnet:
