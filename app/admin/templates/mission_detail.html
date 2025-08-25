@@ -1,61 +1,222 @@
 {% extends "base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title or ("Mission #" ~ mission.id) }}{% endblock %}
+
+{% macro status_badge(status) -%}
+  {%- if not status -%}
+    <span class="badge bg-secondary">N/A</span>
+  {%- else -%}
+    {%- set s = status.value if status is defined and status is not string else status -%}
+    {%- if s in ["PENDING","PLANNING","PLANNED"] -%}
+      <span class="badge bg-info text-dark">{{ s }}</span>
+    {%- elif s in ["RUNNING"] -%}
+      <span class="badge bg-primary">{{ s }}</span>
+    {%- elif s in ["RETRY"] -%}
+      <span class="badge bg-warning text-dark">{{ s }}</span>
+    {%- elif s in ["FAILED"] -%}
+      <span class="badge bg-danger">{{ s }}</span>
+    {%- elif s in ["SUCCESS"] -%}
+      <span class="badge bg-success">{{ s }}</span>
+    {%- elif s in ["ADAPTING"] -%}
+      <span class="badge bg-purple" style="background:#6f42c1">{{ s }}</span>
+    {%- else -%}
+      <span class="badge bg-secondary">{{ s }}</span>
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro task_status_badge(task) -%}
+  {{ status_badge(task.status) }}
+{%- endmacro %}
 
 {% block content %}
+
 <header class="mb-4">
-  <h1 class="h4">Mission #{{ mission.id }}: {{ mission.objective }}</h1>
-  <p class="text-muted">
-    Status: <span class="badge bg-primary">{{ mission.status.value if mission.status else 'N/A' }}</span> |
-    Initiated by: {{ mission.initiator.email if mission.initiator else 'N/A' }} |
-    Last Updated: {{ mission.updated_at.strftime('%Y-%m-%d %H:%M') }}
+  <h1 class="h4 mb-1">Mission #{{ mission.id }}: <span class="fw-normal">{{ mission.objective }}</span></h1>
+  <p class="text-muted small mb-2">
+    Status: {{ status_badge(mission.status) }}
+    &nbsp;|&nbsp; Initiator:
+    {{ mission.initiator.email if mission.initiator else 'N/A' }}
+    &nbsp;|&nbsp; Last Updated:
+    {{ mission.updated_at.strftime('%Y-%m-%d %H:%M') if mission.updated_at else 'N/A' }}
+    &nbsp;|&nbsp; Active Plan:
+    {% if mission.active_plan %}
+      v{{ mission.active_plan.version }} ({{ mission.active_plan.planner_name or 'unknown planner' }})
+    {% else %}
+      <em>None</em>
+    {% endif %}
   </p>
+  {% if mission.active_plan %}
+    <p class="text-muted small mb-0">
+      Plan Score: {{ mission.active_plan.score or '—' }} | Rationale: {{ mission.active_plan.rationale or '—' }}
+    </p>
+  {% endif %}
 </header>
 
-<div class="row">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        Task List & Plan
+<div class="row g-4">
+  <!-- Tasks & Plan -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Task Plan</span>
+        {% if mission.active_plan %}
+          <span class="small text-muted">Content Hash: {{ mission.active_plan.content_hash or '—' }}</span>
+        {% endif %}
       </div>
       <div class="card-body">
-        {% if mission.tasks and mission.tasks.all() %}
+
+        {% set tasks_list = mission.tasks %}
+        {% if tasks_list and tasks_list|length > 0 %}
+          <!-- Optional summary -->
+            <div class="mb-3 small">
+              Total: {{ tasks_list|length }} |
+              Success: {{ tasks_list|selectattr('status','equalto',TaskStatus.SUCCESS)|list|length }} |
+              Failed: {{ tasks_list|selectattr('status','equalto',TaskStatus.FAILED)|list|length }} |
+              Running: {{ tasks_list|selectattr('status','equalto',TaskStatus.RUNNING)|list|length }} |
+              Pending: {{ tasks_list|selectattr('status','equalto',TaskStatus.PENDING)|list|length }} |
+              Retry: {{ tasks_list|selectattr('status','equalto',TaskStatus.RETRY)|list|length }}
+            </div>
+
           <ul class="list-group list-group-flush">
-            {% for task in mission.tasks.all() %}
-              <li class="list-group-item">
-                <strong>Task #{{ task.sequence_id or task.id }}:</strong> {{ task.description }}
-                <span class="badge float-end bg-secondary">{{ task.status.value if task.status else 'N/A' }}</span>
+            {% for task in tasks_list|sort(attribute='id') %}
+              <li class="list-group-item py-3">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>#{{ loop.index }} (id={{ task.id }})</strong>
+                    <div class="mt-1">
+                      <span class="text-muted small">
+                        Key: {{ task.task_key or '—' }} |
+                        Priority: {{ task.priority }} |
+                        Risk: {{ task.risk_level or '—' }} |
+                        Criticality: {{ task.criticality or '—' }}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    {{ task_status_badge(task) }}
+                  </div>
+                </div>
+
+                <p class="mb-1 mt-2">{{ task.description or 'No description.' }}</p>
+
+                <div class="small text-muted">
+                  Tool: <code>{{ task.tool_name or '—' }}</code>
+                  {% if task.tool_args_json %}
+                    &nbsp;Args:
+                    <code class="text-wrap">{{ task.tool_args_json|tojson }}</code>
+                  {% endif %}
+                  <br>
+                  {% set deps = task.depends_on_json or [] %}
+                  Dependencies:
+                  {% if deps and deps|length > 0 %}
+                    {{ deps|join(', ') }}
+                  {% else %}
+                    <em>None</em>
+                  {% endif %}
+                  {% if task.started_at %}
+                    <br>Started: {{ task.started_at.strftime('%H:%M:%S') }}
+                  {% endif %}
+                  {% if task.finished_at %}
+                    &nbsp;Finished: {{ task.finished_at.strftime('%H:%M:%S') }}
+                  {% endif %}
+                  {% if task.duration_ms %}
+                    &nbsp;Duration: {{ (task.duration_ms / 1000.0)|round(3) }}s
+                  {% endif %}
+                  {% if task.attempt_count %}
+                    &nbsp;Attempts: {{ task.attempt_count }}/{{ task.max_attempts }}
+                  {% endif %}
+                  {% if task.error_text %}
+                    <br><span class="text-danger">Error:</span> {{ task.error_text[:180] }}
+                  {% endif %}
+                  {% if task.result_text %}
+                    <br><span class="text-success">Result:</span> {{ task.result_text[:180] }}
+                  {% endif %}
+                </div>
               </li>
             {% endfor %}
           </ul>
         {% else %}
-          <p class="text-center text-muted">The Overmind has not generated a task plan for this mission yet.</p>
+          <p class="text-center text-muted my-3">
+            The Overmind has not generated any tasks yet for this mission.
+          </p>
         {% endif %}
+
+        {% if mission.active_plan %}
+          {# Topological Layers Visualization (if present) #}
+          {% set raw = mission.active_plan.raw_json if mission.active_plan.raw_json is mapping
+                       else (mission.active_plan.raw_json|default({}) ) %}
+          {% set topo = raw.get('topological_order') if raw else None %}
+          {% if topo %}
+            <hr>
+            <h6 class="text-uppercase mt-3 mb-2 small">Topological Layers</h6>
+            <div class="d-flex flex-wrap gap-2">
+              {% for layer in topo %}
+                <div class="border rounded p-2 small bg-light">
+                  <div class="fw-semibold mb-1">Layer {{ loop.index }}</div>
+                  {% if layer %}
+                    {% for key in layer %}
+                      <span class="badge bg-secondary mb-1">{{ key }}</span>
+                    {% endfor %}
+                  {% else %}
+                    <em>Empty</em>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+
       </div>
     </div>
   </div>
 
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        Mission Log (Events)
+  <!-- Events & Mission Log -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Mission Log (Events)</span>
+        <span class="small text-muted">
+          Total: {{ mission.events|length if mission.events else 0 }}
+        </span>
       </div>
       <div class="card-body">
-         {% if mission.events and mission.events.all() %}
+        {% set evts = mission.events %}
+        {% if evts and evts|length > 0 %}
           <ul class="list-group list-group-flush small">
-            {% for event in mission.events.all() %}
+            {# ترتيب عكسي: أحدث الأحداث أولاً #}
+            {% for event in evts|sort(attribute='id', reverse=True) %}
               <li class="list-group-item">
-                <strong>{{ event.event_type.value if event.event_type else 'UNKNOWN' }}</strong>
-                <small class="text-muted d-block">{{ event.created_at.strftime('%H:%M:%S') }} - {{ event.note or '' }}</small>
+                <div class="d-flex justify-content-between">
+                  <strong>{{ event.event_type.value if event.event_type else 'UNKNOWN' }}</strong>
+                  <span class="text-muted">{{ event.created_at.strftime('%H:%M:%S') if event.created_at else '' }}</span>
+                </div>
+                {% if event.payload %}
+                  <div class="mt-1">
+                    <code class="d-block text-wrap">
+                      {{ event.payload|tojson }}
+                    </code>
+                  </div>
+                {% endif %}
+                {% if event.note %}
+                  <div class="text-muted">{{ event.note }}</div>
+                {% endif %}
               </li>
             {% endfor %}
           </ul>
         {% else %}
-          <p class="text-center text-muted">No events logged for this mission yet.</p>
+          <p class="text-center text-muted my-3">No events logged yet.</p>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary mt-4">&larr; Back to Mission Roster</a>
+<div class="mt-4 d-flex gap-2">
+  <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">&larr; Back to Mission Roster</a>
+  {% if mission.status and mission.status.value not in ['SUCCESS','FAILED','CANCELED'] %}
+    <form method="post" action="{{ url_for('admin.force_refresh_mission', mission_id=mission.id) }}">
+      <button class="btn btn-outline-primary btn-sm" type="submit">Force Refresh</button>
+    </form>
+  {% endif %}
+</div>
+
 {% endblock %}
