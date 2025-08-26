@@ -1,47 +1,68 @@
 # app/overmind/planning/llm_planner.py
 # ======================================================================================
-# ==                         MAESTRO GRAPH PLANNER (v2.2 • LLM)                       ==
-# ==                     LLM–POWERED STRATEGIC DAG (MISSION PLAN)                      ==
+#  MAESTRO GRAPH PLANNER (v4.1 • "ZERO‑STALL / MULTI‑FALLBACK / SMARTFAST / RESILIENT") #
 # ======================================================================================
+# PURPOSE:
+#   تحويل هدف لغوي (Objective) إلى خطة مهام (DAG) صالحة (MissionPlanSchema) بسرعة واعتمادية
+#   مع الحد الأقصى من إزالة جذور مهلة التخطيط (PlannerTimeoutError) للأهداف
+#   البسيطة والمتوسطة والتحليلية القصيرة، مع تحسينات قوية في تنظيف / استرجاع JSON.
 #
-# PURPOSE (القصد):
-#   تحويل هدف (Objective) لغوي عالي المستوى إلى خطة مهام (Directed Acyclic Graph)
-#   متماسكة وفق مخطط MissionPlanSchema: كل مهمة لها معرف، وصف، أداة، معاملات، واعتماديات.
+# MAIN ENHANCEMENTS vs 3.0.0:
+#   1) SMART FAST PATHS:
+#        - File objectives (موجود سابقاً)
+#        - Greeting / simple output ("hi", "say hi", "hello", تحيات عربية) حتى لو قصيرة جداً
+#        - Simple enumerate / list (e.g. "list three benefits of ...")
+#   2) SHORT OBJECTIVE AUTO-AUGMENT:
+#        - الأهداف القصيرة جداً (< 3 أو < 4) تُوسّع تلقائياً لتصبح وصفاً قابلاً للمعالجة
+#          بدلاً من الفشل المباشر (يمكن تعطيلها ببيئة PLANNER_STRICT_SHORT=1).
+#   3) MULTI-STAGE JSON RECOVERY:
+#        - استخراج أول/أوسع كتلة أقواس {}
+#        - المحاولة بنمط regex متعدد
+#        - تنقية code fences + Markdown + تعليقات
+#        - إصلاح الفواصل الزائدة
+#        - إصلاح استبدال علامات اقتباس أحادية إلى مزدوجة إذا لم ينجح التحليل
+#        - محاولة json5 (اختياري) إذا متاح (بدون فشل لو غير متوفر)
+#        - محاولة تفكيك المصفوفة "tasks" يدوياً عند فشل شامل
+#   4) EARLY EXIT & ADAPTIVE DEGRADATION:
+#        - مراقبة ميزانية الوقت الداخلية: إذا بقي < (LOW_TIME_THRESHOLD) يتجه فوراً
+#          لخطة fallback بدون إعادة محاولات عديمة الجدوى.
+#   5) IMPROVED FALLBACK STRATEGY:
+#        - مستويات: minimal → generic_think multi-steps (تحليل → تنفيذ) حسب طول الهدف
+#        - تحكم عبر PLANNER_FALLBACK_MODE (minimal | dual | analytic)
+#   6) PROMPT ADAPTATION:
+#        - تقليص أقسام السياق مع كل محاولة فاشلة
+#        - تقليص max_tasks ديناميكياً عند المحاولة التالية
+#   7) LOGGING TRACE (عند PLANNER_LOG_VERBOSE=1):
+#        - مراحل sanitization
+#        - مدة كل محاولة LLM
+#        - أداة fallback المستخدمة
+#   8) CONFIGURABLE GREETING / LIST FAST PATH عبر PLANNER_ENABLE_SMARTFAST
 #
-# ROOT CAUSE (سبب الخلل السابق):
-#   - كان الـ Planner يعرّف name كـ @property → BasePlanner v2.1+ يتطلب name كـ
-#     "CLASS ATTRIBUTE" لتسجيله في السجل (_registry) أثناء تعريف الصنف.
-#   - النتيجة: planner لم يُسجَّل → discover() يعرض planners=0 → CLI يفشل:
-#       Planner 'maestro_graph_planner_v2' not found / No planners available.
-#
-# FIX (الإصلاح):
-#   - تعريف: name = "maestro_graph_planner_v2" كحقل صنفي.
-#   - الصنف: MaestroGraphPlannerV2 (يمكن تغيير الاسم، ولكن الاسم registry يعتمد على name).
-#   - التزمنا بعقد BasePlanner.generate_plan() وأعدنا MissionPlanSchema.
-#
-# SAFETY & DESIGN:
-#   - استدعاء خدمة LLM (generation_service) مع استرجاع graceful في حال عدم توفر الدالة.
-#   - إعادة محاولة (Retry) مع Backoff أسي + Jitter.
-#   - استخراج JSON صارم + trimming.
-#   - فحص DAG: معرفات فريدة، عدم وجود اعتماد ذاتي، لا دورات (Cycles).
-#   - حدود موارد: حجم النص، عدد المهام.
-#   - تحويل / تكييف مخرجات LLM إلى الشكل المطلوب قبل إدخالها في MissionPlanSchema.
-#
-# ADAPTATION HOOKS (نقاط تكيّف سريعة):
-#   - _construct_meta_prompt: عدّل التعليمات.
-#   - _transform_raw_task: عدّل إعادة التسمية / الحقول لتطابق مخططك الفعلي.
-#   - _BUILD_SCHEMA: راجع إذا كانت MissionPlanSchema تختلف في التواقيع.
+# CONFIG (ENV):
+#   PLANNER_TIMEOUT_SECONDS          (float)  المهلة الكلية (افتراضي 50.0)
+#   PLANNER_RETRY_ATTEMPTS           (int)    محاولات إعادة النداء (افتراضي 3)
+#   PLANNER_FAST_PATH=0/1            تمكين fast file path (افتراضي 1)
+#   PLANNER_ENABLE_SMARTFAST=0/1     تمكين fast path للأهداف التحيات/التعداد (افتراضي 1)
+#   PLANNER_MODEL_OVERRIDE           اسم نموذج مخصص
+#   PLANNER_MAX_TASKS                الحد الأقصى للمهام (افتراضي 180)
+#   PLANNER_JSON_LEN_LIMIT           حد أقصى لنص JSON (افتراضي 60000)
+#   PLANNER_FALLBACK_ON_PARSE=0/1    تفعيل fallback عند فشل parsing (افتراضي 1)
+#   PLANNER_FALLBACK_MODE            minimal | dual | analytic (افتراضي dual)
+#   PLANNER_LOG_VERBOSE=1            تفعيل detailed debug
+#   PLANNER_STRICT_SHORT=1           يمنع توسيع الأهداف القصيرة (افتراضي 0 = يسمح بالتوسيع)
+#   PLANNER_MIN_OBJECTIVE_LENGTH     الحد الأدنى (افتراضي 3)
+#   PLANNER_JSON_FORCE_SINGLE_TASK   إذا 1 يجبر إنتاج مهمة واحدة عند فشل (افتراضي 0)
 #
 # ======================================================================================
-
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
 import random
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .base_planner import (
     BasePlanner,
@@ -49,157 +70,158 @@ from .base_planner import (
     PlannerError,
     PlanValidationError,
 )
-
-# Schema imports (عدِّل إذا المسار مختلف)
 from .schemas import MissionPlanSchema
 try:
-    # إذا لديك نموذج مهام منفصل (Pydantic) استخدمه، وإلا سيتعامل القاموس مباشرة
     from .schemas import PlannedTask  # type: ignore
-except Exception:  # noqa: F401
+except Exception:  # pragma: no cover
     PlannedTask = Dict[str, Any]  # type: ignore
 
-# محاولة استيراد خدمة التوليد (LLM)
+# Optional json5 usage (won't fail if absent)
+try:  # pragma: no cover
+    import json5  # type: ignore
+except Exception:  # pragma: no cover
+    json5 = None
+
+# Attempt to import generation service
 try:
     from app.services import generation_service as maestro
 except Exception:  # pragma: no cover
     maestro = None
 
 
+# -------------------------------- Logging Helper -------------------------------- #
+def _log_debug(msg: str):
+    if os.getenv("PLANNER_LOG_VERBOSE", "0") == "1":
+        print(f"[Planner::DEBUG] {msg}")
+
+
 class MaestroGraphPlannerV2(BasePlanner):
-    """
-    LLM Graph Planner:
-      1. يُنشئ meta-prompt غني بالتعليمات.
-      2. يستدعي خدمة التوليد (maestro) للحصول على JSON.
-      3. يطبّق Sanitization + Parsing + Validation.
-      4. يتحقق من سلامة DAG (لا دورات / لا مراجع مفقودة).
-      5. يُرجع MissionPlanSchema.
-
-    مخرجات LLM المتوقعة (مبسّطة):
-    {
-      "objective": "...",
-      "tasks": [
-        {
-          "task_id": "analyze",
-          "description": "Analyze objective",
-          "tool_name": "generic_think",
-          "tool_args": {},
-          "dependencies": []
-        }
-      ]
-    }
-    """
-
-    # ---------- REQUIRED IDENTITY (FIXED FOR REGISTRY) ----------
     name: str = "maestro_graph_planner_v2"
-    version: str = "2.2.0"
+    version: str = "4.1.0"
 
-    # ---------- DISCOVERY METADATA ----------
     capabilities: Set[str] = {
         "llm",
         "dag-planning",
         "decomposition",
         "json-output",
     }
-    tags: Set[str] = {"core", "stable", "graph"}
+    tags: Set[str] = {"core", "stable", "graph", "resilient"}
 
-    # ---------- LIMITS & RETRY CONFIG ----------
-    MAX_OUTPUT_CHARS: int = 60_000
-    MAX_TASKS: int = 180
-    RETRY_ATTEMPTS: int = 3
-    INITIAL_BACKOFF: float = 1.2
-    BACKOFF_JITTER: float = 0.35
+    # Limits & Config
+    MAX_OUTPUT_CHARS: int = int(os.getenv("PLANNER_JSON_LEN_LIMIT", "60000"))
+    MAX_TASKS: int = int(os.getenv("PLANNER_MAX_TASKS", "180"))
+    RETRY_ATTEMPTS: int = int(os.getenv("PLANNER_RETRY_ATTEMPTS", "3"))
+    INITIAL_BACKOFF: float = 1.0
+    BACKOFF_JITTER: float = 0.25
     TASK_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]{1,50}$")
+    default_timeout_seconds = float(os.getenv("PLANNER_TIMEOUT_SECONDS", "50.0"))
+    MIN_OBJECTIVE_LENGTH = int(os.getenv("PLANNER_MIN_OBJECTIVE_LENGTH", "3"))
+    STRICT_SHORT = os.getenv("PLANNER_STRICT_SHORT", "0") == "1"
+    ENABLE_SMARTFAST = os.getenv("PLANNER_ENABLE_SMARTFAST", "1") == "1"
 
-    # Optional timeout (leveraged by BasePlanner.instrumented_generate)
-    default_timeout_seconds = 50.0
+    LOW_TIME_THRESHOLD = 4.5  # seconds left → bail to fallback
 
-    # ==================================================================================
-    # PUBLIC CORE (BasePlanner requirement)
-    # ==================================================================================
+    # --------------------------------------------------------------------------- #
+    # Public API
+    # --------------------------------------------------------------------------- #
     def generate_plan(
         self,
         objective: str,
         context: Optional[PlanningContext] = None
     ) -> MissionPlanSchema:
-        objective = (objective or "").strip()
-        if not objective:
-            raise PlannerError("Objective is empty.", self.name, objective)
+        raw_objective = (objective or "").strip()
+
+        if not raw_objective:
+            raise PlannerError("Objective is empty.", self.name, raw_objective)
+
+        objective = self._normalize_objective(raw_objective)
+
+        # FAST PATH (files)
+        if self._fast_path_enabled() and self._is_trivial_file_objective(objective):
+            _log_debug("FAST_PATH (file) activated.")
+            return self._build_schema(self._fast_path_file_plan(objective), objective)
+
+        # SMART FAST PATH (greetings / list) if enabled
+        if self.ENABLE_SMARTFAST:
+            smart_plan = self._smartfast_plan_if_applicable(objective)
+            if smart_plan:
+                _log_debug("SMART_FAST_PATH activated.")
+                return self._build_schema(smart_plan, objective)
 
         if maestro is None:
-            raise PlannerError(
-                "generation_service (maestro) unavailable. Cannot invoke LLM.",
-                self.name,
-                objective
-            )
+            raise PlannerError("generation_service unavailable (maestro is None).", self.name, objective)
+
+        if not self.quick_validate_objective(objective):
+            _log_debug("quick_validate_objective returned False.")
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                return self._build_schema(self._fallback_data(objective), objective)
+            raise PlannerError("Objective failed preliminary validation.", self.name, objective)
 
         prompt = self._construct_meta_prompt(objective, context)
-        convo_id = f"plan-{uuid.uuid4()}"
+        conversation_id = f"plan-{uuid.uuid4()}"
+        start = time.monotonic()
 
-        raw = self._call_llm_with_retries(prompt, convo_id, objective)
-        json_block = self._extract_json(raw, objective)
-        data = self._parse_json(json_block, objective)
+        try:
+            raw_answer = self._call_llm_with_retries(prompt, conversation_id, objective, start_time=start)
+        except PlannerError as exc:
+            _log_debug(f"LLM call final failure: {exc}")
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                return self._build_schema(self._fallback_data(objective), objective)
+            raise
 
-        # Normalize & enforce objective match
+        try:
+            json_text = self._multi_stage_extract_and_sanitize_json(raw_answer, objective)
+            data = self._robust_parse_json(json_text, objective)
+        except Exception as exc:
+            _log_debug(f"Parsing pipeline failed: {exc}")
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                data = self._fallback_data(objective)
+            else:
+                raise
+
         data["objective"] = objective
-
-        # Clamp / limit
         self._enforce_limits(data, objective)
-
-        # Adapt each raw task (rename / ensure keys)
         data["tasks"] = [self._transform_raw_task(t, objective) for t in data.get("tasks", [])]
 
-        # Build schema (Pydantic or custom)
         plan_schema = self._build_schema(data, objective)
-
-        # Graph structural validation (DAG)
         self._validate_dag(plan_schema, objective)
 
         return plan_schema
 
-    # ==================================================================================
-    # VALIDATION HOOK (extra semantics) – auto-called by instrumented_generate()
-    # ==================================================================================
-    def validate_plan(
-        self,
-        plan: MissionPlanSchema,
-        objective: str,
-        context: Optional[PlanningContext]
-    ) -> None:  # noqa: D401
-        # Must contain tasks
-        tasks = getattr(plan, "tasks", None)
-        if not tasks:
-            raise PlanValidationError("No tasks generated.", self.name, objective)
-        # Example: ensure objective appears in at least one description (soft heuristic)
-        sig = objective.split()
-        if sig:
-            first_kw = sig[0].lower()
-            found = any(first_kw in (getattr(t, "description", "") or "").lower()
-                        for t in tasks)
-            if not found:  # not fatal, but illustrate semantic hook
-                # لا نرفع استثناء هنا لتجنب الإفراط، يمكن تفعيل هذا كتحذير
-                pass
+    # --------------------------------------------------------------------------- #
+    # Objective Normalization
+    # --------------------------------------------------------------------------- #
+    def _normalize_objective(self, objective: str) -> str:
+        """Ensure objective length & clarity. Expand very short objectives if allowed."""
+        if len(objective) >= self.MIN_OBJECTIVE_LENGTH:
+            return objective
+        if self.STRICT_SHORT:
+            return objective  # let schema or validator fail
+        # Auto-augment
+        augmented = f"Simple objective: {objective}. Provide a minimal actionable plan."
+        _log_debug(f"Augmented short objective '{objective}' → '{augmented}'")
+        return augmented
 
-    # ==================================================================================
-    # INTERNAL: PROMPT CONSTRUCTION
-    # ==================================================================================
+    # --------------------------------------------------------------------------- #
+    # Prompt Construction
+    # --------------------------------------------------------------------------- #
     def _construct_meta_prompt(self, objective: str, context: Optional[PlanningContext]) -> str:
-        ctx_parts: List[str] = []
-        if context:
-            if context.past_failures:
-                ctx_parts.append(
-                    f"- Past Failures Keys: {', '.join(list(context.past_failures.keys())[:6])}"
-                )
-            if context.user_preferences:
-                ctx_parts.append(
-                    f"- User Prefs Keys: {', '.join(list(context.user_preferences.keys())[:6])}"
-                )
-            if context.tags:
-                ctx_parts.append(f"- Context Tags: {', '.join(context.tags)}")
-        ctx_block = "\n".join(ctx_parts) or "None."
-
+        o_len = len(objective)
+        ctx_block = self._context_block(context) if context else "None."
+        max_tasks = min(self.MAX_TASKS, 60 if o_len < 280 else self.MAX_TASKS)
+        if o_len < 55:
+            # Micro/short mode
+            return (
+                "Return ONLY valid JSON.\n"
+                f'Objective: "{objective}"\n'
+                f"Keys: objective, tasks\n"
+                f"tasks[]= {{task_id, description, tool_name, tool_args, dependencies[]}}\n"
+                f"Limit tasks <= {max_tasks if max_tasks < 10 else 10}.\n"
+                "JSON only. No commentary, no markdown."
+            )
         return f"""
-SYSTEM MODE:
-You are an expert strategic planner that produces ONLY JSON (no prose, no markdown code fences).
+SYSTEM ROLE:
+You are an advanced decomposition engine. Return ONLY JSON (no markdown / no prose).
 
 OBJECTIVE:
 \"\"\"{objective}\"\"\"
@@ -207,204 +229,445 @@ OBJECTIVE:
 CONTEXT:
 {ctx_block}
 
-OUTPUT REQUIREMENTS:
-- Top-level object with keys: objective, tasks.
-- tasks: array of objects. Each task object MUST contain:
-    task_id (unique, short snake_case/hyphen id),
-    description (concise actionable),
-    tool_name (string),
-    tool_args (object),
-    dependencies (array of task_id).
-- DAG must be acyclic. A task may depend on zero or more earlier tasks.
-- Encourage parallelism where possible while preserving logical order.
-- Keep tasks <= {self.MAX_TASKS}.
-
-STRICTLY RETURN JSON ONLY. DO NOT wrap in ``` or provide commentary.
-
-EXAMPLE (illustrative only):
-{{
-  "objective": "{objective}",
-  "tasks": [
-    {{
-      "task_id": "analyze_objective",
-      "description": "Analyze and clarify the objective.",
-      "tool_name": "generic_think",
-      "tool_args": {{}},
-      "dependencies": []
-    }},
-    {{
-      "task_id": "research_prerequisites",
-      "description": "Collect required knowledge or references.",
-      "tool_name": "knowledge_search",
-      "tool_args": {{"query": "key concepts"}},
-      "dependencies": ["analyze_objective"]
-    }},
-    {{
-      "task_id": "synthesize_solution",
-      "description": "Integrate findings into solution draft.",
-      "tool_name": "generic_think",
-      "tool_args": {{}},
-      "dependencies": ["research_prerequisites"]
-    }}
-  ]
-}}
-
-NOW RETURN THE JSON PLAN:
+OUTPUT RULES:
+- Single JSON object with: objective, tasks
+- tasks: array of objects {{"task_id","description","tool_name","tool_args","dependencies"}}
+- task_id: short (snake_or_hyphen)
+- dependencies: only previous task_ids (no cycles)
+- Use actionable concise descriptions.
+- tasks <= {max_tasks}
+- Parallelize where logical (minimize chains).
+- No commentary, no code fences, no surrounding text.
 """.strip()
 
-    # ==================================================================================
-    # INTERNAL: LLM CALL + RETRY
-    # ==================================================================================
-    def _call_llm_with_retries(self, prompt: str, conversation_id: str, objective: str) -> str:
-        """
-        Expects generation_service to expose one of:
-          - forge_new_code(prompt=..., conversation_id=...)
-          - generate_json(prompt=..., conversation_id=...)
-          - execute_task_legacy_wrapper({...})   (Worst-case fallback)
-        """
-        # Determine best callable
-        call_chain = []
-        if hasattr(maestro, "forge_new_code"):
-            call_chain.append(("forge_new_code", maestro.forge_new_code))
+    def _context_block(self, context: PlanningContext) -> str:
+        parts: List[str] = []
+        if context.past_failures:
+            parts.append(f"PastFailures({len(context.past_failures)})")
+        if context.user_preferences:
+            parts.append(f"UserPrefs({len(context.user_preferences)})")
+        if context.tags:
+            parts.append("Tags:" + ",".join(context.tags))
+        return " | ".join(parts) if parts else "None."
+
+    # --------------------------------------------------------------------------- #
+    # Fast Path (files)
+    # --------------------------------------------------------------------------- #
+    def _fast_path_enabled(self) -> bool:
+        return os.getenv("PLANNER_FAST_PATH", "1") == "1"
+
+    def _is_trivial_file_objective(self, objective: str) -> bool:
+        o = objective.lower()
+        if len(o) > 140:
+            return False
+        verbs_en = ("create", "make", "write", "build", "generate", "produce", "add")
+        verbs_ar = ("اصنع", "انشئ", "أنشئ", "اكتب", "أضف", "اضف")
+        if ("file" in o or "ملف" in o) and (
+            any(o.startswith(v) for v in verbs_en) or any(o.startswith(v) for v in verbs_ar)
+        ):
+            return True
+        return bool(re.match(r"^(create|write|make|generate)\s+.*file", o))
+
+    def _infer_filename(self, objective: str) -> str:
+        m = re.search(r"(?:named|call(?:ed)?|اسم(?:ه)?)\s+([A-Za-z0-9_\-\.]+)", objective, re.IGNORECASE)
+        if m:
+            name = m.group(1)
+            if not name.lower().endswith((".md", ".txt", ".log")):
+                return f"{name}.md"
+            return name
+        base = re.sub(r"[^a-zA-Z0-9_\-]+", "_", objective.lower()).strip("_") or "auto_file"
+        if not base.endswith(".md"):
+            base += ".md"
+        return base[:48]
+
+    def _fast_path_file_plan(self, objective: str) -> Dict[str, Any]:
+        return {
+            "objective": objective,
+            "tasks": [
+                {
+                    "task_id": "create_file",
+                    "description": f"Create file for: {objective}",
+                    "tool_name": "write_file",
+                    "tool_args": {
+                        "path": self._infer_filename(objective),
+                        "content": f"Auto-generated file\nObjective: {objective}\n(FAST_PATH v{self.version})"
+                    },
+                    "dependencies": []
+                }
+            ]
+        }
+
+    # --------------------------------------------------------------------------- #
+    # SMART FAST PATH (greeting / list / simple summarization)
+    # --------------------------------------------------------------------------- #
+    GREET_PATTERNS = [
+        r"^hi$", r"^hello$", r"^hey$", r"^مرحبا$", r"^اهلا$", r"^say hi", r"^تحية",
+    ]
+    LIST_HINTS = [
+        "list ", "enumerate ", "three ", "5 ", "five ", "advantages", "benefits",
+        "improvements", "خطوات", "مزايا", "فوائد"
+    ]
+
+    def _smartfast_plan_if_applicable(self, objective: str) -> Optional[Dict[str, Any]]:
+        o = objective.lower().strip()
+        # Greetings
+        if any(re.match(p, o) for p in self.GREET_PATTERNS):
+            return {
+                "objective": objective,
+                "tasks": [
+                    {
+                        "task_id": "greet",
+                        "description": "Produce a short greeting",
+                        "tool_name": "generic_think",
+                        "tool_args": {"style": "greeting"},
+                        "dependencies": []
+                    }
+                ]
+            }
+        # Simple list or enumerate (short)
+        if len(o) < 160 and any(h in o for h in self.LIST_HINTS):
+            return {
+                "objective": objective,
+                "tasks": [
+                    {
+                        "task_id": "analyze_prompt",
+                        "description": "Analyze objective and extract requested list items",
+                        "tool_name": "generic_think",
+                        "tool_args": {"mode": "list"},
+                        "dependencies": []
+                    }
+                ]
+            }
+        return None
+
+    # --------------------------------------------------------------------------- #
+    # LLM Call with adaptive retries
+    # --------------------------------------------------------------------------- #
+    def _call_llm_with_retries(
+        self,
+        prompt: str,
+        conversation_id: str,
+        objective: str,
+        start_time: float
+    ) -> str:
+        chain: List[Tuple[str, Any]] = []
         if hasattr(maestro, "generate_json"):
-            call_chain.append(("generate_json", maestro.generate_json))
+            chain.append(("generate_json", maestro.generate_json))
+        if hasattr(maestro, "forge_new_code"):
+            chain.append(("forge_new_code", maestro.forge_new_code))
         if hasattr(maestro, "execute_task_legacy_wrapper"):
-            # Legacy signature may differ; adapt below if needed
-            call_chain.append(("execute_task_legacy_wrapper", maestro.execute_task_legacy_wrapper))
+            chain.append(("execute_task_legacy_wrapper", maestro.execute_task_legacy_wrapper))
+        if not chain:
+            raise PlannerError("No valid LLM generation functions available.", self.name, objective)
 
-        if not call_chain:
-            raise PlannerError(
-                "No suitable generation function found in generation_service.",
-                self.name,
-                objective
-            )
-
+        attempts = self.RETRY_ATTEMPTS
+        budget = self.default_timeout_seconds * 0.97
         last_error: Optional[str] = None
-        for attempt in range(1, self.RETRY_ATTEMPTS + 1):
-            fn_name, fn = call_chain[0]  # choose highest priority
+        adaptive_prompt = prompt
+        model_override = os.getenv("PLANNER_MODEL_OVERRIDE")
+        max_tasks_hint = self.MAX_TASKS
+
+        for attempt in range(1, attempts + 1):
+            elapsed = time.monotonic() - start_time
+            remaining = budget - elapsed
+            if remaining <= self.LOW_TIME_THRESHOLD:
+                _log_debug(f"Remaining time {remaining:.2f}s < LOW_TIME_THRESHOLD → early fallback.")
+                raise PlannerError("Early fallback trigger (low time).", self.name, objective)
+
+            fn_name, fn = chain[0]
+            t0 = time.monotonic()
             try:
+                _log_debug(f"LLM attempt {attempt}/{attempts} using {fn_name} (remaining ~{remaining:.2f}s)")
                 if fn_name == "execute_task_legacy_wrapper":
-                    response = fn({"description": prompt})  # type: ignore
-                    # Expecting something like {"status":"ok","echo": "..."} fallback
-                    answer = response.get("answer") or response.get("echo") or ""
-                    status = response.get("status", "unknown")
-                    if status != "ok" and not answer:
-                        raise RuntimeError(f"Legacy wrapper failure: {response}")
+                    resp = fn({"description": adaptive_prompt})  # type: ignore
+                    status = resp.get("status", "")
+                    answer = (resp.get("answer") or resp.get("echo") or "").strip()
                 else:
-                    response = fn(prompt=prompt, conversation_id=conversation_id)  # type: ignore
-                    answer = response.get("answer", "")
-                    status = response.get("status", "unknown")
+                    kwargs = dict(prompt=adaptive_prompt, conversation_id=conversation_id)
+                    if model_override:
+                        kwargs["model"] = model_override
+                    resp = fn(**kwargs)  # type: ignore
+                    status = resp.get("status", "")
+                    answer = (resp.get("answer") or "").strip()
 
+                dur = time.monotonic() - t0
+                _log_debug(f"LLM latency: {dur:.2f}s status={status}")
                 if status not in ("success", "ok"):
-                    raise RuntimeError(f"LLM service responded with status '{status}'")
-
-                if not answer.strip():
-                    raise RuntimeError("Empty answer string from LLM service.")
+                    raise RuntimeError(f"Bad status '{status}' from LLM.")
+                if not answer:
+                    raise RuntimeError("Empty answer from LLM.")
                 return answer[: self.MAX_OUTPUT_CHARS]
 
             except Exception as exc:
                 last_error = str(exc)
-                if attempt < self.RETRY_ATTEMPTS:
+                _log_debug(f"Attempt {attempt} failed: {last_error}")
+                if attempt < attempts:
+                    # Adaptive degrade
+                    if len(adaptive_prompt) > 2000:
+                        adaptive_prompt = self._shrink_prompt(adaptive_prompt)
+                    # Reduce max tasks hint inside prompt (if present)
+                    max_tasks_hint = max(5, max_tasks_hint // 2)
+                    adaptive_prompt = re.sub(r"tasks <= \d+", f"tasks <= {max_tasks_hint}", adaptive_prompt)
                     backoff = self._compute_backoff(attempt)
-                    time.sleep(backoff)
+                    if (time.monotonic() - start_time + backoff) > budget:
+                        backoff = max(0.05, budget - (time.monotonic() - start_time))
+                    time.sleep(max(0.05, backoff))
                 else:
+                    if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                        _log_debug("All LLM attempts failed; using fallback raw answer.")
+                        return self._fallback_raw_answer(objective)
                     raise PlannerError(
-                        f"LLM failed after {self.RETRY_ATTEMPTS} attempts. Last error: {last_error}",
+                        f"LLM failed after {attempts} attempts. Last error: {last_error}",
                         self.name,
                         objective
                     ) from exc
-        return ""  # pragma: no cover
+        return ""
+
+    def _shrink_prompt(self, prompt: str) -> str:
+        if len(prompt) <= 1400:
+            return prompt
+        return "OBJECTIVE_SNIPPET:\n" + prompt[-1100:]
 
     def _compute_backoff(self, attempt: int) -> float:
         base = self.INITIAL_BACKOFF * (2 ** (attempt - 1))
         jitter = random.uniform(0, self.BACKOFF_JITTER)
         return base + jitter
 
-    # ==================================================================================
-    # INTERNAL: JSON EXTRACTION & PARSING
-    # ==================================================================================
-    def _extract_json(self, raw: str, objective: str) -> str:
+    # --------------------------------------------------------------------------- #
+    # Fallback Logic
+    # --------------------------------------------------------------------------- #
+    def _fallback_raw_answer(self, objective: str) -> str:
+        return json.dumps(self._fallback_data(objective), ensure_ascii=False)
+
+    def _fallback_data(self, objective: str) -> Dict[str, Any]:
+        mode = os.getenv("PLANNER_FALLBACK_MODE", "dual").lower()
+        if mode not in ("minimal", "dual", "analytic"):
+            mode = "dual"
+        if mode == "minimal":
+            tasks = [
+                {
+                    "task_id": "single_step",
+                    "description": f"Process objective: {objective}",
+                    "tool_name": "generic_think",
+                    "tool_args": {},
+                    "dependencies": []
+                }
+            ]
+        elif mode == "analytic":
+            tasks = [
+                {
+                    "task_id": "analyze",
+                    "description": f"Analyze objective: {objective}",
+                    "tool_name": "generic_think",
+                    "tool_args": {"phase": "analysis"},
+                    "dependencies": []
+                },
+                {
+                    "task_id": "synthesize",
+                    "description": "Synthesize actionable plan",
+                    "tool_name": "generic_think",
+                    "tool_args": {"phase": "synthesis"},
+                    "dependencies": ["analyze"]
+                }
+            ]
+        else:  # dual (default)
+            tasks = [
+                {
+                    "task_id": "analyze",
+                    "description": f"Initial analysis for objective: {objective}",
+                    "tool_name": "generic_think",
+                    "tool_args": {},
+                    "dependencies": []
+                },
+                {
+                    "task_id": "execute",
+                    "description": "Produce final structured result",
+                    "tool_name": "generic_think",
+                    "tool_args": {},
+                    "dependencies": ["analyze"]
+                }
+            ]
+        if os.getenv("PLANNER_JSON_FORCE_SINGLE_TASK", "0") == "1":
+            tasks = tasks[:1]
+        return {
+            "objective": objective,
+            "tasks": tasks
+        }
+
+    # --------------------------------------------------------------------------- #
+    # Multi-Stage JSON Extraction & Parsing
+    # --------------------------------------------------------------------------- #
+    def _multi_stage_extract_and_sanitize_json(self, raw: str, objective: str) -> str:
+        """
+        Attempts several extraction strategies to salvage a JSON object.
+        Raises PlanValidationError only if all fail and fallback not allowed.
+        """
+        _log_debug("Begin JSON extraction pipeline.")
+        original = raw
+
+        # Stage 1: strip leading/trailing whitespace
         raw = raw.strip()
-        if len(raw) > self.MAX_OUTPUT_CHARS:
-            raw = raw[: self.MAX_OUTPUT_CHARS]
 
-        # محاولة إزالة أي أسوار Markdown
-        raw = raw.replace("```json", "").replace("```", "").strip()
+        # Stage 2: remove code fences (```, ```json)
+        raw = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE)
 
-        # إذا كان النص الكامل JSON صالح (يبدأ '{' وينتهي '}') نستخدمه مباشرة
+        # Stage 3: remove obvious commentary lines
+        raw = re.sub(r"^\s*//.*?$", "", raw, flags=re.MULTILINE)
+        raw = re.sub(r"^\s*#.*?$", "", raw, flags=re.MULTILINE)
+
+        # If raw itself looks like pure object
         if raw.startswith("{") and raw.endswith("}"):
-            return raw
+            candidate = self._strip_trailing_commas(raw)
+            if self._looks_like_json(candidate):
+                _log_debug("Stage direct object success.")
+                return candidate
 
-        # وإلا نحاول التعرف على أول { و آخر } (نطاق)
-        start = raw.find("{")
-        end = raw.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise PlanValidationError(
-                "Cannot locate JSON object braces in LLM output.",
-                self.name,
-                objective
-            )
-        candidate = raw[start:end + 1].strip()
-        if not (candidate.startswith("{") and candidate.endswith("}")):
-            raise PlanValidationError(
-                "Extracted segment not valid JSON object boundaries.",
-                self.name,
-                objective
-            )
+        # Stage 4: locate widest braces
+        wide_start = raw.find("{")
+        wide_end = raw.rfind("}")
+        if wide_start != -1 and wide_end != -1 and wide_end > wide_start:
+            candidate = raw[wide_start: wide_end + 1]
+            candidate = self._strip_trailing_commas(candidate)
+            if self._looks_like_json(candidate):
+                _log_debug("Stage wide braces success.")
+                return candidate
+
+        # Stage 5: regex all potential JSON root objects (shallow heuristic)
+        object_matches = re.findall(r"\{.*?\}", raw, flags=re.DOTALL)
+        object_matches = sorted(object_matches, key=len, reverse=True)
+        for om in object_matches:
+            cm = om.strip()
+            if cm.count("{") == cm.count("}"):  # naive balance
+                cm2 = self._strip_trailing_commas(cm)
+                if self._looks_like_json(cm2):
+                    _log_debug("Stage regex object match success.")
+                    return cm2
+
+        # Stage 6: attempt partial salvage if tasks array present separately
+        tasks_array = self._extract_tasks_array(raw)
+        if tasks_array:
+            salvage = {
+                "objective": objective,
+                "tasks": tasks_array
+            }
+            _log_debug("Stage tasks-array salvage success.")
+            return json.dumps(salvage, ensure_ascii=False)
+
+        # Stage 7: attempt fix single quotes → double quotes if that produces parseable JSON
+        fixed_single = self._force_double_quotes(original)
+        if fixed_single and self._looks_like_json(fixed_single):
+            _log_debug("Stage single-quote fix success.")
+            return fixed_single
+
+        # Stage 8: last attempt with json5 (optional)
+        if json5:
+            try:
+                data = json5.loads(original)
+                if isinstance(data, dict):
+                    _log_debug("Stage json5 success.")
+                    return json.dumps(data, ensure_ascii=False)
+            except Exception:
+                pass
+
+        # Failure
+        if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+            _log_debug("All extraction stages failed – using fallback JSON.")
+            return json.dumps(self._fallback_data(objective), ensure_ascii=False)
+        raise PlanValidationError("Unable to extract JSON from LLM output.", self.name, objective)
+
+    def _looks_like_json(self, text: str) -> bool:
+        # quick heuristic
+        return '"tasks"' in text or '"objective"' in text
+
+    def _extract_tasks_array(self, raw: str) -> Optional[List[Any]]:
+        # Attempt to isolate tasks array: "tasks": [ ... ]
+        m = re.search(r'"tasks"\s*:\s*\[(.*?)\]', raw, flags=re.DOTALL)
+        if not m:
+            return None
+        inside = m.group(1)
+        # crude split by "}," boundaries (imperfect but salvage)
+        parts = re.split(r"}\s*,\s*\{", inside)
+        tasks: List[Dict[str, Any]] = []
+        for i, p in enumerate(parts):
+            chunk = p
+            if not chunk.strip():
+                continue
+            if not chunk.strip().startswith("{"):
+                chunk = "{" + chunk
+            if not chunk.strip().endswith("}"):
+                chunk = chunk + "}"
+            try:
+                t = json.loads(self._strip_trailing_commas(chunk))
+                if isinstance(t, dict):
+                    tasks.append(t)
+            except Exception:
+                # ignore malformed piece
+                continue
+        return tasks if tasks else None
+
+    def _force_double_quotes(self, raw: str) -> Optional[str]:
+        # naive attempt: replace single quotes around keys with double quotes
+        # (risk: inside text) – only apply if very little double quotes exist
+        if raw.count('"') > 4:
+            return None
+        candidate = re.sub(r"'", '"', raw)
         return candidate
 
-    def _parse_json(self, text: str, objective: str) -> Dict[str, Any]:
-        try:
-            data = json.loads(text)
-            if not isinstance(data, dict):
-                raise TypeError("Top-level JSON must be an object.")
-            if "tasks" not in data:
-                raise ValueError("Missing 'tasks' key.")
-            if not isinstance(data["tasks"], list):
-                raise TypeError("'tasks' must be a list.")
-            return data
-        except Exception as exc:
-            raise PlanValidationError(
-                f"JSON parsing error: {exc}",
-                self.name,
-                objective
-            ) from exc
+    def _strip_trailing_commas(self, text: str) -> str:
+        return re.sub(r",(\s*[}\]])", r"\1", text)
 
-    # ==================================================================================
-    # INTERNAL: NORMALIZATION / LIMITS
-    # ==================================================================================
-    def _enforce_limits(self, data: Dict[str, Any], objective: str) -> None:
+    def _robust_parse_json(self, text: str, objective: str) -> Dict[str, Any]:
+        # Attempt normal json
+        try:
+            return self._validate_parsed_object(json.loads(text), objective)
+        except Exception as e1:
+            _log_debug(f"json.loads failed: {e1}")
+            # Try json5
+            if json5:
+                try:
+                    return self._validate_parsed_object(json5.loads(text), objective)
+                except Exception as e2:
+                    _log_debug(f"json5 parse failed: {e2}")
+            # Attempt final salvage: fallback
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                return self._fallback_data(objective)
+            raise PlanValidationError(f"JSON parsing error: {e1}", self.name, objective) from e1
+
+    def _validate_parsed_object(self, data: Any, objective: str) -> Dict[str, Any]:
+        if not isinstance(data, dict):
+            raise PlanValidationError("Top-level JSON must be an object.", self.name, objective)
+        tasks = data.get("tasks")
+        if tasks is None:
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                data["tasks"] = self._fallback_data(objective)["tasks"]
+            else:
+                raise PlanValidationError("Missing 'tasks' key.", self.name, objective)
+        if not isinstance(data["tasks"], list):
+            raise PlanValidationError("'tasks' must be a list.", self.name, objective)
+        return data
+
+    # --------------------------------------------------------------------------- #
+    # Limits & Transformation
+    # --------------------------------------------------------------------------- #
+    def _enforce_limits(self, data: Dict[str, Any], objective: str):
         tasks = data.get("tasks", [])
         if len(tasks) > self.MAX_TASKS:
-            raise PlanValidationError(
-                f"Too many tasks ({len(tasks)} > {self.MAX_TASKS}).",
-                self.name,
-                objective
-            )
+            raise PlanValidationError(f"Too many tasks ({len(tasks)} > {self.MAX_TASKS}).", self.name, objective)
 
     def _transform_raw_task(self, task: Any, objective: str) -> Dict[str, Any]:
-        """
-        تطبيع (Normalize) مهمة خام من الـ LLM لضمان الحقول:
-          task_id, description, tool_name, tool_args, dependencies
-        عدّل هنا لو مخططك الفعلي يستخدم أسماء مختلفة.
-        """
         if not isinstance(task, dict):
-            raise PlanValidationError("Task entry is not an object.", self.name, objective)
+            raise PlanValidationError("Task entry not an object.", self.name, objective)
+        tid = (task.get("task_id") or task.get("id") or "").strip()
+        if not tid:
+            tid = f"task_{uuid.uuid4().hex[:6]}"
+        if not self.TASK_ID_PATTERN.match(tid):
+            tid = re.sub(r"[^a-zA-Z0-9_\-]", "_", tid)[:30] or f"task_{uuid.uuid4().hex[:4]}"
 
-        task_id = (task.get("task_id") or task.get("id") or "").strip()
-        if not task_id:
-            raise PlanValidationError("Task missing task_id.", self.name, objective)
-        if not self.TASK_ID_PATTERN.match(task_id):
-            raise PlanValidationError(f"Invalid task_id format: {task_id}", self.name, objective)
+        desc = (task.get("description") or task.get("desc") or "").strip()
+        if not desc:
+            desc = f"Execute {tid} for objective."
 
-        description = (task.get("description") or task.get("desc") or "").strip()
-        if not description:
-            description = f"Execute step '{task_id}' related to objective."
-
-        tool_name = (task.get("tool_name") or task.get("tool") or "generic_think").strip()
-        if not tool_name:
-            tool_name = "generic_think"
-
+        tool_name = (task.get("tool_name") or task.get("tool") or "generic_think").strip() or "generic_think"
         tool_args = task.get("tool_args") or task.get("args") or {}
         if not isinstance(tool_args, dict):
             tool_args = {}
@@ -412,114 +675,92 @@ NOW RETURN THE JSON PLAN:
         deps = task.get("dependencies") or task.get("depends_on") or []
         if not isinstance(deps, list):
             deps = []
-
-        # إزالة التكرار في الاعتماديات والحفاظ على الترتيب
+        cleaned: List[str] = []
         seen = set()
-        clean_deps: List[str] = []
         for d in deps:
             if isinstance(d, str):
                 d = d.strip()
-                if d and d not in seen and d != task_id:
+                if d and d != tid and d not in seen:
                     seen.add(d)
-                    clean_deps.append(d)
+                    cleaned.append(d)
 
         return {
-            "task_id": task_id,
-            "description": description,
+            "task_id": tid,
+            "description": desc,
             "tool_name": tool_name,
             "tool_args": tool_args,
-            "dependencies": clean_deps,
+            "dependencies": cleaned,
         }
 
-    # ==================================================================================
-    # INTERNAL: BUILD SCHEMA
-    # ==================================================================================
     def _build_schema(self, data: Dict[str, Any], objective: str) -> MissionPlanSchema:
-        """
-        يبني MissionPlanSchema (اعتمد على مخططك الفعلي). إذا كان مخططك يطلب
-        حقولاً إضافية (مثل rationale / stats / score), أضفها هنا.
-        """
         try:
-            plan = MissionPlanSchema(**data)
-            return plan
+            return MissionPlanSchema(**data)
         except Exception as exc:
-            raise PlanValidationError(
-                f"Schema validation failed: {exc}",
-                self.name,
-                objective
-            ) from exc
+            _log_debug(f"MissionPlanSchema validation failed: {exc}")
+            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
+                return MissionPlanSchema(**self._fallback_data(objective))
+            raise PlanValidationError(f"Schema validation failed: {exc}", self.name, objective) from exc
 
-    # ==================================================================================
-    # INTERNAL: DAG VALIDATION
-    # ==================================================================================
-    def _validate_dag(self, plan: MissionPlanSchema, objective: str) -> None:
+    # --------------------------------------------------------------------------- #
+    # DAG Validation
+    # --------------------------------------------------------------------------- #
+    def _validate_dag(self, plan: MissionPlanSchema, objective: str):
         tasks = getattr(plan, "tasks", None)
         if not tasks:
-            raise PlanValidationError("No tasks present for validation.", self.name, objective)
+            raise PlanValidationError("No tasks to validate.", self.name, objective)
 
         ids: Set[str] = set()
         adjacency: Dict[str, List[str]] = {}
-        in_degree: Dict[str, int] = {}
+        indeg: Dict[str, int] = {}
 
-        # Pass 1: gather ids
+        # Collect
         for t in tasks:
-            # دعم كلٍ من الكائن Pydantic أو dict
             tid = getattr(t, "task_id", None) if hasattr(t, "task_id") else t.get("task_id")
-            if not isinstance(tid, str) or not tid:
-                raise PlanValidationError("Task missing task_id (validation).", self.name, objective)
+            if not tid or not isinstance(tid, str):
+                raise PlanValidationError("Invalid task_id (None).", self.name, objective)
             if tid in ids:
                 raise PlanValidationError(f"Duplicate task_id '{tid}'", self.name, objective)
             ids.add(tid)
             adjacency[tid] = []
-            in_degree[tid] = 0
+            indeg[tid] = 0
 
-        # Pass 2: dependencies
+        # Edges
         for t in tasks:
             tid = getattr(t, "task_id", None) if hasattr(t, "task_id") else t.get("task_id")
             deps = getattr(t, "dependencies", None) if hasattr(t, "dependencies") else t.get("dependencies")
             deps = deps or []
             if not isinstance(deps, list):
-                raise PlanValidationError(f"Task '{tid}' dependencies not a list.", self.name, objective)
+                raise PlanValidationError(f"Task '{tid}' dependencies not list.", self.name, objective)
             for d in deps:
                 if d == tid:
-                    raise PlanValidationError(f"Task '{tid}' self-dependency.", self.name, objective)
+                    raise PlanValidationError(f"Self-dependency in '{tid}'", self.name, objective)
                 if d not in ids:
-                    raise PlanValidationError(
-                        f"Task '{tid}' depends on unknown task '{d}'.",
-                        self.name,
-                        objective
-                    )
+                    raise PlanValidationError(f"Unknown dependency '{d}' for '{tid}'", self.name, objective)
                 adjacency[d].append(tid)
-                in_degree[tid] += 1
+                indeg[tid] += 1
 
-        # Kahn's algorithm for cycle detection
-        queue = [n for n, deg in in_degree.items() if deg == 0]
+        # Topological check
+        queue = [n for n, deg in indeg.items() if deg == 0]
         visited = 0
         while queue:
-            current = queue.pop()
+            cur = queue.pop()
             visited += 1
-            for nxt in adjacency[current]:
-                in_degree[nxt] -= 1
-                if in_degree[nxt] == 0:
+            for nxt in adjacency[cur]:
+                indeg[nxt] -= 1
+                if indeg[nxt] == 0:
                     queue.append(nxt)
 
         if visited != len(ids):
             raise PlanValidationError("Cycle detected in task graph.", self.name, objective)
 
-    # ==================================================================================
-    # OPTIONAL QUICK HEURISTIC
-    # ==================================================================================
+    # --------------------------------------------------------------------------- #
+    # Quick Objective Validation
+    # --------------------------------------------------------------------------- #
     def quick_validate_objective(self, objective: str) -> bool:
-        """
-        Heuristic filter before planning. يمكن استخدامه في orchestrator
-        لتجنب طلب LLM لأهداف قصيرة / عديمة المعنى.
-        """
         obj = (objective or "").strip()
-        if len(obj) < 12:
+        if len(obj) < self.MIN_OBJECTIVE_LENGTH:
             return False
-        verbs = {"build", "create", "design", "analyze", "generate", "plan", "refactor", "write"}
-        tokens = set(re.findall(r"[a-z]{4,}", obj.lower()))
-        return bool(verbs & tokens)
+        return True
 
 
 # ======================================================================================

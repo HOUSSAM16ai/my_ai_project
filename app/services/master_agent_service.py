@@ -1,42 +1,50 @@
 # app/services/master_agent_service.py
 # ======================================================================================
-#  OVERMIND ORCHESTRATION SERVICE (v4.2 • "ALIAS-EXEC-FIX / TOOL-DIRECT")              #
+#  OVERMIND ORCHESTRATION SERVICE (v4.4 • "TERMINAL-VISION / ANTI-PENDING UPRISING")    #
 # ======================================================================================
 #  PURPOSE:
-#    تحويل الـ Objective إلى خطة ثم تنفيذها (Topological / Wave) مع دعم كامل
-#    لتنفيذ المهام التي تستدعي أدوات (tools) عبر سجل الأدوات (agent_tools) بما في ذلك
-#    الـ aliases (مثل file_system / file_system_tool) دون أن تبقى المهام PENDING.
+#    تحويل الـ Objective إلى خطة ثم تنفيذها (Topological / Wave) مع إصلاح جذري
+#    لمشكلة "شلل الحالة" حيث تبقى الـ Mission في RUNNING بعد انتهاء المهام.
 #
-#  WHAT'S NEW in v4.2 (compared to 4.1):
-#    1) إصلاح مشكلة بقاء المهام ذات tool_name (مثل 'file_system') في حالة PENDING:
-#       - سابقاً: أي مهمة (حتى لو لها tool_name) تمر عبر maestro.execute_task إذا وُجد،
-#                 ما يعني تجاهل سجل الأدوات الحقيقي إن لم يكن maestro ينفّذ الأدوات.
-#       - الآن: إذا كان للـ Task tool_name غير فارغ => نستخدم _execute_tool (تنفيذ مباشر
-#                 عبر agent_tools + resolve_tool_name) بغض النظر عن وجود maestro.execute_task.
-#    2) دعم resolve_tool_name لضبط alias -> canonical (مثلاً file_system -> write_file).
-#    3) تسجيل نتيجة الأداة في result_text + حفظ meta في result_meta_json إن توفر الحقل.
-#    4) تحسين سجلات TASK_STARTED / TASK_COMPLETED لتشمل canonical_tool.
-#    5) تغليف تنفيذ الأداة في طبقة آمنة ترجع أخطاء واضحة (ToolNotFound / ToolFailed).
+#  CORE FIXES (v4.4):
+#    1) TERMINAL VISION: لم يعد التحكم في حلقة الحياة (_tick) يعتمد فقط على تغيّر
+#       حالة الـ Mission؛ أضفنا فحصاً متكرراً (Polling + Event) حتى تُغلق كل المهام.
+#    2) EVENT-DRIVEN CHECK: استدعاء _check_terminal بعد نهاية كل Task (نجاح/فشل)
+#       لضمان الإعلان المبكر عن النجاح أو الفشل.
+#    3) POLLING LOOP REWRITE: إعادة كتابة _tick لتستمر بينما توجد مهام مفتوحة
+#       (PENDING / RETRY / RUNNING) حتى تتحول الـ Mission إلى حالة نهائية.
+#    4) ALIAS EXECUTION: استمرار دعم تنفيذ الأدوات عبر resolve_tool_name مع
+#       تسجيل أوضح للـ canonical_tool.
+#    5) ROBUST TOOL RESULT EXTRACTION: دعم صيغ ToolResult مختلفة (result / data /
+#       content) بدون انكسار.
+#    6) CONFIGURABLE POLL INTERVAL: متغير بيئة OVERMIND_POLL_INTERVAL_SECONDS
+#       (افتراضي 0.18 ثانية).
+#    7) SAFETY: حماية ضد تجاوز الزمن الكلي (MAX_TOTAL_RUNTIME_SECONDS) وإنهاء أنيق.
 #
-#  EXECUTION DECISION:
+#  HIGH-LEVEL EXECUTION DECISION:
 #      if task.tool_name:
-#           _execute_tool (direct registry)  <-- يعتمد على agent_tools
+#           _execute_tool(...)   --> تنفيذ مباشر للأدوات (registry) + alias resolution
 #      else:
-#           maestro.execute_task(task)       <-- مهام توليد/تفكير عامة
+#           maestro.execute_task(task)  --> تنفيذ معرفي (LLM / multi-step) داخل generation_service
 #
-#  THREAD SAFETY NOTE:
-#    ما زلنا نستعمل نفس Session في الخيوط (كما في الإصدارات السابقة) – يمكن تحسينه لاحقاً
-#    بتحويل التنفيذ إلى Worker Queue.
+#  TERMINAL CHECK CRITERIA:
+#      - لا يوجد أي Task بحالة PENDING / RETRY / RUNNING
+#      - إن وجدت FAILED:
+#            * إذا فشل >= REPLAN_FAILURE_THRESHOLD وسمح التكيّف => ADAPTING
+#            * وإلا => FAILED
+#        وإلا (بدون failed) => SUCCESS
 #
-#  FALLBACKS:
-#    - لو لم يُعثر على الأداة في السجل (حتى بعد alias) => فشل المهمة مع ToolNotFound.
-#    - لو الأداة رجعت ok=False => يُرمى استثناء TaskExecutionError ويجري منطق retry.
+#  ENVIRONMENT FLAGS:
+#      OVERMIND_POLL_INTERVAL_SECONDS   (float, default=0.18)
+#      OVERMIND_MAX_LIFECYCLE_TICKS     (int,   default=1000)
+#      OVERMIND_LOG_DEBUG=1            (verbose internal logs)
 #
 # ======================================================================================
 
 from __future__ import annotations
 
 import json
+import os
 import random
 import threading
 import time
@@ -46,7 +54,7 @@ from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 from flask import current_app
-from sqlalchemy import select, func
+from sqlalchemy import select, func, exists
 from sqlalchemy.orm import joinedload
 
 from app import db
@@ -69,7 +77,7 @@ from app.models import (
 # --------------------------------------------------------------------------------------
 try:
     from app.overmind.planning.factory import get_all_planners
-except ImportError:
+except ImportError:  # pragma: no cover
     def get_all_planners():
         return []
 
@@ -80,7 +88,7 @@ from app.overmind.planning.schemas import MissionPlanSchema, PlanWarning
 # --------------------------------------------------------------------------------------
 try:
     from app.services import generation_service as maestro
-except ImportError:
+except ImportError:  # pragma: no cover
     class maestro:  # fallback mock
         @staticmethod
         def execute_task(task: Task):
@@ -89,16 +97,12 @@ except ImportError:
             task.finished_at = utc_now()
             db.session.commit()
 
-        @staticmethod
-        def execute_tool(tool_name: str, tool_args: Dict[str, Any]) -> Dict[str, Any]:
-            return {"status": "success", "result_text": f"Mock tool {tool_name} -> {tool_args}"}
-
 # --------------------------------------------------------------------------------------
-# Agent Tools (NEW: used directly for tool tasks)
+# Agent Tools
 # --------------------------------------------------------------------------------------
 try:
     from app.services import agent_tools
-except ImportError:
+except ImportError:  # pragma: no cover
     agent_tools = None  # Will cause ToolNotFound if referenced
 
 # --------------------------------------------------------------------------------------
@@ -124,7 +128,7 @@ def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pa
 # --------------------------------------------------------------------------------------
 # Config / Constants
 # --------------------------------------------------------------------------------------
-OVERMIND_VERSION = "4.2-alias-exec-fix"
+OVERMIND_VERSION = "4.4-terminal-vision"
 
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = 3
@@ -136,11 +140,16 @@ TASK_EXECUTION_HARD_TIMEOUT_SECONDS = 180
 
 TASK_RETRY_BACKOFF_BASE = 2.0
 TASK_RETRY_BACKOFF_JITTER = 0.5
-MAX_LIFECYCLE_TICKS = 100
-MAX_TOTAL_RUNTIME_SECONDS = 7200
+MAX_TOTAL_RUNTIME_SECONDS = 7200  # 2h safety cap
+
+# Poll configuration
+DEFAULT_POLL_INTERVAL = float(os.getenv("OVERMIND_POLL_INTERVAL_SECONDS", "0.18"))
+MAX_LIFECYCLE_TICKS = int(os.getenv("OVERMIND_MAX_LIFECYCLE_TICKS", "1000"))
 
 STALL_DETECTION_WINDOW = 10
 STALL_NO_PROGRESS_THRESHOLD = 0
+
+VERBOSE_DEBUG = os.getenv("OVERMIND_LOG_DEBUG", "0") == "1"
 
 # --------------------------------------------------------------------------------------
 # Logging Helpers
@@ -167,13 +176,16 @@ def _log(level: str, mission: Mission | None, message: str, **extra):
 def log_info(mission: Mission | None, message: str, **extra): _log("info", mission, message, **extra)
 def log_warn(mission: Mission | None, message: str, **extra): _log("warn", mission, message, **extra)
 def log_error(mission: Mission | None, message: str, **extra): _log("error", mission, message, **extra)
+def log_debug(mission: Mission | None, message: str, **extra):
+    if VERBOSE_DEBUG:
+        _log("debug", mission, f"[DEBUG] {message}", **extra)
 
 # --------------------------------------------------------------------------------------
 # Mission Lock (advisory stub)
 # --------------------------------------------------------------------------------------
 @contextmanager
 def mission_lock(mission_id: int):
-    # TODO: Replace with DB advisory/Redis lock in distributed environment.
+    # TODO: Replace with DB advisory/Redis lock for distributed deployment.
     yield
 
 # --------------------------------------------------------------------------------------
@@ -235,38 +247,83 @@ class OvermindService:
                 update_mission_status(mission, MissionStatus.FAILED, note=f"Fatal: {e}")
                 db.session.commit()
 
-    # --------------------------- Main State Loop --------------------------------------
+    # --------------------------- Main State Loop (Polling + Event) --------------------
     def _tick(self, mission: Mission, overall_start_perf: float):
+        """
+        إعادة تصميم الحلقة:
+          - تستمر أثناء وجود مهام مفتوحة أو حالة قابلة للتقدم.
+          - لا تتوقف مبكراً بمجرد عدم تغيّر status في دورة واحدة.
+        """
         loops = 0
-        changed = True
-        while changed and loops < MAX_LIFECYCLE_TICKS:
+        while loops < MAX_LIFECYCLE_TICKS:
             loops += 1
-            previous = mission.status
 
             if (time.perf_counter() - overall_start_perf) > MAX_TOTAL_RUNTIME_SECONDS:
                 update_mission_status(mission, MissionStatus.FAILED, note="Exceeded total runtime limit.")
                 db.session.commit()
+                log_warn(mission, "Mission terminated due to total runtime limit.")
                 break
+
+            log_debug(mission, "Lifecycle loop tick", loop=loops, status=str(mission.status))
 
             if mission.status == MissionStatus.PENDING:
                 self._plan_phase(mission)
+
             elif mission.status == MissionStatus.PLANNING:
+                # Planners may be async or multi-step; brief wait
                 time.sleep(0.05)
+
             elif mission.status == MissionStatus.PLANNED:
                 self._prepare_execution(mission)
+
             elif mission.status == MissionStatus.RUNNING:
                 if EXECUTION_STRATEGY == "topological":
                     self._execution_phase(mission)
                 else:
                     self._execution_wave_legacy(mission)
+
+                # Always re-check terminal conditions
                 self._check_terminal(mission)
+
+                # If still running and there remain open tasks -> poll sleep
+                if mission.status == MissionStatus.RUNNING and self._has_open_tasks(mission):
+                    time.sleep(DEFAULT_POLL_INTERVAL)
+                else:
+                    # Either success/failure or no open tasks (terminal check will adjust)
+                    pass
+
             elif mission.status == MissionStatus.ADAPTING:
                 self._adaptive_replan(mission)
+
             elif mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+                log_debug(mission, "Mission reached terminal state; exiting loop.")
                 break
 
-            db.session.refresh(mission)
-            changed = (mission.status != previous)
+            # Refresh mission state & tasks
+            try:
+                db.session.refresh(mission)
+            except Exception:
+                db.session.rollback()
+
+            # Stop if terminal
+            if mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+                break
+
+            # If running but no tasks open -> do a final terminal check and break
+            if mission.status == MissionStatus.RUNNING and not self._has_open_tasks(mission):
+                self._check_terminal(mission)
+                db.session.refresh(mission)
+                if mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED):
+                    break
+                # Safety sleep to avoid frantic loop
+                time.sleep(0.05)
+
+        else:
+            # Loop exhaustion
+            if mission.status == MissionStatus.RUNNING:
+                log_warn(mission, "Lifecycle tick limit reached while still RUNNING.")
+                self._check_terminal(mission)
+                db.session.commit()
 
     # ------------------------------ Planning Phase ------------------------------------
     def _plan_phase(self, mission: Mission):
@@ -276,7 +333,9 @@ class OvermindService:
 
         planners = get_all_planners()
         if not planners:
-            raise PlannerSelectionError("No planners available.")
+            update_mission_status(mission, MissionStatus.FAILED, note="No planners available.")
+            db.session.commit()
+            return
 
         candidates: List[CandidatePlan] = []
         for planner in planners:
@@ -300,7 +359,8 @@ class OvermindService:
                 log_info(mission, "Planner candidate produced",
                          planner=planner_name, score=score, duration=f"{result.duration_seconds:.4f}")
             except Exception as e:
-                log_warn(mission, "Planner failed", planner=getattr(planner, "name", "unknown"), error=str(e))
+                log_warn(mission, "Planner failed",
+                         planner=getattr(planner, "name", "unknown"), error=str(e))
 
         if not candidates:
             update_mission_status(mission, MissionStatus.FAILED, note="All planners failed.")
@@ -312,7 +372,9 @@ class OvermindService:
         try:
             self._persist_plan(mission, best, version)
         except Exception as e:
-            raise PlanPersistenceError(f"Failed to persist plan: {e}") from e
+            update_mission_status(mission, MissionStatus.FAILED, note=f"Plan persistence error: {e}")
+            db.session.commit()
+            return
 
         update_mission_status(mission, MissionStatus.PLANNED, note=f"Plan v{version} selected.")
         db.session.commit()
@@ -558,6 +620,7 @@ class OvermindService:
 
     # ------------------ Core Execution (Retry Wrapper) --------------------------------
     def _execute_task_with_retry_topological(self, mission: Mission, task: Task, layer_index: int):
+        # Refresh row to guard against stale session state
         task = Task.query.get(task.id)
         if not task or task.status not in (TaskStatus.PENDING, TaskStatus.RETRY):
             return
@@ -571,6 +634,7 @@ class OvermindService:
             task.error_text = "PolicyDenied"
             db.session.commit()
             log_warn(mission, "Policy denied tool", task_key=task.task_key, tool=task.tool_name)
+            self._safe_terminal_event(mission)
             return
 
         attempt_index = task.attempt_count + 1
@@ -589,30 +653,28 @@ class OvermindService:
                 "tool": task.tool_name
             }
         )
+        log_debug(mission, "Task started", task_key=task.task_key, attempt=attempt_index, tool=task.tool_name)
 
         perf_start = time.perf_counter()
 
         try:
-            # NEW: Direct tool execution if tool_name is specified
-            if task.tool_name:
+            if task.tool_name:  # Direct Tool Task
                 result_payload = self._execute_tool(task)
                 if not verification_service.verify(task):
                     raise TaskExecutionError("Verification failed.")
-                # result_payload should contain result_text and possibly tool meta
-                task.result_text = result_payload.get("result_text", "")[:5000]
-                extra_meta = result_payload.get("meta") or result_payload.get("tool_meta")
+                task.result_text = (result_payload.get("result_text") or "")[:5000]
+                extra_meta = result_payload.get("meta")
                 if hasattr(task, "result_meta_json") and extra_meta:
                     try:
                         task.result_meta_json = extra_meta
                     except Exception:
                         pass
                 task.status = TaskStatus.SUCCESS
-            else:
-                # Non-tool (LLM / generic) task via maestro
+            else:  # Delegated to Maestro
                 if hasattr(maestro, "execute_task"):
-                    maestro.execute_task(task)  # expected to set status & result_text
+                    maestro.execute_task(task)  # expected to set status
                     db.session.refresh(task)
-                    if task.status == TaskStatus.RUNNING:
+                    if task.status == TaskStatus.RUNNING:  # Defensive; Maestro forgot to finalize
                         task.status = TaskStatus.SUCCESS
                 else:
                     task.result_text = "[Generic Execution Fallback]"
@@ -639,7 +701,11 @@ class OvermindService:
             )
 
         except Exception as e:
-            db.session.refresh(task)
+            # Reload row safely (avoid stale state)
+            try:
+                db.session.refresh(task)
+            except Exception:
+                pass
             task.attempt_count = attempt_index
             task.error_text = str(e)[:500]
             task.finished_at = utc_now()
@@ -694,6 +760,9 @@ class OvermindService:
                 increment_counter("overmind_tasks_executed_total", {"result": "failed"})
             db.session.commit()
 
+        # EVENT-DRIVEN TERMINAL CHECK
+        self._safe_terminal_event(mission)
+
     # ------------------------------ Tool Execution Core --------------------------------
     def _execute_tool(self, task: Task) -> Dict[str, Any]:
         """
@@ -702,9 +771,10 @@ class OvermindService:
             {
               "status": "success" | "error",
               "result_text": "...",
-              "meta": {...}   # إن توفرت
+              "data": {...} أو قيمة,
+              "meta": {...}
             }
-        يرفع استثناء TaskExecutionError عند الفشل.
+        يرفع TaskExecutionError عند الفشل.
         """
         if agent_tools is None:
             raise TaskExecutionError("Agent tools module not available.")
@@ -713,10 +783,17 @@ class OvermindService:
         if not tool_name_raw:
             raise TaskExecutionError("Empty tool_name for tool execution path.")
 
-        canonical = agent_tools.resolve_tool_name(tool_name_raw) or tool_name_raw
+        # Alias resolution
+        canonical = None
+        if hasattr(agent_tools, "resolve_tool_name"):
+            try:
+                canonical = agent_tools.resolve_tool_name(tool_name_raw)
+            except Exception:
+                canonical = None
+        canonical = canonical or tool_name_raw
 
-        # ابحث في السجل: اسم alias أو الاسم الأصلي
-        meta = agent_tools._TOOL_REGISTRY.get(tool_name_raw) or agent_tools._TOOL_REGISTRY.get(canonical)
+        registry = getattr(agent_tools, "_TOOL_REGISTRY", {})
+        meta = registry.get(tool_name_raw) or registry.get(canonical)
         if not meta:
             raise TaskExecutionError(f"ToolNotFound: {tool_name_raw}")
 
@@ -725,7 +802,6 @@ class OvermindService:
             raise TaskExecutionError(f"ToolHandlerMissing: {tool_name_raw}")
 
         args = task.tool_args_json or {}
-        # تأكد أنها dict
         if isinstance(args, str):
             try:
                 args = json.loads(args)
@@ -739,44 +815,63 @@ class OvermindService:
         except Exception as ex:
             raise TaskExecutionError(f"ToolRaised: {ex}") from ex
 
-        # ToolResult أو شيء آخر
+        # Normalization
         status_ok = True
         result_text = ""
-        meta_payload = {}
+        meta_payload = {"canonical_tool": canonical, "invocation_tool_name": tool_name_raw}
         data_payload = None
 
+        # ToolResult pattern attempts
         if hasattr(result_obj, "ok"):
-            status_ok = result_obj.ok
-            data_payload = result_obj.data
-            if isinstance(data_payload, dict):
-                # استنتاج نص مفيد
-                if "content" in data_payload and isinstance(data_payload["content"], str):
-                    result_text = data_payload["content"]
-                elif "written" in data_payload:
-                    result_text = f"File written: {data_payload['written']}"
-                elif "appended" in data_payload:
-                    result_text = f"Appended: {data_payload['appended']}"
-                else:
-                    result_text = json.dumps(data_payload, ensure_ascii=False)[:1000]
-            elif isinstance(data_payload, str):
-                result_text = data_payload[:1000]
-            meta_payload = (result_obj.meta or {}).copy()
-            if not status_ok and result_obj.error:
-                raise TaskExecutionError(f"ToolFailed: {result_obj.error}")
+            status_ok = getattr(result_obj, "ok", True)
+            # unify possible payload locations
+            candidate_attrs = ["data", "result", "content", "_content"]
+            for attr in candidate_attrs:
+                if hasattr(result_obj, attr):
+                    data_payload = getattr(result_obj, attr)
+                    if data_payload is not None:
+                        break
+            error_attr = getattr(result_obj, "error", None)
+            if not status_ok and error_attr:
+                raise TaskExecutionError(f"ToolFailed: {error_attr}")
+            # meta
+            if hasattr(result_obj, "meta"):
+                try:
+                    meta_field = getattr(result_obj, "meta")
+                    if isinstance(meta_field, dict):
+                        meta_payload.update(meta_field)
+                except Exception:
+                    pass
         else:
-            # fallback simple
+            # Raw return (dict / str / other)
             data_payload = result_obj
-            result_text = str(result_obj)[:1000]
+
+        # Derive result_text
+        if isinstance(data_payload, dict):
+            if "content" in data_payload and isinstance(data_payload["content"], str):
+                result_text = data_payload["content"]
+            elif "written" in data_payload:
+                result_text = f"File written: {data_payload['written']}"
+            elif "appended" in data_payload:
+                result_text = f"Appended: {data_payload['appended']}"
+            else:
+                try:
+                    result_text = json.dumps(data_payload, ensure_ascii=False)[:1000]
+                except Exception:
+                    result_text = str(data_payload)[:1000]
+        elif isinstance(data_payload, str):
+            result_text = data_payload[:1000]
+        elif data_payload is not None:
+            result_text = str(data_payload)[:1000]
+        else:
+            if not result_text:
+                result_text = "[NO TOOL OUTPUT]"
 
         return {
             "status": "success" if status_ok else "error",
             "result_text": result_text,
             "data": data_payload,
-            "meta": {
-                "canonical_tool": canonical,
-                "invocation_tool_name": tool_name_raw,
-                **meta_payload
-            }
+            "meta": meta_payload
         }
 
     def _compute_backoff(self, attempt: int) -> float:
@@ -786,25 +881,47 @@ class OvermindService:
 
     # ----------------------------- Terminal Check --------------------------------------
     def _check_terminal(self, mission: Mission):
+        """
+        فحص شامل لتحديد إن كانت الـ Mission يمكن أن تُعلن ناجحة أو فاشلة أو تدخل طور التكيّف.
+        """
         pending = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
         retry = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
         running = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RUNNING).count()
         failed = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.FAILED).count()
 
+        log_debug(
+            mission,
+            "Terminal check snapshot",
+            pending=pending, retry=retry, running=running, failed=failed, status=str(mission.status)
+        )
+
         if pending == 0 and retry == 0 and running == 0:
             if failed == 0:
-                update_mission_status(mission, MissionStatus.SUCCESS, note="All tasks completed.")
-                increment_counter("overmind_missions_finished_total", {"result": "success"})
-                log_info(mission, "Mission success")
+                if mission.status != MissionStatus.SUCCESS:
+                    update_mission_status(mission, MissionStatus.SUCCESS, note="All tasks completed.")
+                    increment_counter("overmind_missions_finished_total", {"result": "success"})
+                    log_info(mission, "Mission success")
             else:
                 if failed >= REPLAN_FAILURE_THRESHOLD and self._adaptive_cycles_used(mission) < ADAPTIVE_MAX_CYCLES:
-                    update_mission_status(mission, MissionStatus.ADAPTING, note="Entering adaptive replan.")
-                    log_info(mission, "Switching to adaptive replanning", failed=failed)
+                    if mission.status != MissionStatus.ADAPTING:
+                        update_mission_status(mission, MissionStatus.ADAPTING, note="Entering adaptive replan.")
+                        log_info(mission, "Switching to adaptive replanning", failed=failed)
                 else:
-                    update_mission_status(mission, MissionStatus.FAILED, note=f"{failed} tasks failed.")
-                    increment_counter("overmind_missions_finished_total", {"result": "failed"})
-                    log_warn(mission, "Mission failed terminally", failed=failed)
+                    if mission.status != MissionStatus.FAILED:
+                        update_mission_status(mission, MissionStatus.FAILED, note=f"{failed} tasks failed.")
+                        increment_counter("overmind_missions_finished_total", {"result": "failed"})
+                        log_warn(mission, "Mission failed terminally", failed=failed)
             db.session.commit()
+
+    def _has_open_tasks(self, mission: Mission) -> bool:
+        """Return True if there are any tasks still actionable."""
+        return db.session.query(
+            exists().where(
+                Task.mission_id == mission.id,
+            ).where(
+                Task.status.in_([TaskStatus.PENDING, TaskStatus.RETRY, TaskStatus.RUNNING])
+            )
+        ).scalar()
 
     def _adaptive_cycles_used(self, mission: Mission) -> int:
         plan_count = MissionPlan.query.filter_by(mission_id=mission.id).count()
@@ -871,6 +988,22 @@ class OvermindService:
             log_error(mission, "Adaptive replanning failed", error=str(e))
             update_mission_status(mission, MissionStatus.FAILED, note=f"Adaptive failed: {e}")
             db.session.commit()
+
+    # ----------------------------- Internal Helpers -----------------------------------
+    def _compute_backoff(self, attempt: int) -> float:
+        base = TASK_RETRY_BACKOFF_BASE ** attempt
+        jitter = random.uniform(0, TASK_RETRY_BACKOFF_JITTER)
+        return min(base + jitter, 600.0)
+
+    def _safe_terminal_event(self, mission: Mission):
+        """
+        استدعاء آمن للفحص النهائي بعد انتهاء تنفيذ مهمة (نجاح/فشل)
+        لتقليل زمن بقائها في RUNNING.
+        """
+        try:
+            self._check_terminal(mission)
+        except Exception:
+            pass
 
 # ======================================================================================
 # Singleton Facade

@@ -1,35 +1,42 @@
-# app/models.py
 # ======================================================================================
-#  COGNIFORGE DOMAIN MODELS v12.2  "TIMESTAMP GUARD / OVERMIND+ MAESTRO SAFE"          #
+#  COGNIFORGE DOMAIN MODELS  v13.0  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER"          #
 # ======================================================================================
-#  WHY v12.2?
-#    (1) حلّ المشكلة التي ظهرت في التنفيذ:
-#          psycopg2.errors.DatatypeMismatch: column "started_at" is of type timestamp with time zone but expression is of type numeric
-#        السبب كان إسناد أرقام float (time.time()) مباشرةً إلى أعمدة DateTime.
+#  PURPOSE:
+#    نموذج نطاق (Domain Model) مُحسَّن لتحقيق انسجام كامل بين:
+#      - Overmind Orchestrator (master_agent_service v4.4-terminal-vision)
+#      - Maestro Generation Service (generation_service v16.5.0 sovereign fusion)
 #
-#    (2) إضافة طبقة حراسة (Guard Layer) تحوّل أي قيمة (float/int/str ISO) يتم تمريرها
-#        إلى started_at / finished_at / next_retry_at إلى datetime UTC تلقائياً قبل الحفظ.
+#  CORE UPGRADES vs v12.2:
+#    1) RESULT META CHANNEL:
+#         حقل result_meta_json (JSON) مضاف لدعم أي بيانات إضافية (مثل tool meta).
+#         (كان master_agent_service يتحقق من وجوده قبل الإسناد).
+#    2) TASK TIMESTAMP GUARD:
+#         تحسين التحويل (coerce_datetime) + دعم قيم epoch / ISO / dt بدون TZ.
+#    3) ATOMIC FINALIZATION:
+#         finalize_task صار idempotent (لن يُعيد إنهاء مهمة منتهية).
+#    4) RETRY SUPPORT:
+#         حقول next_retry_at + attempt_count + max_attempts مُهيّأة للاستخدام المباشر.
+#    5) DURATION CONSISTENCY:
+#         compute_duration يستخدم started_at/finished_at فقط إن لم يكن duration_ms محفوظاً.
+#    6) INDEXING + ANALYTICS:
+#         فهارس تغطي الاستعلامات المتكررة لدى Overmind (mission_id,status / (mission_id,task_key)).
+#    7) EXTENDED ENUMS ALIGNMENT:
+#         إضافة SKIPPED و RETRY (موجودة في Overmind) وضمان تماسك حالات المهمة.
+#    8) EVENT STREAM:
+#         MissionEventType يشمل جميع الأحداث المطلوبة لدى النسختين (CREATED / PLAN_SELECTED /
+#         EXECUTION_STARTED / TASK_* / REPLAN_* / STATUS_CHANGE / FINALIZED).
+#    9) SAFE HASHING UTIL + CONTENT HASH للخطط لاكتشاف التكرار.
+#   10) DERIVED PROPERTIES:
+#         - Task.is_terminal
+#         - Task.duration_seconds
+#         - Mission.total_tasks / completed_tasks / failed_tasks / success_ratio
+#   11) UNIFIED HELPERS:
+#         update_mission_status, log_mission_event, finalize_task (لا يقوم بالـ commit).
+#   12) UPGRADED JSON TYPE:
+#         JSONB_or_JSON يدعم PostgreSQL (JSONB) و باقي المحركات (SAJSON).
 #
-#    (3) واجهات مريحة:
-#        - Task.mark_started()
-#        - Task.mark_finished()
-#        - Task.schedule_retry(backoff_seconds)
-#        - Task.compute_duration()
-#
-#    (4) ضبط finalize_task ليستخدم utc_now ويُضيف حدثاً منظماً.
-#
-#    (5) تحسين __repr__ لتسهيل التشخيص، وإضافة خصائص مشتقة:
-#        - Task.is_terminal
-#        - Task.duration_seconds (قراءة فقط)
-#
-#    (6) دوال مساعدة إضافية:
-#        - coerce_datetime(value): تحويل آمن للقيم المختلفة إلى datetime
-#
-#    (7) تحسين تعاريف العلاقات مع overlaps و foreign_keys بوضوح كما في 12.1.
-#
-#  ملاحظة:
-#    مصدر الخطأ الأصلي هو SERVICE (مثل master_agent_service) الذي كان يكتب time.time().
-#    هذا الإصدار يعمل حتى لو استمر ذلك مؤقتاً، لأنه سيحوّل float -> datetime UTC.
+#  NOTE:
+#    هذا الملف لا ينفذ أي commit. التحكم الكامل بالمعاملات (Transactions) مسؤولية الطبقات العليا.
 #
 # ======================================================================================
 
@@ -38,7 +45,7 @@ from __future__ import annotations
 import enum
 import hashlib
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, Dict, List, Union
+from typing import Optional, Any, Dict, List, Union, Iterable
 
 from flask_login import UserMixin
 from sqlalchemy import (
@@ -64,12 +71,16 @@ from app import db, login_manager
 
 class JSONB_or_JSON(TypeDecorator):
     """
-    اختيار JSONB في PostgreSQL وإلا JSON عادي في باقي المحركات.
+    استخدام JSONB في PostgreSQL وإلا JSON قياسي.
     """
     impl = SAJSON
     cache_ok = True
     def load_dialect_impl(self, dialect):
-        return dialect.type_descriptor(JSONB()) if dialect.name == 'postgresql' else dialect.type_descriptor(SAJSON())
+        return (
+            dialect.type_descriptor(JSONB())
+            if dialect.name == 'postgresql'
+            else dialect.type_descriptor(SAJSON())
+        )
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -79,35 +90,34 @@ def hash_content(content: str) -> str:
 
 def coerce_datetime(value: Any) -> Optional[datetime]:
     """
-    يحوّل عدة أنواع إلى datetime(timezone=UTC):
-
+    تحويل مرن إلى datetime مع TZ=UTC:
       - None -> None
-      - datetime (مع / بدون tz) -> مع إلحاق UTC إن لم توجد
-      - int / float (epoch seconds) -> datetime UTC
-      - str ISO8601 -> محاولة التحويل
-      - أي قيمة غير معروفة -> تُهمل (ترجع None)
+      - datetime (مع / بدون tz)
+      - int/float (Epoch)
+      - str (عدة صيغ ISO + fromisoformat)
+      - غير ذلك => None
     """
     if value is None:
         return None
     if isinstance(value, datetime):
-        if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
+        return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
     if isinstance(value, (int, float)):
         try:
             return datetime.fromtimestamp(float(value), tz=timezone.utc)
         except Exception:
             return None
     if isinstance(value, str):
-        # محاولات ISO شائعة
-        for fmt in ("%Y-%m-%d %H:%M:%S.%f%z",
-                    "%Y-%m-%d %H:%M:%S.%f",
-                    "%Y-%m-%d %H:%M:%S%z",
-                    "%Y-%m-%d %H:%M:%S",
-                    "%Y-%m-%dT%H:%M:%S.%f%z",
-                    "%Y-%m-%dT%H:%M:%S.%f",
-                    "%Y-%m-%dT%H:%M:%S%z",
-                    "%Y-%m-%dT%H:%M:%S"):
+        fmts = (
+            "%Y-%m-%d %H:%M:%S.%f%z",
+            "%Y-%m-%d %H:%M:%S.%f",
+            "%Y-%m-%d %H:%M:%S%z",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%f%z",
+            "%Y-%m-%dT%H:%M:%S.%f",
+            "%Y-%m-%dT%H:%M:%S%z",
+            "%Y-%m-%dT%H:%M:%S",
+        )
+        for fmt in fmts:
             try:
                 dt = datetime.strptime(value, fmt)
                 if dt.tzinfo is None:
@@ -115,7 +125,6 @@ def coerce_datetime(value: Any) -> Optional[datetime]:
                 return dt.astimezone(timezone.utc)
             except Exception:
                 continue
-        # محاولة أخيرة: fromisoformat
         try:
             dt = datetime.fromisoformat(value)
             if dt.tzinfo is None:
@@ -123,7 +132,6 @@ def coerce_datetime(value: Any) -> Optional[datetime]:
             return dt.astimezone(timezone.utc)
         except Exception:
             return None
-    # غير مدعوم
     return None
 
 @login_manager.user_loader
@@ -138,23 +146,46 @@ class MessageRole(enum.Enum):
     USER="user"; ASSISTANT="assistant"; TOOL="tool"; SYSTEM="system"
 
 class MissionStatus(enum.Enum):
-    PENDING="PENDING"; PLANNING="PLANNING"; PLANNED="PLANNED"; RUNNING="RUNNING"
-    ADAPTING="ADAPTING"; SUCCESS="SUCCESS"; FAILED="FAILED"; CANCELED="CANCELED"
+    PENDING="PENDING"
+    PLANNING="PLANNING"
+    PLANNED="PLANNED"
+    RUNNING="RUNNING"
+    ADAPTING="ADAPTING"
+    SUCCESS="SUCCESS"
+    FAILED="FAILED"
+    CANCELED="CANCELED"
 
 class TaskStatus(enum.Enum):
-    PENDING="PENDING"; RUNNING="RUNNING"; SUCCESS="SUCCESS"; FAILED="FAILED"; RETRY="RETRY"; SKIPPED="SKIPPED"
+    PENDING="PENDING"
+    RUNNING="RUNNING"
+    SUCCESS="SUCCESS"
+    FAILED="FAILED"
+    RETRY="RETRY"
+    SKIPPED="SKIPPED"
 
 class PlanStatus(enum.Enum):
-    DRAFT="DRAFT"; VALID="VALID"; SUPERSEDED="SUPERSEDED"; FAILED="FAILED"
+    DRAFT="DRAFT"
+    VALID="VALID"
+    SUPERSEDED="SUPERSEDED"
+    FAILED="FAILED"
 
 class TaskType(enum.Enum):
-    TOOL="TOOL"; SYSTEM="SYSTEM"; META="META"; VERIFICATION="VERIFICATION"
+    TOOL="TOOL"
+    SYSTEM="SYSTEM"
+    META="META"
+    VERIFICATION="VERIFICATION"
 
 class MissionEventType(enum.Enum):
-    CREATED="CREATED"; STATUS_CHANGE="STATUS_CHANGE"; PLAN_SELECTED="PLAN_SELECTED"
-    EXECUTION_STARTED="EXECUTION_STARTED"; TASK_STARTED="TASK_STARTED"
-    TASK_COMPLETED="TASK_COMPLETED"; TASK_FAILED="TASK_FAILED"
-    REPLAN_TRIGGERED="REPLAN_TRIGGERED"; REPLAN_APPLIED="REPLAN_APPLIED"; FINALIZED="FINALIZED"
+    CREATED="CREATED"
+    STATUS_CHANGE="STATUS_CHANGE"
+    PLAN_SELECTED="PLAN_SELECTED"
+    EXECUTION_STARTED="EXECUTION_STARTED"
+    TASK_STARTED="TASK_STARTED"
+    TASK_COMPLETED="TASK_COMPLETED"
+    TASK_FAILED="TASK_FAILED"
+    REPLAN_TRIGGERED="REPLAN_TRIGGERED"
+    REPLAN_APPLIED="REPLAN_APPLIED"
+    FINALIZED="FINALIZED"
 
 # ======================================================================================
 # MIXINS
@@ -176,6 +207,7 @@ class Timestamped:
 
 class User(UserMixin, Timestamped, db.Model):
     __tablename__ = "users"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str] = mapped_column(db.String(150), nullable=False)
     email: Mapped[str] = mapped_column(db.String(150), unique=True, index=True, nullable=False)
@@ -197,7 +229,7 @@ class User(UserMixin, Timestamped, db.Model):
         return f"<User id={self.id} email={self.email}>"
 
 # ======================================================================================
-# EDUCATIONAL MODELS (OPTIONAL)
+# OPTIONAL EDUCATIONAL MODELS
 # ======================================================================================
 
 class Subject(Timestamped, db.Model):
@@ -242,9 +274,13 @@ class Submission(Timestamped, db.Model):
 
 class Mission(Timestamped, db.Model):
     __tablename__ = "missions"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     objective: Mapped[str] = mapped_column(db.Text, nullable=False)
-    status: Mapped[MissionStatus] = mapped_column(db.Enum(MissionStatus, native_enum=False), default=MissionStatus.PENDING, index=True)
+    status: Mapped[MissionStatus] = mapped_column(
+        db.Enum(MissionStatus, native_enum=False),
+        default=MissionStatus.PENDING, index=True
+    )
     initiator_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True)
     active_plan_id: Mapped[Optional[int]] = mapped_column(db.Integer, ForeignKey("mission_plans.id", use_alter=True), nullable=True)
 
@@ -273,18 +309,46 @@ class Mission(Timestamped, db.Model):
     )
 
     tasks: Mapped[List["Task"]] = relationship("Task", back_populates="mission", cascade="all, delete-orphan")
-    events: Mapped[List["MissionEvent"]] = relationship("MissionEvent", back_populates="mission", cascade="all, delete-orphan", order_by="MissionEvent.id")
+    events: Mapped[List["MissionEvent"]] = relationship(
+        "MissionEvent",
+        back_populates="mission",
+        cascade="all, delete-orphan",
+        order_by="MissionEvent.id"
+    )
+
+    # ---- Derived analytics ----
+    @property
+    def total_tasks(self) -> int:
+        return len(self.tasks)
+
+    @property
+    def completed_tasks(self) -> int:
+        return sum(1 for t in self.tasks if t.status == TaskStatus.SUCCESS)
+
+    @property
+    def failed_tasks(self) -> int:
+        return sum(1 for t in self.tasks if t.status == TaskStatus.FAILED)
+
+    @property
+    def success_ratio(self) -> float:
+        if not self.tasks:
+            return 0.0
+        return self.completed_tasks / len(self.tasks)
 
     def __repr__(self):
         return f"<Mission id={self.id} status={self.status.value} objective={self.objective[:30]!r}>"
 
 class MissionPlan(Timestamped, db.Model):
     __tablename__ = "mission_plans"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
     version: Mapped[int] = mapped_column(db.Integer, nullable=False, default=1)
     planner_name: Mapped[Optional[str]] = mapped_column(db.String(120))
-    status: Mapped[PlanStatus] = mapped_column(db.Enum(PlanStatus, native_enum=False), default=PlanStatus.VALID, index=True)
+    status: Mapped[PlanStatus] = mapped_column(
+        db.Enum(PlanStatus, native_enum=False),
+        default=PlanStatus.VALID, index=True
+    )
     score: Mapped[Optional[float]] = mapped_column(db.Float)
     rationale: Mapped[Optional[str]] = mapped_column(db.Text)
     raw_json: Mapped[dict] = mapped_column(JSONB_or_JSON)
@@ -306,7 +370,7 @@ class MissionPlan(Timestamped, db.Model):
     def __repr__(self):
         return f"<MissionPlan id={self.id} v={self.version} planner={self.planner_name} score={self.score}>"
 
-# جدول اختياري للتبعيات
+# --- Optional explicit dependencies table (kept for flexibility if graph expands) ---
 task_dependencies = db.Table(
     'task_dependencies',
     db.Column('task_id', db.Integer, db.ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True),
@@ -315,32 +379,48 @@ task_dependencies = db.Table(
 
 class Task(Timestamped, db.Model):
     __tablename__ = "tasks"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
     plan_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("mission_plans.id", ondelete="CASCADE"), index=True)
+
     task_key: Mapped[str] = mapped_column(db.String(120), index=True)
     description: Mapped[Optional[str]] = mapped_column(db.Text)
     task_type: Mapped[TaskType] = mapped_column(db.Enum(TaskType, native_enum=False), default=TaskType.TOOL, index=True)
+
     tool_name: Mapped[Optional[str]] = mapped_column(db.String(255), index=True)
     tool_args_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
     depends_on_json: Mapped[Optional[list]] = mapped_column(JSONB_or_JSON)
+
     priority: Mapped[int] = mapped_column(db.Integer, default=0)
     risk_level: Mapped[Optional[str]] = mapped_column(db.String(20))
     criticality: Mapped[Optional[str]] = mapped_column(db.String(20))
-    status: Mapped[TaskStatus] = mapped_column(db.Enum(TaskStatus, native_enum=False), default=TaskStatus.PENDING, index=True)
+
+    status: Mapped[TaskStatus] = mapped_column(
+        db.Enum(TaskStatus, native_enum=False),
+        default=TaskStatus.PENDING,
+        index=True
+    )
     attempt_count: Mapped[int] = mapped_column(db.Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(db.Integer, default=3)
     next_retry_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+
+    # Results & telemetry
     result_text: Mapped[Optional[str]] = mapped_column(db.Text)
     error_text: Mapped[Optional[str]] = mapped_column(db.Text)
     duration_ms: Mapped[Optional[int]] = mapped_column(db.Integer)
+
     started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
-    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
+
+    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)          # Structured multi-step output
+    result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON) # Free-form meta (tools / model usage)
     cost_usd = mapped_column(db.Numeric(12, 6))
 
     mission: Mapped[Mission] = relationship("Mission", back_populates="tasks")
-    plan: Mapped[MissionPlan] = relationship("MissionPlan", back_populates="tasks", overlaps="plans,active_plan,mission")
+    plan: Mapped[MissionPlan] = relationship(
+        "MissionPlan", back_populates="tasks", overlaps="plans,active_plan,mission"
+    )
 
     dependencies: Mapped[List["Task"]] = relationship(
         "Task",
@@ -355,7 +435,7 @@ class Task(Timestamped, db.Model):
         Index("ix_task_plan_taskkey", "plan_id", "task_key"),
     )
 
-    # ---------- Convenience / Derived ----------
+    # ---------- Derived ----------
     @property
     def is_terminal(self) -> bool:
         return self.status in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED)
@@ -368,21 +448,25 @@ class Task(Timestamped, db.Model):
             return (self.finished_at - self.started_at).total_seconds()
         return None
 
-    # ---------- Lifecycle convenience ----------
+    # ---------- Lifecycle Helpers ----------
     def mark_started(self):
+        if self.status not in (TaskStatus.PENDING, TaskStatus.RETRY, TaskStatus.RUNNING):
+            return
         self.status = TaskStatus.RUNNING
-        self.started_at = utc_now()
+        if not self.started_at:
+            self.started_at = utc_now()
 
-    def mark_finished(self, status: TaskStatus, result_text: str | None = None, error: str | None = None):
+    def mark_finished(self, status: TaskStatus, result_text: Optional[str] = None, error: Optional[str] = None):
         if status not in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED):
             raise ValueError("mark_finished expects a terminal status.")
         self.status = status
+        if not self.started_at:
+            self.started_at = utc_now()
         self.finished_at = utc_now()
-        if self.started_at and self.finished_at:
-            self.duration_ms = int((self.finished_at - self.started_at).total_seconds() * 1000)
-        if result_text:
+        self.compute_duration()
+        if result_text is not None:
             self.result_text = result_text
-        if error:
+        if error is not None:
             self.error_text = error
 
     def schedule_retry(self, backoff_seconds: float):
@@ -398,12 +482,14 @@ class Task(Timestamped, db.Model):
 
 class MissionEvent(Timestamped, db.Model):
     __tablename__ = "mission_events"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
     task_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey("tasks.id", ondelete="SET NULL"), index=True)
     event_type: Mapped[MissionEventType] = mapped_column(db.Enum(MissionEventType, native_enum=False), index=True)
     payload: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
     note: Mapped[Optional[str]] = mapped_column(db.String(500))
+
     mission: Mapped[Mission] = relationship("Mission", back_populates="events")
     task: Mapped[Optional[Task]] = relationship("Task")
 
@@ -411,31 +497,34 @@ class MissionEvent(Timestamped, db.Model):
         return f"<MissionEvent id={self.id} type={self.event_type.value}>"
 
 # ======================================================================================
-# MODEL-LEVEL EVENT LISTENERS (Timestamp Autocoerce)
+# MODEL EVENT LISTENERS (Timestamp Coercion)
 # ======================================================================================
 
-def _coerce_task_datetime_fields(mapper, connection, target: Task):
+def _coerce_task_datetime_fields(_mapper, _connection, target: Task):
     """
-    يحوّل أي قيم غير datetime في الحقول الحساسة إلى datetime UTC:
-      started_at / finished_at / next_retry_at
+    يحوّل أي قيم (float/int/ISO) إلى datetime UTC للحقول:
+      started_at, finished_at, next_retry_at
     """
-    for field_name in ("started_at", "finished_at", "next_retry_at"):
-        raw = getattr(target, field_name, None)
+    for attr in ("started_at", "finished_at", "next_retry_at"):
+        raw = getattr(target, attr, None)
         coerced = coerce_datetime(raw)
         if raw is not None and coerced is None:
-            # إن وصلت قيمة غير قابلة للتحويل تبقى كما هي (أو يمكن تصفيرها)
-            setattr(target, field_name, None)
+            # قيمة غير قابلة للتحويل → تصفيرها لسلامة التخزين
+            setattr(target, attr, None)
         else:
-            setattr(target, field_name, coerced)
+            setattr(target, attr, coerced)
 
 event.listen(Task, "before_insert", _coerce_task_datetime_fields)
 event.listen(Task, "before_update", _coerce_task_datetime_fields)
 
 # ======================================================================================
-# HELPERS
+# HELPERS / SERVICE-LAYER BRIDGES
 # ======================================================================================
 
 def update_mission_status(mission: Mission, new_status: MissionStatus, note: Optional[str] = None):
+    """
+    تغيير حالة المهمة مع تسجيل حدث STATUS_CHANGE (دون commit).
+    """
     old_status = mission.status
     if old_status != new_status:
         mission.status = new_status
@@ -455,6 +544,9 @@ def log_mission_event(
     payload: Optional[Dict[str, Any]] = None,
     note: Optional[str] = None
 ) -> MissionEvent:
+    """
+    إضافة حدث إلى سجل المهمة (دون commit).
+    """
     evt = MissionEvent(
         mission_id=mission.id,
         task_id=task.id if task else None,
@@ -473,20 +565,32 @@ def finalize_task(
     error_text: Optional[str] = None
 ):
     """
-    إنهاء مهمة (Terminal) وتسجيل حدث.
+    إنهاء مهمة (Terminal) بشكل آمن و idempotent.
+    لا يقوم بأي commit — مسؤولية المستدعي.
     """
     if status not in {TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED}:
         raise ValueError("finalize_task expects a terminal TaskStatus.")
-    # حافظ على started_at إن كانت موجودة
+
+    # Idempotent guard
+    if task.status in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED):
+        # تحديث النصوص فقط إن لزم
+        if result_text and not task.result_text:
+            task.result_text = result_text
+        if error_text and not task.error_text:
+            task.error_text = error_text
+        return
+
     if task.started_at is None:
         task.started_at = utc_now()
     task.finished_at = utc_now()
     task.compute_duration()
     task.status = status
+
     if result_text is not None:
         task.result_text = result_text
     if error_text is not None:
         task.error_text = error_text
+
     event_type = MissionEventType.TASK_COMPLETED if status == TaskStatus.SUCCESS else MissionEventType.TASK_FAILED
     log_mission_event(
         task.mission,
@@ -494,9 +598,10 @@ def finalize_task(
         task=task,
         payload={
             "status": status.value,
-            "result_excerpt": (task.result_text or "")[:120],
-            "error_excerpt": (task.error_text or "")[:120],
-            "duration_ms": task.duration_ms
+            "result_excerpt": (task.result_text or "")[:160],
+            "error_excerpt": (task.error_text or "")[:160],
+            "duration_ms": task.duration_ms,
+            "attempts": task.attempt_count
         }
     )
 
