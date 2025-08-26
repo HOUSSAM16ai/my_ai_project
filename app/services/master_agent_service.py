@@ -1,44 +1,52 @@
 # app/services/master_agent_service.py
-# ======================================================================================
-#  OVERMIND ORCHESTRATION SERVICE (v4.4 • "TERMINAL-VISION / ANTI-PENDING UPRISING")    #
+# # ======================================================================================
+#  OVERMIND ORCHESTRATION SERVICE
+#  File: app/services/master_agent_service.py
+#  Version: 5.0-ULTRA-FIX / "NO-PENDING-PARADOX"
 # ======================================================================================
 #  PURPOSE:
-#    تحويل الـ Objective إلى خطة ثم تنفيذها (Topological / Wave) مع إصلاح جذري
-#    لمشكلة "شلل الحالة" حيث تبقى الـ Mission في RUNNING بعد انتهاء المهام.
+#    - تحويل الـ Objective إلى خطة (MissionPlan) متعددة المهام
+#    - تنفيذها Topologically مع دعم التوازي (اختياري) والـ Adaptive Replan
+#    - حل جذري لمشكلات الجمود وسوء تفسير topological_order
 #
-#  CORE FIXES (v4.4):
-#    1) TERMINAL VISION: لم يعد التحكم في حلقة الحياة (_tick) يعتمد فقط على تغيّر
-#       حالة الـ Mission؛ أضفنا فحصاً متكرراً (Polling + Event) حتى تُغلق كل المهام.
-#    2) EVENT-DRIVEN CHECK: استدعاء _check_terminal بعد نهاية كل Task (نجاح/فشل)
-#       لضمان الإعلان المبكر عن النجاح أو الفشل.
-#    3) POLLING LOOP REWRITE: إعادة كتابة _tick لتستمر بينما توجد مهام مفتوحة
-#       (PENDING / RETRY / RUNNING) حتى تتحول الـ Mission إلى حالة نهائية.
-#    4) ALIAS EXECUTION: استمرار دعم تنفيذ الأدوات عبر resolve_tool_name مع
-#       تسجيل أوضح للـ canonical_tool.
-#    5) ROBUST TOOL RESULT EXTRACTION: دعم صيغ ToolResult مختلفة (result / data /
-#       content) بدون انكسار.
-#    6) CONFIGURABLE POLL INTERVAL: متغير بيئة OVERMIND_POLL_INTERVAL_SECONDS
-#       (افتراضي 0.18 ثانية).
-#    7) SAFETY: حماية ضد تجاوز الزمن الكلي (MAX_TOTAL_RUNTIME_SECONDS) وإنهاء أنيق.
+#  CORE ULTRA FIXES:
+#    1) Topological Normalization:
+#         يقبل الآن:
+#            * List[str]           => طبقة واحدة (ترتيب خطي)
+#            * List[List[str]]     => طبقات موجّهة صريحة
+#            * قيمة مشوّهة        => fallback ذكي
+#    2) Content Hash:
+#         يُحسب داخلياً (SHA-256) بصورة حتمية.
+#    3) PlanWarning Compatibility:
+#         تعريف fallback محلي لمنع فشل الاستيراد.
+#    4) Event + Poll Hybrid Loop:
+#         حلقة تجمع التحقق الحدثي مع الـ polling لتفادي الركود.
+#    5) Immediate Terminal Evaluation:
+#         فحص نهائي بعد كل Task.
+#    6) Tool Execution Normalization:
+#         توحيد المخرجات (data/result/content) + دعم الكائنات المعادة.
+#    7) Retry Backoff:
+#         أسّي + Jitter.
+#    8) Parallel Strategy Toggle:
+#         MULTI أو SEQUENTIAL (للتشخيص أو بيئات غير آمنة خيطيًا).
+#    9) Stall Detection:
+#         نافذة انزلاقية + تحذيرات.
+#   10) Defensive Refresh:
+#         تجديد كائن المهمة دورياً لتفادي الحالات الراكدة.
+#   11) Risk Counts Grace:
+#         لا ينكسر لو stats بلا risk_counts.
 #
-#  HIGH-LEVEL EXECUTION DECISION:
-#      if task.tool_name:
-#           _execute_tool(...)   --> تنفيذ مباشر للأدوات (registry) + alias resolution
-#      else:
-#           maestro.execute_task(task)  --> تنفيذ معرفي (LLM / multi-step) داخل generation_service
+#  ENV VARS (اختيارية):
+#      OVERMIND_POLL_INTERVAL_SECONDS   (افتراضي 0.18)
+#      OVERMIND_MAX_LIFECYCLE_TICKS     (افتراضي 1000)
+#      OVERMIND_LOG_DEBUG=1             (تشغيل سجلات Debug)
 #
-#  TERMINAL CHECK CRITERIA:
-#      - لا يوجد أي Task بحالة PENDING / RETRY / RUNNING
-#      - إن وجدت FAILED:
-#            * إذا فشل >= REPLAN_FAILURE_THRESHOLD وسمح التكيّف => ADAPTING
-#            * وإلا => FAILED
-#        وإلا (بدون failed) => SUCCESS
+#  SAFE GUARDS:
+#      - MAX_TOTAL_RUNTIME_SECONDS
+#      - TASK_EXECUTION_HARD_TIMEOUT_SECONDS
 #
-#  ENVIRONMENT FLAGS:
-#      OVERMIND_POLL_INTERVAL_SECONDS   (float, default=0.18)
-#      OVERMIND_MAX_LIFECYCLE_TICKS     (int,   default=1000)
-#      OVERMIND_LOG_DEBUG=1            (verbose internal logs)
-#
+#  NOTE:
+#      التصميم قابل للتوسعة لإضافة Observability / توزيع / سياسات متقدمة.
 # ======================================================================================
 
 from __future__ import annotations
@@ -48,6 +56,7 @@ import os
 import random
 import threading
 import time
+import hashlib
 from dataclasses import dataclass
 from contextlib import contextmanager
 from datetime import timedelta
@@ -81,7 +90,31 @@ except ImportError:  # pragma: no cover
     def get_all_planners():
         return []
 
-from app.overmind.planning.schemas import MissionPlanSchema, PlanWarning
+# --------------------------------------------------------------------------------------
+# Schemas (with safe PlanWarning fallback)
+# --------------------------------------------------------------------------------------
+try:
+    from app.overmind.planning.schemas import MissionPlanSchema, PlanValidationError  # type: ignore
+    try:
+        from app.overmind.planning.schemas import PlanWarning  # if exists
+    except ImportError:  # define fallback
+        class PlanWarning:
+            def __init__(self, code: str, message: str):
+                self.code = code
+                self.message = message
+            def model_dump(self):
+                return {"code": self.code, "message": self.message}
+except ImportError:  # pragma: no cover
+    class MissionPlanSchema:  # minimal fallback
+        pass
+    class PlanValidationError(Exception):
+        pass
+    class PlanWarning:
+        def __init__(self, code: str, message: str):
+            self.code = code
+            self.message = message
+        def model_dump(self):
+            return {"code": self.code, "message": self.message}
 
 # --------------------------------------------------------------------------------------
 # Maestro (Generation / Task Executor)
@@ -103,7 +136,7 @@ except ImportError:  # pragma: no cover
 try:
     from app.services import agent_tools
 except ImportError:  # pragma: no cover
-    agent_tools = None  # Will cause ToolNotFound if referenced
+    agent_tools = None
 
 # --------------------------------------------------------------------------------------
 # Policy / Verification Stubs
@@ -128,21 +161,22 @@ def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pa
 # --------------------------------------------------------------------------------------
 # Config / Constants
 # --------------------------------------------------------------------------------------
-OVERMIND_VERSION = "4.4-terminal-vision"
+OVERMIND_VERSION = "5.0-ultra-fix"
 
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = 3
 REPLAN_FAILURE_THRESHOLD = 2
 
 EXECUTION_STRATEGY = "topological"      # "topological" | "wave_legacy"
+EXECUTION_PARALLELISM_MODE = "MULTI"    # "MULTI" | "SEQUENTIAL"
+
 TOPO_MAX_PARALLEL = 6
 TASK_EXECUTION_HARD_TIMEOUT_SECONDS = 180
+MAX_TOTAL_RUNTIME_SECONDS = 7200
 
 TASK_RETRY_BACKOFF_BASE = 2.0
 TASK_RETRY_BACKOFF_JITTER = 0.5
-MAX_TOTAL_RUNTIME_SECONDS = 7200  # 2h safety cap
 
-# Poll configuration
 DEFAULT_POLL_INTERVAL = float(os.getenv("OVERMIND_POLL_INTERVAL_SECONDS", "0.18"))
 MAX_LIFECYCLE_TICKS = int(os.getenv("OVERMIND_MAX_LIFECYCLE_TICKS", "1000"))
 
@@ -185,7 +219,7 @@ def log_debug(mission: Mission | None, message: str, **extra):
 # --------------------------------------------------------------------------------------
 @contextmanager
 def mission_lock(mission_id: int):
-    # TODO: Replace with DB advisory/Redis lock for distributed deployment.
+    # TODO: استبدالها لاحقاً بـ Redis / DB Advisory Lock للتشغيل الموزع.
     yield
 
 # --------------------------------------------------------------------------------------
@@ -199,7 +233,7 @@ class PolicyDeniedError(OrchestratorError): pass
 class AdaptiveReplanError(OrchestratorError): pass
 
 # --------------------------------------------------------------------------------------
-# Selection Data Structure
+# Plan Candidate DS
 # --------------------------------------------------------------------------------------
 @dataclass
 class CandidatePlan:
@@ -213,6 +247,10 @@ class CandidatePlan:
 # Overmind Service
 # ======================================================================================
 class OvermindService:
+    """
+    الخدمة المركزية لإدارة دورة حياة المهمة:
+      PENDING -> PLANNING -> PLANNED -> RUNNING -> (SUCCESS|FAILED|ADAPTING) -> ...
+    """
 
     # ----------------------------- Public API -----------------------------------------
     def start_new_mission(self, objective: str, initiator: User) -> Mission:
@@ -249,11 +287,6 @@ class OvermindService:
 
     # --------------------------- Main State Loop (Polling + Event) --------------------
     def _tick(self, mission: Mission, overall_start_perf: float):
-        """
-        إعادة تصميم الحلقة:
-          - تستمر أثناء وجود مهام مفتوحة أو حالة قابلة للتقدم.
-          - لا تتوقف مبكراً بمجرد عدم تغيّر status في دورة واحدة.
-        """
         loops = 0
         while loops < MAX_LIFECYCLE_TICKS:
             loops += 1
@@ -270,7 +303,7 @@ class OvermindService:
                 self._plan_phase(mission)
 
             elif mission.status == MissionStatus.PLANNING:
-                # Planners may be async or multi-step; brief wait
+                # في حال التخطيط غير متزامن مستقبلاً
                 time.sleep(0.05)
 
             elif mission.status == MissionStatus.PLANNED:
@@ -281,16 +314,10 @@ class OvermindService:
                     self._execution_phase(mission)
                 else:
                     self._execution_wave_legacy(mission)
-
-                # Always re-check terminal conditions
+                # إعادة التحقق بعد محاولة التنفيذ
                 self._check_terminal(mission)
-
-                # If still running and there remain open tasks -> poll sleep
                 if mission.status == MissionStatus.RUNNING and self._has_open_tasks(mission):
                     time.sleep(DEFAULT_POLL_INTERVAL)
-                else:
-                    # Either success/failure or no open tasks (terminal check will adjust)
-                    pass
 
             elif mission.status == MissionStatus.ADAPTING:
                 self._adaptive_replan(mission)
@@ -299,27 +326,27 @@ class OvermindService:
                 log_debug(mission, "Mission reached terminal state; exiting loop.")
                 break
 
-            # Refresh mission state & tasks
+            # تحديث كيان المهمة (Defensive)
             try:
                 db.session.refresh(mission)
             except Exception:
                 db.session.rollback()
 
-            # Stop if terminal
             if mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
                 break
 
-            # If running but no tasks open -> do a final terminal check and break
             if mission.status == MissionStatus.RUNNING and not self._has_open_tasks(mission):
                 self._check_terminal(mission)
-                db.session.refresh(mission)
+                try:
+                    db.session.refresh(mission)
+                except Exception:
+                    db.session.rollback()
                 if mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED):
                     break
-                # Safety sleep to avoid frantic loop
                 time.sleep(0.05)
 
         else:
-            # Loop exhaustion
+            # لو استنفدنا التكرارات
             if mission.status == MissionStatus.RUNNING:
                 log_warn(mission, "Lifecycle tick limit reached while still RUNNING.")
                 self._check_terminal(mission)
@@ -386,7 +413,7 @@ class OvermindService:
         log_info(mission, "Plan selected", planner=best.planner_name, plan_version=version, score=best.score)
 
     def _score_plan(self, plan: MissionPlanSchema, metadata: Dict[str, Any]) -> float:
-        stats = plan.stats or {}
+        stats = getattr(plan, "stats", {}) or {}
         tasks = stats.get("tasks", len(getattr(plan, "tasks", [])))
         roots = stats.get("roots", 0)
         longest_path = stats.get("longest_path", 1)
@@ -402,7 +429,7 @@ class OvermindService:
         return round(base, 3)
 
     def _build_plan_rationale(self, plan: MissionPlanSchema, score: float, metadata: Dict[str, Any]) -> str:
-        stats = plan.stats or {}
+        stats = getattr(plan, "stats", {}) or {}
         return "; ".join([
             f"score={score}",
             f"tasks={stats.get('tasks')}",
@@ -420,17 +447,34 @@ class OvermindService:
     # ------------------------- Persist Plan & Tasks -----------------------------------
     def _persist_plan(self, mission: Mission, candidate: CandidatePlan, version: int):
         schema = candidate.raw
-        stats_json = json.dumps(schema.stats or {}, ensure_ascii=False)
+        stats_json = json.dumps(getattr(schema, "stats", {}) or {}, ensure_ascii=False)
+        warnings_list_raw = getattr(schema, "warnings", None) or []
         warnings_list = [
-            (w.model_dump() if isinstance(w, PlanWarning) else w)
-            for w in (schema.warnings or [])
+            (w.model_dump() if hasattr(w, "model_dump") else w)
+            for w in warnings_list_raw
         ]
         warnings_json = json.dumps(warnings_list, ensure_ascii=False)
 
+        # Compute deterministic content hash
+        plan_signature = json.dumps({
+            "objective": getattr(schema, "objective", ""),
+            "tasks": [
+                (
+                    t.task_id,
+                    getattr(getattr(t, "task_type", ""), "value", str(getattr(t, "task_type", ""))),
+                    sorted(getattr(t, "dependencies", [])),
+                    getattr(t, "tool_name", "") or "",
+                    getattr(t, "priority", 0),
+                )
+                for t in getattr(schema, "tasks", [])
+            ]
+        }, ensure_ascii=False)
+        content_hash = hashlib.sha256(plan_signature.encode("utf-8")).hexdigest()
+
         raw_json = json.dumps({
-            "objective": schema.objective,
-            "topological_order": schema.topological_order,
-            "stats": schema.stats,
+            "objective": getattr(schema, "objective", ""),
+            "topological_order": getattr(schema, "topological_order", []),
+            "stats": getattr(schema, "stats", {}),
             "warnings": warnings_list
         }, ensure_ascii=False)
 
@@ -444,25 +488,27 @@ class OvermindService:
             raw_json=raw_json,
             stats_json=stats_json,
             warnings_json=warnings_json,
-            content_hash=schema.content_hash
+            content_hash=content_hash
         )
         db.session.add(mp)
         db.session.flush()
 
-        for t in schema.tasks:
+        for t in getattr(schema, "tasks", []):
             task_row = Task(
                 mission_id=mission.id,
                 plan_id=mp.id,
                 task_key=t.task_id,
                 description=t.description,
-                tool_name=t.tool_name,            # may be alias like 'file_system'
+                tool_name=t.tool_name,
                 tool_args_json=t.tool_args,
                 status=TaskStatus.PENDING,
                 attempt_count=0,
                 max_attempts=DEFAULT_MAX_TASK_ATTEMPTS,
                 priority=t.priority,
-                risk_level=t.risk_level.value if hasattr(t.risk_level, "value") else str(t.risk_level),
-                criticality=t.criticality.value if hasattr(t.criticality, "value") else str(t.criticality),
+                risk_level=getattr(getattr(t, "risk_level", ""), "value",
+                                   str(getattr(t, "risk_level", ""))),
+                criticality=getattr(getattr(t, "criticality", ""), "value",
+                                    str(getattr(t, "criticality", ""))),
                 depends_on_json=t.dependencies
             )
             db.session.add(task_row)
@@ -495,13 +541,37 @@ class OvermindService:
             db.session.commit()
             return
 
+        # Extract raw plan JSON
         try:
             raw = plan.raw_json if isinstance(plan.raw_json, dict) else json.loads(plan.raw_json or "{}")
         except Exception:
             raw = {}
-        topo_layers: List[List[str]] = raw.get("topological_order") or []
+
+        raw_topo = raw.get("topological_order") or []
+
+        topo_layers: List[List[str]] = []
+        if isinstance(raw_topo, list):
+            if all(isinstance(x, str) for x in raw_topo):
+                topo_layers = [raw_topo]  # linear -> single layer
+            elif all(isinstance(x, list) for x in raw_topo):
+                # ensure each nested element is a list of strings
+                normalized: List[List[str]] = []
+                for layer in raw_topo:
+                    if isinstance(layer, list):
+                        normalized.append([str(k) for k in layer if isinstance(k, str)])
+                topo_layers = normalized
+            else:
+                # Mixed content -> fallback
+                topo_layers = [[str(x) for x in raw_topo if isinstance(x, str)]]
+        else:
+            topo_layers = [[t.task_key for t in mission.tasks]]
+
         if not topo_layers:
             topo_layers = [[t.task_key for t in mission.tasks]]
+
+        log_debug(mission, "Topological layers normalized",
+                  layers=len(topo_layers),
+                  shape=[len(l) for l in topo_layers])
 
         task_index: Dict[str, Task] = {t.task_key: t for t in mission.tasks}
 
@@ -509,8 +579,15 @@ class OvermindService:
         progress_attempted = False
 
         for layer_idx, layer_keys in enumerate(topo_layers):
+            if isinstance(layer_keys, str):
+                layer_keys = [layer_keys]
+
             layer_tasks = [task_index.get(k) for k in layer_keys if task_index.get(k)]
-            if layer_tasks and all(t.status in (TaskStatus.SUCCESS, TaskStatus.FAILED) for t in layer_tasks):
+            if not layer_tasks:
+                continue
+
+            # Skip entire layer if all done terminally
+            if all(t.status in (TaskStatus.SUCCESS, TaskStatus.FAILED) for t in layer_tasks):
                 continue
 
             ready: List[Task] = []
@@ -541,18 +618,22 @@ class OvermindService:
                      layer=layer_idx, batch_size=len(ready), layer_total=len(layer_tasks))
             progress_attempted = True
 
-            threads: List[threading.Thread] = []
-            for tk in ready:
-                th = threading.Thread(
-                    target=self._execute_task_with_retry_topological,
-                    args=(mission, tk, layer_idx),
-                    daemon=True
-                )
-                th.start()
-                threads.append(th)
-
-            for th in threads:
-                th.join(timeout=TASK_EXECUTION_HARD_TIMEOUT_SECONDS)
+            if EXECUTION_PARALLELISM_MODE == "MULTI":
+                threads: List[threading.Thread] = []
+                for tk in ready:
+                    th = threading.Thread(
+                        target=self._execute_task_with_retry_topological,
+                        args=(mission, tk, layer_idx),
+                        daemon=True
+                    )
+                    th.start()
+                    threads.append(th)
+                for th in threads:
+                    th.join(timeout=TASK_EXECUTION_HARD_TIMEOUT_SECONDS)
+            else:
+                # SEQUENTIAL mode
+                for tk in ready:
+                    self._execute_task_with_retry_topological(mission, tk, layer_idx)
 
         total_success_after = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.SUCCESS).count()
         newly = total_success_after - total_success_before
@@ -674,7 +755,7 @@ class OvermindService:
                 if hasattr(maestro, "execute_task"):
                     maestro.execute_task(task)  # expected to set status
                     db.session.refresh(task)
-                    if task.status == TaskStatus.RUNNING:  # Defensive; Maestro forgot to finalize
+                    if task.status == TaskStatus.RUNNING:  # Defensive fallback
                         task.status = TaskStatus.SUCCESS
                 else:
                     task.result_text = "[Generic Execution Fallback]"
@@ -821,10 +902,8 @@ class OvermindService:
         meta_payload = {"canonical_tool": canonical, "invocation_tool_name": tool_name_raw}
         data_payload = None
 
-        # ToolResult pattern attempts
         if hasattr(result_obj, "ok"):
             status_ok = getattr(result_obj, "ok", True)
-            # unify possible payload locations
             candidate_attrs = ["data", "result", "content", "_content"]
             for attr in candidate_attrs:
                 if hasattr(result_obj, attr):
@@ -834,7 +913,6 @@ class OvermindService:
             error_attr = getattr(result_obj, "error", None)
             if not status_ok and error_attr:
                 raise TaskExecutionError(f"ToolFailed: {error_attr}")
-            # meta
             if hasattr(result_obj, "meta"):
                 try:
                     meta_field = getattr(result_obj, "meta")
@@ -843,10 +921,8 @@ class OvermindService:
                 except Exception:
                     pass
         else:
-            # Raw return (dict / str / other)
             data_payload = result_obj
 
-        # Derive result_text
         if isinstance(data_payload, dict):
             if "content" in data_payload and isinstance(data_payload["content"], str):
                 result_text = data_payload["content"]
@@ -874,6 +950,7 @@ class OvermindService:
             "meta": meta_payload
         }
 
+    # ----------------------------- Backoff ---------------------------------------------
     def _compute_backoff(self, attempt: int) -> float:
         base = TASK_RETRY_BACKOFF_BASE ** attempt
         jitter = random.uniform(0, TASK_RETRY_BACKOFF_JITTER)
@@ -881,9 +958,6 @@ class OvermindService:
 
     # ----------------------------- Terminal Check --------------------------------------
     def _check_terminal(self, mission: Mission):
-        """
-        فحص شامل لتحديد إن كانت الـ Mission يمكن أن تُعلن ناجحة أو فاشلة أو تدخل طور التكيّف.
-        """
         pending = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
         retry = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
         running = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RUNNING).count()
@@ -914,7 +988,6 @@ class OvermindService:
             db.session.commit()
 
     def _has_open_tasks(self, mission: Mission) -> bool:
-        """Return True if there are any tasks still actionable."""
         return db.session.query(
             exists().where(
                 Task.mission_id == mission.id,
@@ -990,16 +1063,7 @@ class OvermindService:
             db.session.commit()
 
     # ----------------------------- Internal Helpers -----------------------------------
-    def _compute_backoff(self, attempt: int) -> float:
-        base = TASK_RETRY_BACKOFF_BASE ** attempt
-        jitter = random.uniform(0, TASK_RETRY_BACKOFF_JITTER)
-        return min(base + jitter, 600.0)
-
     def _safe_terminal_event(self, mission: Mission):
-        """
-        استدعاء آمن للفحص النهائي بعد انتهاء تنفيذ مهمة (نجاح/فشل)
-        لتقليل زمن بقائها في RUNNING.
-        """
         try:
             self._check_terminal(mission)
         except Exception:
