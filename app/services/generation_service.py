@@ -1,33 +1,54 @@
-# app/services/generation_service.py
 # ======================================================================================
-# ==            MAESTRO COGNITIVE ORCHESTRATOR & LLM GATEWAY (v15.3.0)                ==
-# ==    Unified Task Executor | Tool-Calling | File Ops | Safe Telemetry Persistence   ==
+#  MAESTRO COGNITIVE ORCHESTRATOR & LLM GATEWAY (v16.0.0 • "SOVEREIGN-MODEL-DYNAMIC") 
 # ======================================================================================
+#  PURPOSE:
+#    تنفيذ المهام المعرفية (Tasks) عبر نموذج ذكاء اصطناعي واحد مُدار مركزياً، مع:
+#      - اختيار ديناميكي للنموذج من متغيرات البيئة (DEFAULT_AI_MODEL او overrides).
+#      - دعم أدوات (tools) وتعاقب خطوات (multi-step tool-use) باستخدام مخطط أدوات agent_tools.
+#      - كتابة / قراءة الملفات (write_file / read_file) تلقائياً إن لم تكن مسجلة (autoreg).
+#      - تخزين Telemetry منظّم في task.result مع usage / steps / tools / أسباب النهاية.
 #
-#  WHY v15.3.0 (Super Fix Edition):
-#    1. إزالة الإستخدام الخاطئ للـ finalize_task بـ result_meta (غير مدعوم في models).
-#       الآن نضع كل الـ telemetry / steps داخل task.result (JSON) ثم نستدعي finalize_task
-#       بالوسائط الصحيحة فقط: (task, status, result_text, error_text).
-#    2. إضافة أداة write_file (و read_file اختيارياً) تلقائياً إن لم تكن مسجلة
-#       لتمكين المهام من فعلياً إنشاء الملف المطلوب (مثل SUCCESS.md).
-#    3. تحسين الـ prompt لتوجيه النموذج لاستعمال الأدوات بدلاً من وصف العمل فقط.
-#    4. استخراج usage (tokens) بشكل مرن كما في v15.2.1.
-#    5. حماية من الجمود: إذا كرر النموذج نفس قائمة الأدوات دون تقدم يتم الإنهاء.
-#    6. تخزين:
-#         task.result = {
-#            "telemetry": {...},
-#            "steps": [...],
-#            "tools_used": [...],
-#            "usage": {...},
-#            "final_reason": "...",
-#         }
-#    7. سجل أحداث منظم (TASK_STATUS_CHANGE, TASK_UPDATED) لكل خطوة أو أداة.
-#    8. توافق مع models v12.2 حيث الحقول started_at/finished_at تُدار هناك.
+#  WHAT'S NEW (v16.0.0):
+#    1) SOVEREIGN MODEL OVERRIDES:
+#         ترتيب اختيار النموذج الآن:
+#             (A) تمرير model صراحةً لواجهة forge_new_code أو execute_task (param)
+#             (B) task.model_name إن وُجد
+#             (C) متغير بيئة AI_MODEL_OVERRIDE (يُفضَّل للاختبارات الحية)
+#             (D) DEFAULT_AI_MODEL (من Flask config أو .env)
+#             (E) ثابت fallback: openai/gpt-4o
+#    2) دعم متغير بيئة MAESTRO_FORCE_MODEL لقفل نموذج محدد (يتجاوز كل ما سبق).
+#    3) تحسين كشف الركود (stagnation) عند تكرار نفس تسلسل الأدوات بلا تقدم.
+#    4) تحسين استخراج usage ودمجه تجميعياً.
+#    5) تحصين finalize_task: عدم تمرير حقول غير مدعومة (فقط: task, status, result_text, error_text).
+#    6) عزل تسجيل (logging) آمن حتى خارج سياق Flask.
+#
+#  ENV VARS IMPACTING MODEL SELECTION:
+#      DEFAULT_AI_MODEL          النموذج الافتراضي (التطبيق / التطوير).
+#      AI_MODEL_OVERRIDE         يفرض نموذجاً بديلاً (قبل DEFAULT).
+#      MAESTRO_FORCE_MODEL       إذا وُضع => يُجبِر استخدام هذا النموذج دائماً (أعلى أولوية).
+#      AGENT_MAX_STEPS           عدد أقصى لخطوات الاستدلال / الأدوات (افتراض 5).
+#
+#  ENV VARS لخصائص التشغيل:
+#      MAESTRO_AUTO_CONTEXT=1        محاولة خلق سياق Flask تلقائياً عند النداء خارج السياق.
+#      MAESTRO_DISABLE_AUTOTOOLS=1   تعطيل التسجيل التلقائي write_file/read_file.
+#      MAESTRO_SUPPRESS_CTX_ERRORS=1 إخفاء أخطاء السياق في السجلات (هدوء أكبر).
+#
+#  RESULT STORAGE (task.result JSON):
+#      {
+#        "telemetry": {...},
+#        "steps": [ {step_index, decision, tool_calls, notes, duration_ms} ... ],
+#        "tools_used": ["write_file", ...],
+#        "usage": {prompt_tokens, completion_tokens, total_tokens},
+#        "final_reason": "model_concluded" | "max_steps_exhausted" | "stagnation_detected",
+#        "error": "...optional..."
+#      }
+#
+#  SAFE FILE OPERATIONS:
+#      write_file / read_file يُضافان ديناميكياً إن لم يكونا موجودين، مع حصر المسار تحت /app.
 #
 #  NOTE:
-#    - إذا كانت هناك أدوات أخرى تريد تسجيلها، افعل ذلك في agent_tools.py. هذا الملف
-#      يسجل write_file و read_file فقط إن لم تكونا موجودتين.
-#    - لو أردت تعطيل التسجيل التلقائي: ضع متغير بيئة MAESTRO_DISABLE_AUTOTOOLS=1
+#      هذا الملف لا يتعامل مباشرة مع مفاتيح API. إدارة المفاتيح تتم في llm_client_service
+#      عبر متغيرات البيئة (OPENROUTER_API_KEY / OPENAI_API_KEY).
 #
 # ======================================================================================
 
@@ -53,7 +74,11 @@ except Exception:  # pragma: no cover
         return False
 
 
-def _try_auto_context():
+def _attempt_auto_context():
+    """
+    محاولة إنشاء سياق تطبيق (إن تم تفعيل MAESTRO_AUTO_CONTEXT=1) لاستخدام
+    current_app.config عند التشغيل من CLI أو عمليات خلفية بلا سياق Flask.
+    """
     if not has_app_context() and os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1":
         try:
             from app import ensure_app_context  # type: ignore
@@ -82,10 +107,10 @@ try:
 except Exception:  # pragma: no cover
     Mission = Task = object  # type: ignore
 
-    def log_mission_event(*a, **k):  # type: ignore
+    def log_mission_event(*_a, **_k):  # type: ignore
         pass
 
-    def finalize_task(*a, **k):  # type: ignore
+    def finalize_task(*_a, **_k):  # type: ignore
         pass
 
     class MissionEventType:  # type: ignore
@@ -99,7 +124,7 @@ except Exception:  # pragma: no cover
 
 
 # -----------------------------------------------------------------------------
-# LLM Client & Tools & System Context
+# LLM Client / Tools / System Context
 # -----------------------------------------------------------------------------
 try:
     from .llm_client_service import get_llm_client
@@ -114,20 +139,20 @@ try:
 except Exception:  # pragma: no cover
 
     class _DummyToolResult:
-        def __init__(self, ok: bool, content: Any = None, error: str = ""):
+        def __init__(self, ok: bool, result=None, error: str = ""):
             self.ok = ok
-            self._content = content
+            self.result = result
             self.error = error
 
         def to_dict(self):
-            return {"ok": self.ok, "content": self._content, "error": self.error}
+            return {"ok": self.ok, "result": self.result, "error": self.error}
 
     class agent_tools:  # type: ignore
         _TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
 
         @staticmethod
         def ToolResult(ok: bool, result=None, error=""):
-            return _DummyToolResult(ok=ok, content=result, error=error)
+            return _DummyToolResult(ok=ok, result=result, error=error)
 
         @staticmethod
         def get_tools_schema():
@@ -142,23 +167,21 @@ except Exception:  # pragma: no cover
         @staticmethod
         def find_related_context(_desc: str):
             class R:
-                data = {"context": "no-system-context-available"}
-
+                data = {"context": "system-context-unavailable"}
             return R()
 
 
-__version__ = "15.3.0"
+__version__ = "16.0.0"
 
 # ======================================================================================
-# DATA CONTRACTS
+# DATA MODELS
 # ======================================================================================
-
 
 @dataclass
 class StepState:
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
-    decision: str = ""
+    decision: str = ""          # "tool" | "final"
     tool_calls: List[Dict[str, Any]] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
     duration_ms: Optional[float] = None
@@ -191,18 +214,20 @@ class OrchestratorTelemetry:
 # HELPERS
 # ======================================================================================
 
-def _safe_logger():
+def _logger():
     if has_app_context() and current_app:
         try:
             return current_app.logger
         except Exception:
             pass
     import logging
-
     return logging.getLogger("maestro.generation_service")
 
 
 def _cfg(key: str, default: Any = None) -> Any:
+    """
+    قراءة قيمة من Flask config إن وجد سياق، وإلا من البيئة، وإلا fallback.
+    """
     if has_app_context() and current_app:
         try:
             val = current_app.config.get(key)
@@ -214,7 +239,7 @@ def _cfg(key: str, default: Any = None) -> Any:
     return env_val if env_val is not None else default
 
 
-def _serialize_safe(obj: Any) -> str:
+def _safe_json(obj: Any) -> str:
     if isinstance(obj, str):
         return obj
     try:
@@ -223,44 +248,50 @@ def _serialize_safe(obj: Any) -> str:
         return repr(obj)
 
 
-def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]) -> Any:
+def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]):
     reg = getattr(agent_tools, "_TOOL_REGISTRY", {})
     meta = reg.get(tool_name)
-    if meta and callable(meta.get("handler")):
-        try:
-            return meta["handler"](**tool_args)
-        except Exception as exc:
-            return agent_tools.ToolResult(ok=False, result=None, error=f"TOOL_EXEC_ERROR:{exc}")
-    return agent_tools.ToolResult(ok=False, result=None, error=f"UNKNOWN_TOOL:{tool_name}")
+    if not meta or not callable(meta.get("handler")):
+        return agent_tools.ToolResult(ok=False, result=None, error=f"UNKNOWN_TOOL:{tool_name}")
+    try:
+        return meta["handler"](**tool_args)
+    except Exception as exc:
+        return agent_tools.ToolResult(ok=False, result=None, error=f"TOOL_EXEC_ERROR:{exc}")
 
 
-def _detect_no_progress(prev_tools: List[str], current_tools: List[str]) -> bool:
-    return prev_tools and prev_tools == current_tools
+def _is_stagnation(prev_tools: List[str], current_tools: List[str]) -> bool:
+    """
+    يعتبر ركوداً إذا تكرر نفس التسلسل (نفس الأسماء بنفس الترتيب) مباشرةً.
+    """
+    return bool(prev_tools) and prev_tools == current_tools
 
 
-def _identity_block(task: Any, code_context: Any) -> str:
+def _build_system_prompt(task: Any, context_blob: Any) -> str:
     mission_obj = getattr(task, "mission", None)
-    mission_obj_text = getattr(mission_obj, "objective", "N/A")
+    objective = getattr(mission_obj, "objective", "N/A")
     description = getattr(task, "description", "(no description)")
     return f"""
-You are MAESTRO (service v{__version__}) acting as an autonomous executor.
+You are MAESTRO (orchestrator v{__version__}), a disciplined autonomous executor.
 
 MISSION OBJECTIVE:
-{mission_obj_text}
+{objective}
 
 CURRENT TASK:
-"{description}"
+{description}
 
-CONTEXT:
-{_serialize_safe(code_context)}
+CONTEXT SNAPSHOT:
+{_safe_json(context_blob)}
 
-IMPORTANT:
-- If the task involves creating or writing a file, YOU MUST call the write_file tool with fields:
-    path (string, relative under /app) and content (string).
-- Do NOT just describe the file. Actually invoke the tool.
-- Use only the tools provided. After you finish the necessary actions, respond with a concise final answer.
+OPERATIONAL DIRECTIVES:
+1. If the task requires creating or updating a file, you MUST call the write_file tool with:
+   - path (relative under /app unless absolute) 
+   - content (full exact content).
+2. To inspect a file use read_file.
+3. Use tools instead of describing hypothetical actions.
+4. After necessary tool calls, produce a concise final answer (plain text).
+5. Avoid redundant tool invocations.
 
-Proceed step-by-step.
+Return only what is necessary. Work step-by-step.
 """.strip()
 
 
@@ -269,28 +300,30 @@ def _normalize_assistant_message(raw_msg) -> Dict[str, Any]:
     base = {"role": getattr(raw_msg, "role", "assistant"), "content": content}
     tool_calls = getattr(raw_msg, "tool_calls", None) or []
     if tool_calls:
+        # محاولة تحويل tool_calls إلى dict قياسي
         try:
-            base["tool_calls"] = [tc.model_dump() for tc in tool_calls]
+            base["tool_calls"] = [
+                tc.model_dump() if hasattr(tc, "model_dump") else getattr(tc, "__dict__", str(tc))
+                for tc in tool_calls
+            ]
         except Exception:
             base["tool_calls"] = [getattr(tc, "__dict__", str(tc)) for tc in tool_calls]
     return base
 
 
-def _extract_usage_tokens(resp) -> Dict[str, Any]:
+def _extract_usage(resp) -> Dict[str, Any]:
     """
-    Extract usage metrics flexibly from SDK variants.
+    استخراج usage من أنواع متفاوتة (دكت / كائن).
     """
     try:
         usage = getattr(resp, "usage", None)
-        if usage is None:
+        if not usage:
             return {}
         if isinstance(usage, dict):
             return {
-                "prompt_tokens": usage.get("prompt_tokens") or usage.get("prompt") or usage.get("input_tokens"),
-                "completion_tokens": usage.get("completion_tokens")
-                or usage.get("completion")
-                or usage.get("output_tokens"),
-                "total_tokens": usage.get("total_tokens") or usage.get("total") or usage.get("usage_total"),
+                "prompt_tokens": usage.get("prompt_tokens") or usage.get("input_tokens"),
+                "completion_tokens": usage.get("completion_tokens") or usage.get("output_tokens"),
+                "total_tokens": usage.get("total_tokens") or usage.get("total"),
             }
 
         def _g(obj, *names):
@@ -300,19 +333,19 @@ def _extract_usage_tokens(resp) -> Dict[str, Any]:
             return None
 
         return {
-            "prompt_tokens": _g(usage, "prompt_tokens", "prompt", "input_tokens"),
-            "completion_tokens": _g(usage, "completion_tokens", "completion", "output_tokens"),
-            "total_tokens": _g(usage, "total_tokens", "total", "usage_total"),
+            "prompt_tokens": _g(usage, "prompt_tokens", "input_tokens"),
+            "completion_tokens": _g(usage, "completion_tokens", "output_tokens"),
+            "total_tokens": _g(usage, "total_tokens", "total"),
         }
     except Exception:
         return {}
 
 
 # ======================================================================================
-# AUTO TOOL REGISTRATION (write_file / read_file)
+# AUTO TOOL REGISTRATION
 # ======================================================================================
 
-def _ensure_basic_file_tools():
+def _ensure_file_tools():
     if os.getenv("MAESTRO_DISABLE_AUTOTOOLS", "0") == "1":
         return
     reg = getattr(agent_tools, "_TOOL_REGISTRY", None)
@@ -324,28 +357,25 @@ def _ensure_basic_file_tools():
         def _write_file(path: str, content: str):
             base_root = "/app"
             path = path.strip()
-            if path.startswith("/"):
-                abs_path = path
-            else:
-                abs_path = os.path.join(base_root, path)
-            base_root_abs = os.path.abspath(base_root)
-            abs_path_norm = os.path.abspath(abs_path)
-            if not abs_path_norm.startswith(base_root_abs):
+            abs_path = path if path.startswith("/") else os.path.join(base_root, path)
+            base_abs = os.path.abspath(base_root)
+            abs_norm = os.path.abspath(abs_path)
+            if not abs_norm.startswith(base_abs):
                 return agent_tools.ToolResult(ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP")
-            os.makedirs(os.path.dirname(abs_path_norm), exist_ok=True)
-            with open(abs_path_norm, "w", encoding="utf-8") as f:
+            os.makedirs(os.path.dirname(abs_norm), exist_ok=True)
+            with open(abs_norm, "w", encoding="utf-8") as f:
                 f.write(content)
-            return agent_tools.ToolResult(ok=True, result={"written": abs_path_norm})
+            return agent_tools.ToolResult(ok=True, result={"written": abs_norm})
 
         reg["write_file"] = {
             "name": "write_file",
             "handler": _write_file,
-            "description": "Create or overwrite a text file with given content (UTF-8) under /app.",
+            "description": "Create or overwrite a UTF-8 text file under /app.",
             "schema": {
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Relative or absolute path under /app"},
-                    "content": {"type": "string", "description": "Exact file content to write"},
+                    "content": {"type": "string", "description": "File content"},
                 },
                 "required": ["path", "content"],
             },
@@ -355,28 +385,25 @@ def _ensure_basic_file_tools():
     if "read_file" not in reg:
         def _read_file(path: str, max_bytes: int = 20000):
             base_root = "/app"
-            if path.startswith("/"):
-                abs_path = path
-            else:
-                abs_path = os.path.join(base_root, path)
-            base_root_abs = os.path.abspath(base_root)
-            abs_path_norm = os.path.abspath(abs_path)
-            if not abs_path_norm.startswith(base_root_abs):
+            abs_path = path if path.startswith("/") else os.path.join(base_root, path)
+            base_abs = os.path.abspath(base_root)
+            abs_norm = os.path.abspath(abs_path)
+            if not abs_norm.startswith(base_abs):
                 return agent_tools.ToolResult(ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP")
-            if not os.path.exists(abs_path_norm):
+            if not os.path.exists(abs_norm):
                 return agent_tools.ToolResult(ok=False, result=None, error="FILE_NOT_FOUND")
-            with open(abs_path_norm, "r", encoding="utf-8", errors="replace") as f:
+            with open(abs_norm, "r", encoding="utf-8", errors="replace") as f:
                 data = f.read(max_bytes + 10)
             snippet = data[:max_bytes]
             truncated = len(data) > max_bytes
             return agent_tools.ToolResult(
-                ok=True, result={"path": abs_path_norm, "content": snippet, "truncated": truncated}
+                ok=True, result={"path": abs_norm, "content": snippet, "truncated": truncated}
             )
 
         reg["read_file"] = {
             "name": "read_file",
             "handler": _read_file,
-            "description": "Read a UTF-8 text file under /app (returns truncated content if big).",
+            "description": "Read a UTF-8 file under /app (returns truncated content if large).",
             "schema": {
                 "type": "object",
                 "properties": {
@@ -387,7 +414,7 @@ def _ensure_basic_file_tools():
             },
         }
 
-    # Patch get_tools_schema to include newly registered tools (if necessary)
+    # Patch schema method once
     if not hasattr(agent_tools, "_original_get_tools_schema"):
         agent_tools._original_get_tools_schema = agent_tools.get_tools_schema  # type: ignore
 
@@ -397,14 +424,13 @@ def _ensure_basic_file_tools():
                 base = agent_tools._original_get_tools_schema() or []  # type: ignore
             except Exception:
                 base = []
-            # Append new ones
             for tname in ("write_file", "read_file"):
                 meta = reg.get(tname)
                 if not meta:
                     continue
-                # Avoid duplicates
                 exists = any(
-                    (isinstance(x, dict) and x.get("function", {}).get("name") == tname) for x in base
+                    isinstance(x, dict) and x.get("function", {}).get("name") == tname
+                    for x in base
                 )
                 if not exists:
                     base.append(
@@ -422,39 +448,76 @@ def _ensure_basic_file_tools():
         agent_tools.get_tools_schema = _patched_schema  # type: ignore
 
 
-_ensure_basic_file_tools()
+_ensure_file_tools()
 
 # ======================================================================================
-# SERVICE
+# MODEL SELECTION
+# ======================================================================================
+
+def _select_model(explicit: Optional[str] = None, task: Optional[Task] = None) -> str:
+    """
+    آلية ذات سيادة لاختيار النموذج.
+      1) MAESTRO_FORCE_MODEL (يتجاوز كل شيء)
+      2) explicit (تمرير مباشر للدالة)
+      3) getattr(task, 'model_name', None)
+      4) AI_MODEL_OVERRIDE (بيئة)
+      5) DEFAULT_AI_MODEL (Config / Env)
+      6) fallback 'openai/gpt-4o'
+    """
+    forced = os.getenv("MAESTRO_FORCE_MODEL")
+    if forced:
+        return forced.strip()
+
+    if explicit and explicit.strip():
+        return explicit.strip()
+
+    if task is not None:
+        task_model = getattr(task, "model_name", None)
+        if task_model and isinstance(task_model, str) and task_model.strip():
+            return task_model.strip()
+
+    override = os.getenv("AI_MODEL_OVERRIDE")
+    if override and override.strip():
+        return override.strip()
+
+    cfg_default = _cfg("DEFAULT_AI_MODEL", None)
+    if cfg_default and str(cfg_default).strip():
+        return str(cfg_default).strip()
+
+    return "openai/gpt-4o"
+
+
+# ======================================================================================
+# CORE SERVICE
 # ======================================================================================
 
 class MaestroGenerationService:
     def __init__(self):
         self.version = __version__
-        self.logger = _safe_logger()
+        self.log = _logger()
 
-    # ---------------------- Forge (Generic Text) ----------------------
+    # ---------------------------- Basic Text Generation ----------------------------
     def forge_new_code(
         self,
         prompt: str,
         conversation_id: Optional[str] = None,
         model: Optional[str] = None,
     ) -> Dict[str, Any]:
-        _try_auto_context()
+        """
+        واجهة نصية عامة (مقيدة) – تستدعي نموذج واحد للحصول على إجابة.
+        """
+        _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
-        model_name = model or _cfg("DEFAULT_AI_MODEL", "openai/gpt-4o")
+        model_name = _select_model(explicit=model)
         try:
             client = get_llm_client()
             messages = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful AI system. Return concise answer.",
-                },
+                {"role": "system", "content": "You are a concise, helpful AI assistant."},
                 {"role": "user", "content": prompt},
             ]
             resp = client.chat.completions.create(model=model_name, messages=messages)
-            usage_info = _extract_usage_tokens(resp)
+            usage = _extract_usage(resp)
             answer = resp.choices[0].message.content or ""
             return {
                 "status": "success",
@@ -463,13 +526,12 @@ class MaestroGenerationService:
                     "conversation_id": cid,
                     "model": model_name,
                     "elapsed_s": round(time.perf_counter() - started, 4),
-                    "usage": usage_info,
-                    "tokens": usage_info.get("total_tokens"),
+                    "usage": usage,
                 },
             }
         except Exception as exc:
             if os.getenv("MAESTRO_SUPPRESS_CTX_ERRORS", "0") != "1":
-                self.logger.error("[forge_new_code] Failure", exc_info=True)
+                self.log.error("[forge_new_code] Failure", exc_info=True)
             return {
                 "status": "error",
                 "error": str(exc),
@@ -477,26 +539,20 @@ class MaestroGenerationService:
                     "conversation_id": cid,
                     "model": model_name,
                     "elapsed_s": round(time.perf_counter() - started, 4),
-                    "had_app_context": has_app_context(),
                 },
             }
 
-    # ---------------------- JSON Variant ----------------------
+    # ---------------------------- JSON-only Variant ----------------------------
     def generate_json(
         self,
         prompt: str,
         conversation_id: Optional[str] = None,
         model: Optional[str] = None,
     ) -> Dict[str, Any]:
-        json_prompt = f"""
-You must output ONLY valid JSON. No commentary, no markdown fences.
-User request:
-{prompt}
-Return structured JSON answer.
-""".strip()
-        return self.forge_new_code(json_prompt, conversation_id, model=model)
+        strict_prompt = f"""You must output ONLY valid JSON (no markdown fences, no commentary). User request:\n{prompt}\nReturn structured JSON only."""
+        return self.forge_new_code(strict_prompt, conversation_id=conversation_id, model=model)
 
-    # ---------------------- Legacy Wrapper ----------------------
+    # ---------------------------- Legacy Wrapper ----------------------------
     def execute_task_legacy_wrapper(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         started = time.perf_counter()
         desc = ""
@@ -525,87 +581,87 @@ Return structured JSON answer.
             "meta": res.get("meta", {}),
         }
 
-    # ---------------------- Task Orchestration (Core) ----------------------
-    def execute_task(self, task: Task) -> None:
-        _try_auto_context()
+    # ---------------------------- Task Execution (Multi-Step Tool Use) ----------------------------
+    def execute_task(self, task: Task, model: Optional[str] = None) -> None:
+        """
+        المنفّذ المركزي للمهام التي تحتاج استدلال متعدد الخطوات مع أدوات.
+        يحفظ النتيجة في task.result + finalize_task.
+        """
+        _attempt_auto_context()
         if not hasattr(task, "mission"):
-            self._safe_log("execute_task: task missing 'mission' attribute.", level="warning")
+            self._safe_log("execute_task: task has no 'mission' attribute.", level="warning")
             return
 
         cfg = OrchestratorConfig(
-            model_name=_cfg("DEFAULT_AI_MODEL", "openai/gpt-4o"),
+            model_name=_select_model(explicit=model, task=task),
             max_steps=int(_cfg("AGENT_MAX_STEPS", 5)),
         )
 
         mission = task.mission
         telemetry = OrchestratorTelemetry()
-        step_states: List[StepState] = []
-        prev_tools_snapshot: List[str] = []
-        final_answer = "(no final answer produced)"
-        tool_usage_sequence: List[str] = []
-        usage_accumulated: Dict[str, Any] = {}
+        steps: List[StepState] = []
+        previous_tool_sequence: List[str] = []
+        cumulative_usage: Dict[str, int] = {}
+        tools_used: List[str] = []
+        final_answer = "(no answer produced)"
+        stagnation_detected = False
+
+        # Transition to RUNNING
+        try:
+            task.status = TaskStatus.RUNNING
+            log_mission_event(
+                mission,
+                MissionEventType.TASK_STATUS_CHANGE,
+                payload={"task_id": getattr(task, "id", None), "status": "RUNNING"},
+            )
+            self._commit()
+        except Exception:
+            self._safe_log("Failed to persist RUNNING state early.", level="warning")
+
+        # Acquire LLM client
+        try:
+            client = get_llm_client()
+        except Exception as exc:
+            telemetry.error = f"LLM client init failed: {exc}"
+            task.result = {
+                "telemetry": telemetry.to_dict(),
+                "error": telemetry.error,
+                "steps": [],
+                "tools_used": [],
+            }
+            finalize_task(task, status=TaskStatus.FAILED, result_text="LLM init failure.")
+            self._commit()
+            return
+
+        # Build context
+        ctx_res = system_service.find_related_context(getattr(task, "description", ""))
+        sys_prompt = _build_system_prompt(task, getattr(ctx_res, "data", {}))
+        messages: List[Dict[str, Any]] = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": getattr(task, "description", "")},
+        ]
+        tool_schema = agent_tools.get_tools_schema()
 
         try:
-            # Mark RUNNING
-            try:
-                task.status = TaskStatus.RUNNING
-                log_mission_event(
-                    mission,
-                    MissionEventType.TASK_STATUS_CHANGE,
-                    payload={"task_id": getattr(task, "id", None), "status": "RUNNING"},
-                )
-                self._db_commit_safe()
-            except Exception:
-                self._safe_log("Failed to persist RUNNING status early.", level="warning")
+            for step_index in range(cfg.max_steps):
+                state = StepState(step_index=step_index)
+                steps.append(state)
+                telemetry.steps_taken = step_index + 1
 
-            # Init client
-            try:
-                client = get_llm_client()
-            except Exception as e:
-                telemetry.error = f"Client init failed: {e}"
-                task.result = {
-                    "telemetry": telemetry.to_dict(),
-                    "error": str(e),
-                    "steps": [],
-                    "tools_used": [],
-                }
-                finalize_task(task, status=TaskStatus.FAILED, result_text="LLM client initialization failed.")
-                self._db_commit_safe()
-                return
-
-            ctx_res = system_service.find_related_context(getattr(task, "description", ""))
-            system_prompt = _identity_block(task, getattr(ctx_res, "data", {}))
-            messages: List[Dict[str, Any]] = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": getattr(task, "description", "")},
-            ]
-            tools_schema = agent_tools.get_tools_schema()
-
-            for step_idx in range(cfg.max_steps):
-                state = StepState(step_index=step_idx)
-                step_states.append(state)
-                telemetry.steps_taken = step_idx + 1
-
-                # Sanitize
-                for m in messages:
-                    if m.get("content") is None:
-                        m["content"] = ""
-
-                # LLM call
+                # Call LLM
                 llm_resp = client.chat.completions.create(
                     model=cfg.model_name,
                     messages=messages,
-                    tools=tools_schema,
+                    tools=tool_schema,
                     tool_choice="auto",
                 )
-                usage_chunk = _extract_usage_tokens(llm_resp)
-                # Merge usage (simple override for now)
-                for k, v in usage_chunk.items():
-                    if v is not None:
-                        usage_accumulated[k] = (usage_accumulated.get(k, 0) or 0) + (v if isinstance(v, int) else 0)
+                usage_piece = _extract_usage(llm_resp)
+                for k, v in usage_piece.items():
+                    if isinstance(v, int):
+                        cumulative_usage[k] = cumulative_usage.get(k, 0) + v
 
-                raw_msg = llm_resp.choices[0].message
-                assistant_dict = _normalize_assistant_message(raw_msg)
+                raw_assistant_msg = llm_resp.choices[0].message
+                assistant_dict = _normalize_assistant_message(raw_assistant_msg)
                 messages.append(assistant_dict)
 
                 log_mission_event(
@@ -613,16 +669,16 @@ Return structured JSON answer.
                     MissionEventType.TASK_UPDATED,
                     payload={
                         "task_id": getattr(task, "id", None),
-                        "step": step_idx,
+                        "step": step_index,
                         "decision": assistant_dict,
                     },
-                    note="Maestro reasoning step.",
+                    note="Reasoning step captured.",
                 )
-                tool_calls = assistant_dict.get("tool_calls") or []
 
+                tool_calls = assistant_dict.get("tool_calls") or []
                 if tool_calls:
                     state.decision = "tool"
-                    new_tools = []
+                    current_tools = []
                     for call in tool_calls:
                         fn_name = None
                         fn_args = {}
@@ -635,90 +691,101 @@ Return structured JSON answer.
                         except Exception:
                             pass
 
-                        if fn_name:
-                            new_tools.append(fn_name)
-                            tool_res = _invoke_tool(fn_name, fn_args)
-                            tool_usage_sequence.append(fn_name)
-                            telemetry.tools_invoked += 1
-                            tool_payload = getattr(tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"})()
-                            messages.append(
-                                {
-                                    "role": "tool",
-                                    "tool_call_id": call_id,
-                                    "name": fn_name,
-                                    "content": _serialize_safe(tool_payload),
-                                }
-                            )
-                            log_mission_event(
-                                mission,
-                                MissionEventType.TASK_UPDATED,
-                                payload={
-                                    "task_id": getattr(task, "id", None),
-                                    "tool_result": tool_payload,
-                                    "tool": fn_name,
-                                },
-                                note=f"Tool '{fn_name}' executed.",
-                            )
+                        if not fn_name:
+                            continue
+                        current_tools.append(fn_name)
+                        tools_used.append(fn_name)
+                        telemetry.tools_invoked += 1
+                        tool_res = _invoke_tool(fn_name, fn_args)
+                        payload_dict = getattr(tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"})()
 
-                    if _detect_no_progress(prev_tools_snapshot, new_tools):
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": call_id,
+                                "name": fn_name,
+                                "content": _safe_json(payload_dict),
+                            }
+                        )
+                        log_mission_event(
+                            mission,
+                            MissionEventType.TASK_UPDATED,
+                            payload={
+                                "task_id": getattr(task, "id", None),
+                                "tool_result": payload_dict,
+                                "tool": fn_name,
+                            },
+                            note=f"Tool '{fn_name}' executed.",
+                        )
+
+                    # Stagnation?
+                    if _is_stagnation(previous_tool_sequence, current_tools):
                         telemetry.finalization_reason = "stagnation_detected"
+                        stagnation_detected = True
                         state.finish()
                         break
-                    prev_tools_snapshot = new_tools
-                    telemetry.distinct_tools = len(set(tool_usage_sequence))
-                    state.finish()
-                    continue
 
-                # Final answer
+                    previous_tool_sequence = current_tools
+                    telemetry.distinct_tools = len(set(tools_used))
+                    state.finish()
+                    continue  # Next step for potential follow-up
+
+                # No tool calls => final answer
                 state.decision = "final"
                 final_answer = assistant_dict.get("content") or "(empty)"
                 telemetry.finalization_reason = "model_concluded"
                 state.finish()
                 break
             else:
-                telemetry.finalization_reason = "max_steps_exhausted"
+                if not telemetry.finalization_reason:
+                    telemetry.finalization_reason = "max_steps_exhausted"
 
-            # Persist structured result BEFORE finalize_task so it survives
-            try:
-                task.result = {
-                    "telemetry": telemetry.to_dict(),
-                    "steps": [asdict(s) for s in step_states],
-                    "tools_used": tool_usage_sequence,
-                    "usage": usage_accumulated,
-                    "final_reason": telemetry.finalization_reason,
-                }
-            except Exception:
-                self._safe_log("Could not assign task.result JSON.", level="warning")
+            # Persist structured result before finalize_task
+            task.result = {
+                "telemetry": telemetry.to_dict(),
+                "steps": [asdict(s) for s in steps],
+                "tools_used": tools_used,
+                "usage": cumulative_usage,
+                "final_reason": telemetry.finalization_reason,
+                **({"error": telemetry.error} if telemetry.error else {}),
+            }
 
-            finalize_task(task, status=TaskStatus.SUCCESS, result_text=final_answer)
-            self._db_commit_safe()
-
-        except Exception as exc:
-            telemetry.error = str(exc)
+            status = TaskStatus.FAILED if stagnation_detected else TaskStatus.SUCCESS
+            finalize_task(task, status=status, result_text=final_answer)
+            self._commit()
+        except Exception as exec_err:
+            telemetry.error = str(exec_err)
             try:
                 task.result = {
                     "telemetry": telemetry.to_dict(),
                     "trace": traceback.format_exc(),
-                    "tools_used": tool_usage_sequence,
+                    "tools_used": tools_used,
                 }
             except Exception:
                 pass
-            finalize_task(task, status=TaskStatus.FAILED, result_text=f"Catastrophic failure: {exc}")
-            self._db_commit_safe()
+            finalize_task(
+                task,
+                status=TaskStatus.FAILED,
+                result_text=f"Catastrophic failure: {exec_err}",
+            )
+            self._commit()
 
-    # ---------------------- Diagnostics ----------------------
+    # ---------------------------- Diagnostics ----------------------------
     def diagnostics(self) -> Dict[str, Any]:
         return {
             "version": self.version,
             "has_app_context": has_app_context(),
-            "default_model": _cfg("DEFAULT_AI_MODEL", "openai/gpt-4o"),
+            "resolved_default_model": _select_model(),  # بدون تمرير => يسلك مسار البيئة
+            "force_model": os.getenv("MAESTRO_FORCE_MODEL"),
+            "override_model": os.getenv("AI_MODEL_OVERRIDE"),
+            "default_ai_model_env": os.getenv("DEFAULT_AI_MODEL"),
             "max_steps": int(_cfg("AGENT_MAX_STEPS", 5)),
-            "auto_context": os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1",
             "tools_registered": list(getattr(agent_tools, "_TOOL_REGISTRY", {}).keys()),
+            "auto_context": os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1",
         }
 
-    # ---------------------- Internals ----------------------
-    def _db_commit_safe(self):
+    # ---------------------------- Internals ----------------------------
+    def _commit(self):
         if db:
             try:
                 db.session.commit()
@@ -726,15 +793,15 @@ Return structured JSON answer.
                 self._safe_log(f"[DB] Commit failed: {exc}", level="error")
 
     def _safe_log(self, msg: str, level: str = "info", exc_info: bool = False):
+        logger = self.log
         try:
-            logger = self.logger
             getattr(logger, level, logger.info)(msg, exc_info=exc_info)
         except Exception:
-            print(f"[Maestro::{level.upper()}] {msg}")
+            print(f"[MAESTRO::{level.upper()}] {msg}")
 
 
 # ======================================================================================
-# SINGLETON + SHORTCUTS
+# SINGLETON & FACADES
 # ======================================================================================
 
 _generation_service_singleton: Optional[MaestroGenerationService] = None
@@ -761,8 +828,8 @@ def execute_task_legacy_wrapper(*a, **k):
     return get_generation_service().execute_task_legacy_wrapper(*a, **k)
 
 
-def execute_task(task: Task):
-    return get_generation_service().execute_task(task)
+def execute_task(task: Task, model: Optional[str] = None):
+    return get_generation_service().execute_task(task, model=model)
 
 
 def diagnostics():
@@ -770,12 +837,13 @@ def diagnostics():
 
 
 # ======================================================================================
-# SELF-TEST (Manual)
+# SELF-TEST (Manual Invocation)
 # ======================================================================================
 if __name__ == "__main__":  # pragma: no cover
     svc = get_generation_service()
-    print("Diagnostics:", json.dumps(svc.diagnostics(), ensure_ascii=False, indent=2))
-    demo = svc.forge_new_code("Say hello in Arabic.", conversation_id="selftest")
+    print("=== Diagnostics ===")
+    print(json.dumps(svc.diagnostics(), ensure_ascii=False, indent=2))
+    demo = svc.forge_new_code("Say hello in Arabic.", conversation_id="selftest", model=os.getenv("AI_MODEL_OVERRIDE"))
     print("forge_new_code =>", json.dumps(demo, ensure_ascii=False, indent=2))
-    legacy = svc.execute_task_legacy_wrapper({"description": "List three planets."})
+    legacy = svc.execute_task_legacy_wrapper({"description": "List three constellations."})
     print("legacy wrapper =>", json.dumps(legacy, ensure_ascii=False, indent=2))
