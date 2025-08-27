@@ -10,11 +10,11 @@ FEATURES:
   - Argument schema validation (subset JSON Schema: type/object/properties/required/default)
   - Cleans unexpected argument keys (defensive)
   - ToolResult unified (ok, data|error, meta, trace_id)
-  - Path safety: root confinement, no traversal, no symlink, enforce extension, large file overwrite guard
+  - Path safety: root confinement, no traversal, no symlink, extension enforcement, large-file overwrite guard
   - Size limits via env:
         AGENT_TOOLS_MAX_WRITE_BYTES (default 2_000_000)
         AGENT_TOOLS_MAX_APPEND_BYTES (default 1_000_000)
-        AGENT_TOOLS_MAX_READ_BYTES (default 500_000)
+        AGENT_TOOLS_MAX_READ_BYTES  (default 500_000)
   - GENERIC_THINK_MAX_CHARS_INPUT (default 12000)
   - DISPATCH_ALLOWLIST controls which tools dispatch_tool can call
   - Telemetry: invocations, errors, total_ms, avg_ms, last_error
@@ -23,6 +23,7 @@ FEATURES:
   - Policy hooks (policy_can_execute / transform_arguments) for future extensibility
   - Safe UTF-8 text only FS operations
   - Fallback reasoning if LLM backend unavailable
+  - Backwards compatibility aliases: *_tool names maintained
 
 ENV VARS (summary):
   AGENT_TOOLS_LOG_LEVEL=DEBUG|INFO|WARNING
@@ -34,12 +35,7 @@ ENV VARS (summary):
   AGENT_TOOLS_MAX_WRITE_BYTES=2000000
   AGENT_TOOLS_MAX_APPEND_BYTES=1000000
   AGENT_TOOLS_MAX_READ_BYTES=500000
-  MEMORY_ALLOWLIST="session_topic,user_goal" (optional subset of allowed keys)
-
-COMPATIBILITY EXPECTATIONS:
-  - External orchestrator calls _TOOL_REGISTRY[name]["handler"](**tool_args)
-  - resolve_tool_name(name) -> canonical or None
-  - ToolResult convertible to dict via to_dict()
+  MEMORY_ALLOWLIST="session_topic,user_goal"
 
 LICENSE: Internal proprietary (adjust as needed)
 """
@@ -55,12 +51,12 @@ import traceback
 import logging
 import threading
 from dataclasses import dataclass, asdict
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # --------------------------------------------------------------------------------------
 # Version
 # --------------------------------------------------------------------------------------
-__version__ = "2.0.0"
+__version__ = "2.0.1"  # patched syntax & compatibility
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -121,7 +117,6 @@ class ToolResult:
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
-        # Drop None fields for cleanliness
         return {k: v for k, v in d.items() if v is not None}
 
 # --------------------------------------------------------------------------------------
@@ -136,18 +131,16 @@ _REGISTRY_LOCK = threading.Lock()
 # Policy Hooks (future)
 # --------------------------------------------------------------------------------------
 def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
-    # Placeholder for future RBAC / risk control
     return True
 
 def transform_arguments(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-    # Hook to transform arguments (e.g. path rewriting)
     return args
 
 # --------------------------------------------------------------------------------------
 # Metrics Helpers
 # --------------------------------------------------------------------------------------
 def _init_tool_stats(name: str):
-    if name not in _ TOOL_STATS:
+    if name not in _TOOL_STATS:
         _TOOL_STATS[name] = {
             "invocations": 0,
             "errors": 0,
@@ -193,7 +186,14 @@ def _coerce_to_tool_result(obj: Any) -> ToolResult:
 # --------------------------------------------------------------------------------------
 # Argument Validation (subset JSON Schema)
 # --------------------------------------------------------------------------------------
-SUPPORTED_TYPES = {"string": str, "integer": int, "number": (int, float), "boolean": bool, "object": dict, "array": list}
+SUPPORTED_TYPES = {
+    "string": str,
+    "integer": int,
+    "number": (int, float),
+    "boolean": bool,
+    "object": dict,
+    "array": list
+}
 
 def _validate_type(name: str, value: Any, expected: str):
     py_type = SUPPORTED_TYPES.get(expected)
@@ -203,14 +203,6 @@ def _validate_type(name: str, value: Any, expected: str):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
 
 def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Supports:
-      - root schema: type=object
-      - properties: { field: {type, default, description...} }
-      - required: list
-      - Drops unexpected keys
-      - Assigns default values
-    """
     if not isinstance(schema, dict):
         return args
     if schema.get("type") != "object":
@@ -218,12 +210,10 @@ def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[st
     properties = schema.get("properties", {}) or {}
     required = schema.get("required", []) or []
     cleaned: Dict[str, Any] = {}
-
     for field, meta in properties.items():
         if field in args:
             value = args[field]
         else:
-            # default if any
             if "default" in meta:
                 value = meta["default"]
             else:
@@ -232,33 +222,34 @@ def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[st
         if expected_type in SUPPORTED_TYPES:
             _validate_type(field, value, expected_type)
         cleaned[field] = value
-
     missing = [r for r in required if r not in cleaned]
     if missing:
         raise ValueError(f"Missing required parameters: {missing}")
-
     return cleaned
 
 # --------------------------------------------------------------------------------------
 # Path Safety
 # --------------------------------------------------------------------------------------
-def _safe_path(path: str, *, must_exist_parent: bool = False,
-               enforce_ext: Optional[List[str]] = None,
-               forbid_overwrite_large: bool = True) -> str:
+def _safe_path(
+    path: str,
+    *,
+    must_exist_parent: bool = False,
+    enforce_ext: Optional[List[str]] = None,
+    forbid_overwrite_large: bool = True
+) -> str:
     if not isinstance(path, str) or not path.strip():
         raise ValueError("Empty path.")
     if len(path) > 420:
         raise ValueError("Path too long.")
     norm = path.replace("\\", "/")
     if norm.startswith("/") or norm.startswith("~"):
-        # treat as relative to project root
         norm = norm.lstrip("/")
     if ".." in norm.split("/"):
         raise PermissionError("Path traversal detected.")
     abs_path = os.path.abspath(os.path.join(_PROJECT_ROOT, norm))
     if not abs_path.startswith(_PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
-    # Ensure no symlink in any component
+    # Symlink checks per component
     cur = _PROJECT_ROOT
     rel_parts = abs_path[len(_PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
     for part in rel_parts:
@@ -294,7 +285,6 @@ def tool(
     aliases: Optional[List[str]] = None,
     allow_disable: bool = True
 ):
-    """Register a tool with optional aliases."""
     if parameters is None:
         parameters = {"type": "object", "properties": {}}
     if aliases is None:
@@ -304,17 +294,15 @@ def tool(
         with _REGISTRY_LOCK:
             if name in _TOOL_REGISTRY:
                 raise ValueError(f"Tool '{name}' already registered.")
-            # Pre-check alias conflicts
             for a in aliases:
                 if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
                     raise ValueError(f"Alias '{a}' already registered.")
 
-            # Canonical entry
             meta = {
                 "name": name,
                 "description": description,
                 "parameters": parameters,
-                "handler": None,  # placeholder until wrapper built
+                "handler": None,
                 "category": category,
                 "canonical": name,
                 "is_alias": False,
@@ -324,7 +312,6 @@ def tool(
             _TOOL_REGISTRY[name] = meta
             _init_tool_stats(name)
 
-            # Alias entries (light)
             for a in aliases:
                 _ALIAS_INDEX[a] = name
                 _TOOL_REGISTRY[a] = {
@@ -342,13 +329,12 @@ def tool(
 
             def wrapper(**kwargs):
                 trace_id = _generate_trace_id()
-                reg_name = name
+                reg_name = name  # canonical for stats
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[reg_name]
                 canonical_name = meta_entry["canonical"]
                 try:
-                    meta_disabled = meta_entry.get("disabled", False)
-                    if meta_disabled:
+                    if meta_entry.get("disabled"):
                         raise PermissionError("TOOL_DISABLED")
                     schema = meta_entry.get("parameters") or {}
                     try:
@@ -366,7 +352,6 @@ def tool(
                     result = ToolResult(ok=False, error=str(e))
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
                 _record_invocation(reg_name, elapsed_ms, result.ok, result.error)
-                # Merge meta
                 st = _TOOL_STATS[reg_name]
                 if result.meta is None:
                     result.meta = {}
@@ -386,7 +371,6 @@ def tool(
                 result.trace_id = trace_id
                 return result
 
-            # Assign wrapper to canonical + alias entries
             _TOOL_REGISTRY[name]["handler"] = wrapper
             for a in aliases:
                 _TOOL_REGISTRY[a]["handler"] = wrapper
@@ -398,7 +382,7 @@ def tool(
 # --------------------------------------------------------------------------------------
 @tool(
     name="introspect_tools",
-    description="Return registry & telemetry snapshot. Filters: include_aliases(bool)=True, include_disabled(bool)=True, category(str), name_contains(str), enabled_only(bool), telemetry_only(bool).",
+    description="Return registry & telemetry snapshot. Filters: include_aliases, include_disabled, category, name_contains, enabled_only, telemetry_only.",
     category="introspection",
     parameters={
         "type": "object",
@@ -476,7 +460,6 @@ def memory_put(key: str, value: str) -> ToolResult:
     if _MEMORY_ALLOWLIST and key not in _MEMORY_ALLOWLIST:
         return ToolResult(ok=False, error="KEY_NOT_ALLOWED")
     try:
-        # Validate serializable
         json.dumps(value)
     except Exception:
         return ToolResult(ok=False, error="VALUE_NOT_SERIALIZABLE")
@@ -530,17 +513,11 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         return ToolResult(ok=False, error="EMPTY_PROMPT")
     if len(clean) > _GENERIC_THINK_MAX_CHARS:
         clean = clean[:_GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
-    # If backend absent -> fallback heuristic
     if not maestro:
         fallback = f"[fallback-{mode}] " + clean[:400]
         return ToolResult(ok=True, data={"answer": fallback, "mode": mode, "fallback": True})
     model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
-    candidate_methods = [
-        "generate_text",
-        "forge_new_code",
-        "run",
-        "complete"
-    ]
+    candidate_methods = ["generate_text", "forge_new_code", "run", "complete"]
     response = None
     last_err = None
     for m in candidate_methods:
@@ -559,7 +536,6 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         if last_err:
             return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}")
         return ToolResult(ok=False, error="NO_LLM_METHOD")
-    # Normalize answer
     if isinstance(response, str):
         answer = response
     elif isinstance(response, dict):
@@ -588,9 +564,7 @@ def summarize_text(text: str, style: str = "concise") -> ToolResult:
     if not t:
         return ToolResult(ok=False, error="EMPTY_TEXT")
     snippet = t[:8000]
-    prompt = (
-        f"Summarize the following text in a {style} manner. Provide key points:\n---\n{snippet}\n---"
-    )
+    prompt = f"Summarize the following text in a {style} manner. Provide key points:\n---\n{snippet}\n---"
     return generic_think(prompt=prompt, mode="summary")
 
 @tool(
@@ -700,7 +674,7 @@ def read_file(path: str, max_bytes: int = 20000) -> ToolResult:
         if os.path.isdir(abs_path):
             return ToolResult(ok=False, error="IS_DIRECTORY")
         with open(abs_path, "r", encoding="utf-8") as f:
-            data = f.read(max_eff + 10)  # slight over-read to detect truncation
+            data = f.read(max_eff + 10)
         truncated = len(data) > max_eff
         return ToolResult(ok=True, data={
             "path": abs_path,
@@ -815,7 +789,6 @@ def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) ->
     if not canonical:
         return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
     handler = _TOOL_REGISTRY[canonical]["handler"]
-    # Defensive: ensure arguments is dict
     if not isinstance(arguments, dict):
         return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
     try:
@@ -848,13 +821,31 @@ def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
     return schema
 
 # --------------------------------------------------------------------------------------
+# Backwards Compatibility Function Aliases (*_tool)
+# --------------------------------------------------------------------------------------
+# Some legacy code may call generic_think_tool etc.
+def generic_think_tool(**kwargs): return generic_think(**kwargs)
+def summarize_text_tool(**kwargs): return summarize_text(**kwargs)
+def refine_text_tool(**kwargs): return refine_text(**kwargs)
+def write_file_tool(**kwargs): return write_file(**kwargs)
+def append_file_tool(**kwargs): return append_file(**kwargs)
+def read_file_tool(**kwargs): return read_file(**kwargs)
+def file_exists_tool(**kwargs): return file_exists(**kwargs)
+def list_dir_tool(**kwargs): return list_dir(**kwargs)
+def delete_file_tool(**kwargs): return delete_file(**kwargs)
+def introspect_tools_tool(**kwargs): return introspect_tools(**kwargs)
+def memory_put_tool(**kwargs): return memory_put(**kwargs)
+def memory_get_tool(**kwargs): return memory_get(**kwargs)
+def dispatch_tool_tool(**kwargs): return dispatch_tool(**kwargs)
+
+# --------------------------------------------------------------------------------------
 # __all__
 # --------------------------------------------------------------------------------------
 __all__ = [
     "ToolResult",
     "resolve_tool_name",
     "get_tools_schema",
-    # Tools
+    # Tools canonical
     "introspect_tools",
     "memory_put",
     "memory_get",
@@ -868,6 +859,20 @@ __all__ = [
     "list_dir",
     "delete_file",
     "dispatch_tool",
+    # Legacy alias exports
+    "generic_think_tool",
+    "summarize_text_tool",
+    "refine_text_tool",
+    "write_file_tool",
+    "append_file_tool",
+    "read_file_tool",
+    "file_exists_tool",
+    "list_dir_tool",
+    "delete_file_tool",
+    "introspect_tools_tool",
+    "memory_put_tool",
+    "memory_get_tool",
+    "dispatch_tool_tool",
     # Registries
     "_TOOL_REGISTRY",
     "_TOOL_STATS",
