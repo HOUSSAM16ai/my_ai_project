@@ -1,187 +1,375 @@
-# ======================================================================================
-# ==        MAESTRO AGENT TOOL REGISTRY (v1.1.1 • "ALIAS-FIX / MULTI-ALIAS")         ==
-# ==  Deterministic Tool Layer | Safe FS Ops | Introspection | Telemetry | Aliases    ==
-# ======================================================================================
-#
-# لماذا v1.1.1؟
-#   - إضافة alias جديد 'file_system_tool' لأن الـ planner يولّد حالياً tool_name بهذه القيمة
-#     إضافة إلى 'file_system' لضمان التنفيذ الفوري دون تعديل الـ planner.
-#   - الحفاظ على دعم alias السابق 'file_system'.
-#
-# الهدف:
-#   جعل أي Task يحمل tool_name أحد: write_file / file_system / file_system_tool
-#   يُنفّذ بنفس الأداة الفعلية (write_file).
-#
-# ملاحظات:
-#   - get_tools_schema يُرجع فقط الأسماء الأصلية (بدون aliases) لتقليل التشويش على LLM.
-#   - يمكن إضافة Aliases أخرى ببساطة عبر توسيع قائمة aliases في decorator.
-#   - توجد دالة resolve_tool_name لو احتجت تسوية اسم خارجي إلى الاسم الأصلي.
-#
-# ======================================================================================
+"""
+MAESTRO AGENT TOOL REGISTRY (v2.0)  "HYPER-GROUNDED / COGNITIVE-CORE / SAFE-IO"
+================================================================================
+FEATURES:
+  - Cognitive Core: generic_think (fallback aware) + summarize_text + refine_text
+  - Meta tools: dispatch_tool (allowlist), introspect_tools (rich filters)
+  - Ephemeral memory tools: memory_put / memory_get (allowlist support)
+  - Unified registry with aliases, early conflict detection, disable via env
+  - Tool disabling: DISABLED_TOOLS="delete_file,dispatch_tool"
+  - Argument schema validation (subset JSON Schema: type/object/properties/required/default)
+  - Cleans unexpected argument keys (defensive)
+  - ToolResult unified (ok, data|error, meta, trace_id)
+  - Path safety: root confinement, no traversal, no symlink, enforce extension, large file overwrite guard
+  - Size limits via env:
+        AGENT_TOOLS_MAX_WRITE_BYTES (default 2_000_000)
+        AGENT_TOOLS_MAX_APPEND_BYTES (default 1_000_000)
+        AGENT_TOOLS_MAX_READ_BYTES (default 500_000)
+  - GENERIC_THINK_MAX_CHARS_INPUT (default 12000)
+  - DISPATCH_ALLOWLIST controls which tools dispatch_tool can call
+  - Telemetry: invocations, errors, total_ms, avg_ms, last_error
+  - trace_id per invocation
+  - delete_file requires confirm=True
+  - Policy hooks (policy_can_execute / transform_arguments) for future extensibility
+  - Safe UTF-8 text only FS operations
+  - Fallback reasoning if LLM backend unavailable
+
+ENV VARS (summary):
+  AGENT_TOOLS_LOG_LEVEL=DEBUG|INFO|WARNING
+  DISABLED_TOOLS="tool_a,tool_b"
+  DISPATCH_ALLOWLIST="generic_think,summarize_text,write_file"
+  GENERIC_THINK_MODEL_OVERRIDE="model-name"
+  GENERIC_THINK_ENABLE_STREAM=0|1 (placeholder)
+  GENERIC_THINK_MAX_CHARS_INPUT=12000
+  AGENT_TOOLS_MAX_WRITE_BYTES=2000000
+  AGENT_TOOLS_MAX_APPEND_BYTES=1000000
+  AGENT_TOOLS_MAX_READ_BYTES=500000
+  MEMORY_ALLOWLIST="session_topic,user_goal" (optional subset of allowed keys)
+
+COMPATIBILITY EXPECTATIONS:
+  - External orchestrator calls _TOOL_REGISTRY[name]["handler"](**tool_args)
+  - resolve_tool_name(name) -> canonical or None
+  - ToolResult convertible to dict via to_dict()
+
+LICENSE: Internal proprietary (adjust as needed)
+"""
 
 from __future__ import annotations
+
 import os
 import json
 import time
+import uuid
+import stat
+import traceback
 import logging
+import threading
 from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-__version__ = "1.1.1"
+# --------------------------------------------------------------------------------------
+# Version
+# --------------------------------------------------------------------------------------
+__version__ = "2.0.0"
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 # Logging
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 logger = logging.getLogger("agent_tools")
 if not logger.handlers:
     logging.basicConfig(
         level=os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
+else:
+    logger.setLevel(os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"))
 
-# -----------------------------------------------------------------------------
-# ToolResult – الحاوية الموحدة
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# Environment / Limits
+# --------------------------------------------------------------------------------------
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except Exception:
+        return default
+
+_PROJECT_ROOT = os.path.abspath("/app")
+_MAX_WRITE_BYTES = _int_env("AGENT_TOOLS_MAX_WRITE_BYTES", 2_000_000)
+_MAX_APPEND_BYTES = _int_env("AGENT_TOOLS_MAX_APPEND_BYTES", 1_000_000)
+_MAX_READ_BYTES = _int_env("AGENT_TOOLS_MAX_READ_BYTES", 500_000)
+_GENERIC_THINK_MAX_CHARS = _int_env("GENERIC_THINK_MAX_CHARS_INPUT", 12_000)
+
+_DISABLED: Set[str] = {
+    t.strip() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()
+}
+
+_DISPATCH_ALLOW: Set[str] = {
+    t.strip() for t in os.getenv("DISPATCH_ALLOWLIST", "").split(",") if t.strip()
+}
+
+_MEMORY_ALLOWLIST: Optional[Set[str]] = None
+_mem_list_raw = os.getenv("MEMORY_ALLOWLIST", "").strip()
+if _mem_list_raw:
+    _MEMORY_ALLOWLIST = {k.strip() for k in _mem_list_raw.split(",") if k.strip()}
+
+# --------------------------------------------------------------------------------------
+# Ephemeral Memory (Thread-safe)
+# --------------------------------------------------------------------------------------
+_MEMORY_STORE: Dict[str, Any] = {}
+_MEMORY_LOCK = threading.Lock()
+
+# --------------------------------------------------------------------------------------
+# Tool Result
+# --------------------------------------------------------------------------------------
 @dataclass
 class ToolResult:
     ok: bool
     data: Any = None
     error: Optional[str] = None
-    meta: Optional[Dict[str, Any]] = None
+    meta: Dict[str, Any] = None
+    trace_id: Optional[str] = None
+
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        # Drop None fields for cleanliness
+        return {k: v for k, v in d.items() if v is not None}
 
-# -----------------------------------------------------------------------------
-# السجل الداخلي
-# -----------------------------------------------------------------------------
-# _TOOL_REGISTRY: name -> metadata dict {handler, parameters, description, category, canonical, is_alias, aliases}
-_TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
-_TOOL_STATS: Dict[str, Dict[str, Any]] = {}          # {name: {invocations, errors, total_ms}}
-_ALIAS_INDEX: Dict[str, str] = {}                    # alias -> canonical
+# --------------------------------------------------------------------------------------
+# Registries
+# --------------------------------------------------------------------------------------
+_TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}      # name -> meta {handler, ...}
+_TOOL_STATS: Dict[str, Dict[str, Any]] = {}         # name -> metrics
+_ALIAS_INDEX: Dict[str, str] = {}                   # alias -> canonical
+_REGISTRY_LOCK = threading.Lock()
 
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-_PROJECT_ROOT = os.path.abspath("/app")
-_MAX_WRITE_BYTES = 2_000_000
-_MAX_PATH_LENGTH = 400
+# --------------------------------------------------------------------------------------
+# Policy Hooks (future)
+# --------------------------------------------------------------------------------------
+def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
+    # Placeholder for future RBAC / risk control
+    return True
 
+def transform_arguments(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    # Hook to transform arguments (e.g. path rewriting)
+    return args
+
+# --------------------------------------------------------------------------------------
+# Metrics Helpers
+# --------------------------------------------------------------------------------------
 def _init_tool_stats(name: str):
-    if name not in _TOOL_STATS:
-        _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0}
+    if name not in _ TOOL_STATS:
+        _TOOL_STATS[name] = {
+            "invocations": 0,
+            "errors": 0,
+            "total_ms": 0.0,
+            "last_error": None,
+        }
 
-def _record_invocation(name: str, elapsed_ms: float, ok: bool):
+def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: Optional[str]):
     st = _TOOL_STATS[name]
     st["invocations"] += 1
     st["total_ms"] += elapsed_ms
     if not ok:
         st["errors"] += 1
+        st["last_error"] = (error or "")[:220]
 
-def _safe_path(path: str, must_exist_parent: bool = False) -> str:
-    if not isinstance(path, str) or not path.strip():
-        raise ValueError("Path is empty or invalid.")
-    if len(path) > _MAX_PATH_LENGTH:
-        raise ValueError("Path too long.")
-    if ".." in path or path.startswith("~"):
-        raise PermissionError("Path traversal detected.")
-    if path.startswith("/"):
-        abs_path = os.path.abspath(path)
-    else:
-        abs_path = os.path.abspath(os.path.join(_PROJECT_ROOT, path))
-    if not abs_path.startswith(_PROJECT_ROOT):
-        raise PermissionError("Path escapes project root.")
-    parent = os.path.dirname(abs_path)
-    if must_exist_parent and not os.path.isdir(parent):
-        raise FileNotFoundError("Parent directory does not exist.")
-    return abs_path
+# --------------------------------------------------------------------------------------
+# Utility
+# --------------------------------------------------------------------------------------
+def _generate_trace_id() -> str:
+    return uuid.uuid4().hex[:16]
+
+def resolve_tool_name(name: str) -> Optional[str]:
+    if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
+        return name
+    return _ALIAS_INDEX.get(name)
 
 def _coerce_to_tool_result(obj: Any) -> ToolResult:
     if isinstance(obj, ToolResult):
         return obj
+    if isinstance(obj, tuple) and len(obj) == 2 and isinstance(obj[0], bool):
+        ok, payload = obj
+        if ok:
+            return ToolResult(ok=True, data=payload)
+        return ToolResult(ok=False, error=str(payload))
     if isinstance(obj, dict):
-        if obj.get("ok") is True:
-            return ToolResult(ok=True, data=obj)
-        if "error" in obj and not obj.get("ok", True):
-            return ToolResult(ok=False, error=obj.get("error"), data=obj)
+        if "ok" in obj:
+            return ToolResult(ok=bool(obj["ok"]), data=obj.get("data"), error=obj.get("error"))
         return ToolResult(ok=True, data=obj)
     if isinstance(obj, str):
         return ToolResult(ok=True, data={"text": obj})
-    return ToolResult(ok=True, data={"value": obj})
+    return ToolResult(ok=True, data=obj)
 
-def resolve_tool_name(name: str) -> Optional[str]:
-    """Return canonical name if alias; else same name if registered; else None."""
-    if name in _TOOL_REGISTRY:
-        meta = _TOOL_REGISTRY[name]
-        return meta.get("canonical") or name
-    return _ALIAS_INDEX.get(name)
+# --------------------------------------------------------------------------------------
+# Argument Validation (subset JSON Schema)
+# --------------------------------------------------------------------------------------
+SUPPORTED_TYPES = {"string": str, "integer": int, "number": (int, float), "boolean": bool, "object": dict, "array": list}
 
-# -----------------------------------------------------------------------------
-# Decorator (with alias support)
-# -----------------------------------------------------------------------------
+def _validate_type(name: str, value: Any, expected: str):
+    py_type = SUPPORTED_TYPES.get(expected)
+    if not py_type:
+        return
+    if not isinstance(value, py_type):
+        raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
+
+def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Supports:
+      - root schema: type=object
+      - properties: { field: {type, default, description...} }
+      - required: list
+      - Drops unexpected keys
+      - Assigns default values
+    """
+    if not isinstance(schema, dict):
+        return args
+    if schema.get("type") != "object":
+        return args
+    properties = schema.get("properties", {}) or {}
+    required = schema.get("required", []) or []
+    cleaned: Dict[str, Any] = {}
+
+    for field, meta in properties.items():
+        if field in args:
+            value = args[field]
+        else:
+            # default if any
+            if "default" in meta:
+                value = meta["default"]
+            else:
+                continue
+        expected_type = meta.get("type")
+        if expected_type in SUPPORTED_TYPES:
+            _validate_type(field, value, expected_type)
+        cleaned[field] = value
+
+    missing = [r for r in required if r not in cleaned]
+    if missing:
+        raise ValueError(f"Missing required parameters: {missing}")
+
+    return cleaned
+
+# --------------------------------------------------------------------------------------
+# Path Safety
+# --------------------------------------------------------------------------------------
+def _safe_path(path: str, *, must_exist_parent: bool = False,
+               enforce_ext: Optional[List[str]] = None,
+               forbid_overwrite_large: bool = True) -> str:
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("Empty path.")
+    if len(path) > 420:
+        raise ValueError("Path too long.")
+    norm = path.replace("\\", "/")
+    if norm.startswith("/") or norm.startswith("~"):
+        # treat as relative to project root
+        norm = norm.lstrip("/")
+    if ".." in norm.split("/"):
+        raise PermissionError("Path traversal detected.")
+    abs_path = os.path.abspath(os.path.join(_PROJECT_ROOT, norm))
+    if not abs_path.startswith(_PROJECT_ROOT):
+        raise PermissionError("Escaped project root.")
+    # Ensure no symlink in any component
+    cur = _PROJECT_ROOT
+    rel_parts = abs_path[len(_PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
+    for part in rel_parts:
+        if not part:
+            continue
+        cur = os.path.join(cur, part)
+        if os.path.islink(cur):
+            raise PermissionError("Symlink component disallowed.")
+    parent = os.path.dirname(abs_path)
+    if must_exist_parent and not os.path.isdir(parent):
+        raise FileNotFoundError("Parent directory does not exist.")
+    if enforce_ext:
+        if not any(abs_path.lower().endswith(e.lower()) for e in enforce_ext):
+            raise ValueError(f"Extension not allowed. Must be one of {enforce_ext}")
+    if forbid_overwrite_large and os.path.exists(abs_path):
+        try:
+            st = os.stat(abs_path)
+            if stat.S_ISREG(st.st_mode) and st.st_size > _MAX_WRITE_BYTES:
+                raise PermissionError("Refusing to overwrite large file.")
+        except FileNotFoundError:
+            pass
+    return abs_path
+
+# --------------------------------------------------------------------------------------
+# Decorator
+# --------------------------------------------------------------------------------------
 def tool(
     name: str,
     description: str,
     parameters: Optional[Dict[str, Any]] = None,
     *,
     category: str = "general",
-    aliases: Optional[List[str]] = None
+    aliases: Optional[List[str]] = None,
+    allow_disable: bool = True
 ):
-    """
-    تسجيل أداة جديدة مع دعم aliases.
-    كل alias يُسجل كمدخل مستقل في _TOOL_REGISTRY مع نفس الـ handler والـ schema.
-    """
+    """Register a tool with optional aliases."""
     if parameters is None:
         parameters = {"type": "object", "properties": {}}
     if aliases is None:
         aliases = []
 
-    def decorator(fn: Callable[..., Any]):
-        if name in _TOOL_REGISTRY:
-            raise ValueError(f"Tool '{name}' already registered.")
-        for a in aliases:
-            if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
-                raise ValueError(f"Alias '{a}' already used.")
-        meta_main = {
-            "name": name,
-            "description": description,
-            "parameters": parameters,
-            "handler": fn,
-            "category": category,
-            "canonical": name,
-            "is_alias": False,
-            "aliases": aliases
-        }
-        _TOOL_REGISTRY[name] = meta_main
-        _init_tool_stats(name)
+    def decorator(func: Callable[..., Any]):
+        with _REGISTRY_LOCK:
+            if name in _TOOL_REGISTRY:
+                raise ValueError(f"Tool '{name}' already registered.")
+            # Pre-check alias conflicts
+            for a in aliases:
+                if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
+                    raise ValueError(f"Alias '{a}' already registered.")
 
-        for a in aliases:
-            _ALIAS_INDEX[a] = name
-            _TOOL_REGISTRY[a] = {
-                "name": a,
-                "description": f"[alias of {name}] {description}",
+            # Canonical entry
+            meta = {
+                "name": name,
+                "description": description,
                 "parameters": parameters,
-                "handler": fn,
+                "handler": None,  # placeholder until wrapper built
                 "category": category,
                 "canonical": name,
-                "is_alias": True,
-                "aliases": []
+                "is_alias": False,
+                "aliases": aliases,
+                "disabled": (allow_disable and name in _DISABLED),
             }
-            _init_tool_stats(a)
+            _TOOL_REGISTRY[name] = meta
+            _init_tool_stats(name)
 
-        def make_wrapper(reg_name: str, canonical_name: str):
-            def wrapper(*args, **kwargs) -> ToolResult:
+            # Alias entries (light)
+            for a in aliases:
+                _ALIAS_INDEX[a] = name
+                _TOOL_REGISTRY[a] = {
+                    "name": a,
+                    "description": f"[alias of {name}] {description}",
+                    "parameters": parameters,
+                    "handler": None,
+                    "category": category,
+                    "canonical": name,
+                    "is_alias": True,
+                    "aliases": [],
+                    "disabled": (allow_disable and name in _DISABLED),
+                }
+                _init_tool_stats(a)
+
+            def wrapper(**kwargs):
+                trace_id = _generate_trace_id()
+                reg_name = name
                 start = time.perf_counter()
+                meta_entry = _TOOL_REGISTRY[reg_name]
+                canonical_name = meta_entry["canonical"]
                 try:
-                    raw = fn(*args, **kwargs)
+                    meta_disabled = meta_entry.get("disabled", False)
+                    if meta_disabled:
+                        raise PermissionError("TOOL_DISABLED")
+                    schema = meta_entry.get("parameters") or {}
+                    try:
+                        validated = _validate_arguments(schema, kwargs)
+                    except Exception as ve:
+                        raise ValueError(f"Argument validation failed: {ve}") from ve
+                    if not policy_can_execute(canonical_name, validated):
+                        raise PermissionError("POLICY_DENIED")
+                    transformed = transform_arguments(canonical_name, validated)
+                    raw = func(**transformed)
                     result = _coerce_to_tool_result(raw)
                 except Exception as e:
-                    logger.exception("Tool '%s' raised exception.", reg_name)
-                    result = ToolResult(ok=False, error=f"{type(e).__name__}: {e}")
-                elapsed_ms = (time.perf_counter() - start) * 1000
-                _record_invocation(reg_name, elapsed_ms, result.ok)
+                    logger.debug("Tool '%s' exception: %s", reg_name, e)
+                    logger.debug("Traceback:\n%s", traceback.format_exc())
+                    result = ToolResult(ok=False, error=str(e))
+                elapsed_ms = (time.perf_counter() - start) * 1000.0
+                _record_invocation(reg_name, elapsed_ms, result.ok, result.error)
+                # Merge meta
+                st = _TOOL_STATS[reg_name]
                 if result.meta is None:
                     result.meta = {}
-                st = _TOOL_STATS[reg_name]
                 result.meta.update({
                     "tool": reg_name,
                     "canonical": canonical_name,
@@ -191,94 +379,280 @@ def tool(
                     "avg_ms": round(st["total_ms"] / st["invocations"], 2) if st["invocations"] else 0.0,
                     "version": __version__,
                     "category": category,
-                    "is_alias": reg_name != canonical_name
+                    "is_alias": meta_entry.get("is_alias", False),
+                    "disabled": meta_entry.get("disabled", False),
+                    "last_error": st["last_error"],
                 })
+                result.trace_id = trace_id
                 return result
-            return wrapper
 
-        _TOOL_REGISTRY[name]["handler"] = make_wrapper(name, name)
-        for a in aliases:
-            _TOOL_REGISTRY[a]["handler"] = make_wrapper(a, name)
-        return _TOOL_REGISTRY[name]["handler"]
+            # Assign wrapper to canonical + alias entries
+            _TOOL_REGISTRY[name]["handler"] = wrapper
+            for a in aliases:
+                _TOOL_REGISTRY[a]["handler"] = wrapper
+        return wrapper
     return decorator
 
-# -----------------------------------------------------------------------------
-# Introspection
-# -----------------------------------------------------------------------------
-def get_tools_schema() -> List[Dict[str, Any]]:
-    """
-    يعيد فقط الأدوات الأصلية (بدون aliases) حتى لا يتضاعف تعريف الوظائف أمام الـ LLM.
-    """
-    schema: List[Dict[str, Any]] = []
-    for meta in _TOOL_REGISTRY.values():
-        if meta.get("is_alias"):
-            continue
-        schema.append({
-            "type": "function",
-            "function": {
-                "name": meta["name"],
-                "description": meta["description"],
-                "parameters": meta["parameters"]
-            }
-        })
-    return schema
-
-def list_registered_tools(include_stats: bool = True, include_aliases: bool = True) -> ToolResult:
-    tools = []
-    for name, meta in _TOOL_REGISTRY.items():
-        if not include_aliases and meta.get("is_alias"):
-            continue
-        row = {
-            "name": name,
-            "canonical": meta.get("canonical"),
-            "description": meta["description"],
-            "category": meta.get("category"),
-            "is_alias": meta.get("is_alias", False),
-            "aliases": meta.get("aliases", []) if not meta.get("is_alias") else []
-        }
-        if include_stats:
-            st = _TOOL_STATS[name]
-            row.update({
-                "invocations": st["invocations"],
-                "errors": st["errors"],
-                "avg_ms": round(st["total_ms"] / st["invocations"], 2) if st["invocations"] else 0.0
-            })
-        tools.append(row)
-    return ToolResult(ok=True, data={"version": __version__, "tools": tools})
-
-# -----------------------------------------------------------------------------
-# TOOL IMPLEMENTATIONS
-# -----------------------------------------------------------------------------
-
+# --------------------------------------------------------------------------------------
+# Introspection Tool
+# --------------------------------------------------------------------------------------
 @tool(
-    name="write_file",
-    description="Create or overwrite a UTF-8 text file under /app. Returns the absolute path written.",
-    category="fs",
-    aliases=["file_system", "file_system_tool"],  # إضافة alias جديد لحل المشكلة الحالية
+    name="introspect_tools",
+    description="Return registry & telemetry snapshot. Filters: include_aliases(bool)=True, include_disabled(bool)=True, category(str), name_contains(str), enabled_only(bool), telemetry_only(bool).",
+    category="introspection",
     parameters={
         "type": "object",
         "properties": {
-            "path": {"type": "string", "description": "Relative path (e.g. 'SUCCESS.md')."},
-            "content": {"type": "string", "description": "Exact file content to write."}
+            "include_aliases": {"type": "boolean", "default": True},
+            "include_disabled": {"type": "boolean", "default": True},
+            "category": {"type": "string"},
+            "name_contains": {"type": "string"},
+            "enabled_only": {"type": "boolean", "default": False},
+            "telemetry_only": {"type": "boolean", "default": False},
+        }
+    }
+)
+def introspect_tools(
+    include_aliases: bool = True,
+    include_disabled: bool = True,
+    category: Optional[str] = None,
+    name_contains: Optional[str] = None,
+    enabled_only: bool = False,
+    telemetry_only: bool = False
+) -> ToolResult:
+    out = []
+    for name, meta in sorted(_TOOL_REGISTRY.items()):
+        if meta.get("is_alias") and not include_aliases:
+            continue
+        if not include_disabled and meta.get("disabled"):
+            continue
+        if enabled_only and meta.get("disabled"):
+            continue
+        if category and meta.get("category") != category:
+            continue
+        if name_contains and name_contains.lower() not in name.lower():
+            continue
+        st = _TOOL_STATS.get(name, {})
+        base = {
+            "name": name,
+            "canonical": meta.get("canonical"),
+            "is_alias": meta.get("is_alias", False),
+            "disabled": meta.get("disabled", False),
+            "category": meta.get("category"),
+            "invocations": st.get("invocations", 0),
+            "errors": st.get("errors", 0),
+            "avg_ms": round(st.get("total_ms", 0.0) / st.get("invocations", 1), 2) if st.get("invocations") else 0.0,
+            "last_error": st.get("last_error"),
+            "version": __version__
+        }
+        if not telemetry_only:
+            base["description"] = meta.get("description")
+            base["parameters"] = meta.get("parameters")
+            base["aliases"] = meta.get("aliases")
+        out.append(base)
+    return ToolResult(ok=True, data={"tools": out, "count": len(out)})
+
+# --------------------------------------------------------------------------------------
+# Memory Tools
+# --------------------------------------------------------------------------------------
+@tool(
+    name="memory_put",
+    description="Store a small JSON-serializable string under a key in ephemeral memory (allowlist enforced if MEMORY_ALLOWLIST set).",
+    category="memory",
+    parameters={
+        "type": "object",
+        "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string", "description": "Arbitrary JSON-serializable string content."}
+        },
+        "required": ["key", "value"]
+    }
+)
+def memory_put(key: str, value: str) -> ToolResult:
+    if len(key) > 120:
+        return ToolResult(ok=False, error="KEY_TOO_LONG")
+    if len(value) > 50_000:
+        return ToolResult(ok=False, error="VALUE_TOO_LONG")
+    if _MEMORY_ALLOWLIST and key not in _MEMORY_ALLOWLIST:
+        return ToolResult(ok=False, error="KEY_NOT_ALLOWED")
+    try:
+        # Validate serializable
+        json.dumps(value)
+    except Exception:
+        return ToolResult(ok=False, error="VALUE_NOT_SERIALIZABLE")
+    with _MEMORY_LOCK:
+        _MEMORY_STORE[key] = value
+    return ToolResult(ok=True, data={"stored": True, "key": key})
+
+@tool(
+    name="memory_get",
+    description="Retrieve value by key from ephemeral memory.",
+    category="memory",
+    parameters={
+        "type": "object",
+        "properties": {
+            "key": {"type": "string"}
+        },
+        "required": ["key"]
+    }
+)
+def memory_get(key: str) -> ToolResult:
+    with _MEMORY_LOCK:
+        if key not in _MEMORY_STORE:
+            return ToolResult(ok=False, error="KEY_NOT_FOUND")
+        return ToolResult(ok=True, data={"key": key, "value": _MEMORY_STORE[key]})
+
+# --------------------------------------------------------------------------------------
+# Maestro (LLM) Import & Cognitive Tools
+# --------------------------------------------------------------------------------------
+try:
+    from . import generation_service as maestro  # type: ignore
+except Exception:
+    maestro = None
+    logger.warning("LLM backend (generation_service) not available; generic_think will fallback.")
+
+@tool(
+    name="generic_think",
+    description="Primary cognitive tool: analyze, reason, answer, produce structured or free text.",
+    category="cognitive",
+    parameters={
+        "type": "object",
+        "properties": {
+            "prompt": {"type": "string", "description": "Instruction or question."},
+            "mode": {"type": "string", "description": "answer|list|greeting|analysis|summary|refine", "default": "analysis"}
+        },
+        "required": ["prompt"]
+    }
+)
+def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
+    clean = (prompt or "").strip()
+    if not clean:
+        return ToolResult(ok=False, error="EMPTY_PROMPT")
+    if len(clean) > _GENERIC_THINK_MAX_CHARS:
+        clean = clean[:_GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
+    # If backend absent -> fallback heuristic
+    if not maestro:
+        fallback = f"[fallback-{mode}] " + clean[:400]
+        return ToolResult(ok=True, data={"answer": fallback, "mode": mode, "fallback": True})
+    model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
+    candidate_methods = [
+        "generate_text",
+        "forge_new_code",
+        "run",
+        "complete"
+    ]
+    response = None
+    last_err = None
+    for m in candidate_methods:
+        if hasattr(maestro, m):
+            try:
+                method = getattr(maestro, m)
+                kwargs = {"prompt": clean}
+                if model_override:
+                    kwargs["model"] = model_override
+                response = method(**kwargs)  # type: ignore
+                break
+            except Exception as e:
+                last_err = e
+                continue
+    if response is None:
+        if last_err:
+            return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}")
+        return ToolResult(ok=False, error="NO_LLM_METHOD")
+    # Normalize answer
+    if isinstance(response, str):
+        answer = response
+    elif isinstance(response, dict):
+        answer = response.get("answer") or response.get("content") or response.get("text") or ""
+    else:
+        answer = str(response)
+    if not answer.strip():
+        return ToolResult(ok=False, error="EMPTY_ANSWER")
+    return ToolResult(ok=True, data={"answer": answer, "mode": mode, "fallback": False})
+
+@tool(
+    name="summarize_text",
+    description="Summarize given text (delegates to generic_think).",
+    category="cognitive",
+    parameters={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "style": {"type": "string", "default": "concise"}
+        },
+        "required": ["text"]
+    }
+)
+def summarize_text(text: str, style: str = "concise") -> ToolResult:
+    t = (text or "").strip()
+    if not t:
+        return ToolResult(ok=False, error="EMPTY_TEXT")
+    snippet = t[:8000]
+    prompt = (
+        f"Summarize the following text in a {style} manner. Provide key points:\n---\n{snippet}\n---"
+    )
+    return generic_think(prompt=prompt, mode="summary")
+
+@tool(
+    name="refine_text",
+    description="Refine or improve clarity/style of provided text.",
+    category="cognitive",
+    parameters={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "tone": {"type": "string", "default": "professional"}
+        },
+        "required": ["text"]
+    }
+)
+def refine_text(text: str, tone: str = "professional") -> ToolResult:
+    t = (text or "").strip()
+    if not t:
+        return ToolResult(ok=False, error="EMPTY_TEXT")
+    prompt = (
+        f"Refine the following text to a {tone} tone while preserving meaning. "
+        f"Return only the improved text:\n---\n{t[:8000]}\n---"
+    )
+    return generic_think(prompt=prompt, mode="refine")
+
+# --------------------------------------------------------------------------------------
+# Filesystem Tools
+# --------------------------------------------------------------------------------------
+@tool(
+    name="write_file",
+    description="Create or overwrite a UTF-8 text file under /app. Returns path & bytes written.",
+    category="fs",
+    aliases=["file_system", "file_system_tool"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "content": {"type": "string", "description": "UTF-8 text content"},
+            "enforce_ext": {"type": "string", "description": "Optional required extension (e.g. '.md')"}
         },
         "required": ["path", "content"]
     }
 )
-def write_file_tool(path: str, content: str) -> ToolResult:
+def write_file(path: str, content: str, enforce_ext: Optional[str] = None) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        if not isinstance(content, str):
+            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+        encoded = content.encode("utf-8")
+        if len(encoded) > _MAX_WRITE_BYTES:
+            return ToolResult(ok=False, error="WRITE_TOO_LARGE")
+        enforce_list = [enforce_ext] if enforce_ext else None
+        abs_path = _safe_path(path, must_exist_parent=False, enforce_ext=enforce_list)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-        if len(content.encode("utf-8")) > _MAX_WRITE_BYTES:
-            return ToolResult(ok=False, error="Content too large.")
         with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
-        return ToolResult(ok=True, data={"written": abs_path, "bytes": len(content.encode('utf-8'))})
+        return ToolResult(ok=True, data={"written": abs_path, "bytes": len(encoded)})
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
 @tool(
     name="append_file",
-    description="Append UTF-8 text to an existing or new file under /app.",
+    description="Append UTF-8 text to file (creates if missing).",
     category="fs",
     parameters={
         "type": "object",
@@ -289,22 +663,24 @@ def write_file_tool(path: str, content: str) -> ToolResult:
         "required": ["path", "content"]
     }
 )
-def append_file_tool(path: str, content: str) -> ToolResult:
+def append_file(path: str, content: str) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        if not isinstance(content, str):
+            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+        encoded = content.encode("utf-8")
+        if len(encoded) > _MAX_APPEND_BYTES:
+            return ToolResult(ok=False, error="APPEND_TOO_LARGE")
+        abs_path = _safe_path(path)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-        if len(content.encode("utf-8")) > _MAX_WRITE_BYTES:
-            return ToolResult(ok=False, error="Append content too large.")
-        mode = "a" if os.path.exists(abs_path) else "w"
-        with open(abs_path, mode, encoding="utf-8") as f:
+        with open(abs_path, "a", encoding="utf-8") as f:
             f.write(content)
-        return ToolResult(ok=True, data={"appended": abs_path})
+        return ToolResult(ok=True, data={"appended": abs_path, "bytes": len(encoded)})
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
 @tool(
     name="read_file",
-    description="Read a UTF-8 text file (truncated if bigger than max_bytes).",
+    description="Read UTF-8 text file with max_bytes limit.",
     category="fs",
     parameters={
         "type": "object",
@@ -315,25 +691,30 @@ def append_file_tool(path: str, content: str) -> ToolResult:
         "required": ["path"]
     }
 )
-def read_file_tool(path: str, max_bytes: int = 20000) -> ToolResult:
+def read_file(path: str, max_bytes: int = 20000) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        max_eff = int(min(max_bytes, _MAX_READ_BYTES))
+        abs_path = _safe_path(path)
         if not os.path.exists(abs_path):
             return ToolResult(ok=False, error="FILE_NOT_FOUND")
-        with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
-            data = f.read(max_bytes + 10)
-        truncated = len(data) > max_bytes
+        if os.path.isdir(abs_path):
+            return ToolResult(ok=False, error="IS_DIRECTORY")
+        with open(abs_path, "r", encoding="utf-8") as f:
+            data = f.read(max_eff + 10)  # slight over-read to detect truncation
+        truncated = len(data) > max_eff
         return ToolResult(ok=True, data={
             "path": abs_path,
-            "content": data[:max_bytes],
+            "content": data[:max_eff],
             "truncated": truncated
         })
+    except UnicodeDecodeError:
+        return ToolResult(ok=False, error="NOT_UTF8_TEXT")
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
 @tool(
     name="file_exists",
-    description="Check whether a path exists (file or directory).",
+    description="Check path existence and type.",
     category="fs",
     parameters={
         "type": "object",
@@ -341,9 +722,9 @@ def read_file_tool(path: str, max_bytes: int = 20000) -> ToolResult:
         "required": ["path"]
     }
 )
-def file_exists_tool(path: str) -> ToolResult:
+def file_exists(path: str) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        abs_path = _safe_path(path)
         return ToolResult(ok=True, data={
             "path": abs_path,
             "exists": os.path.exists(abs_path),
@@ -355,19 +736,19 @@ def file_exists_tool(path: str) -> ToolResult:
 
 @tool(
     name="list_dir",
-    description="List entries of a directory (names only + type).",
+    description="List directory entries (name, type, size).",
     category="fs",
     parameters={
         "type": "object",
         "properties": {
-            "path": {"type": "string", "description": "Directory path relative (default: '.')"},
+            "path": {"type": "string", "default": "."},
             "max_entries": {"type": "integer", "default": 200}
         }
     }
 )
-def list_dir_tool(path: str = ".", max_entries: int = 200) -> ToolResult:
+def list_dir(path: str = ".", max_entries: int = 200) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        abs_path = _safe_path(path)
         if not os.path.isdir(abs_path):
             return ToolResult(ok=False, error="NOT_A_DIRECTORY")
         entries = []
@@ -385,80 +766,113 @@ def list_dir_tool(path: str = ".", max_entries: int = 200) -> ToolResult:
 
 @tool(
     name="delete_file",
-    description="Delete a file under /app (refuses to delete directories). Use cautiously.",
+    description="Delete a file (requires confirm=True).",
     category="fs",
     parameters={
         "type": "object",
         "properties": {
             "path": {"type": "string"},
-            "must_exist": {"type": "boolean", "default": True}
+            "confirm": {"type": "boolean", "default": False}
         },
         "required": ["path"]
     }
 )
-def delete_file_tool(path: str, must_exist: bool = True) -> ToolResult:
+def delete_file(path: str, confirm: bool = False) -> ToolResult:
     try:
-        abs_path = _safe_path(path, must_exist_parent=False)
+        if not confirm:
+            return ToolResult(ok=False, error="CONFIRM_REQUIRED")
+        abs_path = _safe_path(path)
         if not os.path.exists(abs_path):
-            if must_exist:
-                return ToolResult(ok=False, error="FILE_NOT_FOUND")
-            return ToolResult(ok=True, data={"deleted": False, "reason": "file_not_found"})
+            return ToolResult(ok=False, error="FILE_NOT_FOUND")
         if os.path.isdir(abs_path):
-            return ToolResult(ok=False, error="PATH_IS_DIRECTORY")
+            return ToolResult(ok=False, error="IS_DIRECTORY")
         os.remove(abs_path)
         return ToolResult(ok=True, data={"deleted": True, "path": abs_path})
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+# --------------------------------------------------------------------------------------
+# Dispatch Meta-tool
+# --------------------------------------------------------------------------------------
 @tool(
-    name="introspect_tools",
-    description="Return registry & telemetry snapshot of all tools (including aliases).",
-    category="introspection",
-    parameters={"type": "object", "properties": {}}
+    name="dispatch_tool",
+    description="Dynamically call another registered tool (allowlist via DISPATCH_ALLOWLIST).",
+    category="meta",
+    parameters={
+        "type": "object",
+        "properties": {
+            "tool_name": {"type": "string"},
+            "arguments": {"type": "object", "description": "Arguments for target tool", "default": {}}
+        },
+        "required": ["tool_name"]
+    }
 )
-def introspect_tools_tool() -> ToolResult:
-    tools = []
-    for name, meta in _TOOL_REGISTRY.items():
-        st = _TOOL_STATS[name]
-        tools.append({
-            "name": name,
-            "canonical": meta.get("canonical"),
-            "is_alias": meta.get("is_alias", False),
+def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
+    arguments = arguments or {}
+    if _DISPATCH_ALLOW and tool_name not in _DISPATCH_ALLOW:
+        return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")
+    canonical = resolve_tool_name(tool_name)
+    if not canonical:
+        return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
+    handler = _TOOL_REGISTRY[canonical]["handler"]
+    # Defensive: ensure arguments is dict
+    if not isinstance(arguments, dict):
+        return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
+    try:
+        result = handler(**arguments)
+    except TypeError as te:
+        return ToolResult(ok=False, error=f"ARGUMENTS_INVALID: {te}")
+    except Exception as e:
+        return ToolResult(ok=False, error=f"DISPATCH_FAILED: {e}")
+    return result
+
+# --------------------------------------------------------------------------------------
+# Public Schema Access
+# --------------------------------------------------------------------------------------
+def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
+    schema: List[Dict[str, Any]] = []
+    for meta in _TOOL_REGISTRY.values():
+        if meta.get("is_alias"):
+            continue
+        if meta.get("disabled") and not include_disabled:
+            continue
+        schema.append({
+            "name": meta["name"],
             "description": meta["description"],
+            "parameters": meta["parameters"],
             "category": meta.get("category"),
-            "invocations": st["invocations"],
-            "errors": st["errors"],
-            "avg_ms": round(st["total_ms"] / st["invocations"], 2) if st["invocations"] else 0.0
+            "aliases": meta.get("aliases", []),
+            "disabled": meta.get("disabled", False),
+            "version": __version__
         })
-    return ToolResult(ok=True, data={
-        "version": __version__,
-        "count": len(_TOOL_REGISTRY),
-        "tools": tools
-    })
+    return schema
 
-# -----------------------------------------------------------------------------
-# Legacy convenience (اختياري)
-# -----------------------------------------------------------------------------
-def write_text_file(path: str, content: str) -> Dict[str, Any]:
-    result = write_file_tool(path=path, content=content)
-    return result.to_dict()
-
-# -----------------------------------------------------------------------------
-# Public Exports
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# __all__
+# --------------------------------------------------------------------------------------
 __all__ = [
     "ToolResult",
-    "_TOOL_REGISTRY",
-    "get_tools_schema",
-    "list_registered_tools",
     "resolve_tool_name",
-    "write_file_tool",
-    "read_file_tool",
-    "append_file_tool",
-    "file_exists_tool",
-    "list_dir_tool",
-    "delete_file_tool",
-    "introspect_tools_tool",
-    "write_text_file",
-    "__version__",
+    "get_tools_schema",
+    # Tools
+    "introspect_tools",
+    "memory_put",
+    "memory_get",
+    "generic_think",
+    "summarize_text",
+    "refine_text",
+    "write_file",
+    "append_file",
+    "read_file",
+    "file_exists",
+    "list_dir",
+    "delete_file",
+    "dispatch_tool",
+    # Registries
+    "_TOOL_REGISTRY",
+    "_TOOL_STATS",
+    "_ALIAS_INDEX",
 ]
+
+# END OF FILE
+# ======================================================================================
