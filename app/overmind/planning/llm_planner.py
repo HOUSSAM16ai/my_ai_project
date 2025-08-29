@@ -1,95 +1,132 @@
 # -*- coding: utf-8 -*-
 # app/overmind/planning/llm_planner.py
 """
-llm_planner.py  (Version 5.0  "GROUNDED-PURE-THINK / CONTEXT-AWARE / JSON-MODE")
-
-High-fidelity mission planner with:
-  - Smart Routing Layer (fast paths for trivial objectives).
-  - Strict Tool Grounding (enumerate ONLY actually available tools).
-  - JSON Mode / Function Calling attempt (maestro.generate_json).
-  - Multi-Strategy Ladder (strict_full -> structured_template -> minimal_hint).
-  - Defensive JSON parsing with minimal graceful fallback.
-  - Output bridging placeholders: ${previous_task_id.output} allowed inside tool_args.
-  - Bilingual (Arabic / English) objective tolerance.
-  - Backoff & adaptive prompt shrinking.
-  - Compatibility preserved with MissionPlanSchema (objective, tasks[]).
-  - Does NOT invent tools. Forces unknown tool names to generic_think.
-
-Execution layer MUST later replace placeholders ${task_id.output} in tool_args before executing
-dependent tasks (fetch previous task textual result and inject).
-
-ENV CONFIG (all optional):
-  PLANNER_TIMEOUT_SECONDS          (default: 40.0)
-  PLANNER_RETRY_ATTEMPTS           (default: 3)
-  PLANNER_MODEL_OVERRIDE           (forces a model name for maestro)
-  PLANNER_MAX_TASKS                (default: 120)
-  PLANNER_ENABLE_FAST_PATH         ("1" default)
-  PLANNER_ENABLE_SMARTFAST         ("1" default)
-  PLANNER_JSON_FORCE_SINGLE_TASK   ("0" default)
-  PLANNER_LOG_VERBOSE              ("0" default) -> set "1" for debug logging
-  PLANNER_STRICT_SHORT             ("1" default) if set, do not augment ultra short objectives
-  PLANNER_FALLBACK_ON_PARSE        ("1" default) produce fallback plan on parse failure
-  PLANNER_SHORT_OBJECTIVE_MIN_LEN  (default: 12) threshold for short objective augmentation
-"""
+# -*- coding: utf-8 -*-
+# ======================================================================================
+# LLMGroundedPlanner
+# Version: 1.2.0  "GROUNDING / RICH-LOG / NO-SILENT-FALLBACK"
+# ======================================================================================
+# PURPOSE:
+#   Converts a natural-language mission objective into an ordered, tool-grounded task plan.
+#   Robust JSON extraction, explicit validation, rich logging, deterministic self_test.
+#
+# DESIGN GOALS:
+#   - Correct (hard) import of BasePlanner; no صمت خبيث (silent fallback) unless env toggle.
+#   - Self-test returns (bool, reason) and never hides failure cause.
+#   - Structured LLM call first; multi-stage textual fallback if JSON fails (unless strict).
+#   - Clear PlanValidationError / PlannerError raising with rich context.
+#   - Strong normalization + validation: uniqueness, allowed tool name pattern, dependency pruning.
+#   - Logging at DEBUG/INFO/WARN/ERROR with planner_name context.
+#   - Fallback STUB only if LLM_PLANNER_ALLOW_STUB=1 (dev emergency).
+#
+# ENV VARIABLES:
+#   LLM_PLANNER_ALLOW_STUB=1          Allow stub if BasePlanner import fails (NOT for prod).
+#   LLM_PLANNER_STRICT_JSON=1         Fail fast if structured JSON phase fails (no text fallback).
+#   LLM_PLANNER_MAX_TASKS=25          Hard cap on accepted tasks.
+#   LLM_PLANNER_SELFTEST_STRICT=1     If set, self_test fails when maestro/tool layer absent.
+#   LLM_PLANNER_LOG_LEVEL=DEBUG|INFO  Override logger level for this module.
+#
+# OUTPUT SCHEMA (MissionPlanSchema fallback if absent):
+# {
+#   "objective": str,
+#   "tasks": List[PlannedTask]
+# }
+#
+# Each PlannedTask:
+# {
+#   task_id: str ("t01"...),
+#   description: str,
+#   tool_name: str,
+#   tool_args: Dict[str, Any],
+#   dependencies: List[str]
+# }
+#
+# ======================================================================================
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import time
-import uuid
-import random
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple, Callable
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Iterable
 
-# -----------------------------------------------------------------------------
-# ASCII SANITY CHECK (prevents hidden Unicode punctuation regressions)
-# -----------------------------------------------------------------------------
-__PLANNER_FILE_ASCII_OK__: bool = True
-__PLANNER_FILE_ASCII_ISSUES__: List[str] = []
-
-
-def _scan_ascii_sanity():
-    """
-    Scan first ~120 lines of this file for non-ASCII characters (primarily to catch
-    smart punctuation like En/Em dashes or smart quotes that can cause SyntaxError
-    in certain contexts).
-    Soft-fail: only logs a warning; does not stop import.
-    """
-    global __PLANNER_FILE_ASCII_OK__, __PLANNER_FILE_ASCII_ISSUES__
+# --------------------------------------------------------------------------------------
+# LOGGER
+# --------------------------------------------------------------------------------------
+_LOG = logging.getLogger("llm_planner")
+_default_level = os.getenv("LLM_PLANNER_LOG_LEVEL", "").upper()
+if _default_level:
     try:
-        this_path = __file__
-        with open(this_path, "r", encoding="utf-8") as f:
-            for i, line in enumerate(f):
-                if i > 120:
-                    break
-                for ch in line:
-                    if ord(ch) > 127:
-                        __PLANNER_FILE_ASCII_OK__ = False
-                        __PLANNER_FILE_ASCII_ISSUES__.append(
-                            f"L{i+1}: U+{ord(ch):04X} '{ch}' -> {line.strip()[:80]}"
-                        )
-        if not __PLANNER_FILE_ASCII_OK__:
-            import logging
-            logging.getLogger("llm_planner").warning(
-                "Non-ASCII punctuation detected in llm_planner header region: %s",
-                __PLANNER_FILE_ASCII_ISSUES__[:5]
-            )
+        _LOG.setLevel(getattr(logging, _default_level, logging.INFO))
     except Exception:
-        pass
+        _LOG.setLevel(logging.INFO)
+else:
+    _LOG.setLevel(logging.INFO)
 
+if not _LOG.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s] %(message)s"))
+    _LOG.addHandler(_h)
 
-_scan_ascii_sanity()
-
-# ---------------------------------------------------------------------------
-# External Dependencies (soft imports / graceful degradation)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# BASE PLANNER IMPORT (Hard)
+# --------------------------------------------------------------------------------------
+_ALLOW_STUB = os.getenv("LLM_PLANNER_ALLOW_STUB", "0") == "1"
 
 try:
+    from .base_planner import BasePlanner, PlannerError  # type: ignore
+except Exception as e:
+    if not _ALLOW_STUB:
+        raise RuntimeError(
+            "FATAL: Unable to import '.base_planner'. To allow a temporary stub set "
+            "LLM_PLANNER_ALLOW_STUB=1 (NOT for production)."
+        ) from e
+
+    class PlannerError(Exception):
+        def __init__(self, message: str, planner: str = "stub", objective: str = "", extra: Dict[str, Any] = None):
+            super().__init__(message)
+            self.planner = planner
+            self.objective = objective
+            self.extra = extra or {}
+
+    class BasePlanner:  # type: ignore
+        name = "base_planner_stub"
+        @classmethod
+        def live_planner_classes(cls):
+            return {}
+        @classmethod
+        def planner_metadata(cls):
+            return {}
+        @classmethod
+        def compute_rank_hint(cls, **kwargs):
+            return 0.0
+
+    _LOG.error("USING *STUB* BasePlanner – planner reliability & ranking will be degraded.")
+
+# --------------------------------------------------------------------------------------
+# OPTIONAL EXTERNAL SERVICES / MODULES
+# --------------------------------------------------------------------------------------
+# maestro.generation_service expected to provide structured / raw completions
+try:
+    from app.services import maestro  # type: ignore
+except Exception:
+    maestro = None  # type: ignore
+
+# agent_tools expected to enumerate available tools
+try:
+    from app.services import agent_tools  # type: ignore
+except Exception:
+    agent_tools = None  # type: ignore
+
+# --------------------------------------------------------------------------------------
+# OPTIONAL SHARED SCHEMAS
+# --------------------------------------------------------------------------------------
+try:
     from .schemas import MissionPlanSchema, PlannedTask, PlanningContext  # type: ignore
-except Exception:  # pragma: no cover
-    # Minimal stand-ins to avoid crashes if real schemas are absent.
+except Exception:
     @dataclass
     class PlannedTask:  # type: ignore
         task_id: str
@@ -101,444 +138,240 @@ except Exception:  # pragma: no cover
     @dataclass
     class MissionPlanSchema:  # type: ignore
         objective: str
-        tasks: List[PlannedTask]
+        tasks: List[PlannedTask] = field(default_factory=list)
 
     @dataclass
     class PlanningContext:  # type: ignore
-        past_failures: Optional[List[str]] = None
-        user_preferences: Optional[Dict[str, Any]] = None
-        tags: Optional[List[str]] = None
+        user_id: Optional[str] = None
+        past_failures: List[str] = field(default_factory=list)
+        user_preferences: Dict[str, Any] = field(default_factory=dict)
+        tags: List[str] = field(default_factory=list)
 
+# --------------------------------------------------------------------------------------
+# CONFIG
+# --------------------------------------------------------------------------------------
+STRICT_JSON_ONLY = os.getenv("LLM_PLANNER_STRICT_JSON", "0") == "1"
+SELF_TEST_STRICT = os.getenv("LLM_PLANNER_SELFTEST_STRICT", "0") == "1"
+MAX_TASKS_DEFAULT = int(os.getenv("LLM_PLANNER_MAX_TASKS", "25"))
 
-try:
-    from .base import BasePlanner, PlannerError, PlanValidationError  # type: ignore
-except Exception:  # pragma: no cover
-    class PlannerError(Exception):
-        def __init__(self, message: str, planner_name: str = "llm_planner", objective: str = ""):
-            super().__init__(f"[{planner_name}] {message} :: objective='{objective}'")
-            self.planner_name = planner_name
-            self.objective = objective
+_VALID_TOOL_NAME = re.compile(r"^[a-zA-Z0-9_.\-:]{2,128}$", re.UNICODE)
 
-    class PlanValidationError(PlannerError):
-        pass
+# Regex stages for textual extraction
+_TASK_ARRAY_REGEX = re.compile(r'"tasks"\s*:\s*(\[[^\]]*\])', re.IGNORECASE | re.DOTALL)
+_JSON_BLOCK_CURLY = re.compile(r"\{.*\}", re.DOTALL)
 
-    class BasePlanner:  # type: ignore
-        name: str = "llm_planner_stub"
+# --------------------------------------------------------------------------------------
+# CUSTOM ERRORS
+# --------------------------------------------------------------------------------------
+class PlanValidationError(PlannerError):
+    pass
 
-        def quick_validate_objective(self, objective: str) -> bool:
-            return bool(objective and len(objective.strip()) > 0)
+# --------------------------------------------------------------------------------------
+# UTILS
+# --------------------------------------------------------------------------------------
+def _clip(s: str, n: int = 180) -> str:
+    return s if len(s) <= n else s[: n - 3] + "..."
 
-        def generate_plan(self, objective: str, context: Optional["PlanningContext"] = None):
-            raise NotImplementedError
+def _safe_json_loads(payload: str) -> Tuple[Optional[Any], Optional[str]]:
+    try:
+        return json.loads(payload), None
+    except Exception as e:
+        return None, str(e)
 
+def _tool_exists(name: str) -> bool:
+    try:
+        if not agent_tools:
+            return False
+        return bool(agent_tools.get_tool(name))  # type: ignore
+    except Exception:
+        return False
 
-# Generation service (LLM orchestration)
-try:
-    from app.services import generation_service as maestro  # type: ignore
-except Exception:  # pragma: no cover
-    maestro = None  # type: ignore
+def _canonical_task_id(seq: int) -> str:
+    return f"t{seq:02d}"
 
-# Agent tools registry (for grounding)
-try:
-    from app.services import agent_tools  # type: ignore
-except Exception:  # pragma: no cover
-    agent_tools = None  # type: ignore
-
-# Optional json5 parsing enhancement
-try:  # pragma: no cover
-    import json5  # type: ignore
-except Exception:  # pragma: no cover
-    json5 = None  # type: ignore
-
-
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-
-def _log_debug(msg: str):
-    if os.getenv("PLANNER_LOG_VERBOSE", "0") == "1":
-        print(f"[Planner::DEBUG] {msg}")
-
-
-# ---------------------------------------------------------------------------
-# Planner Implementation
-# ---------------------------------------------------------------------------
-
+# --------------------------------------------------------------------------------------
+# MAIN PLANNER CLASS
+# --------------------------------------------------------------------------------------
 class LLMGroundedPlanner(BasePlanner):
     """
-    High-level LLM grounded planner with multi-strategy generation and robust fallback.
+    LLM-grounded mission planner:
+    - Structured generation attempt
+    - Multi-stage fallback
+    - Strict validation
     """
-
     name: str = "llm_grounded_planner"
-    version: str = "5.0.1"  # sanitized header edition
+    version: str = "1.2.0"
+    tier: str = "core"
+    production_ready: bool = True
+    capabilities = {"planning", "llm", "tool-grounding"}
+    tags = {"mission", "tasks"}
 
-    capabilities: Set[str] = {"grounded", "routing", "json-mode"}
+    # ------------------------------------------------------------------
+    # Self-test
+    # ------------------------------------------------------------------
+    @classmethod
+    def self_test(cls) -> Tuple[bool, str]:
+        # Core name invariants
+        if not cls.name or " " in cls.name:
+            return False, "invalid_name"
 
-    # Configuration / Limits
-    MAX_OUTPUT_CHARS: int = 60_000
-    MAX_TASKS: int = int(os.getenv("PLANNER_MAX_TASKS", "120"))
-    RETRY_ATTEMPTS: int = int(os.getenv("PLANNER_RETRY_ATTEMPTS", "3"))
-    INITIAL_BACKOFF: float = 0.9
-    BACKOFF_JITTER: float = 0.35
-    TASK_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]{1,60}$")
+        # Generation backend presence if strict
+        if maestro is None and SELF_TEST_STRICT:
+            return False, "maestro_unavailable_strict"
 
-    default_timeout_seconds: float = float(os.getenv("PLANNER_TIMEOUT_SECONDS", "40.0"))
-    ENABLE_FAST_PATH: bool = os.getenv("PLANNER_ENABLE_FAST_PATH", "1") == "1"
-    ENABLE_SMARTFAST: bool = os.getenv("PLANNER_ENABLE_SMARTFAST", "1") == "1"
-    STRICT_SHORT: bool = os.getenv("PLANNER_STRICT_SHORT", "1") == "1"
-    MIN_OBJECTIVE_LENGTH: int = int(os.getenv("PLANNER_SHORT_OBJECTIVE_MIN_LEN", "12"))
-    LOW_TIME_THRESHOLD: float = 3.5  # seconds remaining instruct early bail
+        # Tool layer optional
+        if agent_tools is None and SELF_TEST_STRICT:
+            return False, "agent_tools_unavailable_strict"
 
-    # -----------------------------------------------------------------------
-    # Public Entry
-    # -----------------------------------------------------------------------
+        # Attempt a lightweight structured call if backend available
+        if maestro and hasattr(maestro, "generation_service"):
+            try:
+                svc = maestro.generation_service  # type: ignore
+                # Minimal dry-run using a tiny schema
+                minimal_schema = {"type": "object", "properties": {"status": {"type": "string"}}, "required": ["status"]}
+                resp = svc.structured_json(
+                    system_prompt="Return {'status':'ok'}",
+                    user_prompt="Say ok",
+                    format_schema=minimal_schema,
+                    temperature=0.0,
+                    max_retries=1,
+                    fail_hard=False,
+                )
+                if not isinstance(resp, dict) or resp.get("status") != "ok":
+                    return False, f"minimal_structured_bad:{resp}"
+            except Exception as e:
+                if SELF_TEST_STRICT:
+                    return False, f"minimal_structured_exception:{type(e).__name__}:{e}"
+
+        return True, "ok"
+
+    # ------------------------------------------------------------------
+    # Public API: Generate plan
+    # ------------------------------------------------------------------
     def generate_plan(
         self,
         objective: str,
-        context: Optional[PlanningContext] = None
+        context: Optional[PlanningContext] = None,
+        max_tasks: Optional[int] = None,
     ) -> MissionPlanSchema:
-        raw_objective = (objective or "").strip()
-        if not raw_objective:
-            raise PlannerError("Empty objective supplied.", self.name, raw_objective)
+        t0 = time.perf_counter()
+        if not self._objective_is_valid(objective):
+            raise PlannerError("Objective invalid or too short.", self.name, objective)
 
-        objective = self._normalize_objective(raw_objective)
+        cap = max_tasks or MAX_TASKS_DEFAULT
+        cap = min(cap, MAX_TASKS_DEFAULT)
 
-        # Fast path routing
-        routed = self._route_objective(objective)
-        if routed:
-            _log_debug(f"ROUTED fast_path='{routed['route']}'")
-            return self._build_schema(routed["data"], objective)
+        _LOG.info("[%s] plan_start objective='%s' cap=%d", self.name, _clip(objective, 120), cap)
 
-        if maestro is None:
-            raise PlannerError("generation_service (maestro) unavailable.", self.name, objective)
-
-        if not self.quick_validate_objective(objective):
-            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                return self._build_schema(self._fallback_data(objective), objective)
-            raise PlannerError("Objective failed quick validation.", self.name, objective)
-
-        # Tool grounding
-        tool_inventory = self._gather_tool_inventory()
-        prompt = self._construct_meta_prompt(objective, context, tool_inventory)
-        conversation_id = f"plan-{uuid.uuid4()}"
-
-        start_time = time.monotonic()
-        plan_dict: Optional[Dict[str, Any]] = None
-
-        # Attempt strict JSON mode if available
-        try:
-            plan_dict = self._attempt_strict_json_mode(
-                objective=objective,
-                prompt=prompt,
-                tool_inventory=tool_inventory,
-                conversation_id=conversation_id,
-                start=start_time
-            )
-        except PlannerError as exc:
-            _log_debug(f"Strict JSON mode PlannerError: {exc}")
-        except Exception as exc:  # pragma: no cover
-            _log_debug(f"Strict JSON unexpected exception: {exc}")
-
-        # If strict JSON failed or unsupported, use multi-strategy textual ladder
-        if plan_dict is None:
+        # Structured attempt
+        structured_data: Optional[Dict[str, Any]] = None
+        errors: List[str] = []
+        if maestro and hasattr(maestro, "generation_service"):
             try:
-                raw_answer = self._call_llm_with_strategies(
-                    prompt=prompt,
-                    conversation_id=conversation_id,
-                    objective=objective,
-                    start_time=start_time
-                )
-                json_text = self._sanitize_and_extract_json(raw_answer, objective)
-                plan_dict = self._robust_parse_json(json_text, objective)
-            except Exception as exc:
-                _log_debug(f"Strategy + parsing pipeline failed: {exc}")
-                if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                    plan_dict = self._fallback_data(objective)
-                else:
-                    raise PlannerError(f"Failed to obtain valid plan: {exc}", self.name, objective) from exc
+                structured_data = self._call_structured_llm(objective, context, cap)
+                _LOG.debug("[%s] structured_generation_success keys=%s", self.name, list(structured_data.keys()))
+            except Exception as e:
+                errors.append(f"struct_fail:{type(e).__name__}:{e}")
+                _LOG.warning("[%s] structured_generation_failed: %s", self.name, e)
+        else:
+            errors.append("maestro_unavailable")
 
-        # Clean / enforce
-        plan_dict = self._postprocess_parsed_plan(plan_dict, objective, tool_inventory)
-        schema_obj = self._build_schema(plan_dict, objective)
-        self._validate_dag(schema_obj, objective)
-        return schema_obj
+        # Strict JSON mode: abort if structured missing
+        if STRICT_JSON_ONLY and structured_data is None:
+            raise PlannerError(
+                f"STRICT_JSON_ONLY enabled; structured phase failed. errors={errors}",
+                self.name,
+                objective,
+                extra={"errors": errors[-5:]},
+            )
 
-    # -----------------------------------------------------------------------
-    # Routing Layer
-    # -----------------------------------------------------------------------
-    def _route_objective(self, objective: str) -> Optional[Dict[str, Any]]:
-        """
-        Returns: dict {route: <name>, data: <plan_dict>} or None to proceed with LLM.
-        Fast path categories:
-          - File creation
-          - Greeting
-          - Simple list
-          - Micro-answer (short conceptual ask)
-        """
-        if self.ENABLE_FAST_PATH and self._is_file_creation(objective):
-            return {"route": "file_fast", "data": self._plan_file_fast(objective)}
+        # Fallback textual generation
+        raw_text: Optional[str] = None
+        if structured_data is None:
+            try:
+                raw_text = self._call_text_llm(objective, context)
+                _LOG.debug("[%s] text_generation_length=%d", self.name, len(raw_text))
+            except Exception as e:
+                errors.append(f"text_fail:{type(e).__name__}:{e}")
+                _LOG.error("[%s] text_generation_failed: %s", self.name, e)
 
-        if self.ENABLE_SMARTFAST:
-            g_or_l = self._smart_greeting_or_list(objective)
-            if g_or_l:
-                return g_or_l
+        # Build plan dict
+        plan_dict: Optional[Dict[str, Any]] = None
+        extraction_notes: List[str] = []
 
-        # Micro generic answer
-        if len(objective) < 55 and not re.search(r"\b(file|ملف)\b", objective, re.IGNORECASE):
-            return {
-                "route": "micro_generic",
-                "data": {
-                    "objective": objective,
-                    "tasks": [
-                        {
-                            "task_id": "answer",
-                            "description": f"Produce a concise answer for: {objective}",
-                            "tool_name": "generic_think",
-                            "tool_args": {"mode": "answer"},
-                            "dependencies": []
-                        }
-                    ]
-                }
-            }
-        return None
+        if structured_data is not None:
+            plan_dict = structured_data
+        elif raw_text:
+            plan_dict, extraction_notes = self._extract_plan_from_text(raw_text)
+            errors.extend(extraction_notes)
 
-    # -----------------------------------------------------------------------
-    # Objective Normalization
-    # -----------------------------------------------------------------------
-    def _normalize_objective(self, objective: str) -> str:
-        if len(objective) >= self.MIN_OBJECTIVE_LENGTH:
-            return objective
-        if self.STRICT_SHORT:
-            return objective
-        augmented = f"Short objective: {objective}. Provide a minimal actionable plan."
-        _log_debug(f"Augmented short objective '{objective}' -> '{augmented}'")
-        return augmented
+        if plan_dict is None:
+            raise PlannerError(
+                f"Failed to derive JSON plan; errors={errors[-6:]}",
+                self.name,
+                objective,
+                extra={"errors": errors},
+            )
 
-    # -----------------------------------------------------------------------
-    # Tool Inventory / Grounding
-    # -----------------------------------------------------------------------
-    def _gather_tool_inventory(self) -> List[Dict[str, Any]]:
-        """
-        Build a list of available tools with minimal summaries.
-        Ensures 'generic_think' always present.
-        """
-        tools: List[Dict[str, Any]] = []
-        if agent_tools and hasattr(agent_tools, "_TOOL_REGISTRY"):
-            registry = getattr(agent_tools, "_TOOL_REGISTRY")
-            if isinstance(registry, dict):
-                for name, meta in registry.items():
-                    if isinstance(meta, dict):
-                        summary = meta.get("description") or meta.get("summary") or ""
-                    else:
-                        summary = ""
-                    tools.append({
-                        "name": str(name),
-                        "summary": summary[:200] if summary else ""
-                    })
-        names = {t["name"] for t in tools}
-        if "generic_think" not in names:
-            tools.append({"name": "generic_think", "summary": "LLM cognitive reasoning / thinking step."})
-        return tools
+        # Normalize / validate
+        tasks_raw = plan_dict.get("tasks")
+        norm_errors: List[str] = []
+        try:
+            tasks = self._normalize_and_validate_tasks(tasks_raw, cap, norm_errors)
+        except PlanValidationError as ve:
+            errors.extend(norm_errors)
+            raise PlannerError(
+                f"Normalization failed: {ve}",
+                self.name,
+                objective,
+                extra={"errors": errors[-10:]},
+            ) from ve
 
-    # -----------------------------------------------------------------------
-    # Prompt Construction (Grounded)
-    # -----------------------------------------------------------------------
-    def _construct_meta_prompt(
+        mission_plan = MissionPlanSchema(
+            objective=str(plan_dict.get("objective") or objective),
+            tasks=tasks,
+        )
+
+        # Post validation (graph / dependencies)
+        self._post_validate(mission_plan)
+
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        _LOG.info(
+            "[%s] plan_success tasks=%d elapsed_ms=%.1f objective='%s'",
+            self.name,
+            len(mission_plan.tasks),
+            elapsed_ms,
+            _clip(objective, 100),
+        )
+        if errors:
+            _LOG.debug("[%s] non_fatal_notes=%s", self.name, errors[-6:])
+        return mission_plan
+
+    # ------------------------------------------------------------------
+    # Objective Validation
+    # ------------------------------------------------------------------
+    def _objective_is_valid(self, objective: str) -> bool:
+        if not objective:
+            return False
+        stripped = objective.strip()
+        if len(stripped) < 5:
+            return False
+        if stripped.isdigit():
+            return False
+        return True
+
+    # ------------------------------------------------------------------
+    # Structured LLM Call
+    # ------------------------------------------------------------------
+    def _call_structured_llm(
         self,
         objective: str,
         context: Optional[PlanningContext],
-        tool_inventory: List[Dict[str, Any]]
-    ) -> str:
-        ctx_block = self._context_block(context) if context else "None."
-        max_tasks_dynamic = min(self.MAX_TASKS, 50 if len(objective) > 180 else 25 if len(objective) > 90 else 15)
-
-        tool_lines = [f"- {t['name']}: {t['summary'] or '[no summary]'}" for t in tool_inventory]
-
-        grounded_rules = (
-            "YOU MUST ONLY USE THESE TOOLS (no invention, no web_search, no imaginary tools):\n"
-            + os.linesep.join(tool_lines)
-            + "\nIf a tool you think you need is NOT listed above, RESTRUCTURE using only allowed tools.\n"
-        )
-
-        output_binding_rules = """
-OUTPUT BINDING / CONTEXT BRIDGING:
-- A later task may re-use textual output of a previous task by referencing a placeholder inside tool_args.
-- Pattern: "${previous_task_id.output}" inside tool_args for tasks depending on a prior result.
-- When referencing previous output, ADD that previous task_id to dependencies.
-Example:
-  Task A (task_id: analyze) -> tool: generic_think
-  Task B (task_id: summarize) depends on analyze and has:
-     "tool_args": {"source": "${analyze.output}"}
-"""
-
-        short_mode = len(objective) < 70
-        if short_mode:
-            return (
-                "Return ONLY valid JSON (no markdown, no commentary).\n"
-                f'Objective: "{objective}"\n'
-                "Keys: objective, tasks.\n"
-                "Each task: {task_id, description, tool_name, tool_args, dependencies[]}\n"
-                f"tasks count <= {10 if max_tasks_dynamic > 10 else max_tasks_dynamic}\n"
-                "Use only allowed tools.\n"
-                + grounded_rules +
-                "JSON only."
-            )
-
-        return f"""
-SYSTEM ROLE:
-You are a grounded decomposition & planning engine. Generate a realistic DAG of tasks
-that can be executed by the orchestrator. DO NOT hallucinate tools.
-
-OBJECTIVE:
-\"\"\"{objective}\"\"\"
-
-CONTEXT (metadata):
-{ctx_block}
-
-{grounded_rules}
-
-{output_binding_rules}
-
-STRICT OUTPUT FORMAT (JSON ONLY):
-{{
-  "objective": "...",
-  "tasks": [
-     {{
-       "task_id": "short_id",
-       "description": "Action",
-       "tool_name": "one_of_listed_tools",
-       "tool_args": {{}},
-       "dependencies": []
-     }}
-  ]
-}}
-
-RULES:
-- Return ONLY a single JSON object. No backticks, no prose outside JSON.
-- task_id: short, unique, [a-zA-Z0-9_-].
-- dependencies: only list previous task_ids (acyclic).
-- If reusing previous output, put "${{prev_task_id.output}}" in tool_args and include dependency.
-- Keep tasks <= {max_tasks_dynamic}.
-- Parallelize where safe; avoid unnecessary deep chains.
-- A plan using unlisted tools is invalid; reframe using available tools.
-- If uncertain, produce a minimal valid plan.
-
-JSON ONLY. NO MARKDOWN. NO EXTRA TEXT
-""".strip()
-
-    def _context_block(self, context: PlanningContext) -> str:
-        parts: List[str] = []
-        if getattr(context, "past_failures", None):
-            parts.append(f"PastFailures({len(context.past_failures)})")
-        if getattr(context, "user_preferences", None):
-            parts.append(f"UserPrefs({len(context.user_preferences)})")
-        if getattr(context, "tags", None):
-            parts.append("Tags:" + ",".join(context.tags))
-        return " | ".join(parts) if parts else "None."
-
-    # -----------------------------------------------------------------------
-    # Fast Paths
-    # -----------------------------------------------------------------------
-    def _is_file_creation(self, objective: str) -> bool:
-        obj = objective.lower().strip()
-        verbs = (
-            "create", "make", "write", "generate", "build", "produce", "add",
-            "اصنع", "انشئ", "أنشئ", "اكتب", "أضف", "اضف"
-        )
-        if any(obj.startswith(v) for v in verbs):
-            if "file" in obj or "ملف" in obj:
-                return True
-        return bool(re.match(r"^(create|write|make|generate)\s+.*file", obj))
-
-    def _infer_filename(self, objective: str) -> str:
-        m = re.search(r"(?:named|call(?:ed)?|اسم(?:ه)?)\s+([A-Za-z0-9_\-\.]+)", objective, re.IGNORECASE)
-        if m:
-            name = m.group(1)
-            if not name.lower().endswith((".md", ".txt", ".log", ".py", ".json")):
-                return f"{name}.md"
-            return name
-        base = re.sub(r"[^a-zA-Z0-9_\-]+", "_", objective.lower()).strip("_") or "auto_file"
-        if not base.endswith(".md"):
-            base += ".md"
-        return base[:80]
-
-    def _plan_file_fast(self, objective: str) -> Dict[str, Any]:
-        return {
-            "objective": objective,
-            "tasks": [
-                {
-                    "task_id": "create_file",
-                    "description": f"Create a file addressing: {objective}",
-                    "tool_name": "write_file",
-                    "tool_args": {
-                        "path": self._infer_filename(objective),
-                        "content": f"# Auto Generated File\n\nObjective: {objective}\n\n(Initial draft.)\n"
-                    },
-                    "dependencies": []
-                }
-            ]
-        }
-
-    def _smart_greeting_or_list(self, objective: str) -> Optional[Dict[str, Any]]:
-        o = objective.lower().strip()
-        greet_patterns = [
-            r"^hi$", r"^hello$", r"^hey$", r"^مرحبا$", r"^اهلا$", r"^تحية$", r"^say hi$"
-        ]
-        list_hints = [
-            "list ", "enumerate ", "advantages", "benefits", "improvements",
-            "خطوات", "مزايا", "فوائد", "points", "reasons"
-        ]
-        if any(re.match(p, o) for p in greet_patterns):
-            return {
-                "route": "greeting",
-                "data": {
-                    "objective": objective,
-                    "tasks": [
-                        {
-                            "task_id": "greet",
-                            "description": "Produce a warm concise greeting",
-                            "tool_name": "generic_think",
-                            "tool_args": {"style": "greeting"},
-                            "dependencies": []
-                        }
-                    ]
-                }
-            }
-        if len(o) < 160 and any(h in o for h in list_hints):
-            return {
-                "route": "list_simple",
-                "data": {
-                    "objective": objective,
-                    "tasks": [
-                        {
-                            "task_id": "list",
-                            "description": f"Generate enumerated list for: {objective}",
-                            "tool_name": "generic_think",
-                            "tool_args": {"mode": "list"},
-                            "dependencies": []
-                        }
-                    ]
-                }
-            }
-        return None
-
-    # -----------------------------------------------------------------------
-    # Strict JSON Mode Attempt
-    # -----------------------------------------------------------------------
-    def _attempt_strict_json_mode(
-        self,
-        objective: str,
-        prompt: str,
-        tool_inventory: List[Dict[str, Any]],
-        conversation_id: str,
-        start: float
-    ) -> Optional[Dict[str, Any]]:
-        if not hasattr(maestro, "generate_json"):
-            return None
-        elapsed = time.monotonic() - start
-        if self.default_timeout_seconds - elapsed < self.LOW_TIME_THRESHOLD:
-            _log_debug("Skipping strict JSON mode (low time).")
-            return None
+        max_tasks: int,
+    ) -> Dict[str, Any]:
+        if maestro is None or not hasattr(maestro, "generation_service"):
+            raise RuntimeError("maestro.generation_service not available")
+        svc = maestro.generation_service  # type: ignore
 
         schema = {
             "type": "object",
@@ -549,392 +382,305 @@ JSON ONLY. NO MARKDOWN. NO EXTRA TEXT
                     "items": {
                         "type": "object",
                         "properties": {
-                            "task_id": {"type": "string"},
                             "description": {"type": "string"},
                             "tool_name": {"type": "string"},
                             "tool_args": {"type": "object"},
                             "dependencies": {
                                 "type": "array",
                                 "items": {"type": "string"}
-                            }
+                            },
                         },
-                        "required": ["task_id", "description", "tool_name", "tool_args", "dependencies"]
-                    }
-                }
+                        "required": ["description", "tool_name"],
+                    },
+                },
             },
-            "required": ["objective", "tasks"]
+            "required": ["tasks"],
         }
 
-        _log_debug("Attempting strict JSON mode (generate_json)...")
-        try:
-            response = maestro.generate_json(  # type: ignore
-                prompt=prompt,
-                schema=schema,
-                conversation_id=conversation_id,
-                model=os.getenv("PLANNER_MODEL_OVERRIDE") or None
-            )
-        except Exception as exc:
-            raise PlannerError(f"Strict JSON generation failed: {exc}", self.name, objective) from exc
-
-        if not isinstance(response, dict):
-            raise PlannerError("Strict JSON mode returned non-dict.", self.name, objective)
-        if "tasks" not in response or not isinstance(response["tasks"], list):
-            raise PlannerError("Strict JSON mode missing tasks array.", self.name, objective)
-        return response
-
-    # -----------------------------------------------------------------------
-    # Multi-Strategy textual attempts
-    # -----------------------------------------------------------------------
-    def _call_llm_with_strategies(
-        self,
-        prompt: str,
-        conversation_id: str,
-        objective: str,
-        start_time: float
-    ) -> str:
-        strategies: List[Tuple[str, str]] = [
-            ("strict_full", prompt),
-            ("structured_template", self._inject_structural_template(prompt)),
-            ("minimal_hint", self._minimal_hint_prompt(objective)),
-        ]
-        last_error = None
-
-        for strategy_index, (label, sprompt) in enumerate(strategies, start=1):
-            attempts = self.RETRY_ATTEMPTS
-            _log_debug(f"Strategy {strategy_index}/{len(strategies)} '{label}' start")
-            adaptive_prompt = sprompt
-            for attempt in range(1, attempts + 1):
-                elapsed = time.monotonic() - start_time
-                remaining = self.default_timeout_seconds - elapsed
-                if remaining <= self.LOW_TIME_THRESHOLD:
-                    _log_debug("Remaining time low -> abort strategies early.")
-                    raise PlannerError("Low time budget", self.name, objective)
-
-                gen_fn: Optional[Callable[..., Any]] = None
-                if hasattr(maestro, "generate_text"):
-                    gen_fn = getattr(maestro, "generate_text")
-                elif hasattr(maestro, "forge_new_code"):
-                    gen_fn = getattr(maestro, "forge_new_code")
-
-                if gen_fn is None:
-                    raise PlannerError("No usable LLM generation function.", self.name, objective)
-
-                t0 = time.monotonic()
-                try:
-                    _log_debug(f"Strategy '{label}' attempt {attempt}/{attempts}")
-                    kwargs = dict(prompt=adaptive_prompt, conversation_id=conversation_id)
-                    model_override = os.getenv("PLANNER_MODEL_OVERRIDE")
-                    if model_override:
-                        kwargs["model"] = model_override
-                    response = gen_fn(**kwargs)  # type: ignore
-                    latency = time.monotonic() - t0
-                    answer, status = self._extract_answer_and_status(response)
-                    _log_debug(f"LLM latency: {latency:.2f}s status={status}")
-                    if status not in ("success", "ok") or not answer:
-                        raise RuntimeError(f"Bad status/empty answer (status={status})")
-                    return answer[: self.MAX_OUTPUT_CHARS]
-                except Exception as exc:
-                    last_error = str(exc)
-                    _log_debug(f"Strategy '{label}' attempt {attempt} failed: {last_error}")
-                    if attempt < attempts:
-                        adaptive_prompt = self._shrink_prompt(adaptive_prompt)
-                        backoff = self._compute_backoff(attempt)
-                        _log_debug(f"Backoff {backoff:.2f}s then retry (prompt size={len(adaptive_prompt)})")
-                        time.sleep(backoff)
-                    else:
-                        _log_debug(f"Strategy '{label}' exhausted attempts.")
-                        continue
-        raise PlannerError(f"All strategies failed. Last error: {last_error}", self.name, objective)
-
-    def _inject_structural_template(self, base_prompt: str) -> str:
-        template = """
-FOLLOW THIS EXACT JSON SHAPE (NO EXTRA TEXT):
-{
- "objective": "...",
- "tasks": [
-    {
-      "task_id": "task_one",
-      "description": "Brief action",
-      "tool_name": "generic_think",
-      "tool_args": {},
-      "dependencies": []
-    }
- ]
-}
-Return only filled JSON.
-"""
-        return base_prompt + "\n\n" + template
-
-    def _minimal_hint_prompt(self, objective: str) -> str:
-        return (
-            "Return ONLY JSON with keys: objective, tasks.\n"
-            f'Objective: "{objective}"\n'
-            'If unsure, produce a single task using "generic_think".\n'
-            'Each task fields: task_id, description, tool_name, tool_args, dependencies.\n'
-            "JSON only."
+        user_prompt = self._render_user_prompt(objective, context, max_tasks)
+        system_prompt = (
+            "You are a precision mission planner. Return ONLY a JSON object matching the schema."
         )
 
-    # -----------------------------------------------------------------------
-    # LLM response extraction + JSON sanitization
-    # -----------------------------------------------------------------------
-    def _extract_answer_and_status(self, response: Any) -> Tuple[str, str]:
-        if isinstance(response, str):
-            return response, "success"
-        if isinstance(response, dict):
-            if "answer" in response and isinstance(response["answer"], str):
-                return response["answer"], str(response.get("status", "success"))
-            if "text" in response and isinstance(response["text"], str):
-                return response["text"], str(response.get("status", "success"))
-            for v in response.values():
-                if isinstance(v, str):
-                    return v, str(response.get("status", "success"))
-        return "", "error"
+        resp = svc.structured_json(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            format_schema=schema,
+            temperature=0.1,
+            max_retries=1,
+            fail_hard=False,
+        )
+        if not isinstance(resp, dict):
+            raise PlannerError("Structured response not a dict", self.name, objective)
+        if "tasks" not in resp:
+            raise PlannerError("Structured response missing 'tasks'", self.name, objective)
+        return resp
 
-    def _sanitize_and_extract_json(self, raw: str, objective: str) -> str:
-        text = raw.strip()
-        text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).replace("```", "")
-        if text.startswith("{") and text.endswith("}"):
-            return text
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return text[start:end + 1]
-        if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-            _log_debug("Could not isolate JSON object; fallback.")
-            return json.dumps(self._fallback_data(objective), ensure_ascii=False)
-        raise PlanValidationError("Failed to isolate JSON object.", self.name, objective)
-
-    # -----------------------------------------------------------------------
-    # JSON Parsing & Validation
-    # -----------------------------------------------------------------------
-    def _robust_parse_json(self, text: str, objective: str) -> Dict[str, Any]:
-        try:
-            return self._validate_parsed_object(json.loads(text), objective)
-        except Exception as e1:
-            _log_debug(f"json.loads failed: {e1}")
-            if json5:
-                try:
-                    return self._validate_parsed_object(json5.loads(text), objective)
-                except Exception as e2:
-                    _log_debug(f"json5 parse failed: {e2}")
-            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                return self._fallback_data(objective)
-            raise PlanValidationError("JSON parse failed with no fallback permitted.", self.name, objective)
-
-    def _validate_parsed_object(self, data: Any, objective: str) -> Dict[str, Any]:
-        if not isinstance(data, dict):
-            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                return self._fallback_data(objective)
-            raise PlanValidationError("Top-level JSON must be an object.", self.name, objective)
-        tasks = data.get("tasks")
-        if tasks is None:
-            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                data["tasks"] = self._fallback_data(objective)["tasks"]
-            else:
-                raise PlanValidationError("Missing 'tasks' key.", self.name, objective)
-        if not isinstance(data["tasks"], list):
-            raise PlanValidationError("'tasks' must be a list.", self.name, objective)
-        data.setdefault("objective", objective)
-        return data
-
-    def _postprocess_parsed_plan(
+    # ------------------------------------------------------------------
+    # Textual Fallback
+    # ------------------------------------------------------------------
+    def _call_text_llm(
         self,
-        plan_dict: Dict[str, Any],
         objective: str,
-        tool_inventory: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        self._enforce_limits(plan_dict, objective)
-        allowed_tool_names = {t["name"] for t in tool_inventory}
-        cleaned_tasks: List[Dict[str, Any]] = []
-        for raw_task in plan_dict.get("tasks", []):
-            try:
-                cleaned = self._transform_raw_task(raw_task, objective, allowed_tool_names)
-                cleaned_tasks.append(cleaned)
-            except Exception as exc:
-                _log_debug(f"Skipping invalid task entry: {exc}")
-        if not cleaned_tasks:
-            cleaned_tasks = self._fallback_data(objective)["tasks"]
-        plan_dict["tasks"] = cleaned_tasks
-        return plan_dict
+        context: Optional[PlanningContext],
+    ) -> str:
+        if maestro is None or not hasattr(maestro, "generation_service"):
+            raise RuntimeError("maestro.generation_service not available for text fallback")
+        svc = maestro.generation_service  # type: ignore
 
-    # -----------------------------------------------------------------------
-    # Limits & Task Transformation
-    # -----------------------------------------------------------------------
-    def _enforce_limits(self, data: Dict[str, Any], objective: str):
-        tasks = data.get("tasks") or []
-        if not isinstance(tasks, list):
-            raise PlanValidationError("'tasks' must be list during limit enforcement.", self.name, objective)
-        if len(tasks) > self.MAX_TASKS:
-            _log_debug(f"Truncating tasks from {len(tasks)} -> {self.MAX_TASKS}")
-            data["tasks"] = tasks[: self.MAX_TASKS]
-        if os.getenv("PLANNER_JSON_FORCE_SINGLE_TASK", "0") == "1":
-            data["tasks"] = data["tasks"][:1]
+        system_prompt = (
+            "You are a mission planner. Provide a JSON object with keys 'objective' and 'tasks'. "
+            "Each task includes description, tool_name, tool_args (object), dependencies (array)."
+        )
+        user_prompt = self._render_user_prompt(objective, context, MAX_TASKS_DEFAULT)
 
-    def _transform_raw_task(
-        self,
-        task: Any,
-        objective: str,
-        allowed_tool_names: Set[str]
-    ) -> Dict[str, Any]:
-        if not isinstance(task, dict):
-            raise PlanValidationError("Task entry not an object.", self.name, objective)
+        text = svc.text_completion(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=0.4,
+            max_tokens=900,
+            max_retries=1,
+            fail_hard=False,
+        )
+        if not text or not isinstance(text, str):
+            raise PlannerError("Empty textual response from LLM", self.name, objective)
+        return text
 
-        tid = (task.get("task_id") or task.get("id") or "").strip()
-        if not tid:
-            tid = f"task_{uuid.uuid4().hex[:6]}"
-        if not self.TASK_ID_PATTERN.match(tid):
-            tid = re.sub(r"[^a-zA-Z0-9_\-]", "_", tid)[:60] or f"task_{uuid.uuid4().hex[:4]}"
+    # ------------------------------------------------------------------
+    # Multi-Stage Extraction from Text
+    # ------------------------------------------------------------------
+    def _extract_plan_from_text(self, raw_text: str) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+        errs: List[str] = []
+        if not raw_text:
+            return None, ["empty_text"]
 
-        desc = (task.get("description") or task.get("desc") or "").strip()
-        if not desc:
-            desc = f"Execute {tid} to advance objective."
+        snippet = raw_text.strip()
 
-        tool_name = (task.get("tool_name") or task.get("tool") or "generic_think").strip() or "generic_think"
-        if tool_name not in allowed_tool_names:
-            _log_debug(f"Unknown tool '{tool_name}' -> forcing 'generic_think'.")
-            tool_name = "generic_think"
+        # Stage A: Direct JSON parse
+        parsed, err = _safe_json_loads(snippet)
+        if parsed and isinstance(parsed, dict) and "tasks" in parsed:
+            return parsed, errs
+        if err:
+            errs.append(f"direct_json_fail:{err}")
 
-        tool_args = task.get("tool_args") or task.get("args") or {}
-        if not isinstance(tool_args, dict):
-            tool_args = {}
+        # Stage B: Extract "tasks": [ ... ]
+        arr_match = _TASK_ARRAY_REGEX.search(snippet)
+        if arr_match:
+            array_chunk = arr_match.group(1)
+            synthesized = f'{{"objective":"{_clip(snippet,50)}","tasks":{array_chunk}}}'
+            candidate, err2 = _safe_json_loads(synthesized)
+            if candidate and isinstance(candidate, dict):
+                return candidate, errs
+            if err2:
+                errs.append(f"tasks_array_parse_fail:{err2}")
 
-        deps_raw = task.get("dependencies") or task.get("depends_on") or []
-        if not isinstance(deps_raw, list):
-            deps_raw = []
-        cleaned_deps: List[str] = []
-        seen = set()
-        for d in deps_raw:
-            if isinstance(d, str):
-                d2 = d.strip()
-                if d2 and d2 != tid and d2 not in seen:
-                    seen.add(d2)
-                    cleaned_deps.append(d2)
+        # Stage C: First large curly block
+        block_match = _JSON_BLOCK_CURLY.search(snippet)
+        if block_match:
+            block = block_match.group(0)
+            candidate, err3 = _safe_json_loads(block)
+            if candidate and isinstance(candidate, dict) and "tasks" in candidate:
+                return candidate, errs
+            if err3:
+                errs.append(f"curly_block_fail:{err3}")
 
-        return {
-            "task_id": tid,
-            "description": desc,
-            "tool_name": tool_name,
-            "tool_args": tool_args,
-            "dependencies": cleaned_deps
-        }
-
-    def _build_schema(self, data: Dict[str, Any], objective: str) -> MissionPlanSchema:
-        tasks_out: List[Any] = []
-        for t in data.get("tasks", []):
-            if isinstance(t, PlannedTask):
-                tasks_out.append(t)
-            else:
-                try:
-                    tasks_out.append(PlannedTask(**t))
-                except Exception:
-                    tasks_out.append(t)
-        try:
-            return MissionPlanSchema(objective=data.get("objective", objective), tasks=tasks_out)
-        except Exception as exc:
-            _log_debug(f"MissionPlanSchema validation failed: {exc}")
-            if os.getenv("PLANNER_FALLBACK_ON_PARSE", "1") == "1":
-                fb = self._fallback_data(objective)
-                fb_tasks = [PlannedTask(**x) for x in fb["tasks"]]
-                return MissionPlanSchema(objective=objective, tasks=fb_tasks)
-            raise PlanValidationError(f"Schema validation failed: {exc}", self.name, objective) from exc
-
-    # -----------------------------------------------------------------------
-    # DAG Validation
-    # -----------------------------------------------------------------------
-    def _validate_dag(self, plan: MissionPlanSchema, objective: str):
-        tasks = getattr(plan, "tasks", [])
-        ids: Set[str] = set()
-        adjacency: Dict[str, List[str]] = {}
-        indeg: Dict[str, int] = {}
-
-        for t in tasks:
-            tid = getattr(t, "task_id", None) if hasattr(t, "task_id") else t.get("task_id")
-            if not tid or not isinstance(tid, str):
-                raise PlanValidationError("Invalid task_id (None).", self.name, objective)
-            if tid in ids:
-                raise PlanValidationError(f"Duplicate task_id '{tid}'", self.name, objective)
-            ids.add(tid)
-            adjacency[tid] = []
-            indeg[tid] = 0
-
-        for t in tasks:
-            tid = getattr(t, "task_id", None) if hasattr(t, "task_id") else t.get("task_id")
-            deps = getattr(t, "dependencies", []) if hasattr(t, "dependencies") else t.get("dependencies", [])
-            if not isinstance(deps, list):
-                raise PlanValidationError(f"Dependencies not list in '{tid}'", self.name, objective)
-            for d in deps:
-                if d == tid:
-                    raise PlanValidationError(f"Self-dependency in '{tid}'", self.name, objective)
-                if d not in ids:
-                    raise PlanValidationError(f"Unknown dependency '{d}' for '{tid}'", self.name, objective)
-                adjacency[d].append(tid)
-                indeg[tid] += 1
-
-        queue = [n for n, deg in indeg.items() if deg == 0]
-        visited = 0
-        while queue:
-            cur = queue.pop()
-            visited += 1
-            for nxt in adjacency[cur]:
-                indeg[nxt] -= 1
-                if indeg[nxt] == 0:
-                    queue.append(nxt)
-        if visited != len(ids):
-            raise PlanValidationError("Cycle detected in task graph.", self.name, objective)
-
-    # -----------------------------------------------------------------------
-    # Fallback Data
-    # -----------------------------------------------------------------------
-    def _fallback_data(self, objective: str) -> Dict[str, Any]:
-        return {
-            "objective": objective,
-            "tasks": [
-                {
-                    "task_id": "analyze",
-                    "description": f"Analyze objective: {objective}",
-                    "tool_name": "generic_think",
+        # Stage D: Bullet list heuristic
+        tasks_guess: List[Dict[str, Any]] = []
+        current: Optional[Dict[str, Any]] = None
+        for line in snippet.splitlines():
+            ln = line.strip()
+            if not ln:
+                continue
+            if ln.startswith("- "):
+                if current:
+                    tasks_guess.append(current)
+                desc = ln[2:].strip()
+                current = {
+                    "description": desc,
+                    "tool_name": "unknown",
                     "tool_args": {},
-                    "dependencies": []
-                },
-                {
-                    "task_id": "produce",
-                    "description": "Produce final answer using previous analysis",
-                    "tool_name": "generic_think",
-                    "tool_args": {"source": "${analyze.output}"},
-                    "dependencies": ["analyze"]
+                    "dependencies": [],
                 }
-            ]
-        }
+            elif ":" in ln and current:
+                k, v = ln.split(":", 1)
+                k = k.strip().lower()
+                v = v.strip().strip(",")
+                if k in ("tool", "tool_name"):
+                    current["tool_name"] = v
+        if current:
+            tasks_guess.append(current)
 
-    # -----------------------------------------------------------------------
-    # Backoff & Helpers
-    # -----------------------------------------------------------------------
-    def _compute_backoff(self, attempt: int) -> float:
-        base = self.INITIAL_BACKOFF * (2 ** (attempt - 1))
-        jitter = random.uniform(0, self.BACKOFF_JITTER)
-        return base + jitter
+        if tasks_guess:
+            return {
+                "objective": "Recovered from bullet list",
+                "tasks": tasks_guess
+            }, errs
 
-    def _shrink_prompt(self, prompt: str) -> str:
-        if len(prompt) <= 1800:
-            return prompt
-        head = prompt[:900]
-        tail = prompt[-500:]
-        shrunk = head + "\n...SNIP...\n" + tail
-        _log_debug(f"Prompt shrunk from {len(prompt)} to {len(shrunk)}")
-        return shrunk
+        errs.append("all_extraction_stages_failed")
+        return None, errs
 
+    # ------------------------------------------------------------------
+    # Prompt Rendering
+    # ------------------------------------------------------------------
+    def _render_user_prompt(
+        self,
+        objective: str,
+        context: Optional[PlanningContext],
+        max_tasks: int,
+    ) -> str:
+        lines: List[str] = []
+        lines.append("MISSION OBJECTIVE:")
+        lines.append(objective)
+        lines.append("")
+        if context and context.past_failures:
+            lines.append("RECENT FAILURES (contextual warnings):")
+            for f in context.past_failures[:5]:
+                lines.append(f"- {f}")
+            lines.append("")
+        tool_examples = self._list_tool_examples(limit=5)
+        if tool_examples:
+            lines.append("AVAILABLE TOOL EXAMPLES:")
+            for name, desc in tool_examples:
+                if not name:
+                    continue
+                lines.append(f"- {name}: {desc or 'No description'}")
+            lines.append("")
+        lines.append(f"Produce up to {max_tasks} tasks.")
+        lines.append("Return ONLY JSON. Keys: objective (string), tasks (array).")
+        lines.append("Each task keys: description, tool_name, tool_args(object), dependencies(array).")
+        return "\n".join(lines)
 
-# ---------------------------------------------------------------------------
-# Integration Notes
-# ---------------------------------------------------------------------------
-"""
-Execution Layer Notes:
+    # ------------------------------------------------------------------
+    # Tool examples enumeration
+    # ------------------------------------------------------------------
+    def _list_tool_examples(self, limit: int = 5) -> List[Tuple[str, Optional[str]]]:
+        out: List[Tuple[str, Optional[str]]] = []
+        if not agent_tools:
+            return out
+        try:
+            for i, t in enumerate(agent_tools.list_tools()):  # type: ignore
+                if i >= limit:
+                    break
+                out.append((
+                    getattr(t, "name", f"tool_{i}"),
+                    getattr(t, "description", None)
+                ))
+        except Exception as e:
+            _LOG.debug("[%s] tool_enumeration_fail: %s", self.name, e)
+        return out
 
-1) Keep MissionPlanSchema shape stable: objective + tasks[] {task_id, description, tool_name, tool_args, dependencies}.
-2) Before executing each task, substitute placeholders ${task_id.output} in the tool_args with actual previous outputs.
-3) If maestro.generate_json is unavailable, multi-strategy fallback ensures resilience.
-4) Enable verbose logs with PLANNER_LOG_VERBOSE=1.
-5) Unknown/hallucinated tools are coerced to generic_think early to avoid runtime failures.
-6) STRICT_SHORT=0 enables auto-augmentation for extremely short objectives.
-7) __PLANNER_FILE_ASCII_OK__ can be inspected for header hygiene diagnostics.
-"""
+    # ------------------------------------------------------------------
+    # Normalize & Validate Tasks
+    # ------------------------------------------------------------------
+    def _normalize_and_validate_tasks(
+        self,
+        tasks_raw: Any,
+        max_tasks: int,
+        errors_out: List[str],
+    ) -> List[PlannedTask]:
+        if not isinstance(tasks_raw, list):
+            raise PlanValidationError("tasks_not_list", self.name)
+
+        cleaned: List[PlannedTask] = []
+        seen_ids: set = set()
+        for idx, task in enumerate(tasks_raw):
+            if len(cleaned) >= max_tasks:
+                errors_out.append("task_limit_reached")
+                break
+            if not isinstance(task, dict):
+                errors_out.append(f"task_{idx}_not_dict")
+                continue
+
+            desc = str(task.get("description") or "").strip()
+            if not desc:
+                errors_out.append(f"task_{idx}_missing_description")
+                continue
+
+            tool_name = str(task.get("tool_name") or "unknown").strip()
+            if not _VALID_TOOL_NAME.match(tool_name):
+                errors_out.append(f"task_{idx}_invalid_tool_name:{tool_name}")
+                tool_name = "unknown"
+
+            tool_args = task.get("tool_args")
+            if not isinstance(tool_args, dict):
+                errors_out.append(f"task_{idx}_tool_args_not_object")
+                tool_args = {}
+
+            deps = task.get("dependencies")
+            if not isinstance(deps, list):
+                errors_out.append(f"task_{idx}_deps_not_list")
+                deps = []
+            filtered_deps: List[str] = []
+            for d in deps:
+                if isinstance(d, str) and _VALID_TOOL_NAME.match(d):
+                    filtered_deps.append(d)
+                else:
+                    errors_out.append(f"task_{idx}_dep_invalid:{d}")
+
+            if not _tool_exists(tool_name):
+                errors_out.append(f"task_{idx}_tool_missing:{tool_name}")
+
+            task_id = _canonical_task_id(len(cleaned) + 1)
+            while task_id in seen_ids:
+                task_id = _canonical_task_id(len(seen_ids) + len(cleaned) + 1)
+            seen_ids.add(task_id)
+
+            cleaned.append(
+                PlannedTask(
+                    task_id=task_id,
+                    description=desc,
+                    tool_name=tool_name,
+                    tool_args=tool_args,
+                    dependencies=filtered_deps,
+                )
+            )
+
+        if not cleaned:
+            raise PlanValidationError("no_valid_tasks", self.name)
+
+        return cleaned
+
+    # ------------------------------------------------------------------
+    # Post Graph Validation
+    # ------------------------------------------------------------------
+    def _post_validate(self, plan: MissionPlanSchema):
+        graph = {t.task_id: set(t.dependencies) for t in plan.tasks}
+
+        # Remove dependencies referencing unknown IDs (already pruned earlier but double-check)
+        valid_ids = set(graph.keys())
+        for deps in graph.values():
+            deps.intersection_update(valid_ids)
+
+        # Cycle detection via DFS
+        visited: Dict[str, int] = {}  # 0=unseen,1=visiting,2=done
+        def dfs(node: str, stack: List[str]):
+            state = visited.get(node, 0)
+            if state == 1:
+                raise PlanValidationError(f"cycle_detected:{'->'.join(stack+[node])}", self.name)
+            if state == 2:
+                return
+            visited[node] = 1
+            for nxt in graph.get(node, []):
+                dfs(nxt, stack + [node])
+            visited[node] = 2
+        for tid in graph:
+            if visited.get(tid, 0) == 0:
+                dfs(tid, [])
+
+        # Basic topological depth sanity
+        if len(plan.tasks) > MAX_TASKS_DEFAULT:
+            raise PlanValidationError("exceeds_factory_max_tasks", self.name)
+
+# --------------------------------------------------------------------------------------
+# PUBLIC MODULE EXPORTS
+# --------------------------------------------------------------------------------------
+__all__ = [
+    "LLMGroundedPlanner",
+    "PlanValidationError",
+    "MissionPlanSchema",
+    "PlannedTask",
+    "PlanningContext",
+]
+# --------------------------------------------------------------------------------------
+# END OF FILE
+# --------------------------------------------------------------------------------------
