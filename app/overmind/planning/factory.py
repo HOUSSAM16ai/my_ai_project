@@ -1,40 +1,21 @@
 # app/overmind/planning/factory.py
 # # -*- coding: utf-8 -*-
 """
-# # # # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # ======================================================================================
-#  THE STRATEGIST'S GUILD • PLANNER FACTORY CORE
-#  Version: 3.1  "GUILD OMEGA / ZERO-DOWNTIME / SELF-HEAL / META-GOVERNANCE"
+# PLANNER FACTORY CORE (Version 3.1 "GUILD OMEGA / ZERO-DOWNTIME / SELF-HEAL / META-GOVERNANCE")
+# Safe edition: no triple-quoted docstrings to avoid unterminated literal issues in CI.
 # ======================================================================================
-#  PURPOSE:
-#    Unified governance, discovery, ranking, instantiation, diagnostics, self-heal.
-#    Robust against partial imports or legacy expectations.
-#
-#  KEY FEATURES:
-#    - Deterministic discovery (manual + dynamic scan) with signature to skip redundant runs.
-#    - Metadata harvesting via BasePlanner v3.x hooks: live_planner_classes(), planner_metadata(),
-#      compute_rank_hint() (graceful fallback if missing).
-#    - Backward compatibility: provides available_planners() (wrap if exists) + get_all_planners().
-#    - Self-heal (retry discovery) when zero planners.
-#    - Profiling of selection & instantiation (env toggles).
-#    - Diagnostics (human + JSON) + export to file.
-#    - Quarantine awareness + reliability threshold filtering.
-#    - Thread-safe via RLock.
-#
-#  ENV VARIABLES (optional):
-#      OVERMIND_PLANNER_MANUAL          Comma-list of modules to force-import.
-#      OVERMIND_PLANNER_EXCLUDE         Comma-list of short module names to exclude.
-#      FACTORY_FORCE_REDISCOVER         1 => always force re-discovery.
-#      FACTORY_MIN_RELIABILITY          Minimum reliability score filter.
-#      FACTORY_SELF_HEAL_ON_EMPTY       1 => auto self_heal if no planners on selection.
-#      FACTORY_PROFILE_SELECTION        1 (default) enable selection profiling.
-#      FACTORY_PROFILE_INSTANTIATION    1 (default) enable instantiation profiling.
-#
-#  QUICK USAGE:
-#      from app.overmind.planning.factory import select_best_planner
-#      p = select_best_planner("Draft README", required_capabilities={"llm"})
-#      result = p.instrumented_generate("Outline please")
-#
+# KEY FEATURES:
+#   - Deterministic discovery (manual list + dynamic scan) with signature.
+#   - Metadata harvest via BasePlanner v3 hooks (if present).
+#   - Backward compatibility: available_planners(), get_all_planners().
+#   - Self-heal if zero planners (env or parameter).
+#   - Ranking with reliability / capabilities / tier / production_ready.
+#   - Diagnostics (text + JSON) + export_diagnostics().
+#   - Profiling selection & instantiation (env toggles).
+#   - Thread-safe state with RLock.
+#   - No multi-line string pitfalls.
 # ======================================================================================
 
 from __future__ import annotations
@@ -61,16 +42,15 @@ from typing import (
     Union,
 )
 
-# Attempt BasePlanner import (must exist in real project)
+# Attempt to import BasePlanner
 try:
     from .base_planner import BasePlanner, PlannerError  # type: ignore
-except Exception:  # Fallback stubs if early bootstrap
+except Exception:
     class PlannerError(RuntimeError):
         def __init__(self, msg: str, where: str = "factory", context: str = ""):
             super().__init__(msg)
             self.where = where
             self.context = context
-
     class BasePlanner:  # type: ignore
         @staticmethod
         def live_planner_classes():
@@ -80,7 +60,6 @@ except Exception:  # Fallback stubs if early bootstrap
             return {}
         @staticmethod
         def compute_rank_hint(**kwargs):
-            # Very basic fallback
             return 0.0
 
 # ======================================================================================
@@ -91,7 +70,7 @@ FACTORY_VERSION = "3.1"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
 OFFICIAL_MANUAL_MODULES: List[str] = [
-    "app.overmind.planning.llm_planner",  # Safe to remove or extend
+    "app.overmind.planning.llm_planner",  # Adjust/remove as needed
 ]
 
 DEFAULT_EXCLUDE_MODULES: Set[str] = {
@@ -125,8 +104,6 @@ class PlannerRecord:
     name: str
     module: Optional[str] = None
     class_name: Optional[str] = None
-
-    # Attributes / metadata
     capabilities: Set[str] = field(default_factory=set)
     tags: Set[str] = field(default_factory=set)
     tier: Optional[str] = None
@@ -134,20 +111,14 @@ class PlannerRecord:
     production_ready: Optional[bool] = None
     quarantined: Optional[bool] = None
     self_test_passed: Optional[bool] = None
-
-    # Telemetry
     reliability_score: Optional[float] = None
     total_invocations: Optional[int] = None
     total_failures: Optional[int] = None
     avg_duration_ms: Optional[float] = None
-
-    # Runtime instantiation metrics
     instantiated: bool = False
     instantiation_ts: Optional[float] = None
     last_access_ts: Optional[float] = None
     instantiation_duration_s: Optional[float] = None
-
-    # Errors
     error: Optional[str] = None
     last_error: Optional[str] = None
 
@@ -157,27 +128,20 @@ class PlannerRecord:
         d["tags"] = sorted(self.tags)
         return d
 
-
 @dataclass
 class FactoryState:
     lock: threading.RLock = field(default_factory=threading.RLock)
     discovered: bool = False
     discovery_signature: Optional[str] = None
     discovery_runs: int = 0
-
     planner_records: Dict[str, PlannerRecord] = field(default_factory=dict)
-
     import_failures: Dict[str, str] = field(default_factory=dict)
     archived_import_failures: List[Dict[str, str]] = field(default_factory=list)
-
     issued_warnings: Set[str] = field(default_factory=set)
-
     total_instantiations: int = 0
     last_self_heal_ts: Optional[float] = None
-
     selection_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
     instantiation_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
-
 
 _STATE = FactoryState()
 _INSTANCE_CACHE: Dict[str, BasePlanner] = {}
@@ -238,7 +202,6 @@ def _import_module(module_name: str) -> Optional[ModuleType]:
         return None
 
 def _get_planner_class(name: str):
-    # Prefer new API
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
             live = BasePlanner.live_planner_classes()  # type: ignore
@@ -248,7 +211,6 @@ def _get_planner_class(name: str):
                     return cls
         except Exception as e:
             _warn_once("live_planner_classes_access", f"live_planner_classes() failed: {e}")
-    # Fallback .get_planner_class if provided
     if hasattr(BasePlanner, "get_planner_class"):
         try:
             return BasePlanner.get_planner_class(name)  # type: ignore
@@ -276,9 +238,7 @@ def _extract_string(obj: Any, attr: str) -> Optional[str]:
     if not hasattr(obj, attr):
         return None
     v = getattr(obj, attr)
-    if v is None:
-        return None
-    return str(v)
+    return None if v is None else str(v)
 
 def _file_fingerprint(root_package: str) -> str:
     try:
@@ -302,15 +262,12 @@ def _compute_discovery_signature(root: str) -> str:
     return hashlib.md5("::".join(parts).encode("utf-8")).hexdigest()
 
 def _sync_registry_into_records():
-    # planner_metadata map
     metadata_map = {}
     if hasattr(BasePlanner, "planner_metadata"):
         try:
             metadata_map = BasePlanner.planner_metadata()  # type: ignore
         except Exception as e:
             _warn_once("planner_metadata_access", f"planner_metadata() failed: {e}")
-
-    # live_planner_classes
     live_classes = {}
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
@@ -355,29 +312,21 @@ def _discover_and_register(force: bool = False, package: Optional[str] = None):
     with _STATE.lock:
         root = package or DEFAULT_ROOT_PACKAGE
         signature = _compute_discovery_signature(root)
-
         if (_STATE.discovered and not force and not _FORCE_REDISCOVER
                 and _STATE.discovery_signature == signature):
             return
-
         start = time.perf_counter()
         _STATE.discovery_runs += 1
         _STATE.import_failures.clear()
         _log(f"Discovery run #{_STATE.discovery_runs} root='{root}' signature={signature[:10]} ...")
-
-        # Manual imports
         for m in MANUAL_IMPORT_MODULES:
             _import_module(m)
-
-        # Dynamic scan
         for fullname in list(_iter_submodules(root) or []):
             short = fullname.rsplit(".", 1)[-1]
             if short in EXCLUDE_MODULES:
                 continue
             _import_module(fullname)
-
         _sync_registry_into_records()
-
         _STATE.discovery_signature = signature
         _STATE.discovered = True
         elapsed = time.perf_counter() - start
@@ -394,12 +343,10 @@ def _instantiate_planner(name: str) -> BasePlanner:
         if rec.instantiated and key in _INSTANCE_CACHE:
             rec.last_access_ts = _now()
             return _INSTANCE_CACHE[key]
-
     cls = _get_planner_class(key)
     t0 = time.perf_counter()
     inst = cls()  # type: ignore
     elapsed = time.perf_counter() - t0
-
     with _STATE.lock:
         rec = _STATE.planner_records.setdefault(key, PlannerRecord(name=key))
         rec.instantiated = True
@@ -442,14 +389,13 @@ def _rank_hint(name: str,
             )
         except Exception as e:
             _warn_once("compute_rank_hint_fail", f"compute_rank_hint failed: {e}")
-    # Fallback formula
     score = capabilities_match_ratio * 0.6 + reliability_score * 0.35
     if production_ready:
         score += 0.04
     if tier and isinstance(tier, str):
         tier_map = {"alpha": -0.05, "beta": 0.0, "stable": 0.05, "gold": 0.07, "vip": 0.08}
         score += tier_map.get(tier.lower(), 0.0)
-    score += (hash(name) & 0xFFFF) * 1e-10  # jitter
+    score += (hash(name) & 0xFFFF) * 1e-10
     return score
 
 # ======================================================================================
@@ -467,7 +413,7 @@ def refresh_metadata():
             return
     _sync_registry_into_records()
 
-# Backward compatibility injection of available_planners()
+# Inject backward compatibility available_planners
 if not hasattr(BasePlanner, "available_planners"):
     def _legacy_available_planners() -> List[str]:  # type: ignore
         return _active_planner_names()
@@ -543,7 +489,6 @@ def select_best_planner(objective: str,
     refresh_metadata()
     req_set = _safe_lower_set(required_capabilities)
     t0 = time.perf_counter()
-
     active = _active_planner_names()
     if not active:
         do_heal = self_heal_on_empty if self_heal_on_empty is not None else _SELF_HEAL_ON_EMPTY
@@ -551,10 +496,8 @@ def select_best_planner(objective: str,
             heal_report = self_heal()
             _log(f"Self-heal invoked: {heal_report}")
             active = _active_planner_names()
-
     if not active:
         raise PlannerError("No active planners after discovery/self-heal.", "factory", objective)
-
     candidates: List[Tuple[float, str]] = []
     for name in active:
         rec = _STATE.planner_records.get(name)
@@ -566,7 +509,7 @@ def select_best_planner(objective: str,
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
         prod = bool(rec.production_ready)
         if prefer_production and not prod and req_set:
-            reliability *= 0.97  # slight penalty
+            reliability *= 0.97
         score = _rank_hint(
             name=name,
             objective=objective,
@@ -576,13 +519,10 @@ def select_best_planner(objective: str,
             production_ready=prod
         )
         candidates.append((score, name))
-
     if not candidates:
         raise PlannerError("No candidate planners matched constraints.", "factory", objective)
-
     candidates.sort(reverse=True)
     best_score, best_name = candidates[0]
-
     sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
         with _STATE.lock:
@@ -595,10 +535,8 @@ def select_best_planner(objective: str,
                 "duration_s": sel_elapsed,
                 "ts": _now(),
             })
-
     if auto_instantiate:
         return get_planner(best_name)
-    # Return an instantiated object anyway (consistent path)
     return get_planner(best_name, auto_instantiate=True)
 
 def batch_select_best_planners(objective: str,
@@ -658,7 +596,6 @@ def self_heal(force: bool = True,
     if report["before_active"] > 0:
         report["after_active"] = report["before_active"]
         return report
-
     with _STATE.lock:
         now = _now()
         if _STATE.last_self_heal_ts and (now - _STATE.last_self_heal_ts) < cooldown_seconds:
@@ -666,14 +603,12 @@ def self_heal(force: bool = True,
             report["after_active"] = len(_active_planner_names())
             return report
         _STATE.last_self_heal_ts = now
-
     for _ in range(max_attempts):
         report["attempts"] += 1
         discover(force=force)
         if _active_planner_names():
             break
         time.sleep(0.2)
-
     report["after_active"] = len(_active_planner_names())
     return report
 
@@ -771,7 +706,7 @@ def diagnostics_report(verbose: bool = False) -> str:
             lines.append(f"  * {r.name} reliability={r.reliability_score} self_test={r.self_test_passed}")
     lines.append("-- Recommendations --")
     if not active:
-        lines.append("  * Use self_heal() or set OVERMIND_PLANNER_MANUAL to force-import modules.")
+        lines.append("  * Use self_heal() or set OVERMIND_PLANNER_MANUAL.")
     else:
         lines.append("  * Use select_best_planner(...) for automatic ranking.")
     if verbose:
@@ -806,8 +741,8 @@ def health_check(min_required: int = 1) -> Dict[str, Any]:
     quarantined_count = sum(1 for r in _STATE.planner_records.values() if r.quarantined)
     suggestions: List[str] = []
     if active_count < min_required:
-        suggestions.append("Verify planner modules are imported (OVERMIND_PLANNER_MANUAL).")
-        suggestions.append("Check quarantined planners for self-test failures.")
+        suggestions.append("Verify planner modules import (OVERMIND_PLANNER_MANUAL).")
+        suggestions.append("Check quarantined planners self-test status.")
     return {
         "ready": active_count >= min_required,
         "active": active_count,
