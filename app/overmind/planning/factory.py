@@ -1,6 +1,4 @@
 # app/overmind/planning/factory.py
-# # -*- coding: utf-8 -*-
-"""
 # -*- coding: utf-8 -*-
 # ======================================================================================
 # PLANNER FACTORY CORE (Version 3.1 "GUILD OMEGA / ZERO-DOWNTIME / SELF-HEAL / META-GOVERNANCE")
