@@ -1,48 +1,42 @@
 # app/overmind/planning/factory.py
 # # -*- coding: utf-8 -*-
 """
-# # # ======================================================================================
+# # # # -*- coding: utf-8 -*-
+# ======================================================================================
 #  THE STRATEGIST'S GUILD • PLANNER FACTORY CORE
 #  Version: 3.1  "GUILD OMEGA / ZERO-DOWNTIME / SELF-HEAL / META-GOVERNANCE"
 # ======================================================================================
+#  PURPOSE:
+#    Unified governance, discovery, ranking, instantiation, diagnostics, self-heal.
+#    Robust against partial imports or legacy expectations.
 #
-#  PURPOSE (EN):
-#    Unified governance + discovery + ranking + instantiation + diagnostics for all
-#    planner implementations built on top of BasePlanner v3.x.
+#  KEY FEATURES:
+#    - Deterministic discovery (manual + dynamic scan) with signature to skip redundant runs.
+#    - Metadata harvesting via BasePlanner v3.x hooks: live_planner_classes(), planner_metadata(),
+#      compute_rank_hint() (graceful fallback if missing).
+#    - Backward compatibility: provides available_planners() (wrap if exists) + get_all_planners().
+#    - Self-heal (retry discovery) when zero planners.
+#    - Profiling of selection & instantiation (env toggles).
+#    - Diagnostics (human + JSON) + export to file.
+#    - Quarantine awareness + reliability threshold filtering.
+#    - Thread-safe via RLock.
 #
-#    Key Features:
-#      1. Deterministic discovery (manual import list + dynamic scan) with a signature
-#         to avoid redundant rescans unless the environment, file set, or version changes.
-#      2. Harvests live metadata through:
-#            - BasePlanner.live_planner_classes()
-#            - BasePlanner.planner_metadata()
-#            - BasePlanner.compute_rank_hint()
-#      3. Backward compatibility layer: if old code expects BasePlanner.available_planners()
-#         or external imports call get_all_planners(), both are provided.
-#      4. Zero-downtime reload (reload_planners) preserving an archive of past import failures.
-#      5. Optional self-heal attempt if no planners are active (env FACTORY_SELF_HEAL_ON_EMPTY=1
-#         or via parameter self_heal_on_empty=True in select functions).
-#      6. Rich diagnostics (human formatted + JSON) with export_diagnostics(path).
-#      7. Ranking / selection with capability matching and production tier preference.
-#      8. Profiling hooks for selection and instantiation (opt-in via env flags).
-#      9. Quarantine awareness (excludes quarantined by default).
-#     10. Thread-safe operations via re-entrant lock.
-#     11. Clean separation of public API vs internal helpers.
+#  ENV VARIABLES (optional):
+#      OVERMIND_PLANNER_MANUAL          Comma-list of modules to force-import.
+#      OVERMIND_PLANNER_EXCLUDE         Comma-list of short module names to exclude.
+#      FACTORY_FORCE_REDISCOVER         1 => always force re-discovery.
+#      FACTORY_MIN_RELIABILITY          Minimum reliability score filter.
+#      FACTORY_SELF_HEAL_ON_EMPTY       1 => auto self_heal if no planners on selection.
+#      FACTORY_PROFILE_SELECTION        1 (default) enable selection profiling.
+#      FACTORY_PROFILE_INSTANTIATION    1 (default) enable instantiation profiling.
 #
-#  PURPOSE (AR):
-#    حوكمة مركزية + اكتشاف + ترتيب + إنشاء + تشخيص لجميع المخطِّطين مع دعم التعافي الذاتي
-#    وتوافق رجعي وتصدير تقارير مفصلة.
-#
-#  QUICK START:
+#  QUICK USAGE:
 #      from app.overmind.planning.factory import select_best_planner
-#      planner = select_best_planner("Draft README", required_capabilities={"llm"})
-#      out = planner.instrumented_generate("Outline please")
-#
-#  EXTRA:
-#      - Use diagnostics_report(verbose=True) or export_diagnostics("diag.json")
-#      - Use self_heal() if needed when dynamic discovery fails early in startup.
+#      p = select_best_planner("Draft README", required_capabilities={"llm"})
+#      result = p.instrumented_generate("Outline please")
 #
 # ======================================================================================
+
 from __future__ import annotations
 
 import hashlib
@@ -67,8 +61,27 @@ from typing import (
     Union,
 )
 
-# Base planner (assumed present in same package hierarchy)
-from .base_planner import BasePlanner, PlannerError  # type: ignore
+# Attempt BasePlanner import (must exist in real project)
+try:
+    from .base_planner import BasePlanner, PlannerError  # type: ignore
+except Exception:  # Fallback stubs if early bootstrap
+    class PlannerError(RuntimeError):
+        def __init__(self, msg: str, where: str = "factory", context: str = ""):
+            super().__init__(msg)
+            self.where = where
+            self.context = context
+
+    class BasePlanner:  # type: ignore
+        @staticmethod
+        def live_planner_classes():
+            return {}
+        @staticmethod
+        def planner_metadata():
+            return {}
+        @staticmethod
+        def compute_rank_hint(**kwargs):
+            # Very basic fallback
+            return 0.0
 
 # ======================================================================================
 # CONSTANTS / ENV
@@ -77,9 +90,8 @@ from .base_planner import BasePlanner, PlannerError  # type: ignore
 FACTORY_VERSION = "3.1"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
-# Official pre-import invitations (edit / extend / remove if desired)
 OFFICIAL_MANUAL_MODULES: List[str] = [
-    "app.overmind.planning.llm_planner",
+    "app.overmind.planning.llm_planner",  # Safe to remove or extend
 ]
 
 DEFAULT_EXCLUDE_MODULES: Set[str] = {
@@ -101,7 +113,6 @@ _FORCE_REDISCOVER = os.getenv("FACTORY_FORCE_REDISCOVER", "0") == "1"
 MIN_RELIABILITY = float(os.getenv("FACTORY_MIN_RELIABILITY", "0.0"))
 _SELF_HEAL_ON_EMPTY = os.getenv("FACTORY_SELF_HEAL_ON_EMPTY", "0") == "1"
 
-# Profiling toggles
 PROFILE_SELECTION = os.getenv("FACTORY_PROFILE_SELECTION", "1") == "1"
 PROFILE_INSTANTIATION = os.getenv("FACTORY_PROFILE_INSTANTIATION", "1") == "1"
 
@@ -111,12 +122,11 @@ PROFILE_INSTANTIATION = os.getenv("FACTORY_PROFILE_INSTANTIATION", "1") == "1"
 
 @dataclass
 class PlannerRecord:
-    # Identity
     name: str
     module: Optional[str] = None
     class_name: Optional[str] = None
 
-    # Capabilities / descriptors
+    # Attributes / metadata
     capabilities: Set[str] = field(default_factory=set)
     tags: Set[str] = field(default_factory=set)
     tier: Optional[str] = None
@@ -137,7 +147,7 @@ class PlannerRecord:
     last_access_ts: Optional[float] = None
     instantiation_duration_s: Optional[float] = None
 
-    # Error tracking
+    # Errors
     error: Optional[str] = None
     last_error: Optional[str] = None
 
@@ -165,7 +175,6 @@ class FactoryState:
     total_instantiations: int = 0
     last_self_heal_ts: Optional[float] = None
 
-    # Profiling
     selection_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
     instantiation_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -229,7 +238,7 @@ def _import_module(module_name: str) -> Optional[ModuleType]:
         return None
 
 def _get_planner_class(name: str):
-    # Try new API
+    # Prefer new API
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
             live = BasePlanner.live_planner_classes()  # type: ignore
@@ -238,14 +247,14 @@ def _get_planner_class(name: str):
                 if cls:
                     return cls
         except Exception as e:
-            _warn_once("live_planner_classes_access", f"live_planner_classes() access failed: {e}")
-    # Try BasePlanner registry fallback
+            _warn_once("live_planner_classes_access", f"live_planner_classes() failed: {e}")
+    # Fallback .get_planner_class if provided
     if hasattr(BasePlanner, "get_planner_class"):
         try:
             return BasePlanner.get_planner_class(name)  # type: ignore
         except Exception:
             pass
-    raise KeyError(f"Planner class '{name}' not found in registry.")
+    raise KeyError(f"Planner class '{name}' not found")
 
 def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
     if not hasattr(obj, attr):
@@ -258,22 +267,25 @@ def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
 def _extract_bool(obj: Any, attr: str) -> Optional[bool]:
     if not hasattr(obj, attr):
         return None
-    return bool(getattr(obj, attr))
+    try:
+        return bool(getattr(obj, attr))
+    except Exception:
+        return None
 
 def _extract_string(obj: Any, attr: str) -> Optional[str]:
     if not hasattr(obj, attr):
         return None
     v = getattr(obj, attr)
-    return None if v is None else str(v)
+    if v is None:
+        return None
+    return str(v)
 
 def _file_fingerprint(root_package: str) -> str:
     try:
         pkg = importlib.import_module(root_package)
         if not hasattr(pkg, "__path__"):
             return "na"
-        names = []
-        for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
-            names.append(m.name)
+        names = [m.name for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + ".")]
         raw = "|".join(sorted(names))
         return hashlib.md5(raw.encode("utf-8")).hexdigest()
     except Exception:
@@ -290,23 +302,23 @@ def _compute_discovery_signature(root: str) -> str:
     return hashlib.md5("::".join(parts).encode("utf-8")).hexdigest()
 
 def _sync_registry_into_records():
-    # Acquire metadata map if available
+    # planner_metadata map
     metadata_map = {}
     if hasattr(BasePlanner, "planner_metadata"):
         try:
             metadata_map = BasePlanner.planner_metadata()  # type: ignore
         except Exception as e:
-            _warn_once("planner_metadata_access", f"planner_metadata() access failed: {e}")
+            _warn_once("planner_metadata_access", f"planner_metadata() failed: {e}")
 
-    # Acquire live classes
-    live = {}
+    # live_planner_classes
+    live_classes = {}
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
-            live = BasePlanner.live_planner_classes()  # type: ignore
+            live_classes = BasePlanner.live_planner_classes()  # type: ignore
         except Exception as e:
-            _warn_once("live_planner_classes_sync", f"live_planner_classes() access failed: {e}")
+            _warn_once("live_planner_classes_sync", f"live_planner_classes() failed: {e}")
 
-    for pname, cls in live.items():
+    for pname, cls in live_classes.items():
         key = pname.lower().strip()
         rec = _STATE.planner_records.get(key)
         if not rec:
@@ -316,8 +328,10 @@ def _sync_registry_into_records():
         rec.class_name = getattr(cls, "__name__", rec.class_name)
         rec.capabilities |= _extract_attribute_set(cls, "capabilities")
         rec.tags |= _extract_attribute_set(cls, "tags")
-        rec.tier = rec.tier or _extract_string(cls, "tier")
-        rec.version = rec.version or _extract_string(cls, "version")
+        if rec.tier is None:
+            rec.tier = _extract_string(cls, "tier")
+        if rec.version is None:
+            rec.version = _extract_string(cls, "version")
         if rec.production_ready is None:
             rec.production_ready = _extract_bool(cls, "production_ready")
         if rec.quarantined is None:
@@ -325,17 +339,17 @@ def _sync_registry_into_records():
         if rec.self_test_passed is None:
             rec.self_test_passed = _extract_bool(cls, "self_test_passed")
 
-        meta_entry = metadata_map.get(pname) if isinstance(metadata_map, dict) else None
-        if isinstance(meta_entry, dict):
-            rec.reliability_score = meta_entry.get("reliability_score", rec.reliability_score)
-            rec.total_invocations = meta_entry.get("total_invocations", rec.total_invocations)
-            rec.total_failures = meta_entry.get("total_failures", rec.total_failures)
-            rec.avg_duration_ms = meta_entry.get("avg_duration_ms", rec.avg_duration_ms)
-            rec.tier = meta_entry.get("tier", rec.tier)
-            rec.quarantined = meta_entry.get("quarantined", rec.quarantined)
-            rec.self_test_passed = meta_entry.get("self_test_passed", rec.self_test_passed)
-            rec.production_ready = meta_entry.get("production_ready", rec.production_ready)
-            rec.version = meta_entry.get("version", rec.version)
+        meta = metadata_map.get(pname) if isinstance(metadata_map, dict) else None
+        if isinstance(meta, dict):
+            rec.reliability_score = meta.get("reliability_score", rec.reliability_score)
+            rec.total_invocations = meta.get("total_invocations", rec.total_invocations)
+            rec.total_failures = meta.get("total_failures", rec.total_failures)
+            rec.avg_duration_ms = meta.get("avg_duration_ms", rec.avg_duration_ms)
+            rec.tier = meta.get("tier", rec.tier)
+            rec.quarantined = meta.get("quarantined", rec.quarantined)
+            rec.self_test_passed = meta.get("self_test_passed", rec.self_test_passed)
+            rec.production_ready = meta.get("production_ready", rec.production_ready)
+            rec.version = meta.get("version", rec.version)
 
 def _discover_and_register(force: bool = False, package: Optional[str] = None):
     with _STATE.lock:
@@ -367,16 +381,16 @@ def _discover_and_register(force: bool = False, package: Optional[str] = None):
         _STATE.discovery_signature = signature
         _STATE.discovered = True
         elapsed = time.perf_counter() - start
-        _log(f"Discovery completed in {elapsed:.4f}s total planners={len(_STATE.planner_records)}")
+        _log(f"Discovery completed in {elapsed:.4f}s planners={len(_STATE.planner_records)}")
 
 def _instantiate_planner(name: str) -> BasePlanner:
     key = name.lower().strip()
     with _STATE.lock:
         rec = _STATE.planner_records.get(key)
         if not rec:
-            raise KeyError(f"Planner '{name}' not registered.")
+            raise KeyError(f"Planner '{name}' not registered")
         if rec.quarantined:
-            raise KeyError(f"Planner '{name}' is quarantined.")
+            raise KeyError(f"Planner '{name}' is quarantined")
         if rec.instantiated and key in _INSTANCE_CACHE:
             rec.last_access_ts = _now()
             return _INSTANCE_CACHE[key]
@@ -411,14 +425,12 @@ def _capabilities_match_ratio(required: Set[str], offered: Set[str]) -> float:
     inter = required & offered
     return len(inter) / max(len(required), 1)
 
-def _rank_hint(
-    name: str,
-    objective: str,
-    capabilities_match_ratio: float,
-    reliability_score: float,
-    tier: Optional[str],
-    production_ready: bool
-) -> float:
+def _rank_hint(name: str,
+               objective: str,
+               capabilities_match_ratio: float,
+               reliability_score: float,
+               tier: Optional[str],
+               production_ready: bool) -> float:
     if hasattr(BasePlanner, "compute_rank_hint"):
         try:
             return BasePlanner.compute_rank_hint(  # type: ignore
@@ -430,14 +442,14 @@ def _rank_hint(
             )
         except Exception as e:
             _warn_once("compute_rank_hint_fail", f"compute_rank_hint failed: {e}")
-    # Fallback internal score
+    # Fallback formula
     score = capabilities_match_ratio * 0.6 + reliability_score * 0.35
     if production_ready:
         score += 0.04
     if tier and isinstance(tier, str):
         tier_map = {"alpha": -0.05, "beta": 0.0, "stable": 0.05, "gold": 0.07, "vip": 0.08}
         score += tier_map.get(tier.lower(), 0.0)
-    score += (hash(name) & 0xFFFF) * 1e-10
+    score += (hash(name) & 0xFFFF) * 1e-10  # jitter
     return score
 
 # ======================================================================================
@@ -447,7 +459,7 @@ def _rank_hint(
 def discover(force: bool = False, package: Optional[str] = None):
     _discover_and_register(force=force, package=package)
     if not _active_planner_names():
-        _warn_once("post_discover_empty", "After discover(): zero active planners detected.")
+        _warn_once("post_discover_empty", "After discover(): no active planners.")
 
 def refresh_metadata():
     with _STATE.lock:
@@ -455,21 +467,21 @@ def refresh_metadata():
             return
     _sync_registry_into_records()
 
-# Backward compatibility for older code expecting BasePlanner.available_planners()
+# Backward compatibility injection of available_planners()
 if not hasattr(BasePlanner, "available_planners"):
     def _legacy_available_planners() -> List[str]:  # type: ignore
-        return _active_planner_names(include_quarantined=False)
+        return _active_planner_names()
     setattr(BasePlanner, "available_planners", staticmethod(_legacy_available_planners))  # type: ignore
 else:
     try:
         original_available = BasePlanner.available_planners  # type: ignore
         def _wrapped_available_planners():
             try:
-                names = set(original_available())  # type: ignore
+                base_names = set(original_available())  # type: ignore
             except Exception:
-                names = set()
-            names.update(_active_planner_names(include_quarantined=False))
-            return sorted(names)
+                base_names = set()
+            base_names.update(_active_planner_names())
+            return sorted(base_names)
         setattr(BasePlanner, "available_planners", staticmethod(_wrapped_available_planners))  # type: ignore
     except Exception:
         pass
@@ -491,35 +503,25 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
             raise PlannerError(f"Planner '{name}' is quarantined.", "factory", name)
     if auto_instantiate:
         return _instantiate_planner(key)
-    # (Non-instantiated path — rarely used)
     cls = _get_planner_class(key)
     return cls()  # type: ignore
 
-def list_planners(
-    include_quarantined: bool = False,
-    include_errors: bool = False
-) -> List[str]:
+def list_planners(include_quarantined: bool = False,
+                  include_errors: bool = False) -> List[str]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
-    names: List[str] = []
-    for n, rec in _STATE.planner_records.items():
-        if rec.quarantined and not include_quarantined:
+    out: List[str] = []
+    for n, r in _STATE.planner_records.items():
+        if r.quarantined and not include_quarantined:
             continue
-        if rec.error and not include_errors:
+        if r.error and not include_errors:
             continue
-        names.append(n)
-    return sorted(names)
+        out.append(n)
+    return sorted(out)
 
-def get_all_planners(
-    instances: bool = True,
-    include_quarantined: bool = False
-) -> List[Union[str, BasePlanner]]:
-    """
-    Backward compatibility helper (used by other services):
-    - When instances=True returns instantiated planners.
-    - When instances=False returns names.
-    """
+def get_all_planners(instances: bool = True,
+                     include_quarantined: bool = False) -> List[Union[str, BasePlanner]]:
     names = list_planners(include_quarantined=include_quarantined)
     if not instances:
         return names
@@ -531,26 +533,23 @@ def get_all_planners(
             _log(f"Skipping planner '{n}' due to instantiation error: {e}", "WARN")
     return result
 
-def select_best_planner(
-    objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
-    prefer_production: bool = True,
-    auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None
-) -> BasePlanner:
+def select_best_planner(objective: str,
+                        required_capabilities: Optional[Iterable[str]] = None,
+                        prefer_production: bool = True,
+                        auto_instantiate: bool = True,
+                        self_heal_on_empty: Optional[bool] = None) -> BasePlanner:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
-
     req_set = _safe_lower_set(required_capabilities)
-    start = time.perf_counter()
+    t0 = time.perf_counter()
 
     active = _active_planner_names()
     if not active:
         do_heal = self_heal_on_empty if self_heal_on_empty is not None else _SELF_HEAL_ON_EMPTY
         if do_heal:
             heal_report = self_heal()
-            _log(f"Self-heal invoked during selection: {heal_report}")
+            _log(f"Self-heal invoked: {heal_report}")
             active = _active_planner_names()
 
     if not active:
@@ -567,7 +566,7 @@ def select_best_planner(
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
         prod = bool(rec.production_ready)
         if prefer_production and not prod and req_set:
-            reliability *= 0.97
+            reliability *= 0.97  # slight penalty
         score = _rank_hint(
             name=name,
             objective=objective,
@@ -584,7 +583,7 @@ def select_best_planner(
     candidates.sort(reverse=True)
     best_score, best_name = candidates[0]
 
-    duration = time.perf_counter() - start
+    sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
         with _STATE.lock:
             _STATE.selection_profile_samples.append({
@@ -593,21 +592,20 @@ def select_best_planner(
                 "best": best_name,
                 "score": best_score,
                 "candidates_considered": len(candidates),
-                "duration_s": duration,
+                "duration_s": sel_elapsed,
                 "ts": _now(),
             })
 
     if auto_instantiate:
         return get_planner(best_name)
+    # Return an instantiated object anyway (consistent path)
     return get_planner(best_name, auto_instantiate=True)
 
-def batch_select_best_planners(
-    objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
-    n: int = 3,
-    prefer_production: bool = True,
-    auto_instantiate: bool = False
-) -> List[Union[str, BasePlanner]]:
+def batch_select_best_planners(objective: str,
+                               required_capabilities: Optional[Iterable[str]] = None,
+                               n: int = 3,
+                               prefer_production: bool = True,
+                               auto_instantiate: bool = False) -> List[Union[str, BasePlanner]]:
     if n <= 0:
         return []
     if not _STATE.discovered:
@@ -617,7 +615,6 @@ def batch_select_best_planners(
     active = _active_planner_names()
     if not active:
         return []
-
     candidates: List[Tuple[float, str]] = []
     for name in active:
         rec = _STATE.planner_records.get(name)
@@ -640,24 +637,18 @@ def batch_select_best_planners(
         )
         candidates.append((score, name))
     candidates.sort(reverse=True)
-    selected_names = [nme for _, nme in candidates[:n]]
+    selected = [nme for _, nme in candidates[:n]]
     if auto_instantiate:
-        return [get_planner(n) for n in selected_names]
-    return selected_names
+        return [get_planner(n) for n in selected]
+    return selected
 
 # ======================================================================================
 # SELF-HEAL
 # ======================================================================================
 
-def self_heal(
-    force: bool = True,
-    cooldown_seconds: float = 5.0,
-    max_attempts: int = 2
-) -> Dict[str, Any]:
-    """
-    Attempt recovery when no planners are active; tries discovery again.
-    Returns a report dict with counts & attempts.
-    """
+def self_heal(force: bool = True,
+              cooldown_seconds: float = 5.0,
+              max_attempts: int = 2) -> Dict[str, Any]:
     report = {
         "before_active": len(_active_planner_names()),
         "attempts": 0,
@@ -687,7 +678,7 @@ def self_heal(
     return report
 
 # ======================================================================================
-# INTROSPECTION / DIAGNOSTICS
+# DIAGNOSTICS / INTROSPECTION
 # ======================================================================================
 
 def planner_stats() -> Dict[str, Any]:
@@ -736,19 +727,17 @@ def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
     for n, r in _STATE.planner_records.items():
         if not verbose and r.quarantined:
             continue
-        row = r.to_public_dict()
-        records.append(row)
-    diagnostics = {
+        records.append(r.to_public_dict())
+    return {
         "version": FACTORY_VERSION,
         "stats": stats,
         "active": active_names,
         "records": records,
         "import_failures": stats["import_failures"],
-        "selection_profiles": _STATE.selection_profile_samples[-25:],  # last 25
+        "selection_profiles": _STATE.selection_profile_samples[-25:],
         "instantiation_profiles": _STATE.instantiation_profile_samples[-25:],
         "timestamp": _now(),
     }
-    return diagnostics
 
 def diagnostics_report(verbose: bool = False) -> str:
     data = diagnostics_json(verbose=verbose)
@@ -771,12 +760,10 @@ def diagnostics_report(verbose: bool = False) -> str:
         lines.append("-- Active Planners --")
         for n in active:
             r = _STATE.planner_records.get(n)
-            if not r:
-                continue
-            lines.append(f"  * {n} rel={r.reliability_score} tier={r.tier} prod={r.production_ready}")
+            if r:
+                lines.append(f"  * {n} rel={r.reliability_score} tier={r.tier} prod={r.production_ready}")
     else:
-        lines.append("!! WARNING: No active planners.")
-        lines.append("   Recommendation: Add modules to OVERMIND_PLANNER_MANUAL or ensure early imports.")
+        lines.append("!! WARNING: No active planners. Ensure manual modules or correct package path.")
     quarantined = [r for r in _STATE.planner_records.values() if r.quarantined]
     if quarantined:
         lines.append("-- Quarantined --")
@@ -784,7 +771,7 @@ def diagnostics_report(verbose: bool = False) -> str:
             lines.append(f"  * {r.name} reliability={r.reliability_score} self_test={r.self_test_passed}")
     lines.append("-- Recommendations --")
     if not active:
-        lines.append("  * Use self_heal() or ensure planner modules are discoverable.")
+        lines.append("  * Use self_heal() or set OVERMIND_PLANNER_MANUAL to force-import modules.")
     else:
         lines.append("  * Use select_best_planner(...) for automatic ranking.")
     if verbose:
@@ -799,12 +786,10 @@ def diagnostics_report(verbose: bool = False) -> str:
                 lines.append(f"   ERROR: {r.error}")
     return "\n".join(lines)
 
-def export_diagnostics(
-    path: Union[str, Path],
-    fmt: str = "json",
-    verbose: bool = False,
-    ensure_dir: bool = True
-) -> Path:
+def export_diagnostics(path: Union[str, Path],
+                       fmt: str = "json",
+                       verbose: bool = False,
+                       ensure_dir: bool = True) -> Path:
     p = Path(path)
     if ensure_dir and p.parent and not p.parent.exists():
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -812,8 +797,7 @@ def export_diagnostics(
         data = diagnostics_json(verbose=verbose)
         p.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     else:
-        report = diagnostics_report(verbose=verbose)
-        p.write_text(report, encoding="utf-8")
+        p.write_text(diagnostics_report(verbose=verbose), encoding="utf-8")
     _log(f"Diagnostics exported -> {p}")
     return p
 
@@ -855,19 +839,17 @@ def reload_planners():
     discover(force=True)
 
 # ======================================================================================
-# ASYNC WRAPPERS (Optional)
+# ASYNC WRAPPERS
 # ======================================================================================
 
 async def a_get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     return get_planner(name, auto_instantiate=auto_instantiate)
 
-async def a_select_best_planner(
-    objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
-    prefer_production: bool = True,
-    auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None
-) -> BasePlanner:
+async def a_select_best_planner(objective: str,
+                                required_capabilities: Optional[Iterable[str]] = None,
+                                prefer_production: bool = True,
+                                auto_instantiate: bool = True,
+                                self_heal_on_empty: Optional[bool] = None) -> BasePlanner:
     return select_best_planner(
         objective,
         required_capabilities=required_capabilities,
