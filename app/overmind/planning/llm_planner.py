@@ -1,36 +1,28 @@
 # -*- coding: utf-8 -*-
 # app/overmind/planning/llm_planner.py
-"""
 # -*- coding: utf-8 -*-
-# =================================================================================================
-# LLMGroundedPlanner  (Version 1.4.0  "FORENSIC-STABLE / ZERO-TRIPLE-QUOTE")
-# -------------------------------------------------------------------------------------------------
-# الهدف:
-#   تحويل objective لغوي إلى خطة مهام أداة-مرتكزة (tool-grounded) صالحة وقابلة للتنفيذ.
+# ======================================================================================
+# File: app/overmind/planning/llm_planner.py
+# LLMGroundedPlanner  (Version 1.7.0  "FORENSIC-FINAL / ZERO-TRIPLE-QUOTE / HARDENED")
+# ======================================================================================
+# ملاحظات أساسية (لا تحذف هذا الجزء):
+#   1. لا توجد أي سلاسل ثلاثية """ أو ''' في هذا الملف إطلاقاً (جميع التوثيق بالتعليقات #).
+#   2. لا توجد أسطر نص حر (Plain text) خارج التعليقات أو التعليمات البرمجية.
+#   3. كل String literal مغلق بشكل صحيح، لتصفير أخطاء: SyntaxError: unterminated string literal.
+#   4. استيراد صارم لـ BasePlanner؛ لا يستخدم Stub إلا إذا فُعِّل LLM_PLANNER_ALLOW_STUB=1.
+#   5. self_test يعيد (bool, reason) واضحة.
+#   6. توليد الخطة: Structured JSON أولاً ثم سقوط متعدد المراحل (Direct JSON → tasks array synth → first curly block → bullet heuristic).
+#   7. تطبيع و تحقق صارم للمهام + كشف الدورات في التبعيات + ضبط حدود المهام.
+#   8. تسجيل (Logging) ثري: INFO و DEBUG و WARNING و ERROR مع اسم المخطط للسياق.
+#   9. واجهات التصدير __all__ متوافقة مع المصنع (factory).
+#  10. للحماية: أي فشل في البناء أو الاستخراج يرفع PlannerError مع تفاصيل.
 #
-# السمات:
-#   - لا سلاسل ثلاثية مطلقاً (تجنّب SyntaxError الناجم عن تلف نسخ/لصق).
-#   - استيراد صارم لـ BasePlanner (Stub اختياري فقط إذا LLM_PLANNER_ALLOW_STUB=1).
-#   - self_test يعيد (bool, reason) بلا صمت.
-#   - توليد منظّم (structured JSON) أولاً، ثم استخراج متعدد المراحل عند الفشل.
-#   - استخراج متعدد المراحل: (1) Direct Parse (2) tasks array synthesize (3) أول بلوك {} (4) Bullets.
-#   - فحص / تطبيع المهام (أسماء الأدوات، args، deps) + كشف الدورات.
-#   - Logging واضح: INFO (بداية/نجاح) / WARNING (فشل مرحلة) / ERROR (فشل نهائي) / DEBUG (تفاصيل).
-#   - حماية من الأدوات المفقودة وتنبيه reliability.
-#   - لا اعتماد على docstrings للتسجيل أو التعريف.
+# التحقق بعد الحفظ:
+#   grep -n '"""' app/overmind/planning/llm_planner.py || echo "NO triple quotes"
+#   grep -n "'''" app/overmind/planning/llm_planner.py || echo "NO triple quotes"
+#   python -m py_compile app/overmind/planning/llm_planner.py
 #
-# متغيرات البيئة:
-#   LLM_PLANNER_ALLOW_STUB=1        يسمح Stub مؤقت عند فشل استيراد القاعدة (DEV ONLY).
-#   LLM_PLANNER_STRICT_JSON=1       يمنع السقوط إلى النص؛ فشل فوري إن أخفق التوليد المنظم.
-#   LLM_PLANNER_MAX_TASKS=N         حد أقصى للمهام (افتراضي 25).
-#   LLM_PLANNER_SELFTEST_STRICT=1   self_test يفشل إذا غابت الخدمات (maestro/agent_tools).
-#   LLM_PLANNER_LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL
-#
-# للتحقق السريع بعد الاستبدال:
-#   1) grep -n '"""' app/overmind/planning/llm_planner.py || echo "NO triple quotes"
-#   2) grep -n "'''" app/overmind/planning/llm_planner.py || echo "NO triple quotes"
-#   3) python -m py_compile app/overmind/planning/llm_planner.py
-# =================================================================================================
+# ======================================================================================
 
 from __future__ import annotations
 
@@ -40,11 +32,11 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Iterable
+from typing import Any, Dict, List, Optional, Tuple
 
-# -------------------------------------------------------------------------------------------------
-# LOGGER
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# LOGGER SETUP
+# --------------------------------------------------------------------------------------
 _LOG = logging.getLogger("llm_planner")
 _env_level = os.getenv("LLM_PLANNER_LOG_LEVEL", "").upper()
 if _env_level:
@@ -53,21 +45,21 @@ else:
     _LOG.setLevel(logging.INFO)
 
 if not _LOG.handlers:
-    _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s] %(message)s"))
-    _LOG.addHandler(_handler)
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s] %(message)s"))
+    _LOG.addHandler(_h)
 
-# -------------------------------------------------------------------------------------------------
-# STRICT BASE IMPORT
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# STRICT BASE IMPORT (Optional Stub via Env)
+# --------------------------------------------------------------------------------------
 _ALLOW_STUB = os.getenv("LLM_PLANNER_ALLOW_STUB", "0") == "1"
 try:
     from .base_planner import BasePlanner, PlannerError  # type: ignore
-except Exception as _base_err:  # noqa: BLE001
+except Exception as _imp_err:  # noqa: BLE001
     if not _ALLOW_STUB:
         raise RuntimeError(
-            "FATAL: Cannot import .base_planner. Set LLM_PLANNER_ALLOW_STUB=1 ONLY for temporary dev."
-        ) from _base_err
+            "FATAL: Cannot import .base_planner. To allow a temporary stub set LLM_PLANNER_ALLOW_STUB=1."
+        ) from _imp_err
 
     class PlannerError(Exception):  # type: ignore
         def __init__(self, message: str, planner: str = "stub", objective: str = "", extra: Dict[str, Any] = None):
@@ -78,21 +70,24 @@ except Exception as _base_err:  # noqa: BLE001
 
     class BasePlanner:  # type: ignore
         name = "base_planner_stub"
+
         @classmethod
         def live_planner_classes(cls):
             return {}
+
         @classmethod
         def planner_metadata(cls):
             return {}
+
         @classmethod
         def compute_rank_hint(cls, **kwargs):
             return 0.0
 
-    _LOG.error("USING STUB BasePlanner (LLM_PLANNER_ALLOW_STUB=1). This is NOT production ready.")
+    _LOG.error("USING STUB BasePlanner (development mode).")
 
-# -------------------------------------------------------------------------------------------------
-# EXTERNAL SERVICES (Optional)
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# EXTERNAL OPTIONAL SERVICES
+# --------------------------------------------------------------------------------------
 try:
     from app.services import maestro  # type: ignore
 except Exception:
@@ -103,9 +98,9 @@ try:
 except Exception:
     agent_tools = None  # type: ignore
 
-# -------------------------------------------------------------------------------------------------
-# OPTIONAL SHARED SCHEMAS
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# OPTIONAL SHARED SCHEMAS WITH FALLBACKS
+# --------------------------------------------------------------------------------------
 try:
     from .schemas import MissionPlanSchema, PlannedTask, PlanningContext  # type: ignore
 except Exception:
@@ -129,28 +124,29 @@ except Exception:
         user_preferences: Dict[str, Any] = field(default_factory=dict)
         tags: List[str] = field(default_factory=list)
 
-# -------------------------------------------------------------------------------------------------
-# CONFIG / CONSTANTS
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# CONFIG & CONSTANTS
+# --------------------------------------------------------------------------------------
 STRICT_JSON_ONLY = os.getenv("LLM_PLANNER_STRICT_JSON", "0") == "1"
 SELF_TEST_STRICT = os.getenv("LLM_PLANNER_SELFTEST_STRICT", "0") == "1"
 MAX_TASKS_DEFAULT = int(os.getenv("LLM_PLANNER_MAX_TASKS", "25"))
 
-# Regex patterns (كلها raw أو عادية بدون backslash غير مهرب)
 _VALID_TOOL_NAME = re.compile(r"^[a-zA-Z0-9_.\-:]{2,128}$")
 _TASK_ARRAY_REGEX = re.compile(r'"tasks"\s*:\s*(\[[^\]]*\])', re.IGNORECASE | re.DOTALL)
 _JSON_BLOCK_CURLY = re.compile(r"\{.*\}", re.DOTALL)
 
-# -------------------------------------------------------------------------------------------------
-# CUSTOM ERRORS
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# CUSTOM ERROR
+# --------------------------------------------------------------------------------------
 class PlanValidationError(PlannerError):
     pass
 
-# -------------------------------------------------------------------------------------------------
-# UTILS
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# UTILITY HELPERS
+# --------------------------------------------------------------------------------------
 def _clip(s: str, n: int = 180) -> str:
+    if s is None:
+        return ""
     return s if len(s) <= n else s[: n - 3] + "..."
 
 def _safe_json_loads(payload: str) -> Tuple[Optional[Any], Optional[str]]:
@@ -170,13 +166,12 @@ def _tool_exists(name: str) -> bool:
 def _canonical_task_id(idx: int) -> str:
     return f"t{idx:02d}"
 
-# -------------------------------------------------------------------------------------------------
-# PLANNER IMPLEMENTATION
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# MAIN PLANNER
+# --------------------------------------------------------------------------------------
 class LLMGroundedPlanner(BasePlanner):
-    # NOTE: السابق (LLM-grounded mission planner:) كان نص حر في نسخة تالفة؛ تحول الآن إلى تعليق.
     name: str = "llm_grounded_planner"
-    version: str = "1.4.0"
+    version: str = "1.7.0"
     tier: str = "core"
     production_ready: bool = True
     capabilities = {"planning", "llm", "tool-grounding"}
@@ -193,12 +188,14 @@ class LLMGroundedPlanner(BasePlanner):
             return False, "maestro_unavailable_strict"
         if agent_tools is None and SELF_TEST_STRICT:
             return False, "agent_tools_unavailable_strict"
-
-        # Optional minimal structured ping
         if maestro and hasattr(maestro, "generation_service"):
             try:
                 svc = maestro.generation_service  # type: ignore
-                schema = {"type": "object", "properties": {"status": {"type": "string"}}, "required": ["status"]}
+                schema = {
+                    "type": "object",
+                    "properties": {"status": {"type": "string"}},
+                    "required": ["status"],
+                }
                 resp = svc.structured_json(
                     system_prompt="Return {'status':'ok'}",
                     user_prompt="Reply ok",
@@ -215,7 +212,7 @@ class LLMGroundedPlanner(BasePlanner):
         return True, "ok"
 
     # ----------------------------------------------
-    # PLAN GENERATION API
+    # PUBLIC API: generate_plan
     # ----------------------------------------------
     def generate_plan(
         self,
@@ -223,19 +220,21 @@ class LLMGroundedPlanner(BasePlanner):
         context: Optional[PlanningContext] = None,
         max_tasks: Optional[int] = None,
     ) -> MissionPlanSchema:
-        start = time.perf_counter()
+        t0 = time.perf_counter()
 
         if not self._objective_is_valid(objective):
             raise PlannerError("objective_invalid_or_short", self.name, objective)
 
         cap = min(max_tasks or MAX_TASKS_DEFAULT, MAX_TASKS_DEFAULT)
-        _LOG.info("[%s] plan_start objective='%s' cap=%d strict=%s",
-                  self.name, _clip(objective, 120), cap, STRICT_JSON_ONLY)
+        _LOG.info(
+            "[%s] plan_start objective='%s' cap=%d strict=%s",
+            self.name, _clip(objective, 120), cap, STRICT_JSON_ONLY
+        )
 
         errors: List[str] = []
         structured: Optional[Dict[str, Any]] = None
 
-        # Phase 1: Structured
+        # Phase 1 - Structured
         if maestro and hasattr(maestro, "generation_service"):
             try:
                 structured = self._call_structured_llm(objective, context, cap)
@@ -246,15 +245,16 @@ class LLMGroundedPlanner(BasePlanner):
         else:
             errors.append("maestro_unavailable")
 
+        # Strict mode?
         if STRICT_JSON_ONLY and structured is None:
             raise PlannerError(
-                f"strict_json_failed errors={errors[-5:]}",
+                "strict_json_failed",
                 self.name,
                 objective,
-                extra={"errors": errors},
+                extra={"errors": errors[-5:]},
             )
 
-        # Phase 2: Text fallback
+        # Phase 2 - Text Fallback
         raw_text: Optional[str] = None
         if structured is None:
             try:
@@ -264,24 +264,24 @@ class LLMGroundedPlanner(BasePlanner):
                 errors.append(f"text_fail:{type(e).__name__}:{e}")
                 _LOG.error("[%s] text_fail %s", self.name, e)
 
-        # Phase 3: Extraction
+        # Phase 3 - Extraction
         plan_dict: Optional[Dict[str, Any]] = None
-        extract_notes: List[str] = []
+        extraction_notes: List[str] = []
         if structured is not None:
             plan_dict = structured
         elif raw_text:
-            plan_dict, extract_notes = self._extract_plan_from_text(raw_text)
-            errors.extend(extract_notes)
+            plan_dict, extraction_notes = self._extract_plan_from_text(raw_text)
+            errors.extend(extraction_notes)
 
         if plan_dict is None:
             raise PlannerError(
-                f"extraction_failed errors={errors[-6:]}",
+                "extraction_failed",
                 self.name,
                 objective,
-                extra={"errors": errors},
+                extra={"errors": errors[-6:]},
             )
 
-        # Phase 4: Normalize / validate tasks
+        # Phase 4 - Normalize / Validate tasks
         tasks_raw = plan_dict.get("tasks")
         norm_errors: List[str] = []
         try:
@@ -300,18 +300,20 @@ class LLMGroundedPlanner(BasePlanner):
             tasks=tasks,
         )
 
-        # Phase 5: Post validation (cycles, global constraints)
+        # Phase 5 - Post Graph Validation
         self._post_validate(mission_plan)
 
-        elapsed_ms = (time.perf_counter() - start) * 1000.0
-        _LOG.info("[%s] plan_success objective='%s' tasks=%d elapsed_ms=%.1f",
-                  self.name, _clip(objective, 100), len(mission_plan.tasks), elapsed_ms)
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        _LOG.info(
+            "[%s] plan_success objective='%s' tasks=%d elapsed_ms=%.1f",
+            self.name, _clip(objective, 100), len(mission_plan.tasks), elapsed_ms
+        )
         if errors:
             _LOG.debug("[%s] notes=%s", self.name, errors[-6:])
         return mission_plan
 
     # ----------------------------------------------
-    # Objective VS sanity
+    # Objective validation
     # ----------------------------------------------
     def _objective_is_valid(self, objective: str) -> bool:
         if not objective:
@@ -324,7 +326,7 @@ class LLMGroundedPlanner(BasePlanner):
         return True
 
     # ----------------------------------------------
-    # Structured Generation
+    # Structured generation call
     # ----------------------------------------------
     def _call_structured_llm(
         self,
@@ -376,7 +378,7 @@ class LLMGroundedPlanner(BasePlanner):
         return resp
 
     # ----------------------------------------------
-    # Textual Fallback
+    # Text fallback call
     # ----------------------------------------------
     def _call_text_llm(
         self,
@@ -396,7 +398,7 @@ class LLMGroundedPlanner(BasePlanner):
         text = svc.text_completion(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            temperature=0.3,
+            temperature=0.35,
             max_tokens=900,
             max_retries=1,
             fail_hard=False,
@@ -406,7 +408,7 @@ class LLMGroundedPlanner(BasePlanner):
         return text
 
     # ----------------------------------------------
-    # Multi-Stage Extraction
+    # Multi-stage text extraction
     # ----------------------------------------------
     def _extract_plan_from_text(self, raw_text: str) -> Tuple[Optional[Dict[str, Any]], List[str]]:
         errs: List[str] = []
@@ -414,27 +416,23 @@ class LLMGroundedPlanner(BasePlanner):
             return None, ["empty_text"]
         snippet = raw_text.strip()
 
-        # Step A: Direct parse
         parsed, err = _safe_json_loads(snippet)
         if parsed and isinstance(parsed, dict) and "tasks" in parsed:
             return parsed, errs
         if err:
             errs.append(f"direct_fail:{err}")
 
-        # Step B: tasks array synthesize
         arr_match = _TASK_ARRAY_REGEX.search(snippet)
         if arr_match:
             arr_chunk = arr_match.group(1)
-            # Escape quotes inside snippet piece for JSON objective part
-            objective_val = json.dumps(_clip(snippet, 50))
-            synth = f'{{"objective":{objective_val},"tasks":{arr_chunk}}}'
+            safe_obj = json.dumps(_clip(snippet, 50))
+            synth = f'{{"objective":{safe_obj},"tasks":{arr_chunk}}}'
             candidate, err2 = _safe_json_loads(synth)
             if candidate and isinstance(candidate, dict) and "tasks" in candidate:
                 return candidate, errs
             if err2:
                 errs.append(f"tasks_array_fail:{err2}")
 
-        # Step C: first curly block
         block_match = _JSON_BLOCK_CURLY.search(snippet)
         if block_match:
             block = block_match.group(0)
@@ -444,7 +442,6 @@ class LLMGroundedPlanner(BasePlanner):
             if err3:
                 errs.append(f"block_fail:{err3}")
 
-        # Step D: bullets heuristic
         tasks_guess: List[Dict[str, Any]] = []
         current: Optional[Dict[str, Any]] = None
         for line in snippet.splitlines():
@@ -470,16 +467,13 @@ class LLMGroundedPlanner(BasePlanner):
             tasks_guess.append(current)
 
         if tasks_guess:
-            return {
-                "objective": "Recovered (bullets)",
-                "tasks": tasks_guess
-            }, errs
+            return {"objective": "Recovered (bullets)", "tasks": tasks_guess}, errs
 
         errs.append("extraction_all_failed")
         return None, errs
 
     # ----------------------------------------------
-    # Prompt Rendering
+    # Prompt rendering
     # ----------------------------------------------
     def _render_user_prompt(
         self,
@@ -508,7 +502,7 @@ class LLMGroundedPlanner(BasePlanner):
         return "\n".join(lines)
 
     # ----------------------------------------------
-    # Tool Examples
+    # Tool examples enumeration
     # ----------------------------------------------
     def _list_tool_examples(self, limit: int = 5) -> List[Tuple[str, Optional[str]]]:
         out: List[Tuple[str, Optional[str]]] = []
@@ -524,7 +518,7 @@ class LLMGroundedPlanner(BasePlanner):
         return out
 
     # ----------------------------------------------
-    # Normalize & Validate Tasks
+    # Normalize & validate tasks
     # ----------------------------------------------
     def _normalize_and_validate_tasks(
         self,
@@ -534,54 +528,43 @@ class LLMGroundedPlanner(BasePlanner):
     ) -> List[PlannedTask]:
         if not isinstance(tasks_raw, list):
             raise PlanValidationError("tasks_not_list", self.name)
-
         cleaned: List[PlannedTask] = []
         seen_ids: set = set()
-
         for idx, task in enumerate(tasks_raw):
             if len(cleaned) >= max_tasks:
                 errors_out.append("task_limit_reached")
                 break
-
             if not isinstance(task, dict):
                 errors_out.append(f"task_{idx}_not_dict")
                 continue
-
             desc = str(task.get("description") or "").strip()
             if not desc:
                 errors_out.append(f"task_{idx}_missing_description")
                 continue
-
             tool_name = str(task.get("tool_name") or "unknown").strip()
             if not _VALID_TOOL_NAME.match(tool_name):
                 errors_out.append(f"task_{idx}_invalid_tool_name:{tool_name}")
                 tool_name = "unknown"
-
             tool_args = task.get("tool_args")
             if not isinstance(tool_args, dict):
                 errors_out.append(f"task_{idx}_tool_args_not_object")
                 tool_args = {}
-
             deps = task.get("dependencies")
             if not isinstance(deps, list):
                 errors_out.append(f"task_{idx}_deps_not_list")
                 deps = []
-
             filtered_deps: List[str] = []
             for d in deps:
                 if isinstance(d, str) and _VALID_TOOL_NAME.match(d):
                     filtered_deps.append(d)
                 else:
                     errors_out.append(f"task_{idx}_dep_invalid:{d}")
-
             if not _tool_exists(tool_name):
                 errors_out.append(f"task_{idx}_tool_missing:{tool_name}")
-
             task_id = _canonical_task_id(len(cleaned) + 1)
             while task_id in seen_ids:
                 task_id = _canonical_task_id(len(seen_ids) + len(cleaned) + 1)
             seen_ids.add(task_id)
-
             cleaned.append(
                 PlannedTask(
                     task_id=task_id,
@@ -591,13 +574,12 @@ class LLMGroundedPlanner(BasePlanner):
                     dependencies=filtered_deps,
                 )
             )
-
         if not cleaned:
             raise PlanValidationError("no_valid_tasks", self.name)
         return cleaned
 
     # ----------------------------------------------
-    # Post Validation (cycle detection / global constraints)
+    # Post validation (cycles / global limits)
     # ----------------------------------------------
     def _post_validate(self, plan: MissionPlanSchema):
         graph = {t.task_id: set(t.dependencies) for t in plan.tasks}
@@ -625,10 +607,9 @@ class LLMGroundedPlanner(BasePlanner):
         if len(plan.tasks) > MAX_TASKS_DEFAULT:
             raise PlanValidationError("exceed_global_max_tasks", self.name)
 
-
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 # EXPORTS
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 __all__ = [
     "LLMGroundedPlanner",
     "PlanValidationError",
@@ -637,9 +618,9 @@ __all__ = [
     "PlanningContext",
 ]
 
-# -------------------------------------------------------------------------------------------------
-# MANUAL TEST ENTRY
-# -------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# MANUAL EXECUTION (DEV)
+# --------------------------------------------------------------------------------------
 if __name__ == "__main__":
     ok, reason = LLMGroundedPlanner.self_test()
     print(f"[SELF_TEST] ok={ok} reason={reason}")
@@ -652,4 +633,4 @@ if __name__ == "__main__":
                 print(" -", t.task_id, t.description, t.tool_name)
         except Exception as exc:  # noqa: BLE001
             print("Generation error:", exc)
-# =================================================================================================
+# ======================================================================================
