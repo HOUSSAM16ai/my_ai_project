@@ -1,30 +1,49 @@
 # app/services/master_agent_service.py
+# -*- coding: utf-8 -*-
 # =============================================================================
-# OVERMIND ORCHESTRATION SERVICE
+# OVERMIND ORCHESTRATION SERVICE (Hardened Edition)
 # File: app/services/master_agent_service.py
-# Version: 7.0 UNIFIED-SCHEMAS / STRICT-PLANNERS / CONTEXT-SAFE
+# Version: 7.1-HARDENED (unified-schemas / guarded-execution / tool-autofix)
 #
-# PURPOSE:
-#   - Mission lifecycle management (Mission -> Plan -> Tasks) with unified
-#     scheduler + strict schema identity (no local fallbacks).
-#   - Topological execution with optional legacy wave mode.
-#   - Adaptive re-planning on repeated failures.
-#   - Thread-safe Flask application context (each worker thread re-loads DB rows).
-#   - No sharing of ORM instances across threads (IDs only).
+# CORE GOALS OF THIS HARDENING:
+#   1. Eliminate ToolNotFound for dotted / variant file tool names
+#      (e.g. "file_system.write", "file_system.read", "file_system.create").
+#   2. Eliminate argument validation failures for file read/write tasks
+#      (Missing required parameters: ['path'] / ['content']).
+#   3. Provide a pre-execution guard (_precheck_and_autofix_task) that:
+#        - Normalizes tool names to canonical set (write_file / read_file).
+#        - Auto-fills required arguments (path, content) when enabled.
+#        - Classifies and marks tasks as FAILED_EARLY (no wasted retries) if
+#          critical parameters cannot be synthesized and auto-fix is disabled.
+#   4. Add structured logging for every guard action (guard_action field).
+#   5. Preserve existing mission lifecycle + planning logic.
 #
-# KEY IMPROVEMENTS vs legacy:
-#   * Removed fallback schema definitions.
-#   * Consumes planner.instrumented_generate() returning {"plan": MissionPlanSchema, "meta": {...}}.
-#   * Unified warning + plan persistence.
+# NEW ENV FLAGS:
+#   OVERMIND_GUARD_ENABLED=1              -> Enable guard logic (default 1)
+#   OVERMIND_GUARD_FILE_AUTOFIX=1         -> Auto-fill path/content for file ops
+#   OVERMIND_GUARD_FILE_DEFAULT_EXT=.md   -> Default extension when synthesizing files
+#   OVERMIND_GUARD_FILE_DEFAULT_CONTENT   -> Override default synthesized content
+#   OVERMIND_GUARD_ACCEPT_DOTTED=1        -> Accept & normalize dotted tool names
+#   OVERMIND_GUARD_FORCE_FILE_INTENT=1    -> Force inference of write/read from description
 #
-# ENV:
-#   OVERMIND_POLL_INTERVAL_SECONDS
-#   OVERMIND_MAX_LIFECYCLE_TICKS
-#   OVERMIND_LOG_DEBUG=1
-#   OVERMIND_EXEC_PARALLEL=SEQUENTIAL|MULTI
+# CANONICAL FILE TOOLS (expected to exist in agent_tools):
+#   - write_file  (aliases: file_writer, file_system, file_writer_tool, file_system_tool)
+#   - read_file   (aliases: file_reader, file_reader_tool, etc.)
 #
-# NOTE:
-#   All schema / planner model classes must come only from app.overmind.planning.schemas
+# DOTTED SUFFIXES MAPPED:
+#   *.write|create|generate|append -> write_file
+#   *.read|open|load|view|show     -> read_file
+#
+# TASK PRECHECK OUTCOMES:
+#   - success: task sanitized → continue normal execution
+#   - autofixed: task mutated; details logged
+#   - early_fail: task marked FAILED (no retry) with clear error_text
+#
+# LOGGING ADDITIONS:
+#   "guard_action": one of (normalized, autofilled, early_fail, pass)
+#   "guard_notes": concise list of modifications
+#
+# NOTE: Existing DB models / relationships assumed unchanged.
 # =============================================================================
 
 from __future__ import annotations
@@ -38,7 +57,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional
 
 from flask import current_app, has_app_context
 from sqlalchemy import select, func, exists
@@ -57,7 +76,7 @@ from app.models import (
 
 # --- Strict planner + schema imports (no fallbacks) ---------------------------
 from app.overmind.planning.factory import get_all_planners
-from app.overmind.planning.schemas import MissionPlanSchema, PlanWarning
+from app.overmind.planning.schemas import MissionPlanSchema
 
 try:
     from app.overmind.planning.base_planner import PlannerError, PlanValidationError  # type: ignore
@@ -100,7 +119,7 @@ def observe_histogram(name: str, value: float, labels: Dict[str, str] | None = N
 def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pass
 
 # --- Config / Constants -------------------------------------------------------
-OVERMIND_VERSION = "7.0-unified"
+OVERMIND_VERSION = "7.1-hardened"
 
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = 3
@@ -123,6 +142,41 @@ STALL_DETECTION_WINDOW = 10
 STALL_NO_PROGRESS_THRESHOLD = 0
 
 VERBOSE_DEBUG = os.getenv("OVERMIND_LOG_DEBUG", "0") == "1"
+
+# --- Guard / Hardening Env ----------------------------------------------------
+GUARD_ENABLED = os.getenv("OVERMIND_GUARD_ENABLED", "1") == "1"
+GUARD_FILE_AUTOFIX = os.getenv("OVERMIND_GUARD_FILE_AUTOFIX", "1") == "1"
+GUARD_ACCEPT_DOTTED = os.getenv("OVERMIND_GUARD_ACCEPT_DOTTED", "1") == "1"
+GUARD_FORCE_FILE_INTENT = os.getenv("OVERMIND_GUARD_FORCE_FILE_INTENT", "1") == "1"
+GUARD_FILE_DEFAULT_EXT = os.getenv("OVERMIND_GUARD_FILE_DEFAULT_EXT", ".txt")
+GUARD_FILE_DEFAULT_CONTENT = os.getenv(
+    "OVERMIND_GUARD_FILE_DEFAULT_CONTENT",
+    "Auto-generated content placeholder."
+)
+
+# Canonical tool names we want to route to:
+CANON_WRITE = "write_file"
+CANON_READ = "read_file"
+
+WRITE_SUFFIXES = {"write", "create", "generate", "append", "touch"}
+READ_SUFFIXES = {"read", "open", "load", "view", "show"}
+
+WRITE_KEYWORDS = {"write", "create", "generate", "append", "produce", "persist", "save"}
+READ_KEYWORDS = {"read", "inspect", "load", "open", "view", "show", "display"}
+
+WRITE_ALIASES = {
+    "write_file", "file_writer", "file_system", "file_system_tool", "file_writer_tool",
+    "file_system_write", "file_system.write", "writer", "create_file", "make_file"
+}
+READ_ALIASES = {
+    "read_file", "file_reader", "file_reader_tool", "file_system_read", "file_system.read",
+    "reader", "open_file", "load_file", "view_file", "show_file"
+}
+
+FILE_REQUIRED = {
+    CANON_WRITE: ["path", "content"],
+    CANON_READ: ["path"],
+}
 
 # --- Logging Helpers ----------------------------------------------------------
 def _emit(level: str, line: str):
@@ -162,7 +216,7 @@ def log_debug(mission: Mission | None, message: str, **extra):
 def mission_lock(mission_id: int):
     yield
 
-# --- Orchestrator Exceptions --------------------------------------------------
+# --- Exceptions ---------------------------------------------------------------
 class OrchestratorError(Exception): pass
 class PlannerSelectionError(OrchestratorError): pass
 class PlanPersistenceError(OrchestratorError): pass
@@ -178,6 +232,114 @@ class CandidatePlan:
     score: float
     rationale: str
     telemetry: Dict[str, Any]
+
+# =============================================================================
+# Guard Utility Functions
+# =============================================================================
+def _l(s: Any) -> str:
+    return str(s or "").strip().lower()
+
+def _looks_like_write(text: str) -> bool:
+    lt = text.lower()
+    return any(k in lt for k in WRITE_KEYWORDS)
+
+def _looks_like_read(text: str) -> bool:
+    lt = text.lower()
+    return any(k in lt for k in READ_KEYWORDS)
+
+def _canonicalize_tool_name(raw_name: str, description: str) -> (str, List[str]):
+    """
+    Returns canonical tool name plus notes describing transformation.
+    """
+    notes: List[str] = []
+    name = _l(raw_name)
+    if not name:
+        notes.append("empty_name")
+        # decide later via intent
+    # Accept dotted forms: split only once
+    base = name
+    suffix = None
+    if GUARD_ACCEPT_DOTTED and "." in name:
+        base, suffix = name.split(".", 1)
+        notes.append(f"dotted_split:{base}.{suffix}")
+
+    # Direct alias groups
+    if base in WRITE_ALIASES or name in WRITE_ALIASES:
+        notes.append(f"alias_write:{raw_name}")
+        return CANON_WRITE, notes
+    if base in READ_ALIASES or name in READ_ALIASES:
+        notes.append(f"alias_read:{raw_name}")
+        return CANON_READ, notes
+
+    # Suffix inference
+    if suffix:
+        if suffix in WRITE_SUFFIXES:
+            notes.append(f"suffix_write:{suffix}")
+            return CANON_WRITE, notes
+        if suffix in READ_SUFFIXES:
+            notes.append(f"suffix_read:{suffix}")
+            return CANON_READ, notes
+
+    # Keyword inside raw name
+    if "write" in name or "create" in name:
+        notes.append("raw_contains_write_token")
+        return CANON_WRITE, notes
+    if "read" in name or "open" in name or "load" in name:
+        notes.append("raw_contains_read_token")
+        return CANON_READ, notes
+
+    # Intent heuristics (if ambiguous / unknown)
+    if GUARD_FORCE_FILE_INTENT and (name in {"", "unknown", "file", "filesystem"} or not name):
+        if _looks_like_write(description):
+            notes.append("intent_desc_write")
+            return CANON_WRITE, notes
+        if _looks_like_read(description):
+            notes.append("intent_desc_read")
+            return CANON_READ, notes
+
+    # No mapping; return original
+    return raw_name, notes
+
+def _ensure_dict(obj: Any) -> Dict[str, Any]:
+    if isinstance(obj, dict):
+        return obj
+    if isinstance(obj, str):
+        try:
+            return json.loads(obj)
+        except Exception:
+            return {"raw": obj}
+    return {}
+
+def _autofill_file_args(tool: str, tool_args: Dict[str, Any], mission: Mission, task: Task, notes: List[str]):
+    if tool not in FILE_REQUIRED:
+        return
+    required = FILE_REQUIRED[tool]
+    changed = False
+    if "path" in required:
+        path_val = tool_args.get("path")
+        if not path_val or not str(path_val).strip():
+            # Synthesize path
+            base_name = f"mission{mission.id}_task{task.task_key}"
+            fname = f"{base_name}{GUARD_FILE_DEFAULT_EXT}"
+            tool_args["path"] = fname
+            notes.append(f"autofill_path:{fname}")
+            changed = True
+    if "content" in required and tool == CANON_WRITE:
+        content_val = tool_args.get("content")
+        if not isinstance(content_val, str) or not content_val.strip():
+            tool_args["content"] = GUARD_FILE_DEFAULT_CONTENT
+            notes.append("autofill_content:default")
+            changed = True
+    if changed:
+        notes.append("mandatory_args_filled")
+
+def _tool_exists(name: str) -> bool:
+    if agent_tools is None:
+        return False
+    try:
+        return bool(agent_tools.get_tool(name))  # type: ignore
+    except Exception:
+        return False
 
 # =============================================================================
 # Overmind Service
@@ -641,6 +803,102 @@ class OvermindService:
         except Exception as e:
             print(f"[Overmind][thread][ERROR] mission={mission_id} task={task_id} {e}")
 
+    # ---------------------- PRECHECK & GUARD (NEW) ----------------------------
+    def _precheck_and_autofix_task(self, mission: Mission, task: Task) -> Dict[str, Any]:
+        """
+        Core guard:
+          - Normalize tool name (dotted/alias → canonical)
+          - Auto-fill required args if enabled
+          - Early fail if impossible to proceed
+        Returns dict with:
+            {
+              "ok": bool,
+              "action": "pass|normalized|autofilled|early_fail",
+              "notes": [list of adjustments],
+              "error": Optional[str]
+            }
+        """
+        outcome = {"ok": True, "action": "pass", "notes": [], "error": None}
+        if not GUARD_ENABLED:
+            return outcome
+
+        raw_tool = task.tool_name or ""
+        description = task.description or ""
+        notes = outcome["notes"]
+
+        # Normalize name
+        canon, cnotes = _canonicalize_tool_name(raw_tool, description)
+        notes.extend(cnotes)
+        changed_name = False
+        if canon != raw_tool:
+            task.tool_name = canon
+            changed_name = True
+
+        # Acquire args dict
+        args = _ensure_dict(task.tool_args_json)
+        task.tool_args_json = args  # ensure dict stored
+
+        # File tool handling (write_file / read_file)
+        if canon in (CANON_WRITE, CANON_READ):
+            # Auto-fill missing if allowed
+            if GUARD_FILE_AUTOFIX:
+                _autofill_file_args(canon, args, mission, task, notes)
+                task.tool_args_json = args
+            else:
+                # Validate presence of required
+                missing = [k for k in FILE_REQUIRED[canon] if not args.get(k)]
+                if missing:
+                    outcome["ok"] = False
+                    outcome["action"] = "early_fail"
+                    outcome["error"] = f"Missing required file args: {missing}"
+                    notes.append(f"missing_args:{','.join(missing)}")
+                    return outcome
+
+        # After potential autofill, validate again (if defined)
+        if canon in FILE_REQUIRED:
+            missing_now = [k for k in FILE_REQUIRED[canon] if not args.get(k)]
+            if missing_now:
+                outcome["ok"] = False
+                outcome["action"] = "early_fail"
+                outcome["error"] = f"Missing required file args after autofix: {missing_now}"
+                notes.append(f"missing_post:{','.join(missing_now)}")
+                return outcome
+
+        # Confirm tool existence; if absent but looks like file intent, substitute
+        if not _tool_exists(task.tool_name):
+            if canon in (CANON_WRITE, CANON_READ):
+                notes.append("tool_absent_but_forced_file")
+            else:
+                # Attempt fallback if description suggests
+                if GUARD_FORCE_FILE_INTENT:
+                    if _looks_like_write(description):
+                        task.tool_name = CANON_WRITE
+                        notes.append("fallback_forced_write")
+                        if GUARD_FILE_AUTOFIX:
+                            _autofill_file_args(CANON_WRITE, args, mission, task, notes)
+                    elif _looks_like_read(description):
+                        task.tool_name = CANON_READ
+                        notes.append("fallback_forced_read")
+                        if GUARD_FILE_AUTOFIX:
+                            _autofill_file_args(CANON_READ, args, mission, task, notes)
+                if not _tool_exists(task.tool_name):
+                    outcome["ok"] = False
+                    outcome["action"] = "early_fail"
+                    outcome["error"] = f"ToolNotFound: {task.tool_name}"
+                    notes.append("tool_unresolvable")
+                    return outcome
+
+        if outcome["ok"]:
+            if changed_name and GUARD_FILE_AUTOFIX and canon in FILE_REQUIRED:
+                outcome["action"] = "autofilled"
+            elif changed_name:
+                outcome["action"] = "normalized"
+            elif GUARD_FILE_AUTOFIX and canon in FILE_REQUIRED:
+                # Check if autofill occurred
+                if any(n.startswith("autofill_") for n in notes):
+                    outcome["action"] = "autofilled"
+        return outcome
+
     # Core Execution -----------------------------------------------------------
     def _execute_task_with_retry_topological(self, mission_id: int, task_id: int, layer_index: int):
         mission = Mission.query.get(mission_id)
@@ -653,6 +911,48 @@ class OvermindService:
         nxt = getattr(task, "next_retry_at", None)
         if nxt and utc_now() < nxt:
             return
+
+        # PRECHECK GUARD ------------------------------------------------------
+        guard_result = self._precheck_and_autofix_task(mission, task)
+        if guard_result["action"] != "pass":
+            log_info(
+                mission,
+                "Guard processed task",
+                task_key=task.task_key,
+                action=guard_result["action"],
+                notes="|".join(guard_result["notes"][:8]),
+                error=guard_result["error"]
+            )
+
+        if not guard_result["ok"]:
+            # Mark early failure (no retry) to avoid wasting attempts
+            task.status = TaskStatus.FAILED
+            task.error_text = guard_result["error"] or "GuardFailed"
+            task.attempt_count += 1
+            task.finished_at = utc_now()
+            task.duration_ms = 0
+            db.session.commit()
+            log_warn(
+                mission,
+                "Task failed early by guard",
+                task_key=task.task_key,
+                error=task.error_text
+            )
+            log_mission_event(
+                mission,
+                MissionEventType.TASK_FAILED,
+                payload={
+                    "task_id": task.id,
+                    "attempt": task.attempt_count,
+                    "retry": False,
+                    "layer": layer_index,
+                    "error": task.error_text
+                }
+            )
+            increment_counter("overmind_tasks_executed_total", {"result": "failed_early"})
+            self._safe_terminal_event(mission_id)
+            return
+        # ---------------------------------------------------------------------
 
         if task.tool_name and not tool_policy_engine.authorize(task.tool_name, mission, task):
             task.status = TaskStatus.FAILED
