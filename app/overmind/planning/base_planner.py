@@ -1,47 +1,32 @@
 # app/overmind/planning/base_planner.py
-# # -*- coding: utf-8 -*-
-# # -*- coding: utf-8 -*-
 # ======================================================================================
 # app/overmind/planning/base_planner.py
 # ======================================================================================
-# THE STRATEGIST'S CODEX  v3.1  "STRATEGIST CODEX / GOVERNANCE / RELIABILITY dna"
+# STRATEGIST CORE v3.2
 #
-# PURPOSE (UPDATED):
-#   Hardened abstract planner foundation with:
-#     - Governance (allow / block lists, environment awareness)
-#     - Quarantine & self-test admission control
-#     - Exponential–decay reliability model (time weighted + Laplace smoothing)
-#     - Telemetry + selection scoring heuristics
-#     - Capabilities + tiers + risk rating metadata
-#     - Instrumented synchronous & asynchronous generation wrappers
-#     - Timeout enforcement (threaded + asyncio.wait_for)
-#     - Robust plan validation placeholder + DAG node counting heuristic
-#     - Safe registration (idempotent, thread-safe) & metadata export helpers
-#     - EXTENDED ERROR MODEL: PlannerError now safely accepts **extra without انفجار
-#     - Extra diagnostic helpers & snapshot methods
+# PURPOSE:
+#   Hardened abstract planner foundation providing:
+#     - Governance (allow/block lists, quarantine, environment awareness)
+#     - Self-test admission control
+#     - Exponential-decay reliability model (Laplace smoothed)
+#     - Telemetry + selection scoring
+#     - Capabilities / tiers / risk metadata
+#     - Sync & async instrumented wrappers with timeouts
+#     - Uniform PlannerError supporting **extra metadata
+#     - Optional duck-type adaptation for plan objects
 #
-# CHANGE LOG (v3.1):
-#   * PlannerError now accepts **extra (stores sanitized copy in .extra / .extra_flat).
-#   * Added PlannerError.to_dict() for structured logging downstream.
-#   * Added defensive logging around registration & self-test.
-#   * Slightly clearer reliability snapshot metadata & docstrings.
-#   * Non-breaking: existing raises without extra still تعمل كما هي.
+# ENV VARS:
+#   OVERMIND_ENV=prod|dev
+#   PLANNERS_ALLOW="llm_grounded_planner,..."
+#   PLANNERS_BLOCK="legacy_planner,stub,..."
+#   PLANNER_DECAY_HALF_LIFE=900
+#   PLANNER_MIN_RELIABILITY=0.05
+#   PLANNER_SELF_TEST_TIMEOUT=5
+#   PLANNER_DEFAULT_TIMEOUT=40
+#   PLANNER_DISABLE_QUARANTINE=0|1
 #
-# ENV VARS (unchanged):
-#     OVERMIND_ENV=prod|dev
-#     PLANNERS_ALLOW="llm_grounded_planner,..."
-#     PLANNERS_BLOCK="legacy_planner,stub,..."
-#     PLANNER_DECAY_HALF_LIFE=900
-#     PLANNER_MIN_RELIABILITY=0.05
-#     PLANNER_SELF_TEST_TIMEOUT=5
-#     PLANNER_DEFAULT_TIMEOUT=40
-#     PLANNER_DISABLE_QUARANTINE=0|1
-#
-# COMPATIBILITY:
-#   - Existing imports of: BasePlanner, PlannerError, PlanValidationError remain valid.
-#   - Subclasses need no modification unless they relied on previous exception message
-#     EXACT formatting (only appended extras when present).
-#
+# NOTE:
+#   All schemas must come from app.overmind.planning.schemas (single source).
 # ======================================================================================
 
 from __future__ import annotations
@@ -60,24 +45,12 @@ from typing import (
 )
 
 # --------------------------------------------------------------------------------------
-# Soft schema imports (fallbacks)
+# Strict schema imports (NO fallback). ImportError should surface immediately.
 # --------------------------------------------------------------------------------------
-try:  # pragma: no cover
-    from .schemas import MissionPlanSchema, PlanningContext  # type: ignore
-except Exception:  # pragma: no cover
-    @dataclass
-    class MissionPlanSchema:  # type: ignore
-        objective: str
-        tasks: List[Any]
-
-    @dataclass
-    class PlanningContext:  # type: ignore
-        past_failures: Optional[List[str]] = None
-        user_preferences: Optional[Dict[str, Any]] = None
-        tags: Optional[List[str]] = None
+from .schemas import MissionPlanSchema, PlanningContext  # type: ignore
 
 # --------------------------------------------------------------------------------------
-# Logging Setup
+# Logging
 # --------------------------------------------------------------------------------------
 logger = logging.getLogger("overmind.planning.base_planner")
 if not logger.handlers:
@@ -87,34 +60,17 @@ if not logger.handlers:
     )
 
 # ======================================================================================
-# Exception Hierarchy (HARDENED)
+# Exceptions
 # ======================================================================================
 
 def _flatten_extras(extra: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Flattens any nested simple dict one level for compact logging.
-    Only shallow flattening - complex nested structures are kept as-is.
-    """
     flat: Dict[str, Any] = {}
     for k, v in extra.items():
-        if isinstance(v, dict):
-            # Keep nested dict intact; avoid deep recursion for predictability
-            flat[k] = v
-        else:
-            flat[k] = v
+        flat[k] = v
     return flat
 
 
 class PlannerError(Exception):
-    """
-    خط الدفاع ضد انفجار الاستثناءات بسبب وسيط extra.
-    يمكن الآن تمرير أي مفاتيح إضافية بدون كسر السلسلة.
-
-    message       : النص الأساسي
-    planner_name  : اسم المخطط (تلقائياً unknown_planner إذا غير معروف)
-    objective     : الهدف الحالي (للسياق)
-    **extra       : أي ميتاداتا (errors, error_code, raw, attempt, إلخ)
-    """
     def __init__(
         self,
         message: str,
@@ -123,7 +79,6 @@ class PlannerError(Exception):
         **extra: Any
     ):
         base_msg = f"[{planner_name}] objective='{objective}' :: {message}"
-        # فقط أضف ملخصاً صغيراً للـ extras إلى النص إن وُجد (لا تتجاوز 180 حرفاً)
         if extra:
             try:
                 flat = _flatten_extras(extra)
@@ -137,7 +92,7 @@ class PlannerError(Exception):
                 if len(preview_str) > 180:
                     preview_str = preview_str[:177] + "..."
                 base_msg += f" | extra: {preview_str}"
-            except Exception as e:  # لا تفشل بسبب تنسيق
+            except Exception as e:
                 base_msg += f" | extra_format_error={e!r}"
         super().__init__(base_msg)
         self.planner_name = planner_name
@@ -160,27 +115,23 @@ class PlannerError(Exception):
 
 
 class PlanValidationError(PlannerError):
-    """ Raised when validation of produced plan structure/content fails. """
     pass
 
 
 class ExternalServiceError(PlannerError):
-    """ Wraps errors originating in external APIs / remote services. """
     pass
 
 
 class PlannerTimeoutError(PlannerError):
-    """ Raised when planner execution exceeds enforced timeout. """
     pass
 
 
 class PlannerAdmissionError(PlannerError):
-    """ Raised when planner is blocked, quarantined, or not registered. """
     pass
 
 
 # --------------------------------------------------------------------------------------
-# Environment & Governance
+# Environment / Governance
 # --------------------------------------------------------------------------------------
 _ENV = os.getenv("OVERMIND_ENV", "dev").strip().lower()
 _ALLOW_LIST = {
@@ -198,7 +149,7 @@ _DISABLE_QUARANTINE = os.getenv("PLANNER_DISABLE_QUARANTINE", "0") == "1"
 _NAME_PATTERN = re.compile(r"^[a-z0-9_][a-z0-9_\-]{2,63}$")
 
 # --------------------------------------------------------------------------------------
-# Reliability State Model (with exponential decay)
+# Reliability State
 # --------------------------------------------------------------------------------------
 @dataclass
 class _ReliabilityState:
@@ -212,19 +163,16 @@ class _ReliabilityState:
     registration_time: float = field(default_factory=time.time)
     last_error: Optional[str] = None
 
-    # Governance extended attributes
     quarantined: bool = False
     self_test_passed: Optional[bool] = None
     production_ready: bool = False
-    tier: str = "experimental"          # core | experimental | shadow
-    risk_rating: str = "medium"         # low | medium | high
+    tier: str = "experimental"
+    risk_rating: str = "medium"
 
     def decay(self, now: Optional[float] = None):
         now = now or time.time()
         dt = now - self.last_update_ts
-        if dt <= 0:
-            return
-        if _DECAY_HALF_LIFE <= 0:
+        if dt <= 0 or _DECAY_HALF_LIFE <= 0:
             self.last_update_ts = now
             return
         factor = 0.5 ** (dt / _DECAY_HALF_LIFE)
@@ -234,20 +182,19 @@ class _ReliabilityState:
 
     def update(self, success: bool, duration_seconds: float):
         self.decay()
-        weight = 1.0
         if success:
-            self.success_weight += weight
+            self.success_weight += 1.0
             self.last_success_ts = time.time()
         else:
-            self.failure_weight += weight
+            self.failure_weight += 1.0
             self.total_failures += 1
         self.total_invocations += 1
         self.total_duration_ms += duration_seconds * 1000.0
 
     def reliability_score(self) -> float:
-        numerator = self.success_weight + 1.0
-        denom = self.success_weight + self.failure_weight + 2.0
-        score = numerator / denom if denom > 0 else 0.5
+        num = self.success_weight + 1.0
+        den = self.success_weight + self.failure_weight + 2.0
+        score = num / den if den > 0 else 0.5
         return max(0.0, min(1.0, score))
 
     @property
@@ -258,20 +205,13 @@ class _ReliabilityState:
 
 
 # --------------------------------------------------------------------------------------
-# Base Planner
+# BasePlanner
 # --------------------------------------------------------------------------------------
 class BasePlanner:
-    """
-    Abstract Planner Base.
-    Subclasses must implement generate_plan().
-    """
-
-    # Registry
     _registry: ClassVar[Dict[str, Type["BasePlanner"]]] = {}
     _reliability: ClassVar[Dict[str, _ReliabilityState]] = {}
     _lock: ClassVar[threading.RLock] = threading.RLock()
 
-    # Required/optional class attributes
     name: ClassVar[str] = "abstract_base"
     version: ClassVar[Optional[str]] = None
     capabilities: ClassVar[Set[str]] = set()
@@ -279,9 +219,8 @@ class BasePlanner:
     tier: ClassVar[str] = "experimental"
     risk_rating: ClassVar[str] = "medium"
     default_timeout_seconds: ClassVar[Optional[float]] = None
-    allow_registration: ClassVar[bool] = True  # set to False on test stubs
+    allow_registration: ClassVar[bool] = True
 
-    # ----- Admission & Registration Hooks -----
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         try:
@@ -293,34 +232,27 @@ class BasePlanner:
     def _attempt_register(cls, planner_cls: Type["BasePlanner"]):
         if planner_cls is BasePlanner:
             return
-
         if not getattr(planner_cls, "allow_registration", True):
             logger.debug("Planner %s registration skipped (allow_registration=False).", planner_cls.__name__)
             return
-
         planner_name = getattr(planner_cls, "name", None)
         if not isinstance(planner_name, str):
-            logger.error("Planner class %s missing 'name' attribute (str).", planner_cls.__name__)
+            logger.error("Planner class %s missing 'name' attribute.", planner_cls.__name__)
             return
-
         key = planner_name.strip().lower()
         if not _NAME_PATTERN.match(key):
-            logger.error("Planner name '%s' invalid (pattern mismatch). Skipped.", key)
+            logger.error("Planner name '%s' invalid (pattern).", key)
             return
-
         if key in _BLOCK_LIST:
             logger.warning("Planner '%s' blocked via PLANNERS_BLOCK.", key)
             return
-
         if _ALLOW_LIST and key not in _ALLOW_LIST:
             logger.info("Planner '%s' skipped (not in PLANNERS_ALLOW).", key)
             return
-
         with cls._lock:
             if key in cls._registry:
-                logger.debug("Planner '%s' already registered. Skipping duplicate.", key)
+                logger.debug("Planner '%s' already registered.", key)
                 return
-
             state = _ReliabilityState(
                 quarantined=not _DISABLE_QUARANTINE,
                 production_ready=getattr(planner_cls, "production_ready", False),
@@ -329,10 +261,8 @@ class BasePlanner:
             )
             cls._registry[key] = planner_cls
             cls._reliability[key] = state
-
         logger.info("Registered planner '%s' (tier=%s prod_ready=%s quarantine=%s)",
                     key, state.tier, state.production_ready, state.quarantined)
-
         cls._run_self_test(planner_cls, key, state)
 
     @classmethod
@@ -380,22 +310,22 @@ class BasePlanner:
             if not _DISABLE_QUARANTINE:
                 state.quarantined = True
             else:
-                logger.warning("Quarantine disabled; allowing planner '%s' despite failed self-test.", key)
+                logger.warning("Quarantine disabled; allowing planner '%s' after failed self-test.", key)
         else:
             state.self_test_passed = True
             if planner_cls.production_ready or _ENV != "prod" or _DISABLE_QUARANTINE:
                 state.quarantined = False
             logger.info("Planner '%s' self-test PASSED (quarantine=%s).", key, state.quarantined)
 
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Abstract contract
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def generate_plan(
         self,
         objective: str,
         context: Optional[PlanningContext] = None
     ) -> MissionPlanSchema:
-        raise NotImplementedError("Subclasses must implement generate_plan()")
+        raise NotImplementedError
 
     async def a_generate_plan(
         self,
@@ -405,9 +335,9 @@ class BasePlanner:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.generate_plan, objective, context)
 
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Validation hook
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def validate_plan(
         self,
         plan: MissionPlanSchema,
@@ -419,9 +349,9 @@ class BasePlanner:
         if not hasattr(plan, "tasks"):
             raise PlanValidationError("Plan missing 'tasks' attribute.", self.name, objective)
 
-    # ----------------------------------------------------------------------------------
-    # Reliability Utilities
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Reliability
+    # ------------------------------------------------------------------
     @classmethod
     def _update_reliability(cls, name: str, success: bool, duration_seconds: float, error: Optional[str] = None):
         lower = name.lower()
@@ -431,7 +361,7 @@ class BasePlanner:
                 return
             state.update(success, duration_seconds)
             if not success and error:
-                state.last_error = (error[:240] if error else None)
+                state.last_error = error[:240]
             if success and state.quarantined and state.self_test_passed is not False:
                 state.quarantined = False
 
@@ -462,20 +392,16 @@ class BasePlanner:
                     "production_ready": st.production_ready,
                     "tier": st.tier,
                     "risk_rating": st.risk_rating,
-                    "last_error": st.last_error
+                    "last_error": st.last_error,
+                    "version": getattr(cls._registry.get(name), "version", None),
+                    "capabilities": sorted(getattr(cls._registry.get(name), "capabilities", [])),
                 }
-                planner_cls = cls._registry.get(name)
-                if planner_cls:
-                    meta.update({
-                        "version": getattr(planner_cls, "version", None),
-                        "capabilities": sorted(getattr(planner_cls, "capabilities", [])),
-                    })
                 data[name] = meta
         return data
 
-    # ----------------------------------------------------------------------------------
-    # Planner retrieval / filtering
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Retrieval
+    # ------------------------------------------------------------------
     @classmethod
     def get_planner_class(cls, name: str) -> Type["BasePlanner"]:
         key = name.lower()
@@ -527,9 +453,9 @@ class BasePlanner:
             st.quarantined = False
             return True
 
-    # ----------------------------------------------------------------------------------
-    # Timeout Execution (Sync)
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Timeout helpers (sync)
+    # ------------------------------------------------------------------
     def _run_with_timeout(
         self,
         objective: str,
@@ -561,12 +487,20 @@ class BasePlanner:
             raise PlannerError(str(err), self.name, objective) from err
         result = container.get("result")
         if not isinstance(result, MissionPlanSchema):
+            # Duck-type adaptation (optional safeguard)
+            if hasattr(result, "objective") and hasattr(result, "tasks"):
+                raise PlannerError(
+                    "Planner returned non-canonical MissionPlanSchema (duck-type detected). "
+                    "Ensure all planners import schemas.MissionPlanSchema.",
+                    self.name,
+                    objective
+                )
             raise PlannerError("Planner returned invalid result type.", self.name, objective)
         return result
 
-    # ----------------------------------------------------------------------------------
-    # Timeout Execution (Async)
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Timeout helpers (async)
+    # ------------------------------------------------------------------
     async def _a_run_with_timeout(
         self,
         objective: str,
@@ -579,11 +513,11 @@ class BasePlanner:
                 timeout=timeout
             )
         except asyncio.TimeoutError as exc:
-            raise PlannerTimeoutError(f"Async timeout {timeout:.2f}s exceeded", self.name, objective) from exc
+            raise PlannerTimeoutError(f"Async timeout {timeout:.2f}s exceeded.", self.name, objective) from exc
 
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Instrumented sync
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def instrumented_generate(
         self,
         objective: str,
@@ -618,10 +552,7 @@ class BasePlanner:
         finally:
             duration = time.perf_counter() - start
             BasePlanner._update_reliability(
-                self.name,
-                success_flag,
-                duration,
-                error=str(error_obj) if error_obj else None
+                self.name, success_flag, duration, error=str(error_obj) if error_obj else None
             )
 
         try:
@@ -654,9 +585,9 @@ class BasePlanner:
         meta["selection_score"] = round(self.compute_selection_score(objective, None), 4)
         return {"plan": plan, "meta": meta}
 
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Instrumented async
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     async def a_instrumented_generate(
         self,
         objective: str,
@@ -691,10 +622,7 @@ class BasePlanner:
         finally:
             duration = time.perf_counter() - start
             BasePlanner._update_reliability(
-                self.name,
-                success_flag,
-                duration,
-                error=str(error_obj) if error_obj else None
+                self.name, success_flag, duration, error=str(error_obj) if error_obj else None
             )
 
         try:
@@ -727,9 +655,9 @@ class BasePlanner:
         meta["selection_score"] = round(self.compute_selection_score(objective, None), 4)
         return {"plan": plan, "meta": meta}
 
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Helpers
-    # ----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def _infer_node_count(self, plan: MissionPlanSchema) -> Optional[int]:
         for attr in ("tasks", "nodes", "steps"):
             if hasattr(plan, attr):
@@ -752,15 +680,11 @@ class BasePlanner:
             match = len(caps & desired_capabilities) / max(1, len(desired_capabilities))
         else:
             match = 1.0 if caps else 0.5
-
-        objective_length = len(objective or "")
-        length_factor = min(objective_length / 500.0, 1.0)
+        length_factor = min(len(objective or "") / 500.0, 1.0)
         length_component = 0.10 * length_factor
-
         tier = getattr(self, "tier", "experimental")
         tier_adjust = {"core": 0.05, "experimental": 0.0, "shadow": -0.03}.get(tier, 0.0)
         prod_adjust = 0.03 if getattr(self, "production_ready", False) else 0.0
-
         base = rel_score * 0.55 + match * 0.30 + length_component
         score = base + tier_adjust + prod_adjust
         return max(0.0, min(1.0, score))
@@ -784,7 +708,7 @@ class BasePlanner:
 
 
 # --------------------------------------------------------------------------------------
-# Public metadata functions
+# Public utility functions
 # --------------------------------------------------------------------------------------
 def list_planner_metadata() -> Dict[str, Any]:
     return BasePlanner.planner_metadata()
@@ -809,7 +733,6 @@ __all__ = [
     "instantiate_all_planners",
     "get_planner_instance",
 ]
-
 # ======================================================================================
 # END OF FILE
 # ======================================================================================
