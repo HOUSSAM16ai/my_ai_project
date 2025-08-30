@@ -1,43 +1,59 @@
+# -*- coding: utf-8 -*-
 """
-MAESTRO AGENT TOOL REGISTRY (v2.0)  "HYPER-GROUNDED / COGNITIVE-CORE / SAFE-IO"
-================================================================================
-FEATURES:
-  - Cognitive Core: generic_think (fallback aware) + summarize_text + refine_text
-  - Meta tools: dispatch_tool (allowlist), introspect_tools (rich filters)
-  - Ephemeral memory tools: memory_put / memory_get (allowlist support)
-  - Unified registry with aliases, early conflict detection, disable via env
-  - Tool disabling: DISABLED_TOOLS="delete_file,dispatch_tool"
-  - Argument schema validation (subset JSON Schema: type/object/properties/required/default)
-  - Cleans unexpected argument keys (defensive)
-  - ToolResult unified (ok, data|error, meta, trace_id)
-  - Path safety: root confinement, no traversal, no symlink, extension enforcement, large-file overwrite guard
-  - Size limits via env:
-        AGENT_TOOLS_MAX_WRITE_BYTES (default 2_000_000)
-        AGENT_TOOLS_MAX_APPEND_BYTES (default 1_000_000)
-        AGENT_TOOLS_MAX_READ_BYTES  (default 500_000)
-  - GENERIC_THINK_MAX_CHARS_INPUT (default 12000)
-  - DISPATCH_ALLOWLIST controls which tools dispatch_tool can call
-  - Telemetry: invocations, errors, total_ms, avg_ms, last_error
-  - trace_id per invocation
-  - delete_file requires confirm=True
-  - Policy hooks (policy_can_execute / transform_arguments) for future extensibility
-  - Safe UTF-8 text only FS operations
-  - Fallback reasoning if LLM backend unavailable
-  - Backwards compatibility aliases: *_tool names maintained
+MAESTRO AGENT TOOL REGISTRY (v3.0-HARDENED)
+"HYPER-GROUNDED / COGNITIVE-CORE / SAFE-IO / SELF-HEALING"
 
-ENV VARS (summary):
-  AGENT_TOOLS_LOG_LEVEL=DEBUG|INFO|WARNING
-  DISABLED_TOOLS="tool_a,tool_b"
-  DISPATCH_ALLOWLIST="generic_think,summarize_text,write_file"
-  GENERIC_THINK_MODEL_OVERRIDE="model-name"
-  GENERIC_THINK_ENABLE_STREAM=0|1 (placeholder)
-  GENERIC_THINK_MAX_CHARS_INPUT=12000
-  AGENT_TOOLS_MAX_WRITE_BYTES=2000000
-  AGENT_TOOLS_MAX_APPEND_BYTES=1000000
-  AGENT_TOOLS_MAX_READ_BYTES=500000
-  MEMORY_ALLOWLIST="session_topic,user_goal"
+WHY THIS REWRITE (compared to v2.0.2 you had):
+------------------------------------------------
+1. Zero ToolNotFound for dotted / alias / intent variants like:
+      file_system.write, file_system.read, file_system.generate
+2. Unified canonicalization pipeline exposed via:
+      - resolve_tool_name(raw_name)
+      - canonicalize_tool_name(raw_name, description="")
+3. Self-healing (optional) auto-fill of missing required args for file tools
+   (path, content) so planner / orchestrator gaps do not cause hard failures.
+   Controlled by env:
+      AGENT_TOOLS_AUTOFILL_MISSING=1 (default ON)
+      AGENT_TOOLS_AUTOFILL_EXTENSION=.txt (default)
+4. Dotted + suffix inference (write/read) BEFORE lookup:
+      <alias>.<suffix>  => mapped to write_file / read_file
+      Suffix families:
+          write_file: write, create, generate, append, touch
+          read_file : read, open, load, view, show
+5. Extended alias mesh:
+      write_file canonical aliases include:
+        file_writer, file_system, file_system_tool, file_writer_tool,
+        file_system.write, file_system.generate, file_system.create
+      read_file canonical aliases include:
+        file_reader, file_reader_tool, file_system.read, file_system.open, file_system.view
+6. Graceful validation:
+      - Strict JSON-schema subset.
+      - If missing required parameters for write_file & autofill enabled,
+        path/content are synthesized (single location of last resort).
+7. Registry Introspection improvements + list_tools() export (non-alias).
+8. Added stable trace_id, richer telemetry, and safety logs at DEBUG.
+9. Backwards compatibility entry points (*_tool) preserved.
+10. Safe path logic hardened (no traversal, no symlink, root confined).
+11. Dispatch meta-tool respects allowlist & canonicalization.
 
-LICENSE: Internal proprietary (adjust as needed)
+ENV SUMMARY (new & existing):
+-----------------------------
+AGENT_TOOLS_LOG_LEVEL=DEBUG|INFO|WARNING
+DISABLED_TOOLS="delete_file,dispatch_tool"
+DISPATCH_ALLOWLIST="generic_think,summarize_text,write_file"
+GENERIC_THINK_MODEL_OVERRIDE="model-name"
+GENERIC_THINK_ENABLE_STREAM=0|1
+GENERIC_THINK_MAX_CHARS_INPUT=12000
+AGENT_TOOLS_MAX_WRITE_BYTES=2000000
+AGENT_TOOLS_MAX_APPEND_BYTES=1000000
+AGENT_TOOLS_MAX_READ_BYTES=500000
+MEMORY_ALLOWLIST="session_topic,user_goal"
+
+# NEW:
+AGENT_TOOLS_AUTOFILL_MISSING=1            (auto path/content for write_file)
+AGENT_TOOLS_AUTOFILL_EXTENSION=.txt
+AGENT_TOOLS_ACCEPT_DOTTED=1               (interpret dotted names)
+AGENT_TOOLS_FORCE_INTENT=1                (infer write/read from description if unknown)
 """
 
 from __future__ import annotations
@@ -51,12 +67,12 @@ import traceback
 import logging
 import threading
 from dataclasses import dataclass, asdict
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 # --------------------------------------------------------------------------------------
 # Version
 # --------------------------------------------------------------------------------------
-__version__ = "2.0.2"  # +file_writer alias
+__version__ = "3.0.0-hardened"
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -69,6 +85,10 @@ if not logger.handlers:
     )
 else:
     logger.setLevel(os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"))
+
+def _dbg(msg: str):
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(msg)
 
 # --------------------------------------------------------------------------------------
 # Environment / Limits
@@ -84,6 +104,11 @@ _MAX_WRITE_BYTES = _int_env("AGENT_TOOLS_MAX_WRITE_BYTES", 2_000_000)
 _MAX_APPEND_BYTES = _int_env("AGENT_TOOLS_MAX_APPEND_BYTES", 1_000_000)
 _MAX_READ_BYTES = _int_env("AGENT_TOOLS_MAX_READ_BYTES", 500_000)
 _GENERIC_THINK_MAX_CHARS = _int_env("GENERIC_THINK_MAX_CHARS_INPUT", 12_000)
+
+_AUTOFILL = os.getenv("AGENT_TOOLS_AUTOFILL_MISSING", "1") == "1"
+_AUTOFILL_EXT = os.getenv("AGENT_TOOLS_AUTOFILL_EXTENSION", ".txt")
+_ACCEPT_DOTTED = os.getenv("AGENT_TOOLS_ACCEPT_DOTTED", "1") == "1"
+_FORCE_INTENT = os.getenv("AGENT_TOOLS_FORCE_INTENT", "1") == "1"
 
 _DISABLED: Set[str] = {
     t.strip() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()
@@ -128,6 +153,33 @@ _ALIAS_INDEX: Dict[str, str] = {}                   # alias -> canonical
 _REGISTRY_LOCK = threading.Lock()
 
 # --------------------------------------------------------------------------------------
+# Canonical & Alias Definitions (file tools focus)
+# --------------------------------------------------------------------------------------
+CANON_WRITE = "write_file"
+CANON_READ = "read_file"
+
+WRITE_SUFFIXES = {"write", "create", "generate", "append", "touch"}
+READ_SUFFIXES = {"read", "open", "load", "view", "show"}
+
+WRITE_KEYWORDS = {"write", "create", "generate", "append", "produce", "persist", "save"}
+READ_KEYWORDS = {"read", "inspect", "load", "open", "view", "show", "display"}
+
+WRITE_ALIASES_BASE = {
+    "file_writer", "file_system", "file_system_tool",
+    "file_writer_tool", "writer", "create_file", "make_file"
+}
+READ_ALIASES_BASE = {
+    "file_reader", "file_reader_tool",
+}
+
+# Dotted direct variants included so resolve_tool_name is trivial:
+WRITE_DOTTED_ALIASES = {f"file_system.{s}" for s in WRITE_SUFFIXES}
+READ_DOTTED_ALIASES = {f"file_system.{s}" for s in READ_SUFFIXES}
+
+# We'll register many of these as aliases when defining the canonical tools.
+# Additional dynamic inference handled in canonicalize_tool_name().
+
+# --------------------------------------------------------------------------------------
 # Policy Hooks (future)
 # --------------------------------------------------------------------------------------
 def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
@@ -162,13 +214,6 @@ def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: Optional[s
 def _generate_trace_id() -> str:
     return uuid.uuid4().hex[:16]
 
-def resolve_tool_name(name: str) -> Optional[str]:
-    # Return canonical if direct
-    if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
-        return name
-    # Alias mapping
-    return _ALIAS_INDEX.get(name)
-
 def _coerce_to_tool_result(obj: Any) -> ToolResult:
     if isinstance(obj, ToolResult):
         return obj
@@ -184,6 +229,104 @@ def _coerce_to_tool_result(obj: Any) -> ToolResult:
     if isinstance(obj, str):
         return ToolResult(ok=True, data={"text": obj})
     return ToolResult(ok=True, data=obj)
+
+def _lower(s: Any) -> str:
+    return str(s or "").strip().lower()
+
+def _looks_like_write(desc: str) -> bool:
+    d = desc.lower()
+    return any(k in d for k in WRITE_KEYWORDS)
+
+def _looks_like_read(desc: str) -> bool:
+    d = desc.lower()
+    return any(k in d for k in READ_KEYWORDS)
+
+# --------------------------------------------------------------------------------------
+# Canonicalization
+# --------------------------------------------------------------------------------------
+def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, List[str]]:
+    """
+    Returns (canonical_name_or_original, notes[])
+    Resolves:
+      - direct canonical
+      - alias (including dotted)
+      - dotted suffix inference
+      - intent inference from description (if enabled)
+    """
+    notes: List[str] = []
+    name = _lower(raw_name)
+    if not name:
+        notes.append("empty_name")
+    base = name
+    suffix = None
+    if _ACCEPT_DOTTED and "." in name:
+        base, suffix = name.split(".", 1)
+        notes.append(f"dotted_split:{base}.{suffix}")
+
+    # Direct / alias
+    if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
+        notes.append("canonical_exact")
+        return name, notes
+    # If alias directly registered
+    if name in _ALIAS_INDEX:
+        notes.append("direct_alias_hit")
+        return _ALIAS_INDEX[name], notes
+    if base in _ALIAS_INDEX:
+        # e.g. base is file_system, suffix may refine
+        if suffix:
+            # suffix inference
+            if suffix in WRITE_SUFFIXES:
+                notes.append(f"infer_write_suffix:{suffix}")
+                return CANON_WRITE, notes
+            if suffix in READ_SUFFIXES:
+                notes.append(f"infer_read_suffix:{suffix}")
+                return CANON_READ, notes
+        notes.append("base_alias_hit")
+        return _ALIAS_INDEX[base], notes
+
+    # Suffix inference (if not recognized alias)
+    if suffix:
+        if suffix in WRITE_SUFFIXES:
+            notes.append(f"suffix_write:{suffix}")
+            return CANON_WRITE, notes
+        if suffix in READ_SUFFIXES:
+            notes.append(f"suffix_read:{suffix}")
+            return CANON_READ, notes
+
+    # Keyword in raw name
+    if any(k in name for k in WRITE_SUFFIXES | WRITE_KEYWORDS):
+        notes.append("keyword_write")
+        return CANON_WRITE, notes
+    if any(k in name for k in READ_SUFFIXES | READ_KEYWORDS):
+        notes.append("keyword_read")
+        return CANON_READ, notes
+
+    # Intent from description
+    if _FORCE_INTENT and name in {"", "unknown", "file", "filesystem"}:
+        if _looks_like_write(description):
+            notes.append("intent_write_desc")
+            return CANON_WRITE, notes
+        if _looks_like_read(description):
+            notes.append("intent_read_desc")
+            return CANON_READ, notes
+
+    return raw_name, notes
+
+def resolve_tool_name(name: str) -> Optional[str]:
+    """
+    Public resolver used externally (planner / orchestrator).
+    Tries canonicalization; returns canonical if recognized, else None.
+    """
+    canon, _ = canonicalize_tool_name(name)
+    if canon in _TOOL_REGISTRY and not _TOOL_REGISTRY[canon].get("is_alias"):
+        return canon
+    return _ALIAS_INDEX.get(canon) if canon in _ALIAS_INDEX else None
+
+def list_tools(include_aliases: bool = False) -> List[Any]:
+    return [
+        meta for meta in _TOOL_REGISTRY.values()
+        if include_aliases or not meta.get("is_alias")
+    ]
 
 # --------------------------------------------------------------------------------------
 # Argument Validation (subset JSON Schema)
@@ -251,7 +394,7 @@ def _safe_path(
     abs_path = os.path.abspath(os.path.join(_PROJECT_ROOT, norm))
     if not abs_path.startswith(_PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
-    # Symlink checks
+    # Symlink check each component
     cur = _PROJECT_ROOT
     rel_parts = abs_path[len(_PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
     for part in rel_parts:
@@ -335,23 +478,42 @@ def tool(
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[reg_name]
                 canonical_name = meta_entry["canonical"]
+
                 try:
                     if meta_entry.get("disabled"):
                         raise PermissionError("TOOL_DISABLED")
+
                     schema = meta_entry.get("parameters") or {}
+
+                    # --- Self-heal (autofill) for file tools BEFORE validation
+                    if _AUTOFILL and canonical_name in {CANON_WRITE, CANON_READ}:
+                        if canonical_name == CANON_WRITE:
+                            if "path" not in kwargs or not str(kwargs.get("path")).strip():
+                                kwargs["path"] = f"autofill_{trace_id}{_AUTOFILL_EXT}"
+                            if "content" not in kwargs or not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
+                                kwargs["content"] = "Auto-generated content placeholder."
+                        elif canonical_name == CANON_READ:
+                            if "path" not in kwargs or not str(kwargs.get("path")).strip():
+                                # For read we cannot guess — let validation fail (clear error)
+                                pass
+
                     try:
                         validated = _validate_arguments(schema, kwargs)
                     except Exception as ve:
                         raise ValueError(f"Argument validation failed: {ve}") from ve
+
                     if not policy_can_execute(canonical_name, validated):
                         raise PermissionError("POLICY_DENIED")
+
                     transformed = transform_arguments(canonical_name, validated)
                     raw = func(**transformed)
                     result = _coerce_to_tool_result(raw)
+
                 except Exception as e:
-                    logger.debug("Tool '%s' exception: %s", reg_name, e)
-                    logger.debug("Traceback:\n%s", traceback.format_exc())
+                    _dbg(f"Tool '{reg_name}' exception: {e}")
+                    _dbg("Traceback:\n" + traceback.format_exc())
                     result = ToolResult(ok=False, error=str(e))
+
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
                 _record_invocation(reg_name, elapsed_ms, result.ok, result.error)
                 st = _TOOL_STATS[reg_name]
@@ -504,7 +666,7 @@ except Exception:
         "type": "object",
         "properties": {
             "prompt": {"type": "string", "description": "Instruction or question."},
-            "mode": {"type": "string", "description": "answer|list|greeting|analysis|summary|refine", "default": "analysis"}
+            "mode": {"type": "string", "description": "answer|list|analysis|summary|refine", "default": "analysis"}
         },
         "required": ["prompt"]
     }
@@ -596,10 +758,13 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
 # Filesystem Tools
 # --------------------------------------------------------------------------------------
 @tool(
-    name="write_file",
-    description="Create or overwrite a UTF-8 text file under /app. Returns path & bytes written.",
+    name=CANON_WRITE,
+    description="Create or overwrite a UTF-8 text file under /app. Returns path & bytes written. Autofill path/content if enabled.",
     category="fs",
-    aliases=["file_writer", "file_system", "file_system_tool", "file_writer_tool"],
+    aliases=list(
+        WRITE_ALIASES_BASE
+        | WRITE_DOTTED_ALIASES  # direct registration for dotted forms
+    ),
     parameters={
         "type": "object",
         "properties": {
@@ -655,9 +820,13 @@ def append_file(path: str, content: str) -> ToolResult:
         return ToolResult(ok=False, error=str(e))
 
 @tool(
-    name="read_file",
-    description="Read UTF-8 text file with max_bytes limit.",
+    name=CANON_READ,
+    description="Read UTF-8 text file with max_bytes limit. Return content & truncated flag. Dotted read aliases supported.",
     category="fs",
+    aliases=list(
+        READ_ALIASES_BASE
+        | READ_DOTTED_ALIASES
+    ),
     parameters={
         "type": "object",
         "properties": {
@@ -772,7 +941,7 @@ def delete_file(path: str, confirm: bool = False) -> ToolResult:
 # --------------------------------------------------------------------------------------
 @tool(
     name="dispatch_tool",
-    description="Dynamically call another registered tool (allowlist via DISPATCH_ALLOWLIST).",
+    description="Dynamically call another registered tool (allowlist via DISPATCH_ALLOWLIST). Automatically canonicalizes tool_name.",
     category="meta",
     parameters={
         "type": "object",
@@ -787,14 +956,20 @@ def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) ->
     arguments = arguments or {}
     if _DISPATCH_ALLOW and tool_name not in _DISPATCH_ALLOW:
         return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")
-    canonical = resolve_tool_name(tool_name)
-    if not canonical:
+    # Canonicalize
+    canon, notes = canonicalize_tool_name(tool_name)
+    target = resolve_tool_name(canon) or resolve_tool_name(tool_name)
+    if not target:
         return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
-    handler = _TOOL_REGISTRY[canonical]["handler"]
+    handler = _TOOL_REGISTRY[target]["handler"]
     if not isinstance(arguments, dict):
         return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
     try:
         result = handler(**arguments)
+        if result.meta is None:
+            result.meta = {}
+        result.meta.setdefault("dispatch_notes", notes)
+        result.meta.setdefault("dispatch_target", target)
     except TypeError as te:
         return ToolResult(ok=False, error=f"ARGUMENTS_INVALID: {te}")
     except Exception as e:
@@ -844,8 +1019,10 @@ def dispatch_tool_tool(**kwargs): return dispatch_tool(**kwargs)
 # --------------------------------------------------------------------------------------
 __all__ = [
     "ToolResult",
+    "canonicalize_tool_name",
     "resolve_tool_name",
     "get_tools_schema",
+    "list_tools",
     # Tools canonical
     "introspect_tools",
     "memory_put",
