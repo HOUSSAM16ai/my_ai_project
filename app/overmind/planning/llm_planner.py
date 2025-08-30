@@ -3,19 +3,18 @@
 # -*- coding: utf-8 -*-
 # # -*- coding: utf-8 -*-
 # # -*- coding: utf-8 -*-
+# # -*- coding: utf-8 -*-
 # ======================================================================================
-# LLMGroundedPlanner (Version 2.0.1 "REGEX-STABILIZED / FAST-SELFTEST / DEGRADABLE")
+# LLMGroundedPlanner (Version 2.0.2 "REGEX-STABILIZED / FALLBACK-ERRORS-CLEAN")
 # ======================================================================================
-# تغييرات 2.0.1:
-#   - إصلاح جذري لخطأ regex (bad character range) باستبدال النمط ووضع الشرطة - في نهاية المجموعة.
-#   - إضافة compile آمن للنمط مع fallback إذا فشل.
-#   - منع تعطّل الاستيراد بسبب re.error مستقبلاً (يسجل تحذير ويستخدم نمط احتياطي).
-#   - باقي منطق 2.0.0 محفوظ (fast self_test + fallback plan).
+# تغييرات 2.0.2:
+#   - استبدال كل raise PlannerError(..., extra={"errors": ...}) بـ raise PlannerError(..., errors=[...])
+#     لتوافق أنظف مع الإصدار المُحسَّن من PlannerError (الذي يقبل **extra).
+#   - الحفاظ على جميع السلوكيات الأصلية (لا تغيير في المنطق الأساسي).
+#   - توضيح التعليقات الخاصة بمسار fallback.
 #
-# تأكيدات:
-#   - لا سلاسل ثلاثية.
-#   - لا نطاقات محارف غير صالحة.
-#   - يمكن ضبط السلوك عبر متغيرات البيئة المذكورة سابقاً.
+# ملاحظة:
+#   إذا أردت الإبقاء على "extra" كحقل ضمني يمكن، لكن تمرير errors= أكثر وضوحاً.
 # ======================================================================================
 
 from __future__ import annotations
@@ -51,23 +50,29 @@ try:
 except Exception as _e:  # noqa: BLE001
     if not _ALLOW_STUB:
         raise RuntimeError("Cannot import .base_planner. Set LLM_PLANNER_ALLOW_STUB=1 for dev stub.") from _e
+
     class PlannerError(Exception):  # type: ignore
-        def __init__(self, msg: str, planner: str = "stub", objective: str = "", extra: Dict[str, Any] = None):
+        def __init__(self, msg: str, planner: str = "stub", objective: str = "", **extra):
             super().__init__(msg)
             self.planner = planner
             self.objective = objective
             self.extra = extra or {}
+
     class BasePlanner:  # type: ignore
         name = "base_planner_stub"
+
         @classmethod
         def live_planner_classes(cls):
             return {}
+
         @classmethod
         def planner_metadata(cls):
             return {}
+
         @classmethod
         def compute_rank_hint(cls, **kwargs):
             return 0.0
+
     _LOG.error("USING STUB BasePlanner (dev mode).")
 
 # --------------------------------------------------------------------------------------
@@ -95,10 +100,12 @@ except Exception:
         tool_name: str
         tool_args: Dict[str, Any]
         dependencies: List[str]
+
     @dataclass
     class MissionPlanSchema:  # type: ignore
         objective: str
         tasks: List[PlannedTask] = field(default_factory=list)
+
     @dataclass
     class PlanningContext:  # type: ignore
         user_id: Optional[str] = None
@@ -116,8 +123,7 @@ FALLBACK_MAX = int(os.getenv("LLM_PLANNER_FALLBACK_MAX_TASKS", "5"))
 SELF_TEST_STRICT = os.getenv("LLM_PLANNER_SELFTEST_STRICT", "0") == "1"
 MAX_TASKS_DEFAULT = int(os.getenv("LLM_PLANNER_MAX_TASKS", "25"))
 
-# Regex patterns (تم إصلاح النمط)
-# ملاحظة: ضع الشرطة - في نهاية المجموعة لتجنب تفسيرها كنطاق.
+# Regex patterns
 _TOOL_NAME_PATTERN_PRIMARY = r'^[A-Za-z0-9_.:~-]{2,128}$'
 _TOOL_NAME_PATTERN_FALLBACK = r'^[A-Za-z0-9_]{2,64}$'  # أضيق
 
@@ -166,7 +172,7 @@ def _canonical_task_id(i: int) -> str:
 # --------------------------------------------------------------------------------------
 class LLMGroundedPlanner(BasePlanner):
     name = "llm_grounded_planner"
-    version = "2.0.1"
+    version = "2.0.2"
     tier = "core"
     production_ready = True
     capabilities = {"planning", "llm", "tool-grounding"}
@@ -226,6 +232,7 @@ class LLMGroundedPlanner(BasePlanner):
         errors: List[str] = []
         structured: Optional[Dict[str, Any]] = None
 
+        # 1) محاولة Structured JSON
         if maestro and hasattr(maestro, "generation_service"):
             try:
                 structured = self._call_structured(objective, context, cap)
@@ -236,9 +243,11 @@ class LLMGroundedPlanner(BasePlanner):
         else:
             errors.append("maestro_unavailable")
 
+        # إذا الوضع صارم و لا يوجد Structured ولا مسموح Fallback → فشل مباشر (بدون انفجار extra)
         if STRICT_JSON_ONLY and structured is None and not FALLBACK_ALLOW:
-            raise PlannerError("strict_mode_no_structured", self.name, objective, extra={"errors": errors[-5:]})
+            raise PlannerError("strict_mode_no_structured", self.name, objective, errors=errors[-5:])
 
+        # 2) محاولة نص عادي (Text) إن فشل Structured
         raw_text: Optional[str] = None
         if structured is None and maestro and hasattr(maestro, "generation_service"):
             try:
@@ -248,6 +257,7 @@ class LLMGroundedPlanner(BasePlanner):
                 errors.append(f"text_fail:{type(e).__name__}:{e}")
                 _LOG.error("[%s] text_fail %s", self.name, e)
 
+        # 3) استخراج / بناء خطة أولية
         plan_dict: Optional[Dict[str, Any]] = None
         extraction_notes: List[str] = []
         if structured is not None:
@@ -256,6 +266,7 @@ class LLMGroundedPlanner(BasePlanner):
             plan_dict, extraction_notes = self._extract_from_text(raw_text)
             errors.extend(extraction_notes)
 
+        # 4) فشل الاستخراج النهائي
         if plan_dict is None:
             if FALLBACK_ALLOW:
                 _LOG.warning("[%s] using_degraded_fallback errors_tail=%s", self.name, errors[-4:])
@@ -263,8 +274,9 @@ class LLMGroundedPlanner(BasePlanner):
                 self._post_validate(plan)
                 self._log_success(plan, objective, start, degraded=True)
                 return plan
-            raise PlannerError("extraction_failed", self.name, objective, extra={"errors": errors[-6:]})
+            raise PlannerError("extraction_failed", self.name, objective, errors=errors[-6:])
 
+        # 5) التطبيع
         tasks_raw = plan_dict.get("tasks")
         norm_errs: List[str] = []
         try:
@@ -277,8 +289,9 @@ class LLMGroundedPlanner(BasePlanner):
                 self._post_validate(plan)
                 self._log_success(plan, objective, start, degraded=True)
                 return plan
-            raise PlannerError("normalize_fail", self.name, objective, extra={"errors": errors[-8:]}) from ve
+            raise PlannerError("normalize_fail", self.name, objective, errors=errors[-8:]) from ve
 
+        # 6) بناء الكائن النهائي
         mission_plan = MissionPlanSchema(
             objective=str(plan_dict.get("objective") or objective),
             tasks=tasks,
@@ -368,11 +381,13 @@ class LLMGroundedPlanner(BasePlanner):
         snippet = (raw_text or "").strip()
         if not snippet:
             return None, ["empty_text"]
+
         parsed, err = _safe_json_loads(snippet)
         if parsed and isinstance(parsed, dict) and "tasks" in parsed:
             return parsed, errs
         if err:
             errs.append(f"direct_fail:{err}")
+
         arr_m = _TASK_ARRAY_REGEX.search(snippet)
         if arr_m:
             arr_chunk = arr_m.group(1)
@@ -383,6 +398,7 @@ class LLMGroundedPlanner(BasePlanner):
                 return cand, errs
             if err2:
                 errs.append(f"tasks_array_fail:{err2}")
+
         blk = _JSON_BLOCK_CURLY.search(snippet)
         if blk:
             block = blk.group(0)
@@ -391,6 +407,8 @@ class LLMGroundedPlanner(BasePlanner):
                 return cand2, errs
             if err3:
                 errs.append(f"block_fail:{err3}")
+
+        # نمط تقديري على شكل قوائم
         tasks_guess: List[Dict[str, Any]] = []
         current: Optional[Dict[str, Any]] = None
         for line in snippet.splitlines():
@@ -416,6 +434,7 @@ class LLMGroundedPlanner(BasePlanner):
             tasks_guess.append(current)
         if tasks_guess:
             return {"objective": "Recovered (bullets)", "tasks": tasks_guess}, errs
+
         errs.append("extraction_all_failed")
         return None, errs
 
@@ -480,6 +499,7 @@ class LLMGroundedPlanner(BasePlanner):
         for deps in graph.values():
             deps.intersection_update(valid)
         visited: Dict[str, int] = {}
+
         def dfs(node: str, stack: List[str]):
             st = visited.get(node, 0)
             if st == 1:
@@ -490,6 +510,7 @@ class LLMGroundedPlanner(BasePlanner):
             for nxt in graph.get(node, []):
                 dfs(nxt, stack + [node])
             visited[node] = 2
+
         for tid in graph:
             if visited.get(tid, 0) == 0:
                 dfs(tid, [])
@@ -502,10 +523,10 @@ class LLMGroundedPlanner(BasePlanner):
         if not words:
             words = ["objective"]
         slice_count = min(FALLBACK_MAX, cap, max(1, len(words)))
-        chunk_len = max(1, len(words)//slice_count)
+        chunk_len = max(1, len(words) // slice_count)
         segments: List[str] = []
         for i in range(0, len(words), chunk_len):
-            segments.append(" ".join(words[i:i+chunk_len]))
+            segments.append(" ".join(words[i:i + chunk_len]))
             if len(segments) >= slice_count:
                 break
         tool_default = "unknown"
@@ -526,7 +547,7 @@ class LLMGroundedPlanner(BasePlanner):
                     description=f"Decompose: {seg}",
                     tool_name=tool_default,
                     tool_args={},
-                    dependencies=[] if i == 1 else [_canonical_task_id(i-1)],
+                    dependencies=[] if i == 1 else [_canonical_task_id(i - 1)],
                 )
             )
         return MissionPlanSchema(objective=objective, tasks=tasks)
@@ -577,6 +598,7 @@ class LLMGroundedPlanner(BasePlanner):
         if x.isdigit():
             return False
         return True
+
 
 # --------------------------------------------------------------------------------------
 # EXPORTS
