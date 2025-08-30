@@ -56,7 +56,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 # --------------------------------------------------------------------------------------
 # Version
 # --------------------------------------------------------------------------------------
-__version__ = "2.0.1"  # patched syntax & compatibility
+__version__ = "2.0.2"  # +file_writer alias
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -163,8 +163,10 @@ def _generate_trace_id() -> str:
     return uuid.uuid4().hex[:16]
 
 def resolve_tool_name(name: str) -> Optional[str]:
+    # Return canonical if direct
     if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
         return name
+    # Alias mapping
     return _ALIAS_INDEX.get(name)
 
 def _coerce_to_tool_result(obj: Any) -> ToolResult:
@@ -249,7 +251,7 @@ def _safe_path(
     abs_path = os.path.abspath(os.path.join(_PROJECT_ROOT, norm))
     if not abs_path.startswith(_PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
-    # Symlink checks per component
+    # Symlink checks
     cur = _PROJECT_ROOT
     rel_parts = abs_path[len(_PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
     for part in rel_parts:
@@ -329,7 +331,7 @@ def tool(
 
             def wrapper(**kwargs):
                 trace_id = _generate_trace_id()
-                reg_name = name  # canonical for stats
+                reg_name = name
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[reg_name]
                 canonical_name = meta_entry["canonical"]
@@ -597,7 +599,7 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
     name="write_file",
     description="Create or overwrite a UTF-8 text file under /app. Returns path & bytes written.",
     category="fs",
-    aliases=["file_system", "file_system_tool"],
+    aliases=["file_writer", "file_system", "file_system_tool", "file_writer_tool"],
     parameters={
         "type": "object",
         "properties": {
@@ -823,7 +825,6 @@ def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
 # --------------------------------------------------------------------------------------
 # Backwards Compatibility Function Aliases (*_tool)
 # --------------------------------------------------------------------------------------
-# Some legacy code may call generic_think_tool etc.
 def generic_think_tool(**kwargs): return generic_think(**kwargs)
 def summarize_text_tool(**kwargs): return summarize_text(**kwargs)
 def refine_text_tool(**kwargs): return refine_text(**kwargs)
