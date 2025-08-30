@@ -1,35 +1,40 @@
 # app/overmind/planning/schemas.py
-# """
-========================================================================================
-  PLANNING SCHEMAS CORE v4.0  (Unified / Single Source of Truth)
-========================================================================================
-الغرض PURPOSE:
-    هذا الملف هو المصدر الوحيد (Single Authority) لجميع نماذج التخطيط المستخدمة
-    عبر النظام (BasePlanner / LLM Planner / Factory / Public Facade).
-    الهدف الأساسي الآن: إزالة الإزدواج (Duplicate Class Definitions) الذي كان
-    يتسبب في فشل isinstance بسبب تعريفات fallback متعددة في ملفات أخرى.
+"""
+================================================================================
+ PLANNING SCHEMAS CORE v4.0  (Single Source of Truth)
+================================================================================
+Purpose:
+    Central unified definitions for planning models (MissionPlanSchema,
+    PlannedTask, PlanningContext, warnings, validation issues, etc.).
+    Eliminates duplicate / fallback dataclass definitions that caused
+    isinstance identity mismatches across planners.
 
-أهم الإصلاحات / KEY FIXES vs النسخ السابقة:
-    1. إضافة PlanningContext هنا (كان غائباً → سبب فشل الاستيراد → تفعيل fallbacks).
-    2. تعريف موحّد لـ MissionPlanSchema / PlannedTask / PlanWarning / PlanValidationIssue /
-       PlanGenerationResult في مكان واحد فقط.
-    3. واجهة register_policy_hook + تنفيذ policy hooks بعد التحقق البنيوي.
-    4. دعم تحذيرات وهيكلة متقدمة مع الحفاظ على التوافق (objective, tasks).
-    5. عدم استعمال أي تعريف بديل في ملفات أخرى (يجب إزالة fallbacks هناك أو تركها
-       لأنها لن تُفَعَّل الآن طالما هذا الملف يُستورد بنجاح).
+Key Points:
+    - All planners must import ONLY from: app.overmind.planning.schemas
+    - Includes PlanningContext to stop prior import failures.
+    - Graph (DAG) validation: uniqueness, dependencies, acyclicity, depth,
+      fan-out, risk heuristics, warnings, and policy hooks.
+    - Pydantic models with extra="forbid" to reject unknown fields.
+    - Policy hooks can raise PlanValidationError or append warnings.
 
-ملاحظات تصميم:
-    - جميع النماذج (ما عدا الإعدادات) مبنية على Pydantic BaseModel لتسهيل التحقق.
-    - تم ضبط model_config(extra="forbid") لتفادي تسلل حقول غير متوقعة.
-    - الأداء: التحقق البنيوي والرسومي (DAG) يجري مرة واحدة عند البناء.
-    - قابل للتوسعة عبر Policy Hooks المضافة بـ register_policy_hook.
+Environment Overrides (optional):
+    PLAN_MAX_TASKS
+    PLAN_MAX_DESCRIPTION_LEN
+    PLAN_MAX_METADATA_KEYS
+    PLAN_MAX_TOOL_ARGS_KEYS
+    PLAN_MAX_TOOL_ARGS_BYTES
+    PLAN_MAX_DEPTH
+    PLAN_MAX_OUT_DEGREE
+    PLAN_PRIORITY_MIN
+    PLAN_PRIORITY_MAX
 
-بيئة / ENV OVERRIDES (اختيارية):
-    PLAN_MAX_TASKS, PLAN_MAX_DESCRIPTION_LEN, PLAN_MAX_METADATA_KEYS,
-    PLAN_MAX_TOOL_ARGS_KEYS, PLAN_MAX_TOOL_ARGS_BYTES, PLAN_MAX_DEPTH,
-    PLAN_MAX_OUT_DEGREE, PLAN_PRIORITY_MIN, PLAN_PRIORITY_MAX
+Usage:
+    from app.overmind.planning.schemas import MissionPlanSchema, PlannedTask, validate_plan
+    plan = validate_plan(payload_dict)
 
-========================================================================================
+NOTE:
+    Keep this file UTF-8 but avoid exotic Unicode symbols outside comments.
+================================================================================
 """
 
 from __future__ import annotations
@@ -41,16 +46,16 @@ import uuid
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
-    List, Dict, Any, Optional, Callable, Iterable, Set
+    List, Dict, Any, Optional, Callable
 )
 
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 __schema_version__ = "4.0.0"
 
-# ======================================================================================
-# SETTINGS (Environment Tunable)
-# ======================================================================================
+# =============================================================================
+# SETTINGS
+# =============================================================================
 
 @dataclass
 class PlanSettings:
@@ -58,7 +63,7 @@ class PlanSettings:
     MAX_DESCRIPTION_LEN: int = int(os.environ.get("PLAN_MAX_DESCRIPTION_LEN", 600))
     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
-    MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24_000))
+    MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
@@ -66,9 +71,9 @@ class PlanSettings:
 
 SETTINGS = PlanSettings()
 
-# ======================================================================================
+# =============================================================================
 # ENUMS
-# ======================================================================================
+# =============================================================================
 
 class TaskType(str, Enum):
     TOOL = "TOOL"
@@ -93,9 +98,9 @@ class WarningSeverity(str, Enum):
     PERFORMANCE = "PERFORMANCE"
     STRUCTURE = "STRUCTURE"
 
-# ======================================================================================
-# VALIDATION ISSUE / WARNING / ERROR
-# ======================================================================================
+# =============================================================================
+# VALIDATION DATA STRUCTURES
+# =============================================================================
 
 class PlanValidationIssue(BaseModel):
     code: str
@@ -111,25 +116,17 @@ class PlanWarning(BaseModel):
     detail: Optional[Dict[str, Any]] = None
 
 class PlanValidationError(ValueError):
-    """
-    Raised when structural / semantic validation of a plan fails aggregating issues.
-    """
     def __init__(self, issues: List[PlanValidationIssue]):
         self.issues = issues
         super().__init__(f"Plan validation failed with {len(issues)} issues.")
     def to_dict(self) -> Dict[str, Any]:
         return {"issues": [i.model_dump() for i in self.issues]}
 
-# ======================================================================================
-# TOOL REGISTRY (اختياري)
-# ======================================================================================
+# =============================================================================
+# TOOL REGISTRY (OPTIONAL EXTERNAL INJECTION)
+# =============================================================================
 
 class ToolRegistryInterface:
-    """
-    Expected external interface (optional):
-        has(tool_name: str) -> bool
-        validate(tool_name: str, args: dict) -> dict (may mutate / normalize)
-    """
     def has(self, tool_name: str) -> bool:  # pragma: no cover
         return False
     def validate(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:  # pragma: no cover
@@ -137,82 +134,46 @@ class ToolRegistryInterface:
 
 TOOL_REGISTRY: Optional[ToolRegistryInterface] = None
 
-# ======================================================================================
+# =============================================================================
 # POLICY HOOKS
-# ======================================================================================
+# =============================================================================
 
 PolicyHook = Callable[['MissionPlanSchema'], None]
 _POLICY_HOOKS: List[PolicyHook] = []
 
 def register_policy_hook(hook: PolicyHook) -> None:
-    """Register an external policy hook executed after base validation."""
     _POLICY_HOOKS.append(hook)
 
-# ======================================================================================
+# =============================================================================
 # TASK MODEL
-# ======================================================================================
+# =============================================================================
 
 class PlannedTask(BaseModel):
-    """
-    Represents a single atomic node in the mission plan DAG.
-    """
     model_config = ConfigDict(extra="forbid")
 
-    task_id: str = Field(
-        ...,
-        pattern=r'^[A-Za-z0-9_\-]+$',
-        min_length=1,
-        max_length=64,
-        description="Unique identifier inside the plan."
-    )
-    description: str = Field(
-        ...,
-        min_length=3,
-        max_length=SETTINGS.MAX_DESCRIPTION_LEN,
-        description="Human + machine understandable task purpose."
-    )
+    task_id: str = Field(..., pattern=r'^[A-Za-z0-9_\-]+$', min_length=1, max_length=64)
+    description: str = Field(..., min_length=3, max_length=SETTINGS.MAX_DESCRIPTION_LEN)
     task_type: TaskType = Field(default=TaskType.TOOL)
     tool_name: Optional[str] = Field(
         None,
         description="Required if task_type in (TOOL, TRANSFORM, AGGREGATE)."
     )
-    tool_args: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Arguments passed to the underlying tool."
-    )
-    dependencies: List[str] = Field(
-        default_factory=list,
-        description="Prerequisite task IDs."
-    )
+    tool_args: Dict[str, Any] = Field(default_factory=dict)
+    dependencies: List[str] = Field(default_factory=list)
     priority: int = Field(
         100,
         ge=SETTINGS.PRIORITY_MIN,
         le=SETTINGS.PRIORITY_MAX,
-        description="Lower number = higher scheduling priority."
+        description="Lower value means higher scheduling priority."
     )
-    criticality: Criticality = Field(
-        default=Criticality.BLOCKING,
-        description="BLOCKING gates downstream tasks; SOFT is non-blocking."
-    )
-    risk_level: RiskLevel = Field(
-        default=RiskLevel.LOW,
-        description="Risk classification for governance / heuristics."
-    )
-    allow_high_risk: bool = Field(
-        False,
-        description="Must be True if risk_level=HIGH."
-    )
-    tags: List[str] = Field(
-        default_factory=list,
-        description="Free-form labels."
-    )
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Auxiliary structured info (cost, domain hints, etc.)."
-    )
+    criticality: Criticality = Field(default=Criticality.BLOCKING)
+    risk_level: RiskLevel = Field(default=RiskLevel.LOW)
+    allow_high_risk: bool = Field(False, description="Must be True if risk_level=HIGH.")
+    tags: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     gate_condition: Optional[str] = Field(
         None,
-        description="Expression for GATE tasks; must evaluate to truthy for pass."
+        description="Expression required for GATE tasks (evaluated by policy layer)."
     )
 
     @field_validator("tool_name")
@@ -236,7 +197,7 @@ class PlannedTask(BaseModel):
         return v
 
     @field_validator("tool_args")
-    def _tool_args_limited_and_validated(cls, v, info):
+    def _tool_args_limits_and_registry(cls, v, info):
         if len(v) > SETTINGS.MAX_TOOL_ARGS_KEYS:
             raise ValueError(f"tool_args key count {len(v)} exceeds {SETTINGS.MAX_TOOL_ARGS_KEYS}.")
         size = len(json.dumps(v, ensure_ascii=False))
@@ -249,7 +210,7 @@ class PlannedTask(BaseModel):
             try:
                 return TOOL_REGISTRY.validate(tool_name, v)
             except Exception as ex:
-                raise ValueError(f"tool_args validation failed for '{tool_name}': {ex}")
+                raise ValueError(f"tool_args validation failed for tool '{tool_name}': {ex}")
         return v
 
     @field_validator("risk_level")
@@ -261,59 +222,37 @@ class PlannedTask(BaseModel):
     @field_validator("gate_condition")
     def _gate_condition_only_for_gate(cls, v, info):
         if v and info.data.get("task_type") != TaskType.GATE:
-            raise ValueError("gate_condition only allowed for task_type=GATE.")
+            raise ValueError("gate_condition only allowed when task_type=GATE.")
         return v
 
-# ======================================================================================
-# PLANNING CONTEXT (مطلوب لمنع fallbacks)
-# ======================================================================================
+# =============================================================================
+# PLANNING CONTEXT
+# =============================================================================
 
 class PlanningContext(BaseModel):
-    """
-    Carries optional contextual enrichment into planners (user prefs, past failures).
-    """
     user_id: Optional[str] = None
     past_failures: List[str] = Field(default_factory=list)
     user_preferences: Dict[str, Any] = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
 
-# ======================================================================================
+# =============================================================================
 # MISSION PLAN MODEL
-# ======================================================================================
+# =============================================================================
 
 class MissionPlanSchema(BaseModel):
-    """
-    Validated mission plan DAG (objective + tasks + computed metadata).
-    """
     model_config = ConfigDict(extra="forbid")
 
-    # Identity
-    plan_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        description="Unique identifier for this plan instance."
-    )
-    revision: int = Field(
-        default=1,
-        ge=1,
-        description="Revision number (increment upon modifications)."
-    )
-    objective: str = Field(
-        ...,
-        min_length=3,
-        description="High-level mission objective."
-    )
-    tasks: List[PlannedTask] = Field(
-        ...,
-        description="List of atomic tasks forming a DAG."
-    )
+    plan_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    revision: int = Field(default=1, ge=1)
+    objective: str = Field(..., min_length=3)
+    tasks: List[PlannedTask] = Field(...)
 
-    # Derived
     topological_order: Optional[List[str]] = Field(default=None)
     stats: Optional[Dict[str, Any]] = Field(default=None)
     warnings: Optional[List[PlanWarning]] = Field(default=None)
     content_hash: Optional[str] = Field(default=None)
 
-    # Internal (non-serialized) structures
+    # internal (non-serialized)
     _adjacency: Dict[str, List[str]] = {}
     _indegree: Dict[str, int] = {}
     _depth_map: Dict[str, int] = {}
@@ -328,62 +267,51 @@ class MissionPlanSchema(BaseModel):
             raise PlanValidationError(issues)
 
         if len(self.tasks) > SETTINGS.MAX_TASKS:
-            issues.append(
-                PlanValidationIssue(
-                    code="TOO_MANY_TASKS",
-                    message=f"Task count {len(self.tasks)} > MAX_TASKS={SETTINGS.MAX_TASKS}"
-                )
-            )
+            issues.append(PlanValidationIssue(
+                code="TOO_MANY_TASKS",
+                message=f"Task count {len(self.tasks)} exceeds MAX_TASKS={SETTINGS.MAX_TASKS}"
+            ))
             raise PlanValidationError(issues)
 
         # Unique IDs
-        id_map: Dict[str, PlannedTask] = {t.task_id: t for t in self.tasks}
+        id_map = {t.task_id: t for t in self.tasks}
         if len(id_map) != len(self.tasks):
-            issues.append(PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id found."))
+            issues.append(PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id detected."))
             raise PlanValidationError(issues)
 
-        # Build adjacency / indegree
+        # Build adjacency
         adj: Dict[str, List[str]] = {tid: [] for tid in id_map}
         indegree: Dict[str, int] = {tid: 0 for tid in id_map}
         for t in self.tasks:
             for dep in t.dependencies:
                 if dep not in id_map:
-                    issues.append(
-                        PlanValidationIssue(
-                            code="INVALID_DEPENDENCY",
-                            message=f"Task '{t.task_id}' depends on unknown '{dep}'.",
-                            task_id=t.task_id
-                        )
-                    )
+                    issues.append(PlanValidationIssue(
+                        code="INVALID_DEPENDENCY",
+                        message=f"Task '{t.task_id}' depends on unknown '{dep}'.",
+                        task_id=t.task_id
+                    ))
                 else:
                     adj[dep].append(t.task_id)
                     indegree[t.task_id] += 1
         if issues:
             raise PlanValidationError(issues)
 
-        # Fan-out constraint
+        # Fan-out
         for parent, children in adj.items():
             if len(children) > SETTINGS.MAX_OUT_DEGREE:
-                issues.append(
-                    PlanValidationIssue(
-                        code="EXCESS_OUT_DEGREE",
-                        message=f"Task '{parent}' fan-out {len(children)} > {SETTINGS.MAX_OUT_DEGREE}",
-                        task_id=parent
-                    )
-                )
+                issues.append(PlanValidationIssue(
+                    code="EXCESS_OUT_DEGREE",
+                    message=f"Task '{parent}' fan-out {len(children)} > MAX_OUT_DEGREE={SETTINGS.MAX_OUT_DEGREE}",
+                    task_id=parent
+                ))
         if issues:
             raise PlanValidationError(issues)
 
-        # Topological sort (Kahn)
+        # Topological sort
         import collections
         queue = collections.deque([tid for tid, deg in indegree.items() if deg == 0])
         if not queue:
-            issues.append(
-                PlanValidationIssue(
-                    code="NO_ROOTS",
-                    message="No root tasks (indegree==0); implies cycle."
-                )
-            )
+            issues.append(PlanValidationIssue(code="NO_ROOTS", message="No root tasks (possible cycle)."))
             raise PlanValidationError(issues)
 
         topo: List[str] = []
@@ -401,26 +329,22 @@ class MissionPlanSchema(BaseModel):
 
         if len(topo) != len(id_map):
             cyclic_nodes = [tid for tid, d in remaining.items() if d > 0]
-            issues.append(
-                PlanValidationIssue(
-                    code="CYCLE_DETECTED",
-                    message="Cycle(s) detected in dependency graph.",
-                    detail={"nodes": cyclic_nodes}
-                )
-            )
+            issues.append(PlanValidationIssue(
+                code="CYCLE_DETECTED",
+                message="Dependency cycle detected.",
+                detail={"nodes": cyclic_nodes}
+            ))
             raise PlanValidationError(issues)
 
         longest_path = max(depth_map.values()) if depth_map else 0
         if longest_path > SETTINGS.MAX_DEPTH:
-            issues.append(
-                PlanValidationIssue(
-                    code="DEPTH_EXCEEDED",
-                    message=f"Depth {longest_path} > MAX_DEPTH={SETTINGS.MAX_DEPTH}"
-                )
-            )
+            issues.append(PlanValidationIssue(
+                code="DEPTH_EXCEEDED",
+                message=f"Depth {longest_path} > MAX_DEPTH={SETTINGS.MAX_DEPTH}"
+            ))
             raise PlanValidationError(issues)
 
-        # Heuristic Warnings
+        # Heuristic warnings
         roots = [tid for tid, deg in indegree.items() if deg == 0]
         if len(roots) / len(id_map) > 0.5 and len(id_map) > 10:
             warnings.append(PlanWarning(
@@ -447,13 +371,12 @@ class MissionPlanSchema(BaseModel):
             ))
 
         high_risk = [t.task_id for t in self.tasks if t.risk_level == RiskLevel.HIGH]
-        if high_risk:
-            if len(high_risk) / len(self.tasks) > 0.3:
-                warnings.append(PlanWarning(
-                    code="HIGH_RISK_DENSITY",
-                    message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 30%.",
-                    severity=WarningSeverity.RISK
-                ))
+        if high_risk and len(high_risk) / len(self.tasks) > 0.3:
+            warnings.append(PlanWarning(
+                code="HIGH_RISK_DENSITY",
+                message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 0.3.",
+                severity=WarningSeverity.RISK
+            ))
 
         for t in self.tasks:
             if t.task_type == TaskType.GATE and not t.gate_condition:
@@ -486,7 +409,7 @@ class MissionPlanSchema(BaseModel):
             "orphan_tasks": [w.task_id for w in warnings if w.code == "ORPHAN_TASK"],
         }
 
-        # Content hash (objective + normalized tasks)
+        # Content hash
         hash_payload = {
             "objective": self.objective,
             "tasks": [
@@ -520,23 +443,17 @@ class MissionPlanSchema(BaseModel):
         self._indegree = indegree
         self._depth_map = depth_map
 
-        # Execute policy hooks
+        # Policy hooks
         for hook in _POLICY_HOOKS:
             hook(self)
 
         return self
 
-    # ----------------------------
-    # Utility / Export helpers
-    # ----------------------------
-    def _add_warning(
-        self,
-        code: str,
-        message: str,
-        severity: WarningSeverity = WarningSeverity.INFO,
-        task_id: Optional[str] = None,
-        detail: Optional[Dict[str, Any]] = None
-    ):
+    # Utility / export helpers
+    def _add_warning(self, code: str, message: str,
+                     severity: WarningSeverity = WarningSeverity.INFO,
+                     task_id: Optional[str] = None,
+                     detail: Optional[Dict[str, Any]] = None):
         if self.warnings is None:
             self.warnings = []
         self.warnings.append(PlanWarning(
@@ -600,35 +517,27 @@ class MissionPlanSchema(BaseModel):
                 g.add_edge(dep, t.task_id)
         return g
 
-# ======================================================================================
-# PLAN GENERATION RESULT (Optional wrapper)
-# ======================================================================================
+# =============================================================================
+# OPTIONAL RESULT WRAPPER
+# =============================================================================
 
 class PlanGenerationResult(BaseModel):
     plan: MissionPlanSchema
     warnings: List[PlanWarning] = Field(default_factory=list)
     validation_issues: List[PlanValidationIssue] = Field(default_factory=list)
 
-# ======================================================================================
+# =============================================================================
 # PUBLIC HELPERS
-# ======================================================================================
+# =============================================================================
 
 def validate_plan(payload: Dict[str, Any]) -> MissionPlanSchema:
-    """
-    Validate and return a MissionPlanSchema instance (raises PlanValidationError if invalid).
-    """
     return MissionPlanSchema.model_validate(payload)
 
-# ======================================================================================
-# SAMPLE POLICY HOOK (Optional – can be disabled if undesired)
-# ======================================================================================
+# =============================================================================
+# SAMPLE POLICY HOOK (Optional)
+# =============================================================================
 
 def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
-    """
-    Policy:
-      - Hard fail if HIGH risk tasks > 100
-      - Warning if HIGH risk tasks > 50
-    """
     high_count = plan.stats.get("risk_counts", {}).get("HIGH", 0) if plan.stats else 0
     if high_count > 100:
         raise PlanValidationError([
@@ -644,12 +553,12 @@ def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
             severity=WarningSeverity.RISK
         )
 
-# Register sample policy (يمكن تعطيله بإزالة هذا السطر)
+# Register the sample policy (remove this line to disable)
 register_policy_hook(_sample_policy_high_risk_limit)
 
-# ======================================================================================
-# __all__
-# ======================================================================================
+# =============================================================================
+# EXPORTS
+# =============================================================================
 
 __all__ = [
     "__schema_version__",
@@ -672,7 +581,3 @@ __all__ = [
     "PlanGenerationResult",
     "validate_plan",
 ]
-
-# ======================================================================================
-# END OF FILE
-# ======================================================================================
