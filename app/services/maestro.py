@@ -1,37 +1,51 @@
 # -*- coding: utf-8 -*-
 # ======================================================================================
-# MAESTRO ADAPTER (v1.0 • "BRIDGE-FUSION")
-# File: app/services/maestro.py
+#  MAESTRO ADAPTER (v2.5.0 • "BRIDGE-FUSION-OMNI")
+#  File: app/services/maestro.py
 # ======================================================================================
-# PURPOSE:
-#   هذا الملف هو "مكيّف" (Adapter) يوفّر الواجهة التي يتوقعها المخطِّط LLMGroundedPlanner
-#   أي: module اسمه maestro يحتوي:
-#       generation_service.text_completion(...)
-#       generation_service.structured_json(...)
+#  PURPOSE:
+#    هذا الملف يعمل كطبقة توافق (Adapter / Bridge) بين أي مكوّن (مثل المخطط LLMGroundedPlanner،
+#    أو الخدمات الأخرى) وبين خدمة التوليد المركزية generation_service الحقيقية الموجودة في
+#    generation_service.py. الهدف:
+#       - توفير واجهة موحّدة: maestro.generation_service.text_completion(...)
+#                                   maestro.generation_service.structured_json(...)
+#       - ضمان استمرار العمل حتى لو كان generation_service جزئياً أو غير موجود (Fallback).
+#       - تقديم تشخيص (Diagnostics) واضح وسجلات (Logging) مُهيكلة.
 #
-#   دون الحاجة لإعادة تسمية generation_service.py أو تعديل المخطط.
+#  DESIGN OVERVIEW:
+#    1) نحاول استيراد module (generation_service.py).
+#       - إذا وجدنا كائناً باسم generation_service يوفّر الدالتين (text_completion, structured_json)
+#         نستعمله مباشرة (Pass-Through Mode).
+#    2) إذا الكائن مفقود أو تنقصه الدوال: ننشئ Adapter ديناميكي (_GenerationServiceAdapter) يلتف
+#       حول الكائن الأصلي (إن وُجد) ويزوّد الدوال المفقودة بمنطق احتياطي.
+#    3) إذا لم يوجد كائن إطلاقاً نستعمل Pure Adapter مع:
+#         - استخدام forge_new_code إن توفّر.
+#         - أو استدعاء مباشر لعميل الـ LLM get_llm_client() (إن وُجد).
+#         - أو إرجاع استجابات فارغة آمنة بدلاً من تحطيم النظام.
+#    4) structured_json في وضع fallback تُجرّب استخراج أوّل كائن JSON متوازن {} مع إعادة المحاولة.
 #
-# DESIGN:
-#   1. نحاول استيراد module: generation_service.py (كموديول داخلي).
-#   2. نفحص إن كان فيه كائن generation_service جاهز ويمتلك الدالتين المطلوبتين:
-#        - text_completion
-#        - structured_json
-#      -> إن نعم: نعيد استعماله كما هو.
-#   3. إن لم يكن، ننشئ Adapter ديناميكي:
-#        - يستخدم الدوال المتوفرة (text_completion / forge_new_code) إن وجدت.
-#        - أو يستدعي LLM مباشرة عبر get_llm_client إن كان متوفراً.
-#        - يوفر structured_json بمحاولة استخراج أول {} JSON.
+#  SAFETY / RELIABILITY:
+#    - لا تُرمى استثناءات قاتلة أثناء إنشاء الـ adapter (إلا عند فشل استيراد generation_service نفسه).
+#    - إعادة المحاولة الخفيفة (retry) مع Backoff ثابت صغير.
+#    - إزالة أسوار Markdown والتحقق من توازن الأقواس.
+#    - حفظ وصف آخر خطأ في diagnostics().
+#    - دعم تحديد النموذج عبر: param > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > DEFAULT_AI_MODEL > fallback.
 #
-#   4. لا نرمي استثناءات قاتلة إلا في حالات استيراد حرجة، ويبقى السلوك مرناً للفشل الآمن.
+#  ENV VARS (اختيارية):
+#       MAESTRO_ADAPTER_LOG_LEVEL    (افتراضي INFO)
+#       DEFAULT_AI_MODEL             (مثال: openai/gpt-4o-mini)
+#       AI_MODEL_OVERRIDE
+#       MAESTRO_FORCE_MODEL
+#       MAESTRO_ADAPTER_MAX_RETRIES  (افتراضي 1)
+#       MAESTRO_ADAPTER_JSON_MAX_RETRIES (افتراضي 1)
 #
-# ENV (اختيارية):
-#   MAESTRO_ADAPTER_LOG_LEVEL = DEBUG | INFO | WARNING | ERROR
-#   DEFAULT_AI_MODEL (مثلاً: openai/gpt-4o) لو لم يحدد النموذج في الاستدعاء.
+#  PUBLIC EXPORTS:
+#       generation_service   -> الكائن الذي يملك text_completion / structured_json
+#       diagnostics()        -> معلومات حالة وتشخيص
+#       ensure_adapter_ready() -> للتحقق السريع برمجياً
 #
-# SAFE-GUARDS:
-#   - إزالة أسوار Markdown (``` ... ```).
-#   - استخراج أول كائن JSON متوازن بدل الاعتماد على regex هش.
-#   - إعادة المحاولة لعدد محدد (max_retries).
+#  VERSION COMPAT NOTE:
+#       متوافق مع الإصدار المعزّز generation_service v17 وما بعده، ويظل آمناً إن كان الإصدار أقدم.
 #
 # ======================================================================================
 from __future__ import annotations
@@ -40,10 +54,12 @@ import json
 import os
 import time
 import logging
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Dict
+
+__version__ = "2.5.0"
 
 # --------------------------------------------------------------------------------------
-# Logging Setup (محلي وخفيف)
+# Logging
 # --------------------------------------------------------------------------------------
 _LOG = logging.getLogger("maestro.adapter")
 _level = os.getenv("MAESTRO_ADAPTER_LOG_LEVEL", "INFO").upper()
@@ -52,34 +68,44 @@ try:
 except Exception:
     _LOG.setLevel(logging.INFO)
 if not _LOG.handlers:
-    h = logging.StreamHandler()
-    h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][maestro.adapter] %(message)s"))
-    _LOG.addHandler(h)
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][maestro.adapter] %(message)s"))
+    _LOG.addHandler(_h)
 
 # --------------------------------------------------------------------------------------
-# استيراد generation_service الأصلي
+# Try import generation_service module
 # --------------------------------------------------------------------------------------
 try:
-    from . import generation_service as _gen_mod  # noqa: F401
+    from . import generation_service as _gen_mod  # type: ignore
 except Exception as e:
-    raise RuntimeError(f"maestro adapter: Cannot import generation_service.py: {e}") from e
+    # هذه حالة حرجة لأن معظم النظام يعتمد على وجود الملف. نرفع استثناء صريح مبكر.
+    raise RuntimeError(f"[maestro.adapter] Cannot import generation_service.py: {e}") from e
 
-# محاولة استيراد عميل الـ LLM (اختياري)
+# --------------------------------------------------------------------------------------
+# Optional direct LLM client (fallback path)
+# --------------------------------------------------------------------------------------
 try:
     from .llm_client_service import get_llm_client  # type: ignore
 except Exception:
     get_llm_client = None  # type: ignore
-    _LOG.warning("llm_client_service.get_llm_client غير متوفر، سيتم الاعتماد على دوال base إن وجدت.")
+    _LOG.warning("llm_client_service.get_llm_client غير متوفر، سيُستخدم مسار fallback فقط إن لزم.")
 
 # --------------------------------------------------------------------------------------
-# Utilities
+# State for diagnostics
 # --------------------------------------------------------------------------------------
+_LAST_ERRORS: Dict[str, str] = {}
+_ADAPTER_MODE: str = "unknown"   # "pass_through" | "wrapped" | "pure"
+_BASE_OBJ_TYPE: str = "none"
+_CREATION_TS = time.time()
+
+# ======================================================================================
+# Utility Functions
+# ======================================================================================
 def _strip_markdown_fences(text: str) -> str:
     if not text:
         return ""
     t = text.strip()
     if t.startswith("```"):
-        # احذف السطر الأول (قد يحتوي label)
         nl = t.find("\n")
         if nl != -1:
             t = t[nl + 1 :]
@@ -88,9 +114,6 @@ def _strip_markdown_fences(text: str) -> str:
     return t
 
 def _extract_first_json_object(text: str) -> Optional[str]:
-    """
-    يحاول العثور على أول كائن JSON متوازن { ... } (طريقة قابلة للتوسع).
-    """
     if not text:
         return None
     t = _strip_markdown_fences(text)
@@ -113,30 +136,58 @@ def _safe_json_load(payload: str) -> Tuple[Optional[Any], Optional[str]]:
     except Exception as e:
         return None, str(e)
 
-def _default_model() -> str:
-    return os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
+def _select_model(explicit: Optional[str] = None) -> str:
+    """
+    Priority: explicit > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > DEFAULT_AI_MODEL > fallback
+    """
+    if explicit and explicit.strip():
+        return explicit.strip()
+    force = os.getenv("MAESTRO_FORCE_MODEL")
+    if force and force.strip():
+        return force.strip()
+    override = os.getenv("AI_MODEL_OVERRIDE")
+    if override and override.strip():
+        return override.strip()
+    default_m = os.getenv("DEFAULT_AI_MODEL", "").strip()
+    if default_m:
+        return default_m
+    return "openai/gpt-4o"
 
-# --------------------------------------------------------------------------------------
-# اختيار أي كائن generation_service موجود في generation_service.py
-# --------------------------------------------------------------------------------------
+def _int_env(name: str, default: int) -> int:
+    try:
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+        return int(raw)
+    except Exception:
+        return default
+
+# ======================================================================================
+# Attempt to fetch existing generation_service object
+# ======================================================================================
 _existing = getattr(_gen_mod, "generation_service", None)
+if _existing is not None:
+    _BASE_OBJ_TYPE = f"{type(_existing).__name__}"
 
-# --------------------------------------------------------------------------------------
+# ======================================================================================
 # Adapter Class
-# --------------------------------------------------------------------------------------
+# ======================================================================================
 class _GenerationServiceAdapter:
     """
-    Adapter يوفر الدوال:
+    Adapter يوفر:
       - text_completion
       - structured_json
-    باستراتيجية مرنة:
-      1) إذا الكائن الأصلي (_base) يمتلك الدالة المطلوبة نستعملها مباشرة.
-      2) وإلا إذا لديه forge_new_code نستعملها لصنع استجابة نصية.
-      3) وإلا نحاول استخدام get_llm_client().
+
+    STRATEGY:
+      1) إذا base لديه الدالة -> استدعاء مباشر.
+      2) إذا لا، محاولة استخدام forge_new_code للنص.
+      3) آخر شيء: LLM client مباشر (إن توفّر) أو فشل آمن يعيد "" / None.
     """
 
     def __init__(self, base: Any = None):
         self._base = base
+        self._text_retries = _int_env("MAESTRO_ADAPTER_MAX_RETRIES", 1)
+        self._json_retries = _int_env("MAESTRO_ADAPTER_JSON_MAX_RETRIES", 1)
 
     # --------------------------- text_completion --------------------------------------
     def text_completion(
@@ -145,16 +196,20 @@ class _GenerationServiceAdapter:
         user_prompt: str,
         temperature: float = 0.3,
         max_tokens: int = 800,
-        max_retries: int = 1,
+        max_retries: int = None,
         fail_hard: bool = False,
+        model: Optional[str] = None,
     ) -> str:
         """
-        يعيد نصاً (str) فقط؛ يفشل بصمت ويعيد "" إذا fail_hard=False.
+        Returns plain string. If fail_hard=False returns "" on failure.
         """
+        attempts = self._text_retries if max_retries is None else max_retries
+        model_name = _select_model(model)
         last_err: Any = None
-        for attempt in range(1, max_retries + 2):
+
+        for attempt in range(1, attempts + 2):
             try:
-                # (1) دالة أصلية بنفس الاسم
+                # 1) Base direct
                 if self._base and hasattr(self._base, "text_completion"):
                     return self._base.text_completion(
                         system_prompt=system_prompt,
@@ -163,39 +218,44 @@ class _GenerationServiceAdapter:
                         max_tokens=max_tokens,
                         max_retries=0,
                         fail_hard=fail_hard,
+                        model=model_name,
                     )
 
-                # (2) forge_new_code
+                # 2) forge_new_code path
                 if self._base and hasattr(self._base, "forge_new_code"):
                     merged = f"{system_prompt.strip()}\n\nUSER:\n{user_prompt}"
-                    resp = self._base.forge_new_code(merged)
+                    resp = self._base.forge_new_code(merged, model=model_name)
                     if isinstance(resp, dict) and resp.get("status") == "success":
                         return (resp.get("answer") or "").strip()
-                    last_err = resp.get("error")
+                    last_err = resp.get("error") if isinstance(resp, dict) else "forge_failure"
                     raise RuntimeError(f"forge_new_code_failed:{last_err}")
 
-                # (3) عميل LLM مباشر
+                # 3) Direct LLM
                 if get_llm_client:
                     client = get_llm_client()
-                    messages = [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ]
                     completion = client.chat.completions.create(
-                        model=_default_model(),
-                        messages=messages,
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
                         temperature=temperature,
                         max_tokens=max_tokens,
                     )
                     content = completion.choices[0].message.content or ""
                     return content.strip()
 
-                raise RuntimeError("No underlying LLM interface (base or client) available.")
+                raise RuntimeError("No underlying generation method available.")
 
             except Exception as e:
                 last_err = e
-                _LOG.warning("text_completion attempt=%d failed: %s", attempt, e)
-                time.sleep(0.15)
+                _LAST_ERRORS["text_completion"] = str(e)
+                _LOG.warning(
+                    "text_completion attempt=%d (limit=%d) failed: %s",
+                    attempt, attempts + 1, e
+                )
+                if attempt <= attempts:
+                    time.sleep(0.15)
 
         if fail_hard:
             raise RuntimeError(f"text_completion_failed:{last_err}")
@@ -208,20 +268,21 @@ class _GenerationServiceAdapter:
         user_prompt: str,
         format_schema: dict,
         temperature: float = 0.2,
-        max_retries: int = 1,
+        max_retries: int = None,
         fail_hard: bool = False,
+        model: Optional[str] = None,
     ) -> Optional[dict]:
         """
-        يحاول إنتاج JSON (dict) وفق المتطلبات. يعيد None إذا لم ينجح (ما لم يكن fail_hard=True).
+        Returns dict or None (unless fail_hard=True).
         """
-        last_err: Any = None
+        attempts = self._json_retries if max_retries is None else max_retries
         required = []
         if isinstance(format_schema, dict):
-            required = format_schema.get("required") or []
-            if not isinstance(required, list):
-                required = []
+            req = format_schema.get("required")
+            if isinstance(req, list):
+                required = req
 
-        # لو الكائن الأصلي لديه structured_json مباشرة نستخدمه:
+        # Try direct if base provides structured_json:
         if self._base and hasattr(self._base, "structured_json"):
             try:
                 return self._base.structured_json(
@@ -229,36 +290,39 @@ class _GenerationServiceAdapter:
                     user_prompt=user_prompt,
                     format_schema=format_schema,
                     temperature=temperature,
-                    max_retries=max_retries,
+                    max_retries=attempts,
                     fail_hard=fail_hard,
+                    model=model,
                 )
             except Exception as e:
-                last_err = e
-                _LOG.warning("base structured_json failed, falling back: %s", e)
+                _LAST_ERRORS["structured_json_direct"] = str(e)
+                _LOG.warning("Direct base structured_json failed -> fallback. Error: %s", e)
 
-        prompt_sys = (
-            f"{system_prompt.strip()}\n"
-            "You MUST reply with only one valid JSON object. No markdown fences, no commentary."
+        sys = (
+            system_prompt.strip()
+            + "\nYou MUST output ONLY one valid JSON object. No markdown fences. No commentary."
         )
+        last_err: Any = None
 
-        for attempt in range(1, max_retries + 2):
+        for attempt in range(1, attempts + 2):
             try:
                 raw = self.text_completion(
-                    system_prompt=prompt_sys,
+                    system_prompt=sys,
                     user_prompt=user_prompt,
                     temperature=temperature,
                     max_tokens=900,
                     max_retries=0,
                     fail_hard=False,
+                    model=model,
                 )
                 if not raw:
                     last_err = "empty_response"
-                    raise RuntimeError("empty_response")
+                    raise RuntimeError(last_err)
 
                 candidate = _extract_first_json_object(raw)
                 if not candidate:
                     last_err = "no_json_found"
-                    raise RuntimeError("no_json_found")
+                    raise RuntimeError(last_err)
 
                 obj, err = _safe_json_load(candidate)
                 if err:
@@ -277,30 +341,95 @@ class _GenerationServiceAdapter:
                 return obj
 
             except Exception as e:
-                _LOG.warning("structured_json attempt=%d failed: %s", attempt, e)
-                time.sleep(0.18)
+                _LAST_ERRORS["structured_json"] = str(e)
+                _LOG.warning(
+                    "structured_json attempt=%d (limit=%d) failed: %s",
+                    attempt, attempts + 1, e
+                )
+                if attempt <= attempts:
+                    time.sleep(0.18)
 
         if fail_hard:
             raise RuntimeError(f"structured_json_failed:{last_err}")
         return None
 
-
-# --------------------------------------------------------------------------------------
-# اختيار ما سنصدّره:
-#   - إذا _existing موجود ويمتلك الدالتين المطلوبتين => استعماله مباشرة.
-#   - غير ذلك: إنشاء Adapter ولفّ الكائن الأصلي (قد يكون None).
-# --------------------------------------------------------------------------------------
+# ======================================================================================
+# Choose export strategy
+# ======================================================================================
 if _existing and all(hasattr(_existing, m) for m in ("text_completion", "structured_json")):
     generation_service = _existing
-    _LOG.info("Using existing generation_service (already provides required methods).")
-else:
+    _ADAPTER_MODE = "pass_through"
+    _LOG.info("Using existing generation_service (full feature / pass-through).")
+elif _existing:
     generation_service = _GenerationServiceAdapter(_existing)
-    if _existing:
-        _LOG.info("Wrapped existing generation_service with adapter (added missing methods).")
-    else:
-        _LOG.info("Created pure adapter (no original generation_service object present).")
+    _ADAPTER_MODE = "wrapped"
+    _LOG.info("Wrapped existing generation_service (added missing methods).")
+else:
+    generation_service = _GenerationServiceAdapter(None)
+    _ADAPTER_MODE = "pure"
+    _LOG.warning("Created pure adapter (no original generation_service object present).")
 
-__all__ = ["generation_service"]
+# ======================================================================================
+# Diagnostics / API
+# ======================================================================================
+def diagnostics() -> dict:
+    """
+    Returns adapter status & internal flags (does NOT call external network).
+    """
+    return {
+        "adapter_version": __version__,
+        "mode": _ADAPTER_MODE,
+        "base_object_type": _BASE_OBJ_TYPE,
+        "has_generation_service_attr": _existing is not None,
+        "pass_through": _ADAPTER_MODE == "pass_through",
+        "default_model_env": os.getenv("DEFAULT_AI_MODEL"),
+        "force_model_env": os.getenv("MAESTRO_FORCE_MODEL"),
+        "override_model_env": os.getenv("AI_MODEL_OVERRIDE"),
+        "selected_default_model_now": _select_model(),
+        "creation_epoch": _CREATION_TS,
+        "last_errors": dict(_LAST_ERRORS),
+    }
+
+def ensure_adapter_ready(raise_on_fail: bool = False) -> bool:
+    """
+    Quick readiness probe: returns True if generation_service exposes the required interface.
+    """
+    ok = all(hasattr(generation_service, m) for m in ("text_completion", "structured_json"))
+    if not ok and raise_on_fail:
+        raise RuntimeError("Maestro adapter is not ready: missing required methods.")
+    return ok
+
+__all__ = [
+    "generation_service",
+    "diagnostics",
+    "ensure_adapter_ready",
+    "__version__",
+]
+
+# ======================================================================================
+# Self-Test (manual execution)
+# ======================================================================================
+if __name__ == "__main__":  # pragma: no cover
+    print("=== maestro.adapter diagnostics ===")
+    print(json.dumps(diagnostics(), ensure_ascii=False, indent=2))
+    ready = ensure_adapter_ready()
+    print("READY:", ready)
+    if ready:
+        try:
+            txt = generation_service.text_completion(
+                "You are tester", "Say ONLY OK.", temperature=0.0, max_retries=0
+            )
+            print("text_completion =>", txt)
+            js = generation_service.structured_json(
+                "System",
+                'Return {"answer":"OK"}',
+                {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]},
+                temperature=0.0,
+                max_retries=0,
+            )
+            print("structured_json =>", js)
+        except Exception as e:
+            print("Self-test error:", e)
 # ======================================================================================
 # END OF FILE
 # ======================================================================================
