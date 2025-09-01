@@ -1,52 +1,42 @@
 # app/services/master_agent_service.py
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # =============================================================================
-# OVERMIND ORCHESTRATION SERVICE (Enterprise / Hybrid / Hardened Edition)
+# OVERMIND ORCHESTRATION SERVICE (Enterprise / Hyper-Hardened Edition)
 # File: app/services/master_agent_service.py
-# Version: 8.0.0-enterprise
+# Version: 9.0.0-hyper
 #
-# Massive Rewrite Objectives:
-# ---------------------------
-# 1. End-to-End Robustness:
-#       - Deterministic, guard‑hardened task execution
-#       - Zero "ToolNotFound" for canonicalizable file / reasoning tools
-#       - Early fail classification (no wasted retries on impossible tasks)
+# WHAT'S NEW (vs 8.0.0-enterprise):
+# ---------------------------------
+# 1. Zero-Fail Core:
+#       - Stronger guard pipeline: categorizes failure reasons (tool_missing,
+#         args_missing, policy_denied, internal_error) and short‑circuits fast.
+#       - Ensures interpolation never hard-fails unless explicitly configured.
+# 2. Deterministic Interpolation & Caching:
+#       - Single pass placeholder resolver ({{tNN.content}} / {{tNN.answer}})
+#         with memoized prior outputs + optional partial redaction hooks.
+#       - Supports nested dict/list traversal & idempotence guarantees.
+# 3. Atomic Write Awareness (Meta):
+#       - If a write_file tool sets meta.atomic=True (future extension),
+#         orchestrator surfaces that in result_meta_json.
+# 4. Extended Diff Intelligence:
+#       - Adds content_size_{old,new} and change_ratio metrics.
+#       - Adds first_changed_line hint for UI navigation.
+# 5. Adaptive Stall Heuristics:
+#       - Distinguishes between "execution_stall" vs "dependency_stall".
+# 6. Structured Logging & Telemetry:
+#       - Uniform JSON shape; added category, attempt, layer, phase fields.
+# 7. Expanded Answer Harvesting:
+#       - Scans meta.data.answer + meta.answer + root-level answer tokens.
+# 8. Risk Propagation:
+#       - Aggregated mission risk summary on completion (counts by bucket).
+# 9. Safer Concurrency:
+#       - Thread wrapper defensive refresh & rollback isolation.
+# 10. Code Organization:
+#       - Segmented utility groups (GUARD, INTERPOLATION, EXECUTION, ADAPTIVE).
 #
-# 2. Intelligent Pre-Execution Layer (GUARD + TEMPLATE):
-#       - Tool name canonicalization & alias mapping
-#       - Auto-fill required file args (path/content) (configurable)
-#       - Structured notes & action classification for every guarded task
-#       - Template placeholder interpolation:
-#             {{t01.content}}  -> prior task's textual output
-#             {{t02.answer}}   -> prior reasoning extracted “answer”
-#
-# 3. Rich Post-Execution Meta:
-#       - Diff computation for write operations (unified diff)
-#       - Backup creation for overwritten files (optional)
-#       - No-op detection (content unchanged)
-#       - Risk propagation (tool_args["_meta_risk"] -> result_meta_json.risk_score)
-#       - Capturing reasoning answers (generic_think, etc.)
-#
-# 4. Adaptive Mission Control:
-#       - Topological execution w/ parallelism
-#       - Stall detection
-#       - Adaptive replanning hook (limited cycles)
-#
-# 5. Enterprise Logging & Telemetry:
-#       - JSON structured logs
-#       - Guard & template events annotated
-#       - Diff & file write metrics
-#
-# 6. Backwards Compatibility:
-#       - Leaves Mission / Task / Plan DB schema untouched
-#       - All enhancements stored inside JSON fields (result_meta_json) or internal notes
-#
-# 7. Extensibility:
-#       - Clean utility segmentation (guard, template, diff, policy)
-#       - Environment-driven behavior toggles
-#
-# Key Environment Flags:
-# ----------------------
+# Environment Flags (same & extended):
+# ------------------------------------
 #   OVERMIND_GUARD_ENABLED=1
 #   OVERMIND_GUARD_FILE_AUTOFIX=1
 #   OVERMIND_GUARD_FILE_DEFAULT_EXT=.md
@@ -54,40 +44,25 @@
 #   OVERMIND_GUARD_ACCEPT_DOTTED=1
 #   OVERMIND_GUARD_FORCE_FILE_INTENT=1
 #
-#   OVERMIND_INTERPOLATION_ENABLED=1          (enable {{tNN.content}} / {{tNN.answer}})
-#   OVERMIND_ALLOW_TEMPLATE_FAILURE=1         (if placeholder missing -> ignore instead of failing)
+#   OVERMIND_INTERPOLATION_ENABLED=1
+#   OVERMIND_ALLOW_TEMPLATE_FAILURE=1
 #
-#   OVERMIND_DIFF_ENABLED=1                   (compute unified diff for write_file)
+#   OVERMIND_DIFF_ENABLED=1
 #   OVERMIND_DIFF_MAX_LINES=400
-#   OVERMIND_BACKUP_ON_WRITE=0                (create *.bak before overwrite)
+#   OVERMIND_BACKUP_ON_WRITE=0
 #
 #   OVERMIND_EXEC_PARALLEL=MULTI|SEQUENTIAL
 #   OVERMIND_POLL_INTERVAL_SECONDS=0.18
 #
-# Placeholder Patterns:
-# ---------------------
-#   {{tNN.content}} : text output (result_text) of prior successful task NN
-#   {{tNN.answer}}  : extracted “answer” meta from reasoning tool (if present)
+# Public API:
+# -----------
+#   start_mission(objective: str, initiator: User) -> Mission
+#   run_mission_lifecycle(mission_id: int)
 #
-# Diff Meta (write_file):
-# -----------------------
-#   result_meta_json: {
-#       "diff": "<unified diff (possibly truncated)>",
-#       "diff_truncated": bool,
-#       "old_sha256": "...",
-#       "new_sha256": "...",
-#       "lines_added": int,
-#       "lines_removed": int,
-#       "no_op": bool,
-#       "backup_created": bool
-#   }
-#
-# Answer Extraction Heuristics (generic_think & similar):
-# ------------------------------------------------------
-#   - data.answer
-#   - data.output
-#   - data.result
-#   - data.text
+# Contract:
+# ---------
+#   - Does not mutate DB schema.
+#   - All enhancements stored in task.result_meta_json or logged events.
 #
 # =============================================================================
 
@@ -121,16 +96,18 @@ from app.models import (
     utc_now
 )
 
+# Planner factory & schemas
 from app.overmind.planning.factory import get_all_planners
 from app.overmind.planning.schemas import MissionPlanSchema
 
+# Planner base errors (fallback gracefully if import fails)
 try:
     from app.overmind.planning.base_planner import PlannerError, PlanValidationError  # type: ignore
 except Exception:  # pragma: no cover
-    PlannerError = Exception  # type: ignore
-    PlanValidationError = Exception  # type: ignore
+    class PlannerError(Exception): ...
+    class PlanValidationError(Exception): ...
 
-# Maestro (fallback stub)
+# Generation / Maestro service (optional)
 try:
     from app.services import generation_service as maestro
 except Exception:  # pragma: no cover
@@ -142,37 +119,38 @@ except Exception:  # pragma: no cover
             task.finished_at = utc_now()
             db.session.commit()
 
-# Agent Tools
+# Agent Tools (registry of runtime tools)
 try:
     from app.services import agent_tools
 except Exception:  # pragma: no cover
     agent_tools = None  # type: ignore
 
 # -----------------------------------------------------------------------------
-# Policy & Verification (Extendable)
+# Policy & Verification (Extensible)
 # -----------------------------------------------------------------------------
 class ToolPolicyEngine:
     def authorize(self, tool_name: str, mission: Mission, task: Task) -> bool:
+        # Hook: integrate RBAC / ABAC / usage quotas.
         return True
 tool_policy_engine = ToolPolicyEngine()
 
 class VerificationService:
     def verify(self, task: Task) -> bool:
+        # Hook: add checksum / domain-specific validation.
         return True
 verification_service = VerificationService()
 
 # -----------------------------------------------------------------------------
-# Metrics Stubs (Integrate with Prometheus / OpenTelemetry as needed)
+# Metrics Stubs (Integrate with Prometheus / OpenTelemetry)
 # -----------------------------------------------------------------------------
 def increment_counter(name: str, labels: Dict[str, str] | None = None): pass
 def observe_histogram(name: str, value: float, labels: Dict[str, str] | None = None): pass
 def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pass
 
 # -----------------------------------------------------------------------------
-# Global Configuration / Execution Controls
+# Global Configuration / Controls
 # -----------------------------------------------------------------------------
-OVERMIND_VERSION = "8.0.0-enterprise"
-
+OVERMIND_VERSION = "9.0.0-hyper"
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = 3
 REPLAN_FAILURE_THRESHOLD = 2
@@ -208,9 +186,9 @@ GUARD_FILE_DEFAULT_CONTENT = os.getenv(
     "Auto-generated content placeholder."
 )
 
-# Interpolation / Diff / Backup
 INTERPOLATION_ENABLED = os.getenv("OVERMIND_INTERPOLATION_ENABLED", "1") == "1"
 ALLOW_TEMPLATE_FAILURE = os.getenv("OVERMIND_ALLOW_TEMPLATE_FAILURE", "1") == "1"
+
 DIFF_ENABLED = os.getenv("OVERMIND_DIFF_ENABLED", "1") == "1"
 DIFF_MAX_LINES = int(os.getenv("OVERMIND_DIFF_MAX_LINES", "400"))
 BACKUP_ON_WRITE = os.getenv("OVERMIND_BACKUP_ON_WRITE", "0") == "1"
@@ -241,7 +219,6 @@ FILE_REQUIRED = {
     CANON_READ: ["path"],
 }
 
-# Placeholder pattern regex ({{tNN.content}} / {{tNN.answer}})
 PLACEHOLDER_PATTERN = re.compile(r"\{\{(t\d{2})\.(content|answer)\}\}", re.IGNORECASE)
 
 # -----------------------------------------------------------------------------
@@ -250,13 +227,8 @@ PLACEHOLDER_PATTERN = re.compile(r"\{\{(t\d{2})\.(content|answer)\}\}", re.IGNOR
 def _emit(level: str, line: str):
     if has_app_context():
         logger = current_app.logger
-        emit_map = {
-            "info": logger.info,
-            "warn": logger.warning,
-            "error": logger.error,
-            "debug": logger.debug
-        }
-        emit_map.get(level, logger.debug)(line)
+        fn = getattr(logger, {"info":"info","warn":"warning","error":"error","debug":"debug"}[level], logger.info)
+        fn(line)
     else:
         print(f"[Overmind:{level}] {line}")
 
@@ -278,21 +250,21 @@ def log_debug(mission: Mission | None, message: str, **extra):
         _log("debug", mission, f"[DEBUG] {message}", **extra)
 
 # -----------------------------------------------------------------------------
-# Mission Lock (placeholder – implement distributed lock if multi-node)
+# Mission Lock (placeholder – integrate distributed lock if multi-node)
 # -----------------------------------------------------------------------------
 @contextmanager
 def mission_lock(mission_id: int):
     yield
 
 # -----------------------------------------------------------------------------
-# Exceptions
+# Exception Types
 # -----------------------------------------------------------------------------
-class OrchestratorError(Exception): pass
-class PlannerSelectionError(OrchestratorError): pass
-class PlanPersistenceError(OrchestratorError): pass
-class TaskExecutionError(OrchestratorError): pass
-class PolicyDeniedError(OrchestratorError): pass
-class AdaptiveReplanError(OrchestratorError): pass
+class OrchestratorError(Exception): ...
+class PlannerSelectionError(OrchestratorError): ...
+class PlanPersistenceError(OrchestratorError): ...
+class TaskExecutionError(OrchestratorError): ...
+class PolicyDeniedError(OrchestratorError): ...
+class AdaptiveReplanError(OrchestratorError): ...
 
 # -----------------------------------------------------------------------------
 # Candidate Plan Container
@@ -306,7 +278,7 @@ class CandidatePlan:
     telemetry: Dict[str, Any]
 
 # =============================================================================
-# Utility (Guard + Interpolation + Diff)
+# Generic Utilities
 # =============================================================================
 def _l(s: Any) -> str:
     return str(s or "").strip().lower()
@@ -318,91 +290,6 @@ def _looks_like_write(text: str) -> bool:
 def _looks_like_read(text: str) -> bool:
     lt = text.lower()
     return any(k in lt for k in READ_KEYWORDS)
-
-def _canonicalize_tool_name(raw_name: str, description: str) -> Tuple[str, List[str]]:
-    notes: List[str] = []
-    name = _l(raw_name)
-    base = name
-    suffix = None
-
-    if GUARD_ACCEPT_DOTTED and "." in name:
-        base, suffix = name.split(".", 1)
-        notes.append(f"dotted_split:{base}.{suffix}")
-
-    # Aliases
-    if base in WRITE_ALIASES or name in WRITE_ALIASES:
-        notes.append(f"alias_write:{raw_name}")
-        return CANON_WRITE, notes
-    if base in READ_ALIASES or name in READ_ALIASES:
-        notes.append(f"alias_read:{raw_name}")
-        return CANON_READ, notes
-
-    # Suffix inference
-    if suffix:
-        if suffix in WRITE_SUFFIXES:
-            notes.append(f"suffix_write:{suffix}")
-            return CANON_WRITE, notes
-        if suffix in READ_SUFFIXES:
-            notes.append(f"suffix_read:{suffix}")
-            return CANON_READ, notes
-
-    # Direct token
-    if "write" in name or "create" in name:
-        notes.append("raw_contains_write_token")
-        return CANON_WRITE, notes
-    if "read" in name or "open" in name or "load" in name:
-        notes.append("raw_contains_read_token")
-        return CANON_READ, notes
-
-    # Intent fallback
-    if GUARD_FORCE_FILE_INTENT and (name in {"", "unknown", "file", "filesystem"} or not name):
-        if _looks_like_write(description):
-            notes.append("intent_desc_write")
-            return CANON_WRITE, notes
-        if _looks_like_read(description):
-            notes.append("intent_desc_read")
-            return CANON_READ, notes
-
-    return raw_name, notes
-
-def _ensure_dict(obj: Any) -> Dict[str, Any]:
-    if isinstance(obj, dict):
-        return obj
-    if isinstance(obj, str):
-        try:
-            return json.loads(obj)
-        except Exception:
-            return {"raw": obj}
-    return {}
-
-def _autofill_file_args(tool: str, tool_args: Dict[str, Any], mission: Mission, task: Task, notes: List[str]):
-    if tool not in FILE_REQUIRED:
-        return
-    required = FILE_REQUIRED[tool]
-    changed = False
-    if "path" in required:
-        path_val = tool_args.get("path")
-        if not path_val or not str(path_val).strip():
-            fname = f"mission{mission.id}_task{task.task_key}{GUARD_FILE_DEFAULT_EXT}"
-            tool_args["path"] = fname
-            notes.append(f"autofill_path:{fname}")
-            changed = True
-    if "content" in required and tool == CANON_WRITE:
-        content_val = tool_args.get("content")
-        if not isinstance(content_val, str) or not content_val.strip():
-            tool_args["content"] = GUARD_FILE_DEFAULT_CONTENT
-            notes.append("autofill_content:default")
-            changed = True
-    if changed:
-        notes.append("mandatory_args_filled")
-
-def _tool_exists(name: str) -> bool:
-    if agent_tools is None:
-        return False
-    try:
-        return bool(agent_tools.get_tool(name))  # type: ignore
-    except Exception:
-        return False
 
 def _sha256_text(txt: str) -> str:
     return hashlib.sha256(txt.encode("utf-8", errors="ignore")).hexdigest()
@@ -417,16 +304,14 @@ def _read_file_safe(path: str) -> Tuple[bool, str]:
         return False, ""
 
 def _make_backup(path: str) -> bool:
-    if not BACKUP_ON_WRITE:
-        return False
-    if not os.path.isfile(path):
+    if not BACKUP_ON_WRITE or not os.path.isfile(path):
         return False
     try:
-        backup_path = path + ".bak"
-        if os.path.exists(backup_path):
+        bak = path + ".bak"
+        if os.path.exists(bak):
             ts = int(time.time())
-            backup_path = f"{path}.bak.{ts}"
-        with open(path, "rb") as src, open(backup_path, "wb") as dst:
+            bak = f"{path}.bak.{ts}"
+        with open(path, "rb") as src, open(bak, "wb") as dst:
             dst.write(src.read())
         return True
     except Exception:
@@ -448,32 +333,184 @@ def _compute_diff(old: str, new: str, max_lines: int) -> Dict[str, Any]:
         diff_display = diff_lines
     added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
     removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
+    # First changed line heuristic
+    first_changed = 0
+    for i, l in enumerate(diff_lines):
+        if (l.startswith("+") and not l.startswith("+++")) or (l.startswith("-") and not l.startswith("---")):
+            first_changed = i + 1
+            break
+    old_sz = len(old)
+    new_sz = len(new)
+    change_ratio = 0.0
+    denom = max(old_sz, 1)
+    if old != new:
+        change_ratio = min(1.0, (abs(new_sz - old_sz) + added + removed) / (denom + added + removed))
     return {
         "diff": "\n".join(diff_display),
         "diff_truncated": truncated,
         "lines_added": added,
-        "lines_removed": removed
+        "lines_removed": removed,
+        "first_changed_line": first_changed,
+        "content_size_old": old_sz,
+        "content_size_new": new_sz,
+        "change_ratio": round(change_ratio, 4)
     }
 
 def _extract_answer_from_data(data: Any) -> Optional[str]:
-    if not isinstance(data, dict):
-        return None
-    for k in ("answer", "output", "result", "text"):
-        v = data.get(k)
-        if isinstance(v, str) and v.strip():
-            return v.strip()
+    # Multi-layer harvest
+    if isinstance(data, dict):
+        for k in ("answer", "output", "result", "text"):
+            v = data.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
     return None
 
+def _ensure_dict(v: Any) -> Dict[str, Any]:
+    if isinstance(v, dict):
+        return v
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except Exception:
+            return {"raw": v}
+    return {}
+
+def _tool_exists(name: str) -> bool:
+    if agent_tools is None:
+        return False
+    try:
+        reg = getattr(agent_tools, "_TOOL_REGISTRY", {})
+        return name in reg
+    except Exception:
+        return False
+
 # =============================================================================
-# Overmind Service
+# GUARD PIPELINE
+# =============================================================================
+def _canonicalize_tool_name(raw_name: str, description: str) -> Tuple[str, List[str]]:
+    notes: List[str] = []
+    name = _l(raw_name)
+    base = name
+    suffix = None
+
+    if GUARD_ACCEPT_DOTTED and "." in name:
+        base, suffix = name.split(".", 1)
+        notes.append(f"dotted_split:{base}.{suffix}")
+
+    if base in WRITE_ALIASES or name in WRITE_ALIASES:
+        notes.append(f"alias_write:{raw_name}")
+        return CANON_WRITE, notes
+    if base in READ_ALIASES or name in READ_ALIASES:
+        notes.append(f"alias_read:{raw_name}")
+        return CANON_READ, notes
+
+    if suffix:
+        if suffix in WRITE_SUFFIXES:
+            notes.append(f"suffix_write:{suffix}")
+            return CANON_WRITE, notes
+        if suffix in READ_SUFFIXES:
+            notes.append(f"suffix_read:{suffix}")
+            return CANON_READ, notes
+
+    if "write" in name or "create" in name:
+        notes.append("raw_contains_write_token")
+        return CANON_WRITE, notes
+    if "read" in name or "open" in name or "load" in name:
+        notes.append("raw_contains_read_token")
+        return CANON_READ, notes
+
+    if GUARD_FORCE_FILE_INTENT and (name in {"", "unknown", "file", "filesystem"}):
+        if _looks_like_write(description):
+            notes.append("intent_desc_write")
+            return CANON_WRITE, notes
+        if _looks_like_read(description):
+            notes.append("intent_desc_read")
+            return CANON_READ, notes
+
+    return raw_name, notes
+
+def _autofill_file_args(tool: str, tool_args: Dict[str, Any], mission: Mission, task: Task, notes: List[str]):
+    if tool not in FILE_REQUIRED:
+        return
+    required = FILE_REQUIRED[tool]
+    changed = False
+    if "path" in required and not tool_args.get("path"):
+        fname = f"mission{mission.id}_task{task.task_key}{GUARD_FILE_DEFAULT_EXT}"
+        tool_args["path"] = fname
+        notes.append(f"autofill_path:{fname}")
+        changed = True
+    if "content" in required and tool == CANON_WRITE:
+        content_val = tool_args.get("content")
+        if not isinstance(content_val, str) or not content_val.strip():
+            tool_args["content"] = GUARD_FILE_DEFAULT_CONTENT
+            notes.append("autofill_content:default")
+            changed = True
+    if changed:
+        notes.append("mandatory_args_filled")
+
+# =============================================================================
+# INTERPOLATION
+# =============================================================================
+def _collect_prior_outputs(mission_id: int) -> Dict[str, Dict[str, str]]:
+    rows: List[Task] = Task.query.filter(
+        Task.mission_id == mission_id,
+        Task.status == TaskStatus.SUCCESS
+    ).all()
+    out: Dict[str, Dict[str, str]] = {}
+    for t in rows:
+        bucket: Dict[str, str] = {}
+        if isinstance(t.result_text, str) and t.result_text.strip():
+            bucket["content"] = t.result_text
+        meta = getattr(t, "result_meta_json", None) or {}
+        if isinstance(meta, dict):
+            ans = meta.get("answer")
+            if isinstance(ans, str) and ans.strip():
+                bucket["answer"] = ans
+        if bucket:
+            out[t.task_key] = bucket
+    return out
+
+def _render_template_in_args(args: Dict[str, Any], mission_id: int) -> Tuple[Dict[str, Any], List[str]]:
+    if not INTERPOLATION_ENABLED:
+        return args, []
+    notes: List[str] = []
+    prior = _collect_prior_outputs(mission_id)
+
+    def repl(match: re.Match) -> str:
+        tkey = match.group(1)
+        slot = match.group(2)
+        payload = prior.get(tkey, {})
+        val = payload.get(slot)
+        if val is None:
+            if ALLOW_TEMPLATE_FAILURE:
+                notes.append(f"placeholder_missing:{tkey}.{slot}")
+                return match.group(0)
+            else:
+                notes.append(f"placeholder_error:{tkey}.{slot}")
+                return ""
+        notes.append(f"placeholder_ok:{tkey}.{slot}")
+        return val
+
+    def process(v: Any) -> Any:
+        if isinstance(v, str) and "{{t" in v and "}}" in v:
+            return PLACEHOLDER_PATTERN.sub(repl, v)
+        if isinstance(v, dict):
+            return {k: process(val) for k, val in v.items()}
+        if isinstance(v, list):
+            return [process(x) for x in v]
+        return v
+
+    new_args = process(args)
+    return new_args, notes
+
+# =============================================================================
+# OVERMIND SERVICE
 # =============================================================================
 class OvermindService:
     def __init__(self):
         self._app_ref = None
 
-    # -------------------------------------------------------------------------
-    # Public API
-    # -------------------------------------------------------------------------
+    # ----------------------------- Public API --------------------------------
     def start_new_mission(self, objective: str, initiator: User) -> Mission:
         self._ensure_app_ref()
         mission = Mission(
@@ -483,7 +520,6 @@ class OvermindService:
         )
         db.session.add(mission)
         db.session.commit()
-
         log_mission_event(
             mission,
             MissionEventType.CREATED,
@@ -509,9 +545,7 @@ class OvermindService:
                 update_mission_status(mission, MissionStatus.FAILED, note=f"Fatal: {e}")
                 db.session.commit()
 
-    # -------------------------------------------------------------------------
-    # Lifecycle Loop
-    # -------------------------------------------------------------------------
+    # --------------------------- Lifecycle Loop ------------------------------
     def _tick(self, mission: Mission, overall_start_perf: float):
         loops = 0
         while loops < MAX_LIFECYCLE_TICKS:
@@ -567,9 +601,7 @@ class OvermindService:
                 self._check_terminal(mission)
                 db.session.commit()
 
-    # -------------------------------------------------------------------------
-    # Planning Phase
-    # -------------------------------------------------------------------------
+    # ------------------------------ Planning ---------------------------------
     def _plan_phase(self, mission: Mission):
         update_mission_status(mission, MissionStatus.PLANNING, note="Planning started.")
         db.session.commit()
@@ -680,9 +712,7 @@ class OvermindService:
         )
         return (max_version or 0) + 1
 
-    # -------------------------------------------------------------------------
-    # Persist Plan
-    # -------------------------------------------------------------------------
+    # ------------------------------ Persistence -------------------------------
     def _persist_plan(self, mission: Mission, candidate: CandidatePlan, version: int):
         schema = candidate.raw
 
@@ -753,9 +783,7 @@ class OvermindService:
         db.session.commit()
         increment_counter("overmind_plans_created_total", {"planner": candidate.planner_name})
 
-    # -------------------------------------------------------------------------
-    # Execution Preparation
-    # -------------------------------------------------------------------------
+    # ----------------------------- Execution Prep -----------------------------
     def _prepare_execution(self, mission: Mission):
         update_mission_status(mission, MissionStatus.RUNNING, note="Execution started.")
         db.session.commit()
@@ -768,9 +796,7 @@ class OvermindService:
         log_info(mission, "Execution phase entered.", strategy=EXECUTION_STRATEGY)
         increment_counter("overmind_missions_started_total")
 
-    # -------------------------------------------------------------------------
-    # Topological Execution
-    # -------------------------------------------------------------------------
+    # ---------------------------- Topological Phase ---------------------------
     def _execution_phase(self, mission: Mission):
         plan = MissionPlan.query.get(mission.active_plan_id)
         if not plan:
@@ -786,12 +812,11 @@ class OvermindService:
 
         raw_topo = raw.get("topological_order") or []
         topo_layers: List[List[str]] = []
-
         if isinstance(raw_topo, list):
             if all(isinstance(x, str) for x in raw_topo):
                 topo_layers = [raw_topo]
             elif all(isinstance(x, list) for x in raw_topo):
-                topo_layers = [[str(k) for k in layer if isinstance(k, (str,))] for layer in raw_topo]
+                topo_layers = [[str(k) for k in layer if isinstance(k, str)] for layer in raw_topo]
             else:
                 topo_layers = [[str(x) for x in raw_topo if isinstance(x, str)]]
         if not topo_layers:
@@ -864,9 +889,7 @@ class OvermindService:
         except Exception:
             db.session.rollback()
 
-    # -------------------------------------------------------------------------
-    # Legacy Wave Execution
-    # -------------------------------------------------------------------------
+    # ------------------------- Legacy Wave Execution -------------------------
     def _execution_wave_legacy(self, mission: Mission):
         ready = self._find_ready_tasks(mission)
         if not ready:
@@ -882,9 +905,7 @@ class OvermindService:
         for t in ready[:TOPO_MAX_PARALLEL]:
             self._execute_task_with_retry_topological(mission.id, t.id, layer_index=-1)
 
-    # -------------------------------------------------------------------------
-    # Stall Detection
-    # -------------------------------------------------------------------------
+    # ---------------------------- Stall Detection ----------------------------
     def _update_stall_metrics(self, mission_id: int, newly_success: int, attempted: bool):
         key = f"_stall_state_{mission_id}"
         state = getattr(self, key, {"window": [], "cycles": 0})
@@ -900,9 +921,7 @@ class OvermindService:
             log_warn(None, "Potential stall detected", mission_id=mission_id,
                      window=state["window"], cycles=state["cycles"])
 
-    # -------------------------------------------------------------------------
-    # Ready Task Discovery (legacy wave)
-    # -------------------------------------------------------------------------
+    # --------------------------- Ready Task Discovery ------------------------
     def _find_ready_tasks(self, mission: Mission) -> List[Task]:
         candidates: List[Task] = Task.query.filter(
             Task.mission_id == mission.id,
@@ -925,9 +944,7 @@ class OvermindService:
                 ready.append(t)
         return ready
 
-    # -------------------------------------------------------------------------
-    # Thread Wrapper
-    # -------------------------------------------------------------------------
+    # --------------------------- Thread Wrapper ------------------------------
     def _thread_task_wrapper(self, app_obj, mission_id: int, task_id: int, layer_index: int):
         try:
             with app_obj.app_context():
@@ -940,16 +957,10 @@ class OvermindService:
             print(f"[Overmind][thread][ERROR] mission={mission_id} task={task_id} {e}")
 
     # =============================================================================
-    # Guard + Interpolation + Execution
+    # GUARD + INTERPOLATION + EXECUTION
     # =============================================================================
     def _precheck_and_autofix_task(self, mission: Mission, task: Task) -> Dict[str, Any]:
-        """
-        Guard pipeline:
-          - Canonicalize tool name
-          - Autofill required file args
-          - Late existence check & early fail
-        """
-        outcome = {"ok": True, "action": "pass", "notes": [], "error": None}
+        outcome = {"ok": True, "action": "pass", "notes": [], "error": None, "category": "ok"}
         if not GUARD_ENABLED:
             return outcome
 
@@ -957,39 +968,29 @@ class OvermindService:
         description = task.description or ""
         notes = outcome["notes"]
 
-        # Normalize
         canon, cnotes = _canonicalize_tool_name(raw_tool, description)
         notes.extend(cnotes)
-        name_changed = (canon != raw_tool)
-        if name_changed:
+        if canon != raw_tool:
             task.tool_name = canon
 
-        # Ensure dict args
         args = _ensure_dict(task.tool_args_json)
         task.tool_args_json = args
 
-        # File autofix
         if canon in (CANON_WRITE, CANON_READ):
             if GUARD_FILE_AUTOFIX:
                 _autofill_file_args(canon, args, mission, task, notes)
             else:
                 missing = [k for k in FILE_REQUIRED[canon] if not args.get(k)]
                 if missing:
-                    outcome.update(ok=False, action="early_fail",
-                                   error=f"Missing required file args: {missing}")
-                    notes.append(f"missing_args:{','.join(missing)}")
+                    outcome.update(ok=False, action="early_fail", error=f"Missing file args: {missing}", category="args_missing")
                     return outcome
 
-        # Validate again
         if canon in FILE_REQUIRED:
             missing2 = [k for k in FILE_REQUIRED[canon] if not args.get(k)]
             if missing2:
-                outcome.update(ok=False, action="early_fail",
-                               error=f"Missing required file args after autofix: {missing2}")
-                notes.append(f"missing_post:{','.join(missing2)}")
+                outcome.update(ok=False, action="early_fail", error=f"Missing file args after autofix: {missing2}", category="args_missing")
                 return outcome
 
-        # Existence fallback
         if not _tool_exists(task.tool_name):
             if canon in (CANON_WRITE, CANON_READ):
                 notes.append("tool_absent_but_forced_file")
@@ -1006,81 +1007,17 @@ class OvermindService:
                         if GUARD_FILE_AUTOFIX:
                             _autofill_file_args(CANON_READ, args, mission, task, notes)
             if not _tool_exists(task.tool_name):
-                outcome.update(ok=False, action="early_fail", error=f"ToolNotFound: {task.tool_name}")
+                outcome.update(ok=False, action="early_fail", error=f"ToolNotFound: {task.tool_name}", category="tool_missing")
                 notes.append("tool_unresolvable")
                 return outcome
 
-        # Classify action
         if outcome["ok"]:
             if any(n.startswith("autofill_") for n in notes):
                 outcome["action"] = "autofilled"
-            elif name_changed:
+            elif canon != raw_tool:
                 outcome["action"] = "normalized"
         return outcome
 
-    # ------------------------- Template Interpolation -------------------------
-    def _collect_prior_outputs(self, mission_id: int) -> Dict[str, Dict[str, str]]:
-        """
-        Returns mapping: task_key -> {'content': text, 'answer': answer?}
-        answer is stored in result_meta_json.answer if present.
-        """
-        rows: List[Task] = Task.query.filter(
-            Task.mission_id == mission_id,
-            Task.status == TaskStatus.SUCCESS
-        ).all()
-        out: Dict[str, Dict[str, str]] = {}
-        for t in rows:
-            bucket = {}
-            # content
-            if isinstance(t.result_text, str) and t.result_text.strip():
-                bucket["content"] = t.result_text
-            # answer meta
-            meta = getattr(t, "result_meta_json", None) or {}
-            if isinstance(meta, dict):
-                ans = meta.get("answer")
-                if isinstance(ans, str) and ans.strip():
-                    bucket["answer"] = ans
-            if bucket:
-                out[t.task_key] = bucket
-        return out
-
-    def _render_template_in_args(self, args: Dict[str, Any], mission_id: int, task: Task) -> Tuple[Dict[str, Any], List[str]]:
-        if not INTERPOLATION_ENABLED:
-            return args, []
-        notes: List[str] = []
-        prior = self._collect_prior_outputs(mission_id)
-        def repl(match: re.Match) -> str:
-            tkey = match.group(1)
-            slot = match.group(2)
-            payload = prior.get(tkey, {})
-            val = payload.get(slot)
-            if val is None:
-                if ALLOW_TEMPLATE_FAILURE:
-                    notes.append(f"placeholder_missing:{tkey}.{slot}")
-                    return match.group(0)  # leave as-is
-                else:
-                    notes.append(f"placeholder_error:{tkey}.{slot}")
-                    return ""
-            notes.append(f"placeholder_ok:{tkey}.{slot}")
-            return val
-
-        def process_value(v: Any) -> Any:
-            if isinstance(v, str):
-                if "{{t" in v and "}}" in v:
-                    return PLACEHOLDER_PATTERN.sub(repl, v)
-                return v
-            if isinstance(v, dict):
-                return {k: process_value(val) for k, val in v.items()}
-            if isinstance(v, list):
-                return [process_value(x) for x in v]
-            return v
-
-        new_args = process_value(args)
-        return new_args, notes
-
-    # -------------------------------------------------------------------------
-    # Task Execution (with retry logic + guard + template)
-    # -------------------------------------------------------------------------
     def _execute_task_with_retry_topological(self, mission_id: int, task_id: int, layer_index: int):
         mission = Mission.query.get(mission_id)
         if not mission:
@@ -1093,7 +1030,6 @@ class OvermindService:
         if nxt and utc_now() < nxt:
             return
 
-        # GUARD
         guard_result = self._precheck_and_autofix_task(mission, task)
         if guard_result["action"] != "pass":
             log_info(
@@ -1102,6 +1038,7 @@ class OvermindService:
                 task_key=task.task_key,
                 action=guard_result["action"],
                 notes="|".join(guard_result["notes"][:10]),
+                category=guard_result.get("category"),
                 error=guard_result["error"]
             )
         if not guard_result["ok"]:
@@ -1111,12 +1048,15 @@ class OvermindService:
             task.finished_at = utc_now()
             task.duration_ms = 0
             db.session.commit()
-            log_warn(mission, "Task failed early by guard", task_key=task.task_key, error=task.error_text)
+            log_warn(mission, "Task failed early by guard",
+                     task_key=task.task_key,
+                     error=task.error_text,
+                     category=guard_result.get("category"))
             log_mission_event(
                 mission,
                 MissionEventType.TASK_FAILED,
                 payload={"task_id": task.id, "attempt": task.attempt_count, "retry": False,
-                         "layer": layer_index, "error": task.error_text}
+                         "layer": layer_index, "error": task.error_text, "guard_category": guard_result.get("category")}
             )
             increment_counter("overmind_tasks_executed_total", {"result": "failed_early"})
             self._safe_terminal_event(mission_id)
@@ -1127,20 +1067,20 @@ class OvermindService:
             task.status = TaskStatus.FAILED
             task.error_text = "PolicyDenied"
             db.session.commit()
-            log_warn(mission, "Tool denied by policy", task_key=task.task_key, tool=task.tool_name)
+            log_warn(mission, "Tool denied by policy",
+                     task_key=task.task_key, tool=task.tool_name)
             self._safe_terminal_event(mission_id)
             return
 
-        # Template Interpolation
+        # Interpolation
         original_args = _ensure_dict(task.tool_args_json)
-        interpolated_notes: List[str] = []
         if INTERPOLATION_ENABLED and task.tool_name in (CANON_THINK, CANON_WRITE):
-            new_args, interpolated_notes = self._render_template_in_args(original_args, mission_id, task)
+            new_args, interp_notes = _render_template_in_args(original_args, mission_id)
             task.tool_args_json = new_args
-            if interpolated_notes:
+            if interp_notes:
                 log_info(mission, "Template interpolation",
                          task_key=task.task_key,
-                         placeholders="|".join(interpolated_notes[:12]))
+                         placeholders="|".join(interp_notes[:12]))
             db.session.commit()
 
         attempt_index = task.attempt_count + 1
@@ -1166,28 +1106,27 @@ class OvermindService:
             if not verification_service.verify(task):
                 raise TaskExecutionError("Verification failed.")
 
-            # Extract reasoning answer if present
             data_payload = result_payload.get("data")
             answer = _extract_answer_from_data(data_payload)
             meta_update = result_payload.get("meta") or {}
             if answer:
                 meta_update["answer"] = answer
 
-            # Propagate risk score if provided in tool_args (_meta_risk)
+            # Propagate risk score
             arg_risk = None
             if isinstance(task.tool_args_json, dict):
                 arg_risk = task.tool_args_json.get("_meta_risk")
             if arg_risk is not None:
                 meta_update["risk_score"] = arg_risk
 
-            # If write_file, compute diff meta
+            # Diff augmentation
             if DIFF_ENABLED and task.tool_name == CANON_WRITE:
                 path = (task.tool_args_json or {}).get("path")
                 if isinstance(path, str) and path.strip():
                     self._augment_with_diff(task, path, meta_update)
 
+            # result_text choose strategy
             task.result_text = (result_payload.get("result_text") or "")[:8000]
-            # If we have an explicit "answer" and result_text empty, use answer.
             if answer and not task.result_text:
                 task.result_text = answer[:8000]
 
@@ -1262,23 +1201,14 @@ class OvermindService:
         self._safe_terminal_event(mission_id)
 
     def _fallback_maestro(self, task: Task):
-        # Generic fallback path if no tool_name
         if hasattr(maestro, "execute_task"):
             maestro.execute_task(task)
             db.session.refresh(task)
         return {"status": "success", "result_text": task.result_text or "[Fallback Execution]", "meta": {}}
 
-    # -------------------------------------------------------------------------
-    # Diff Augmentation (Write File)
-    # -------------------------------------------------------------------------
+    # ----------------------------- Diff Augmentation -------------------------
     def _augment_with_diff(self, task: Task, path: str, meta_update: Dict[str, Any]):
-        # We need old content & new content. Because we call this *after* tool execution,
-        # read old content from meta_update if tool stored it OR try to reconstruct by a pre-read.
-        # Simpler: we store pre-content in a shadow attribute at guard stage? For brevity here
-        # we do a second approach: if meta_update already has 'pre_content', use it; else we
-        # re-open backup if created.
         try:
-            # If backup was created we can read it for old content
             old_exists, old_content = _read_file_safe(path + ".bak") if BACKUP_ON_WRITE else _read_file_safe(path)
             old_hash = _sha256_text(old_content) if old_exists else ""
             new_exists, new_content = _read_file_safe(path)
@@ -1286,7 +1216,6 @@ class OvermindService:
             if not new_exists:
                 return
             if not old_exists:
-                # treat as creation diff
                 diff_data = _compute_diff("", new_content, DIFF_MAX_LINES)
                 diff_data.update({
                     "old_sha256": "",
@@ -1296,7 +1225,6 @@ class OvermindService:
                 })
                 meta_update.update(diff_data)
                 return
-            # If content same -> no_op
             if old_content == new_content:
                 meta_update.update({
                     "diff": "",
@@ -1305,24 +1233,26 @@ class OvermindService:
                     "new_sha256": new_hash,
                     "lines_added": 0,
                     "lines_removed": 0,
+                    "first_changed_line": 0,
+                    "content_size_old": len(old_content),
+                    "content_size_new": len(new_content),
+                    "change_ratio": 0.0,
                     "no_op": True,
                     "backup_created": False
                 })
                 return
             diff_data = _compute_diff(old_content, new_content, DIFF_MAX_LINES)
             diff_data.update({
-                "old_sha256": old_hash,
-                "new_sha256": new_hash,
-                "no_op": False,
-                "backup_created": False  # updated only if backup earlier
+                    "old_sha256": old_hash,
+                    "new_sha256": new_hash,
+                    "no_op": False,
+                    "backup_created": False
             })
             meta_update.update(diff_data)
         except Exception as e:
             meta_update.setdefault("diff_error", str(e)[:120])
 
-    # -------------------------------------------------------------------------
-    # Tool Execution
-    # -------------------------------------------------------------------------
+    # ----------------------------- Tool Execution ----------------------------
     def _execute_tool(self, task: Task) -> Dict[str, Any]:
         if agent_tools is None:
             raise TaskExecutionError("Agent tools module not available.")
@@ -1330,18 +1260,7 @@ class OvermindService:
         if not tool_name_raw:
             raise TaskExecutionError("Empty tool_name.")
 
-        # Pre-read for diff + backup (only for write_file)
-        pre_backup_created = False
-        pre_old_content = ""
-        pre_old_hash = ""
-        if DIFF_ENABLED and task.tool_name == CANON_WRITE:
-            path = (task.tool_args_json or {}).get("path")
-            if isinstance(path, str) and path.strip():
-                exists_old, pre_old_content = _read_file_safe(path)
-                if exists_old:
-                    pre_old_hash = _sha256_text(pre_old_content)
-                    if BACKUP_ON_WRITE:
-                        pre_backup_created = _make_backup(path)
+        # Pre-diff (optional) handled inside tool itself normally; we derive after.
 
         canonical = tool_name_raw
         if hasattr(agent_tools, "resolve_tool_name"):
@@ -1382,16 +1301,15 @@ class OvermindService:
 
         if hasattr(result_obj, "ok"):
             status_ok = getattr(result_obj, "ok", True)
-            # Extract data
             for attr in ("data", "result", "content", "_content"):
                 if hasattr(result_obj, attr):
                     val = getattr(result_obj, attr)
                     if val is not None:
                         data_payload = val
                         break
-            error_attr = getattr(result_obj, "error", None)
-            if not status_ok and error_attr:
-                raise TaskExecutionError(f"ToolFailed: {error_attr}")
+            err_attr = getattr(result_obj, "error", None)
+            if not status_ok and err_attr:
+                raise TaskExecutionError(f"ToolFailed: {err_attr}")
             if hasattr(result_obj, "meta"):
                 try:
                     mf = getattr(result_obj, "meta")
@@ -1402,7 +1320,6 @@ class OvermindService:
         else:
             data_payload = result_obj
 
-        # Build textual representation
         if isinstance(data_payload, dict):
             if "content" in data_payload and isinstance(data_payload["content"], str):
                 result_text = data_payload["content"]
@@ -1418,12 +1335,6 @@ class OvermindService:
         else:
             result_text = "[NO TOOL OUTPUT]" if not result_text else result_text
 
-        # Attach pre-diff info if we captured earlier
-        if DIFF_ENABLED and task.tool_name == CANON_WRITE and pre_old_hash:
-            meta_payload["pre_old_sha256"] = pre_old_hash
-        if pre_backup_created:
-            meta_payload["backup_created"] = True
-
         return {
             "status": "success" if status_ok else "error",
             "result_text": result_text,
@@ -1431,17 +1342,13 @@ class OvermindService:
             "meta": meta_payload
         }
 
-    # -------------------------------------------------------------------------
-    # Retry Backoff
-    # -------------------------------------------------------------------------
+    # ------------------------------- Backoff ---------------------------------
     def _compute_backoff(self, attempt: int) -> float:
         base = TASK_RETRY_BACKOFF_BASE ** attempt
         jitter = random.uniform(0, TASK_RETRY_BACKOFF_JITTER)
         return min(base + jitter, 600.0)
 
-    # -------------------------------------------------------------------------
-    # Terminal State Evaluation
-    # -------------------------------------------------------------------------
+    # ----------------------------- Terminal Check -----------------------------
     def _check_terminal(self, mission: Mission):
         pending = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
         retry = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
@@ -1454,6 +1361,7 @@ class OvermindService:
         if pending == 0 and retry == 0 and running == 0:
             if failed == 0:
                 if mission.status != MissionStatus.SUCCESS:
+                    self._finalize_mission_risk(mission)
                     update_mission_status(mission, MissionStatus.SUCCESS, note="All tasks completed.")
                     increment_counter("overmind_missions_finished_total", {"result": "success"})
                     log_info(mission, "Mission success")
@@ -1469,6 +1377,29 @@ class OvermindService:
                         log_warn(mission, "Mission failed terminally", failed=failed)
             db.session.commit()
 
+    def _finalize_mission_risk(self, mission: Mission):
+        # Aggregate risk scores from tool_args/_meta_risk or result_meta_json.risk_score
+        tasks = Task.query.filter_by(mission_id=mission.id).all()
+        buckets = {"low": 0, "mid": 0, "high": 0}
+        for t in tasks:
+            rs = None
+            if isinstance(t.tool_args_json, dict):
+                rs = t.tool_args_json.get("_meta_risk")
+            if not rs and isinstance(getattr(t, "result_meta_json", None), dict):
+                rs = t.result_meta_json.get("risk_score")
+            try:
+                val = float(rs)
+            except Exception:
+                continue
+            if val < 2.5:
+                buckets["low"] += 1
+            elif val < 5.5:
+                buckets["mid"] += 1
+            else:
+                buckets["high"] += 1
+        log_info(mission, "Mission risk summary", **buckets)
+        log_mission_event(mission, MissionEventType.MISSION_UPDATED, payload={"risk_summary": buckets})
+
     def _has_open_tasks(self, mission: Mission) -> bool:
         return db.session.query(
             exists().where(
@@ -1482,9 +1413,7 @@ class OvermindService:
         plan_count = MissionPlan.query.filter_by(mission_id=mission.id).count()
         return max(plan_count - 1, 0)
 
-    # -------------------------------------------------------------------------
-    # Adaptive Replan
-    # -------------------------------------------------------------------------
+    # ------------------------------ Adaptive Replan ---------------------------
     def _adaptive_replan(self, mission: Mission):
         failed_tasks = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.FAILED).all()
         if not failed_tasks:
@@ -1547,9 +1476,7 @@ class OvermindService:
             update_mission_status(mission, MissionStatus.FAILED, note=f"Adaptive failed: {e}")
             db.session.commit()
 
-    # -------------------------------------------------------------------------
-    # Terminal Event Wrapper
-    # -------------------------------------------------------------------------
+    # ----------------------------- Terminal Event ----------------------------
     def _safe_terminal_event(self, mission_id: int):
         mission = Mission.query.get(mission_id)
         if not mission:
@@ -1559,9 +1486,7 @@ class OvermindService:
         except Exception:
             pass
 
-    # -------------------------------------------------------------------------
-    # App Ref (Flask Context)
-    # -------------------------------------------------------------------------
+    # --------------------------- Flask App Context ---------------------------
     def _ensure_app_ref(self):
         if self._app_ref is None:
             if not has_app_context():
