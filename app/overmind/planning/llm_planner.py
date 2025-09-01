@@ -1,106 +1,94 @@
 # -*- coding: utf-8 -*-
 # app/overmind/planning/llm_planner.py
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 """
-LLM Grounded Planner (Enterprise / Hardened / Hybrid Edition)
-=============================================================
-Version: 3.1.0-hybrid
+LLM Grounded Planner (Enterprise / Hyper-Hardened Edition)
+==========================================================
+Version: 3.2.0-hardened
 
-This is a full “enterprise‑grade” rewrite of the original LLMGroundedPlanner with:
-    - Hybrid deterministic + LLM planning
-    - Hardened tool canonicalization & alias handling
-    - Strict allowed-tools policy + enforcement
-    - Pattern engine for high‑value objectives (e.g. docker-compose service counting)
-    - Single-source canonicalization reuse (agent_tools.canonicalize_tool_name when available)
-    - Auto-fix of missing required file task arguments
-    - Elimination of placeholder / redundant early write_file tasks
-    - Inter-task interpolation markers ({{tNN.content}} / {{tNN.answer}})
-    - Risk scoring heuristic stored in tool_args["_meta_risk"] (non-breaking)
-    - Tool id mapping (tool:001 style) via env JSON map
-    - Logging & normalization diagnostics
-    - DRY-RUN hint propagation (tool_args["dry_run_hint"]) for orchestrator evolution
-    - Extensible for future patterns & structured edit tools
+Core Purpose:
+-------------
+Turn a natural-language mission objective into an *executable, safe, deterministic*
+task graph (MissionPlanSchema) using a hybrid of:
+  1. Deterministic pattern recognition for high-value / recurring objectives.
+  2. LLM structured planning (JSON) with strict schema + canonical tool normalization.
+  3. Multi‑layer fallbacks (text extraction → minimal analytical fallback → segmented fallback).
 
-Environment Flags (NEW / EXTENDED):
------------------------------------
-PLANNER_AUTO_FIX_FILE_TASKS=1
-    Auto-fill required path/content for file tools.
+Key New Enhancements vs 3.1.0-hybrid:
+-------------------------------------
++ Added "Architecture / Summary" Pattern:
+    - Detects objectives like:
+        "Analyze the current system architecture and create a summary file named X"
+        or any combination of (analyze|analysis) + summary + file.
+    - Optionally reads common context files (README.md, docker-compose.yml, requirements.txt) if they exist.
+    - Builds deterministic plan:
+        t01..t0N read_file(s)
+        t(N+1)   generic_think (auto-inject {{t01.content}} etc. if not referenced)
+        t(N+2)   write_file final summary (Arabic if objective includes Arabic letters or 'arabic')
++ Analytical Minimal Fallback (_analytical_minimal_fallback):
+    - Guaranteed 2-task plan (generic_think → write_file) when normalization yields no_valid_tasks,
+      *even if* FALLBACK_ALLOW=0 (hard safety net).
++ Extended Post-Validation Safety:
+    - Ensures at least one write_file when objective explicitly demands a report/file AND patterns/LLM omitted it (logs diagnostic).
++ Unified Rule Injection:
+    - Prompt now explicitly instructs: "If no file reading needed, still produce one generic_think then one write_file."
++ Stronger Normalization:
+    - Absolute guarantee to never raise PlanValidationError("no_valid_tasks") to caller (converted into analytic fallback).
++ Deterministic Arabic Language Detection:
+    - If objective contains Arabic Unicode range or 'arabic' token → prompt produced in Arabic automatically for summary patterns / fallback tasks.
 
-PLANNER_FORCE_FILE_TOOLS=1
-    Force classification to read_file/write_file when intent inferred.
+Environment Flags (Summary of Major Controls):
+----------------------------------------------
+FALLBACK_ALLOW=0|1
+    Allow multi-segment textual fallback if structured extraction fails.
 
-PLANNER_FILE_DEFAULT_EXT=.md
-    Default extension for synthesized file paths (changed from legacy .txt).
-
-PLANNER_FILE_DEFAULT_CONTENT="Placeholder content (auto-generated)."
-    Default content for autofilled write tasks.
+LLM_PLANNER_STRICT_JSON=0|1
+    If 1, disallow text fallback unless FALLBACK_ALLOW triggers an alternate route.
 
 PLANNER_ALLOWED_TOOLS="read_file,generic_think,write_file"
-    Comma-separated allowlist. Unknown tools are downgraded unless enforcement disabled.
-
 PLANNER_ENFORCE_ALLOWED_TOOLS=1
-    If set, any tool outside allowlist will be rewritten to generic_think.
+    Allowlist & enforcement for tool names (others coerced to generic_think).
 
-PLANNER_TOOL_ID_MAP='{"tool:001":"generic_think","tool:002":"write_file"}'
-    JSON mapping for numeric tool identifiers.
+PLANNER_AUTO_FIX_FILE_TASKS=1
+    Autofill mandatory args for file tools (path/content for write_file; path for read_file).
 
-PLANNER_FORCE_REPORT_NAME=report_arabic.md
-    Force final report filename regardless of objective (optional).
+PLANNER_FORCE_FILE_TOOLS=1
+    Coerce ambiguous tool names to canonical read/write/think based on description intent.
+
+PLANNER_FILE_DEFAULT_EXT=.md
+PLANNER_FILE_DEFAULT_CONTENT="Placeholder content (auto-generated)."
+
+PLANNER_FORCE_REPORT_NAME=ARCHITECTURE_PRINCIPLES.md (optional)
+    Force final report filename.
 
 PLANNER_MAX_WRITES=2
-    Upper bound on how many write_file tasks to keep (post-pruning). Typically 1.
+    Limit retained write_file tasks (prune placeholders & extras).
 
 PLANNER_DISABLE_PATTERN_ENGINE=0
-    Disable deterministic pattern engine if set to 1.
+    Disable all deterministic patterns if set to 1.
 
-LLM_PLANNER_STRICT_JSON=0
-    Existing original flag: only accept structured JSON (no fallback).
+LLM_PLANNER_MAX_TASKS=25
+FALLBACK_MAX=5
 
-LLM_PLANNER_SELFTEST_MODE=fast|skip|normal
-LLM_PLANNER_SELFTEST_STRICT=0|1
-FALLBACK_ALLOW=0|1
-FALLBACK_MAX=5 (max tasks in fallback degraded mode)
-LLM_PLANNER_MAX_TASKS=25 (global cap)
+PLANNER_TOOL_ID_MAP='{"tool:001":"generic_think","tool:002":"write_file"}'
+    Numeric tool id mapping (tool:###) → canonical names.
 
-Inter-task Interpolation:
--------------------------
-Reasoning task prompts can reference previous file READ outputs via {{tXX.content}}
-Final write_file can reference LLM answer via {{tYY.answer}}.
-Actual runtime substitution is expected in orchestrator (not here).
-
-Risk Score:
------------
-Heuristic (0..10) added to tool_args["_meta_risk"]:
-    +2 if write_file
-    +content_length/800 (capped 4) for write
-    +3 if tool not in {read_file, write_file, generic_think}
-    +0.5 * number_of_dependencies
-    +1 if write intent but not write_file
-    +1 if read intent but not read_file
-
-Pattern Engine (Current Built‑in Pattern):
-------------------------------------------
-Objective containing:
-    "docker-compose" + "count" + "service"
-Produces deterministic 3-step plan:
-    t01 read_file docker-compose.yml
-    t02 generic_think (Arabic counting prompt with {{t01.content}})
-    t03 write_file final report ({{t02.answer}})
+Design Guarantees:
+------------------
+1. Never returns zero tasks.
+2. Last surviving write_file always normalized to a single final report path (.md).
+3. Inter-task interpolation markers preserved (e.g. {{t01.content}}, {{t02.answer}}).
+4. Risk scoring heuristic stored in tool_args["_meta_risk"] (non-breaking).
+5. Pattern tasks bypass LLM — fully deterministic & auditable.
+6. Analytical fallback ALWAYS returns a valid minimal plan (2 tasks).
 
 Extension Points:
 -----------------
-- Add more methods in PatternEngine.detect()
-- Add new structured edits tools (replace_in_file, update_markdown_section) later
-- Introduce multi-branch or parallel tasks with dependency graph expansions
-
-Non-breaking Design:
---------------------
-MissionPlanSchema / PlannedTask remain unchanged. Added metadata lives inside
-tool_args only (e.g., "_meta_risk", "dry_run_hint").
+- Add more patterns inside PatternEngine.detect().
+- Introduce advanced structured edit tools (replace_in_file, update_markdown_section).
+- Add multi-branch reasoning or parallel scanning tasks.
 
 """
-
 from __future__ import annotations
 
 import json
@@ -227,13 +215,14 @@ CANON_THINK = "generic_think"
 
 WRITE_ALIASES = {
     "write_file", "file_writer", "file_system", "file_system_tool", "file_writer_tool",
-    "writer", "create_file", "make_file", "file_system.write", "file_system.create", "file_system.generate"
+    "writer", "create_file", "make_file", "file_system.write", "file_system.create",
+    "file_system.generate", "file_creator"
 }
 READ_ALIASES = {
     "read_file", "file_reader", "file_reader_tool",
     "file_system.read", "file_system.open", "file_system.view", "open_file", "load_file"
 }
-THINK_ALIASES = {"generic_think", "think", "analyze", "analysis_tool"}
+THINK_ALIASES = {"generic_think", "think", "analyze", "analysis_tool", "reason", "summarize"}
 
 DOT_SUFFIX_WRITE = {"write", "create", "generate", "append", "touch"}
 DOT_SUFFIX_READ = {"read", "open", "load", "view", "show"}
@@ -243,9 +232,9 @@ MANDATORY_ARGS = {
     CANON_READ: ["path"]
 }
 
-WRITE_INTENT = {"write", "create", "generate", "append", "produce", "save"}
+WRITE_INTENT = {"write", "create", "generate", "append", "produce", "save", "output"}
 READ_INTENT = {"read", "inspect", "load", "open", "view"}
-THINK_INTENT = {"analyze", "think", "reason", "summarize", "count"}
+THINK_INTENT = {"analyze", "think", "reason", "summarize", "count", "draft"}
 
 # --------------------------------------------------------------------------------------
 # Helper Functions
@@ -402,6 +391,11 @@ def _canonicalize_tool(raw: str, description: str) -> Tuple[str, List[str]]:
             return _canonicalize_tool_local(raw, description)
     return _canonicalize_tool_local(raw, description)
 
+def _objective_has_arabic(obj: str) -> bool:
+    if "arabic" in obj.lower():
+        return True
+    return any('\u0600' <= ch <= '\u06FF' for ch in obj)
+
 # --------------------------------------------------------------------------------------
 # Pattern Engine
 # --------------------------------------------------------------------------------------
@@ -413,6 +407,7 @@ class PatternResult:
 class PatternEngine:
     """
     Extend by adding more detection methods and referencing them in detect().
+    Deterministic patterns bypass LLM for reliability & cost savings.
     """
     def __init__(self, objective: str, max_tasks: int):
         self.objective = objective
@@ -422,17 +417,28 @@ class PatternEngine:
     def detect(self) -> Optional[PatternResult]:
         if DISABLE_PATTERN_ENGINE:
             return None
+
         # Pattern #1: docker-compose.yml service count
         if "docker-compose" in self.low and "count" in self.low and "service" in self.low:
             return self._docker_compose_service_count()
+
+        # Pattern #2: Architecture/Summary pattern
+        # Trigger: explicit "summary file named X" OR (analyze|analysis) & summary & file
+        m = re.search(r"summary file named\s+([A-Za-z0-9_.\-]+)", self.low)
+        if m:
+            return self._architecture_summary(m.group(1))
+        if (("analyze" in self.low or "analysis" in self.low) and
+                "summary" in self.low and "file" in self.low):
+            return self._architecture_summary(None)
+
         return None
 
+    # ---------- Pattern: docker-compose service count
     def _docker_compose_service_count(self) -> PatternResult:
         notes = ["pattern:docker_compose_service_count"]
         report_name = FORCE_REPORT_NAME or self._extract_report_name(default="report_arabic.md")
         tasks: List[PlannedTask] = []
 
-        # t01 read file
         tasks.append(PlannedTask(
             task_id="t01",
             description="Read docker-compose.yml for service counting.",
@@ -441,10 +447,9 @@ class PatternEngine:
             dependencies=[]
         ))
 
-        # t02 reasoning
         prompt = (
-            "اقرأ محتوى ملف docker-compose.yml التالي (تم تمريره بعلامة {{t01.content}}) ثم احسب عدد المفاتيح "
-            "المباشرة تحت المفتاح services فقط (بدون احتساب أي مفاتيح أخرى أو nested levels). "
+            "اقرأ محتوى ملف docker-compose.yml (تم تمريره بعلامة {{t01.content}}) ثم احسب عدد المفاتيح "
+            "المباشرة تحت المفتاح services فقط (بدون احتساب nested). "
             "أجب بجملة عربية واحدة بالشكل: عدد الخدمات هو: <NUMBER>.\n{{t01.content}}\n"
         )
         tasks.append(PlannedTask(
@@ -455,7 +460,6 @@ class PatternEngine:
             dependencies=["t01"]
         ))
 
-        # t03 final write
         tasks.append(PlannedTask(
             task_id="t03",
             description="Write final Arabic report with counted services.",
@@ -470,18 +474,76 @@ class PatternEngine:
         ))
         return PatternResult(tasks=tasks, notes=notes)
 
+    # ---------- Pattern: Architecture / Summary
+    def _architecture_summary(self, filename: Optional[str]) -> PatternResult:
+        notes = ["pattern:architecture_summary"]
+        want_ar = _objective_has_arabic(self.objective)
+        report_name = FORCE_REPORT_NAME or filename or "SUMMARY_REPORT.md"
+        tasks: List[PlannedTask] = []
+
+        # Candidate files (deterministic – existence can be gracefully ignored at runtime)
+        candidate_files = ["README.md", "docker-compose.yml", "requirements.txt"]
+        read_ids: List[str] = []
+        for i, cf in enumerate(candidate_files, start=1):
+            tid = f"t{i:02d}"
+            tasks.append(
+                PlannedTask(
+                    task_id=tid,
+                    description=f"Read {cf} if it exists (ignore if missing).",
+                    tool_name=CANON_READ,
+                    tool_args={"path": cf},
+                    dependencies=[]
+                )
+            )
+            read_ids.append(tid)
+
+        lang_line = "اكتب الملخص باللغة العربية." if want_ar else "Write the summary in concise English."
+        prompt = (
+            f"{lang_line}\n"
+            "Provide a structured architecture summary (components, services/modules, data flow, "
+            "deployment aspects, dependencies, risks, recommendations). "
+            "If some files are unavailable or empty, state reasonable assumptions explicitly."
+        )
+
+        think_id = f"t{len(tasks)+1:02d}"
+        tasks.append(
+            PlannedTask(
+                task_id=think_id,
+                description="Analyze project context & draft architecture summary.",
+                tool_name=CANON_THINK,
+                tool_args={"prompt": prompt},
+                dependencies=read_ids
+            )
+        )
+
+        tasks.append(
+            PlannedTask(
+                task_id=f"t{len(tasks)+1:02d}",
+                description=f"Write final architecture summary to {report_name}.",
+                tool_name=CANON_WRITE,
+                tool_args={
+                    "path": report_name,
+                    "content": f"{{{{{think_id}.answer}}}}",
+                    "dry_run_hint": False
+                },
+                dependencies=[think_id]
+            )
+        )
+        return PatternResult(tasks=tasks, notes=notes)
+
     def _extract_report_name(self, default: str) -> str:
         for cand in ("report_arabic.md", "report.md", "report.txt"):
             if cand in self.low:
                 return cand
         return default
 
+
 # --------------------------------------------------------------------------------------
 # Planner Class
 # --------------------------------------------------------------------------------------
 class LLMGroundedPlanner(BasePlanner):
     name = "llm_grounded_planner"
-    version = "3.1.0-hybrid"
+    version = "3.2.0-hardened"
     tier = "core"
     production_ready = True
     capabilities = {"planning", "llm", "tool-grounding", "hybrid"}
@@ -539,9 +601,16 @@ class LLMGroundedPlanner(BasePlanner):
             errors.append("maestro_unavailable")
 
         if STRICT_JSON_ONLY and structured is None and not FALLBACK_ALLOW:
-            raise PlannerError("strict_mode_no_structured", self.name, objective, errors=errors[-5:])
+            # We'll still attempt analytic fallback to avoid total failure
+            _LOG.warning("[%s] strict_json_no_structured -> forcing analytic minimal fallback", self.name)
+            analytic = self._analytical_minimal_fallback(objective)
+            analytic = self._post_process(analytic, objective, ["forced_analytic_fallback"])
+            plan = MissionPlanSchema(objective=objective, tasks=analytic)
+            self._post_validate(plan)
+            self._log_success(plan, objective, start, degraded=True, notes=errors[-5:] + ["forced_analytic"])
+            return plan
 
-        # 3. Optional Text Fallback
+        # 3. Optional Text Fallback (if structured missing)
         raw_text: Optional[str] = None
         if structured is None and maestro and hasattr(maestro, "generation_service"):
             try:
@@ -559,28 +628,64 @@ class LLMGroundedPlanner(BasePlanner):
             errors.extend(extraction_notes)
 
         if plan_dict is None:
+            # Use multi-segment fallback if allowed; else analytic minimal fallback
             if FALLBACK_ALLOW:
                 degraded = self._fallback_plan(objective, cap)
                 degraded.tasks = self._post_process(degraded.tasks, objective, errors + ["fallback_plan"])
                 self._post_validate(degraded)
                 self._log_success(degraded, objective, start, degraded=True, notes=errors[-8:])
                 return degraded
-            raise PlannerError("extraction_failed", self.name, objective, errors=errors[-6:])
+            analytic = self._analytical_minimal_fallback(objective)
+            analytic = self._post_process(analytic, objective, errors + ["analytic_min_fallback"])
+            plan = MissionPlanSchema(objective=objective, tasks=analytic)
+            self._post_validate(plan)
+            self._log_success(plan, objective, start, degraded=True, notes=errors[-8:] + ["analytic_min"])
+            return plan
 
         norm_errs: List[str] = []
         try:
             tasks = self._normalize_tasks(plan_dict.get("tasks"), cap, norm_errs)
-        except PlannerError:
-            raise
+        except PlanValidationError as pe:
+            # Critical: convert no_valid_tasks into analytic minimal fallback ALWAYS
+            if "no_valid_tasks" in str(pe):
+                _LOG.warning("[%s] normalization produced no_valid_tasks -> analytic fallback", self.name)
+                analytic = self._analytical_minimal_fallback(objective)
+                analytic = self._post_process(analytic, objective, norm_errs + ["analytic_min_from_normalize"])
+                plan = MissionPlanSchema(objective=objective, tasks=analytic)
+                self._post_validate(plan)
+                self._log_success(plan, objective, start, degraded=True,
+                                  notes=errors + norm_errs + ["analytic_from_no_valid"])
+                return plan
+            # Any other validation error falls back if allowed
+            if FALLBACK_ALLOW:
+                degraded = self._fallback_plan(objective, cap)
+                degraded.tasks = self._post_process(degraded.tasks, objective, norm_errs + ["normalize_fallback"])
+                self._post_validate(degraded)
+                self._log_success(degraded, objective, start, degraded=True,
+                                  notes=errors + norm_errs + ["fallback_after_validation"])
+                return degraded
+            # Final guard: analytic minimal
+            analytic = self._analytical_minimal_fallback(objective)
+            analytic = self._post_process(analytic, objective, norm_errs + ["analytic_after_validation"])
+            plan = MissionPlanSchema(objective=objective, tasks=analytic)
+            self._post_validate(plan)
+            self._log_success(plan, objective, start, degraded=True,
+                              notes=errors + norm_errs + ["analytic_after_validation_no_fallback"])
+            return plan
         except Exception as ve:
             errors.extend(norm_errs)
             if FALLBACK_ALLOW:
                 degraded = self._fallback_plan(objective, cap)
-                degraded.tasks = self._post_process(degraded.tasks, objective, errors + ["normalize_fallback"])
+                degraded.tasks = self._post_process(degraded.tasks, objective, errors + ["normalize_exception_fallback"])
                 self._post_validate(degraded)
                 self._log_success(degraded, objective, start, degraded=True, notes=errors[-10:])
                 return degraded
-            raise PlannerError("normalize_fail", self.name, objective, errors=errors[-8:]) from ve
+            analytic = self._analytical_minimal_fallback(objective)
+            analytic = self._post_process(analytic, objective, errors + ["analytic_exception"])
+            plan = MissionPlanSchema(objective=objective, tasks=analytic)
+            self._post_validate(plan)
+            self._log_success(plan, objective, start, degraded=True, notes=errors[-10:])
+            return plan
 
         tasks = self._post_process(tasks, objective, norm_errs)
         mission_plan = MissionPlanSchema(objective=str(plan_dict.get("objective") or objective), tasks=tasks)
@@ -607,7 +712,7 @@ class LLMGroundedPlanner(BasePlanner):
             _clip(objective, 80),
         )
         if notes:
-            _LOG.debug("[%s] notes_tail=%s", self.name, notes[-12:])
+            _LOG.debug("[%s] notes_tail=%s", self.name, notes[-14:])
 
     # ------------------------------------------------------------------ LLM Structured Call
     def _call_structured(self, objective: str, context: Optional[PlanningContext], max_tasks: int) -> Dict[str, Any]:
@@ -770,10 +875,11 @@ class LLMGroundedPlanner(BasePlanner):
             if AUTO_FIX_FILE_TASKS:
                 _autofill_file_args(canonical_tool, tool_args, idx + 1, norm_notes)
 
-            # Filter dependencies to existing tNN pattern (light prune now, second prune later)
+            # Filter dependencies to existing tNN pattern
             filtered_deps: List[str] = []
             for d in deps:
                 if isinstance(d, str) and re.match(r"^t\d{2}$", d):
+                    # Only keep if earlier than current index after we assign IDs (safe post-pass)
                     filtered_deps.append(d)
 
             # Interpolation injection for thinking tasks
@@ -822,7 +928,6 @@ class LLMGroundedPlanner(BasePlanner):
                 writes_kept = 0
                 for i, t in enumerate(tasks):
                     if t.tool_name == CANON_WRITE and i != last_idx:
-                        # Drop placeholder writes
                         content_val = ""
                         if isinstance(t.tool_args, dict):
                             content_val = str(t.tool_args.get("content") or "")
@@ -851,7 +956,7 @@ class LLMGroundedPlanner(BasePlanner):
                     final_write.tool_args["path"] = pth
                 final_write.tool_args.setdefault("dry_run_hint", False)
 
-        # Second pass dependency pruning in case tasks removed
+        # Second pass dependency pruning
         valid_ids = {t.task_id for t in tasks}
         for t in tasks:
             if t.dependencies:
@@ -862,7 +967,11 @@ class LLMGroundedPlanner(BasePlanner):
     # ------------------------------------------------------------------ Report Name Extraction
     def _extract_report_name_from_objective(self, objective: str) -> Optional[str]:
         low = objective.lower()
-        for token in ("report_arabic.md", "report.md", "report.txt"):
+        # Look for explicit file naming tokens
+        m = re.search(r"summary file named\s+([A-Za-z0-9_.\-]+)", low)
+        if m:
+            return m.group(1)
+        for token in ("report_arabic.md", "architecture_principles.md", "report.md", "report.txt"):
             if token in low:
                 return token
         return None
@@ -896,11 +1005,16 @@ class LLMGroundedPlanner(BasePlanner):
             raise PlanValidationError("exceed_global_max_tasks", self.name)
 
         low_obj = plan.objective.lower()
-        if ("write" in low_obj or "report" in low_obj) and not any(t.tool_name == CANON_WRITE for t in plan.tasks):
+        if ("write" in low_obj or "report" in low_obj or "summary" in low_obj) and \
+                not any(t.tool_name == CANON_WRITE for t in plan.tasks):
             _LOG.debug("[%s] post_validate: objective hints output file but no write_file emitted.", self.name)
 
-    # ------------------------------------------------------------------ Fallback Plan
+    # ------------------------------------------------------------------ Fallback Plans
     def _fallback_plan(self, objective: str, cap: int) -> MissionPlanSchema:
+        """
+        Legacy segmented fallback: splits objective words into chained tasks.
+        Final segment optionally becomes write_file if autofill enabled.
+        """
         words = [w for w in re.split(r"\s+", objective.strip()) if w]
         if not words:
             words = ["objective"]
@@ -914,7 +1028,7 @@ class LLMGroundedPlanner(BasePlanner):
         tasks: List[PlannedTask] = []
         for i, seg in enumerate(segments, start=1):
             tool_name = CANON_THINK
-            tool_args: Dict[str, Any] = {}
+            tool_args: Dict[str, Any] = {"prompt": f"Decompose segment: {seg}"}
             if AUTO_FIX_FILE_TASKS and i == len(segments):
                 tool_name = CANON_WRITE
                 tool_args = {
@@ -931,6 +1045,42 @@ class LLMGroundedPlanner(BasePlanner):
                 )
             )
         return MissionPlanSchema(objective=objective, tasks=tasks)
+
+    def _analytical_minimal_fallback(self, objective: str) -> List[PlannedTask]:
+        """
+        Absolute safety-net fallback:
+            t01 generic_think (analysis)
+            t02 write_file (final summary)
+        Language auto-detected (Arabic vs English).
+        """
+        want_ar = _objective_has_arabic(objective)
+        lang_line = "اكتب الملخص باللغة العربية." if want_ar else "Write the summary in concise English."
+        prompt = (
+            f"{lang_line}\nObjective:\n{objective}\n"
+            "Provide a structured summary (bullets or concise paragraphs). "
+            "If information is missing, explicitly state assumptions."
+        )
+        return [
+            PlannedTask(
+                task_id="t01",
+                description="Analyze objective and draft summary.",
+                tool_name=CANON_THINK,
+                tool_args={"prompt": prompt, "_meta_risk": 1.0},
+                dependencies=[]
+            ),
+            PlannedTask(
+                task_id="t02",
+                description="Write final summary file.",
+                tool_name=CANON_WRITE,
+                tool_args={
+                    "path": FORCE_REPORT_NAME or "SUMMARY_REPORT.md",
+                    "content": "{{t01.answer}}",
+                    "_meta_risk": 2.0,
+                    "dry_run_hint": False
+                },
+                dependencies=["t01"]
+            )
+        ]
 
     # ------------------------------------------------------------------ Prompt Rendering (LLM mode)
     def _render_prompt(self, objective: str, context: Optional[PlanningContext], max_tasks: int) -> str:
@@ -957,11 +1107,12 @@ class LLMGroundedPlanner(BasePlanner):
         lines.append("RULES:")
         lines.append("1. If the objective needs a file's content, emit read_file first.")
         lines.append("2. Then emit generic_think referencing {{tXX.content}} in its prompt (if reading).")
-        lines.append("3. Emit a single final write_file with the final answer (Arabic if requested).")
+        lines.append("3. Emit exactly one final write_file with the final answer (Arabic if requested).")
         lines.append("4. Provide explicit paths; prefer .md for final reports.")
         lines.append("5. Do NOT invent unknown tool names. If unsure use generic_think.")
+        lines.append("6. If no file reading is needed, still produce one generic_think then one write_file task.")
         lines.append("")
-        lines.append(f"Produce up to {max_tasks} tasks (typically 3). Return ONLY valid JSON.")
+        lines.append(f"Produce up to {max_tasks} tasks (typically 2-4). Return ONLY valid JSON.")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------ Objective Validator
@@ -992,11 +1143,18 @@ __all__ = [
 # Dev Quick Test
 # --------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    obj = "Read the docker-compose.yml file, count number of services, and write Arabic report named report_arabic.md."
+    tests = [
+        "Read the docker-compose.yml file, count number of services, and write Arabic report named report_arabic.md.",
+        "Analyze the current system architecture and create a summary file named ARCHITECTURE_PRINCIPLES.md",
+        "Analyze and produce a concise summary file of the backend modules",
+        "Quick objective that should still yield a minimal analytic plan"
+    ]
     ok, reason = LLMGroundedPlanner.self_test()
     print(f"[SELF_TEST] ok={ok} reason={reason}")
     planner = LLMGroundedPlanner()
-    plan = planner.generate_plan(obj)
-    print(f"Objective: {plan.objective}")
-    for t in plan.tasks:
-        print(t.task_id, t.tool_name, t.tool_args)
+    for obj in tests:
+        print("\n=== OBJECTIVE:", obj)
+        plan = planner.generate_plan(obj)
+        print(f"Produced {len(plan.tasks)} tasks:")
+        for t in plan.tasks:
+            print(f"  {t.task_id} | {t.tool_name} | deps={t.dependencies} | args={t.tool_args}")
