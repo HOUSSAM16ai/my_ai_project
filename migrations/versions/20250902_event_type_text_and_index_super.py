@@ -1,64 +1,106 @@
-"""Super migration: Make mission_events.event_type TEXT, add composite index, optional length check, diagnostics.
+"""Super migration (compact): make mission_events.event_type TEXT + composite index + optional length check.
 
-Revision ID: 20250902_event_type_text_and_index_super
+Revision ID: 20250902_evt_type_idx
 Revises: 0b5107e8283d
-Create Date: 2025-09-02
+Create Date: 2025-09-02 18:10:00
 """
+from __future__ import annotations
 
 from alembic import op
 import sqlalchemy as sa
 from contextlib import suppress
 
-revision = "20250902_event_type_text_and_index_super"
+# ---------------------------------------------------------------------------
+# معرفات Alembic
+# ---------------------------------------------------------------------------
+revision = "20250902_evt_type_idx"
 down_revision = "0b5107e8283d"
 branch_labels = None
 depends_on = None
 
-ADD_LENGTH_CHECK = True
-LENGTH_LIMIT = 128
+# ---------------------------------------------------------------------------
+# إعدادات قابلة للضبط
+# ---------------------------------------------------------------------------
+ADD_LENGTH_CHECK = True          # اجعلها False لتعطيل إنشاء CHECK
+LENGTH_LIMIT = 128               # الحد الأقصى لطول event_type (تحكم منطقي فقط، وليس مطلوباً إذا أردت حرية كاملة)
 CHECK_NAME = "ck_mission_events_event_type_len"
 COMPOSITE_INDEX_NAME = "ix_mission_events_mission_created_type"
 LEGACY_SINGLE_INDEX = "ix_mission_events_event_type"
 
-def _dialect_name():
-    bind = op.get_bind()
-    return bind.dialect.name.lower()
+# ---------------------------------------------------------------------------
+# أدوات داخلية
+# ---------------------------------------------------------------------------
+def _bind():
+    return op.get_bind()
 
-def _column_is_already_text(inspector):
-    for col in inspector.get_columns("mission_events"):
+def _dialect():
+    return _bind().dialect.name.lower()
+
+def _is_postgres():
+    return _dialect() == "postgresql"
+
+def _is_sqlite():
+    return _dialect() == "sqlite"
+
+def _column_is_text():
+    insp = sa.inspect(_bind())
+    for col in insp.get_columns("mission_events"):
         if col["name"] == "event_type":
-            coltype = col["type"].__class__.__name__.lower()
-            if "text" in coltype:
+            # مثال: TEXT / VARCHAR / STRING …
+            ctype = col["type"].__class__.__name__.lower()
+            if "text" in ctype:
                 return True
     return False
 
-def _print_diagnostics():
-    bind = op.get_bind()
-    dialect = _dialect_name()
-    print(f"[event_type migration] Dialect: {dialect}")
+def _print_stats(stage: str):
     with suppress(Exception):
-        res = bind.execute(sa.text(
-            "SELECT MAX(char_length(event_type)) AS max_len, COUNT(*) AS total FROM mission_events"
+        res = _bind().execute(sa.text(
+            "SELECT MAX(char_length(event_type)) AS max_len, COUNT(*) AS total_rows FROM mission_events"
         )).first()
         if res:
-            print(f"[event_type migration] Pre-change stats: max_len={res.max_len}, total_rows={res.total}")
-    try:
-        inspector = sa.inspect(bind)
-        for col in inspector.get_columns("mission_events"):
-            if col["name"] == "event_type":
-                print(f"[event_type migration] Current column type object: {col['type']}")
-                break
-    except Exception as e:
-        print(f"[event_type migration] Could not inspect columns: {e}")
+            print(f"[event_type migration] {stage}: max_len={res.max_len}, total_rows={res.total_rows}")
 
+def _index_exists(index_name: str) -> bool:
+    # PostgreSQL فقط - لبساطة (يمكن توسيعها لاحقاً لغيره)
+    if not _is_postgres():
+        return False
+    with suppress(Exception):
+        q = sa.text(
+            "SELECT 1 FROM pg_class WHERE relkind='i' AND relname=:idx LIMIT 1"
+        )
+        row = _bind().execute(q.bindparams(idx=index_name)).first()
+        return bool(row)
+    return False
+
+def _check_constraint_exists(name: str) -> bool:
+    if not _is_postgres():
+        return False
+    with suppress(Exception):
+        q = sa.text("""
+            SELECT 1
+            FROM pg_constraint c
+            JOIN pg_class t ON c.conrelid = t.oid
+            WHERE t.relname='mission_events'
+              AND c.contype='c'
+              AND c.conname=:name
+            LIMIT 1
+        """)
+        row = _bind().execute(q.bindparams(name=name)).first()
+        return bool(row)
+    return False
+
+# ---------------------------------------------------------------------------
+# Upgrade
+# ---------------------------------------------------------------------------
 def upgrade():
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    _print_diagnostics()
+    print("[event_type migration] START upgrade")
+    print(f"[event_type migration] Dialect = {_dialect()}")
+    _print_stats("before")
 
-    if not _column_is_already_text(inspector):
-        dialect = _dialect_name()
-        if dialect == "sqlite":
+    # 1) تحويل العمود إلى TEXT إن لم يكن بالفعل TEXT
+    if not _column_is_text():
+        if _is_sqlite():
+            # SQLite يحتاج batch_alter_table لتغيير النوع بدون تعقيدات
             with op.batch_alter_table("mission_events") as batch_op:
                 batch_op.alter_column(
                     "event_type",
@@ -74,64 +116,68 @@ def upgrade():
                 existing_type=sa.String(length=17),
                 existing_nullable=False
             )
-        print("[event_type migration] Column altered to TEXT.")
+        print("[event_type migration] Column 'event_type' altered to TEXT.")
     else:
-        print("[event_type migration] NOTE: event_type already TEXT (skipping ALTER).")
+        print("[event_type migration] NOTE: 'event_type' already TEXT -> skipping alter.")
 
-    if ADD_LENGTH_CHECK:
-        with suppress(Exception):
-            existing_checks = bind.execute(sa.text(
-                "SELECT conname FROM pg_constraint c "
-                "JOIN pg_class t ON c.conrelid = t.oid "
-                "WHERE t.relname='mission_events' AND c.contype='c'"
-            )).fetchall() if _dialect_name() == "postgresql" else []
-            if any(row[0] == CHECK_NAME for row in existing_checks):
-                print(f"[event_type migration] CHECK {CHECK_NAME} already exists, skipping.")
-            else:
-                op.execute(
-                    sa.text(
-                        f"ALTER TABLE mission_events "
-                        f"ADD CONSTRAINT {CHECK_NAME} CHECK (char_length(event_type) <= :limit)"
-                    ).bindparams(limit=LENGTH_LIMIT)
-                )
-                print(f"[event_type migration] Added CHECK constraint {CHECK_NAME} (<= {LENGTH_LIMIT}).")
+    # 2) إضافة CHECK (اختياري) في PostgreSQL فقط
+    if ADD_LENGTH_CHECK and _is_postgres():
+        if _check_constraint_exists(CHECK_NAME):
+            print(f"[event_type migration] CHECK {CHECK_NAME} already exists -> skip.")
+        else:
+            op.execute(sa.text(
+                f"ALTER TABLE mission_events "
+                f"ADD CONSTRAINT {CHECK_NAME} CHECK (char_length(event_type) <= :limit)"
+            ).bindparams(limit=LENGTH_LIMIT))
+            print(f"[event_type migration] Added CHECK {CHECK_NAME} (<= {LENGTH_LIMIT}).")
+    else:
+        if ADD_LENGTH_CHECK:
+            print("[event_type migration] Length CHECK skipped (non-PostgreSQL dialect).")
 
+    # 3) إسقاط الفهرس القديم (إن وجد)
     with suppress(Exception):
         op.drop_index(LEGACY_SINGLE_INDEX, table_name="mission_events")
-        print(f"[event_type migration] Dropped legacy index {LEGACY_SINGLE_INDEX}.")
+        print(f"[event_type migration] Dropped legacy index {LEGACY_SINGLE_INDEX} (if existed).")
 
-    try:
-        op.create_index(
-            COMPOSITE_INDEX_NAME,
-            "mission_events",
-            ["mission_id", "created_at", "event_type"],
-            unique=False
-        )
-        print(f"[event_type migration] Created composite index {COMPOSITE_INDEX_NAME}.")
-    except Exception as e:
-        print(f"[event_type migration] Could not create composite index (maybe exists): {e}")
+    # 4) إنشاء فهرس مركب (mission_id, created_at, event_type)
+    # نتجنب التكرار في PostgreSQL عبر فحص وجوده (اختياري).
+    create_index = True
+    if _is_postgres() and _index_exists(COMPOSITE_INDEX_NAME):
+        create_index = False
+        print(f"[event_type migration] Composite index {COMPOSITE_INDEX_NAME} already exists -> skip.")
+    if create_index:
+        with suppress(Exception):
+            op.create_index(
+                COMPOSITE_INDEX_NAME,
+                "mission_events",
+                ["mission_id", "created_at", "event_type"],
+                unique=False
+            )
+            print(f"[event_type migration] Created composite index {COMPOSITE_INDEX_NAME}.")
 
-    with suppress(Exception):
-        res2 = bind.execute(sa.text(
-            "SELECT MAX(char_length(event_type)) AS max_len_after FROM mission_events"
-        )).first()
-        if res2:
-            print(f"[event_type migration] Post-change max length: {res2.max_len_after}")
+    _print_stats("after")
+    print("[event_type migration] DONE upgrade")
 
+# ---------------------------------------------------------------------------
+# Downgrade
+# ---------------------------------------------------------------------------
 def downgrade():
-    bind = op.get_bind()
-    dialect = _dialect_name()
-    print("[event_type migration] Starting downgrade...")
+    print("[event_type migration] START downgrade")
+    print(f"[event_type migration] Dialect = {_dialect()}")
 
+    # 1) حذف الفهرس المركب
     with suppress(Exception):
         op.drop_index(COMPOSITE_INDEX_NAME, table_name="mission_events")
         print(f"[event_type migration] Dropped composite index {COMPOSITE_INDEX_NAME}.")
 
-    if ADD_LENGTH_CHECK and dialect == "postgresql":
-        with suppress(Exception):
-            op.execute(sa.text(f"ALTER TABLE mission_events DROP CONSTRAINT {CHECK_NAME}"))
-            print(f"[event_type migration] Dropped CHECK constraint {CHECK_NAME}.")
+    # 2) حذف CHECK (إن وُجد وكان PostgreSQL)
+    if ADD_LENGTH_CHECK and _is_postgres():
+        if _check_constraint_exists(CHECK_NAME):
+            with suppress(Exception):
+                op.execute(sa.text(f"ALTER TABLE mission_events DROP CONSTRAINT {CHECK_NAME}"))
+                print(f"[event_type migration] Dropped CHECK constraint {CHECK_NAME}.")
 
+    # 3) إعادة الفهرس القديم الأحادي (اختياري – نفعلها تماشياً مع ما كان)
     with suppress(Exception):
         op.create_index(
             LEGACY_SINGLE_INDEX,
@@ -141,7 +187,8 @@ def downgrade():
         )
         print(f"[event_type migration] Re-created legacy index {LEGACY_SINGLE_INDEX}.")
 
-    if dialect == "sqlite":
+    # 4) إعادة العمود إلى VARCHAR(64) (أو الطول السابق، عدّله إذا احتجت)
+    if _is_sqlite():
         with op.batch_alter_table("mission_events") as batch_op:
             batch_op.alter_column(
                 "event_type",
@@ -157,4 +204,5 @@ def downgrade():
             existing_type=sa.Text(),
             existing_nullable=False
         )
-    print("[event_type migration] Downgraded event_type to VARCHAR(64).")
+    print("[event_type migration] Downgraded 'event_type' back to VARCHAR(64).")
+    print("[event_type migration] DONE downgrade")
