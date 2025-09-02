@@ -1,39 +1,67 @@
 # ======================================================================================
-#  COGNIFORGE DOMAIN MODELS  v13.1  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER (Pro)"    #
+#  COGNIFORGE DOMAIN MODELS  v13.2  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER (Pro+)"   #
 # ======================================================================================
 #  PURPOSE (الغرض):
-#    نموذج نطاق (Domain Model) مُحسَّن ومتوافق دلالياً بين:
-#      - Overmind Orchestrator (master_agent_service ≥ v4.4-terminal-vision-pro)
-#      - Maestro Generation Service (generation_service ≥ v16.5.0 sovereign fusion)
+#    نموذج نطاق (Domain Model) موحّد دلالياً بين طبقات:
+#      - Overmind Orchestrator
+#      - Maestro Generation Service
+#    مع دعم أحداث مهمة (Mission Events) تحليلية/نهائية أوسع.
 #
-#  THIS "PRO" EDITION ADDS SEMANTIC MISSION EVENTS:
+#  WHAT'S NEW in v13.2 (مقارنة بـ v13.1):
+#    - توضيح الوضع الفعلي لعمود mission_events.event_type بعد الهجرة "الخارقة":
+#        أصبح نوعه TEXT (غير محدود عملياً) + (اختياري) CHECK ≤ 128.
+#    - تصحيح الملاحظة السابقة (لم تكن دقيقة دائماً) بخصوص "لا حاجة لهجرة":
+#        رغم استخدام native_enum=False، الإنشاء الأولي أعطى VARCHAR(17) فتطلّبنا هجرة
+#        لتوسيعه عند إضافة قيمة أطول (ARCHITECTURE_CLASSIFIED).
+#    - توثيق سلسلة الهجرات المتعلقة بالموديلات الأساسية.
+#
+#  SEMANTIC MISSION EVENTS (الإصدار التحليلي):
 #      MISSION_UPDATED, RISK_SUMMARY, ARCHITECTURE_CLASSIFIED,
-#      MISSION_COMPLETED, MISSION_FAILED  (مع الإبقاء على FINALIZED).
+#      MISSION_COMPLETED, MISSION_FAILED, FINALIZED
 #
-#  CORE UPGRADES vs v13.0:
-#    1) Extended MissionEventType for richer analytics & dashboards.
-#    2) Backwards compatible: legacy consumers can still rely on FINALIZED / STATUS_CHANGE.
-#    3) No DB migration required (native_enum=False => values stored as VARCHAR).
-#    4) Clear separation between:
-#         - Transitional events (STATUS_CHANGE)
-#         - Analytical classification (RISK_SUMMARY / ARCHITECTURE_CLASSIFIED)
-#         - Terminal outcomes (MISSION_COMPLETED / MISSION_FAILED / FINALIZED)
-#    5) Maintained idempotent finalize_task helper.
+#  CORE UPGRADES vs v13.0 (مراجعة سريعة):
+#    1) توسيع MissionEventType لتحليلات أغنى ولوحات مراقبة.
+#    2) توافق خلفي: المستهلكون القدامى ما زالوا يعتمدون على FINALIZED و STATUS_CHANGE.
+#    3) فصل واضح بين:
+#         - الأحداث الانتقالية  (STATUS_CHANGE)
+#         - التصنيف التحليلي   (RISK_SUMMARY / ARCHITECTURE_CLASSIFIED)
+#         - المخرجات النهائية   (MISSION_COMPLETED / MISSION_FAILED / FINALIZED)
+#    4) المحافظة على finalize_task idempotent.
 #
-#  PRE-EXISTING FEATURES (from v13.0):
-#    - RESULT META CHANNEL (result_meta_json)
-#    - TASK TIMESTAMP COERCION (coerce_datetime)
-#    - RETRY SUPPORT (attempt_count / max_attempts / next_retry_at)
-#    - CONSISTENT DURATION (compute_duration logic)
-#    - INDEXING for frequent mission/task queries
-#    - HASHING UTILS for plan content
-#    - DERIVED ANALYTICS on Mission (total_tasks, success_ratio ...)
-#    - UNIFIED HELPERS (update_mission_status / log_mission_event / finalize_task)
-#    - JSONB_or_JSON abstraction
+#  PRE-EXISTING FEATURES:
+#    - result_meta_json قناة وصفية للنتائج
+#    - تحويل الطوابع الزمنية المرنة (coerce_datetime)
+#    - منطق إعادة المحاولة (retry scheduling)
+#    - حساب مدة متسق (compute_duration)
+#    - فهارس متكررة الاستعلام
+#    - تهشير المحتوى (hash_content)
+#    - إحصاءات مشتقة على Mission (success_ratio ...)
+#    - واجهات موحّدة (update_mission_status / log_mission_event / finalize_task)
+#    - JSONB_or_JSON تجريد PostgreSQL/SQLite
 #
-#  NOTE:
-#    لا يقوم هذا الملف بعمليات commit. التحكم في المعاملات مسؤولية الطبقات العليا.
-#    يمكن توسيع MissionEventType لاحقاً بدون Migration طالما native_enum=False.
+#  MIGRATION HISTORY (ذات صلة):
+#    - 0fe9bd3b1f3c : Genesis schema
+#    - 0b5107e8283d : إضافة result_meta_json لِـ Task
+#    - 20250902_event_type_text_and_index_super :
+#         * تحويل mission_events.event_type إلى TEXT
+#         * فهرس مركّب (mission_id, created_at, event_type)
+#         * (اختياري) CHECK (char_length(event_type) <= 128)
+#
+#  NOTE (مهم):
+#    - استخدام db.Enum(..., native_enum=False) يعني تخزين القيم كسلاسل (VARCHAR/TEXT)،
+#      ولكن الطول الابتدائي يمكن أن يكون محدوداً (كما حدث: 17) => إضافة قيمة أطول
+#      قد تتطلب هجرة توسيع أو تحويل إلى TEXT (وهو ما تم الآن).
+#    - حالياً العمود TEXT: لا يلزم تعديل إضافي في هذا الملف لحل الخطأ السابق.
+#    - إذا كان CHECK ≤ 128 مفعل في قاعدة البيانات، فهو طبقة حماية فقط؛ جميع القيم الحالية
+#      أقل بكثير من 128.
+#
+#  TRANSACTION POLICY:
+#    - هذا الملف لا يقوم بالـ commit. مسؤولية إدارة المعاملات تقع على الطبقات العليا
+#      (الخدمات / orchestrator).
+#
+#  OPTIONAL FUTURE EXTENSIONS:
+#    - إضافة Validator قبل log_mission_event للتحقق من الطول أو منع أحداث مكررة.
+#    - استبدال Enum بنص حر + طبقة تحقق إذا أصبح التطور سريع الإيقاع جداً.
 #
 # ======================================================================================
 
@@ -63,15 +91,23 @@ from sqlalchemy.orm import (
 from app import db, login_manager
 
 # ======================================================================================
+# CONFIG / CONSTANTS (اختياري — يعكس قيد الهجرة إذا كان مفعلاً)
+# ======================================================================================
+
+EVENT_TYPE_MAX_LEN = 128  # مطابقة للهجرة (إن وُجد CHECK). مرجع فقط—العمود TEXT.
+
+# ======================================================================================
 # UTILITIES
 # ======================================================================================
 
 class JSONB_or_JSON(TypeDecorator):
     """
-    استخدام JSONB في PostgreSQL وإلا JSON قياسي.
+    استخدام JSONB في PostgreSQL وإلا JSON قياسي (JSON).
+    يحافظ على واجهة موحّدة للبيئات المختلفة.
     """
     impl = SAJSON
     cache_ok = True
+
     def load_dialect_impl(self, dialect):
         return (
             dialect.type_descriptor(JSONB())
@@ -87,12 +123,8 @@ def hash_content(content: str) -> str:
 
 def coerce_datetime(value: Any) -> Optional[datetime]:
     """
-    تحويل مرن إلى datetime مع TZ=UTC:
-      - None -> None
-      - datetime (مع / بدون tz)
-      - int/float (Epoch)
-      - str (عدة صيغ ISO + fromisoformat)
-      - غير ذلك => None
+    تحويل مرن إلى datetime بتوقيت UTC.
+    يقبل: datetime / int أو float (Epoch) / string (مجموعة صيغ) / وإلا None.
     """
     if value is None:
         return None
@@ -177,33 +209,33 @@ class TaskType(enum.Enum):
 
 class MissionEventType(enum.Enum):
     # Lifecycle & Planning
-    CREATED          = "CREATED"
-    STATUS_CHANGE    = "STATUS_CHANGE"
-    PLAN_SELECTED    = "PLAN_SELECTED"
-    EXECUTION_STARTED= "EXECUTION_STARTED"
+    CREATED           = "CREATED"
+    STATUS_CHANGE     = "STATUS_CHANGE"
+    PLAN_SELECTED     = "PLAN_SELECTED"
+    EXECUTION_STARTED = "EXECUTION_STARTED"
 
-    # Task-level
-    TASK_STARTED     = "TASK_STARTED"
-    TASK_COMPLETED   = "TASK_COMPLETED"
-    TASK_FAILED      = "TASK_FAILED"
+    # Task-level events
+    TASK_STARTED   = "TASK_STARTED"
+    TASK_COMPLETED = "TASK_COMPLETED"
+    TASK_FAILED    = "TASK_FAILED"
 
     # Adaptation / Replanning
     REPLAN_TRIGGERED = "REPLAN_TRIGGERED"
     REPLAN_APPLIED   = "REPLAN_APPLIED"
 
-    # Generic legacy update (fallback)
-    MISSION_UPDATED  = "MISSION_UPDATED"
+    # Generic / legacy
+    MISSION_UPDATED = "MISSION_UPDATED"
 
-    # Analytical specialization
-    RISK_SUMMARY             = "RISK_SUMMARY"
-    ARCHITECTURE_CLASSIFIED  = "ARCHITECTURE_CLASSIFIED"
+    # Analytical
+    RISK_SUMMARY            = "RISK_SUMMARY"
+    ARCHITECTURE_CLASSIFIED = "ARCHITECTURE_CLASSIFIED"
 
     # Terminal outcomes
     MISSION_COMPLETED = "MISSION_COMPLETED"
     MISSION_FAILED    = "MISSION_FAILED"
 
-    # Final lifecycle closure marker (can appear after completed/failed)
-    FINALIZED         = "FINALIZED"
+    # Final closure marker
+    FINALIZED = "FINALIZED"
 
 # ======================================================================================
 # MIXINS
@@ -211,12 +243,16 @@ class MissionEventType(enum.Enum):
 
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False,
-        server_default=func.now(), default=utc_now
+        db.DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        default=utc_now
     )
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False,
-        server_default=func.now(), onupdate=utc_now
+        db.DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=utc_now
     )
 
 # ======================================================================================
@@ -297,7 +333,8 @@ class Mission(Timestamped, db.Model):
     objective: Mapped[str] = mapped_column(db.Text, nullable=False)
     status: Mapped[MissionStatus] = mapped_column(
         db.Enum(MissionStatus, native_enum=False),
-        default=MissionStatus.PENDING, index=True
+        default=MissionStatus.PENDING,
+        index=True
     )
     initiator_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True)
     active_plan_id: Mapped[Optional[int]] = mapped_column(db.Integer, ForeignKey("mission_plans.id", use_alter=True), nullable=True)
@@ -365,7 +402,8 @@ class MissionPlan(Timestamped, db.Model):
     planner_name: Mapped[Optional[str]] = mapped_column(db.String(120))
     status: Mapped[PlanStatus] = mapped_column(
         db.Enum(PlanStatus, native_enum=False),
-        default=PlanStatus.VALID, index=True
+        default=PlanStatus.VALID,
+        index=True
     )
     score: Mapped[Optional[float]] = mapped_column(db.Float)
     rationale: Mapped[Optional[str]] = mapped_column(db.Text)
@@ -388,7 +426,7 @@ class MissionPlan(Timestamped, db.Model):
     def __repr__(self):
         return f"<MissionPlan id={self.id} v={self.version} planner={self.planner_name} score={self.score}>"
 
-# --- Optional explicit dependencies table (kept for flexibility if graph expands) ---
+# --- Optional explicit dependencies table ---
 task_dependencies = db.Table(
     'task_dependencies',
     db.Column('task_id', db.Integer, db.ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True),
@@ -431,8 +469,8 @@ class Task(Timestamped, db.Model):
     started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
 
-    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)          # Structured output
-    result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON) # Free-form meta
+    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)           # Structured output
+    result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Free-form meta
     cost_usd = mapped_column(db.Numeric(12, 6))
 
     mission: Mapped[Mission] = relationship("Mission", back_populates="tasks")
@@ -504,7 +542,10 @@ class MissionEvent(Timestamped, db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
     task_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey("tasks.id", ondelete="SET NULL"), index=True)
-    event_type: Mapped[MissionEventType] = mapped_column(db.Enum(MissionEventType, native_enum=False), index=True)
+    event_type: Mapped[MissionEventType] = mapped_column(
+        db.Enum(MissionEventType, native_enum=False),
+        index=True
+    )
     payload: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
     note: Mapped[Optional[str]] = mapped_column(db.String(500))
 
@@ -563,7 +604,7 @@ def log_mission_event(
 ) -> MissionEvent:
     """
     إضافة حدث إلى سجل المهمة (دون commit).
-    استخدمه في orchestrator لتسجيل النقاط التحليلية / الترمينية.
+    يمكن توسيعه لاحقاً للتحقق من الطول أو منع التكرار.
     """
     evt = MissionEvent(
         mission_id=mission.id,
@@ -583,8 +624,7 @@ def finalize_task(
     error_text: Optional[str] = None
 ):
     """
-    إنهاء مهمة (Terminal) بشكل آمن و idempotent.
-    لا يقوم بأي commit — مسؤولية المستدعي (الخدمة العليا).
+    إنهاء مهمة (Terminal) بشكل آمن و idempotent (بدون commit).
     """
     if status not in {TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED}:
         raise ValueError("finalize_task expects a terminal TaskStatus.")
