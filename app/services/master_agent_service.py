@@ -2,67 +2,53 @@
 # -*- coding: utf-8 -*-
 # -*- coding: utf-8 -*-
 """
-OVERMIND MASTER ORCHESTRATOR – LEVEL‑4 DEEP SCAN / HYPER EXECUTION CORE
-=======================================================================
-Version: 10.0.0-l4
+OVERMIND MASTER ORCHESTRATOR – LEVEL‑4 DEEP SCAN / HYPER EXECUTION CORE (PRO EDITION)
+=====================================================================================
+Version: 10.1.0-l4-pro
 Status : Production / Hardened / Deterministic + Adaptive / Zero-Stall Friendly
 
 English Overview
 ----------------
-This service is the central runtime orchestrator that:
+Central runtime orchestrator that:
 1. Starts missions from natural objectives.
-2. Selects / persists a mission plan (via planners – now Level‑4 aware).
-3. Executes tasks with guarded tooling (agent_tools v4.2.0-hyper-l4), ensuring:
-   - Canonical tool normalization
-   - Safe auto-fill for file operations
+2. Selects / persists a mission plan (Level‑4 aware deterministic patterns + LLM fallback).
+3. Executes tasks with guarded tooling (agent_tools v4.x), ensuring:
+   - Canonical tool normalization & safe autofill
    - Interpolation of prior outputs ({{tNN.content}} / {{tNN.answer}})
    - Diff augmentation for write_file
    - Risk propagation & mission risk summary
 4. Detects stalls vs dependency wait states.
-5. Performs adaptive replanning if configured (limited cycles).
-6. Guarantees termination (success / failed) – never infinite loop.
-7. Seamlessly cooperates with Level‑4 pipeline (list_dir → read_file(ignore_missing) →
-   multi-layer generic_think → ensure_file(optional) → write_file).
+5. Performs adaptive replanning if configured (bounded cycles).
+6. Guarantees termination (SUCCESS / FAILED) – never infinite loop.
+7. Integrates Level‑4 pipeline phases (list_dir → read_file(ignore_missing) → multi-layer generic_think
+   → ensure_file(optional) → write_file).
+8. Emits SEMANTIC mission events (PRO): RISK_SUMMARY / ARCHITECTURE_CLASSIFIED /
+   MISSION_COMPLETED / MISSION_FAILED / FINALIZED for analytics & dashboards.
 
 Arabic Overview (ملخّص عربي)
 -----------------------------
-هذا المُنسِّق هو القلب التشغيلي:
+هذا المُنسِّق هو القلب التشغيلي للمهمات:
 - يحوّل الهدف إلى خطة مهام.
-- ينفّذ الأدوات بشكل آمن، مع تطبيع الأسماء والتعبئة التلقائية.
-- يدعم المستوى 4 للفحص المعمّق، ويمنع التعليق (stall) حتى لو الملفات ناقصة.
-- يُجري إعادة تخطيط تكيفي عند الفشل، ويُلخِّص المخاطر، ويُولّد فروقات التعديلات (diff).
-- يدعم ensure_file و read_file (ignore_missing) بطريقة لا تكسر السلسلة.
+- ينفّذ الأدوات مع حراسة (تطبيع، تعبئة تلقائية، تفادي الأعطال).
+- يدعم المستوى 4 للفحص المعمّق دون توقف بسبب ملفات ناقصة.
+- يُجري إعادة تخطيط تكيفي عند الحاجة.
+- يُنتج تلخيصاً للمخاطر + تصنيفاً لملف المعمارية.
+- يصدر أحداثاً دلالية نهائية (نجاح / فشل) + FINALIZED.
 
-Key Level‑4 Enhancements vs 9.x
--------------------------------
-+ Soft Missing File Handling:
-    Treat missing read_file as a SOFT condition (if tool already returns ok with exists=False)
-    – no cascading failures; orchestration interprets absence semantically.
-+ ensure_file Integration:
-    Recognizes ensure_file as a “pre‑creation” step (risk category distinct) and
-    skips unnecessary diff logic.
-+ Intelligent Stall Heuristic v2:
-    Separates:
-      - execution_stall (no tasks dispatched)
-      - progress_gap (tasks attempted but no successes)
-    Emits structured telemetry windows.
-+ Answer Harvest Refinement:
-    Harvests answer from result_meta_json.answer, data.answer, or fallback result_text.
-+ Interpolation Resilience:
-    If placeholder missing and ALLOW_TEMPLATE_FAILURE=1, leaves marker; else blanks.
-+ Write Diff Safety:
-    Auto backup optional; diff summary augmented with hash & change_ratio, no-op flagged.
-+ Adaptive Replan Sharpened:
-    Tracks cycles, attaches failure context keys, ensures analytic minimal fallback plan
-    (planner-level guarantee) remains executable.
-+ Mission Finalization:
-    Risk bucket summarization plus classification of architecture report creation
-    (if final artifact path matches ARCHITECTURE_PRINCIPLES.md or env override).
-+ Tool Normalization Sync:
-    Mirrors updated agent_tools canonicalization (write_file, read_file, generic_think, ensure_file, append_file).
+Key PRO Enhancements vs 10.0.0-l4
+---------------------------------
++ Replaced generic MISSION_UPDATED with semantic events:
+    * RISK_SUMMARY
+    * ARCHITECTURE_CLASSIFIED
+    * MISSION_COMPLETED
+    * MISSION_FAILED
+    * FINALIZED (retained as closure marker)
++ Catastrophic and adaptive failure paths emit proper terminal events.
++ Helper _emit_terminal_events centralizes terminal event emission (idempotent).
++ Backwards safe: MissionStatus logic unchanged; added analytics clarity.
 
-Environment Flags (New / Relevant)
-----------------------------------
+Environment Flags (Relevant)
+----------------------------
 OVERMIND_GUARD_ENABLED=1
 OVERMIND_GUARD_FILE_AUTOFIX=1
 OVERMIND_GUARD_FORCE_FILE_INTENT=1
@@ -72,7 +58,7 @@ OVERMIND_GUARD_FILE_DEFAULT_CONTENT="Auto-generated content placeholder."
 OVERMIND_INTERPOLATION_ENABLED=1
 OVERMIND_ALLOW_TEMPLATE_FAILURE=1
 
-OVERMIND_L4_SOFT_MISSING_FILES=1          (Treat FILE_NOT_FOUND for read_file as soft failure -> convert to synthetic success)
+OVERMIND_L4_SOFT_MISSING_FILES=1
 OVERMIND_L4_MISSING_FILE_MARKER="[MISSING]"
 OVERMIND_L4_EXPECT_ARCH_FILE="ARCHITECTURE_PRINCIPLES.md"
 
@@ -89,19 +75,17 @@ REPLAN_FAILURE_THRESHOLD=2
 
 Contracts / Safety
 ------------------
-- Does NOT modify DB schema – only rows & JSON meta.
-- Guarantees mission termination inside MAX_LIFECYCLE_TICKS or runtime ceiling.
-- All tool invocations pass through guard + interpolation layers.
-- Soft-missing logic ensures architecture scans never fail solely due to absent optional files.
+- No DB schema alteration.
+- Terminates within tick/time ceilings.
+- Soft-missing read_file (ignore_missing) prevents cascading failures.
+- All terminal outcomes produce semantic events for analytics.
 
 Extensibility Points
 --------------------
 - ToolPolicyEngine.authorize(...) for RBAC/quotas.
 - VerificationService.verify(...) for domain validation.
-- _augment_with_diff(...) for richer semantic diff (AST compare in future).
-- _precheck_and_autofix_task(...) for advanced intent classification (add more tool families).
+- _augment_with_diff(...) for richer semantic diff (future AST modes).
 - Adaptive replan hook for custom planner selection.
-
 """
 
 from __future__ import annotations
@@ -186,7 +170,7 @@ def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pa
 # =============================================================================
 # Global Configuration
 # =============================================================================
-OVERMIND_VERSION = "10.0.0-l4"
+OVERMIND_VERSION = "10.1.0-l4-pro"
 
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = int(os.getenv("ADAPTIVE_MAX_CYCLES", "3"))
@@ -296,7 +280,7 @@ def log_debug(mission: Mission | None, message: str, **extra):
         _log("debug", mission, f"[DEBUG] {message}", **extra)
 
 # =============================================================================
-# Mission Lock (placeholder: use distributed lock in multi-instance setups)
+# Mission Lock (placeholder: distributed lock in multi-instance setups)
 # =============================================================================
 @contextmanager
 def mission_lock(mission_id: int):
@@ -595,6 +579,8 @@ class OvermindService:
                 log_error(mission, "Lifecycle catastrophic failure", error=str(e))
                 update_mission_status(mission, MissionStatus.FAILED, note=f"Fatal: {e}")
                 db.session.commit()
+                # Emit semantic terminal events
+                self._emit_terminal_events(mission, success=False, reason="catastrophic_failure", error=str(e))
 
     # --------------------------- Lifecycle Loop ------------------------------
     def _tick(self, mission: Mission, overall_start_perf: float):
@@ -605,6 +591,7 @@ class OvermindService:
                 update_mission_status(mission, MissionStatus.FAILED, note="Total runtime limit exceeded.")
                 db.session.commit()
                 log_warn(mission, "Mission aborted by total runtime limit.")
+                self._emit_terminal_events(mission, success=False, reason="runtime_limit")
                 break
 
             log_debug(mission, "Lifecycle tick", loop=loops, status=str(mission.status))
@@ -662,6 +649,7 @@ class OvermindService:
         if not planners:
             update_mission_status(mission, MissionStatus.FAILED, note="No planners available.")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="no_planners")
             return
 
         candidates: List[CandidatePlan] = []
@@ -713,6 +701,7 @@ class OvermindService:
         if not candidates:
             update_mission_status(mission, MissionStatus.FAILED, note="All planners failed.")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="all_planners_failed")
             return
 
         best = max(candidates, key=lambda c: c.score)
@@ -722,6 +711,7 @@ class OvermindService:
         except Exception as e:
             update_mission_status(mission, MissionStatus.FAILED, note=f"Persist error: {e}")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="persist_error")
             return
 
         update_mission_status(mission, MissionStatus.PLANNED, note=f"Plan v{version} selected.")
@@ -828,11 +818,11 @@ class OvermindService:
             log_error(mission, "Active plan not found.")
             update_mission_status(mission, MissionStatus.FAILED, note="No plan.")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="missing_plan")
             return
 
         task_index: Dict[str, Task] = {t.task_key: t for t in mission.tasks}
 
-        # Fallback simple linear order by task_key ascending (planner already sets t01..)
         ordered_keys = sorted(task_index.keys())
         layers = [ordered_keys]
 
@@ -992,7 +982,6 @@ class OvermindService:
                 return outcome
 
         if not _tool_exists(task.tool_name):
-            # Attempt fallback intent
             if canon in (CANON_WRITE, CANON_READ):
                 notes.append("tool_absent_but_forced_file")
             else:
@@ -1082,12 +1071,10 @@ class OvermindService:
 
         try:
             result_payload = self._execute_tool(task) if task.tool_name else self._fallback_maestro(task)
-            # Soft missing file remediation (if older read_file returns hard failure)
+            # Soft missing file remediation
             if L4_SOFT_MISSING_FILES and task.tool_name == CANON_READ:
                 data = result_payload.get("data") or {}
-                # If the tool used older semantics (error path) we would catch before; current version returns ok
                 if isinstance(data, dict) and not data.get("exists", True):
-                    # Provide marker if empty
                     if not data.get("content"):
                         data["content"] = f"{L4_MISSING_FILE_MARKER} {data.get('path','')}"
                         result_payload["result_text"] = data["content"]
@@ -1101,25 +1088,21 @@ class OvermindService:
             if answer:
                 meta_update["answer"] = answer
 
-            # Risk propagation
             arg_risk = None
             if isinstance(task.tool_args_json, dict):
                 arg_risk = task.tool_args_json.get("_meta_risk")
             if arg_risk is not None:
                 meta_update["risk_score"] = arg_risk
 
-            # Diff augmentation (skip ensure_file; only final writes)
             if DIFF_ENABLED and task.tool_name == CANON_WRITE:
                 path = (task.tool_args_json or {}).get("path")
                 if isinstance(path, str) and path.strip():
                     self._augment_with_diff(task, path, meta_update)
 
-            # result_text strategy
             task.result_text = (result_payload.get("result_text") or "")[:16000]
             if answer and not task.result_text:
                 task.result_text = answer[:16000]
 
-            # Save meta
             if hasattr(task, "result_meta_json"):
                 current_meta = getattr(task, "result_meta_json") or {}
                 if not isinstance(current_meta, dict):
@@ -1310,7 +1293,6 @@ class OvermindService:
 
         if hasattr(result_obj, "ok"):
             status_ok = getattr(result_obj, "ok", True)
-            # Data extraction cascade
             for attr in ("data", "result", "content", "_content"):
                 if hasattr(result_obj, attr):
                     val = getattr(result_obj, attr)
@@ -1319,7 +1301,6 @@ class OvermindService:
                         break
             err_attr = getattr(result_obj, "error", None)
             if not status_ok and err_attr:
-                # Soft-missing override for old read_file semantics
                 if L4_SOFT_MISSING_FILES and tool_name_raw == CANON_READ and "FILE_NOT_FOUND" in str(err_attr):
                     status_ok = True
                     data_payload = {"content": "", "exists": False, "missing": True, "soft_missing": True}
@@ -1336,7 +1317,6 @@ class OvermindService:
         else:
             data_payload = result_obj
 
-        # Collapse output
         if isinstance(data_payload, dict):
             if "content" in data_payload and isinstance(data_payload["content"], str):
                 result_text = data_payload["content"]
@@ -1383,6 +1363,7 @@ class OvermindService:
                     update_mission_status(mission, MissionStatus.SUCCESS, note="All tasks completed.")
                     increment_counter("overmind_missions_finished_total", {"result": "success"})
                     log_info(mission, "Mission success")
+                    self._emit_terminal_events(mission, success=True, reason="all_tasks_success")
             else:
                 if failed >= REPLAN_FAILURE_THRESHOLD and self._adaptive_cycles_used(mission) < ADAPTIVE_MAX_CYCLES:
                     if mission.status != MissionStatus.ADAPTING:
@@ -1393,6 +1374,7 @@ class OvermindService:
                         update_mission_status(mission, MissionStatus.FAILED, note=f"{failed} tasks failed.")
                         increment_counter("overmind_missions_finished_total", {"result": "failed"})
                         log_warn(mission, "Mission failed terminally", failed=failed)
+                        self._emit_terminal_events(mission, success=False, reason="tasks_failed")
             db.session.commit()
 
     def _finalize_mission_risk(self, mission: Mission):
@@ -1415,10 +1397,9 @@ class OvermindService:
             else:
                 buckets["high"] += 1
         log_info(mission, "Mission risk summary", **buckets)
-        log_mission_event(mission, MissionEventType.MISSION_UPDATED, payload={"risk_summary": buckets})
+        log_mission_event(mission, MissionEventType.RISK_SUMMARY, payload={"risk_summary": buckets})
 
     def _classify_architecture_outcome(self, mission: Mission):
-        # Detect if an architecture artifact was generated
         arch_tasks = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.SUCCESS).all()
         produced = False
         target = L4_EXPECT_ARCH_FILE.lower()
@@ -1430,7 +1411,7 @@ class OvermindService:
                     break
         log_mission_event(
             mission,
-            MissionEventType.MISSION_UPDATED,
+            MissionEventType.ARCHITECTURE_CLASSIFIED,
             payload={"architecture_artifact": produced, "expected": target}
         )
         log_info(mission, "Architecture artifact classification", produced=produced, expected=target)
@@ -1460,6 +1441,7 @@ class OvermindService:
             update_mission_status(mission, MissionStatus.FAILED, note="Adaptive cycle limit reached.")
             db.session.commit()
             log_warn(mission, "Adaptive cycle limit reached -> Mission FAILED.")
+            self._emit_terminal_events(mission, success=False, reason="adaptive_cycle_limit")
             return
 
         failure_context = {t.task_key: (t.error_text or "unknown") for t in failed_tasks}
@@ -1483,6 +1465,7 @@ class OvermindService:
         if not chosen:
             update_mission_status(mission, MissionStatus.FAILED, note="No planner for adaptive replan.")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="no_planner_adaptive")
             return
 
         try:
@@ -1510,6 +1493,46 @@ class OvermindService:
             log_error(mission, "Adaptive replanning failed", error=str(e))
             update_mission_status(mission, MissionStatus.FAILED, note=f"Adaptive failed: {e}")
             db.session.commit()
+            self._emit_terminal_events(mission, success=False, reason="adaptive_replan_failed", error=str(e))
+
+    # ----------------------- Terminal Event Emission (PRO) -------------------
+    def _emit_terminal_events(self, mission: Mission, success: bool, reason: str, error: Optional[str] = None):
+        """
+        Idempotent semantic terminal emission:
+          - SUCCESS  -> MISSION_COMPLETED + FINALIZED
+          - FAILURE  -> MISSION_FAILED + FINALIZED
+        Ensures we don't double-log by checking last event types locally (cheap) if needed.
+        """
+        # Basic guard: only when mission is terminal
+        if mission.status not in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+            return
+        # Avoid duplicate FINALIZED
+        last_event = None
+        if mission.events:
+            last_event = mission.events[-1].event_type
+        if last_event == MissionEventType.FINALIZED:
+            return
+
+        if success:
+            log_mission_event(
+                mission,
+                MissionEventType.MISSION_COMPLETED,
+                payload={"reason": reason}
+            )
+        else:
+            log_mission_event(
+                mission,
+                MissionEventType.MISSION_FAILED,
+                payload={"reason": reason, "error": error}
+            )
+        log_mission_event(
+            mission,
+            MissionEventType.FINALIZED,
+            payload={"status": mission.status.value, "reason": reason}
+        )
+        db.session.commit()
+        log_info(mission, "Terminal mission events emitted",
+                 success=success, reason=reason, status=mission.status.value)
 
     # ----------------------------- Terminal Event ----------------------------
     def _safe_terminal_event(self, mission_id: int):
@@ -1518,6 +1541,10 @@ class OvermindService:
             return
         try:
             self._check_terminal(mission)
+            if mission.status == MissionStatus.SUCCESS:
+                self._emit_terminal_events(mission, success=True, reason="post_check")
+            elif mission.status == MissionStatus.FAILED:
+                self._emit_terminal_events(mission, success=False, reason="post_check")
         except Exception:
             pass
 
@@ -1540,5 +1567,5 @@ def run_mission_lifecycle(mission_id: int):
     return _overmind_service_singleton.run_mission_lifecycle(mission_id)
 
 # =============================================================================
-# END OF FILE (v10.0.0-l4)
+# END OF FILE (v10.1.0-l4-pro)
 # =============================================================================
