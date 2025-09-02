@@ -1,42 +1,39 @@
 # ======================================================================================
-#  COGNIFORGE DOMAIN MODELS  v13.0  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER"          #
+#  COGNIFORGE DOMAIN MODELS  v13.1  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER (Pro)"    #
 # ======================================================================================
-#  PURPOSE:
-#    نموذج نطاق (Domain Model) مُحسَّن لتحقيق انسجام كامل بين:
-#      - Overmind Orchestrator (master_agent_service v4.4-terminal-vision)
-#      - Maestro Generation Service (generation_service v16.5.0 sovereign fusion)
+#  PURPOSE (الغرض):
+#    نموذج نطاق (Domain Model) مُحسَّن ومتوافق دلالياً بين:
+#      - Overmind Orchestrator (master_agent_service ≥ v4.4-terminal-vision-pro)
+#      - Maestro Generation Service (generation_service ≥ v16.5.0 sovereign fusion)
 #
-#  CORE UPGRADES vs v12.2:
-#    1) RESULT META CHANNEL:
-#         حقل result_meta_json (JSON) مضاف لدعم أي بيانات إضافية (مثل tool meta).
-#         (كان master_agent_service يتحقق من وجوده قبل الإسناد).
-#    2) TASK TIMESTAMP GUARD:
-#         تحسين التحويل (coerce_datetime) + دعم قيم epoch / ISO / dt بدون TZ.
-#    3) ATOMIC FINALIZATION:
-#         finalize_task صار idempotent (لن يُعيد إنهاء مهمة منتهية).
-#    4) RETRY SUPPORT:
-#         حقول next_retry_at + attempt_count + max_attempts مُهيّأة للاستخدام المباشر.
-#    5) DURATION CONSISTENCY:
-#         compute_duration يستخدم started_at/finished_at فقط إن لم يكن duration_ms محفوظاً.
-#    6) INDEXING + ANALYTICS:
-#         فهارس تغطي الاستعلامات المتكررة لدى Overmind (mission_id,status / (mission_id,task_key)).
-#    7) EXTENDED ENUMS ALIGNMENT:
-#         إضافة SKIPPED و RETRY (موجودة في Overmind) وضمان تماسك حالات المهمة.
-#    8) EVENT STREAM:
-#         MissionEventType يشمل جميع الأحداث المطلوبة لدى النسختين (CREATED / PLAN_SELECTED /
-#         EXECUTION_STARTED / TASK_* / REPLAN_* / STATUS_CHANGE / FINALIZED).
-#    9) SAFE HASHING UTIL + CONTENT HASH للخطط لاكتشاف التكرار.
-#   10) DERIVED PROPERTIES:
-#         - Task.is_terminal
-#         - Task.duration_seconds
-#         - Mission.total_tasks / completed_tasks / failed_tasks / success_ratio
-#   11) UNIFIED HELPERS:
-#         update_mission_status, log_mission_event, finalize_task (لا يقوم بالـ commit).
-#   12) UPGRADED JSON TYPE:
-#         JSONB_or_JSON يدعم PostgreSQL (JSONB) و باقي المحركات (SAJSON).
+#  THIS "PRO" EDITION ADDS SEMANTIC MISSION EVENTS:
+#      MISSION_UPDATED, RISK_SUMMARY, ARCHITECTURE_CLASSIFIED,
+#      MISSION_COMPLETED, MISSION_FAILED  (مع الإبقاء على FINALIZED).
+#
+#  CORE UPGRADES vs v13.0:
+#    1) Extended MissionEventType for richer analytics & dashboards.
+#    2) Backwards compatible: legacy consumers can still rely on FINALIZED / STATUS_CHANGE.
+#    3) No DB migration required (native_enum=False => values stored as VARCHAR).
+#    4) Clear separation between:
+#         - Transitional events (STATUS_CHANGE)
+#         - Analytical classification (RISK_SUMMARY / ARCHITECTURE_CLASSIFIED)
+#         - Terminal outcomes (MISSION_COMPLETED / MISSION_FAILED / FINALIZED)
+#    5) Maintained idempotent finalize_task helper.
+#
+#  PRE-EXISTING FEATURES (from v13.0):
+#    - RESULT META CHANNEL (result_meta_json)
+#    - TASK TIMESTAMP COERCION (coerce_datetime)
+#    - RETRY SUPPORT (attempt_count / max_attempts / next_retry_at)
+#    - CONSISTENT DURATION (compute_duration logic)
+#    - INDEXING for frequent mission/task queries
+#    - HASHING UTILS for plan content
+#    - DERIVED ANALYTICS on Mission (total_tasks, success_ratio ...)
+#    - UNIFIED HELPERS (update_mission_status / log_mission_event / finalize_task)
+#    - JSONB_or_JSON abstraction
 #
 #  NOTE:
-#    هذا الملف لا ينفذ أي commit. التحكم الكامل بالمعاملات (Transactions) مسؤولية الطبقات العليا.
+#    لا يقوم هذا الملف بعمليات commit. التحكم في المعاملات مسؤولية الطبقات العليا.
+#    يمكن توسيع MissionEventType لاحقاً بدون Migration طالما native_enum=False.
 #
 # ======================================================================================
 
@@ -45,7 +42,7 @@ from __future__ import annotations
 import enum
 import hashlib
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, Dict, List, Union, Iterable
+from typing import Optional, Any, Dict, List
 
 from flask_login import UserMixin
 from sqlalchemy import (
@@ -143,49 +140,70 @@ def load_user(user_id: str):
 # ======================================================================================
 
 class MessageRole(enum.Enum):
-    USER="user"; ASSISTANT="assistant"; TOOL="tool"; SYSTEM="system"
+    USER = "user"
+    ASSISTANT = "assistant"
+    TOOL = "tool"
+    SYSTEM = "system"
 
 class MissionStatus(enum.Enum):
-    PENDING="PENDING"
-    PLANNING="PLANNING"
-    PLANNED="PLANNED"
-    RUNNING="RUNNING"
-    ADAPTING="ADAPTING"
-    SUCCESS="SUCCESS"
-    FAILED="FAILED"
-    CANCELED="CANCELED"
+    PENDING  = "PENDING"
+    PLANNING = "PLANNING"
+    PLANNED  = "PLANNED"
+    RUNNING  = "RUNNING"
+    ADAPTING = "ADAPTING"
+    SUCCESS  = "SUCCESS"
+    FAILED   = "FAILED"
+    CANCELED = "CANCELED"
 
 class TaskStatus(enum.Enum):
-    PENDING="PENDING"
-    RUNNING="RUNNING"
-    SUCCESS="SUCCESS"
-    FAILED="FAILED"
-    RETRY="RETRY"
-    SKIPPED="SKIPPED"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED  = "FAILED"
+    RETRY   = "RETRY"
+    SKIPPED = "SKIPPED"
 
 class PlanStatus(enum.Enum):
-    DRAFT="DRAFT"
-    VALID="VALID"
-    SUPERSEDED="SUPERSEDED"
-    FAILED="FAILED"
+    DRAFT      = "DRAFT"
+    VALID      = "VALID"
+    SUPERSEDED = "SUPERSEDED"
+    FAILED     = "FAILED"
 
 class TaskType(enum.Enum):
-    TOOL="TOOL"
-    SYSTEM="SYSTEM"
-    META="META"
-    VERIFICATION="VERIFICATION"
+    TOOL         = "TOOL"
+    SYSTEM       = "SYSTEM"
+    META         = "META"
+    VERIFICATION = "VERIFICATION"
 
 class MissionEventType(enum.Enum):
-    CREATED="CREATED"
-    STATUS_CHANGE="STATUS_CHANGE"
-    PLAN_SELECTED="PLAN_SELECTED"
-    EXECUTION_STARTED="EXECUTION_STARTED"
-    TASK_STARTED="TASK_STARTED"
-    TASK_COMPLETED="TASK_COMPLETED"
-    TASK_FAILED="TASK_FAILED"
-    REPLAN_TRIGGERED="REPLAN_TRIGGERED"
-    REPLAN_APPLIED="REPLAN_APPLIED"
-    FINALIZED="FINALIZED"
+    # Lifecycle & Planning
+    CREATED          = "CREATED"
+    STATUS_CHANGE    = "STATUS_CHANGE"
+    PLAN_SELECTED    = "PLAN_SELECTED"
+    EXECUTION_STARTED= "EXECUTION_STARTED"
+
+    # Task-level
+    TASK_STARTED     = "TASK_STARTED"
+    TASK_COMPLETED   = "TASK_COMPLETED"
+    TASK_FAILED      = "TASK_FAILED"
+
+    # Adaptation / Replanning
+    REPLAN_TRIGGERED = "REPLAN_TRIGGERED"
+    REPLAN_APPLIED   = "REPLAN_APPLIED"
+
+    # Generic legacy update (fallback)
+    MISSION_UPDATED  = "MISSION_UPDATED"
+
+    # Analytical specialization
+    RISK_SUMMARY             = "RISK_SUMMARY"
+    ARCHITECTURE_CLASSIFIED  = "ARCHITECTURE_CLASSIFIED"
+
+    # Terminal outcomes
+    MISSION_COMPLETED = "MISSION_COMPLETED"
+    MISSION_FAILED    = "MISSION_FAILED"
+
+    # Final lifecycle closure marker (can appear after completed/failed)
+    FINALIZED         = "FINALIZED"
 
 # ======================================================================================
 # MIXINS
@@ -413,8 +431,8 @@ class Task(Timestamped, db.Model):
     started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
 
-    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)          # Structured multi-step output
-    result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON) # Free-form meta (tools / model usage)
+    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)          # Structured output
+    result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON) # Free-form meta
     cost_usd = mapped_column(db.Numeric(12, 6))
 
     mission: Mapped[Mission] = relationship("Mission", back_populates="tasks")
@@ -509,7 +527,6 @@ def _coerce_task_datetime_fields(_mapper, _connection, target: Task):
         raw = getattr(target, attr, None)
         coerced = coerce_datetime(raw)
         if raw is not None and coerced is None:
-            # قيمة غير قابلة للتحويل → تصفيرها لسلامة التخزين
             setattr(target, attr, None)
         else:
             setattr(target, attr, coerced)
@@ -546,6 +563,7 @@ def log_mission_event(
 ) -> MissionEvent:
     """
     إضافة حدث إلى سجل المهمة (دون commit).
+    استخدمه في orchestrator لتسجيل النقاط التحليلية / الترمينية.
     """
     evt = MissionEvent(
         mission_id=mission.id,
@@ -566,14 +584,13 @@ def finalize_task(
 ):
     """
     إنهاء مهمة (Terminal) بشكل آمن و idempotent.
-    لا يقوم بأي commit — مسؤولية المستدعي.
+    لا يقوم بأي commit — مسؤولية المستدعي (الخدمة العليا).
     """
     if status not in {TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED}:
         raise ValueError("finalize_task expects a terminal TaskStatus.")
 
     # Idempotent guard
     if task.status in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED):
-        # تحديث النصوص فقط إن لزم
         if result_text and not task.result_text:
             task.result_text = result_text
         if error_text and not task.error_text:
@@ -591,7 +608,9 @@ def finalize_task(
     if error_text is not None:
         task.error_text = error_text
 
-    event_type = MissionEventType.TASK_COMPLETED if status == TaskStatus.SUCCESS else MissionEventType.TASK_FAILED
+    event_type = (MissionEventType.TASK_COMPLETED
+                  if status == TaskStatus.SUCCESS
+                  else MissionEventType.TASK_FAILED)
     log_mission_event(
         task.mission,
         event_type,
