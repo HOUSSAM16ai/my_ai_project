@@ -3,37 +3,7 @@
 ================================================================================
  PLANNING SCHEMAS CORE v4.0  (Single Source of Truth)
 ================================================================================
-Purpose:
-    Central unified definitions for planning models (MissionPlanSchema,
-    PlannedTask, PlanningContext, warnings, validation issues, etc.).
-    Eliminates duplicate / fallback dataclass definitions that caused
-    isinstance identity mismatches across planners.
-
-Key Points:
-    - All planners must import ONLY from: app.overmind.planning.schemas
-    - Includes PlanningContext to stop prior import failures.
-    - Graph (DAG) validation: uniqueness, dependencies, acyclicity, depth,
-      fan-out, risk heuristics, warnings, and policy hooks.
-    - Pydantic models with extra="forbid" to reject unknown fields.
-    - Policy hooks can raise PlanValidationError or append warnings.
-
-Environment Overrides (optional):
-    PLAN_MAX_TASKS
-    PLAN_MAX_DESCRIPTION_LEN
-    PLAN_MAX_METADATA_KEYS
-    PLAN_MAX_TOOL_ARGS_KEYS
-    PLAN_MAX_TOOL_ARGS_BYTES
-    PLAN_MAX_DEPTH
-    PLAN_MAX_OUT_DEGREE
-    PLAN_PRIORITY_MIN
-    PLAN_PRIORITY_MAX
-
-Usage:
-    from app.overmind.planning.schemas import MissionPlanSchema, PlannedTask, validate_plan
-    plan = validate_plan(payload_dict)
-
-NOTE:
-    Keep this file UTF-8 but avoid exotic Unicode symbols outside comments.
+(تم اختصار رأس التعليق السابق، مع إضافة PlanMeta والدعم لحقل meta)
 ================================================================================
 """
 
@@ -51,7 +21,7 @@ from typing import (
 
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
-__schema_version__ = "4.0.0"
+__schema_version__ = "4.0.1"  # bump بعد إضافة PlanMeta/meta
 
 # =============================================================================
 # SETTINGS
@@ -143,6 +113,34 @@ _POLICY_HOOKS: List[PolicyHook] = []
 
 def register_policy_hook(hook: PolicyHook) -> None:
     _POLICY_HOOKS.append(hook)
+
+# =============================================================================
+# PLAN META (جديد)
+# =============================================================================
+
+class PlanMeta(BaseModel):
+    """
+    يحمل معلومات تليمترية/سيميائية ديناميكية من الـ planner.
+    أمثلة شائعة:
+        language: 'ar' أو 'en'
+        section_task: معرف مهمة رئيسية لتوليد الأقسام
+        files_scanned: عدد ملفات تم فحصها
+        streaming: هل البث المتجزئ مفعل
+        chunk_count: عدد القطع المتوقعة أو المنتجة
+        roles_inferred: عدد الأدوار المستنتجة
+        artifacts_expected: عدد المخرجات النهائية المتوقعة
+    يسمح بأي مفاتيح إضافية مستقبلية دون كسر.
+    """
+    language: Optional[str] = None
+    section_task: Optional[str] = None
+    files_scanned: Optional[int] = None
+    streaming: Optional[bool] = None
+    chunk_count: Optional[int] = None
+    roles_inferred: Optional[int] = None
+    artifacts_expected: Optional[int] = None
+
+    # السماح بحقوق إضافية:
+    model_config = ConfigDict(extra="allow")
 
 # =============================================================================
 # TASK MODEL
@@ -246,6 +244,12 @@ class MissionPlanSchema(BaseModel):
     revision: int = Field(default=1, ge=1)
     objective: str = Field(..., min_length=3)
     tasks: List[PlannedTask] = Field(...)
+
+    # الحقل الجديد:
+    meta: Optional[PlanMeta] = Field(
+        default=None,
+        description="Dynamic telemetry / semantic guidance produced by planner. Accepts arbitrary extra keys."
+    )
 
     topological_order: Optional[List[str]] = Field(default=None)
     stats: Optional[Dict[str, Any]] = Field(default=None)
@@ -501,7 +505,8 @@ class MissionPlanSchema(BaseModel):
             ],
             "objective": self.objective,
             "stats": self.stats,
-            "warnings": [w.model_dump() for w in self.warnings] if self.warnings else []
+            "warnings": [w.model_dump() for w in self.warnings] if self.warnings else [],
+            "meta": self.meta.model_dump() if self.meta else None
         }
 
     def to_networkx(self):
@@ -553,7 +558,6 @@ def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
             severity=WarningSeverity.RISK
         )
 
-# Register the sample policy (remove this line to disable)
 register_policy_hook(_sample_policy_high_risk_limit)
 
 # =============================================================================
@@ -575,6 +579,7 @@ __all__ = [
     "TOOL_REGISTRY",
     "register_policy_hook",
     "PolicyHook",
+    "PlanMeta",
     "PlannedTask",
     "PlanningContext",
     "MissionPlanSchema",
