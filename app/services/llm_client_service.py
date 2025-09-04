@@ -1,61 +1,113 @@
 # app/services/llm_client_service.py - The Central Communications Ministry
 # # -*- coding: utf-8 -*-
-# ======================================================================================
-#  LLM CLIENT SERVICE (v4.2.0 • "RESILIENT-COMMS-CORE+")
-#  File: app/services/llm_client_service.py
-# ======================================================================================
-#  PURPOSE:
-#    نقطة الارتكاز (Single Source of Truth) لإنشاء عميل LLM واحد مُعاد استعماله عبر النظام
-#    (generation_service / maestro adapter / مخطط / CLI) مع:
-#      - كشف تلقائي للمزود (OpenRouter أولاً ثم OpenAI).
-#      - دعم وضع المحاكاة (Mock) لأغراض التطوير والاختبارات أو عند غياب المفاتيح.
-#      - تصميم كسول (Lazy) + Singleton مع خيار تعطيل الكاش.
-#      - واجهة متوافقة: client.chat.completions.create(...)
-#      - ميتاداتا تشخيصية وشفافية كاملة (llm_health).
-#      - أمان ضد العمل خارج سياق Flask (لا الاستيراد ولا التهشم).
-#      - محاولة احتياطية (Fallback HTTP) إذا مكتبة openai غير متوفرة.
+# -*- coding: utf-8 -*-
+# =================================================================================================
+#  LLM CLIENT SERVICE – HYPER PRO EDITION
+#  Version: 4.7.0  •  Codename: "RESILIENT-COMMS-ULTRA / RETRY+STREAM / COST / CIRCUIT / HOOKS"
+# =================================================================================================
+#  PURPOSE
+#    Single Authoritative Gateway for all LLM invocations across the Overmind stack:
+#      - Unified construction & reuse (lazy singleton; optional cache disable).
+#      - Automatic multi-provider credential detection (OpenRouter → OpenAI).
+#      - Modern + legacy OpenAI SDK compatibility + lightweight HTTP fallback.
+#      - Resilient high-level interface invoke_chat() + optional streaming.
+#      - Structured response envelope (content / usage / latency / cost / meta).
+#      - Retries with exponential backoff + jitter + error taxonomy.
+#      - Circuit breaker for repeated transient failures.
+#      - Cumulative usage & (optional) cost estimation (per model rate table).
+#      - Hooks (pre / post) for dynamic policy injection, tracing, sanitization.
+#      - Output sanitization (sensitive marker redaction).
+#      - Force-model override, configurable timeouts, mock fallback modes.
+#      - Health diagnostics (llm_health) enriched with latency & breaker state.
 #
-#  KEY FEATURES vs v3.0:
-#      1. دعم تعدد نسخ مكتبة openai (الواجهة الحديثة openai.OpenAI والقديمة openai.ChatCompletion).
-#      2. محرك Mock مُحسَّن مع تتبع usage (prompt_tokens / completion_tokens / total_tokens).
-#      3. Fallback HTTP بسيط إلى OpenRouter إذا فشلت تهيئة مكتبة openai (بدون تبعية ثقيلة).
-#      4. آلية reset مرنة + إمكانية فرض إعادة البناء (LLM_DISABLE_CACHE).
-#      5. تلوين أسباب الانتقال إلى Mock (forced-mock-flag / no-api-key / real-client-init-failure / http-fallback).
-#      6. خاصية حماية زمن التشغيل (Timeout) قابلة للتهيئة.
-#      7. توحيد واجهة الاستدعاء حتى في أوضاع fallback.
-#      8. وظائف: get_llm_client, reset_llm_client, is_mock_client, llm_health.
+#  COMPATIBILITY
+#    - Backward compatible with legacy direct usage: client.chat.completions.create(...)
+#    - New advanced consumers should prefer invoke_chat() or invoke_chat_stream().
 #
-#  ENV VARS:
-#      OPENROUTER_API_KEY          مفتاح OpenRouter (أولوية #1)
-#      OPENAI_API_KEY              مفتاح OpenAI (أولوية #2)
-#      LLM_BASE_URL                لتجاوز العنوان الافتراضي (OpenRouter أو OpenAI)
-#      LLM_TIMEOUT_SECONDS         افتراضي 90
-#      LLM_FORCE_MOCK=1            إجبار وضع المحاكاة
-#      LLM_MOCK_MODE=1             نفس التأثير
-#      LLM_DISABLE_CACHE=1         تعطيل التخزين المؤقت (كل نداء يبني عميل جديد)
-#      LLM_HTTP_FALLBACK=1         السماح باستعمال requests كخطة طوارئ عند فشل مكتبة openai
-#      LLM_LOG_LEVEL               افتراضي INFO
+#  NEW vs 4.6.0
+#    + Dedicated invoke_chat_stream() helper.
+#    + Circuit Breaker (configurable window / threshold / cooldown).
+#    + Budget Guard (session cost ceiling).
+#    + Smart Retry Policy (skip retry for auth_error / parse unless configured).
+#    + Selective Retry Error Classes.
+#    + Cost Budget Hard-Fail vs Soft Warn.
+#    + Model alias normalization (optional mapping).
+#    + Expanded Sanitization patterns + optional regex redaction.
+#    + Fine-grained logging levels for attempts & breaker events.
+#    + Minimal internal stats snapshot (for external orchestrators).
 #
-#  PUBLIC API:
-#      get_llm_client()            -> يعيد العميل الموحد
-#      reset_llm_client()          -> مسح الـ Singleton
-#      is_mock_client(client=None) -> هل العميل محاكاة؟
-#      llm_health()                -> تقرير تشخيصي
+#  ENV VARS (Key Subset)
+#    OPENROUTER_API_KEY                Primary key (priority #1)
+#    OPENAI_API_KEY                    Secondary key
+#    LLM_BASE_URL                      Override base URL
+#    LLM_TIMEOUT_SECONDS=90
+#    LLM_FORCE_MOCK=0|1
+#    LLM_MOCK_MODE=0|1                 (alias)
+#    LLM_DISABLE_CACHE=0|1
+#    LLM_HTTP_FALLBACK=0|1
 #
-#  CLIENT INTERFACE EXPECTED BY CALLERS:
-#      client.chat.completions.create(
-#          model=..., messages=[{"role":"system","content":"..."}, ...],
-#          tools=[...], tool_choice="auto", temperature=..., max_tokens=...
-#      ) -> object يمتلك:
-#          .choices[0].message.content
-#          .choices[0].message.tool_calls (قد تكون None)
-#          .usage = {"prompt_tokens": int?, "completion_tokens": int?, "total_tokens": int?}
+#    LLM_MAX_RETRIES=2
+#    LLM_RETRY_BACKOFF_BASE=1.3
+#    LLM_RETRY_JITTER=1
+#    LLM_RETRY_ON_AUTH=0              (auth_error normally not retried)
+#    LLM_RETRY_ON_PARSE=0
 #
-#  NOTES:
-#      - لا نحاول حساب tokens الحقيقية في Mock؛ نعيد أرقام تقديرية صغيرة
-#      - إذا احتجت تسجيل أوسع يمكنك ربط logger الخارجي بالاسم: llm.client.service
+#    LLM_ENABLE_STREAM=0
+#    LLM_FORCE_MODEL=""               Force override model name
+#    LLM_SANITIZE_OUTPUT=0
+#    LLM_SANITIZE_REGEXES_JSON='["OPENAI_API_KEY=[A-Za-z0-9_-]+"]'
 #
-# ======================================================================================
+#    MODEL_COST_TABLE_JSON='{"openai/gpt-4o":{"prompt":0.000002,"completion":0.000006}}'
+#    MODEL_ALIAS_MAP_JSON='{"gpt-4o":"openai/gpt-4o"}'
+#
+#    LLM_COST_BUDGET_SESSION=0        (0 => disabled; else numeric USD upper limit)
+#    LLM_COST_BUDGET_HARD_FAIL=0      (if 1 and budget exceeded → raise error)
+#
+#    # Circuit Breaker
+#    LLM_BREAKER_WINDOW=60            (seconds)
+#    LLM_BREAKER_ERROR_THRESHOLD=6
+#    LLM_BREAKER_COOLDOWN=30
+#
+#    # Logging
+#    LLM_LOG_LEVEL=INFO
+#    LLM_LOG_ATTEMPTS=1
+#
+#  PUBLIC API
+#    get_llm_client()
+#    reset_llm_client()
+#    is_mock_client(client=None)
+#    llm_health()
+#    invoke_chat(...)
+#    invoke_chat_stream(... generator ...)
+#    register_llm_pre_hook(fn)
+#    register_llm_post_hook(fn)
+#
+#  RESPONSE ENVELOPE (invoke_chat)
+#    {
+#      "content": str,
+#      "tool_calls": list|None,
+#      "usage": {prompt_tokens, completion_tokens, total_tokens},
+#      "model": str,
+#      "provider": str|None,
+#      "latency_ms": float,
+#      "cost": float|None,
+#      "raw": <original completion object>,
+#      "meta": {
+#          "attempts": int,
+#          "forced_model": bool,
+#          "http_fallback": bool|None,
+#          "build_seq": int,
+#          "stream": bool,
+#          "start_ts": float,
+#          "end_ts": float,
+#          "circuit_breaker_open": bool,
+#          "retry_schedule": [<floats>]
+#      }
+#    }
+#
+#  LICENSE / NOTE
+#    Internal proprietary orchestration layer snippet – adapt carefully.
+# =================================================================================================
 
 from __future__ import annotations
 
@@ -64,18 +116,21 @@ import os
 import time
 import threading
 import uuid
-from typing import Any, Dict, Optional, List
+import math
+import random
+import re
+from typing import Any, Dict, Optional, List, Callable, Generator, Union
 
 # --------------------------------------------------------------------------------------
-# Optional deps
+# Optional dependencies
 # --------------------------------------------------------------------------------------
 try:
-    import openai  # المكتبة الحديثة (قد تكون v1.x ذات كلاس OpenAI)
+    import openai  # Modern SDK (v1.x with class OpenAI) OR legacy structure
 except Exception:  # pragma: no cover
     openai = None  # type: ignore
 
 try:
-    import requests  # استعمل فقط في Fallback HTTP
+    import requests  # For HTTP fallback
 except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
@@ -83,6 +138,7 @@ try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
     current_app = None  # type: ignore
+
     def has_app_context() -> bool:  # type: ignore
         return False
 
@@ -102,13 +158,15 @@ if not _LOG.handlers:
     _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][llm.client] %(message)s"))
     _LOG.addHandler(_h)
 
+_LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
+
 # --------------------------------------------------------------------------------------
 # GLOBAL SINGLETON STATE
 # --------------------------------------------------------------------------------------
 _CLIENT_SINGLETON: Optional[Any] = None
 _CLIENT_LOCK = threading.Lock()
 _CLIENT_META: Dict[str, Any] = {}
-_CLIENT_BUILD_SEQ = 0  # incremental identifier
+_CLIENT_BUILD_SEQ = 0
 
 # ======================================================================================
 # MOCK CLIENT
@@ -116,7 +174,7 @@ _CLIENT_BUILD_SEQ = 0  # incremental identifier
 
 class MockLLMClient:
     """
-    عميل محاكاة متوافق مع واجهة الدوال المطلوبة.
+    Mock client with minimal compatibility.
     """
 
     def __init__(self, reason: str, model_alias: str = "mock/virtual-model"):
@@ -136,27 +194,26 @@ class MockLLMClient:
 
             def create(self, model: str, messages: List[Dict[str, str]], tools=None, tool_choice=None, **kwargs):
                 self._parent._calls += 1
-                # استخراج آخر رسالة مستخدم
                 last_user = ""
                 for m in reversed(messages):
                     if m.get("role") == "user":
                         last_user = m.get("content", "")
                         break
 
-                # بناء رد بسيط
-                synthetic = f"[MOCK:{self._parent._reason}] model={model} calls={self._parent._calls}\nUser: {last_user[:400]}"
+                synthetic = (
+                    f"[MOCK:{self._parent._reason}] model={model} calls={self._parent._calls}\n"
+                    f"User: {last_user[:400]}"
+                )
 
-                # واجهات موازية للرسالة
                 class _Msg:
                     def __init__(self, content: str):
                         self.content = content
-                        self.tool_calls = None  # محجوزة لتوافق واجهة أدوات
+                        self.tool_calls = None
 
                 class _Choice:
                     def __init__(self, msg):
                         self.message = msg
 
-                # تقدير usage تزويري
                 prompt_tokens = max(1, sum(len(m.get("content", "")) for m in messages) // 16)
                 completion_tokens = max(1, len(synthetic) // 18)
                 usage = {
@@ -187,15 +244,12 @@ class MockLLMClient:
         }
 
 # ======================================================================================
-# FALLBACK HTTP CLIENT (Minimal OpenRouter Invocation)
+# FALLBACK HTTP CLIENT
 # ======================================================================================
 
 class _HttpFallbackClient:
     """
-    عميل بسيط جداً يستعمل requests لاستدعاء OpenRouter إذا:
-      - openai lib غير متاحة أو فشل تهيئتها.
-      - LLM_HTTP_FALLBACK=1.
-    يكتفي بتمثيل واجهة chat.completions.create (جزء صغير).
+    Minimal HTTP fallback (OpenRouter style).
     """
 
     def __init__(self, api_key: str, base_url: str, timeout: float):
@@ -226,7 +280,7 @@ class _HttpFallbackClient:
             ):
                 self._parent._calls += 1
                 if requests is None:
-                    raise RuntimeError("requests library not available for HTTP fallback.")
+                    raise RuntimeError("requests not available for HTTP fallback.")
                 url = f"{self._parent._base}/chat/completions"
                 payload = {
                     "model": model,
@@ -236,7 +290,6 @@ class _HttpFallbackClient:
                     payload["temperature"] = temperature
                 if max_tokens is not None:
                     payload["max_tokens"] = max_tokens
-                # ملاحظة: تجاهل tools حالياً في fallback البسيط
 
                 headers = {
                     "Authorization": f"Bearer {self._parent._api_key}",
@@ -253,12 +306,9 @@ class _HttpFallbackClient:
                     raise RuntimeError(f"HTTP fallback bad status {resp.status_code}: {resp.text[:400]}")
 
                 data = resp.json()
-                # OpenRouter متوافق تقريباً مع شكل OpenAI
-                # تأكد من وجود choices[0].message.content
                 choices = data.get("choices", [])
                 if not choices:
                     raise RuntimeError("HTTP fallback: no choices in response")
-
                 first = choices[0]
                 message = first.get("message", {})
                 content = message.get("content", "")
@@ -272,7 +322,6 @@ class _HttpFallbackClient:
                     def __init__(self, msg):
                         self.message = msg
 
-                # usage (قد يكون موجوداً أو لا)
                 usage_obj = data.get("usage") or {}
                 usage = {
                     "prompt_tokens": usage_obj.get("prompt_tokens"),
@@ -302,7 +351,7 @@ class _HttpFallbackClient:
         }
 
 # ======================================================================================
-# INTERNAL HELPERS
+# INTERNAL CONFIG HELPERS
 # ======================================================================================
 
 def _read_config_key(key: str) -> Optional[str]:
@@ -319,7 +368,7 @@ def _resolve_api_credentials() -> Dict[str, Any]:
     """
     Priority:
       1) OPENROUTER_API_KEY (base default: https://openrouter.ai/api/v1)
-      2) OPENAI_API_KEY     (base default: https://api.openai.com/v1)
+      2) OPENAI_API_KEY
     """
     openrouter_key = _read_config_key("OPENROUTER_API_KEY")
     openai_key = _read_config_key("OPENAI_API_KEY")
@@ -335,7 +384,7 @@ def _resolve_api_credentials() -> Dict[str, Any]:
         return {
             "provider": "openai",
             "api_key": openai_key,
-            "base_url": base_url_env or None  # OpenAI SDK سيختار الافتراضي
+            "base_url": base_url_env or None
         }
     return {"provider": None, "api_key": None, "base_url": None}
 
@@ -345,43 +394,32 @@ def _should_force_mock() -> bool:
 def _bool_env(name: str) -> bool:
     return os.getenv(name, "0") == "1"
 
-# --------------------------------------------------------------------------------------
+# ======================================================================================
 # REAL CLIENT BUILDERS
-# --------------------------------------------------------------------------------------
+# ======================================================================================
+
 def _build_openai_modern_client(creds: Dict[str, Any], timeout: float):
-    """
-    المحاولة الأساسية (لواجهة SDK الحديثة).
-    """
     if openai is None:
         return None
     try:
-        # واجهة v1.x
         client_kwargs: Dict[str, Any] = {"api_key": creds["api_key"]}
         if creds.get("base_url"):
             client_kwargs["base_url"] = creds["base_url"]
-        # timeout الجديد في openai.OpenAI قد يسمى timeout
         client_kwargs["timeout"] = timeout
-        client = openai.OpenAI(**client_kwargs)
-        return client
+        return openai.OpenAI(**client_kwargs)  # type: ignore
     except Exception as e:
         _LOG.warning("Failed to build modern OpenAI client: %s", e)
         return None
 
 def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
-    """
-    إذا النسخة قديمة (لا يوجد OpenAI class). نبني Wrapper يحاكي chat.completions.create.
-    """
     if openai is None:
         return None
-
-    # تحقق من وجود واجهة ChatCompletion
     if not hasattr(openai, "ChatCompletion"):
         return None
 
     class _LegacyChatWrapper:
         class _CompletionsWrapper:
             def create(self, model: str, messages, tools=None, tool_choice=None, temperature=0.7, max_tokens=None, **kwargs):
-                # التوقيع الرئيسي: openai.ChatCompletion.create(...)
                 try:
                     resp = openai.ChatCompletion.create(  # type: ignore
                         model=model,
@@ -391,15 +429,16 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
                     )
                 except Exception as e:
                     raise RuntimeError(f"Legacy OpenAI call failed: {e}")
-                # resp.choices[0].message["content"]
-                # تهيئة شكل مقارب
+
                 class _Msg:
                     def __init__(self, content: str):
                         self.content = content
                         self.tool_calls = None
+
                 class _Choice:
                     def __init__(self, msg):
                         self.message = msg
+
                 first = resp["choices"][0]["message"]["content"]
                 msg = _Msg(first)
                 usage = resp.get("usage", {})
@@ -419,11 +458,10 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
             self.chat = _LegacyChatWrapper()
             self._created_at = time.time()
             self._id = str(uuid.uuid4())
-            self._calls = 0
+
         def meta(self):
             return {"legacy": True, "created_at": self._created_at, "id": self._id}
 
-    # ضبط المفتاح والقيمة الأساسية (لو متاح)
     try:
         if creds["api_key"]:
             openai.api_key = creds["api_key"]  # type: ignore
@@ -431,33 +469,21 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
             openai.api_base = creds["base_url"]  # type: ignore
     except Exception:
         pass
-
-    # (timeout) لا تتوفر طريقة مباشرة في الواجهة القديمة لإجباره لكل استدعاء.
     return _LegacyClientWrapper()
 
-# --------------------------------------------------------------------------------------
-# CORE BUILD PIPELINE
-# --------------------------------------------------------------------------------------
 def _build_real_client(creds: Dict[str, Any], timeout: float):
-    """
-    يحاول إنشاء عميل حقيقي (Modern -> Legacy -> HTTP fallback optional)
-    وإلا يعيد None.
-    """
     provider = creds["provider"]
     if provider not in ("openrouter", "openai"):
         return None
 
-    # Modern
     client = _build_openai_modern_client(creds, timeout)
     if client:
         return client
 
-    # Legacy
     client = _build_openai_legacy_wrapper(creds, timeout)
     if client:
         return client
 
-    # Optional HTTP fallback (فقط إذا provider=openrouter & LLM_HTTP_FALLBACK=1)
     if provider == "openrouter" and _bool_env("LLM_HTTP_FALLBACK"):
         if requests is not None and creds.get("api_key"):
             try:
@@ -467,13 +493,11 @@ def _build_real_client(creds: Dict[str, Any], timeout: float):
 
     return None
 
-# --------------------------------------------------------------------------------------
-# HIGH LEVEL FACTORY
-# --------------------------------------------------------------------------------------
+# ======================================================================================
+# BUILD / FACTORY
+# ======================================================================================
+
 def _build_client() -> Any:
-    """
-    يبني ويعيد عميل حقيقي أو Mock مع ضبط _CLIENT_META.
-    """
     global _CLIENT_BUILD_SEQ
     _CLIENT_BUILD_SEQ += 1
     build_id = _CLIENT_BUILD_SEQ
@@ -493,18 +517,15 @@ def _build_client() -> Any:
         "ts": time.time(),
     })
 
-    # 1) Force mock
     if forced_mock:
         client = MockLLMClient("forced-mock-flag")
         _CLIENT_META.update({"provider_actual": "mock", "reason": "forced"})
         _LOG.info("[LLM] Using forced mock client.")
         return client
 
-    # 2) Real attempt
     if creds["api_key"]:
         real = _build_real_client(creds, timeout_s)
         if real:
-            # Detect fallback HTTP
             http_fb = isinstance(real, _HttpFallbackClient)
             _CLIENT_META.update({
                 "provider_actual": creds["provider"],
@@ -516,8 +537,6 @@ def _build_client() -> Any:
             return real
         else:
             _LOG.warning("[LLM] Real client init failed, switching to mock.")
-
-        # 3) fallback mock
         client = MockLLMClient("real-client-init-failure")
         _CLIENT_META.update({
             "provider_actual": "mock",
@@ -526,7 +545,6 @@ def _build_client() -> Any:
         })
         return client
 
-    # 4) No key → mock
     client = MockLLMClient("no-api-key")
     _CLIENT_META.update({
         "provider_actual": "mock",
@@ -536,14 +554,10 @@ def _build_client() -> Any:
     return client
 
 # ======================================================================================
-# PUBLIC API
+# PUBLIC CORE ACCESS
 # ======================================================================================
 
 def get_llm_client() -> Any:
-    """
-    يعيد العميل Singleton (أو يبنيه).
-    إذا LLM_DISABLE_CACHE=1 → يُنشئ دائماً عميل جديد (للاختبارات).
-    """
     global _CLIENT_SINGLETON
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
 
@@ -559,9 +573,6 @@ def get_llm_client() -> Any:
         return _CLIENT_SINGLETON
 
 def reset_llm_client() -> None:
-    """
-    مسح الـ Singleton ليُعاد بناؤه في النداء القادم.
-    """
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
@@ -571,10 +582,340 @@ def is_mock_client(client: Optional[Any] = None) -> bool:
     c = client or _CLIENT_SINGLETON
     return isinstance(c, MockLLMClient)
 
+# ======================================================================================
+# METRICS / STATE / COST / HOOKS / BREAKER
+# ======================================================================================
+
+_LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
+_LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", "1.3"))
+_LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+_LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+_LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
+_LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
+_LLM_RETRY_ON_AUTH = os.getenv("LLM_RETRY_ON_AUTH", "0") == "1"
+_LLM_RETRY_ON_PARSE = os.getenv("LLM_RETRY_ON_PARSE", "0") == "1"
+
+try:
+    _MODEL_COST_TABLE = json.loads(os.getenv("MODEL_COST_TABLE_JSON", "{}"))
+except Exception:
+    _MODEL_COST_TABLE = {}
+
+try:
+    _MODEL_ALIAS_MAP = json.loads(os.getenv("MODEL_ALIAS_MAP_JSON", "{}"))
+except Exception:
+    _MODEL_ALIAS_MAP = {}
+
+_COST_BUDGET_SESSION = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
+_COST_BUDGET_HARD_FAIL = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
+
+# Circuit Breaker
+_BREAKER_WINDOW = float(os.getenv("LLM_BREAKER_WINDOW", "60") or 60.0)
+_BREAKER_THRESHOLD = int(os.getenv("LLM_BREAKER_ERROR_THRESHOLD", "6") or 6)
+_BREAKER_COOLDOWN = float(os.getenv("LLM_BREAKER_COOLDOWN", "30") or 30.0)
+_BREAKER_STATE = {
+    "errors": [],        # list[timestamps]
+    "open_until": 0.0,   # timestamp if open
+    "open_events": 0
+}
+
+# Sanitization regex list
+try:
+    _SANITIZE_REGEXES = json.loads(os.getenv("LLM_SANITIZE_REGEXES_JSON", "[]"))
+except Exception:
+    _SANITIZE_REGEXES = []
+
+_PRE_HOOKS: List[Callable[[Dict[str, Any]], None]] = []
+_POST_HOOKS: List[Callable[[Dict[str, Any], Dict[str, Any]], None]] = []
+
+def register_llm_pre_hook(fn: Callable[[Dict[str, Any]], None]) -> None:
+    _PRE_HOOKS.append(fn)
+
+def register_llm_post_hook(fn: Callable[[Dict[str, Any], Dict[str, Any]], None]) -> None:
+    _POST_HOOKS.append(fn)
+
+# Cumulative stats
+_LLMTOTAL = {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "calls": 0,
+    "errors": 0,
+    "last_error_kind": None,
+    "latencies_ms": [],
+    "cost_usd": 0.0
+}
+_LAT_WIN = 300
+
+_SENSITIVE_MARKERS = ("OPENAI_API_KEY=", "sk-or-", "sk-")
+
+def _classify_error(exc: Exception) -> str:
+    msg = str(exc).lower()
+    if "rate" in msg and "limit" in msg:
+        return "rate_limit"
+    if "unauthorized" in msg or "api key" in msg or "invalid api key" in msg:
+        return "auth_error"
+    if "timeout" in msg:
+        return "timeout"
+    if "connection" in msg or "network" in msg or "dns" in msg:
+        return "network"
+    if "parse" in msg or "json" in msg:
+        return "parse"
+    return "unknown"
+
+def _retry_allowed(kind: str) -> bool:
+    if kind == "auth_error" and not _LLM_RETRY_ON_AUTH:
+        return False
+    if kind == "parse" and not _LLM_RETRY_ON_PARSE:
+        return False
+    return kind in ("rate_limit", "network", "timeout", "parse") or True  # 'unknown' fallback
+
+def _estimate_cost(model: str, prompt_tokens: Optional[int], completion_tokens: Optional[int]) -> Optional[float]:
+    if not model:
+        return None
+    model_key = _MODEL_ALIAS_MAP.get(model, model)
+    data = _MODEL_COST_TABLE.get(model_key)
+    if not data:
+        return None
+    p_rate = data.get("prompt", 0)
+    c_rate = data.get("completion", 0)
+    pt = prompt_tokens or 0
+    ct = completion_tokens or 0
+    return round(pt * p_rate + ct * c_rate, 6)
+
+def _sanitize(text: str) -> str:
+    if not _LLM_SANITIZE_OUTPUT or not isinstance(text, str):
+        return text
+    sanitized = text.replace("\r", "")
+    for marker in _SENSITIVE_MARKERS:
+        if marker in sanitized:
+            sanitized = sanitized.replace(marker, f"[REDACTED:{marker}]")
+    # Regex patterns
+    for pattern in _SANITIZE_REGEXES:
+        try:
+            sanitized = re.sub(pattern, "[REDACTED_PATTERN]", sanitized)
+        except Exception:
+            pass
+    return sanitized
+
+def _apply_force_model(payload: Dict[str, Any]) -> None:
+    if _LLM_FORCE_MODEL:
+        payload["model"] = _LLM_FORCE_MODEL
+
+def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
+    for i in range(0, len(full_text), chunk_size):
+        yield full_text[i:i + chunk_size]
+
+def _circuit_allowed() -> bool:
+    now = time.time()
+    if _BREAKER_STATE["open_until"] > now:
+        return False
+    return True
+
+def _note_error_for_breaker():
+    now = time.time()
+    _BREAKER_STATE["errors"].append(now)
+    cutoff = now - _BREAKER_WINDOW
+    _BREAKER_STATE["errors"] = [t for t in _BREAKER_STATE["errors"] if t >= cutoff]
+    if len(_BREAKER_STATE["errors"]) >= _BREAKER_THRESHOLD and _BREAKER_STATE["open_until"] <= now:
+        _BREAKER_STATE["open_until"] = now + _BREAKER_COOLDOWN
+        _BREAKER_STATE["open_events"] += 1
+        _LOG.warning(
+            "LLM Circuit Breaker OPEN (errors=%d threshold=%d cooldown=%ds)",
+            len(_BREAKER_STATE["errors"]), _BREAKER_THRESHOLD, _BREAKER_COOLDOWN
+        )
+
+def _maybe_close_breaker():
+    now = time.time()
+    if _BREAKER_STATE["open_until"] and _BREAKER_STATE["open_until"] <= now:
+        # Passive closure
+        pass
+
+def _enforce_cost_budget(new_cost: Optional[float]):
+    if not new_cost:
+        return
+    if _COST_BUDGET_SESSION <= 0:
+        return
+    projected = _LLMTOTAL["cost_usd"] + new_cost
+    if projected > _COST_BUDGET_SESSION:
+        msg = (
+            f"LLM session cost budget exceeded: projected={projected:.6f} > "
+            f"budget={_COST_BUDGET_SESSION:.6f}"
+        )
+        if _COST_BUDGET_HARD_FAIL:
+            raise RuntimeError(msg)
+        _LOG.warning("[LLM] %s (soft warn).", msg)
+
+# ======================================================================================
+# HIGH LEVEL INVOCATION
+# ======================================================================================
+
+def invoke_chat(
+    model: str,
+    messages: List[Dict[str, str]],
+    *,
+    tools: Optional[List[Dict[str, Any]]] = None,
+    tool_choice: Optional[str] = None,
+    temperature: float = 0.7,
+    max_tokens: Optional[int] = None,
+    stream: Optional[bool] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Union[Dict[str, Any], Generator[Dict[str, Any], None, None]]:
+    """
+    High-level resilient call.
+    If stream True (and enabled), returns generator that yields partial {"delta": "..."} pieces,
+    followed by final envelope on completion.
+    """
+    if not _circuit_allowed():
+        raise RuntimeError("LLM circuit breaker OPEN – rejecting invocation temporarily.")
+
+    client = get_llm_client()
+    start_build = time.time()
+    payload = {
+        "model": model,
+        "messages": messages,
+        "tools": tools,
+        "tool_choice": tool_choice,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "extra": extra or {}
+    }
+    _apply_force_model(payload)
+
+    for hook in _PRE_HOOKS:
+        try:
+            hook(payload)
+        except Exception as e:
+            _LOG.warning("LLM pre_hook error: %s", e)
+
+    use_stream = stream if stream is not None else _LLM_ENABLE_STREAM
+    attempts = 0
+    last_exc: Optional[Exception] = None
+    backoff = _LLM_RETRY_BACKOFF_BASE
+    retry_schedule: List[float] = []
+
+    def _do_call():
+        return client.chat.completions.create(
+            model=payload["model"],
+            messages=payload["messages"],
+            tools=payload["tools"],
+            tool_choice=payload["tool_choice"],
+            temperature=payload["temperature"],
+            max_tokens=payload["max_tokens"],
+        )
+
+    def _complete_once() -> Dict[str, Any]:
+        nonlocal attempts, last_exc, backoff
+        while attempts <= _LLM_MAX_RETRIES:
+            attempts += 1
+            t0 = time.perf_counter()
+            try:
+                completion = _do_call()
+                latency_ms = (time.perf_counter() - t0) * 1000.0
+                content = getattr(completion.choices[0].message, "content", "")
+                tool_calls = getattr(completion.choices[0].message, "tool_calls", None)
+                usage = getattr(completion, "usage", {}) or {}
+                pt = usage.get("prompt_tokens")
+                ct = usage.get("completion_tokens")
+                total = usage.get("total_tokens")
+                _LLMTOTAL["calls"] += 1
+                if pt: _LLMTOTAL["prompt_tokens"] += pt
+                if ct: _LLMTOTAL["completion_tokens"] += ct
+                if total: _LLMTOTAL["total_tokens"] += total
+                _LLMTOTAL["latencies_ms"].append(latency_ms)
+                if len(_LLMTOTAL["latencies_ms"]) > _LAT_WIN:
+                    _LLMTOTAL["latencies_ms"] = _LLMTOTAL["latencies_ms"][-_LAT_WIN:]
+                content = _sanitize(content)
+                cost = _estimate_cost(payload["model"], pt, ct)
+                _enforce_cost_budget(cost)
+                if cost:
+                    _LLMTOTAL["cost_usd"] += cost
+                envelope = {
+                    "content": content,
+                    "tool_calls": tool_calls,
+                    "usage": usage,
+                    "model": payload["model"],
+                    "provider": _CLIENT_META.get("provider_actual"),
+                    "latency_ms": round(latency_ms, 2),
+                    "cost": cost,
+                    "raw": completion,
+                    "meta": {
+                        "attempts": attempts,
+                        "forced_model": bool(_LLM_FORCE_MODEL),
+                        "http_fallback": _CLIENT_META.get("http_fallback_mode"),
+                        "build_seq": _CLIENT_META.get("build_seq"),
+                        "stream": False,
+                        "start_ts": start_build,
+                        "end_ts": time.time(),
+                        "circuit_breaker_open": False,
+                        "retry_schedule": retry_schedule
+                    }
+                }
+                for hook in _POST_HOOKS:
+                    try:
+                        hook(payload, envelope)
+                    except Exception as e:
+                        _LOG.warning("LLM post_hook error: %s", e)
+                return envelope
+            except Exception as exc:
+                kind = _classify_error(exc)
+                _LLMTOTAL["errors"] += 1
+                _LLMTOTAL["last_error_kind"] = kind
+                _note_error_for_breaker()
+                last_exc = exc
+                if attempts > _LLM_MAX_RETRIES or not _retry_allowed(kind):
+                    if _LOG_ATTEMPTS:
+                        _LOG.error(
+                            "LLM final failure attempt=%d kind=%s err=%s",
+                            attempts, kind, exc
+                        )
+                    break
+                sleep_for = backoff
+                if _LLM_RETRY_JITTER:
+                    sleep_for += random.random() * 0.25
+                retry_schedule.append(round(sleep_for, 3))
+                if _LOG_ATTEMPTS:
+                    _LOG.warning(
+                        "LLM retry #%d (kind=%s in %.2fs) err=%s",
+                        attempts, kind, sleep_for, exc
+                    )
+                time.sleep(sleep_for)
+                backoff *= _LLM_RETRY_BACKOFF_BASE
+        raise RuntimeError(f"LLM invocation failed after {attempts} attempts: {last_exc}")
+
+    if not use_stream:
+        result = _complete_once()
+        _maybe_close_breaker()
+        return result
+
+    def _stream_gen() -> Generator[Dict[str, Any], None, None]:
+        # Simulated streaming: first full call → break content into deltas.
+        # After simulation, we still produce a final envelope (fresh call or reuse).
+        envelope = _complete_once()
+        full = envelope["content"]
+        for chunk in _maybe_stream_simulated(full):
+            yield {"delta": _sanitize(chunk)}
+        # Produce final (mark stream)
+        envelope["meta"]["stream"] = True
+        _maybe_close_breaker()
+        yield envelope
+
+    return _stream_gen()
+
+def invoke_chat_stream(*args, **kwargs) -> Generator[Dict[str, Any], None, None]:
+    """
+    Explicit streaming helper. Forces stream=True.
+    """
+    kwargs["stream"] = True
+    result = invoke_chat(*args, **kwargs)
+    if not isinstance(result, Generator):
+        raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
+    return result  # type: ignore
+
+# ======================================================================================
+# HEALTH & SNAPSHOT
+# ======================================================================================
+
 def llm_health() -> Dict[str, Any]:
-    """
-    تقرير تشخيصي خفيف الوزن.
-    """
     client = _CLIENT_SINGLETON
     base = {
         "initialized": client is not None,
@@ -586,7 +927,6 @@ def llm_health() -> Dict[str, Any]:
         "disable_cache": _bool_env("LLM_DISABLE_CACHE"),
         "http_fallback_allowed": _bool_env("LLM_HTTP_FALLBACK"),
     }
-    # إضافة تفاصيل إضافية
     if isinstance(client, MockLLMClient):
         base["client_kind"] = "mock"
         base["client_details"] = client.meta()
@@ -595,26 +935,109 @@ def llm_health() -> Dict[str, Any]:
         base["client_details"] = client.meta()
     else:
         base["client_kind"] = "real_or_legacy"
+    lat = _LLMTOTAL["latencies_ms"]
+    avg_lat = round(sum(lat)/len(lat), 2) if lat else None
+    base["cumulative"] = {
+        "prompt_tokens": _LLMTOTAL["prompt_tokens"],
+        "completion_tokens": _LLMTOTAL["completion_tokens"],
+        "total_tokens": _LLMTOTAL["total_tokens"],
+        "calls": _LLMTOTAL["calls"],
+        "errors": _LLMTOTAL["errors"],
+        "last_error_kind": _LLMTOTAL["last_error_kind"],
+        "avg_latency_ms": avg_lat,
+        "cost_usd": round(_LLMTOTAL["cost_usd"], 6)
+    }
+    now = time.time()
+    base["circuit_breaker"] = {
+        "open": _BREAKER_STATE["open_until"] > now,
+        "open_until": _BREAKER_STATE["open_until"],
+        "recent_error_count": len([t for t in _BREAKER_STATE["errors"] if t >= now - _BREAKER_WINDOW]),
+        "window": _BREAKER_WINDOW,
+        "threshold": _BREAKER_THRESHOLD,
+        "cooldown": _BREAKER_COOLDOWN,
+        "open_events": _BREAKER_STATE["open_events"]
+    }
+    base["features"] = {
+        "retry": _LLM_MAX_RETRIES > 0,
+        "stream_enabled": _LLM_ENABLE_STREAM,
+        "force_model": _LLM_FORCE_MODEL,
+        "sanitize_output": _LLM_SANITIZE_OUTPUT,
+        "pre_hooks": len(_PRE_HOOKS),
+        "post_hooks": len(_POST_HOOKS),
+        "cost_table_loaded": bool(_MODEL_COST_TABLE),
+        "model_alias_map": bool(_MODEL_ALIAS_MAP),
+        "cost_budget_session": _COST_BUDGET_SESSION,
+        "cost_budget_hard_fail": _COST_BUDGET_HARD_FAIL
+    }
     return base
+
+# ======================================================================================
+# INTERNAL / DEBUG UTILS
+# ======================================================================================
+
+def _debug_snapshot() -> Dict[str, Any]:
+    return {
+        "client_kind": llm_health().get("client_kind"),
+        "cumulative": llm_health().get("cumulative"),
+        "breaker": llm_health().get("circuit_breaker"),
+    }
+
+# ======================================================================================
+# EXPORTS
+# ======================================================================================
+
+__all__ = [
+    "get_llm_client",
+    "reset_llm_client",
+    "is_mock_client",
+    "llm_health",
+    "invoke_chat",
+    "invoke_chat_stream",
+    "register_llm_pre_hook",
+    "register_llm_post_hook",
+]
 
 # ======================================================================================
 # SELF-TEST (manual execution)
 # ======================================================================================
 if __name__ == "__main__":  # pragma: no cover
-    print("=== LLM Client Service Self-Test ===")
+    print("=== LLM Client Service Self-Test (v4.7.0) ===")
     c1 = get_llm_client()
     print("Client Type:", type(c1))
-    print("Health:", json.dumps(llm_health(), ensure_ascii=False, indent=2))
-    if hasattr(c1, "chat"):
+    print("Health (initial):", json.dumps(llm_health(), ensure_ascii=False, indent=2))
+
+    try:
+        resp = invoke_chat(
+            model="test-model",
+            messages=[
+                {"role": "system", "content": "You are test."},
+                {"role": "user", "content": "Say ONLY OK."}
+            ]
+        )
+        if isinstance(resp, dict):
+            print("Response content:", resp.get("content"))
+            print("Usage:", resp.get("usage"))
+            print("Meta:", resp.get("meta"))
+        else:
+            print("Streaming generator unexpected in self-test (skipped).")
+    except Exception as exc:
+        print("Invocation failed:", exc)
+
+    # Streaming simulation (if enabled)
+    if _LLM_ENABLE_STREAM:
+        print("\n-- Streaming Test --")
         try:
-            resp = c1.chat.completions.create(
+            for part in invoke_chat_stream(
                 model="test-model",
-                messages=[{"role": "system", "content": "You are test."},
-                          {"role": "user", "content": "Say ONLY OK."}]
-            )
-            print("Response:", getattr(resp.choices[0].message, "content", None))
-            print("Usage:", getattr(resp, "usage", None))
-        except Exception as exc:
-            print("Invocation failed:", exc)
+                messages=[{"role": "user", "content": "Stream test please."}]
+            ):
+                print("STREAM PART:", part)
+        except Exception as se:
+            print("Streaming failed:", se)
+
+    print("After calls -> Health:", json.dumps(llm_health(), ensure_ascii=False, indent=2))
     reset_llm_client()
     print("After reset -> Health:", json.dumps(llm_health(), ensure_ascii=False, indent=2))
+# =================================================================================================
+# END OF FILE
+# =================================================================================================
