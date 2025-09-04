@@ -1,32 +1,64 @@
 # app/overmind/planning/base_planner.py
 # ======================================================================================
-# app/overmind/planning/base_planner.py
+# OVERMIND / MAESTRO – STRATEGIST CORE (Base Planner Foundation)
+# Version: 4.5.0  •  Codename: "HYPER-STRATEGIST / STRUCT-AWARE / DRIFT-SENSE / RELIABILITY-DECAY+"
 # ======================================================================================
-# STRATEGIST CORE v3.2
+# PURPOSE
+#   Canonical abstract planner base class supplying:
+#     - Deterministic registration + governance (allow / block / quarantine / env gating).
+#     - Self-test admission (with quarantine control & timeout).
+#     - Exponential half-life reliability model with Laplace smoothing.
+#     - Instrumented sync & async execution with hard timeouts.
+#     - Unified error taxonomy (PlannerError + derived).
+#     - Selection scoring with structural telemetry augmentation (optional).
+#     - Deep context passthrough (LLM structural / index signals).
+#     - Structural scoring (grade + entropy + density + diversity) + drift detection.
+#     - Apparent reliability nudge (non-persistent) for superior structural grades.
 #
-# PURPOSE:
-#   Hardened abstract planner foundation providing:
-#     - Governance (allow/block lists, quarantine, environment awareness)
-#     - Self-test admission control
-#     - Exponential-decay reliability model (Laplace smoothed)
-#     - Telemetry + selection scoring
-#     - Capabilities / tiers / risk metadata
-#     - Sync & async instrumented wrappers with timeouts
-#     - Uniform PlannerError supporting **extra metadata
-#     - Optional duck-type adaptation for plan objects
+# UPGRADE HIGHLIGHTS (vs legacy 3.x):
+#   + deep_context injection (instrumented_generate / a_instrumented_generate).
+#   + Structural plan awareness: struct_base_score / struct_bonus / struct_drift.
+#   + Dual-phase selection score: selection_score_base vs selection_score (post-struct).
+#   + Grade bonuses (A/B/C) tunable via environment.
+#   + Drift detection (task ratio change + grade drop delta).
+#   + Apparent reliability nudge for grade A outputs (reporting only).
+#   + Hardened self-test handling + explicit quarantine bypass env toggle.
 #
-# ENV VARS:
-#   OVERMIND_ENV=prod|dev
-#   PLANNERS_ALLOW="llm_grounded_planner,..."
-#   PLANNERS_BLOCK="legacy_planner,stub,..."
-#   PLANNER_DECAY_HALF_LIFE=900
-#   PLANNER_MIN_RELIABILITY=0.05
-#   PLANNER_SELF_TEST_TIMEOUT=5
-#   PLANNER_DEFAULT_TIMEOUT=40
-#   PLANNER_DISABLE_QUARANTINE=0|1
+# ENV VARS
+#   OVERMIND_ENV=prod|dev                               Execution environment label.
+#   PLANNERS_ALLOW="planner_a,planner_b"                Allow list (case-insensitive).
+#   PLANNERS_BLOCK="legacy_planner,stub"                Block list (case-insensitive).
+#   PLANNER_DECAY_HALF_LIFE=900                         Seconds half-life for reliability weights.
+#   PLANNER_MIN_RELIABILITY=0.05                        Floor for multi-planner usage.
+#   PLANNER_SELF_TEST_TIMEOUT=5                         Seconds for self-test.
+#   PLANNER_DEFAULT_TIMEOUT=40                          Fallback global planner timeout (s).
+#   PLANNER_DISABLE_QUARANTINE=0|1                      Disable quarantine gating.
 #
-# NOTE:
-#   All schemas must come from app.overmind.planning.schemas (single source).
+#   # Structural scoring / drift (all optional):
+#   PLANNER_STRUCT_SCORE_ENABLE=1                       Toggle structural scoring integration.
+#   PLANNER_STRUCT_SCORE_WEIGHT=0.07                    Weight factor for struct_base_score.
+#   PLANNER_STRUCT_GRADE_BONUS_A=0.05                   Grade A additive bonus.
+#   PLANNER_STRUCT_GRADE_BONUS_B=0.02                   Grade B additive bonus.
+#   PLANNER_STRUCT_GRADE_BONUS_C=0.0                    Grade C additive bonus.
+#   PLANNER_STRUCT_DRIFT_TASK_RATIO=0.30                Relative task count change to flag drift.
+#   PLANNER_STRUCT_DRIFT_GRADE_DROP=2                   Grade drop severity threshold (A=3,B=2,C=1).
+#   PLANNER_STRUCT_RELIABILITY_NUDGE=0.01               Apparent reliability uplift for grade A.
+#
+# DESIGN NOTES
+#   - Structural metrics consumed from MissionPlanSchema.meta (PlanMeta).
+#   - NO persistent reliability modification from structural signals (only apparent).
+#   - All added metadata fields are additive / backward compatible.
+#   - generate_plan / a_generate_plan remain the sole abstract obligations.
+#
+# SECURITY & STABILITY
+#   - Self-test isolated in thread with timeout.
+#   - Quarantine ensures unverified planners cannot silently degrade environment (unless disabled).
+#   - Defensive checks around plan duck-typing to enforce canonical schema usage.
+#
+# EXTENSION IDEAS (Future)
+#   - Adaptive reliability weighting by structural volatility trends.
+#   - Planner ensemble arbitration layer (merge + reconcile).
+#   - Negative drift penalties progression.
 # ======================================================================================
 
 from __future__ import annotations
@@ -44,14 +76,18 @@ from typing import (
     Any, ClassVar, Dict, List, Optional, Type, Union, Set, Iterable, Tuple
 )
 
-# --------------------------------------------------------------------------------------
-# Strict schema imports (NO fallback). ImportError should surface immediately.
-# --------------------------------------------------------------------------------------
+# =============================================================================
+# Strict schema imports – MUST succeed (single source of truth)
+# =============================================================================
 from .schemas import MissionPlanSchema, PlanningContext  # type: ignore
+try:
+    from .schemas import PlanMeta  # type hint only
+except Exception:  # pragma: no cover
+    PlanMeta = object  # type: ignore
 
-# --------------------------------------------------------------------------------------
+# =============================================================================
 # Logging
-# --------------------------------------------------------------------------------------
+# =============================================================================
 logger = logging.getLogger("overmind.planning.base_planner")
 if not logger.handlers:
     logging.basicConfig(
@@ -59,11 +95,11 @@ if not logger.handlers:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
 
-# ======================================================================================
-# Exceptions
-# ======================================================================================
-
+# =============================================================================
+# Error Helpers
+# =============================================================================
 def _flatten_extras(extra: Dict[str, Any]) -> Dict[str, Any]:
+    # Simple shallow flattening hook (reserve for nested expansions if needed).
     flat: Dict[str, Any] = {}
     for k, v in extra.items():
         flat[k] = v
@@ -71,6 +107,7 @@ def _flatten_extras(extra: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class PlannerError(Exception):
+    """Unified planner exception with context rich formatting."""
     def __init__(
         self,
         message: str,
@@ -130,9 +167,9 @@ class PlannerAdmissionError(PlannerError):
     pass
 
 
-# --------------------------------------------------------------------------------------
+# =============================================================================
 # Environment / Governance
-# --------------------------------------------------------------------------------------
+# =============================================================================
 _ENV = os.getenv("OVERMIND_ENV", "dev").strip().lower()
 _ALLOW_LIST = {
     x.strip().lower() for x in os.getenv("PLANNERS_ALLOW", "").split(",") if x.strip()
@@ -148,9 +185,22 @@ _DISABLE_QUARANTINE = os.getenv("PLANNER_DISABLE_QUARANTINE", "0") == "1"
 
 _NAME_PATTERN = re.compile(r"^[a-z0-9_][a-z0-9_\-]{2,63}$")
 
-# --------------------------------------------------------------------------------------
-# Reliability State
-# --------------------------------------------------------------------------------------
+# Structural scoring toggles
+_STRUCT_ENABLE = os.getenv("PLANNER_STRUCT_SCORE_ENABLE", "1") == "1"
+_STRUCT_WEIGHT = float(os.getenv("PLANNER_STRUCT_SCORE_WEIGHT", "0.07") or 0.07)
+_GRADE_BONUS_A = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_A", "0.05") or 0.05)
+_GRADE_BONUS_B = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_B", "0.02") or 0.02)
+_GRADE_BONUS_C = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_C", "0.0") or 0.0)
+_DRIFT_TASK_RATIO = float(os.getenv("PLANNER_STRUCT_DRIFT_TASK_RATIO", "0.30") or 0.30)
+_DRIFT_GRADE_DROP = int(os.getenv("PLANNER_STRUCT_DRIFT_GRADE_DROP", "2") or 2)
+_RELIABILITY_NUDGE = float(os.getenv("PLANNER_STRUCT_RELIABILITY_NUDGE", "0.01") or 0.01)
+
+# Cache last structural snapshot per planner
+_LAST_STRUCT: Dict[str, Dict[str, Any]] = {}
+
+# =============================================================================
+# Reliability State (exponential decay laplace-smoothed)
+# =============================================================================
 @dataclass
 class _ReliabilityState:
     success_weight: float = 0.0
@@ -192,6 +242,7 @@ class _ReliabilityState:
         self.total_duration_ms += duration_seconds * 1000.0
 
     def reliability_score(self) -> float:
+        # Laplace smoothing (1 prior success + 1 prior failure)
         num = self.success_weight + 1.0
         den = self.success_weight + self.failure_weight + 2.0
         score = num / den if den > 0 else 0.5
@@ -204,14 +255,15 @@ class _ReliabilityState:
         return self.total_duration_ms / self.total_invocations
 
 
-# --------------------------------------------------------------------------------------
-# BasePlanner
-# --------------------------------------------------------------------------------------
+# =============================================================================
+# BasePlanner Class
+# =============================================================================
 class BasePlanner:
     _registry: ClassVar[Dict[str, Type["BasePlanner"]]] = {}
     _reliability: ClassVar[Dict[str, _ReliabilityState]] = {}
     _lock: ClassVar[threading.RLock] = threading.RLock()
 
+    # Overridable static attributes
     name: ClassVar[str] = "abstract_base"
     version: ClassVar[Optional[str]] = None
     capabilities: ClassVar[Set[str]] = set()
@@ -221,6 +273,9 @@ class BasePlanner:
     default_timeout_seconds: ClassVar[Optional[float]] = None
     allow_registration: ClassVar[bool] = True
 
+    # --------------------------------------------------------------
+    # Registration logic
+    # --------------------------------------------------------------
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         try:
@@ -261,8 +316,10 @@ class BasePlanner:
             )
             cls._registry[key] = planner_cls
             cls._reliability[key] = state
-        logger.info("Registered planner '%s' (tier=%s prod_ready=%s quarantine=%s)",
-                    key, state.tier, state.production_ready, state.quarantined)
+        logger.info(
+            "Registered planner '%s' (tier=%s prod_ready=%s quarantine=%s)",
+            key, state.tier, state.production_ready, state.quarantined
+        )
         cls._run_self_test(planner_cls, key, state)
 
     @classmethod
@@ -282,6 +339,7 @@ class BasePlanner:
         def runner():
             try:
                 sig = inspect.signature(test_method)
+                # Support @staticmethod / @classmethod / instance method
                 if isinstance(test_method, (classmethod, staticmethod)):
                     test_method()  # type: ignore
                 else:
@@ -317,14 +375,15 @@ class BasePlanner:
                 state.quarantined = False
             logger.info("Planner '%s' self-test PASSED (quarantine=%s).", key, state.quarantined)
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Abstract contract
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     def generate_plan(
         self,
         objective: str,
         context: Optional[PlanningContext] = None
     ) -> MissionPlanSchema:
+        """Implement in subclass."""
         raise NotImplementedError
 
     async def a_generate_plan(
@@ -335,9 +394,9 @@ class BasePlanner:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.generate_plan, objective, context)
 
-    # ------------------------------------------------------------------
-    # Validation hook
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
+    # Plan validation hook (lightweight)
+    # --------------------------------------------------------------
     def validate_plan(
         self,
         plan: MissionPlanSchema,
@@ -349,9 +408,9 @@ class BasePlanner:
         if not hasattr(plan, "tasks"):
             raise PlanValidationError("Plan missing 'tasks' attribute.", self.name, objective)
 
-    # ------------------------------------------------------------------
-    # Reliability
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
+    # Reliability internal update
+    # --------------------------------------------------------------
     @classmethod
     def _update_reliability(cls, name: str, success: bool, duration_seconds: float, error: Optional[str] = None):
         lower = name.lower()
@@ -363,6 +422,7 @@ class BasePlanner:
             if not success and error:
                 state.last_error = error[:240]
             if success and state.quarantined and state.self_test_passed is not False:
+                # Auto unquarantine on successful generation if self-test not definitively failed
                 state.quarantined = False
 
     def current_reliability_score(self) -> float:
@@ -399,9 +459,9 @@ class BasePlanner:
                 data[name] = meta
         return data
 
-    # ------------------------------------------------------------------
-    # Retrieval
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
+    # Retrieval APIs
+    # --------------------------------------------------------------
     @classmethod
     def get_planner_class(cls, name: str) -> Type["BasePlanner"]:
         key = name.lower()
@@ -453,9 +513,9 @@ class BasePlanner:
             st.quarantined = False
             return True
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Timeout helpers (sync)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     def _run_with_timeout(
         self,
         objective: str,
@@ -487,20 +547,19 @@ class BasePlanner:
             raise PlannerError(str(err), self.name, objective) from err
         result = container.get("result")
         if not isinstance(result, MissionPlanSchema):
-            # Duck-type adaptation (optional safeguard)
             if hasattr(result, "objective") and hasattr(result, "tasks"):
                 raise PlannerError(
                     "Planner returned non-canonical MissionPlanSchema (duck-type detected). "
-                    "Ensure all planners import schemas.MissionPlanSchema.",
+                    "Ensure canonical schema usage.",
                     self.name,
                     objective
                 )
             raise PlannerError("Planner returned invalid result type.", self.name, objective)
         return result
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Timeout helpers (async)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     async def _a_run_with_timeout(
         self,
         objective: str,
@@ -515,9 +574,9 @@ class BasePlanner:
         except asyncio.TimeoutError as exc:
             raise PlannerTimeoutError(f"Async timeout {timeout:.2f}s exceeded.", self.name, objective) from exc
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Instrumented sync
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     def instrumented_generate(
         self,
         objective: str,
@@ -525,7 +584,8 @@ class BasePlanner:
         *,
         include_node_count: bool = True,
         extra_metadata: Optional[Dict[str, Any]] = None,
-        enforce_timeout: bool = True
+        enforce_timeout: bool = True,
+        deep_context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
@@ -535,7 +595,8 @@ class BasePlanner:
         with BasePlanner._lock:
             st = BasePlanner._reliability.get(self.name.lower())
             if st and st.quarantined:
-                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).", self.name, objective)
+                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).",
+                                            self.name, objective)
 
         try:
             if enforce_timeout and timeout:
@@ -555,6 +616,7 @@ class BasePlanner:
                 self.name, success_flag, duration, error=str(error_obj) if error_obj else None
             )
 
+        # Validate
         try:
             self.validate_plan(plan, objective, context)
         except PlannerError:
@@ -578,16 +640,84 @@ class BasePlanner:
             "production_ready": getattr(self, "production_ready", False),
             "risk_rating": getattr(self, "risk_rating", "medium"),
             "environment": _ENV,
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "deep_context_used": bool(deep_context),
         }
         if extra_metadata:
             meta.update(extra_metadata)
-        meta["selection_score"] = round(self.compute_selection_score(objective, None), 4)
+
+        # Structural enrichment
+        struct_base = 0.0
+        struct_bonus = 0.0
+        drift_flag = False
+        grade_used = None
+        if _STRUCT_ENABLE and isinstance(plan, MissionPlanSchema) and plan.meta:
+            pm = plan.meta
+            grade_used = getattr(pm, "structural_quality_grade", None)
+
+            def _nz(v, default=0.0):
+                return v if isinstance(v, (int, float)) and v is not None else default
+
+            hotspot_density = _nz(getattr(pm, "hotspot_density", None))
+            layer_div = _nz(getattr(pm, "layer_diversity", None))
+            entropy = _nz(getattr(pm, "structural_entropy", None))
+
+            grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
+            grade_component = grade_map.get(grade_used, 0.5)
+
+            struct_base = (grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy) / 4.0
+            struct_base = max(0.0, min(1.0, struct_base))
+
+            # Grade bonus
+            if grade_used == "A":
+                struct_bonus += _GRADE_BONUS_A
+            elif grade_used == "B":
+                struct_bonus += _GRADE_BONUS_B
+            else:
+                struct_bonus += _GRADE_BONUS_C
+
+            # Drift detection
+            prev = _LAST_STRUCT.get(self.name.lower())
+            task_count = len(getattr(plan, "tasks", []) or [])
+            if prev:
+                prev_tasks = prev.get("tasks", task_count)
+                prev_grade = prev.get("grade")
+                if prev_tasks > 0 and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO:
+                    drift_flag = True
+                if prev_grade and grade_used:
+                    order = {"A": 3, "B": 2, "C": 1}
+                    if (order.get(prev_grade, 2) - order.get(grade_used, 2)) >= _DRIFT_GRADE_DROP:
+                        drift_flag = True
+            _LAST_STRUCT[self.name.lower()] = {
+                "tasks": task_count,
+                "grade": grade_used,
+                "ts": time.time()
+            }
+
+            meta.update({
+                "struct_base_score": round(struct_base, 4),
+                "struct_grade": grade_used,
+                "struct_bonus": round(struct_bonus, 4),
+                "struct_drift": drift_flag
+            })
+
+            if grade_used == "A" and _RELIABILITY_NUDGE > 0:
+                meta["reliability_nudge_applied"] = True
+                meta["reliability_score_apparent"] = min(1.0, rel_score + _RELIABILITY_NUDGE)
+
+        base_selection = self.compute_selection_score(objective, None)
+        final_selection = base_selection
+        if _STRUCT_ENABLE and struct_base:
+            final_selection = min(1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus)
+
+        meta["selection_score_base"] = round(base_selection, 4)
+        meta["selection_score"] = round(final_selection, 4)
+
         return {"plan": plan, "meta": meta}
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Instrumented async
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     async def a_instrumented_generate(
         self,
         objective: str,
@@ -595,7 +725,8 @@ class BasePlanner:
         *,
         include_node_count: bool = True,
         extra_metadata: Optional[Dict[str, Any]] = None,
-        enforce_timeout: bool = True
+        enforce_timeout: bool = True,
+        deep_context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
@@ -605,7 +736,8 @@ class BasePlanner:
         with BasePlanner._lock:
             st = BasePlanner._reliability.get(self.name.lower())
             if st and st.quarantined:
-                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).", self.name, objective)
+                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).",
+                                            self.name, objective)
 
         try:
             if enforce_timeout and timeout:
@@ -648,16 +780,76 @@ class BasePlanner:
             "production_ready": getattr(self, "production_ready", False),
             "risk_rating": getattr(self, "risk_rating", "medium"),
             "environment": _ENV,
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "deep_context_used": bool(deep_context),
         }
         if extra_metadata:
             meta.update(extra_metadata)
-        meta["selection_score"] = round(self.compute_selection_score(objective, None), 4)
+
+        struct_base = 0.0
+        struct_bonus = 0.0
+        drift_flag = False
+        grade_used = None
+        if _STRUCT_ENABLE and isinstance(plan, MissionPlanSchema) and plan.meta:
+            pm = plan.meta
+
+            def _nz(v, default=0.0):
+                return v if isinstance(v, (int, float)) and v is not None else default
+
+            hotspot_density = _nz(getattr(pm, "hotspot_density", None))
+            layer_div = _nz(getattr(pm, "layer_diversity", None))
+            entropy = _nz(getattr(pm, "structural_entropy", None))
+            grade_used = getattr(pm, "structural_quality_grade", None)
+
+            grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
+            grade_component = grade_map.get(grade_used, 0.5)
+
+            struct_base = (grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy) / 4.0
+            struct_base = max(0.0, min(1.0, struct_base))
+
+            if grade_used == "A":
+                struct_bonus += _GRADE_BONUS_A
+            elif grade_used == "B":
+                struct_bonus += _GRADE_BONUS_B
+            else:
+                struct_bonus += _GRADE_BONUS_C
+
+            prev = _LAST_STRUCT.get(self.name.lower())
+            task_count = len(getattr(plan, "tasks", []) or [])
+            if prev:
+                prev_tasks = prev.get("tasks", task_count)
+                prev_grade = prev.get("grade")
+                if prev_tasks > 0 and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO:
+                    drift_flag = True
+                if prev_grade and grade_used:
+                    order = {"A": 3, "B": 2, "C": 1}
+                    if (order.get(prev_grade, 2) - order.get(grade_used, 2)) >= _DRIFT_GRADE_DROP:
+                        drift_flag = True
+            _LAST_STRUCT[self.name.lower()] = {"tasks": task_count, "grade": grade_used, "ts": time.time()}
+
+            meta.update({
+                "struct_base_score": round(struct_base, 4),
+                "struct_grade": grade_used,
+                "struct_bonus": round(struct_bonus, 4),
+                "struct_drift": drift_flag
+            })
+            if grade_used == "A" and _RELIABILITY_NUDGE > 0:
+                meta["reliability_nudge_applied"] = True
+                meta["reliability_score_apparent"] = min(1.0, rel_score + _RELIABILITY_NUDGE)
+
+        base_selection = self.compute_selection_score(objective, None)
+        final_selection = base_selection
+        if _STRUCT_ENABLE and struct_base:
+            final_selection = min(1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus)
+
+        meta["selection_score_base"] = round(base_selection, 4)
+        meta["selection_score"] = round(final_selection, 4)
+
         return {"plan": plan, "meta": meta}
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------
     def _infer_node_count(self, plan: MissionPlanSchema) -> Optional[int]:
         for attr in ("tasks", "nodes", "steps"):
             if hasattr(plan, attr):
@@ -674,6 +866,7 @@ class BasePlanner:
         objective: str,
         desired_capabilities: Optional[Set[str]] = None
     ) -> float:
+        # Base compute (structural injection occurs AFTER in instrumented pipeline)
         rel_score = self.current_reliability_score()
         caps = getattr(self, "capabilities", set())
         if desired_capabilities:
@@ -707,9 +900,9 @@ class BasePlanner:
             }
 
 
-# --------------------------------------------------------------------------------------
-# Public utility functions
-# --------------------------------------------------------------------------------------
+# =============================================================================
+# Public Utility Functions
+# =============================================================================
 def list_planner_metadata() -> Dict[str, Any]:
     return BasePlanner.planner_metadata()
 
@@ -722,6 +915,9 @@ def get_planner_instance(name: str) -> BasePlanner:
     return BasePlanner.instantiate(name)
 
 
+# =============================================================================
+# Exports
+# =============================================================================
 __all__ = [
     "BasePlanner",
     "PlannerError",
@@ -733,6 +929,7 @@ __all__ = [
     "instantiate_all_planners",
     "get_planner_instance",
 ]
+
 # ======================================================================================
 # END OF FILE
 # ======================================================================================
