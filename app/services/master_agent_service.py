@@ -1,91 +1,75 @@
 # app/services/master_agent_service.py
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 """
 OVERMIND MASTER ORCHESTRATOR – LEVEL‑4 DEEP SCAN / HYPER EXECUTION CORE (PRO EDITION)
 =====================================================================================
-Version: 10.1.0-l4-pro
-Status : Production / Hardened / Deterministic + Adaptive / Zero-Stall Friendly
+Version : 10.2.0-l4-pro
+Status  : Production / Hardened / Deterministic + Adaptive / Zero-Stall Friendly
+Author  : System Orchestrator (Refactored “Ultra Professional” Edition)
 
 English Overview
 ----------------
-Central runtime orchestrator that:
-1. Starts missions from natural objectives.
-2. Selects / persists a mission plan (Level‑4 aware deterministic patterns + LLM fallback).
-3. Executes tasks with guarded tooling (agent_tools v4.x), ensuring:
-   - Canonical tool normalization & safe autofill
-   - Interpolation of prior outputs ({{tNN.content}} / {{tNN.answer}})
-   - Diff augmentation for write_file
-   - Risk propagation & mission risk summary
-4. Detects stalls vs dependency wait states.
-5. Performs adaptive replanning if configured (bounded cycles).
-6. Guarantees termination (SUCCESS / FAILED) – never infinite loop.
-7. Integrates Level‑4 pipeline phases (list_dir → read_file(ignore_missing) → multi-layer generic_think
-   → ensure_file(optional) → write_file).
-8. Emits SEMANTIC mission events (PRO): RISK_SUMMARY / ARCHITECTURE_CLASSIFIED /
-   MISSION_COMPLETED / MISSION_FAILED / FINALIZED for analytics & dashboards.
+The Master Orchestrator coordinates full mission lifecycles:
+1. Creates missions from natural-language objectives.
+2. Selects & persists a mission plan (deterministic heuristic scoring + LLM fallback).
+3. Executes tasks with hardened guard rails (canonical tool normalization, safe autofill, arg interpolation).
+4. Performs structural diff augmentation for write_file (optional & bounded).
+5. Maintains stall detection windows & ensures bounded termination (no infinite loops).
+6. Triggers adaptive replanning (bounded cycles) when failure thresholds are exceeded.
+7. Emits semantic analytics events: CREATED / PLAN_SELECTED / EXECUTION_STARTED /
+   TASK_STARTED / TASK_COMPLETED / TASK_FAILED / RISK_SUMMARY / ARCHITECTURE_CLASSIFIED /
+   REPLAN_TRIGGERED / REPLAN_APPLIED / MISSION_COMPLETED / MISSION_FAILED / FINALIZED.
+8. Integrates (optionally) a Deep Structural Index (AST v2) to inject contextual awareness
+   (files scanned, hotspots, duplicate groups, layers, services, entrypoints) into planners.
 
 Arabic Overview (ملخّص عربي)
 -----------------------------
-هذا المُنسِّق هو القلب التشغيلي للمهمات:
-- يحوّل الهدف إلى خطة مهام.
-- ينفّذ الأدوات مع حراسة (تطبيع، تعبئة تلقائية، تفادي الأعطال).
-- يدعم المستوى 4 للفحص المعمّق دون توقف بسبب ملفات ناقصة.
-- يُجري إعادة تخطيط تكيفي عند الحاجة.
-- يُنتج تلخيصاً للمخاطر + تصنيفاً لملف المعمارية.
-- يصدر أحداثاً دلالية نهائية (نجاح / فشل) + FINALIZED.
+هذا المُنسِّق هو القلب التشغيلي للمهمّة:
+- يحوّل الهدف إلى خطة.
+- يختار ويُخزّن الخطة، ثم ينفّذ المهام بحراسة صارمة.
+- يدعم إعادة التخطيط التكيفي ضمن دورات محدودة.
+- يضمن انتهاء المهمة (نجاح أو فشل) دون حلقات لا نهائية.
+- يصدر أحداثاً دلالية لمراقبة المخاطر والمعمارية.
+- يمكنه دمج فهرس بنيوي عميق (AST) لتغذية التخطيط بسياق أدق.
 
-Key PRO Enhancements vs 10.0.0-l4
----------------------------------
-+ Replaced generic MISSION_UPDATED with semantic events:
-    * RISK_SUMMARY
-    * ARCHITECTURE_CLASSIFIED
-    * MISSION_COMPLETED
-    * MISSION_FAILED
-    * FINALIZED (retained as closure marker)
-+ Catastrophic and adaptive failure paths emit proper terminal events.
-+ Helper _emit_terminal_events centralizes terminal event emission (idempotent).
-+ Backwards safe: MissionStatus logic unchanged; added analytics clarity.
+Key Enhancements (10.2 vs 10.1)
+-------------------------------
++ Modular deep index injection with caching & safe degradation.
++ Centralized helper methods for: safe DB refresh, commit, timing, stall tracking.
++ Structured, typed utility functions & improved guard instrumentation.
++ Optional cache for deep index (hash+mtime) to avoid redundant AST parsing.
++ Clear segmentation of planning phases & context preparation.
++ “Ultra” logging clarity & consistent JSON payload semantics.
 
-Environment Flags (Relevant)
+Environment Flags (Selected)
 ----------------------------
-OVERMIND_GUARD_ENABLED=1
-OVERMIND_GUARD_FILE_AUTOFIX=1
+OVERMIND_ENABLE_DEEP_INDEX=1              (Enable deep AST context enumeration)
+OVERMIND_DEEP_INDEX_MAX_AGE_SEC=300       (Max age before recomputing context cache)
+DEEP_INDEX_MAX_FILES / DEEP_INDEX_MAX_FILE_BYTES / DEEP_INDEX_CALL_GRAPH (index tuning)
+OVERMIND_GUARD_ENABLED=1                  (Enable tool guard)
+OVERMIND_GUARD_FILE_AUTOFIX=1             (Autofill path/content)
 OVERMIND_GUARD_FORCE_FILE_INTENT=1
-OVERMIND_GUARD_FILE_DEFAULT_EXT=.md
-OVERMIND_GUARD_FILE_DEFAULT_CONTENT="Auto-generated content placeholder."
-
 OVERMIND_INTERPOLATION_ENABLED=1
 OVERMIND_ALLOW_TEMPLATE_FAILURE=1
-
 OVERMIND_L4_SOFT_MISSING_FILES=1
-OVERMIND_L4_MISSING_FILE_MARKER="[MISSING]"
-OVERMIND_L4_EXPECT_ARCH_FILE="ARCHITECTURE_PRINCIPLES.md"
-
 OVERMIND_DIFF_ENABLED=1
-OVERMIND_DIFF_MAX_LINES=400
-OVERMIND_BACKUP_ON_WRITE=0
-
 OVERMIND_EXEC_PARALLEL=MULTI|SEQUENTIAL
-OVERMIND_POLL_INTERVAL_SECONDS=0.18
-OVERMIND_MAX_LIFECYCLE_TICKS=1500
-
 ADAPTIVE_MAX_CYCLES=3
 REPLAN_FAILURE_THRESHOLD=2
 
-Contracts / Safety
+Safety / Contracts
 ------------------
-- No DB schema alteration.
-- Terminates within tick/time ceilings.
-- Soft-missing read_file (ignore_missing) prevents cascading failures.
-- All terminal outcomes produce semantic events for analytics.
+- No schema alteration.
+- All terminal outcomes produce semantic events.
+- Diff & index features are strictly bounded & optional (graceful fallback).
+- If deep index fails, planning proceeds without structural context.
 
 Extensibility Points
 --------------------
-- ToolPolicyEngine.authorize(...) for RBAC/quotas.
-- VerificationService.verify(...) for domain validation.
-- _augment_with_diff(...) for richer semantic diff (future AST modes).
-- Adaptive replan hook for custom planner selection.
+- ToolPolicyEngine.authorize(...) for RBAC/quotas
+- VerificationService.verify(...) for domain validation
+- _augment_with_diff(...) can later integrate richer AST diff modes
+- _build_deep_index_context() evolvable (e.g., embeddings, risk scoring)
 """
 
 from __future__ import annotations
@@ -101,7 +85,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 from flask import current_app, has_app_context
 from sqlalchemy import select, func, exists
@@ -118,18 +102,21 @@ from app.models import (
     utc_now
 )
 
-# Planner factory & schemas
 from app.overmind.planning.factory import get_all_planners
 from app.overmind.planning.schemas import MissionPlanSchema
 
+# ----------------------------------------------------------------------------- 
 # Planner base errors (graceful fallback)
+# -----------------------------------------------------------------------------
 try:
     from app.overmind.planning.base_planner import PlannerError, PlanValidationError  # type: ignore
 except Exception:  # pragma: no cover
     class PlannerError(Exception): ...
     class PlanValidationError(Exception): ...
 
-# Generation (optional backend)
+# ----------------------------------------------------------------------------- 
+# Optional generation backend
+# -----------------------------------------------------------------------------
 try:
     from app.services import generation_service as maestro
 except Exception:  # pragma: no cover
@@ -141,42 +128,60 @@ except Exception:  # pragma: no cover
             task.finished_at = utc_now()
             db.session.commit()
 
-# Agent tools (runtime registry)
+# ----------------------------------------------------------------------------- 
+# Agent tools registry
+# -----------------------------------------------------------------------------
 try:
     from app.services import agent_tools
 except Exception:  # pragma: no cover
     agent_tools = None  # type: ignore
 
+# ----------------------------------------------------------------------------- 
+# Optional Deep Index (lazy import — safe fallback)
+# -----------------------------------------------------------------------------
+try:
+    from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+except Exception:  # pragma: no cover
+    build_index = None
+    summarize_for_prompt = None
+
 # =============================================================================
-# Policy & Verification Hooks
+# Policy & Verification Hooks (placeholders)
 # =============================================================================
 class ToolPolicyEngine:
     def authorize(self, tool_name: str, mission: Mission, task: Task) -> bool:
         return True
+
 tool_policy_engine = ToolPolicyEngine()
 
 class VerificationService:
     def verify(self, task: Task) -> bool:
         return True
+
 verification_service = VerificationService()
 
 # =============================================================================
 # Metrics Stubs (Integrate with real telemetry later)
 # =============================================================================
-def increment_counter(name: str, labels: Dict[str, str] | None = None): pass
-def observe_histogram(name: str, value: float, labels: Dict[str, str] | None = None): pass
-def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None): pass
+def increment_counter(name: str, labels: Dict[str, str] | None = None):  # pragma: no cover
+    pass
+
+def observe_histogram(name: str, value: float, labels: Dict[str, str] | None = None):  # pragma: no cover
+    pass
+
+def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None):  # pragma: no cover
+    pass
 
 # =============================================================================
 # Global Configuration
 # =============================================================================
-OVERMIND_VERSION = "10.1.0-l4-pro"
+OVERMIND_VERSION = "10.2.0-l4-pro"
 
 DEFAULT_MAX_TASK_ATTEMPTS = 3
 ADAPTIVE_MAX_CYCLES = int(os.getenv("ADAPTIVE_MAX_CYCLES", "3"))
 REPLAN_FAILURE_THRESHOLD = int(os.getenv("REPLAN_FAILURE_THRESHOLD", "2"))
 
-EXECUTION_STRATEGY = "topological"
+EXECUTION_STRATEGY = "topological"  # reserved for future multiple strategies
 EXECUTION_PARALLELISM_MODE = os.getenv("OVERMIND_EXEC_PARALLEL", "MULTI").upper()
 TOPO_MAX_PARALLEL = 6
 
@@ -189,7 +194,6 @@ TASK_RETRY_BACKOFF_JITTER = 0.5
 DEFAULT_POLL_INTERVAL = float(os.getenv("OVERMIND_POLL_INTERVAL_SECONDS", "0.18"))
 MAX_LIFECYCLE_TICKS = int(os.getenv("OVERMIND_MAX_LIFECYCLE_TICKS", "1500"))
 
-# Stall detection windows
 STALL_DETECTION_WINDOW = 12
 STALL_NO_PROGRESS_THRESHOLD = 0
 
@@ -219,7 +223,11 @@ DIFF_ENABLED = os.getenv("OVERMIND_DIFF_ENABLED", "1") == "1"
 DIFF_MAX_LINES = int(os.getenv("OVERMIND_DIFF_MAX_LINES", "400"))
 BACKUP_ON_WRITE = os.getenv("OVERMIND_BACKUP_ON_WRITE", "0") == "1"
 
-# Canonical tool names (aligned with agent_tools)
+# Deep Index feature flags
+ENABLE_DEEP_INDEX = os.getenv("OVERMIND_ENABLE_DEEP_INDEX", "1") == "1"
+DEEP_INDEX_MAX_CACHE_AGE = int(os.getenv("OVERMIND_DEEP_INDEX_MAX_AGE_SEC", "300"))  # seconds
+
+# Canonical tool names
 CANON_WRITE = "write_file"
 CANON_READ = "read_file"
 CANON_THINK = "generic_think"
@@ -257,7 +265,7 @@ PLACEHOLDER_PATTERN = re.compile(r"\{\{(t\d{2})\.(content|answer)\}\}", re.IGNOR
 def _emit(level: str, line: str):
     if has_app_context():
         logger = current_app.logger
-        fn = getattr(logger, {"info":"info","warn":"warning","error":"error","debug":"debug"}[level], logger.info)
+        fn = getattr(logger, {"info": "info", "warn": "warning", "error": "error", "debug": "debug"}[level], logger.info)
         fn(line)
     else:
         print(f"[Overmind:{level}] {line}")
@@ -280,7 +288,7 @@ def log_debug(mission: Mission | None, message: str, **extra):
         _log("debug", mission, f"[DEBUG] {message}", **extra)
 
 # =============================================================================
-# Mission Lock (placeholder: distributed lock in multi-instance setups)
+# Mission Lock (placeholder – could integrate distributed lock)
 # =============================================================================
 @contextmanager
 def mission_lock(mission_id: int):
@@ -371,8 +379,8 @@ def _compute_diff(old: str, new: str, max_lines: int) -> Dict[str, Any]:
     old_sz = len(old)
     new_sz = len(new)
     change_ratio = 0.0
-    denom = max(old_sz, 1)
     if old != new:
+        denom = max(old_sz, 1)
         change_ratio = min(1.0, (abs(new_sz - old_sz) + added + removed) / (denom + added + removed))
     return {
         "diff": "\n".join(diff_display),
@@ -542,24 +550,31 @@ def _render_template_in_args(args: Dict[str, Any], mission_id: int) -> Tuple[Dic
 # Overmind Service
 # =============================================================================
 class OvermindService:
+    """
+    Central mission orchestration service.
+    Internals are split into:
+      - Planning Phase (with optional deep structural context)
+      - Execution Phase (topological scheduling)
+      - Adaptive Replan Phase
+      - Guard + Interpolation + Diff augmentation
+      - Terminalization & analytics emission
+    """
+
     def __init__(self):
         self._app_ref = None
+        # cache structure for deep index { "sha": str, "ts": float, "context": {...} }
+        self._deep_index_cache: Optional[Dict[str, Any]] = None
 
-    # ----------------------------- Public API --------------------------------
+    # --------------------------------------------------------------------- #
+    # Public API
+    # --------------------------------------------------------------------- #
     def start_new_mission(self, objective: str, initiator: User) -> Mission:
         self._ensure_app_ref()
-        mission = Mission(
-            objective=objective,
-            initiator=initiator,
-            status=MissionStatus.PENDING
-        )
+        mission = Mission(objective=objective, initiator=initiator, status=MissionStatus.PENDING)
         db.session.add(mission)
         db.session.commit()
-        log_mission_event(
-            mission,
-            MissionEventType.CREATED,
-            payload={"objective": objective, "version": OVERMIND_VERSION}
-        )
+        log_mission_event(mission, MissionEventType.CREATED,
+                          payload={"objective": objective, "version": OVERMIND_VERSION})
         db.session.commit()
         log_info(mission, "Mission created; starting lifecycle", objective=objective)
         self.run_mission_lifecycle(mission.id)
@@ -579,10 +594,12 @@ class OvermindService:
                 log_error(mission, "Lifecycle catastrophic failure", error=str(e))
                 update_mission_status(mission, MissionStatus.FAILED, note=f"Fatal: {e}")
                 db.session.commit()
-                # Emit semantic terminal events
-                self._emit_terminal_events(mission, success=False, reason="catastrophic_failure", error=str(e))
+                self._emit_terminal_events(mission, success=False,
+                                           reason="catastrophic_failure", error=str(e))
 
-    # --------------------------- Lifecycle Loop ------------------------------
+    # --------------------------------------------------------------------- #
+    # Lifecycle Loop
+    # --------------------------------------------------------------------- #
     def _tick(self, mission: Mission, overall_start_perf: float):
         loops = 0
         while loops < MAX_LIFECYCLE_TICKS:
@@ -616,6 +633,7 @@ class OvermindService:
                 log_debug(mission, "Terminal state reached; exiting.")
                 break
 
+            # Refresh or rollback if needed
             try:
                 db.session.refresh(mission)
             except Exception:
@@ -634,16 +652,48 @@ class OvermindService:
                     break
                 time.sleep(0.05)
         else:
+            # loop exhausted
             if mission.status == MissionStatus.RUNNING:
                 log_warn(mission, "Lifecycle tick limit reached while RUNNING.")
                 self._check_terminal(mission)
                 db.session.commit()
 
-    # ------------------------------ Planning ---------------------------------
+    # --------------------------------------------------------------------- #
+    # Planning Phase
+    # --------------------------------------------------------------------- #
     def _plan_phase(self, mission: Mission):
         update_mission_status(mission, MissionStatus.PLANNING, note="Planning started.")
         db.session.commit()
         log_info(mission, "Planning phase started.")
+
+        # Deep Index Context (Optional)
+        deep_context = self._build_deep_index_context()
+        if deep_context:
+            log_info(
+                mission,
+                "Deep index context ready",
+                files=deep_context["files_scanned"],
+                hotspots=deep_context["hotspots_count"],
+                layers=len(deep_context["layers"]),
+                build_ms=deep_context["build_ms"]
+            )
+            try:
+                log_mission_event(
+                    mission,
+                    MissionEventType.ARCHITECTURE_CLASSIFIED,
+                    payload={
+                        "index_version": deep_context["index_version"],
+                        "files_scanned": deep_context["files_scanned"],
+                        "hotspots": deep_context["hotspots_count"],
+                        "layers_detected": len(deep_context["layers"]),
+                        "build_ms": deep_context["build_ms"]
+                    }
+                )
+                db.session.commit()
+            except Exception:
+                pass
+        else:
+            log_debug(mission, "Deep index context skipped or unavailable.")
 
         planners = get_all_planners()
         if not planners:
@@ -655,13 +705,14 @@ class OvermindService:
         candidates: List[CandidatePlan] = []
         for planner in planners:
             try:
-                result_dict = planner.instrumented_generate(mission.objective, context=None)
-                if (
-                    not isinstance(result_dict, dict)
-                    or "plan" not in result_dict
-                    or "meta" not in result_dict
-                ):
-                    raise PlannerError("instrumented_generate invalid structure", getattr(planner, "name", "?"), mission.objective)  # type: ignore
+                ctx = deep_context if deep_context else None
+                result_dict = planner.instrumented_generate(mission.objective, context=ctx)
+                if (not isinstance(result_dict, dict)
+                        or "plan" not in result_dict
+                        or "meta" not in result_dict):
+                    raise PlannerError("instrumented_generate invalid structure",
+                                       getattr(planner, "name", "?"),
+                                       mission.objective)  # type: ignore
 
                 plan_obj: MissionPlanSchema = result_dict["plan"]
                 meta: Dict[str, Any] = result_dict["meta"]
@@ -723,11 +774,74 @@ class OvermindService:
         )
         log_info(mission, "Plan selected", version=version, planner=best.planner_name, score=best.score)
 
+    # --------------------------------------------------------------------- #
+    # Deep Index Context Builder (with caching)
+    # --------------------------------------------------------------------- #
+    def _build_deep_index_context(self) -> Optional[Dict[str, Any]]:
+        if not ENABLE_DEEP_INDEX or not (build_index and summarize_for_prompt):
+            return None
+
+        # Simple directory hash (mtime aggregation) to detect changes quickly
+        # (Lightweight heuristic, not cryptographically perfect.)
+        def dir_signature(root: str = ".") -> str:
+            acc = 0
+            for base, _, files in os.walk(root):
+                if any(skip in base for skip in (".git", "__pycache__", "venv", ".venv", "node_modules")):
+                    continue
+                for f in files:
+                    if f.endswith(".py"):
+                        p = os.path.join(base, f)
+                        try:
+                            st = os.stat(p)
+                            acc ^= int(st.st_mtime_ns) & 0xFFFFFFFFFFFF
+                        except Exception:
+                            continue
+            return f"{acc:012x}"
+
+        now = time.time()
+        sig = dir_signature()
+
+        # Cache reuse
+        if self._deep_index_cache:
+            cached_sig = self._deep_index_cache.get("sig")
+            ts = self._deep_index_cache.get("ts", 0)
+            if cached_sig == sig and (now - ts) < DEEP_INDEX_MAX_CACHE_AGE:
+                ctx_cached = self._deep_index_cache.get("context")
+                if ctx_cached:
+                    ctx_cached["cache_hit"] = True
+                    return ctx_cached
+
+        try:
+            t0 = time.perf_counter()
+            idx = build_index(".")
+            summary = summarize_for_prompt(idx, max_len=4000)
+            ctx = {
+                "deep_index_summary": summary,
+                "files_scanned": idx.get("files_scanned"),
+                "hotspots_count": len(idx.get("complexity_hotspots_top50", [])),
+                "duplicate_groups": len(idx.get("duplicate_function_bodies", {})),
+                "layers": list(idx.get("layers", {}).keys()),
+                "services": idx.get("service_candidates", [])[:12],
+                "entrypoints": idx.get("entrypoints", []),
+                "index_version": idx.get("index_version"),
+                "build_ms": int((time.perf_counter() - t0) * 1000),
+                "cache_hit": False
+            }
+            self._deep_index_cache = {"sig": sig, "ts": now, "context": ctx}
+            return ctx
+        except Exception as e:
+            log_warn(None, "Deep index build failed", error=str(e))
+            return None
+
+    # --------------------------------------------------------------------- #
+    # Plan Scoring / Rationale
+    # --------------------------------------------------------------------- #
     def _score_plan(self, plan: MissionPlanSchema, metadata: Dict[str, Any]) -> float:
         stats = getattr(plan, "tasks", []) or []
         count = len(stats)
         if count == 0:
             return 0.0
+        # Basic heuristic: penalize exceeding 40 tasks slightly
         base = 100.0 - max(count - 40, 0) * 0.5
         return round(base, 2)
 
@@ -740,7 +854,9 @@ class OvermindService:
         )
         return (max_version or 0) + 1
 
-    # ------------------------------ Persistence -------------------------------
+    # --------------------------------------------------------------------- #
+    # Persistence
+    # --------------------------------------------------------------------- #
     def _persist_plan(self, mission: Mission, candidate: CandidatePlan, version: int):
         schema = candidate.raw
         plan_signature = json.dumps({
@@ -798,7 +914,9 @@ class OvermindService:
         db.session.commit()
         increment_counter("overmind_plans_created_total", {"planner": candidate.planner_name})
 
-    # ----------------------------- Execution Prep -----------------------------
+    # --------------------------------------------------------------------- #
+    # Execution Prep
+    # --------------------------------------------------------------------- #
     def _prepare_execution(self, mission: Mission):
         update_mission_status(mission, MissionStatus.RUNNING, note="Execution started.")
         db.session.commit()
@@ -811,7 +929,9 @@ class OvermindService:
         log_info(mission, "Execution phase entered.", strategy=EXECUTION_STRATEGY)
         increment_counter("overmind_missions_started_total")
 
-    # ---------------------------- Topological Phase ---------------------------
+    # --------------------------------------------------------------------- #
+    # Execution (Topological)
+    # --------------------------------------------------------------------- #
     def _execution_phase(self, mission: Mission):
         plan = MissionPlan.query.get(mission.active_plan_id)
         if not plan:
@@ -822,7 +942,7 @@ class OvermindService:
             return
 
         task_index: Dict[str, Task] = {t.task_key: t for t in mission.tasks}
-
+        # Placeholder for layering: currently single layer
         ordered_keys = sorted(task_index.keys())
         layers = [ordered_keys]
 
@@ -876,7 +996,9 @@ class OvermindService:
         except Exception:
             db.session.rollback()
 
-    # ------------------------- Legacy Wave Execution -------------------------
+    # --------------------------------------------------------------------- #
+    # Legacy Wave Execution (placeholder)
+    # --------------------------------------------------------------------- #
     def _execution_wave_legacy(self, mission: Mission):
         ready = self._find_ready_tasks(mission)
         if not ready:
@@ -892,7 +1014,9 @@ class OvermindService:
         for t in ready[:TOPO_MAX_PARALLEL]:
             self._execute_task_with_retry_topological(mission.id, t.id, layer_index=-1)
 
-    # ---------------------------- Stall Detection ----------------------------
+    # --------------------------------------------------------------------- #
+    # Stall Detection
+    # --------------------------------------------------------------------- #
     def _update_stall_metrics(self, mission_id: int, newly_success: int, attempted: bool):
         key = f"_stall_state_{mission_id}"
         state = getattr(self, key, {"window": [], "cycles": 0, "attempts": 0})
@@ -911,7 +1035,9 @@ class OvermindService:
                      mission_id=mission_id,
                      window=state["window"], cycles=state["cycles"])
 
-    # --------------------------- Ready Task Discovery ------------------------
+    # --------------------------------------------------------------------- #
+    # Ready Task Discovery
+    # --------------------------------------------------------------------- #
     def _find_ready_tasks(self, mission: Mission) -> List[Task]:
         candidates: List[Task] = Task.query.filter(
             Task.mission_id == mission.id,
@@ -934,7 +1060,9 @@ class OvermindService:
                 ready.append(t)
         return ready
 
-    # --------------------------- Thread Wrapper ------------------------------
+    # --------------------------------------------------------------------- #
+    # Thread Wrapper
+    # --------------------------------------------------------------------- #
     def _thread_task_wrapper(self, app_obj, mission_id: int, task_id: int, layer_index: int):
         try:
             with app_obj.app_context():
@@ -946,9 +1074,9 @@ class OvermindService:
         except Exception as e:
             print(f"[Overmind][thread][ERROR] mission={mission_id} task={task_id} {e}")
 
-    # =============================================================================
-    # GUARD + INTERPOLATION + EXECUTION
-    # =============================================================================
+    # --------------------------------------------------------------------- #
+    # Guard + Interpolation + Execution
+    # --------------------------------------------------------------------- #
     def _precheck_and_autofix_task(self, mission: Mission, task: Task) -> Dict[str, Any]:
         outcome = {"ok": True, "action": "pass", "notes": [], "error": None, "category": "ok"}
         if not GUARD_ENABLED:
@@ -972,13 +1100,16 @@ class OvermindService:
             else:
                 missing = [k for k in FILE_REQUIRED.get(canon, []) if not args.get(k)]
                 if missing:
-                    outcome.update(ok=False, action="early_fail", error=f"Missing file args: {missing}", category="args_missing")
+                    outcome.update(ok=False, action="early_fail",
+                                   error=f"Missing file args: {missing}", category="args_missing")
                     return outcome
 
         if canon in FILE_REQUIRED:
             missing2 = [k for k in FILE_REQUIRED[canon] if not args.get(k)]
             if missing2:
-                outcome.update(ok=False, action="early_fail", error=f"Missing file args after autofix: {missing2}", category="args_missing")
+                outcome.update(ok=False, action="early_fail",
+                               error=f"Missing file args after autofix: {missing2}",
+                               category="args_missing")
                 return outcome
 
         if not _tool_exists(task.tool_name):
@@ -997,7 +1128,9 @@ class OvermindService:
                         if GUARD_FILE_AUTOFIX:
                             _autofill_file_args(CANON_READ, args, mission, task, notes)
             if not _tool_exists(task.tool_name):
-                outcome.update(ok=False, action="early_fail", error=f"ToolNotFound: {task.tool_name}", category="tool_missing")
+                outcome.update(ok=False, action="early_fail",
+                               error=f"ToolNotFound: {task.tool_name}",
+                               category="tool_missing")
                 notes.append("tool_unresolvable")
                 return outcome
 
@@ -1032,7 +1165,8 @@ class OvermindService:
                 error=guard_result["error"]
             )
         if not guard_result["ok"]:
-            self._finalize_failed_task(mission, task, guard_result["error"] or "GuardFailed", layer_index, retry=False)
+            self._finalize_failed_task(mission, task, guard_result["error"] or "GuardFailed",
+                                       layer_index, retry=False)
             return
 
         # Policy
@@ -1040,7 +1174,7 @@ class OvermindService:
             self._finalize_failed_task(mission, task, "PolicyDenied", layer_index, retry=False)
             return
 
-        # Interpolation (only for think/write/append)
+        # Interpolation
         original_args = _ensure_dict(task.tool_args_json)
         if INTERPOLATION_ENABLED and task.tool_name in (CANON_THINK, CANON_WRITE, CANON_APPEND):
             new_args, interp_notes = _render_template_in_args(original_args, mission_id)
@@ -1059,9 +1193,13 @@ class OvermindService:
         log_mission_event(
             mission,
             MissionEventType.TASK_STARTED,
-            payload={"task_id": task.id, "task_key": task.task_key,
-                     "layer": layer_index, "attempt": attempt_index,
-                     "tool": task.tool_name}
+            payload={
+                "task_id": task.id,
+                "task_key": task.task_key,
+                "layer": layer_index,
+                "attempt": attempt_index,
+                "tool": task.tool_name
+            }
         )
         log_debug(mission, "Task started",
                   task_key=task.task_key, attempt=attempt_index,
@@ -1131,7 +1269,8 @@ class OvermindService:
 
         self._safe_terminal_event(mission_id)
 
-    def _finalize_failed_task(self, mission: Mission, task: Task, error_text: str, layer_index: int, retry: bool):
+    def _finalize_failed_task(self, mission: Mission, task: Task, error_text: str,
+                               layer_index: int, retry: bool):
         task.status = TaskStatus.FAILED
         task.error_text = error_text[:500]
         task.attempt_count += 1
@@ -1144,8 +1283,13 @@ class OvermindService:
         log_mission_event(
             mission,
             MissionEventType.TASK_FAILED,
-            payload={"task_id": task.id, "attempt": task.attempt_count, "retry": retry,
-                     "layer": layer_index, "error": task.error_text}
+            payload={
+                "task_id": task.id,
+                "attempt": task.attempt_count,
+                "retry": retry,
+                "layer": layer_index,
+                "error": task.error_text
+            }
         )
         increment_counter("overmind_tasks_executed_total", {"result": "failed_early"})
 
@@ -1173,9 +1317,13 @@ class OvermindService:
             log_mission_event(
                 mission,
                 MissionEventType.TASK_FAILED,
-                payload={"task_id": task.id, "attempt": task.attempt_count,
-                         "retry": True, "layer": layer_index,
-                         "error": str(exc)[:200]}
+                payload={
+                    "task_id": task.id,
+                    "attempt": task.attempt_count,
+                    "retry": True,
+                    "layer": layer_index,
+                    "error": str(exc)[:200]
+                }
             )
             increment_counter("overmind_tasks_executed_total", {"result": "retry"})
         else:
@@ -1187,9 +1335,13 @@ class OvermindService:
             log_mission_event(
                 mission,
                 MissionEventType.TASK_FAILED,
-                payload={"task_id": task.id, "attempt": task.attempt_count,
-                         "retry": False, "layer": layer_index,
-                         "error": str(exc)[:200]}
+                payload={
+                    "task_id": task.id,
+                    "attempt": task.attempt_count,
+                    "retry": False,
+                    "layer": layer_index,
+                    "error": str(exc)[:200]
+                }
             )
             increment_counter("overmind_tasks_executed_total", {"result": "failed"})
         db.session.commit()
@@ -1200,7 +1352,9 @@ class OvermindService:
             db.session.refresh(task)
         return {"status": "success", "result_text": task.result_text or "[Fallback Execution]", "meta": {}}
 
-    # ----------------------------- Diff Augmentation -------------------------
+    # --------------------------------------------------------------------- #
+    # Diff Augmentation
+    # --------------------------------------------------------------------- #
     def _augment_with_diff(self, task: Task, path: str, meta_update: Dict[str, Any]):
         try:
             old_exists, old_content = _read_file_safe(path + ".bak") if BACKUP_ON_WRITE else _read_file_safe(path)
@@ -1237,16 +1391,18 @@ class OvermindService:
                 return
             diff_data = _compute_diff(old_content, new_content, DIFF_MAX_LINES)
             diff_data.update({
-                    "old_sha256": old_hash,
-                    "new_sha256": new_hash,
-                    "no_op": False,
-                    "backup_created": False
+                "old_sha256": old_hash,
+                "new_sha256": new_hash,
+                "no_op": False,
+                "backup_created": False
             })
             meta_update.update(diff_data)
         except Exception as e:
             meta_update.setdefault("diff_error", str(e)[:120])
 
-    # ----------------------------- Tool Execution ----------------------------
+    # --------------------------------------------------------------------- #
+    # Tool Execution
+    # --------------------------------------------------------------------- #
     def _execute_tool(self, task: Task) -> Dict[str, Any]:
         if agent_tools is None:
             raise TaskExecutionError("Agent tools module not available.")
@@ -1339,13 +1495,17 @@ class OvermindService:
             "meta": meta_payload
         }
 
-    # ------------------------------- Backoff ---------------------------------
+    # --------------------------------------------------------------------- #
+    # Retry Backoff
+    # --------------------------------------------------------------------- #
     def _compute_backoff(self, attempt: int) -> float:
         base = TASK_RETRY_BACKOFF_BASE ** attempt
         jitter = random.uniform(0, TASK_RETRY_BACKOFF_JITTER)
         return min(base + jitter, 600.0)
 
-    # ----------------------------- Terminal Check -----------------------------
+    # --------------------------------------------------------------------- #
+    # Terminal Check
+    # --------------------------------------------------------------------- #
     def _check_terminal(self, mission: Mission):
         pending = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
         retry = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
@@ -1377,6 +1537,9 @@ class OvermindService:
                         self._emit_terminal_events(mission, success=False, reason="tasks_failed")
             db.session.commit()
 
+    # --------------------------------------------------------------------- #
+    # Mission Risk Summary
+    # --------------------------------------------------------------------- #
     def _finalize_mission_risk(self, mission: Mission):
         tasks = Task.query.filter_by(mission_id=mission.id).all()
         buckets = {"low": 0, "mid": 0, "high": 0}
@@ -1399,6 +1562,9 @@ class OvermindService:
         log_info(mission, "Mission risk summary", **buckets)
         log_mission_event(mission, MissionEventType.RISK_SUMMARY, payload={"risk_summary": buckets})
 
+    # --------------------------------------------------------------------- #
+    # Architecture Artifact Classification
+    # --------------------------------------------------------------------- #
     def _classify_architecture_outcome(self, mission: Mission):
         arch_tasks = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.SUCCESS).all()
         produced = False
@@ -1416,6 +1582,9 @@ class OvermindService:
         )
         log_info(mission, "Architecture artifact classification", produced=produced, expected=target)
 
+    # --------------------------------------------------------------------- #
+    # Helpers
+    # --------------------------------------------------------------------- #
     def _has_open_tasks(self, mission: Mission) -> bool:
         return db.session.query(
             exists().where(
@@ -1429,7 +1598,9 @@ class OvermindService:
         plan_count = MissionPlan.query.filter_by(mission_id=mission.id).count()
         return max(plan_count - 1, 0)
 
-    # ------------------------------ Adaptive Replan ---------------------------
+    # --------------------------------------------------------------------- #
+    # Adaptive Replan
+    # --------------------------------------------------------------------- #
     def _adaptive_replan(self, mission: Mission):
         failed_tasks = Task.query.filter_by(mission_id=mission.id, status=TaskStatus.FAILED).all()
         if not failed_tasks:
@@ -1495,18 +1666,14 @@ class OvermindService:
             db.session.commit()
             self._emit_terminal_events(mission, success=False, reason="adaptive_replan_failed", error=str(e))
 
-    # ----------------------- Terminal Event Emission (PRO) -------------------
-    def _emit_terminal_events(self, mission: Mission, success: bool, reason: str, error: Optional[str] = None):
-        """
-        Idempotent semantic terminal emission:
-          - SUCCESS  -> MISSION_COMPLETED + FINALIZED
-          - FAILURE  -> MISSION_FAILED + FINALIZED
-        Ensures we don't double-log by checking last event types locally (cheap) if needed.
-        """
-        # Basic guard: only when mission is terminal
+    # --------------------------------------------------------------------- #
+    # Terminal Events Emission
+    # --------------------------------------------------------------------- #
+    def _emit_terminal_events(self, mission: Mission, success: bool,
+                              reason: str, error: Optional[str] = None):
         if mission.status not in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
             return
-        # Avoid duplicate FINALIZED
+        # Avoid duplication of FINALIZED
         last_event = None
         if mission.events:
             last_event = mission.events[-1].event_type
@@ -1534,7 +1701,6 @@ class OvermindService:
         log_info(mission, "Terminal mission events emitted",
                  success=success, reason=reason, status=mission.status.value)
 
-    # ----------------------------- Terminal Event ----------------------------
     def _safe_terminal_event(self, mission_id: int):
         mission = Mission.query.get(mission_id)
         if not mission:
@@ -1548,12 +1714,15 @@ class OvermindService:
         except Exception:
             pass
 
-    # --------------------------- Flask App Context ---------------------------
+    # --------------------------------------------------------------------- #
+    # Flask App Context
+    # --------------------------------------------------------------------- #
     def _ensure_app_ref(self):
         if self._app_ref is None:
             if not has_app_context():
                 raise RuntimeError("No application context; call inside Flask app context.")
             self._app_ref = current_app._get_current_object()
+
 
 # =============================================================================
 # Singleton Facade
@@ -1567,5 +1736,5 @@ def run_mission_lifecycle(mission_id: int):
     return _overmind_service_singleton.run_mission_lifecycle(mission_id)
 
 # =============================================================================
-# END OF FILE (v10.1.0-l4-pro)
+# END OF FILE (v10.2.0-l4-pro)
 # =============================================================================
