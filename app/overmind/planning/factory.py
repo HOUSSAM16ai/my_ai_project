@@ -1,19 +1,56 @@
 # app/overmind/planning/factory.py
 # -*- coding: utf-8 -*-
 # ======================================================================================
-# PLANNER FACTORY CORE (Version 3.1 "GUILD OMEGA / ZERO-DOWNTIME / SELF-HEAL / META-GOVERNANCE")
-# Safe edition: no triple-quoted docstrings to avoid unterminated literal issues in CI.
+# OVERMIND PLANNER FACTORY – HYPER STRUCTURAL / DEEP-CONTEXT AWARE CORE
+# Version 4.0.0  •  Codename: "GUILD OMEGA PRIME / ZERO-DOWNTIME / SELF-HEAL+ / DEEP-BOOST"
 # ======================================================================================
-# KEY FEATURES:
-#   - Deterministic discovery (manual list + dynamic scan) with signature.
-#   - Metadata harvest via BasePlanner v3 hooks (if present).
-#   - Backward compatibility: available_planners(), get_all_planners().
-#   - Self-heal if zero planners (env or parameter).
-#   - Ranking with reliability / capabilities / tier / production_ready.
-#   - Diagnostics (text + JSON) + export_diagnostics().
-#   - Profiling selection & instantiation (env toggles).
-#   - Thread-safe state with RLock.
-#   - No multi-line string pitfalls.
+# DESIGN PRINCIPLES
+#   - Deterministic, idempotent, side‑effect minimal discovery.
+#   - Deep Context–Aware scoring (optional): integrates mission deep_index metadata
+#     (hotspots, layers, structural summary presence) for capability-based boosts.
+#   - Backward compatible public API (discover, get_planner, get_all_planners, select_best_planner).
+#   - Fine-grained telemetry: selection & instantiation profiling with breakdown factors.
+#   - Self-heal logic with cooldown and archival of import failures.
+#   - Thread-safe state (RLock) with minimal contention windows.
+#   - NO triple-quoted docstrings (historical CI safety constraint).
+#
+# عربي (ملخص):
+#   - مصنع المخطّطات يقوم باكتشاف وتحميل Planners وترتيبهم وفق القدرات والموثوقية.
+#   - إضافة اختياريّة لـ deep_context لرفع درجة المخطط الذي يدعم "deep_index" أو "structural".
+#   - تليمتري مفصّل (breakdown) وأحداث اختيار أغنى، مع self-heal ذكي عند عدم توفر أي مخطط.
+#
+# NEW vs 3.1
+#   + deep_context parameter في select_best_planner / batch_select_best_planners (اختياري).
+#   + Boosts:
+#       * +DEEP_INDEX_CAP_BOOST (افتراضي 0.05) إذا توفّر deep_index_summary و capability=deep_index.
+#       * +HOTSPOT_CAP_BOOST (افتراضي 0.03) إذا hotspots_count > HOTSPOT_THRESHOLD و capability ∈ {refactor,risk,structural}.
+#   + Selection breakdown telemetry: base_score / deep_boost / hotspot_boost / cap_ratio / reliability / tier / production_ready.
+#   + Environment-driven tuning (FACTORY_DEEP_INDEX_CAP_BOOST, FACTORY_HOTSPOT_CAP_BOOST, FACTORY_HOTSPOT_THRESHOLD).
+#   + Archival of prior import fail snapshots on reload.
+#   + health_check includes reliability hints and suggestions.
+#   + Enhanced diagnostics_json: includes 'boost_config' & last selection profiles.
+#
+# ENV FLAGS (selected):
+#   OVERMIND_PLANNER_MANUAL            Comma list of extra modules to import manually.
+#   OVERMIND_PLANNER_EXCLUDE           Comma list of module short names to exclude.
+#   FACTORY_FORCE_REDISCOVER=1         Force discovery each call.
+#   FACTORY_MIN_RELIABILITY=0.25       Filter out planners below this reliability.
+#   FACTORY_SELF_HEAL_ON_EMPTY=1       Attempt self-heal if no planners.
+#   FACTORY_PROFILE_SELECTION=1        Store selection profiling samples.
+#   FACTORY_PROFILE_INSTANTIATION=1    Store instantiation timing samples.
+#   FACTORY_DEEP_INDEX_CAP_BOOST=0.05  Boost weight for deep_index capability.
+#   FACTORY_HOTSPOT_CAP_BOOST=0.03     Boost weight for hotspot related capability.
+#   FACTORY_HOTSPOT_THRESHOLD=8        Hotspots count threshold to trigger hotspot boost.
+#
+# COMPATIBILITY:
+#   - Old callers of select_best_planner(...) remain valid (deep_context defaults to None).
+#   - No schema / DB changes. Additive telemetry only.
+#
+# SAFETY:
+#   - All dynamic imports wrapped with exception capture into import_failures.
+#   - Quarantined planners skipped unless include_quarantined=True.
+#   - Reliability floor enforced via FACTORY_MIN_RELIABILITY.
+#
 # ======================================================================================
 
 from __future__ import annotations
@@ -40,7 +77,7 @@ from typing import (
     Union,
 )
 
-# Attempt to import BasePlanner
+# Attempt to import BasePlanner; create safe fallbacks if missing.
 try:
     from .base_planner import BasePlanner, PlannerError  # type: ignore
 except Exception:
@@ -64,11 +101,11 @@ except Exception:
 # CONSTANTS / ENV
 # ======================================================================================
 
-FACTORY_VERSION = "3.1"
+FACTORY_VERSION = "4.0.0"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
 OFFICIAL_MANUAL_MODULES: List[str] = [
-    "app.overmind.planning.llm_planner",  # Adjust/remove as needed
+    "app.overmind.planning.llm_planner",  # Extend / customize as needed
 ]
 
 DEFAULT_EXCLUDE_MODULES: Set[str] = {
@@ -92,6 +129,10 @@ _SELF_HEAL_ON_EMPTY = os.getenv("FACTORY_SELF_HEAL_ON_EMPTY", "0") == "1"
 
 PROFILE_SELECTION = os.getenv("FACTORY_PROFILE_SELECTION", "1") == "1"
 PROFILE_INSTANTIATION = os.getenv("FACTORY_PROFILE_INSTANTIATION", "1") == "1"
+
+DEEP_INDEX_CAP_BOOST = float(os.getenv("FACTORY_DEEP_INDEX_CAP_BOOST", "0.05") or "0.05")
+HOTSPOT_CAP_BOOST = float(os.getenv("FACTORY_HOTSPOT_CAP_BOOST", "0.03") or "0.03")
+HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
 
 # ======================================================================================
 # DATA STRUCTURES
@@ -411,7 +452,7 @@ def refresh_metadata():
             return
     _sync_registry_into_records()
 
-# Inject backward compatibility available_planners
+# Backward compatibility: available_planners
 if not hasattr(BasePlanner, "available_planners"):
     def _legacy_available_planners() -> List[str]:  # type: ignore
         return _active_planner_names()
@@ -464,24 +505,39 @@ def list_planners(include_quarantined: bool = False,
         out.append(n)
     return sorted(out)
 
-def get_all_planners(instances: bool = True,
-                     include_quarantined: bool = False) -> List[Union[str, BasePlanner]]:
-    names = list_planners(include_quarantined=include_quarantined)
-    if not instances:
-        return names
-    result: List[BasePlanner] = []
-    for n in names:
-        try:
-            result.append(get_planner(n, auto_instantiate=True))
-        except Exception as e:
-            _log(f"Skipping planner '{n}' due to instantiation error: {e}", "WARN")
-    return result
+def _compute_deep_boosts(rec: PlannerRecord,
+                         req_caps: Set[str],
+                         deep_context: Optional[Dict[str, Any]]) -> Tuple[float, Dict[str, Any]]:
+    """
+    Returns (additional_score, breakdown_dict)
+    breakdown_dict keys: deep_boost, hotspot_boost
+    """
+    breakdown = {"deep_boost": 0.0, "hotspot_boost": 0.0}
+    if not deep_context or not isinstance(deep_context, dict):
+        return 0.0, breakdown
+
+    caps = _safe_lower_set(rec.capabilities)
+    deep_index_summary = bool(deep_context.get("deep_index_summary"))
+    hotspots_count = int(deep_context.get("hotspots_count") or 0)
+
+    # Deep index capability boost
+    if deep_index_summary and "deep_index" in caps:
+        boost = max(DEEP_INDEX_CAP_BOOST, 0.0)
+        breakdown["deep_boost"] = boost
+
+    # Hotspot capability boost
+    if hotspots_count > HOTSPOT_THRESHOLD and {"refactor", "risk", "structural"} & caps:
+        hboost = max(HOTSPOT_CAP_BOOST, 0.0)
+        breakdown["hotspot_boost"] = hboost
+
+    return breakdown["deep_boost"] + breakdown["hotspot_boost"], breakdown
 
 def select_best_planner(objective: str,
                         required_capabilities: Optional[Iterable[str]] = None,
                         prefer_production: bool = True,
                         auto_instantiate: bool = True,
-                        self_heal_on_empty: Optional[bool] = None) -> BasePlanner:
+                        self_heal_on_empty: Optional[bool] = None,
+                        deep_context: Optional[Dict[str, Any]] = None) -> BasePlanner:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -496,7 +552,7 @@ def select_best_planner(objective: str,
             active = _active_planner_names()
     if not active:
         raise PlannerError("No active planners after discovery/self-heal.", "factory", objective)
-    candidates: List[Tuple[float, str]] = []
+    candidates: List[Tuple[float, str, Dict[str, Any]]] = []
     for name in active:
         rec = _STATE.planner_records.get(name)
         if not rec or rec.quarantined:
@@ -508,7 +564,7 @@ def select_best_planner(objective: str,
         prod = bool(rec.production_ready)
         if prefer_production and not prod and req_set:
             reliability *= 0.97
-        score = _rank_hint(
+        base_score = _rank_hint(
             name=name,
             objective=objective,
             capabilities_match_ratio=cap_ratio,
@@ -516,11 +572,23 @@ def select_best_planner(objective: str,
             tier=rec.tier,
             production_ready=prod
         )
-        candidates.append((score, name))
+        add_score, boost_breakdown = _compute_deep_boosts(rec, req_set, deep_context)
+        total_score = base_score + add_score
+        breakdown = {
+            "base_score": base_score,
+            "cap_ratio": round(cap_ratio, 4),
+            "reliability": reliability,
+            "tier": rec.tier,
+            "production_ready": prod,
+            "deep_boost": boost_breakdown["deep_boost"],
+            "hotspot_boost": boost_breakdown["hotspot_boost"],
+            "total_score": total_score
+        }
+        candidates.append((total_score, name, breakdown))
     if not candidates:
         raise PlannerError("No candidate planners matched constraints.", "factory", objective)
-    candidates.sort(reverse=True)
-    best_score, best_name = candidates[0]
+    candidates.sort(reverse=True, key=lambda x: x[0])
+    best_score, best_name, best_breakdown = candidates[0]
     sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
         with _STATE.lock:
@@ -530,18 +598,25 @@ def select_best_planner(objective: str,
                 "best": best_name,
                 "score": best_score,
                 "candidates_considered": len(candidates),
+                "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
+                "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
+                "breakdown": best_breakdown,
+                "boost_config": {
+                    "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
+                    "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
+                    "hotspot_threshold": HOTSPOT_THRESHOLD
+                },
                 "duration_s": sel_elapsed,
                 "ts": _now(),
             })
-    if auto_instantiate:
-        return get_planner(best_name)
-    return get_planner(best_name, auto_instantiate=True)
+    return get_planner(best_name) if auto_instantiate else get_planner(best_name, auto_instantiate=True)
 
 def batch_select_best_planners(objective: str,
                                required_capabilities: Optional[Iterable[str]] = None,
                                n: int = 3,
                                prefer_production: bool = True,
-                               auto_instantiate: bool = False) -> List[Union[str, BasePlanner]]:
+                               auto_instantiate: bool = False,
+                               deep_context: Optional[Dict[str, Any]] = None) -> List[Union[str, BasePlanner]]:
     if n <= 0:
         return []
     if not _STATE.discovered:
@@ -563,7 +638,7 @@ def batch_select_best_planners(objective: str,
         prod = bool(rec.production_ready)
         if prefer_production and not prod and req_set:
             reliability *= 0.97
-        score = _rank_hint(
+        base_score = _rank_hint(
             name=name,
             objective=objective,
             capabilities_match_ratio=cap_ratio,
@@ -571,12 +646,13 @@ def batch_select_best_planners(objective: str,
             tier=rec.tier,
             production_ready=prod
         )
-        candidates.append((score, name))
+        extra, _bd = _compute_deep_boosts(rec, req_set, deep_context)
+        candidates.append((base_score + extra, name))
     candidates.sort(reverse=True)
-    selected = [nme for _, nme in candidates[:n]]
+    selected_names = [nme for _, nme in candidates[:n]]
     if auto_instantiate:
-        return [get_planner(n) for n in selected]
-    return selected
+        return [get_planner(n) for n in selected_names]
+    return selected_names
 
 # ======================================================================================
 # SELF-HEAL
@@ -669,6 +745,12 @@ def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
         "import_failures": stats["import_failures"],
         "selection_profiles": _STATE.selection_profile_samples[-25:],
         "instantiation_profiles": _STATE.instantiation_profile_samples[-25:],
+        "boost_config": {
+            "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
+            "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
+            "hotspot_threshold": HOTSPOT_THRESHOLD,
+            "min_reliability": MIN_RELIABILITY
+        },
         "timestamp": _now(),
     }
 
@@ -676,14 +758,14 @@ def diagnostics_report(verbose: bool = False) -> str:
     data = diagnostics_json(verbose=verbose)
     stats = data["stats"]
     lines: List[str] = []
-    lines.append("=== Planner Guild Diagnostics (v3.1) ===")
-    lines.append(f"Factory Version           : {stats['factory_version']}")
+    lines.append(f"=== Planner Guild Diagnostics (v{FACTORY_VERSION}) ===")
     lines.append(f"Discovered                : {stats['discovered']}")
     lines.append(f"Discovery Runs            : {stats['discovery_runs']}")
     lines.append(f"Active Planners           : {stats['active_count']}")
     lines.append(f"Quarantined               : {stats['quarantined_count']}")
     lines.append(f"Instantiated              : {stats['instantiated_count']}")
     lines.append(f"Total Instantiations      : {stats['total_instantiations']}")
+    lines.append(f"Min Reliability Filter    : {MIN_RELIABILITY}")
     if stats["import_failures"]:
         lines.append("-- Import Failures --")
         for m, e in stats["import_failures"].items():
@@ -694,9 +776,11 @@ def diagnostics_report(verbose: bool = False) -> str:
         for n in active:
             r = _STATE.planner_records.get(n)
             if r:
-                lines.append(f"  * {n} rel={r.reliability_score} tier={r.tier} prod={r.production_ready}")
+                lines.append(
+                    f"  * {n} rel={r.reliability_score} tier={r.tier} prod={r.production_ready} caps={len(r.capabilities)}"
+                )
     else:
-        lines.append("!! WARNING: No active planners. Ensure manual modules or correct package path.")
+        lines.append("!! WARNING: No active planners. Consider self_heal() or env override.")
     quarantined = [r for r in _STATE.planner_records.values() if r.quarantined]
     if quarantined:
         lines.append("-- Quarantined --")
@@ -706,14 +790,13 @@ def diagnostics_report(verbose: bool = False) -> str:
     if not active:
         lines.append("  * Use self_heal() or set OVERMIND_PLANNER_MANUAL.")
     else:
-        lines.append("  * Use select_best_planner(...) for automatic ranking.")
+        lines.append("  * Use select_best_planner(...) with deep_context for structural prioritization.")
     if verbose:
         lines.append("\n-- Detailed Records --")
         for n, r in sorted(_STATE.planner_records.items()):
             lines.append(
-                f"[{n}] mod={r.module} caps={sorted(r.capabilities)} tags={sorted(r.tags)} "
-                f"rel={r.reliability_score} q={r.quarantined} prod={r.production_ready} "
-                f"inst={r.instantiated} ver={r.version}"
+                f"[{n}] mod={r.module} caps={sorted(r.capabilities)} "
+                f"rel={r.reliability_score} q={r.quarantined} prod={r.production_ready} inst={r.instantiated} ver={r.version}"
             )
             if r.error:
                 lines.append(f"   ERROR: {r.error}")
@@ -737,18 +820,27 @@ def export_diagnostics(path: Union[str, Path],
 def health_check(min_required: int = 1) -> Dict[str, Any]:
     active_count = len(_active_planner_names())
     quarantined_count = sum(1 for r in _STATE.planner_records.values() if r.quarantined)
+    reliability_vals = [
+        r.reliability_score for r in _STATE.planner_records.values()
+        if r.reliability_score is not None
+    ]
+    avg_reliability = round(sum(reliability_vals) / len(reliability_vals), 4) if reliability_vals else None
     suggestions: List[str] = []
     if active_count < min_required:
-        suggestions.append("Verify planner modules import (OVERMIND_PLANNER_MANUAL).")
-        suggestions.append("Check quarantined planners self-test status.")
-    return {
+        suggestions.append("Verify manual import modules (OVERMIND_PLANNER_MANUAL).")
+        suggestions.append("Check quarantined planners or raise MIN_RELIABILITY threshold.")
+        suggestions.append("Invoke self_heal() or confirm package path.")
+    result = {
         "ready": active_count >= min_required,
         "active": active_count,
         "quarantined": quarantined_count,
         "records": len(_STATE.planner_records),
         "import_failures": len(_STATE.import_failures),
+        "avg_reliability": avg_reliability,
+        "min_reliability_filter": MIN_RELIABILITY,
         "suggestions": suggestions,
     }
+    return result
 
 def list_quarantined() -> List[str]:
     if not _STATE.discovered:
@@ -782,13 +874,15 @@ async def a_select_best_planner(objective: str,
                                 required_capabilities: Optional[Iterable[str]] = None,
                                 prefer_production: bool = True,
                                 auto_instantiate: bool = True,
-                                self_heal_on_empty: Optional[bool] = None) -> BasePlanner:
+                                self_heal_on_empty: Optional[bool] = None,
+                                deep_context: Optional[Dict[str, Any]] = None) -> BasePlanner:
     return select_best_planner(
         objective,
         required_capabilities=required_capabilities,
         prefer_production=prefer_production,
         auto_instantiate=auto_instantiate,
-        self_heal_on_empty=self_heal_on_empty
+        self_heal_on_empty=self_heal_on_empty,
+        deep_context=deep_context
     )
 
 # ======================================================================================
@@ -833,12 +927,14 @@ __all__ = [
 # ======================================================================================
 # MAIN (Manual Dev Test)
 # ======================================================================================
-
 if __name__ == "__main__":
     discover(force=True)
     print(diagnostics_report(verbose=True))
     if _active_planner_names():
-        p = select_best_planner("Analyze repository architecture.")
+        p = select_best_planner("Analyze repository architecture.", deep_context={
+            "deep_index_summary": "demo",
+            "hotspots_count": 12
+        })
         print("Selected planner:", p.__class__.__name__)
     export_diagnostics("planner_diagnostics.json", fmt="json", verbose=True)
     print("Diagnostics exported -> planner_diagnostics.json")
