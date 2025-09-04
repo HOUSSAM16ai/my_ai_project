@@ -1,97 +1,121 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 """
-MAESTRO AGENT TOOL REGISTRY (v4.3.0-HYPER-L4+)
-"COGNITIVE-CORE / STRUCTURAL-AWARE / SAFE-IO / ZERO-STALL / EXTENSIBLE / FUTURE-PROOF"
+MAESTRO / OVERMIND – UNIFIED AGENT TOOL REGISTRY
+Ultra Structural-Aware Sovereign Edition
+========================================
+File        : app/services/agent_tools.py
+Version     : 4.4.0-hyper-l4++-struct
+Codename    : "LAYER-SENSE / HOTSPOT-AWARE / ZERO-STALL"
+Status      : Production / Hardened / Deterministic / Lazy-Structural-Enriched
+Author      : Overmind Cognitive Systems
 
-╔══════════════════════════════════════════════════════════════════════╗
-║ Level‑4++ Edition – Optimized for Deep Structural Planner v7.1.0+    ║
-╚══════════════════════════════════════════════════════════════════════╝
+BILINGUAL OVERVIEW (EN / AR)
+---------------------------
+EN:
+This registry provides a consolidated, hardened, extensible tool layer used by:
+ - master_agent_service (planning + execution guard)
+ - generation_service (LLM multi-step reasoning)
+It offers canonicalization, safe file IO, cognitive reasoning (generic_think), structural
+awareness hooks (deep index meta tagging), introspection, and meta dispatch.
 
-PURPOSE
--------
-حزمة أدوات منخفضة العدد عالية الكفاءة متوافقة مع:
-- UltraHyperPlanner (llm_planner v7.1.0-deep)
-- Deep AST Structural Index (STRUCTURAL_INDEX.json / SUMMARY / REPORT)
-- PlanMeta الموسَّع (telemetry, structural insight)
+AR:
+هذا السجل يوفّر طبقة أدوات موحّدة صلبة وقابلة للتوسعة لبيئة الأوركستريتور:
+- تطبيع أسماء الأدوات وحماية الملفات
+- دعم التفكير (generic_think)
+- دمج الاختياري للفهرس البنيوي (Hotspots / Layers / Duplications)
+- أدوات فحص وإلحاق وقراءة وتهيئة ملفات
+- تتبّع تيلمتري + إحصاءات طبقات (Layers)
 
-DESIGN PILLARS
---------------
-1. Deterministic canonicalization → Zero "ToolNotFound" even مع تنوع الأسماء/النقاط.
-2. Hardened FS (مسار آمن، منع traversal، منع symlink، حدود حجم، allowlists).
-3. Graceful Degradation → أي فشل أداة لا يوقف سلسلة التخطيط (ok=False مع error).
-4. Cognitive Stability → generic_think يُرجع دائماً data.answer + قيود طول.
-5. Streaming & Large Artifact Support → append_file + future chunk aggregator.
-6. Structural Awareness Ready → كتابة ملفات ضخمة (JSON/MD) بشكل آمن + ضغط اختياري.
-7. Telemetry موحّد (invocations, elapsed_ms, avg_ms, last_error, version).
-8. Extensible Policy Hooks + Arg Transforms (مكانيات إدراج سياسات لاحقاً).
-9. Memory (اختيارية) محمية بقائمة سماح.
-10. Forward Compatible: أدوات جديدة يمكن تسجيلها بنفس الديكور بدون كسر.
-
-NEW vs 4.2.0
+CORE PILLARS
 ------------
-+ Version bump → 4.3.0-hyper-l4+ (تحضير لإضافات chunked write / hashing).
-+ دعم امتدادات إنشاء افتراضية أوسع: .md,.txt,.json,.log (قابلة للتعديل).
-+ محتوى اختياري: حساب hash (sha256) للملف بعد الكتابة/الإلحاق (ENV toggle).
-+ ضغط (gzip) اختياري للـ JSON الكبير (ENV: AGENT_TOOLS_COMPRESS_JSON=1).
-+ إستراتيجية truncate ذكية: لا تقطع وسط UTF-8 multi-byte (حماية بسيطة).
-+ حماية إضافية ضد تجاوز الحجم التراكمي عند الإلحاق (ENV: APPEND_ENFORCE_TOTAL=1).
-+ أداة جديدة: write_file_if_changed (لا تكتب لو المحتوى مطابق hash سابق).
-+ أداة جديدة: ensure_directory (تهيئة مجلد آمن).
-+ تحسين dispatch_tool (إرجاع ملاحظات canonicalization).
-+ إعادة تنظيم الشيفرة وتعليقات عربية/إنجليزية مختصرة.
+1. Canonical Tool Resolution (write_file / read_file / etc.) – zero "ToolNotFound" drift.
+2. Structural Awareness (optional deep structural map) with tagging per call:
+     struct_layer, struct_hotspot, struct_dup_group
+3. Tool Telemetry (invocations, errors, avg_ms) + Layer Stats aggregation:
+     LAYER_STATS[layer] = {reads, writes, appends, ensures, last_ts}
+4. Deterministic & Fail-Soft: Exceptions captured → ToolResult(ok=False, error=...).
+5. Safe File IO: path traversal guard, symlink denial, size limits, optional compression.
+6. Cognitive Stability: generic_think always returns data.answer (fallback if LLM absent).
+7. Repeatable Extensibility: @tool decorator with alias & capability metadata.
+8. Structural Map Auto-Reload (hash + TTL) – low overhead.
+9. Memory (ephemeral) limited by allowlist.
+10. Forward Hooks for future features (chunk streaming / dependency parsing).
+
+NEW IN 4.4.0 vs 4.3.0
+---------------------
++ Deep Structural Map integration (_DEEP_STRUCT_MAP) with:
+    - Env AGENT_TOOLS_DEEP_MAP_PATH
+    - Auto reload TTL (AGENT_TOOLS_DEEP_MAP_TTL=60s)
+    - Hash-based duplicate load avoidance
++ Annotation of file operations (read/write/append/ensure_file) with structural meta.
++ Layer usage aggregation: _LAYER_STATS with incremental counters.
++ New tool: analyze_path_semantics (inspects a path against structural map).
++ New tool: reload_deep_struct_map (manual refresh).
++ Extended introspect_tools: include_layers flag returns layer usage table.
++ Dispatch enhancements: pass-through structural awareness unchanged.
++ Unified safe JSON dumping with truncation.
++ Hardened argument validation clear errors.
 
 PRIMARY ENV FLAGS
 -----------------
-AGENT_TOOLS_PROJECT_ROOT=/app (أو مسار عمل)
-AGENT_TOOLS_LOG_LEVEL=DEBUG|INFO|WARNING
-
-# Canonicalization / Intent
+AGENT_TOOLS_PROJECT_ROOT=/app
+AGENT_TOOLS_LOG_LEVEL=INFO|DEBUG
+AGENT_TOOLS_DEEP_MAP_PATH=./STRUCTURAL_INDEX.json
+AGENT_TOOLS_DEEP_MAP_TTL=60          (seconds, 0 = no auto reload)
+AGENT_TOOLS_DEEP_LIMIT_KEYS=0        (0 = unlimited, else trim per annotated call)
+AGENT_TOOLS_APPEND_ENFORCE_TOTAL=1
+AGENT_TOOLS_HASH_AFTER_WRITE=1
+AGENT_TOOLS_COMPRESS_JSON=1
 AGENT_TOOLS_AUTOFILL_MISSING=1
 AGENT_TOOLS_AUTOFILL_EXTENSION=.txt
 AGENT_TOOLS_ACCEPT_DOTTED=1
 AGENT_TOOLS_FORCE_INTENT=1
-
-# Size Limits
-AGENT_TOOLS_MAX_WRITE_BYTES=5000000
-AGENT_TOOLS_MAX_APPEND_BYTES=3000000
-AGENT_TOOLS_MAX_READ_BYTES=800000
-
-# Append Behavior
-AGENT_TOOLS_APPEND_ENFORCE_TOTAL=1   (يتحقق من الحجم النهائي قبل الإلحاق)
-
-# Cognitive
-GENERIC_THINK_MODEL_OVERRIDE="model"
-GENERIC_THINK_MAX_CHARS_INPUT=12000
-GENERIC_THINK_MAX_ANSWER_CHARS=24000
-
-# Creation / Ensure
 AGENT_TOOLS_CREATE_MISSING=1
 AGENT_TOOLS_CREATE_ALLOWED_EXTS=.md,.txt,.json,.log
 AGENT_TOOLS_CREATE_DEFAULT_CONTENT="Placeholder (auto-created)."
 AGENT_TOOLS_CREATE_MAX_BYTES=300000
+AGENT_TOOLS_MAX_WRITE_BYTES=5000000
+AGENT_TOOLS_MAX_APPEND_BYTES=3000000
+AGENT_TOOLS_MAX_READ_BYTES=800000
 
-# Write Optimizations
-AGENT_TOOLS_HASH_AFTER_WRITE=1
-AGENT_TOOLS_COMPRESS_JSON=1  (ضغط تلقائي إن انتهى الاسم بـ .json.gz أو لو الحجم كبير)
+COGNITIVE:
+GENERIC_THINK_MODEL_OVERRIDE=model
+GENERIC_THINK_MAX_CHARS_INPUT=12000
+GENERIC_THINK_MAX_ANSWER_CHARS=24000
 
-# Dispatch / Disable
-DISABLED_TOOLS="delete_file"
-DISPATCH_ALLOWLIST="generic_think,write_file,write_file_if_changed,read_file,ensure_file,append_file"
-
-# Memory
+MEMORY:
 MEMORY_ALLOWLIST="session_topic,user_goal"
 
-PLANNER NOTE (Level 4++)
-------------------------
-يجب السماح على الأقل:
-PLANNER_ALLOWED_TOOLS=list_dir,read_file,ensure_file,generic_think,write_file,append_file
+DISPATCH:
+DISPATCH_ALLOWLIST="generic_think,write_file,read_file,ensure_file,append_file,write_file_if_changed"
 
-FORWARD FEATURES (Reserved Hooks)
----------------------------------
-- parse_graph / analyze_dependencies (مستقبل).
-- chunk_session_open / chunk_session_close (تجميع وسيط).
-- secure_eval (محلول sandbox لاحقاً).
+SAFETY / HARDENING
+------------------
+- All file operations sandboxed under PROJECT_ROOT.
+- Denies path traversal & symlinks.
+- Safe compression for large JSON writes (.json → .json.gz).
+- Annotates but never fails if structural map missing (graceful).
+- Tools never raise uncaught exceptions outward – always ToolResult.
+
+STRUCTURAL MAP FORMAT (Expected)
+--------------------------------
+{
+  "files": {
+     "/abs/path/to/file.py": {
+         "layer": "service",
+         "hotspot": true,
+         "dup_group": 2
+     },
+     ...
+  }
+}
+
+EXTENSIBILITY IDEAS (Future)
+----------------------------
+- Weighted risk scoring returned to planner.
+- Structural coverage metrics export tool.
+- Auto-chunk write sessions.
+- Secure ephemeral evaluation sandbox.
 """
 
 from __future__ import annotations
@@ -112,7 +136,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 # ======================================================================================
 # Version
 # ======================================================================================
-__version__ = "4.3.0-hyper-l4+"
+__version__ = "4.4.0-hyper-l4++-struct"
 
 # ======================================================================================
 # Logging
@@ -140,9 +164,14 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 def _bool_env(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(int(1 if default else 0))).strip() in ("1", "true", "TRUE", "yes", "on")
+    return os.getenv(name, str(int(1 if default else 0))).strip().lower() in ("1","true","yes","on")
 
-# Dynamic project root (CRITICAL for Gitpod / container variance)
+def _now() -> float:
+    return time.time()
+
+# ======================================================================================
+# Core Limits / Config
+# ======================================================================================
 PROJECT_ROOT = os.path.abspath(os.getenv("AGENT_TOOLS_PROJECT_ROOT", "/app"))
 
 MAX_WRITE_BYTES  = _int_env("AGENT_TOOLS_MAX_WRITE_BYTES", 5_000_000)
@@ -169,12 +198,8 @@ _mem_list_raw = os.getenv("MEMORY_ALLOWLIST", "").strip()
 if _mem_list_raw:
     _MEMORY_ALLOWLIST = {k.strip() for k in _mem_list_raw.split(",") if k.strip()}
 
-# Auto-create (ensure_file) flags
 AUTO_CREATE_ENABLED = _bool_env("AGENT_TOOLS_CREATE_MISSING", True)
-AUTO_CREATE_DEFAULT_CONTENT = os.getenv(
-    "AGENT_TOOLS_CREATE_DEFAULT_CONTENT",
-    "Auto-generated placeholder file."
-)
+AUTO_CREATE_DEFAULT_CONTENT = os.getenv("AGENT_TOOLS_CREATE_DEFAULT_CONTENT", "Auto-generated placeholder file.")
 AUTO_CREATE_ALLOWED_EXTS = {
     e.strip().lower() for e in os.getenv(
         "AGENT_TOOLS_CREATE_ALLOWED_EXTS", ".md,.txt,.json,.log"
@@ -182,11 +207,111 @@ AUTO_CREATE_ALLOWED_EXTS = {
 }
 AUTO_CREATE_MAX_BYTES = _int_env("AGENT_TOOLS_CREATE_MAX_BYTES", 300_000)
 
+# Structural Map Config
+DEEP_MAP_PATH = os.getenv("AGENT_TOOLS_DEEP_MAP_PATH", "")
+DEEP_MAP_TTL = _int_env("AGENT_TOOLS_DEEP_MAP_TTL", 60)    # seconds (0 = no periodic reload)
+DEEP_LIMIT_KEYS = _int_env("AGENT_TOOLS_DEEP_LIMIT_KEYS", 0)
+
 # ======================================================================================
 # Ephemeral Memory
 # ======================================================================================
 _MEMORY_STORE: Dict[str, Any] = {}
 _MEMORY_LOCK = threading.Lock()
+
+# ======================================================================================
+# Structural Map & Layer Stats
+# ======================================================================================
+_DEEP_STRUCT_MAP: Optional[Dict[str, Any]] = None
+_DEEP_STRUCT_HASH: Optional[str] = None
+_DEEP_STRUCT_LOADED_AT: float = 0.0
+_DEEP_LOCK = threading.Lock()
+
+# Layer usage aggregation:
+_LAYER_STATS: Dict[str, Dict[str, Any]] = {}
+_LAYER_LOCK = threading.Lock()
+
+def _touch_layer(layer: str, op: str):
+    if not layer:
+        return
+    with _LAYER_LOCK:
+        d = _LAYER_STATS.setdefault(layer, {
+            "reads": 0, "writes": 0, "appends": 0, "ensures": 0, "last_ts": 0.0
+        })
+        if op in d:
+            d[op] += 1
+        d["last_ts"] = _now()
+
+def _load_deep_struct_map(force: bool = False) -> bool:
+    """
+    Load or reload structural map if path exists & changed or TTL expired.
+    Returns True if (re)loaded, False otherwise.
+    """
+    global _DEEP_STRUCT_MAP, _DEEP_STRUCT_HASH, _DEEP_STRUCT_LOADED_AT
+    if not DEEP_MAP_PATH or not os.path.isfile(DEEP_MAP_PATH):
+        return False
+    with _DEEP_LOCK:
+        if not force and DEEP_MAP_TTL > 0:
+            if (_now() - _DEEP_STRUCT_LOADED_AT) < DEEP_MAP_TTL and _DEEP_STRUCT_MAP is not None:
+                return False
+        try:
+            with open(DEEP_MAP_PATH, "r", encoding="utf-8") as f:
+                raw = f.read()
+            new_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+            if new_hash == _DEEP_STRUCT_HASH and _DEEP_STRUCT_MAP is not None and not force:
+                _DEEP_STRUCT_LOADED_AT = _now()
+                return False
+            data = json.loads(raw)
+            # Normalize keys to lower absolute paths
+            files = data.get("files") or {}
+            norm_files = {}
+            for k, v in files.items():
+                if not isinstance(k, str):
+                    continue
+                key = os.path.abspath(k).lower()
+                norm_files[key] = v
+            data["files"] = norm_files
+            _DEEP_STRUCT_MAP = data
+            _DEEP_STRUCT_HASH = new_hash
+            _DEEP_STRUCT_LOADED_AT = _now()
+            _dbg(f"[deep_struct_map] loaded entries={len(norm_files)} hash={new_hash[:10]}")
+            return True
+        except Exception as e:
+            _dbg(f"[deep_struct_map] load failed: {e}")
+            return False
+
+def _maybe_reload_struct_map():
+    if not DEEP_MAP_PATH:
+        return
+    if DEEP_MAP_TTL == 0:
+        # Only load first time if not loaded
+        if _DEEP_STRUCT_MAP is None:
+            _load_deep_struct_map(force=True)
+        return
+    if (_now() - _DEEP_STRUCT_LOADED_AT) >= DEEP_MAP_TTL:
+        _load_deep_struct_map(force=False)
+
+def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
+    """
+    Annotate meta/data dict with structural signals (layer, hotspot, dup_group).
+    """
+    _maybe_reload_struct_map()
+    if not _DEEP_STRUCT_MAP:
+        return
+    info = _DEEP_STRUCT_MAP.get("files", {}).get(abs_path.lower())
+    if not info:
+        return
+    layer = info.get("layer")
+    hotspot = info.get("hotspot")
+    dup_group = info.get("dup_group")
+    meta.update({
+        "struct_layer": layer,
+        "struct_hotspot": hotspot,
+        "struct_dup_group": dup_group
+    })
+    # Touch layer stats
+    if layer:
+        # We'll increment operation-specific counters outside after operation
+        pass
 
 # ======================================================================================
 # Data Structures
@@ -232,12 +357,11 @@ WRITE_ALIASES_BASE = {
 READ_ALIASES_BASE = {
     "file_reader", "file_reader_tool"
 }
-
 WRITE_DOTTED_ALIASES = {f"file_system.{s}" for s in WRITE_SUFFIXES}
 READ_DOTTED_ALIASES  = {f"file_system.{s}" for s in READ_SUFFIXES}
 
 # ======================================================================================
-# Policy Hooks (stubs – can be replaced later)
+# Policy Hooks (stubs)
 # ======================================================================================
 def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
     return True
@@ -293,15 +417,13 @@ def _looks_like_read(desc: str) -> bool:
 
 def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
     """
-    JSON dump with fallback truncation (keeps valid UTF-8 boundary).
+    JSON dump with safe truncation preserving UTF-8 boundaries.
     """
-    raw = json.dumps(obj, ensure_ascii=False, separators=(",",":"))
+    raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     b = raw.encode("utf-8")
     if len(b) <= max_bytes:
         return raw
-    # Truncate safely
-    trimmed = b[:max_bytes-10]
-    # Ensure not cutting multibyte char:
+    trimmed = b[:max_bytes - 10]
     while True:
         try:
             return trimmed.decode("utf-8", errors="strict") + "...TRUNCATED"
@@ -309,7 +431,6 @@ def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
             trimmed = trimmed[:-1]
             if not trimmed:
                 return "{}"
-    # Unreachable
 
 def _file_hash(path: str) -> Optional[str]:
     try:
@@ -441,14 +562,13 @@ def tool(
 
                     schema = meta_entry.get("parameters") or {}
 
-                    # Self-heal autofill for file tools BEFORE validation
+                    # Autofill file tool arguments BEFORE validation
                     if AUTOFILL and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED, CANON_READ}:
                         if canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}:
                             if not kwargs.get("path"):
                                 kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
                             if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
                                 kwargs["content"] = "Auto-generated content placeholder."
-                        # read_file path omission will still error gracefully
 
                     try:
                         validated = _validate_arguments(schema, kwargs)
@@ -496,681 +616,7 @@ def tool(
     return decorator
 
 # ======================================================================================
-# Introspection
-# ======================================================================================
-@tool(
-    name="introspect_tools",
-    description="Return registry & telemetry snapshot. Filters: include_aliases, include_disabled, category, name_contains, enabled_only, telemetry_only.",
-    category="introspection",
-    capabilities=["introspection"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "include_aliases": {"type": "boolean", "default": True},
-            "include_disabled": {"type": "boolean", "default": True},
-            "category": {"type": "string"},
-            "name_contains": {"type": "string"},
-            "enabled_only": {"type": "boolean", "default": False},
-            "telemetry_only": {"type": "boolean", "default": False},
-        }
-    }
-)
-def introspect_tools(
-    include_aliases: bool = True,
-    include_disabled: bool = True,
-    category: Optional[str] = None,
-    name_contains: Optional[str] = None,
-    enabled_only: bool = False,
-    telemetry_only: bool = False
-) -> ToolResult:
-    out = []
-    for name, meta in sorted(_TOOL_REGISTRY.items()):
-        if meta.get("is_alias") and not include_aliases:
-            continue
-        if not include_disabled and meta.get("disabled"):
-            continue
-        if enabled_only and meta.get("disabled"):
-            continue
-        if category and meta.get("category") != category:
-            continue
-        if name_contains and name_contains.lower() not in name.lower():
-            continue
-        st = _TOOL_STATS.get(name, {})
-        base = {
-            "name": name,
-            "canonical": meta.get("canonical"),
-            "is_alias": meta.get("is_alias", False),
-            "disabled": meta.get("disabled", False),
-            "category": meta.get("category"),
-            "invocations": st.get("invocations", 0),
-            "errors": st.get("errors", 0),
-            "avg_ms": round(st.get("total_ms", 0.0) / st.get("invocations", 1), 2) if st.get("invocations") else 0.0,
-            "last_error": st.get("last_error"),
-            "version": __version__,
-            "capabilities": _CAPABILITIES.get(name, [])
-        }
-        if not telemetry_only:
-            base["description"] = meta.get("description")
-            base["parameters"] = meta.get("parameters")
-            base["aliases"] = meta.get("aliases")
-        out.append(base)
-    return ToolResult(ok=True, data={"tools": out, "count": len(out)})
-
-# ======================================================================================
-# Memory Tools
-# ======================================================================================
-@tool(
-    name="memory_put",
-    description="Store a small JSON-serializable string under a key (ephemeral in-process).",
-    category="memory",
-    capabilities=["kv_store"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "key": {"type": "string"},
-            "value": {"type": "string", "description": "JSON-serializable string content"}
-        },
-        "required": ["key", "value"]
-    }
-)
-def memory_put(key: str, value: str) -> ToolResult:
-    if len(key) > 120:
-        return ToolResult(ok=False, error="KEY_TOO_LONG")
-    if len(value) > 50_000:
-        return ToolResult(ok=False, error="VALUE_TOO_LONG")
-    if _MEMORY_ALLOWLIST and key not in _MEMORY_ALLOWLIST:
-        return ToolResult(ok=False, error="KEY_NOT_ALLOWED")
-    try:
-        json.dumps(value)
-    except Exception:
-        return ToolResult(ok=False, error="VALUE_NOT_SERIALIZABLE")
-    with _MEMORY_LOCK:
-        _MEMORY_STORE[key] = value
-    return ToolResult(ok=True, data={"stored": True, "key": key})
-
-@tool(
-    name="memory_get",
-    description="Retrieve value by key from ephemeral memory.",
-    category="memory",
-    capabilities=["kv_store"],
-    parameters={
-        "type": "object",
-        "properties": {"key": {"type": "string"}},
-        "required": ["key"]
-    }
-)
-def memory_get(key: str) -> ToolResult:
-    with _MEMORY_LOCK:
-        if key not in _MEMORY_STORE:
-            return ToolResult(ok=False, error="KEY_NOT_FOUND")
-        return ToolResult(ok=True, data={"key": key, "value": _MEMORY_STORE[key]})
-
-# ======================================================================================
-# Maestro (LLM) Import & Cognitive Tools
-# ======================================================================================
-try:
-    from . import generation_service as maestro  # type: ignore
-except Exception:
-    maestro = None
-    logger.warning("LLM backend (generation_service) not available; generic_think will fallback.")
-
-@tool(
-    name=CANON_THINK,
-    description="Primary cognitive tool: reasoning / analysis / Q&A / summarization. ALWAYS returns data.answer.",
-    category="cognitive",
-    capabilities=["llm", "reasoning"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "prompt": {"type": "string", "description": "Instruction or question for reasoning."},
-            "mode": {"type": "string", "description": "answer|list|analysis|summary|refine", "default": "analysis"}
-        },
-        "required": ["prompt"]
-    }
-)
-def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
-    clean = (prompt or "").strip()
-    if not clean:
-        return ToolResult(ok=False, error="EMPTY_PROMPT")
-    truncated = False
-    if len(clean) > GENERIC_THINK_MAX_CHARS:
-        clean = clean[:GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
-        truncated = True
-
-    if not maestro:
-        fallback = f"[fallback-{mode}] {clean[:400]}"
-        return ToolResult(ok=True, data={"answer": fallback, "mode": mode, "fallback": True, "truncated_input": truncated})
-
-    model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
-    candidate_methods = ["generate_text", "forge_new_code", "run", "complete", "structured"]
-    response = None
-    last_err = None
-    for m in candidate_methods:
-        if hasattr(maestro, m):
-            try:
-                method = getattr(maestro, m)
-                kwargs = {"prompt": clean}
-                if model_override:
-                    kwargs["model"] = model_override
-                response = method(**kwargs)  # type: ignore
-                break
-            except Exception as e:
-                last_err = e
-                continue
-    if response is None:
-        if last_err:
-            return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}")
-        return ToolResult(ok=False, error="NO_LLM_METHOD")
-
-    if isinstance(response, str):
-        answer = response
-    elif isinstance(response, dict):
-        answer = (response.get("answer") or response.get("content") or
-                  response.get("text") or response.get("output") or "")
-    else:
-        answer = str(response)
-
-    if not answer.strip():
-        return ToolResult(ok=False, error="EMPTY_ANSWER")
-
-    if len(answer) > GENERIC_THINK_MAX_ANSWER_CHARS:
-        answer = answer[:GENERIC_THINK_MAX_ANSWER_CHARS] + "\n[ANSWER_TRIMMED]"
-
-    return ToolResult(ok=True, data={
-        "answer": answer,
-        "mode": mode,
-        "fallback": False,
-        "truncated_input": truncated
-    })
-
-@tool(
-    name="summarize_text",
-    description="Summarize provided text (delegates to generic_think).",
-    category="cognitive",
-    capabilities=["llm", "summarization"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "text": {"type": "string"},
-            "style": {"type": "string", "default": "concise"}
-        },
-        "required": ["text"]
-    }
-)
-def summarize_text(text: str, style: str = "concise") -> ToolResult:
-    t = (text or "").strip()
-    if not t:
-        return ToolResult(ok=False, error="EMPTY_TEXT")
-    snippet = t[:8000]
-    prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
-    return generic_think(prompt=prompt, mode="summary")
-
-@tool(
-    name="refine_text",
-    description="Refine or improve clarity/style of text (delegates to generic_think).",
-    category="cognitive",
-    capabilities=["llm", "refinement"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "text": {"type": "string"},
-            "tone": {"type": "string", "default": "professional"}
-        },
-        "required": ["text"]
-    }
-)
-def refine_text(text: str, tone: str = "professional") -> ToolResult:
-    t = (text or "").strip()
-    if not t:
-        return ToolResult(ok=False, error="EMPTY_TEXT")
-    prompt = (
-        f"Refine the following text to a {tone} tone while preserving meaning. "
-        f"Return only the improved text without commentary:\n---\n{t[:8000]}\n---"
-    )
-    return generic_think(prompt=prompt, mode="refine")
-
-# ======================================================================================
-# File System Tools
-# ======================================================================================
-def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
-    if HASH_AFTER_WRITE and os.path.isfile(abs_path):
-        try:
-            result_data["sha256"] = _file_hash(abs_path)
-            result_data["size_after"] = os.path.getsize(abs_path)
-        except Exception:
-            pass
-
-@tool(
-    name="ensure_directory",
-    description="Ensure a directory exists (create parents if needed). Returns created/existed.",
-    category="fs",
-    capabilities=["fs","ensure"],
-    parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "must_be_new":{"type":"boolean","default":False}
-        },
-        "required":["path"]
-    }
-)
-def ensure_directory(path: str, must_be_new: bool=False) -> ToolResult:
-    try:
-        abs_path = _safe_path(path)
-        if os.path.exists(abs_path):
-            if not os.path.isdir(abs_path):
-                return ToolResult(ok=False, error="PATH_EXISTS_NOT_DIR")
-            if must_be_new:
-                return ToolResult(ok=False, error="DIR_ALREADY_EXISTS")
-            return ToolResult(ok=True, data={"path": abs_path, "created": False, "exists": True})
-        os.makedirs(abs_path, exist_ok=True)
-        return ToolResult(ok=True, data={"path": abs_path, "created": True, "exists": True})
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name=CANON_WRITE,
-    description="Create or overwrite a UTF-8 text file. Returns path, bytes, size_after, sha256 (optional).",
-    category="fs",
-    capabilities=["fs", "write"],
-    aliases=list(WRITE_ALIASES_BASE | WRITE_DOTTED_ALIASES),
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "content": {"type": "string"},
-            "enforce_ext": {"type": "string", "description": "Optional required extension (e.g. '.md')"},
-            "compress_json_if_large": {"type":"boolean","default":True}
-        },
-        "required": ["path", "content"]
-    }
-)
-def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
-               compress_json_if_large: bool=True) -> ToolResult:
-    try:
-        if not isinstance(content, str):
-            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
-        # Optional compression for large JSON
-        if COMPRESS_JSON and compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
-            # produce .json.gz automatically
-            gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
-            path = gz_path
-            out_bytes = gzip.compress(content.encode("utf-8"))
-            if len(out_bytes) > MAX_WRITE_BYTES:
-                return ToolResult(ok=False, error="COMPRESSED_TOO_LARGE")
-            abs_path = _safe_path(path, enforce_ext=[os.path.splitext(path)[1]])
-            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-            with open(abs_path, "wb") as f:
-                f.write(out_bytes)
-            data = {"written": abs_path, "bytes": len(out_bytes), "compressed": True, "original_len": len(content)}
-            _maybe_hash_and_size(abs_path, data)
-            return ToolResult(ok=True, data=data)
-
-        encoded = content.encode("utf-8")
-        if len(encoded) > MAX_WRITE_BYTES:
-            return ToolResult(ok=False, error="WRITE_TOO_LARGE")
-        enforce_list = [enforce_ext] if enforce_ext else None
-        abs_path = _safe_path(path, must_exist_parent=False, enforce_ext=enforce_list)
-        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-        with open(abs_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        data = {"written": abs_path, "bytes": len(encoded), "compressed": False}
-        _maybe_hash_and_size(abs_path, data)
-        return ToolResult(ok=True, data=data)
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name=CANON_WRITE_IF_CHANGED,
-    description="Write file only if content hash differs from existing content. Returns skipped=True if unchanged.",
-    category="fs",
-    capabilities=["fs","write","optimize"],
-    parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "content":{"type":"string"},
-            "enforce_ext":{"type":"string"}
-        },
-        "required":["path","content"]
-    }
-)
-def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=None) -> ToolResult:
-    try:
-        abs_path = _safe_path(path, enforce_ext=[enforce_ext] if enforce_ext else None)
-        new_hash = _content_hash(content)
-        if os.path.exists(abs_path):
-            existing_hash = _file_hash(abs_path)
-            if existing_hash == new_hash:
-                return ToolResult(ok=True, data={
-                    "path": abs_path,
-                    "skipped": True,
-                    "reason": "UNCHANGED",
-                    "hash": existing_hash
-                })
-        return write_file(path=path, content=content, enforce_ext=enforce_ext)
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name="append_file",
-    description="Append UTF-8 text to a file (creates if missing). Enforces total size if configured.",
-    category="fs",
-    capabilities=["fs", "write", "stream"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "content": {"type": "string"}
-        },
-        "required": ["path", "content"]
-    }
-)
-def append_file(path: str, content: str) -> ToolResult:
-    try:
-        if not isinstance(content, str):
-            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
-        encoded = content.encode("utf-8")
-        if len(encoded) > MAX_APPEND_BYTES:
-            return ToolResult(ok=False, error="APPEND_CHUNK_TOO_LARGE")
-        abs_path = _safe_path(path)
-        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-        if ENFORCE_APPEND_TOTAL and os.path.exists(abs_path):
-            current = os.path.getsize(abs_path)
-            if current + len(encoded) > MAX_APPEND_BYTES:
-                return ToolResult(ok=False, error="APPEND_TOTAL_LIMIT_EXCEEDED")
-        with open(abs_path, "a", encoding="utf-8") as f:
-            f.write(content)
-        data = {"appended": abs_path, "bytes": len(encoded)}
-        _maybe_hash_and_size(abs_path, data)
-        return ToolResult(ok=True, data=data)
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-# UPDATED read_file with ignore_missing=True (no stall if missing)
-@tool(
-    name=CANON_READ,
-    description="Read UTF-8 text file (max_bytes). If ignore_missing=True and file absent, returns ok=True with empty content (exists=False).",
-    category="fs",
-    capabilities=["fs", "read"],
-    aliases=list(READ_ALIASES_BASE | READ_DOTTED_ALIASES),
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "max_bytes": {"type": "integer", "default": 20000},
-            "ignore_missing": {"type": "boolean", "default": True}
-        },
-        "required": ["path"]
-    }
-)
-def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
-    try:
-        max_eff = int(min(max_bytes, MAX_READ_BYTES))
-        abs_path = _safe_path(path)
-        if not os.path.exists(abs_path):
-            if ignore_missing:
-                return ToolResult(ok=True, data={
-                    "path": abs_path,
-                    "content": "",
-                    "truncated": False,
-                    "exists": False,
-                    "missing": True
-                })
-            return ToolResult(ok=False, error="FILE_NOT_FOUND")
-        if os.path.isdir(abs_path):
-            return ToolResult(ok=False, error="IS_DIRECTORY")
-        mode = "rb" if abs_path.lower().endswith(".gz") else "r"
-        if mode == "rb":
-            with open(abs_path, "rb") as f:
-                data_bytes = f.read(max_eff + 10)
-            truncated = len(data_bytes) > max_eff
-            try:
-                text = data_bytes[:max_eff].decode("utf-8", errors="replace")
-            except Exception:
-                text = ""
-            return ToolResult(ok=True, data={
-                "path": abs_path,
-                "content": text,
-                "truncated": truncated,
-                "exists": True,
-                "missing": False,
-                "binary_mode": True
-            })
-        with open(abs_path, "r", encoding="utf-8") as f:
-            data = f.read(max_eff + 10)
-        truncated = len(data) > max_eff
-        return ToolResult(ok=True, data={
-            "path": abs_path,
-            "content": data[:max_eff],
-            "truncated": truncated,
-            "exists": True,
-            "missing": False
-        })
-    except UnicodeDecodeError:
-        return ToolResult(ok=False, error="NOT_UTF8_TEXT")
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name="file_exists",
-    description="Check path existence and type.",
-    category="fs",
-    capabilities=["fs", "meta"],
-    parameters={
-        "type": "object",
-        "properties": {"path": {"type": "string"}},
-        "required": ["path"]
-    }
-)
-def file_exists(path: str) -> ToolResult:
-    try:
-        abs_path = _safe_path(path)
-        return ToolResult(ok=True, data={
-            "path": abs_path,
-            "exists": os.path.exists(abs_path),
-            "is_dir": os.path.isdir(abs_path),
-            "is_file": os.path.isfile(abs_path)
-        })
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name="list_dir",
-    description="List directory entries (name, type, size).",
-    category="fs",
-    capabilities=["fs", "meta"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string", "default": "."},
-            "max_entries": {"type": "integer", "default": 400}
-        }
-    }
-)
-def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
-    try:
-        abs_path = _safe_path(path)
-        if not os.path.isdir(abs_path):
-            return ToolResult(ok=False, error="NOT_A_DIRECTORY")
-        entries = []
-        for name in sorted(os.listdir(abs_path))[:max_entries]:
-            p = os.path.join(abs_path, name)
-            entries.append({
-                "name": name,
-                "is_dir": os.path.isdir(p),
-                "is_file": os.path.isfile(p),
-                "size": os.path.getsize(p) if os.path.isfile(p) else None
-            })
-        return ToolResult(ok=True, data={"path": abs_path, "entries": entries})
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-@tool(
-    name="delete_file",
-    description="Delete a file (requires confirm=True).",
-    category="fs",
-    capabilities=["fs", "write"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "confirm": {"type": "boolean", "default": False}
-        },
-        "required": ["path"]
-    }
-)
-def delete_file(path: str, confirm: bool = False) -> ToolResult:
-    try:
-        if not confirm:
-            return ToolResult(ok=False, error="CONFIRM_REQUIRED")
-        abs_path = _safe_path(path)
-        if not os.path.exists(abs_path):
-            return ToolResult(ok=False, error="FILE_NOT_FOUND")
-        if os.path.isdir(abs_path):
-            return ToolResult(ok=False, error="IS_DIRECTORY")
-        os.remove(abs_path)
-        return ToolResult(ok=True, data={"deleted": True, "path": abs_path})
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-# NEW ensure_file tool (Level 4++ with extended ext allowlist)
-@tool(
-    name="ensure_file",
-    description="Ensure a UTF-8 (or placeholder) text file exists. If missing, create with initial_content / default. Returns created/exists/missing.",
-    category="fs",
-    capabilities=["fs", "ensure"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "max_bytes": {"type": "integer", "default": 40000},
-            "initial_content": {"type": "string", "default": ""},
-            "force_create": {"type": "boolean", "default": False},
-            "allow_create": {"type": "boolean", "default": True},
-            "enforce_ext": {"type": "string", "description": "Require extension (e.g. '.md')"}
-        },
-        "required": ["path"]
-    }
-)
-def ensure_file(
-    path: str,
-    max_bytes: int = 40000,
-    initial_content: str = "",
-    force_create: bool = False,
-    allow_create: bool = True,
-    enforce_ext: Optional[str] = None
-) -> ToolResult:
-    try:
-        max_eff = int(min(max_bytes, MAX_READ_BYTES))
-        lowered = path.lower()
-        if enforce_ext:
-            if not lowered.endswith(enforce_ext.lower()):
-                return ToolResult(ok=False, error="EXTENSION_MISMATCH")
-        else:
-            if AUTO_CREATE_ALLOWED_EXTS and not any(lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS):
-                return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
-
-        abs_path = _safe_path(path)
-        path_exists = os.path.exists(abs_path)
-
-        if path_exists and not force_create:
-            if os.path.isdir(abs_path):
-                return ToolResult(ok=False, error="IS_DIRECTORY")
-            # read snippet
-            mode = "rb" if abs_path.lower().endswith(".gz") else "r"
-            if mode == "rb":
-                with open(abs_path, "rb") as f:
-                    d = f.read(max_eff + 10)
-                truncated = len(d) > max_eff
-                try:
-                    preview = d[:max_eff].decode("utf-8", errors="replace")
-                except Exception:
-                    preview = ""
-            else:
-                with open(abs_path, "r", encoding="utf-8") as f:
-                    d = f.read(max_eff + 10)
-                truncated = len(d) > max_eff
-                preview = d[:max_eff]
-            data = {
-                "path": abs_path,
-                "content": preview,
-                "truncated": truncated,
-                "exists": True,
-                "missing": False,
-                "created": False
-            }
-            _maybe_hash_and_size(abs_path, data)
-            return ToolResult(ok=True, data=data)
-
-        if not path_exists:
-            if not allow_create or not AUTO_CREATE_ENABLED:
-                return ToolResult(ok=False, error="FILE_NOT_FOUND")
-
-        content = (initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT)
-        encoded = content.encode("utf-8")
-        if len(encoded) > AUTO_CREATE_MAX_BYTES:
-            return ToolResult(ok=False, error="INITIAL_CONTENT_TOO_LARGE")
-        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-        with open(abs_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        data = {
-            "path": abs_path,
-            "content": content[:max_eff],
-            "truncated": len(content) > max_eff,
-            "exists": True,
-            "missing": False,
-            "created": True
-        }
-        _maybe_hash_and_size(abs_path, data)
-        return ToolResult(ok=True, data=data)
-    except UnicodeDecodeError:
-        return ToolResult(ok=False, error="NOT_UTF8_TEXT")
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
-
-# ======================================================================================
-# Dispatch Meta-tool
-# ======================================================================================
-@tool(
-    name="dispatch_tool",
-    description="Dynamically call another tool (allowlist via DISPATCH_ALLOWLIST). Canonicalizes tool_name and merges telemetry.",
-    category="meta",
-    capabilities=["meta", "routing"],
-    parameters={
-        "type": "object",
-        "properties": {
-            "tool_name": {"type": "string"},
-            "arguments": {"type": "object", "default": {}}
-        },
-        "required": ["tool_name"]
-    }
-)
-def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
-    arguments = arguments or {}
-    if DISPATCH_ALLOW and tool_name not in DISPATCH_ALLOW:
-        return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")
-    canon, notes = canonicalize_tool_name(tool_name)
-    target = resolve_tool_name(canon) or resolve_tool_name(tool_name)
-    if not target:
-        return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
-    handler = _TOOL_REGISTRY[target]["handler"]
-    if not isinstance(arguments, dict):
-        return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
-    try:
-        result = handler(**arguments)
-        if result.meta is None:
-            result.meta = {}
-        result.meta.setdefault("dispatch_notes", notes)
-        result.meta.setdefault("dispatch_target", target)
-    except TypeError as te:
-        return ToolResult(ok=False, error=f"ARGUMENTS_INVALID: {te}")
-    except Exception as e:
-        return ToolResult(ok=False, error=f"DISPATCH_FAILED: {e}")
-    return result
-
-# ======================================================================================
-# Argument Validation (JSON-Schema subset)
+# Argument Validation
 # ======================================================================================
 SUPPORTED_TYPES = {
     "string": str,
@@ -1210,7 +656,7 @@ def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[st
     return cleaned
 
 # ======================================================================================
-# Canonicalization (after helpers to avoid forward ref issues)
+# Canonicalization
 # ======================================================================================
 def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, List[str]]:
     notes: List[str] = []
@@ -1297,6 +743,795 @@ def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
     return out
 
 # ======================================================================================
+# Tools
+# ======================================================================================
+
+@tool(
+    name="introspect_tools",
+    description="Return registry & telemetry snapshot. Options: include_aliases, include_disabled, category, name_contains, enabled_only, telemetry_only, include_layers",
+    category="introspection",
+    capabilities=["introspection"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "include_aliases": {"type": "boolean", "default": True},
+            "include_disabled": {"type": "boolean", "default": True},
+            "category": {"type": "string"},
+            "name_contains": {"type": "string"},
+            "enabled_only": {"type": "boolean", "default": False},
+            "telemetry_only": {"type": "boolean", "default": False},
+            "include_layers": {"type": "boolean", "default": False}
+        }
+    }
+)
+def introspect_tools(
+    include_aliases: bool = True,
+    include_disabled: bool = True,
+    category: Optional[str] = None,
+    name_contains: Optional[str] = None,
+    enabled_only: bool = False,
+    telemetry_only: bool = False,
+    include_layers: bool = False
+) -> ToolResult:
+    out = []
+    for name, meta in sorted(_TOOL_REGISTRY.items()):
+        if meta.get("is_alias") and not include_aliases:
+            continue
+        if not include_disabled and meta.get("disabled"):
+            continue
+        if enabled_only and meta.get("disabled"):
+            continue
+        if category and meta.get("category") != category:
+            continue
+        if name_contains and name_contains.lower() not in name.lower():
+            continue
+        st = _TOOL_STATS.get(name, {})
+        base = {
+            "name": name,
+            "canonical": meta.get("canonical"),
+            "is_alias": meta.get("is_alias", False),
+            "disabled": meta.get("disabled", False),
+            "category": meta.get("category"),
+            "invocations": st.get("invocations", 0),
+            "errors": st.get("errors", 0),
+            "avg_ms": round(st.get("total_ms", 0.0) / st.get("invocations", 1), 2) if st.get("invocations") else 0.0,
+            "last_error": st.get("last_error"),
+            "version": __version__,
+            "capabilities": _CAPABILITIES.get(name, [])
+        }
+        if not telemetry_only:
+            base["description"] = meta.get("description")
+            base["parameters"] = meta.get("parameters")
+            base["aliases"] = meta.get("aliases")
+        out.append(base)
+    payload = {"tools": out, "count": len(out)}
+    if include_layers:
+        with _LAYER_LOCK:
+            payload["layer_stats"] = _LAYER_STATS.copy()
+    return ToolResult(ok=True, data=payload)
+
+# Memory Tools
+@tool(
+    name="memory_put",
+    description="Store a small JSON-serializable string under a key (ephemeral).",
+    category="memory",
+    capabilities=["kv_store"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string", "description": "JSON-serializable string content"}
+        },
+        "required": ["key", "value"]
+    }
+)
+def memory_put(key: str, value: str) -> ToolResult:
+    if len(key) > 120:
+        return ToolResult(ok=False, error="KEY_TOO_LONG")
+    if len(value) > 50_000:
+        return ToolResult(ok=False, error="VALUE_TOO_LONG")
+    if _MEMORY_ALLOWLIST and key not in _MEMORY_ALLOWLIST:
+        return ToolResult(ok=False, error="KEY_NOT_ALLOWED")
+    try:
+        json.dumps(value)
+    except Exception:
+        return ToolResult(ok=False, error="VALUE_NOT_SERIALIZABLE")
+    with _MEMORY_LOCK:
+        _MEMORY_STORE[key] = value
+    return ToolResult(ok=True, data={"stored": True, "key": key})
+
+@tool(
+    name="memory_get",
+    description="Retrieve a value by key from ephemeral memory.",
+    category="memory",
+    capabilities=["kv_store"],
+    parameters={
+        "type": "object",
+        "properties": {"key": {"type": "string"}},
+        "required": ["key"]
+    }
+)
+def memory_get(key: str) -> ToolResult:
+    with _MEMORY_LOCK:
+        if key not in _MEMORY_STORE:
+            return ToolResult(ok=False, error="KEY_NOT_FOUND")
+        return ToolResult(ok=True, data={"key": key, "value": _MEMORY_STORE[key]})
+
+# LLM / Cognitive (delegates to generation_service if available)
+try:
+    from . import generation_service as maestro  # type: ignore
+except Exception:
+    maestro = None
+    logger.warning("LLM backend (generation_service) not available; generic_think fallback mode active.")
+
+@tool(
+    name=CANON_THINK,
+    description="Primary cognitive tool: reasoning / analysis / Q&A / summarization. ALWAYS returns data.answer.",
+    category="cognitive",
+    capabilities=["llm", "reasoning"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "prompt": {"type": "string", "description": "Instruction or question."},
+            "mode": {"type": "string", "description": "answer|list|analysis|summary|refine", "default": "analysis"}
+        },
+        "required": ["prompt"]
+    }
+)
+def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
+    clean = (prompt or "").strip()
+    if not clean:
+        return ToolResult(ok=False, error="EMPTY_PROMPT")
+    truncated = False
+    if len(clean) > GENERIC_THINK_MAX_CHARS:
+        clean = clean[:GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
+        truncated = True
+
+    if not maestro:
+        fallback = f"[fallback-{mode}] {clean[:400]}"
+        return ToolResult(ok=True, data={"answer": fallback, "mode": mode, "fallback": True, "truncated_input": truncated})
+
+    model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
+    candidate_methods = ["generate_text", "forge_new_code", "run", "complete", "structured"]
+    response = None
+    last_err = None
+    for m in candidate_methods:
+        if hasattr(maestro, m):
+            try:
+                method = getattr(maestro, m)
+                kwargs = {"prompt": clean}
+                if model_override:
+                    kwargs["model"] = model_override
+                response = method(**kwargs)  # type: ignore
+                break
+            except Exception as e:
+                last_err = e
+                continue
+    if response is None:
+        if last_err:
+            return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}")
+        return ToolResult(ok=False, error="NO_LLM_METHOD")
+
+    if isinstance(response, str):
+        answer = response
+    elif isinstance(response, dict):
+        answer = (response.get("answer") or response.get("content") or
+                  response.get("text") or response.get("output") or "")
+    else:
+        answer = str(response)
+
+    if not answer.strip():
+        return ToolResult(ok=False, error="EMPTY_ANSWER")
+
+    if len(answer) > GENERIC_THINK_MAX_ANSWER_CHARS:
+        answer = answer[:GENERIC_THINK_MAX_ANSWER_CHARS] + "\n[ANSWER_TRIMMED]"
+
+    return ToolResult(ok=True, data={
+        "answer": answer,
+        "mode": mode,
+        "fallback": False,
+        "truncated_input": truncated
+    })
+
+@tool(
+    name="summarize_text",
+    description="Summarize provided text (delegates to generic_think).",
+    category="cognitive",
+    capabilities=["llm", "summarization"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "style": {"type": "string", "default": "concise"}
+        },
+        "required": ["text"]
+    }
+)
+def summarize_text(text: str, style: str = "concise") -> ToolResult:
+    t = (text or "").strip()
+    if not t:
+        return ToolResult(ok=False, error="EMPTY_TEXT")
+    snippet = t[:8000]
+    prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
+    return generic_think(prompt=prompt, mode="summary")
+
+@tool(
+    name="refine_text",
+    description="Refine text style/tone (delegates to generic_think).",
+    category="cognitive",
+    capabilities=["llm", "refinement"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "tone": {"type": "string", "default": "professional"}
+        },
+        "required": ["text"]
+    }
+)
+def refine_text(text: str, tone: str = "professional") -> ToolResult:
+    t = (text or "").strip()
+    if not t:
+        return ToolResult(ok=False, error="EMPTY_TEXT")
+    prompt = (
+        f"Refine the following text to a {tone} tone while preserving meaning. "
+        f"Return only the improved text without commentary:\n---\n{t[:8000]}\n---"
+    )
+    return generic_think(prompt=prompt, mode="refine")
+
+# ======================================================================================
+# File System Tools (structural annotated)
+# ======================================================================================
+def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
+    if HASH_AFTER_WRITE and os.path.isfile(abs_path):
+        try:
+            result_data["sha256"] = _file_hash(abs_path)
+            result_data["size_after"] = os.path.getsize(abs_path)
+        except Exception:
+            pass
+
+def _apply_struct_limit(meta: Dict[str, Any]):
+    if not DEEP_LIMIT_KEYS or not meta:
+        return
+    keys = list(meta.keys())
+    if len(keys) <= DEEP_LIMIT_KEYS:
+        return
+    # Keep priority keys first
+    priority = {"struct_layer", "struct_hotspot", "struct_dup_group"}
+    ordered = [k for k in keys if k in priority] + [k for k in keys if k not in priority]
+    trimmed = ordered[:DEEP_LIMIT_KEYS]
+    for k in keys:
+        if k not in trimmed:
+            meta.pop(k, None)
+    meta["_struct_limited"] = True
+
+@tool(
+    name="ensure_directory",
+    description="Ensure a directory exists (create parents). Returns created/existed.",
+    category="fs",
+    capabilities=["fs","ensure"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "must_be_new":{"type":"boolean","default":False}
+        },
+        "required":["path"]
+    }
+)
+def ensure_directory(path: str, must_be_new: bool=False) -> ToolResult:
+    try:
+        abs_path = _safe_path(path)
+        if os.path.exists(abs_path):
+            if not os.path.isdir(abs_path):
+                return ToolResult(ok=False, error="PATH_EXISTS_NOT_DIR")
+            if must_be_new:
+                return ToolResult(ok=False, error="DIR_ALREADY_EXISTS")
+            return ToolResult(ok=True, data={"path": abs_path, "created": False, "exists": True})
+        os.makedirs(abs_path, exist_ok=True)
+        return ToolResult(ok=True, data={"path": abs_path, "created": True, "exists": True})
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name=CANON_WRITE,
+    description="Create or overwrite a UTF-8 file. Supports large JSON compression. Returns path, bytes, size_after, sha256.",
+    category="fs",
+    capabilities=["fs", "write"],
+    aliases=list(WRITE_ALIASES_BASE | WRITE_DOTTED_ALIASES),
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "content": {"type": "string"},
+            "enforce_ext": {"type": "string"},
+            "compress_json_if_large": {"type":"boolean","default":True}
+        },
+        "required": ["path", "content"]
+    }
+)
+def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
+               compress_json_if_large: bool=True) -> ToolResult:
+    try:
+        if not isinstance(content, str):
+            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+        # Compression branch
+        if COMPRESS_JSON and compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
+            gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
+            path = gz_path
+            out_bytes = gzip.compress(content.encode("utf-8"))
+            if len(out_bytes) > MAX_WRITE_BYTES:
+                return ToolResult(ok=False, error="COMPRESSED_TOO_LARGE")
+            abs_path = _safe_path(path, enforce_ext=[os.path.splitext(path)[1]])
+            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+            with open(abs_path, "wb") as f:
+                f.write(out_bytes)
+            data = {"written": abs_path, "bytes": len(out_bytes), "compressed": True, "original_len": len(content)}
+            _annotate_struct_meta(abs_path, data)
+            _maybe_hash_and_size(abs_path, data)
+            if data.get("struct_layer"):
+                _touch_layer(data["struct_layer"], "writes")
+            _apply_struct_limit(data)
+            return ToolResult(ok=True, data=data)
+
+        encoded = content.encode("utf-8")
+        if len(encoded) > MAX_WRITE_BYTES:
+            return ToolResult(ok=False, error="WRITE_TOO_LARGE")
+        enforce_list = [enforce_ext] if enforce_ext else None
+        abs_path = _safe_path(path, must_exist_parent=False, enforce_ext=enforce_list)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        with open(abs_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        data = {"written": abs_path, "bytes": len(encoded), "compressed": False}
+        _annotate_struct_meta(abs_path, data)
+        _maybe_hash_and_size(abs_path, data)
+        if data.get("struct_layer"):
+            _touch_layer(data["struct_layer"], "writes")
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name=CANON_WRITE_IF_CHANGED,
+    description="Write file only if content hash differs. Returns skipped=True if unchanged.",
+    category="fs",
+    capabilities=["fs","write","optimize"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "content":{"type":"string"},
+            "enforce_ext":{"type":"string"}
+        },
+        "required":["path","content"]
+    }
+)
+def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=None) -> ToolResult:
+    try:
+        abs_path = _safe_path(path, enforce_ext=[enforce_ext] if enforce_ext else None)
+        new_hash = _content_hash(content)
+        if os.path.exists(abs_path):
+            existing_hash = _file_hash(abs_path)
+            if existing_hash == new_hash:
+                data = {
+                    "path": abs_path,
+                    "skipped": True,
+                    "reason": "UNCHANGED",
+                    "hash": existing_hash
+                }
+                _annotate_struct_meta(abs_path, data)
+                if data.get("struct_layer"):
+                    _touch_layer(data["struct_layer"], "writes")
+                _apply_struct_limit(data)
+                return ToolResult(ok=True, data=data)
+        return write_file(path=path, content=content, enforce_ext=enforce_ext)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="append_file",
+    description="Append UTF-8 text (creates if missing). Enforces total cumulative size if configured.",
+    category="fs",
+    capabilities=["fs", "write", "stream"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "content": {"type": "string"}
+        },
+        "required": ["path", "content"]
+    }
+)
+def append_file(path: str, content: str) -> ToolResult:
+    try:
+        if not isinstance(content, str):
+            return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+        encoded = content.encode("utf-8")
+        if len(encoded) > MAX_APPEND_BYTES:
+            return ToolResult(ok=False, error="APPEND_CHUNK_TOO_LARGE")
+        abs_path = _safe_path(path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        if ENFORCE_APPEND_TOTAL and os.path.exists(abs_path):
+            current = os.path.getsize(abs_path)
+            if current + len(encoded) > MAX_APPEND_BYTES:
+                return ToolResult(ok=False, error="APPEND_TOTAL_LIMIT_EXCEEDED")
+        with open(abs_path, "a", encoding="utf-8") as f:
+            f.write(content)
+        data = {"appended": abs_path, "bytes": len(encoded)}
+        _annotate_struct_meta(abs_path, data)
+        _maybe_hash_and_size(abs_path, data)
+        if data.get("struct_layer"):
+            _touch_layer(data["struct_layer"], "appends")
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name=CANON_READ,
+    description="Read UTF-8 text (max_bytes). If ignore_missing=True and absent → ok=True with empty content.",
+    category="fs",
+    capabilities=["fs", "read"],
+    aliases=list(READ_ALIASES_BASE | READ_DOTTED_ALIASES),
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "default": 20000},
+            "ignore_missing": {"type": "boolean", "default": True}
+        },
+        "required": ["path"]
+    }
+)
+def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
+    try:
+        max_eff = int(min(max_bytes, MAX_READ_BYTES))
+        abs_path = _safe_path(path)
+        if not os.path.exists(abs_path):
+            if ignore_missing:
+                data = {
+                    "path": abs_path,
+                    "content": "",
+                    "truncated": False,
+                    "exists": False,
+                    "missing": True
+                }
+                _annotate_struct_meta(abs_path, data)
+                if data.get("struct_layer"):
+                    _touch_layer(data["struct_layer"], "reads")
+                _apply_struct_limit(data)
+                return ToolResult(ok=True, data=data)
+            return ToolResult(ok=False, error="FILE_NOT_FOUND")
+        if os.path.isdir(abs_path):
+            return ToolResult(ok=False, error="IS_DIRECTORY")
+        mode = "rb" if abs_path.lower().endswith(".gz") else "r"
+        if mode == "rb":
+            with open(abs_path, "rb") as f:
+                data_bytes = f.read(max_eff + 10)
+            truncated = len(data_bytes) > max_eff
+            try:
+                text = data_bytes[:max_eff].decode("utf-8", errors="replace")
+            except Exception:
+                text = ""
+            res = {
+                "path": abs_path,
+                "content": text,
+                "truncated": truncated,
+                "exists": True,
+                "missing": False,
+                "binary_mode": True
+            }
+            _annotate_struct_meta(abs_path, res)
+            if res.get("struct_layer"):
+                _touch_layer(res["struct_layer"], "reads")
+            _apply_struct_limit(res)
+            return ToolResult(ok=True, data=res)
+        with open(abs_path, "r", encoding="utf-8") as f:
+            data_txt = f.read(max_eff + 10)
+        truncated = len(data_txt) > max_eff
+        res = {
+            "path": abs_path,
+            "content": data_txt[:max_eff],
+            "truncated": truncated,
+            "exists": True,
+            "missing": False
+        }
+        _annotate_struct_meta(abs_path, res)
+        if res.get("struct_layer"):
+            _touch_layer(res["struct_layer"], "reads")
+        _apply_struct_limit(res)
+        return ToolResult(ok=True, data=res)
+    except UnicodeDecodeError:
+        return ToolResult(ok=False, error="NOT_UTF8_TEXT")
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="file_exists",
+    description="Check path existence and type.",
+    category="fs",
+    capabilities=["fs", "meta"],
+    parameters={
+        "type": "object",
+        "properties": {"path": {"type": "string"}},
+        "required": ["path"]
+    }
+)
+def file_exists(path: str) -> ToolResult:
+    try:
+        abs_path = _safe_path(path)
+        data = {
+            "path": abs_path,
+            "exists": os.path.exists(abs_path),
+            "is_dir": os.path.isdir(abs_path),
+            "is_file": os.path.isfile(abs_path)
+        }
+        _annotate_struct_meta(abs_path, data)
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="list_dir",
+    description="List directory entries (name,type,size).",
+    category="fs",
+    capabilities=["fs", "meta"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "default": "."},
+            "max_entries": {"type": "integer", "default": 400}
+        }
+    }
+)
+def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
+    try:
+        abs_path = _safe_path(path)
+        if not os.path.isdir(abs_path):
+            return ToolResult(ok=False, error="NOT_A_DIRECTORY")
+        entries = []
+        for name in sorted(os.listdir(abs_path))[:max_entries]:
+            p = os.path.join(abs_path, name)
+            entries.append({
+                "name": name,
+                "is_dir": os.path.isdir(p),
+                "is_file": os.path.isfile(p),
+                "size": os.path.getsize(p) if os.path.isfile(p) else None
+            })
+        data = {"path": abs_path, "entries": entries}
+        _annotate_struct_meta(abs_path, data)
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="delete_file",
+    description="Delete a file (requires confirm=True).",
+    category="fs",
+    capabilities=["fs", "write"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "confirm": {"type": "boolean", "default": False}
+        },
+        "required": ["path"]
+    }
+)
+def delete_file(path: str, confirm: bool = False) -> ToolResult:
+    try:
+        if not confirm:
+            return ToolResult(ok=False, error="CONFIRM_REQUIRED")
+        abs_path = _safe_path(path)
+        if not os.path.exists(abs_path):
+            return ToolResult(ok=False, error="FILE_NOT_FOUND")
+        if os.path.isdir(abs_path):
+            return ToolResult(ok=False, error="IS_DIRECTORY")
+        os.remove(abs_path)
+        data = {"deleted": True, "path": abs_path}
+        _annotate_struct_meta(abs_path, data)
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="ensure_file",
+    description="Ensure text file exists. If missing & allowed → create with initial_content or default.",
+    category="fs",
+    capabilities=["fs", "ensure"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "default": 40000},
+            "initial_content": {"type": "string", "default": ""},
+            "force_create": {"type": "boolean", "default": False},
+            "allow_create": {"type": "boolean", "default": True},
+            "enforce_ext": {"type": "string"}
+        },
+        "required": ["path"]
+    }
+)
+def ensure_file(
+    path: str,
+    max_bytes: int = 40000,
+    initial_content: str = "",
+    force_create: bool = False,
+    allow_create: bool = True,
+    enforce_ext: Optional[str] = None
+) -> ToolResult:
+    try:
+        max_eff = int(min(max_bytes, MAX_READ_BYTES))
+        lowered = path.lower()
+        if enforce_ext:
+            if not lowered.endswith(enforce_ext.lower()):
+                return ToolResult(ok=False, error="EXTENSION_MISMATCH")
+        else:
+            if AUTO_CREATE_ALLOWED_EXTS and not any(lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS):
+                return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
+
+        abs_path = _safe_path(path)
+        path_exists = os.path.exists(abs_path)
+
+        if path_exists and not force_create:
+            if os.path.isdir(abs_path):
+                return ToolResult(ok=False, error="IS_DIRECTORY")
+            mode = "rb" if abs_path.lower().endswith(".gz") else "r"
+            if mode == "rb":
+                with open(abs_path, "rb") as f:
+                    d = f.read(max_eff + 10)
+                truncated = len(d) > max_eff
+                try:
+                    preview = d[:max_eff].decode("utf-8", errors="replace")
+                except Exception:
+                    preview = ""
+            else:
+                with open(abs_path, "r", encoding="utf-8") as f:
+                    d = f.read(max_eff + 10)
+                truncated = len(d) > max_eff
+                preview = d[:max_eff]
+            data = {
+                "path": abs_path,
+                "content": preview,
+                "truncated": truncated,
+                "exists": True,
+                "missing": False,
+                "created": False
+            }
+            _annotate_struct_meta(abs_path, data)
+            if data.get("struct_layer"):
+                _touch_layer(data["struct_layer"], "ensures")
+            _apply_struct_limit(data)
+            return ToolResult(ok=True, data=data)
+
+        if not path_exists:
+            if not allow_create or not AUTO_CREATE_ENABLED:
+                return ToolResult(ok=False, error="FILE_NOT_FOUND")
+
+        content = (initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT)
+        encoded = content.encode("utf-8")
+        if len(encoded) > AUTO_CREATE_MAX_BYTES:
+            return ToolResult(ok=False, error="INITIAL_CONTENT_TOO_LARGE")
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        with open(abs_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        data = {
+            "path": abs_path,
+            "content": content[:max_eff],
+            "truncated": len(content) > max_eff,
+            "exists": True,
+            "missing": False,
+            "created": True
+        }
+        _annotate_struct_meta(abs_path, data)
+        if data.get("struct_layer"):
+            _touch_layer(data["struct_layer"], "ensures")
+        _apply_struct_limit(data)
+        return ToolResult(ok=True, data=data)
+    except UnicodeDecodeError:
+        return ToolResult(ok=False, error="NOT_UTF8_TEXT")
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+# ======================================================================================
+# Structural Analysis Tools
+# ======================================================================================
+@tool(
+    name="analyze_path_semantics",
+    description="Return structural meta (layer/hotspot/dup_group) for a path if present in deep map.",
+    category="structural",
+    capabilities=["struct", "meta"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"}
+        },
+        "required": ["path"]
+    }
+)
+def analyze_path_semantics(path: str) -> ToolResult:
+    try:
+        abs_path = _safe_path(path)
+        _maybe_reload_struct_map()
+        if not _DEEP_STRUCT_MAP:
+            return ToolResult(ok=True, data={"path": abs_path, "known": False})
+        info = _DEEP_STRUCT_MAP.get("files", {}).get(abs_path.lower())
+        if not info:
+            return ToolResult(ok=True, data={"path": abs_path, "known": False})
+        payload = {
+            "path": abs_path,
+            "known": True,
+            "layer": info.get("layer"),
+            "hotspot": info.get("hotspot"),
+            "dup_group": info.get("dup_group")
+        }
+        return ToolResult(ok=True, data=payload)
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="reload_deep_struct_map",
+    description="Force reload of deep structural map. Returns reloaded + entry count.",
+    category="structural",
+    capabilities=["struct", "control"],
+    parameters={
+        "type": "object",
+        "properties": {}
+    }
+)
+def reload_deep_struct_map() -> ToolResult:
+    try:
+        ok = _load_deep_struct_map(force=True)
+        count = len((_DEEP_STRUCT_MAP or {}).get("files", {})) if _DEEP_STRUCT_MAP else 0
+        return ToolResult(ok=True, data={"reloaded": ok, "entries": count})
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+# ======================================================================================
+# Dispatch
+# ======================================================================================
+@tool(
+    name="dispatch_tool",
+    description="Dynamically call another tool (allowlist via DISPATCH_ALLOWLIST). Canonicalizes tool_name and merges telemetry.",
+    category="meta",
+    capabilities=["meta", "routing"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "tool_name": {"type": "string"},
+            "arguments": {"type": "object", "default": {}}
+        },
+        "required": ["tool_name"]
+    }
+)
+def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
+    arguments = arguments or {}
+    if DISPATCH_ALLOW and tool_name not in DISPATCH_ALLOW:
+        return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")
+    canon, notes = canonicalize_tool_name(tool_name)
+    target = resolve_tool_name(canon) or resolve_tool_name(tool_name)
+    if not target:
+        return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
+    handler = _TOOL_REGISTRY[target]["handler"]
+    if not isinstance(arguments, dict):
+        return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
+    try:
+        result = handler(**arguments)
+        if result.meta is None:
+            result.meta = {}
+        result.meta.setdefault("dispatch_notes", notes)
+        result.meta.setdefault("dispatch_target", target)
+    except TypeError as te:
+        return ToolResult(ok=False, error=f"ARGUMENTS_INVALID: {te}")
+    except Exception as e:
+        return ToolResult(ok=False, error=f"DISPATCH_FAILED: {e}")
+    return result
+
+# ======================================================================================
 # Public Schema Access
 # ======================================================================================
 def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
@@ -1337,6 +1572,8 @@ def introspect_tools_tool(**kwargs): return introspect_tools(**kwargs)
 def memory_put_tool(**kwargs): return memory_put(**kwargs)
 def memory_get_tool(**kwargs): return memory_get(**kwargs)
 def dispatch_tool_tool(**kwargs): return dispatch_tool(**kwargs)
+def analyze_path_semantics_tool(**kwargs): return analyze_path_semantics(**kwargs)
+def reload_deep_struct_map_tool(**kwargs): return reload_deep_struct_map(**kwargs)
 
 # ======================================================================================
 # __all__
@@ -1367,6 +1604,8 @@ __all__ = [
     "ensure_file",
     "ensure_directory",
     "dispatch_tool",
+    "analyze_path_semantics",
+    "reload_deep_struct_map",
     # Legacy alias exports
     "generic_think_tool",
     "summarize_text_tool",
@@ -1384,13 +1623,16 @@ __all__ = [
     "memory_put_tool",
     "memory_get_tool",
     "dispatch_tool_tool",
+    "analyze_path_semantics_tool",
+    "reload_deep_struct_map_tool",
     # Registries (debug / guard)
     "_TOOL_REGISTRY",
     "_TOOL_STATS",
     "_ALIAS_INDEX",
     "_CAPABILITIES",
-    "PROJECT_ROOT"
+    "PROJECT_ROOT",
+    "_LAYER_STATS"
 ]
 
-# END OF FILE (v4.3.0-hyper-l4+)
-# Ready for Level‑4++ Deep Structural Scan + Streaming Synthesis + Adaptive Refactor Telemetry.
+# END OF FILE (v4.4.0-hyper-l4++-struct)
+# Structural map optional – seamlessly degrades if absent.
