@@ -105,7 +105,7 @@ FACTORY_VERSION = "4.0.0"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
 OFFICIAL_MANUAL_MODULES: List[str] = [
-    "app.overmind.planning.llm_planner",  # Extend / customize as needed
+    "app.overmind.planning.llm_planner",
 ]
 
 DEFAULT_EXCLUDE_MODULES: Set[str] = {
@@ -505,13 +505,19 @@ def list_planners(include_quarantined: bool = False,
         out.append(n)
     return sorted(out)
 
+# --- Legacy Shim: get_all_planners (Fixes ImportError in older code) ---
+def get_all_planners(include_quarantined: bool = True,
+                     include_errors: bool = False) -> List[str]:
+    """
+    Legacy wrapper (DEPRECATED):
+      Old code imported get_all_planners; prefer list_planners().
+    """
+    return list_planners(include_quarantined=include_quarantined,
+                         include_errors=include_errors)
+
 def _compute_deep_boosts(rec: PlannerRecord,
                          req_caps: Set[str],
                          deep_context: Optional[Dict[str, Any]]) -> Tuple[float, Dict[str, Any]]:
-    """
-    Returns (additional_score, breakdown_dict)
-    breakdown_dict keys: deep_boost, hotspot_boost
-    """
     breakdown = {"deep_boost": 0.0, "hotspot_boost": 0.0}
     if not deep_context or not isinstance(deep_context, dict):
         return 0.0, breakdown
@@ -520,12 +526,10 @@ def _compute_deep_boosts(rec: PlannerRecord,
     deep_index_summary = bool(deep_context.get("deep_index_summary"))
     hotspots_count = int(deep_context.get("hotspots_count") or 0)
 
-    # Deep index capability boost
     if deep_index_summary and "deep_index" in caps:
         boost = max(DEEP_INDEX_CAP_BOOST, 0.0)
         breakdown["deep_boost"] = boost
 
-    # Hotspot capability boost
     if hotspots_count > HOTSPOT_THRESHOLD and {"refactor", "risk", "structural"} & caps:
         hboost = max(HOTSPOT_CAP_BOOST, 0.0)
         breakdown["hotspot_boost"] = hboost
@@ -537,7 +541,7 @@ def select_best_planner(objective: str,
                         prefer_production: bool = True,
                         auto_instantiate: bool = True,
                         self_heal_on_empty: Optional[bool] = None,
-                        deep_context: Optional[Dict[str, Any]] = None) -> BasePlanner:
+                        deep_context: Optional[Dict[str, Any]] = None) -> Union[BasePlanner, str]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -609,7 +613,10 @@ def select_best_planner(objective: str,
                 "duration_s": sel_elapsed,
                 "ts": _now(),
             })
-    return get_planner(best_name) if auto_instantiate else get_planner(best_name, auto_instantiate=True)
+    # Fix: احترام auto_instantiate الحقيقي
+    if auto_instantiate:
+        return get_planner(best_name, auto_instantiate=True)
+    return best_name  # اسم المخطط فقط
 
 def batch_select_best_planners(objective: str,
                                required_capabilities: Optional[Iterable[str]] = None,
@@ -657,7 +664,6 @@ def batch_select_best_planners(objective: str,
 # ======================================================================================
 # SELF-HEAL
 # ======================================================================================
-
 def self_heal(force: bool = True,
               cooldown_seconds: float = 5.0,
               max_attempts: int = 2) -> Dict[str, Any]:
@@ -875,7 +881,7 @@ async def a_select_best_planner(objective: str,
                                 prefer_production: bool = True,
                                 auto_instantiate: bool = True,
                                 self_heal_on_empty: Optional[bool] = None,
-                                deep_context: Optional[Dict[str, Any]] = None) -> BasePlanner:
+                                deep_context: Optional[Dict[str, Any]] = None) -> Union[BasePlanner, str]:
     return select_best_planner(
         objective,
         required_capabilities=required_capabilities,
@@ -935,6 +941,6 @@ if __name__ == "__main__":
             "deep_index_summary": "demo",
             "hotspots_count": 12
         })
-        print("Selected planner:", p.__class__.__name__)
+        print("Selected planner:", p)
     export_diagnostics("planner_diagnostics.json", fmt="json", verbose=True)
     print("Diagnostics exported -> planner_diagnostics.json")
