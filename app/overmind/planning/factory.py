@@ -1,5 +1,6 @@
 # app/overmind/planning/factory.py
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # ======================================================================================
 # OVERMIND PLANNER FACTORY – HYPER STRUCTURAL / DEEP-CONTEXT AWARE CORE
 # Version 4.0.0  •  Codename: "GUILD OMEGA PRIME / ZERO-DOWNTIME / SELF-HEAL+ / DEEP-BOOST"
@@ -105,7 +106,7 @@ FACTORY_VERSION = "4.0.0"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
 OFFICIAL_MANUAL_MODULES: List[str] = [
-    "app.overmind.planning.llm_planner",
+    "app.overmind.planning.llm_planner",  # Extend / customize as needed
 ]
 
 DEFAULT_EXCLUDE_MODULES: Set[str] = {
@@ -505,15 +506,30 @@ def list_planners(include_quarantined: bool = False,
         out.append(n)
     return sorted(out)
 
-# --- Legacy Shim: get_all_planners (Fixes ImportError in older code) ---
+# --- Legacy Shim: get_all_planners (returns INSTANCES by default for backward compatibility) ---
 def get_all_planners(include_quarantined: bool = True,
-                     include_errors: bool = False) -> List[str]:
+                     include_errors: bool = False,
+                     auto_instantiate: bool = True):
     """
-    Legacy wrapper (DEPRECATED):
-      Old code imported get_all_planners; prefer list_planners().
+    Legacy compatibility wrapper (DEPRECATED).
+    Historically: returned a list of instantiated planner objects.
+    New preferred flow: list_planners() then get_planner(name) explicitly.
+    Parameters:
+      include_quarantined: include quarantined planners
+      include_errors: include records that have import/record errors
+      auto_instantiate: if True return planner instances, else just names
     """
-    return list_planners(include_quarantined=include_quarantined,
-                         include_errors=include_errors)
+    names = list_planners(include_quarantined=include_quarantined,
+                          include_errors=include_errors)
+    if not auto_instantiate:
+        return names
+    instances = []
+    for n in names:
+        try:
+            instances.append(get_planner(n, auto_instantiate=True))
+        except Exception as e:
+            _warn_once(f"shim_get_all_planners_{n}", f"Failed instantiating '{n}' via shim: {e}")
+    return instances
 
 def _compute_deep_boosts(rec: PlannerRecord,
                          req_caps: Set[str],
@@ -613,10 +629,9 @@ def select_best_planner(objective: str,
                 "duration_s": sel_elapsed,
                 "ts": _now(),
             })
-    # Fix: احترام auto_instantiate الحقيقي
     if auto_instantiate:
         return get_planner(best_name, auto_instantiate=True)
-    return best_name  # اسم المخطط فقط
+    return best_name
 
 def batch_select_best_planners(objective: str,
                                required_capabilities: Optional[Iterable[str]] = None,
@@ -664,6 +679,7 @@ def batch_select_best_planners(objective: str,
 # ======================================================================================
 # SELF-HEAL
 # ======================================================================================
+
 def self_heal(force: bool = True,
               cooldown_seconds: float = 5.0,
               max_attempts: int = 2) -> Dict[str, Any]:
