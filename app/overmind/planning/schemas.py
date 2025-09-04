@@ -1,11 +1,49 @@
 # app/overmind/planning/schemas.py
-"""
-================================================================================
- PLANNING SCHEMAS CORE v4.0  (Single Source of Truth)
-================================================================================
-(تم اختصار رأس التعليق السابق، مع إضافة PlanMeta والدعم لحقل meta)
-================================================================================
-"""
+# -*- coding: utf-8 -*-
+# =============================================================================
+# OVERMIND / MAESTRO – PLANNING SCHEMAS CORE
+# Ultra Sovereign Structural Edition
+# Version: 4.2.0  •  Codename: "PLAN-OMEGA / STRUCT-METRICS / DUAL-HASH / QUALITY-GRADE"
+# =============================================================================
+# DESIGN GOALS
+#   - Single Source of Truth for mission planning data structures.
+#   - Strong validation (graph topology, fan-out, depth, risk gating, tool args).
+#   - Structural Intelligence Channels:
+#        * PlanMeta extended with structural metrics (hotspot_density, layer_diversity, entropy, duplicates).
+#        * Dual hashing (content_hash + structural_hash) for semantic vs structural change tracking.
+#        * Structural quality grading heuristic (A / B / C).
+#   - Policy Hooks for custom governance (risk caps, structural sanity).
+#   - Backward compatible (all new fields optional; no breaking removal).
+#
+# NEW IN 4.2.0 (vs 4.0.1):
+#   + Extended PlanMeta (hotspots_count, duplicate_groups, layers_detected, hotspot_density,
+#     layer_diversity, structural_entropy, avg_task_fanout, structural_quality_grade, structural_hash).
+#   + structural_hash: stable signature over (deps, priority, risk, hotspot, layer).
+#   + PLAN_MAX_META_BYTES (env) enforcement (optional) to avoid oversized meta payloads.
+#   + Policy hook _policy_structural_sanity (hotspot density / diversity / entropy warnings).
+#   + Structural quality grade heuristic (auto if not supplied).
+#   + Risk amplification readiness via risk_score + structural signals (extensible).
+#
+# ENV (tunable):
+#    PLAN_MAX_TASKS (default 800)
+#    PLAN_MAX_DESCRIPTION_LEN (default 600)
+#    PLAN_MAX_METADATA_KEYS (default 30)
+#    PLAN_MAX_TOOL_ARGS_KEYS (default 40)
+#    PLAN_MAX_TOOL_ARGS_BYTES (default 24000)
+#    PLAN_MAX_DEPTH (default 60)
+#    PLAN_MAX_OUT_DEGREE (default 80)
+#    PLAN_PRIORITY_MIN (default 0)
+#    PLAN_PRIORITY_MAX (default 1000)
+#    PLAN_MAX_META_BYTES (default 64000)  # New: serialized size limit for meta (PlanMeta) if present
+#
+# SAFETY:
+#   - All validations raise PlanValidationError (aggregate issues).
+#   - Optional TOOL_REGISTRY interface for tool args schema adaptation.
+#   - All added structural metrics optional; absence is safe.
+#
+# NOTE:
+#   - Keep triple-quoted docstrings minimal; critical logic uses explicit comments for CI robustness.
+# =============================================================================
 
 from __future__ import annotations
 
@@ -21,7 +59,7 @@ from typing import (
 
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
-__schema_version__ = "4.0.1"  # bump بعد إضافة PlanMeta/meta
+__schema_version__ = "4.2.0"
 
 # =============================================================================
 # SETTINGS
@@ -38,6 +76,7 @@ class PlanSettings:
     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
+    MAX_META_BYTES: int = int(os.environ.get("PLAN_MAX_META_BYTES", 64000))
 
 SETTINGS = PlanSettings()
 
@@ -115,21 +154,17 @@ def register_policy_hook(hook: PolicyHook) -> None:
     _POLICY_HOOKS.append(hook)
 
 # =============================================================================
-# PLAN META (جديد)
+# PLAN META (Structural Expansion)
 # =============================================================================
 
 class PlanMeta(BaseModel):
     """
-    يحمل معلومات تليمترية/سيميائية ديناميكية من الـ planner.
-    أمثلة شائعة:
-        language: 'ar' أو 'en'
-        section_task: معرف مهمة رئيسية لتوليد الأقسام
-        files_scanned: عدد ملفات تم فحصها
-        streaming: هل البث المتجزئ مفعل
-        chunk_count: عدد القطع المتوقعة أو المنتجة
-        roles_inferred: عدد الأدوار المستنتجة
-        artifacts_expected: عدد المخرجات النهائية المتوقعة
-    يسمح بأي مفاتيح إضافية مستقبلية دون كسر.
+    Flexible telemetry / semantic channel. All fields optional.
+    - Base semantics: language, streaming flags, counts.
+    - Structural metrics: hotspot density, layer diversity, duplication cluster signals.
+    - structural_quality_grade: assigned automatically if not provided (A|B|C).
+    - structural_hash: optional override (auto calculated separately in plan if missing).
+    New fields are additive; consumers should treat unknown keys as optional hints.
     """
     language: Optional[str] = None
     section_task: Optional[str] = None
@@ -139,7 +174,17 @@ class PlanMeta(BaseModel):
     roles_inferred: Optional[int] = None
     artifacts_expected: Optional[int] = None
 
-    # السماح بحقوق إضافية:
+    # Extended structural telemetry:
+    hotspots_count: Optional[int] = None
+    duplicate_groups: Optional[int] = None
+    layers_detected: Optional[int] = None
+    hotspot_density: Optional[float] = None
+    layer_diversity: Optional[float] = None
+    structural_entropy: Optional[float] = None
+    avg_task_fanout: Optional[float] = None
+    structural_quality_grade: Optional[str] = None
+    structural_hash: Optional[str] = None
+
     model_config = ConfigDict(extra="allow")
 
 # =============================================================================
@@ -224,7 +269,7 @@ class PlannedTask(BaseModel):
         return v
 
 # =============================================================================
-# PLANNING CONTEXT
+# PLANNING CONTEXT (Optional, may be passed to planners)
 # =============================================================================
 
 class PlanningContext(BaseModel):
@@ -245,18 +290,18 @@ class MissionPlanSchema(BaseModel):
     objective: str = Field(..., min_length=3)
     tasks: List[PlannedTask] = Field(...)
 
-    # الحقل الجديد:
     meta: Optional[PlanMeta] = Field(
         default=None,
-        description="Dynamic telemetry / semantic guidance produced by planner. Accepts arbitrary extra keys."
+        description="Dynamic telemetry / semantic guidance produced by planner (extended structural metrics)."
     )
 
     topological_order: Optional[List[str]] = Field(default=None)
     stats: Optional[Dict[str, Any]] = Field(default=None)
     warnings: Optional[List[PlanWarning]] = Field(default=None)
     content_hash: Optional[str] = Field(default=None)
+    structural_hash: Optional[str] = Field(default=None)
 
-    # internal (non-serialized)
+    # internal
     _adjacency: Dict[str, List[str]] = {}
     _indegree: Dict[str, int] = {}
     _depth_map: Dict[str, int] = {}
@@ -266,6 +311,7 @@ class MissionPlanSchema(BaseModel):
         issues: List[PlanValidationIssue] = []
         warnings: List[PlanWarning] = []
 
+        # Basic tasks existence
         if not self.tasks:
             issues.append(PlanValidationIssue(code="EMPTY_PLAN", message="Plan has no tasks."))
             raise PlanValidationError(issues)
@@ -277,13 +323,13 @@ class MissionPlanSchema(BaseModel):
             ))
             raise PlanValidationError(issues)
 
-        # Unique IDs
+        # Unique task IDs
         id_map = {t.task_id: t for t in self.tasks}
         if len(id_map) != len(self.tasks):
             issues.append(PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id detected."))
             raise PlanValidationError(issues)
 
-        # Build adjacency
+        # Build adjacency / indegree
         adj: Dict[str, List[str]] = {tid: [] for tid in id_map}
         indegree: Dict[str, int] = {tid: 0 for tid in id_map}
         for t in self.tasks:
@@ -300,7 +346,7 @@ class MissionPlanSchema(BaseModel):
         if issues:
             raise PlanValidationError(issues)
 
-        # Fan-out
+        # Fan-out limit
         for parent, children in adj.items():
             if len(children) > SETTINGS.MAX_OUT_DEGREE:
                 issues.append(PlanValidationIssue(
@@ -348,7 +394,7 @@ class MissionPlanSchema(BaseModel):
             ))
             raise PlanValidationError(issues)
 
-        # Heuristic warnings
+        # Heuristic Warnings
         roots = [tid for tid, deg in indegree.items() if deg == 0]
         if len(roots) / len(id_map) > 0.5 and len(id_map) > 10:
             warnings.append(PlanWarning(
@@ -356,7 +402,6 @@ class MissionPlanSchema(BaseModel):
                 message="More than 50% of tasks are roots.",
                 severity=WarningSeverity.STRUCTURE
             ))
-
         for tid in id_map:
             if indegree[tid] == 0 and not adj[tid] and len(id_map) > 1:
                 warnings.append(PlanWarning(
@@ -365,7 +410,6 @@ class MissionPlanSchema(BaseModel):
                     severity=WarningSeverity.STRUCTURE,
                     task_id=tid
                 ))
-
         priorities = [t.priority for t in self.tasks]
         if len(priorities) > 5 and len(set(priorities)) == 1:
             warnings.append(PlanWarning(
@@ -373,7 +417,6 @@ class MissionPlanSchema(BaseModel):
                 message="All tasks share identical priority.",
                 severity=WarningSeverity.PERFORMANCE
             ))
-
         high_risk = [t.task_id for t in self.tasks if t.risk_level == RiskLevel.HIGH]
         if high_risk and len(high_risk) / len(self.tasks) > 0.3:
             warnings.append(PlanWarning(
@@ -381,7 +424,6 @@ class MissionPlanSchema(BaseModel):
                 message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 0.3.",
                 severity=WarningSeverity.RISK
             ))
-
         for t in self.tasks:
             if t.task_type == TaskType.GATE and not t.gate_condition:
                 warnings.append(PlanWarning(
@@ -391,6 +433,7 @@ class MissionPlanSchema(BaseModel):
                     task_id=t.task_id
                 ))
 
+        # Stats construction
         risk_counts = {
             "LOW": sum(1 for t in self.tasks if t.risk_level == RiskLevel.LOW),
             "MEDIUM": sum(1 for t in self.tasks if t.risk_level == RiskLevel.MEDIUM),
@@ -402,18 +445,30 @@ class MissionPlanSchema(BaseModel):
             risk_counts["HIGH"] * 7
         )
         out_degrees = [len(v) for v in adj.values()]
+        avg_fanout = round(sum(out_degrees)/len(out_degrees), 4) if out_degrees else 0.0
+
         stats = {
             "tasks": len(id_map),
             "roots": len(roots),
             "longest_path": longest_path,
-            "avg_out_degree": round(sum(out_degrees)/len(out_degrees), 3) if out_degrees else 0,
+            "avg_out_degree": avg_fanout,
             "max_out_degree": max(out_degrees) if out_degrees else 0,
             "risk_counts": risk_counts,
             "risk_score": risk_score,
             "orphan_tasks": [w.task_id for w in warnings if w.code == "ORPHAN_TASK"],
         }
 
-        # Content hash
+        # Enforce meta size limit (if meta present & limit > 0)
+        if self.meta:
+            meta_json = json.dumps(self.meta.model_dump(mode="json"), ensure_ascii=False)
+            if SETTINGS.MAX_META_BYTES > 0 and len(meta_json.encode("utf-8")) > SETTINGS.MAX_META_BYTES:
+                warnings.append(PlanWarning(
+                    code="META_TRUNCATION_RISK",
+                    message=f"PlanMeta size exceeds {SETTINGS.MAX_META_BYTES} bytes (consider pruning).",
+                    severity=WarningSeverity.PERFORMANCE
+                ))
+
+        # Full content hash (semantic)
         hash_payload = {
             "objective": self.objective,
             "tasks": [
@@ -439,7 +494,49 @@ class MissionPlanSchema(BaseModel):
             json.dumps(hash_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()
 
-        # Assign computed
+        # Structural hash (topology + structural hints)
+        structural_vector = [
+            {
+              "task_id": t.task_id,
+              "deps": sorted(t.dependencies),
+              "priority": t.priority,
+              "risk": t.risk_level,
+              "hotspot": bool(t.metadata.get("hotspot")),
+              "layer": t.metadata.get("layer")
+            }
+            for t in sorted(self.tasks, key=lambda x: x.task_id)
+        ]
+        self.structural_hash = hashlib.sha256(
+            json.dumps(structural_vector, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+
+        # Inject derived avg_task_fanout if meta present and missing
+        if self.meta:
+            if self.meta.avg_task_fanout is None:
+                self.meta.avg_task_fanout = avg_fanout
+
+            # Structural quality grade (heuristic) if absent
+            try:
+                if self.meta.structural_quality_grade is None:
+                    hg = self.meta.hotspot_density or 0.0
+                    ld = self.meta.layer_diversity or 0.0
+                    rp = risk_score
+                    grade_score = (ld * 0.5) + (1 - abs(hg - 0.25)) * 0.3 + (1 / (1 + rp)) * 0.2
+                    if grade_score >= 0.75:
+                        grade = "A"
+                    elif grade_score >= 0.5:
+                        grade = "B"
+                    else:
+                        grade = "C"
+                    self.meta.structural_quality_grade = grade
+            except Exception:
+                pass
+
+            # Fill meta.structural_hash if not supplied
+            if self.meta.structural_hash is None:
+                self.meta.structural_hash = self.structural_hash
+
+        # Assign computed structures
         self.topological_order = topo
         self.stats = stats
         self.warnings = warnings or None
@@ -539,7 +636,7 @@ def validate_plan(payload: Dict[str, Any]) -> MissionPlanSchema:
     return MissionPlanSchema.model_validate(payload)
 
 # =============================================================================
-# SAMPLE POLICY HOOK (Optional)
+# POLICY HOOKS (Samples / Governance)
 # =============================================================================
 
 def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
@@ -559,6 +656,34 @@ def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
         )
 
 register_policy_hook(_sample_policy_high_risk_limit)
+
+def _policy_structural_sanity(plan: MissionPlanSchema):
+    meta = plan.meta
+    if not meta:
+        return
+    # Hotspot density upper bound
+    if meta.hotspot_density is not None and meta.hotspot_density > 0.55:
+        plan._add_warning(
+            code="HOTSPOT_DENSITY_HIGH",
+            message=f"Hotspot density {meta.hotspot_density:.2f} > 0.55 (narrow structural focus).",
+            severity=WarningSeverity.RISK
+        )
+    # Layer diversity low
+    if meta.layer_diversity is not None and meta.layer_diversity < 0.15:
+        plan._add_warning(
+            code="LAYER_DIVERSITY_LOW",
+            message=f"Layer diversity {meta.layer_diversity:.2f} < 0.15 (possible imbalance).",
+            severity=WarningSeverity.STRUCTURE
+        )
+    # Structural entropy low
+    if meta.structural_entropy is not None and meta.structural_entropy < 0.35:
+        plan._add_warning(
+            code="STRUCTURAL_ENTROPY_LOW",
+            message=f"Structural entropy {meta.structural_entropy:.2f} < 0.35 (over-concentration risk).",
+            severity=WarningSeverity.PERFORMANCE
+        )
+
+register_policy_hook(_policy_structural_sanity)
 
 # =============================================================================
 # EXPORTS
