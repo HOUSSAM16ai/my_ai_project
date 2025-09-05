@@ -1,0 +1,111 @@
+from .base_planner import BasePlanner
+import time
+
+class MultiPassArchPlanner(BasePlanner):
+    """
+    Multi-stage architecture planner:
+      - Draft tasks (S01..S08) each producing a section.
+      - S09 synthesis task cross-links sections.
+      - S_FINAL merges all tasks into a deep bilingual dossier.
+
+    Capabilities:
+      architecture, deep_index, multi_stage, llm
+    """
+
+    name = "multi_pass_arch_planner"
+    capabilities = {"architecture", "deep_index", "llm", "multi_stage"}
+    production_ready = True
+    version = "1.0.0"
+
+    SECTION_IDS = [
+        ("S01", "Executive Summary"),
+        ("S02", "Layered Architecture"),
+        ("S03", "Service Inventory"),
+        ("S04", "Data Flow"),
+        ("S05", "Hotspots & Complexity"),
+        ("S06", "Refactor & Improvement Plan"),
+        ("S07", "Risk Matrix"),
+        ("S08", "Arabic Mirror Sections")
+    ]
+
+    def instrumented_generate(self, objective: str, context=None, deep_context=None):
+        """
+        Returns:
+          {
+            "plan": MissionPlanSchema,
+            "meta": {planner, duration_ms, sections, deep_index_used, node_count}
+          }
+        """
+        t0 = time.perf_counter()
+        dc_note = ""
+        if deep_context and isinstance(deep_context, dict):
+            dc_note = f"(files={deep_context.get('files_scanned')} hotspots={deep_context.get('hotspots_count')})"
+
+        plan = self._build_plan(objective, dc_note)
+        meta = {
+            "planner": self.name,
+            "duration_ms": int((time.perf_counter() - t0) * 1000),
+            "sections": len(self.SECTION_IDS),
+            "deep_index_used": bool(deep_context),
+            "node_count": len(getattr(plan, 'tasks', []))
+        }
+        return {"plan": plan, "meta": meta}
+
+    def _build_plan(self, objective: str, dc_note: str):
+        """
+        Creates MissionPlanSchema with:
+          - Section draft tasks
+          - S09 synthesis
+          - S_FINAL merge into ARCHITECTURE_overmind.md
+        """
+        from app.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
+
+        tasks = []
+
+        # Draft tasks
+        for tid, title in self.SECTION_IDS:
+            tasks.append(MissionTaskSchema(
+                task_id=tid,
+                description=(
+                    f"Draft deep section '{title}' for objective: {objective}. "
+                    "Use numbered subsections, bullet lists, performance and scaling notes, "
+                    "explicit module/file references where possible. Avoid repeating other sections. "
+                    f"DeepContextHint: {dc_note}"
+                ),
+                tool_name="generic_think",
+                tool_args={"section": title, "objective": objective},
+                dependencies=[]
+            ))
+
+        # Synthesis / cross-links
+        tasks.append(MissionTaskSchema(
+            task_id="S09",
+            description="Synthesize relationships across S01..S08, list inconsistencies, missing details, and cross-section links.",
+            tool_name="generic_think",
+            tool_args={"objective": objective},
+            dependencies=[tid for tid, _ in self.SECTION_IDS]
+        ))
+
+        # Merge placeholders
+        placeholders = "\n\n".join(
+            [f"{{{{t{tid}.content}}}}" for tid, _ in self.SECTION_IDS] + ["{{tS09.content}}"]
+        )
+
+        # Final merge
+        tasks.append(MissionTaskSchema(
+            task_id="S_FINAL",
+            description=(
+                "Merge all sections (S01..S08) and synthesis (S09) into a single bilingual (English THEN Arabic) "
+                "architecture dossier ≥1500 words. Include: Table of Contents, numbered headings, "
+                "service table, risk matrix table, hotspots analysis, refactor recommendations, Arabic mirrored titles. "
+                "Output file: ARCHITECTURE_overmind.md"
+            ),
+            tool_name="write_file",
+            tool_args={
+                "path": "ARCHITECTURE_overmind.md",
+                "content": placeholders
+            },
+            dependencies=[tid for tid, _ in self.SECTION_IDS] + ["S09"]
+        ))
+
+        return MissionPlanSchema(objective=objective, tasks=tasks)
