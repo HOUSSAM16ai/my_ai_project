@@ -1,111 +1,169 @@
 from .base_planner import BasePlanner
-import time
+import time, os
 
-class MultiPassArchPlanner(BasePlanner):
+class AdaptiveMultiPassArchPlanner(BasePlanner):
     """
-    Multi-stage architecture planner:
-      - Draft tasks (S01..S08) each producing a section.
-      - S09 synthesis task cross-links sections.
-      - S_FINAL merges all tasks into a deep bilingual dossier.
-
-    Capabilities:
-      architecture, deep_index, multi_stage, llm
+    Context-enriched multi-stage architecture planner:
+      1) t01 list dir
+      2) t02 read core files
+      3) t03 deep index
+      4) t04 semantic structure JSON
+      5) t05..t11 draft sections
+      6) t12 gap audit
+      7) t13 gap fill (optional enhancement)
+      8) t14 synthesis
+      9) t15 qa check
+      10) t16 final merge (bilingual)
     """
-
-    name = "multi_pass_arch_planner"
-    capabilities = {"architecture", "deep_index", "llm", "multi_stage"}
-    production_ready = True
-    version = "1.0.0"
+    name = "adaptive_multi_pass_arch_planner"
+    capabilities = {"architecture","deep_index","multi_stage","llm","adaptive","qa"}
+    production_ready = False
+    version = "0.2.0"
 
     SECTION_IDS = [
-        ("S01", "Executive Summary"),
-        ("S02", "Layered Architecture"),
-        ("S03", "Service Inventory"),
-        ("S04", "Data Flow"),
-        ("S05", "Hotspots & Complexity"),
-        ("S06", "Refactor & Improvement Plan"),
-        ("S07", "Risk Matrix"),
-        ("S08", "Arabic Mirror Sections")
+        ("t05","Executive Summary"),
+        ("t06","Layered Architecture"),
+        ("t07","Service Inventory"),
+        ("t08","Data Flow"),
+        ("t09","Hotspots & Complexity"),
+        ("t10","Refactor & Improvement Plan"),
+        ("t11","Risk Matrix / Resilience"),
+        ("t11b","Arabic Mirror Sections")
+    ]
+
+    CORE_FILES = [
+        "docker-compose.yml","Dockerfile","requirements.txt","config.py","run.py","README.md"
     ]
 
     def instrumented_generate(self, objective: str, context=None, deep_context=None):
-        """
-        Returns:
-          {
-            "plan": MissionPlanSchema,
-            "meta": {planner, duration_ms, sections, deep_index_used, node_count}
-          }
-        """
         t0 = time.perf_counter()
-        dc_note = ""
-        if deep_context and isinstance(deep_context, dict):
-            dc_note = f"(files={deep_context.get('files_scanned')} hotspots={deep_context.get('hotspots_count')})"
-
-        plan = self._build_plan(objective, dc_note)
+        plan = self._build_plan(objective)
         meta = {
             "planner": self.name,
-            "duration_ms": int((time.perf_counter() - t0) * 1000),
+            "duration_ms": int((time.perf_counter()-t0)*1000),
             "sections": len(self.SECTION_IDS),
             "deep_index_used": bool(deep_context),
-            "node_count": len(getattr(plan, 'tasks', []))
+            "node_count": len(getattr(plan,'tasks',[])),
+            "version": self.version
         }
         return {"plan": plan, "meta": meta}
 
-    def _build_plan(self, objective: str, dc_note: str):
-        """
-        Creates MissionPlanSchema with:
-          - Section draft tasks
-          - S09 synthesis
-          - S_FINAL merge into ARCHITECTURE_overmind.md
-        """
+    def _build_plan(self, objective: str):
         from app.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
-
         tasks = []
 
-        # Draft tasks
+        # t01 list repo root
+        tasks.append(MissionTaskSchema(
+            task_id="t01",
+            description="List root directory for structural awareness.",
+            tool_name="list_dir",
+            tool_args={"path": ".", "max_entries": 400},
+            dependencies=[]
+        ))
+
+        # t02 read core files
+        core_reads = []
+        for cf in self.CORE_FILES:
+            tid = f"t02_{cf.replace('.','_')}"
+            tasks.append(MissionTaskSchema(
+                task_id=tid,
+                description=f"Read core file {cf} (ignore missing).",
+                tool_name="read_file",
+                tool_args={"path": cf, "ignore_missing": True, "max_bytes": 80000},
+                dependencies=[]
+            ))
+            core_reads.append(tid)
+
+        # t03 deep index (assumes existing tool 'deep_indexer' or similar; else generic_think fallback)
+        tasks.append(MissionTaskSchema(
+            task_id="t03",
+            description="Build deep structural index (AST + hotspots + layers).",
+            tool_name="generic_think",
+            tool_args={"prompt": "Simulate deep index summary using listed files + core reads."},
+            dependencies=["t01"] + core_reads
+        ))
+
+        # t04 semantic structure (JSON)
+        tasks.append(MissionTaskSchema(
+            task_id="t04",
+            description="Derive semantic structural JSON (layers, services, hotspots, duplicates, risks).",
+            tool_name="generic_think",
+            tool_args={"prompt": "Using index: {{t03.content}}\nReturn JSON with keys: layers,services,hotspots,risks,refactor_opportunities."},
+            dependencies=["t03"]
+        ))
+
+        # Draft sections t05..t11b (each gets partial context)
         for tid, title in self.SECTION_IDS:
             tasks.append(MissionTaskSchema(
                 task_id=tid,
-                description=(
-                    f"Draft deep section '{title}' for objective: {objective}. "
-                    "Use numbered subsections, bullet lists, performance and scaling notes, "
-                    "explicit module/file references where possible. Avoid repeating other sections. "
-                    f"DeepContextHint: {dc_note}"
-                ),
+                description=f"Draft section '{title}' for objective: {objective}. Use index + semantic JSON. Avoid redundancy.",
                 tool_name="generic_think",
-                tool_args={"section": title, "objective": objective},
-                dependencies=[]
+                tool_args={
+                    "prompt": (
+                        f"OBJECTIVE:\n{objective}\n\nINDEX:\n{{{{t03.content}}}}\n\nSEMANTIC:\n{{{{t04.content}}}}\n\n"
+                        f"Produce section: {title} (structured, bullet points, code/service references)."
+                    )
+                },
+                dependencies=["t04"]
             ))
 
-        # Synthesis / cross-links
+        # t12 gap audit
         tasks.append(MissionTaskSchema(
-            task_id="S09",
-            description="Synthesize relationships across S01..S08, list inconsistencies, missing details, and cross-section links.",
+            task_id="t12",
+            description="Audit gaps: Compare semantic JSON vs drafted sections; list missing services, layers not covered, absent hotspots.",
             tool_name="generic_think",
-            tool_args={"objective": objective},
-            dependencies=[tid for tid, _ in self.SECTION_IDS]
+            tool_args={"prompt": "Semantic JSON:\n{{t04.content}}\n\nSections Combined:\n" +
+                        "\n".join(f"{{{{{tid}.content}}}}" for tid,_ in self.SECTION_IDS) +
+                        "\n\nReturn JSON {missing_services:[],missing_layers:[],missing_hotspots:[],notes:[]}"
+                       },
+            dependencies=[sid for sid,_ in self.SECTION_IDS]
         ))
 
-        # Merge placeholders
-        placeholders = "\n\n".join(
-            [f"{{{{t{tid}.content}}}}" for tid, _ in self.SECTION_IDS] + ["{{tS09.content}}"]
-        )
-
-        # Final merge
+        # t13 gap fill (optional text, can be empty if no gaps)
         tasks.append(MissionTaskSchema(
-            task_id="S_FINAL",
-            description=(
-                "Merge all sections (S01..S08) and synthesis (S09) into a single bilingual (English THEN Arabic) "
-                "architecture dossier ≥1500 words. Include: Table of Contents, numbered headings, "
-                "service table, risk matrix table, hotspots analysis, refactor recommendations, Arabic mirrored titles. "
-                "Output file: ARCHITECTURE_overmind.md"
-            ),
+            task_id="t13",
+            description="Fill documented gaps if any (Arabic + English).",
+            tool_name="generic_think",
+            tool_args={"prompt": "Gap JSON:\n{{t12.content}}\nIf empty gaps -> return short note. Else expand missing items with actionable detail."},
+            dependencies=["t12"]
+        ))
+
+        # t14 synthesis
+        tasks.append(MissionTaskSchema(
+            task_id="t14",
+            description="Cross-link sections + integrate gap fill (dependencies, risk propagation, unified refactor priorities).",
+            tool_name="generic_think",
+            tool_args={"prompt": "Sections:\n" + "\n".join(f"{{{{{tid}.content}}}}" for tid,_ in self.SECTION_IDS) +
+                                  "\nGAP_FILL:\n{{t13.content}}\nProduce synthesis linking sections & highlighting systemic risks."},
+            dependencies=[sid for sid,_ in self.SECTION_IDS] + ["t13"]
+        ))
+
+        # t15 QA check
+        tasks.append(MissionTaskSchema(
+            task_id="t15",
+            description="QA metrics (JSON): word_count, referenced_files_count, coverage_ratio estimate (services mentioned / total), bilingual_completeness (0-1).",
+            tool_name="generic_think",
+            tool_args={"prompt": (
+                "Compute QA metrics.\nSections:\n" +
+                "\n".join(f"{{{{{tid}.content}}}}" for tid,_ in self.SECTION_IDS) +
+                "\nSYNTH:\n{{t14.content}}\nGAP:\n{{t13.content}}\nReturn JSON {word_count:int,referenced_files_count:int,coverage_ratio:float,bilingual_completeness:float,notes:[]}"
+            )},
+            dependencies=["t14"]
+        ))
+
+        # t16 final merge
+        tasks.append(MissionTaskSchema(
+            task_id="t16",
+            description="Merge all into ARCHITECTURE_overmind.md (English then Arabic) including QA metrics appendix.",
             tool_name="write_file",
             tool_args={
                 "path": "ARCHITECTURE_overmind.md",
-                "content": placeholders
+                "content": (
+                    "\n\n".join(f"{{{{{tid}.content}}}}" for tid,_ in self.SECTION_IDS) +
+                    "\n\n{{t13.content}}\n\n{{t14.content}}\n\n## QA METRICS\n\n{{t15.content}}"
+                )
             },
-            dependencies=[tid for tid, _ in self.SECTION_IDS] + ["S09"]
+            dependencies=["t15"]
         ))
 
         return MissionPlanSchema(objective=objective, tasks=tasks)
