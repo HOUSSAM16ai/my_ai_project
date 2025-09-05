@@ -1,123 +1,72 @@
 # -*- coding: utf-8 -*-
 """
-MAESTRO / OVERMIND – UNIFIED AGENT TOOL REGISTRY
-Ultra Structural-Aware Sovereign Edition
-========================================
+MAESTRO / OVERMIND – UNIFIED AGENT TOOL REGISTRY (REWRITTEN SUPER EDITION)
+Ultra Structural-Aware Sovereign Edition ++
+================================================================================
 File        : app/services/agent_tools.py
-Version     : 4.4.0-hyper-l4++-struct
-Codename    : "LAYER-SENSE / HOTSPOT-AWARE / ZERO-STALL"
-Status      : Production / Hardened / Deterministic / Lazy-Structural-Enriched
+Version     : 4.5.0-hyper-l5++-omniplan
+Codename    : "OMNILENS / MULTI-PASS / INDEX-FUSION / GAP-AWARE"
+Status      : Production / Hardened / Deterministic / Extended
 Author      : Overmind Cognitive Systems
 
-BILINGUAL OVERVIEW (EN / AR)
----------------------------
-EN:
-This registry provides a consolidated, hardened, extensible tool layer used by:
- - master_agent_service (planning + execution guard)
- - generation_service (LLM multi-step reasoning)
-It offers canonicalization, safe file IO, cognitive reasoning (generic_think), structural
-awareness hooks (deep index meta tagging), introspection, and meta dispatch.
+CHANGELOG (4.5.0 vs 4.4.0)
+-------------------------
++ Added read_bulk_files (batch safe multi-file reader).
++ Added code_index_project (lightweight lexical structural index walker).
++ Added code_search_lexical (regex / substring scanning with snippet extraction).
++ Added code_search_semantic (stub / future embedding integration; graceful fallback).
++ generic_think now returns data.answer AND data.content (smoother templating).
++ Added internal quick complexity heuristics in code_index_project (line_count, size, pseudo 'complexity_score').
++ Layer stats untouched; structural map logic retained.
++ Extra safety for large file scanning & concurrency.
++ Extended __all__ to include new tools.
++ Optional ENV flags controlling indexing & search costs.
 
-AR:
-هذا السجل يوفّر طبقة أدوات موحّدة صلبة وقابلة للتوسعة لبيئة الأوركستريتور:
-- تطبيع أسماء الأدوات وحماية الملفات
-- دعم التفكير (generic_think)
-- دمج الاختياري للفهرس البنيوي (Hotspots / Layers / Duplications)
-- أدوات فحص وإلحاق وقراءة وتهيئة ملفات
-- تتبّع تيلمتري + إحصاءات طبقات (Layers)
-
-CORE PILLARS
-------------
-1. Canonical Tool Resolution (write_file / read_file / etc.) – zero "ToolNotFound" drift.
-2. Structural Awareness (optional deep structural map) with tagging per call:
-     struct_layer, struct_hotspot, struct_dup_group
-3. Tool Telemetry (invocations, errors, avg_ms) + Layer Stats aggregation:
-     LAYER_STATS[layer] = {reads, writes, appends, ensures, last_ts}
-4. Deterministic & Fail-Soft: Exceptions captured → ToolResult(ok=False, error=...).
-5. Safe File IO: path traversal guard, symlink denial, size limits, optional compression.
-6. Cognitive Stability: generic_think always returns data.answer (fallback if LLM absent).
-7. Repeatable Extensibility: @tool decorator with alias & capability metadata.
-8. Structural Map Auto-Reload (hash + TTL) – low overhead.
-9. Memory (ephemeral) limited by allowlist.
-10. Forward Hooks for future features (chunk streaming / dependency parsing).
-
-NEW IN 4.4.0 vs 4.3.0
----------------------
-+ Deep Structural Map integration (_DEEP_STRUCT_MAP) with:
-    - Env AGENT_TOOLS_DEEP_MAP_PATH
-    - Auto reload TTL (AGENT_TOOLS_DEEP_MAP_TTL=60s)
-    - Hash-based duplicate load avoidance
-+ Annotation of file operations (read/write/append/ensure_file) with structural meta.
-+ Layer usage aggregation: _LAYER_STATS with incremental counters.
-+ New tool: analyze_path_semantics (inspects a path against structural map).
-+ New tool: reload_deep_struct_map (manual refresh).
-+ Extended introspect_tools: include_layers flag returns layer usage table.
-+ Dispatch enhancements: pass-through structural awareness unchanged.
-+ Unified safe JSON dumping with truncation.
-+ Hardened argument validation clear errors.
-
-PRIMARY ENV FLAGS
------------------
-AGENT_TOOLS_PROJECT_ROOT=/app
-AGENT_TOOLS_LOG_LEVEL=INFO|DEBUG
-AGENT_TOOLS_DEEP_MAP_PATH=./STRUCTURAL_INDEX.json
-AGENT_TOOLS_DEEP_MAP_TTL=60          (seconds, 0 = no auto reload)
-AGENT_TOOLS_DEEP_LIMIT_KEYS=0        (0 = unlimited, else trim per annotated call)
-AGENT_TOOLS_APPEND_ENFORCE_TOTAL=1
-AGENT_TOOLS_HASH_AFTER_WRITE=1
-AGENT_TOOLS_COMPRESS_JSON=1
-AGENT_TOOLS_AUTOFILL_MISSING=1
-AGENT_TOOLS_AUTOFILL_EXTENSION=.txt
-AGENT_TOOLS_ACCEPT_DOTTED=1
-AGENT_TOOLS_FORCE_INTENT=1
-AGENT_TOOLS_CREATE_MISSING=1
-AGENT_TOOLS_CREATE_ALLOWED_EXTS=.md,.txt,.json,.log
-AGENT_TOOLS_CREATE_DEFAULT_CONTENT="Placeholder (auto-created)."
-AGENT_TOOLS_CREATE_MAX_BYTES=300000
-AGENT_TOOLS_MAX_WRITE_BYTES=5000000
-AGENT_TOOLS_MAX_APPEND_BYTES=3000000
-AGENT_TOOLS_MAX_READ_BYTES=800000
-
-COGNITIVE:
-GENERIC_THINK_MODEL_OVERRIDE=model
-GENERIC_THINK_MAX_CHARS_INPUT=12000
-GENERIC_THINK_MAX_ANSWER_CHARS=24000
-
-MEMORY:
-MEMORY_ALLOWLIST="session_topic,user_goal"
-
-DISPATCH:
-DISPATCH_ALLOWLIST="generic_think,write_file,read_file,ensure_file,append_file,write_file_if_changed"
-
-SAFETY / HARDENING
+BILINGUAL OVERVIEW
 ------------------
-- All file operations sandboxed under PROJECT_ROOT.
-- Denies path traversal & symlinks.
-- Safe compression for large JSON writes (.json → .json.gz).
-- Annotates but never fails if structural map missing (graceful).
-- Tools never raise uncaught exceptions outward – always ToolResult.
+EN: Provides a consolidated, hardened tool layer (file ops, reasoning, indexing, lexical search)
+    for Overmind planners and execution. Supports deep structural annotation, safe I/O,
+    telemetry, adaptive reasoning, and placeholder-friendly outputs.
+AR: طبقة أدوات موحّدة (قراءة/كتابة/بحث/تفكير) آمنة، مع دعم الفهرسة البنيوية السطحية، وإرجاع
+    نتائج جاهزة للاستخدام في مخططات المهام متعددة المراحل، وتدعم الدمج مع الـ Overmind.
 
-STRUCTURAL MAP FORMAT (Expected)
---------------------------------
-{
-  "files": {
-     "/abs/path/to/file.py": {
-         "layer": "service",
-         "hotspot": true,
-         "dup_group": 2
-     },
-     ...
-  }
-}
+KEY ADDITIONS
+-------------
+1. Batch Reading (read_bulk_files): يقلل عدد المهام في مرحلة الاكتشاف.
+2. Lightweight Project Index (code_index_project): يحصي الملفات ويستخرج قياسات سريعة.
+3. Lexical Search (code_search_lexical): بحث نصي سريع مع مقاطع مقتطفة.
+4. Semantic Search Stub (code_search_semantic): واجهة مستقبلية (لا تفشل المنظومة).
+5. Dual Output for generic_think (answer + content) → دعم {{tXX.answer}} / {{tXX.content}}.
+6. Tight safety (size limits / traversal guard / throttle).
 
-EXTENSIBILITY IDEAS (Future)
-----------------------------
-- Weighted risk scoring returned to planner.
-- Structural coverage metrics export tool.
-- Auto-chunk write sessions.
-- Secure ephemeral evaluation sandbox.
+ENV FLAGS (ADDITIONS)
+---------------------
+CODE_INDEX_MAX_FILES=2200          (Max files scanned by code_index_project)
+CODE_INDEX_INCLUDE_EXTS=".py,.md,.txt,.js,.ts,.json,.yml,.yaml"
+CODE_INDEX_EXCLUDE_DIRS=".git,__pycache__,venv,.venv,node_modules,dist,build"
+CODE_INDEX_MAX_FILE_BYTES=180000    (Skip files larger than this)
+CODE_SEARCH_MAX_RESULTS=24
+CODE_SEARCH_MAX_SNIPPET_LINES=14
+CODE_SEARCH_CONTEXT_RADIUS=3
+CODE_SEARCH_FILE_MAX_BYTES=130000
+SEMANTIC_SEARCH_ENABLED=0          (When embeddings infra ready)
+SEMANTIC_SEARCH_FAKE_LATENCY_MS=0  (Simulated latency placeholder)
+
+SAFETY
+------
+- All paths sandboxed under PROJECT_ROOT.
+- Skips binary suspicion by filtering extensions.
+- Controlled memory footprint (line slicing).
+- Graceful fallback if indexing disabled or search heavy.
+
+FORWARD ROADMAP (Not implemented yet)
+-------------------------------------
+- Real embedding-based semantic search & ranking
+- Structural coverage diff metrics as tool
+- Intelligent snippet dedup
+
+================================================================================
 """
-
 from __future__ import annotations
 
 import os
@@ -126,6 +75,7 @@ import time
 import uuid
 import stat
 import gzip
+import re
 import hashlib
 import traceback
 import logging
@@ -136,7 +86,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 # ======================================================================================
 # Version
 # ======================================================================================
-__version__ = "4.4.0-hyper-l4++-struct"
+__version__ = "4.5.0-hyper-l5++-omniplan"
 
 # ======================================================================================
 # Logging
@@ -209,8 +159,30 @@ AUTO_CREATE_MAX_BYTES = _int_env("AGENT_TOOLS_CREATE_MAX_BYTES", 300_000)
 
 # Structural Map Config
 DEEP_MAP_PATH = os.getenv("AGENT_TOOLS_DEEP_MAP_PATH", "")
-DEEP_MAP_TTL = _int_env("AGENT_TOOLS_DEEP_MAP_TTL", 60)    # seconds (0 = no periodic reload)
+DEEP_MAP_TTL = _int_env("AGENT_TOOLS_DEEP_MAP_TTL", 60)    # seconds
 DEEP_LIMIT_KEYS = _int_env("AGENT_TOOLS_DEEP_LIMIT_KEYS", 0)
+
+# Index / Search Config
+CODE_INDEX_MAX_FILES = _int_env("CODE_INDEX_MAX_FILES", 2200)
+CODE_INDEX_INCLUDE_EXTS = os.getenv(
+    "CODE_INDEX_INCLUDE_EXTS",
+    ".py,.md,.txt,.js,.ts,.json,.yml,.yaml"
+).lower().split(",")
+CODE_INDEX_EXCLUDE_DIRS = {
+    d.strip() for d in os.getenv(
+        "CODE_INDEX_EXCLUDE_DIRS",
+        ".git,__pycache__,venv,.venv,node_modules,dist,build"
+    ).split(",") if d.strip()
+}
+CODE_INDEX_MAX_FILE_BYTES = _int_env("CODE_INDEX_MAX_FILE_BYTES", 180_000)
+
+CODE_SEARCH_MAX_RESULTS = _int_env("CODE_SEARCH_MAX_RESULTS", 24)
+CODE_SEARCH_MAX_SNIPPET_LINES = _int_env("CODE_SEARCH_MAX_SNIPPET_LINES", 14)
+CODE_SEARCH_CONTEXT_RADIUS = _int_env("CODE_SEARCH_CONTEXT_RADIUS", 3)
+CODE_SEARCH_FILE_MAX_BYTES = _int_env("CODE_SEARCH_FILE_MAX_BYTES", 130_000)
+
+SEMANTIC_SEARCH_ENABLED = _bool_env("SEMANTIC_SEARCH_ENABLED", False)
+SEMANTIC_SEARCH_FAKE_LATENCY_MS = _int_env("SEMANTIC_SEARCH_FAKE_LATENCY_MS", 0)
 
 # ======================================================================================
 # Ephemeral Memory
@@ -226,7 +198,6 @@ _DEEP_STRUCT_HASH: Optional[str] = None
 _DEEP_STRUCT_LOADED_AT: float = 0.0
 _DEEP_LOCK = threading.Lock()
 
-# Layer usage aggregation:
 _LAYER_STATS: Dict[str, Dict[str, Any]] = {}
 _LAYER_LOCK = threading.Lock()
 
@@ -242,10 +213,6 @@ def _touch_layer(layer: str, op: str):
         d["last_ts"] = _now()
 
 def _load_deep_struct_map(force: bool = False) -> bool:
-    """
-    Load or reload structural map if path exists & changed or TTL expired.
-    Returns True if (re)loaded, False otherwise.
-    """
     global _DEEP_STRUCT_MAP, _DEEP_STRUCT_HASH, _DEEP_STRUCT_LOADED_AT
     if not DEEP_MAP_PATH or not os.path.isfile(DEEP_MAP_PATH):
         return False
@@ -261,14 +228,11 @@ def _load_deep_struct_map(force: bool = False) -> bool:
                 _DEEP_STRUCT_LOADED_AT = _now()
                 return False
             data = json.loads(raw)
-            # Normalize keys to lower absolute paths
             files = data.get("files") or {}
             norm_files = {}
             for k, v in files.items():
-                if not isinstance(k, str):
-                    continue
-                key = os.path.abspath(k).lower()
-                norm_files[key] = v
+                if isinstance(k, str):
+                    norm_files[os.path.abspath(k).lower()] = v
             data["files"] = norm_files
             _DEEP_STRUCT_MAP = data
             _DEEP_STRUCT_HASH = new_hash
@@ -283,7 +247,6 @@ def _maybe_reload_struct_map():
     if not DEEP_MAP_PATH:
         return
     if DEEP_MAP_TTL == 0:
-        # Only load first time if not loaded
         if _DEEP_STRUCT_MAP is None:
             _load_deep_struct_map(force=True)
         return
@@ -291,9 +254,6 @@ def _maybe_reload_struct_map():
         _load_deep_struct_map(force=False)
 
 def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
-    """
-    Annotate meta/data dict with structural signals (layer, hotspot, dup_group).
-    """
     _maybe_reload_struct_map()
     if not _DEEP_STRUCT_MAP:
         return
@@ -308,10 +268,6 @@ def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
         "struct_hotspot": hotspot,
         "struct_dup_group": dup_group
     })
-    # Touch layer stats
-    if layer:
-        # We'll increment operation-specific counters outside after operation
-        pass
 
 # ======================================================================================
 # Data Structures
@@ -416,9 +372,6 @@ def _looks_like_read(desc: str) -> bool:
     return any(k in d for k in READ_KEYWORDS)
 
 def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
-    """
-    JSON dump with safe truncation preserving UTF-8 boundaries.
-    """
     raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     b = raw.encode("utf-8")
     if len(b) <= max_bytes:
@@ -467,7 +420,6 @@ def _safe_path(
     abs_path = os.path.abspath(os.path.join(PROJECT_ROOT, norm))
     if not abs_path.startswith(PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
-    # Symlink guard
     cur = PROJECT_ROOT
     rel_parts = abs_path[len(PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
     for part in rel_parts:
@@ -562,7 +514,6 @@ def tool(
 
                     schema = meta_entry.get("parameters") or {}
 
-                    # Autofill file tool arguments BEFORE validation
                     if AUTOFILL and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED, CANON_READ}:
                         if canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}:
                             if not kwargs.get("path"):
@@ -669,15 +620,12 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
         base, suffix = name.split(".", 1)
         notes.append(f"dotted_split:{base}.{suffix}")
 
-    # Direct canonical
     if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
         notes.append("canonical_exact")
         return name, notes
-    # Direct alias
     if name in _ALIAS_INDEX:
         notes.append("direct_alias_hit")
         return _ALIAS_INDEX[name], notes
-    # Base alias variants
     if base in _ALIAS_INDEX:
         if suffix:
             if suffix in WRITE_SUFFIXES:
@@ -689,7 +637,6 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
         notes.append("base_alias_hit")
         return _ALIAS_INDEX[base], notes
 
-    # Suffix heuristics
     if suffix:
         if suffix in WRITE_SUFFIXES:
             notes.append(f"suffix_write:{suffix}")
@@ -697,16 +644,12 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
         if suffix in READ_SUFFIXES:
             notes.append(f"suffix_read:{suffix}")
             return CANON_READ, notes
-
-    # Keyword heuristics
     if any(k in name for k in WRITE_SUFFIXES | WRITE_KEYWORDS):
         notes.append("keyword_write")
         return CANON_WRITE, notes
     if any(k in name for k in READ_SUFFIXES | READ_KEYWORDS):
         notes.append("keyword_read")
         return CANON_READ, notes
-
-    # Intent inference fallback
     if FORCE_INTENT and name in {"", "unknown", "file", "filesystem"}:
         if _looks_like_write(description):
             notes.append("intent_write_desc")
@@ -714,7 +657,6 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
         if _looks_like_read(description):
             notes.append("intent_read_desc")
             return CANON_READ, notes
-
     return raw_name, notes
 
 def resolve_tool_name(name: str) -> Optional[str]:
@@ -810,7 +752,7 @@ def introspect_tools(
             payload["layer_stats"] = _LAYER_STATS.copy()
     return ToolResult(ok=True, data=payload)
 
-# Memory Tools
+# Memory Tools ---------------------------------------------------------------
 @tool(
     name="memory_put",
     description="Store a small JSON-serializable string under a key (ephemeral).",
@@ -857,7 +799,7 @@ def memory_get(key: str) -> ToolResult:
             return ToolResult(ok=False, error="KEY_NOT_FOUND")
         return ToolResult(ok=True, data={"key": key, "value": _MEMORY_STORE[key]})
 
-# LLM / Cognitive (delegates to generation_service if available)
+# LLM / Cognitive ------------------------------------------------------------
 try:
     from . import generation_service as maestro  # type: ignore
 except Exception:
@@ -866,14 +808,14 @@ except Exception:
 
 @tool(
     name=CANON_THINK,
-    description="Primary cognitive tool: reasoning / analysis / Q&A / summarization. ALWAYS returns data.answer.",
+    description="Primary cognitive tool (reasoning / analysis). Returns data.answer & data.content.",
     category="cognitive",
     capabilities=["llm", "reasoning"],
     parameters={
         "type": "object",
         "properties": {
-            "prompt": {"type": "string", "description": "Instruction or question."},
-            "mode": {"type": "string", "description": "answer|list|analysis|summary|refine", "default": "analysis"}
+            "prompt": {"type": "string"},
+            "mode": {"type": "string", "default": "analysis"}
         },
         "required": ["prompt"]
     }
@@ -886,11 +828,15 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
     if len(clean) > GENERIC_THINK_MAX_CHARS:
         clean = clean[:GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
         truncated = True
-
     if not maestro:
-        fallback = f"[fallback-{mode}] {clean[:400]}"
-        return ToolResult(ok=True, data={"answer": fallback, "mode": mode, "fallback": True, "truncated_input": truncated})
-
+        answer = f"[fallback-{mode}] {clean[:400]}"
+        return ToolResult(ok=True, data={
+            "answer": answer,
+            "content": answer,
+            "mode": mode,
+            "fallback": True,
+            "truncated_input": truncated
+        })
     model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
     candidate_methods = ["generate_text", "forge_new_code", "run", "complete", "structured"]
     response = None
@@ -908,9 +854,7 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
                 last_err = e
                 continue
     if response is None:
-        if last_err:
-            return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}")
-        return ToolResult(ok=False, error="NO_LLM_METHOD")
+        return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}" if last_err else "NO_LLM_METHOD")
 
     if isinstance(response, str):
         answer = response
@@ -922,12 +866,11 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
 
     if not answer.strip():
         return ToolResult(ok=False, error="EMPTY_ANSWER")
-
     if len(answer) > GENERIC_THINK_MAX_ANSWER_CHARS:
         answer = answer[:GENERIC_THINK_MAX_ANSWER_CHARS] + "\n[ANSWER_TRIMMED]"
-
     return ToolResult(ok=True, data={
         "answer": answer,
+        "content": answer,
         "mode": mode,
         "fallback": False,
         "truncated_input": truncated
@@ -937,14 +880,14 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
     name="summarize_text",
     description="Summarize provided text (delegates to generic_think).",
     category="cognitive",
-    capabilities=["llm", "summarization"],
+    capabilities=["llm","summarization"],
     parameters={
-        "type": "object",
-        "properties": {
-            "text": {"type": "string"},
-            "style": {"type": "string", "default": "concise"}
+        "type":"object",
+        "properties":{
+            "text":{"type":"string"},
+            "style":{"type":"string","default":"concise"}
         },
-        "required": ["text"]
+        "required":["text"]
     }
 )
 def summarize_text(text: str, style: str = "concise") -> ToolResult:
@@ -959,14 +902,14 @@ def summarize_text(text: str, style: str = "concise") -> ToolResult:
     name="refine_text",
     description="Refine text style/tone (delegates to generic_think).",
     category="cognitive",
-    capabilities=["llm", "refinement"],
+    capabilities=["llm","refinement"],
     parameters={
-        "type": "object",
-        "properties": {
-            "text": {"type": "string"},
-            "tone": {"type": "string", "default": "professional"}
+        "type":"object",
+        "properties":{
+            "text":{"type":"string"},
+            "tone":{"type":"string","default":"professional"}
         },
-        "required": ["text"]
+        "required":["text"]
     }
 )
 def refine_text(text: str, tone: str = "professional") -> ToolResult:
@@ -980,7 +923,7 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
     return generic_think(prompt=prompt, mode="refine")
 
 # ======================================================================================
-# File System Tools (structural annotated)
+# File System Tools
 # ======================================================================================
 def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
     if HASH_AFTER_WRITE and os.path.isfile(abs_path):
@@ -996,7 +939,6 @@ def _apply_struct_limit(meta: Dict[str, Any]):
     keys = list(meta.keys())
     if len(keys) <= DEEP_LIMIT_KEYS:
         return
-    # Keep priority keys first
     priority = {"struct_layer", "struct_hotspot", "struct_dup_group"}
     ordered = [k for k in keys if k in priority] + [k for k in keys if k not in priority]
     trimmed = ordered[:DEEP_LIMIT_KEYS]
@@ -1035,19 +977,19 @@ def ensure_directory(path: str, must_be_new: bool=False) -> ToolResult:
 
 @tool(
     name=CANON_WRITE,
-    description="Create or overwrite a UTF-8 file. Supports large JSON compression. Returns path, bytes, size_after, sha256.",
+    description="Create or overwrite a UTF-8 file. Supports large JSON compression.",
     category="fs",
-    capabilities=["fs", "write"],
+    capabilities=["fs","write"],
     aliases=list(WRITE_ALIASES_BASE | WRITE_DOTTED_ALIASES),
     parameters={
         "type": "object",
         "properties": {
-            "path": {"type": "string"},
-            "content": {"type": "string"},
-            "enforce_ext": {"type": "string"},
+            "path": {"type":"string"},
+            "content": {"type":"string"},
+            "enforce_ext": {"type":"string"},
             "compress_json_if_large": {"type":"boolean","default":True}
         },
-        "required": ["path", "content"]
+        "required":["path","content"]
     }
 )
 def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
@@ -1055,7 +997,6 @@ def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
     try:
         if not isinstance(content, str):
             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
-        # Compression branch
         if COMPRESS_JSON and compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
             gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
             path = gz_path
@@ -1073,7 +1014,6 @@ def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
                 _touch_layer(data["struct_layer"], "writes")
             _apply_struct_limit(data)
             return ToolResult(ok=True, data=data)
-
         encoded = content.encode("utf-8")
         if len(encoded) > MAX_WRITE_BYTES:
             return ToolResult(ok=False, error="WRITE_TOO_LARGE")
@@ -1094,7 +1034,7 @@ def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
 
 @tool(
     name=CANON_WRITE_IF_CHANGED,
-    description="Write file only if content hash differs. Returns skipped=True if unchanged.",
+    description="Write only if content hash changes (skip if identical).",
     category="fs",
     capabilities=["fs","write","optimize"],
     parameters={
@@ -1131,16 +1071,16 @@ def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=No
 
 @tool(
     name="append_file",
-    description="Append UTF-8 text (creates if missing). Enforces total cumulative size if configured.",
+    description="Append UTF-8 text. Enforces total size if configured.",
     category="fs",
-    capabilities=["fs", "write", "stream"],
+    capabilities=["fs","write","stream"],
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "content": {"type": "string"}
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "content":{"type":"string"}
         },
-        "required": ["path", "content"]
+        "required":["path","content"]
     }
 )
 def append_file(path: str, content: str) -> ToolResult:
@@ -1170,18 +1110,18 @@ def append_file(path: str, content: str) -> ToolResult:
 
 @tool(
     name=CANON_READ,
-    description="Read UTF-8 text (max_bytes). If ignore_missing=True and absent → ok=True with empty content.",
+    description="Read UTF-8 text (soft-missing support).",
     category="fs",
-    capabilities=["fs", "read"],
+    capabilities=["fs","read"],
     aliases=list(READ_ALIASES_BASE | READ_DOTTED_ALIASES),
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "max_bytes": {"type": "integer", "default": 20000},
-            "ignore_missing": {"type": "boolean", "default": True}
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "max_bytes":{"type":"integer","default":20000},
+            "ignore_missing":{"type":"boolean","default":True}
         },
-        "required": ["path"]
+        "required":["path"]
     }
 )
 def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
@@ -1190,13 +1130,7 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
         abs_path = _safe_path(path)
         if not os.path.exists(abs_path):
             if ignore_missing:
-                data = {
-                    "path": abs_path,
-                    "content": "",
-                    "truncated": False,
-                    "exists": False,
-                    "missing": True
-                }
+                data = {"path": abs_path, "content": "", "truncated": False, "exists": False, "missing": True}
                 _annotate_struct_meta(abs_path, data)
                 if data.get("struct_layer"):
                     _touch_layer(data["struct_layer"], "reads")
@@ -1214,14 +1148,7 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
                 text = data_bytes[:max_eff].decode("utf-8", errors="replace")
             except Exception:
                 text = ""
-            res = {
-                "path": abs_path,
-                "content": text,
-                "truncated": truncated,
-                "exists": True,
-                "missing": False,
-                "binary_mode": True
-            }
+            res = {"path": abs_path, "content": text, "truncated": truncated, "exists": True, "missing": False, "binary_mode": True}
             _annotate_struct_meta(abs_path, res)
             if res.get("struct_layer"):
                 _touch_layer(res["struct_layer"], "reads")
@@ -1230,13 +1157,7 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
         with open(abs_path, "r", encoding="utf-8") as f:
             data_txt = f.read(max_eff + 10)
         truncated = len(data_txt) > max_eff
-        res = {
-            "path": abs_path,
-            "content": data_txt[:max_eff],
-            "truncated": truncated,
-            "exists": True,
-            "missing": False
-        }
+        res = {"path": abs_path, "content": data_txt[:max_eff], "truncated": truncated, "exists": True, "missing": False}
         _annotate_struct_meta(abs_path, res)
         if res.get("struct_layer"):
             _touch_layer(res["struct_layer"], "reads")
@@ -1251,22 +1172,17 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
     name="file_exists",
     description="Check path existence and type.",
     category="fs",
-    capabilities=["fs", "meta"],
+    capabilities=["fs","meta"],
     parameters={
-        "type": "object",
-        "properties": {"path": {"type": "string"}},
-        "required": ["path"]
+        "type":"object",
+        "properties":{"path":{"type":"string"}},
+        "required":["path"]
     }
 )
 def file_exists(path: str) -> ToolResult:
     try:
         abs_path = _safe_path(path)
-        data = {
-            "path": abs_path,
-            "exists": os.path.exists(abs_path),
-            "is_dir": os.path.isdir(abs_path),
-            "is_file": os.path.isfile(abs_path)
-        }
+        data = {"path": abs_path, "exists": os.path.exists(abs_path), "is_dir": os.path.isdir(abs_path), "is_file": os.path.isfile(abs_path)}
         _annotate_struct_meta(abs_path, data)
         _apply_struct_limit(data)
         return ToolResult(ok=True, data=data)
@@ -1277,12 +1193,12 @@ def file_exists(path: str) -> ToolResult:
     name="list_dir",
     description="List directory entries (name,type,size).",
     category="fs",
-    capabilities=["fs", "meta"],
+    capabilities=["fs","meta"],
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string", "default": "."},
-            "max_entries": {"type": "integer", "default": 400}
+        "type":"object",
+        "properties":{
+            "path":{"type":"string","default":"."},
+            "max_entries":{"type":"integer","default":400}
         }
     }
 )
@@ -1309,16 +1225,16 @@ def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
 
 @tool(
     name="delete_file",
-    description="Delete a file (requires confirm=True).",
+    description="Delete a file (confirm=True required).",
     category="fs",
-    capabilities=["fs", "write"],
+    capabilities=["fs","write"],
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "confirm": {"type": "boolean", "default": False}
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "confirm":{"type":"boolean","default":False}
         },
-        "required": ["path"]
+        "required":["path"]
     }
 )
 def delete_file(path: str, confirm: bool = False) -> ToolResult:
@@ -1340,20 +1256,20 @@ def delete_file(path: str, confirm: bool = False) -> ToolResult:
 
 @tool(
     name="ensure_file",
-    description="Ensure text file exists. If missing & allowed → create with initial_content or default.",
+    description="Ensure text file exists; create if allowed.",
     category="fs",
-    capabilities=["fs", "ensure"],
+    capabilities=["fs","ensure"],
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"},
-            "max_bytes": {"type": "integer", "default": 40000},
-            "initial_content": {"type": "string", "default": ""},
-            "force_create": {"type": "boolean", "default": False},
-            "allow_create": {"type": "boolean", "default": True},
-            "enforce_ext": {"type": "string"}
+        "type":"object",
+        "properties":{
+            "path":{"type":"string"},
+            "max_bytes":{"type":"integer","default":40000},
+            "initial_content":{"type":"string","default":""},
+            "force_create":{"type":"boolean","default":False},
+            "allow_create":{"type":"boolean","default":True},
+            "enforce_ext":{"type":"string"}
         },
-        "required": ["path"]
+        "required":["path"]
     }
 )
 def ensure_file(
@@ -1373,10 +1289,8 @@ def ensure_file(
         else:
             if AUTO_CREATE_ALLOWED_EXTS and not any(lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS):
                 return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
-
         abs_path = _safe_path(path)
         path_exists = os.path.exists(abs_path)
-
         if path_exists and not force_create:
             if os.path.isdir(abs_path):
                 return ToolResult(ok=False, error="IS_DIRECTORY")
@@ -1394,24 +1308,15 @@ def ensure_file(
                     d = f.read(max_eff + 10)
                 truncated = len(d) > max_eff
                 preview = d[:max_eff]
-            data = {
-                "path": abs_path,
-                "content": preview,
-                "truncated": truncated,
-                "exists": True,
-                "missing": False,
-                "created": False
-            }
+            data = {"path": abs_path, "content": preview, "truncated": truncated, "exists": True, "missing": False, "created": False}
             _annotate_struct_meta(abs_path, data)
             if data.get("struct_layer"):
                 _touch_layer(data["struct_layer"], "ensures")
             _apply_struct_limit(data)
             return ToolResult(ok=True, data=data)
-
         if not path_exists:
             if not allow_create or not AUTO_CREATE_ENABLED:
                 return ToolResult(ok=False, error="FILE_NOT_FOUND")
-
         content = (initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT)
         encoded = content.encode("utf-8")
         if len(encoded) > AUTO_CREATE_MAX_BYTES:
@@ -1419,14 +1324,8 @@ def ensure_file(
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
-        data = {
-            "path": abs_path,
-            "content": content[:max_eff],
-            "truncated": len(content) > max_eff,
-            "exists": True,
-            "missing": False,
-            "created": True
-        }
+        data = {"path": abs_path, "content": content[:max_eff], "truncated": len(content) > max_eff,
+                "exists": True, "missing": False, "created": True}
         _annotate_struct_meta(abs_path, data)
         if data.get("struct_layer"):
             _touch_layer(data["struct_layer"], "ensures")
@@ -1438,19 +1337,290 @@ def ensure_file(
         return ToolResult(ok=False, error=str(e))
 
 # ======================================================================================
-# Structural Analysis Tools
+# Bulk & Index / Search Tools
 # ======================================================================================
+@tool(
+    name="read_bulk_files",
+    description="Read multiple small text files. Returns JSON or concatenated blob.",
+    category="fs",
+    capabilities=["fs","read","batch"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "paths":{"type":"array","default":[]},
+            "max_bytes_per_file":{"type":"integer","default":60000},
+            "ignore_missing":{"type":"boolean","default":True},
+            "merge_mode":{"type":"string","default":"json","description":"json|concat"}
+        },
+        "required":["paths"]
+    }
+)
+def read_bulk_files(
+    paths: List[str],
+    max_bytes_per_file: int = 60000,
+    ignore_missing: bool = True,
+    merge_mode: str = "json"
+) -> ToolResult:
+    out = []
+    max_eff = int(min(max_bytes_per_file, MAX_READ_BYTES))
+    total_chars = 0
+    for p in paths:
+        try:
+            abs_path = _safe_path(p)
+            if not os.path.exists(abs_path):
+                if ignore_missing:
+                    out.append({"path": abs_path, "exists": False, "content": ""})
+                    continue
+                else:
+                    return ToolResult(ok=False, error=f"FILE_NOT_FOUND:{p}")
+            if os.path.isdir(abs_path):
+                out.append({"path": abs_path, "exists": False, "error": "IS_DIRECTORY"})
+                continue
+            if os.path.getsize(abs_path) > max_eff:
+                # Partial read
+                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read(max_eff)
+                truncated = True
+            else:
+                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read()
+                truncated = False
+            total_chars += len(content)
+            out.append({
+                "path": abs_path,
+                "exists": True,
+                "truncated": truncated,
+                "content": content
+            })
+            if total_chars > 1_500_000:  # Hard safety limit
+                break
+        except Exception as e:
+            if not ignore_missing:
+                return ToolResult(ok=False, error=str(e))
+            out.append({"path": p, "exists": False, "error": str(e)})
+    if merge_mode == "concat":
+        merged = "\n\n".join(f"# {os.path.basename(o['path'])}\n{o.get('content','')}" for o in out if o.get("content"))
+        return ToolResult(ok=True, data={
+            "mode": "concat",
+            "content": merged,
+            "files_count": len(out),
+            "total_chars": len(merged)
+        })
+    return ToolResult(ok=True, data={"mode": "json", "files": out, "files_count": len(out)})
+
+@tool(
+    name="code_index_project",
+    description="Lightweight lexical project index: collects file metadata, size, line counts, simple complexity heuristic.",
+    category="index",
+    capabilities=["index","scan"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "root":{"type":"string","default":"."},
+            "max_files":{"type":"integer","default":CODE_INDEX_MAX_FILES},
+            "include_exts":{"type":"string","default":",".join(CODE_INDEX_INCLUDE_EXTS)}
+        }
+    }
+)
+def code_index_project(root: str = ".", max_files: int = CODE_INDEX_MAX_FILES,
+                       include_exts: str = ",".join(CODE_INDEX_INCLUDE_EXTS)) -> ToolResult:
+    try:
+        root_abs = _safe_path(root)
+        if not os.path.isdir(root_abs):
+            return ToolResult(ok=False, error="NOT_A_DIRECTORY")
+        exts = {e.strip().lower() for e in include_exts.split(",") if e.strip().startswith(".")}
+        files_meta = []
+        count = 0
+        start = time.perf_counter()
+        for base, dirs, files in os.walk(root_abs):
+            # prune excluded dirs
+            parts = base.replace("\\", "/").split("/")
+            if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
+                continue
+            for fname in files:
+                if count >= max_files:
+                    break
+                ext = os.path.splitext(fname)[1].lower()
+                if exts and ext not in exts:
+                    continue
+                fpath = os.path.join(base, fname)
+                try:
+                    st = os.stat(fpath)
+                    if st.st_size > CODE_INDEX_MAX_FILE_BYTES:
+                        continue
+                    with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
+                    line_count = len(lines)
+                    non_empty = sum(1 for l in lines if l.strip())
+                    avg_len = sum(len(l) for l in lines)/line_count if line_count else 0
+                    complexity_score = round(
+                        (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
+                    )
+                    files_meta.append({
+                        "path": os.path.relpath(fpath, root_abs),
+                        "lines": line_count,
+                        "non_empty": non_empty,
+                        "avg_line_len": round(avg_len, 2),
+                        "size": st.st_size,
+                        "complexity_score": complexity_score
+                    })
+                    count += 1
+                except Exception:
+                    continue
+            if count >= max_files:
+                break
+        elapsed_ms = int((time.perf_counter() - start)*1000)
+        files_meta.sort(key=lambda x: x["complexity_score"], reverse=True)
+        top_hotspots = files_meta[: min(20, len(files_meta))]
+        return ToolResult(ok=True, data={
+            "root": root_abs,
+            "indexed_files": len(files_meta),
+            "hotspots_top20": top_hotspots,
+            "elapsed_ms": elapsed_ms,
+            "exts": sorted(exts),
+            "limit_reached": count >= max_files
+        })
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="code_search_lexical",
+    description="Lexical scan for a query (substring or optional regex) returning contextual snippets.",
+    category="search",
+    capabilities=["search","scan","lexical"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "query":{"type":"string"},
+            "root":{"type":"string","default":"."},
+            "regex":{"type":"boolean","default":False},
+            "limit":{"type":"integer","default":CODE_SEARCH_MAX_RESULTS},
+            "context_radius":{"type":"integer","default":CODE_SEARCH_CONTEXT_RADIUS}
+        },
+        "required":["query"]
+    }
+)
+def code_search_lexical(query: str, root: str = ".", regex: bool = False,
+                        limit: int = CODE_SEARCH_MAX_RESULTS,
+                        context_radius: int = CODE_SEARCH_CONTEXT_RADIUS) -> ToolResult:
+    try:
+        q = (query or "").strip()
+        if not q:
+            return ToolResult(ok=False, error="EMPTY_QUERY")
+        root_abs = _safe_path(root)
+        if not os.path.isdir(root_abs):
+            return ToolResult(ok=False, error="NOT_A_DIRECTORY")
+        pattern = None
+        if regex:
+            try:
+                pattern = re.compile(q, re.IGNORECASE | re.MULTILINE)
+            except Exception as e:
+                return ToolResult(ok=False, error=f"REGEX_INVALID: {e}")
+        results = []
+        scanned = 0
+        for base, dirs, files in os.walk(root_abs):
+            parts = base.replace("\\", "/").split("/")
+            if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
+                continue
+            for fname in files:
+                ext = os.path.splitext(fname)[1].lower()
+                fpath = os.path.join(base, fname)
+                if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
+                    continue
+                try:
+                    with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
+                except Exception:
+                    continue
+                scanned += 1
+                for idx, line in enumerate(lines):
+                    hit = False
+                    if regex:
+                        if pattern.search(line):
+                            hit = True
+                    else:
+                        if q.lower() in line.lower():
+                            hit = True
+                    if hit:
+                        start = max(0, idx - context_radius)
+                        end = min(len(lines), idx + context_radius + 1)
+                        snippet_lines = lines[start:end]
+                        snippet = "".join(snippet_lines)[:1000]
+                        rel = os.path.relpath(fpath, root_abs)
+                        results.append({
+                            "file": rel,
+                            "line": idx+1,
+                            "snippet": snippet,
+                            "match_line_excerpt": line.strip()[:300]
+                        })
+                        if len(results) >= limit:
+                            return ToolResult(ok=True, data={
+                                "query": q,
+                                "regex": regex,
+                                "results": results,
+                                "scanned_files": scanned,
+                                "limit_reached": True
+                            })
+        return ToolResult(ok=True, data={
+            "query": q,
+            "regex": regex,
+            "results": results,
+            "scanned_files": scanned,
+            "limit_reached": False
+        })
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
+
+@tool(
+    name="code_search_semantic",
+    description="(Stub) Semantic search placeholder. Returns informative stub unless SEMANTIC_SEARCH_ENABLED=1.",
+    category="search",
+    capabilities=["search","semantic","stub"],
+    parameters={
+        "type":"object",
+        "properties":{
+            "query":{"type":"string"},
+            "top_k":{"type":"integer","default":5}
+        },
+        "required":["query"]
+    }
+)
+def code_search_semantic(query: str, top_k: int = 5) -> ToolResult:
+    q = (query or "").strip()
+    if not q:
+        return ToolResult(ok=False, error="EMPTY_QUERY")
+    if not SEMANTIC_SEARCH_ENABLED:
+        return ToolResult(ok=True, data={
+            "query": q,
+            "enabled": False,
+            "message": "Semantic search disabled (SEMANTIC_SEARCH_ENABLED=0). This is a stub.",
+            "results": []
+        })
+    # Future real embedding logic
+    if SEMANTIC_SEARCH_FAKE_LATENCY_MS > 0:
+        time.sleep(SEMANTIC_SEARCH_FAKE_LATENCY_MS / 1000.0)
+    # Dummy placeholder results
+    dummy = [{
+        "file": f"placeholder_{i}.py",
+        "score": round(1.0 - (i * 0.07), 3),
+        "excerpt": f"Simulated semantic match for '{q}' (rank {i+1})."
+    } for i in range(min(top_k, 8))]
+    return ToolResult(ok=True, data={
+        "query": q,
+        "enabled": True,
+        "results": dummy
+    })
+
+# Structural Analysis --------------------------------------------------------
 @tool(
     name="analyze_path_semantics",
     description="Return structural meta (layer/hotspot/dup_group) for a path if present in deep map.",
     category="structural",
-    capabilities=["struct", "meta"],
+    capabilities=["struct","meta"],
     parameters={
-        "type": "object",
-        "properties": {
-            "path": {"type": "string"}
-        },
-        "required": ["path"]
+        "type":"object",
+        "properties":{"path":{"type":"string"}},
+        "required":["path"]
     }
 )
 def analyze_path_semantics(path: str) -> ToolResult:
@@ -1477,10 +1647,10 @@ def analyze_path_semantics(path: str) -> ToolResult:
     name="reload_deep_struct_map",
     description="Force reload of deep structural map. Returns reloaded + entry count.",
     category="structural",
-    capabilities=["struct", "control"],
+    capabilities=["struct","control"],
     parameters={
-        "type": "object",
-        "properties": {}
+        "type":"object",
+        "properties":{}
     }
 )
 def reload_deep_struct_map() -> ToolResult:
@@ -1491,21 +1661,19 @@ def reload_deep_struct_map() -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-# ======================================================================================
-# Dispatch
-# ======================================================================================
+# Dispatch -------------------------------------------------------------------
 @tool(
     name="dispatch_tool",
-    description="Dynamically call another tool (allowlist via DISPATCH_ALLOWLIST). Canonicalizes tool_name and merges telemetry.",
+    description="Dynamically call another tool (allowlist via DISPATCH_ALLOWLIST).",
     category="meta",
-    capabilities=["meta", "routing"],
+    capabilities=["meta","routing"],
     parameters={
-        "type": "object",
-        "properties": {
-            "tool_name": {"type": "string"},
-            "arguments": {"type": "object", "default": {}}
+        "type":"object",
+        "properties":{
+            "tool_name":{"type":"string"},
+            "arguments":{"type":"object","default":{}}
         },
-        "required": ["tool_name"]
+        "required":["tool_name"]
     }
 )
 def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
@@ -1574,6 +1742,10 @@ def memory_get_tool(**kwargs): return memory_get(**kwargs)
 def dispatch_tool_tool(**kwargs): return dispatch_tool(**kwargs)
 def analyze_path_semantics_tool(**kwargs): return analyze_path_semantics(**kwargs)
 def reload_deep_struct_map_tool(**kwargs): return reload_deep_struct_map(**kwargs)
+def read_bulk_files_tool(**kwargs): return read_bulk_files(**kwargs)
+def code_index_project_tool(**kwargs): return code_index_project(**kwargs)
+def code_search_lexical_tool(**kwargs): return code_search_lexical(**kwargs)
+def code_search_semantic_tool(**kwargs): return code_search_semantic(**kwargs)
 
 # ======================================================================================
 # __all__
@@ -1587,7 +1759,7 @@ __all__ = [
     "has_tool",
     "get_tools_schema",
     "list_tools",
-    # Canonical Tools
+    # Core Tools
     "introspect_tools",
     "memory_put",
     "memory_get",
@@ -1598,6 +1770,7 @@ __all__ = [
     "write_file_if_changed",
     "append_file",
     "read_file",
+    "read_bulk_files",
     "file_exists",
     "list_dir",
     "delete_file",
@@ -1606,7 +1779,10 @@ __all__ = [
     "dispatch_tool",
     "analyze_path_semantics",
     "reload_deep_struct_map",
-    # Legacy alias exports
+    "code_index_project",
+    "code_search_lexical",
+    "code_search_semantic",
+    # Legacy alias wrappers
     "generic_think_tool",
     "summarize_text_tool",
     "refine_text_tool",
@@ -1614,6 +1790,7 @@ __all__ = [
     "write_file_if_changed_tool",
     "append_file_tool",
     "read_file_tool",
+    "read_bulk_files_tool",
     "file_exists_tool",
     "list_dir_tool",
     "delete_file_tool",
@@ -1625,7 +1802,10 @@ __all__ = [
     "dispatch_tool_tool",
     "analyze_path_semantics_tool",
     "reload_deep_struct_map_tool",
-    # Registries (debug / guard)
+    "code_index_project_tool",
+    "code_search_lexical_tool",
+    "code_search_semantic_tool",
+    # Registries / Stats
     "_TOOL_REGISTRY",
     "_TOOL_STATS",
     "_ALIAS_INDEX",
@@ -1634,5 +1814,4 @@ __all__ = [
     "_LAYER_STATS"
 ]
 
-# END OF FILE (v4.4.0-hyper-l4++-struct)
-# Structural map optional – seamlessly degrades if absent.
+# END OF FILE (v4.5.0-hyper-l5++-omniplan)
