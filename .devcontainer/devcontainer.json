@@ -1,26 +1,25 @@
 {
-  "name": "CogniForge: The Architect's Control v15.0",
+  "//": "Dev Container Configuration (Ultimate Optimized Edition)",
+  "name": "CogniForge – Architect Dev Env",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
   "service": "web",
   "workspaceFolder": "/app",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+
   "remoteUser": "root",
   "containerUser": "root",
   "overrideCommand": false,
 
-  // --- [THE ARCHITECT'S CONTROL PROTOCOL] ---
-  // We perform only the most essential setup, then hand over control
-  // to the architect for manual build and execution.
-  "initializeCommand": "bash -lc 'if [ ! -f .env ] && [ -f .-env.example ]; then cp .env.example .env; fi'",
-  "postCreateCommand": "bash -lc '.devcontainer/on-create.sh'",
-  "postAttachCommand": "echo '✅ Welcome, Architect. Your environment is ready. Modify your .env file, then run: docker-compose up --build'",
-  // "postStartCommand" has been intentionally removed to prevent automatic startup.
-  // --- نهاية البروتوكول ---
+  "initializeCommand": "",
+
+  "postCreateCommand": "bash .devcontainer/on-create.sh",
+  "postStartCommand": "bash .devcontainer/on-start.sh",
+  "postAttachCommand": "bash .devcontainer/on-attach.sh",
 
   "userEnvProbe": "loginInteractiveShell",
   "waitFor": "postCreateCommand",
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -54,6 +53,7 @@
       }
     }
   },
+
   "forwardPorts": [5000, 8000, 8001, 5432],
   "portsAttributes": {
     "5000": { "label": "Flask Frontend (Web)" },
@@ -61,22 +61,45 @@
     "8001": { "label": "ChromaDB (Vector Memory)" },
     "5432": { "label": "PostgreSQL (Database)" }
   },
+
   "containerEnv": {
     "PIP_DISABLE_PIP_VERSION_CHECK": "1",
     "PIP_NO_CACHE_DIR": "1",
     "PYTHONDONTWRITEBYTECODE": "1",
-    "FORCE_COLOR": "1"
+    "FORCE_COLOR": "1",
+
+    "SKIP_ENV_BOOTSTRAP": "false",
+    "SKIP_PIP_INSTALL": "false",
+    "SKIP_DB_WAIT": "false",
+    "SKIP_MIGRATIONS": "false",
+    "SKIP_SEED": "false",
+
+    "RUN_MIGRATIONS_DURING_CREATE": "false",
+    "RUN_SEED_DURING_CREATE": "false",
+
+    "RUN_APP_ON_START": "false",
+    "APP_START_CMD": "flask run --host=0.0.0.0 --port=8000",
+
+    "SHOW_MIGRATION_STATUS": "true",
+    "DB_HOST": "db",
+    "DB_PORT": "5432"
   },
+
   "mounts": [
     "source=devcontainer-dind,target=/var/lib/docker,type=volume"
   ],
+
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest", "moby": true },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
   },
+
   "hostRequirements": {
     "cpus": 2,
     "memory": "4gb",
