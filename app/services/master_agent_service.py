@@ -452,10 +452,10 @@ def _autofill_file_args(tool: str, tool_args: Dict[str, Any], mission: Mission, 
 
 # Interpolation --------------------------------------------------------------
 def _collect_prior_outputs(mission_id: int) -> Dict[str, Dict[str, str]]:
-    rows: List[Task] = Task.query.filter(
+    rows: List[Task] = db.session.query(Task).filter(
         Task.mission_id == mission_id,
         Task.status == TaskStatus.SUCCESS
-    ).all()
+    ).options(joinedload(Task.mission)).all()
     out: Dict[str, Dict[str, str]] = {}
     for t in rows:
         bucket: Dict[str, str] = {}
@@ -998,24 +998,43 @@ class OvermindService:
 
     # ------------------------------ Ready Task Discovery ---------------------
     def _find_ready_tasks(self, mission: Mission) -> List[Task]:
-        candidates: List[Task] = Task.query.filter(
+        candidates: List[Task] = db.session.query(Task).filter(
             Task.mission_id == mission.id,
             Task.status.in_([TaskStatus.PENDING, TaskStatus.RETRY])
-        ).all()
+        ).options(joinedload(Task.mission)).all()
+        
+        all_deps = set()
+        for t in candidates:
+            deps = t.depends_on_json or []
+            all_deps.update(deps)
+        
+        if all_deps:
+            dep_rows_dict = {
+                task.task_key: task for task in db.session.query(Task).filter(
+                    Task.mission_id == mission.id,
+                    Task.task_key.in_(all_deps)
+                ).all()
+            }
+        else:
+            dep_rows_dict = {}
+        
         ready: List[Task] = []
         for t in candidates:
             deps = t.depends_on_json or []
             if not deps:
                 ready.append(t)
                 continue
-            dep_rows = Task.query.filter(
-                Task.mission_id == mission.id,
-                Task.task_key.in_(deps)
-            ).all()
-            if len(dep_rows) != len(deps):
+            
+            missing_deps = [dep for dep in deps if dep not in dep_rows_dict]
+            if missing_deps:
                 log_warn(mission, "Task missing dependency", task_key=t.task_key)
                 continue
-            if all(dr.status == TaskStatus.SUCCESS for dr in dep_rows):
+                
+            all_done = all(
+                dep_rows_dict[dep].status == TaskStatus.SUCCESS 
+                for dep in deps
+            )
+            if all_done:
                 ready.append(t)
         return ready
 
@@ -1444,7 +1463,7 @@ class OvermindService:
 
     # ------------------------------ Risk Summary -----------------------------
     def _finalize_mission_risk(self, mission: Mission):
-        tasks = Task.query.filter_by(mission_id=mission.id).all()
+        tasks = db.session.query(Task).filter_by(mission_id=mission.id).options(joinedload(Task.mission)).all()
         buckets = {"low": 0, "mid": 0, "high": 0}
         for t in tasks:
             rs = None
@@ -1469,8 +1488,10 @@ class OvermindService:
 
     # ------------------------------ Architecture Outcome ---------------------
     def _classify_architecture_outcome(self, mission: Mission):
-        arch_tasks = Task.query.filter_by(mission_id=mission.id,
-                                          status=TaskStatus.SUCCESS).all()
+        arch_tasks = db.session.query(Task).filter_by(
+            mission_id=mission.id,
+            status=TaskStatus.SUCCESS
+        ).options(joinedload(Task.mission)).all()
         produced = False
         target = L4_EXPECT_ARCH_FILE.lower()
         for t in arch_tasks:
