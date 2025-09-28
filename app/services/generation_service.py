@@ -725,6 +725,58 @@ class MaestroGenerationService:
         strict_prompt = f"You must output ONLY valid JSON (no fences). User request:\n{prompt}"
         return self.forge_new_code(strict_prompt, conversation_id=conversation_id, model=model)
 
+    def generate_comprehensive_response(
+        self,
+        prompt: str,
+        conversation_id: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate a comprehensive single-file response with deep analysis."""
+        try:
+            comprehensive_prompt = self._build_comprehensive_prompt(prompt)
+            
+            result = self.forge_new_code(
+                prompt=comprehensive_prompt,
+                conversation_id=conversation_id or f"comprehensive-{uuid.uuid4()}",
+                model=model
+            )
+            
+            if result.get("status") == "success":
+                return {
+                    "status": "success",
+                    "answer": result.get("answer", ""),
+                    "meta": {
+                        **result.get("meta", {}),
+                        "response_type": "comprehensive",
+                        "consolidated": True
+                    }
+                }
+            return result
+        except Exception as exc:
+            self._safe_log("[generate_comprehensive_response] Failure", level="error", exc_info=True)
+            return {
+                "status": "error",
+                "error": str(exc),
+                "meta": {"response_type": "comprehensive"}
+            }
+
+    def _build_comprehensive_prompt(self, user_prompt: str) -> str:
+        """Build a comprehensive prompt that includes all analysis types in one response."""
+        return f"""أنت خبير ذكاء اصطناعي متقدم متخصص في تحليل المشاريع البرمجية. قدم إجابة شاملة ومنظمة في ملف واحد فقط.
+
+يجب أن تتضمن إجابتك:
+1. **تحليل معماري عميق**: طبقات النظام، الخدمات، التبعيات
+2. **النقاط الساخنة**: المناطق عالية التعقيد والأهمية
+3. **فهرس المكونات**: ملخص منظم للملفات والوظائف الرئيسية
+4. **التوصيات**: فرص التحسين والمخاطر المحتملة
+5. **الخلاصة**: ملخص تنفيذي شامل
+
+استخدم تنسيق Markdown منظم مع عناوين واضحة وتحليل عميق.
+
+سؤال المستخدم: {user_prompt}
+
+قدم إجابة خارقة الذكاء ومنظمة بشكل مثالي في ملف واحد شامل."""
+
     # ------------------------------------------------------------------
     # Legacy single-shot wrapper (compat)
     # ------------------------------------------------------------------
@@ -1135,6 +1187,9 @@ def forge_new_code(*a, **k):
 def generate_json(*a, **k):
     return get_generation_service().generate_json(*a, **k)
 
+def generate_comprehensive_response(*a, **k):
+    return get_generation_service().generate_comprehensive_response(*a, **k)
+
 def execute_task_legacy_wrapper(*a, **k):
     if len(a) == 1 and isinstance(a[0], str) and not k:
         return get_generation_service().execute_task_legacy_wrapper({"description": a[0]})
@@ -1159,6 +1214,7 @@ __all__ = [
     "get_generation_service",
     "forge_new_code",
     "generate_json",
+    "generate_comprehensive_response",
     "execute_task",
     "execute_task_legacy_wrapper",
     "diagnostics",

@@ -761,8 +761,8 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
 # ======================================================================================
 @mindgate_cli.cli.command("ask")
 @click.argument("prompt", nargs=-1, required=True)
-@click.option("--mode", type=click.Choice(["legacy", "forge", "json"]), default="legacy",
-              help="LLM mode: legacy | forge | json")
+@click.option("--mode", type=click.Choice(["legacy", "forge", "json", "comprehensive"]), default="comprehensive",
+              help="LLM mode: legacy | forge | json | comprehensive")
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
@@ -790,6 +790,10 @@ def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
             if not hasattr(generation_service, "forge_new_code"):
                 raise RuntimeError("forge_new_code not available.")
             result = generation_service.forge_new_code(prompt=text, conversation_id=f"ask-{uuid.uuid4()}")
+        elif mode == "comprehensive":
+            if not hasattr(generation_service, "generate_comprehensive_response"):
+                raise RuntimeError("generate_comprehensive_response not available.")
+            result = generation_service.generate_comprehensive_response(prompt=text, conversation_id=f"ask-{uuid.uuid4()}")
         else:  # json
             if not hasattr(generation_service, "generate_json"):
                 raise RuntimeError("generate_json not available.")
