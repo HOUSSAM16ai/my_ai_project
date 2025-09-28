@@ -89,6 +89,7 @@ PLANNER_CORE_READ_FILES=README.md,requirements.txt,Dockerfile,config.py,pyprojec
 # Artifact Index & Output
 PLANNER_INDEX_FILE=1
 PLANNER_INDEX_NAME=ARTIFACT_INDEX.md
+PLANNER_COMPREHENSIVE_MODE=0
 
 # Guardrails
 PLANNER_MAX_TASKS_GLOBAL=550
@@ -225,6 +226,9 @@ STRICT_WRITE_ENF= _env_flag("PLANNER_STRICT_WRITE_ENFORCE", True)
 
 INDEX_FILE_EN   = _env_flag("PLANNER_INDEX_FILE", True)
 INDEX_FILE_NAME = os.getenv("PLANNER_INDEX_NAME","ARTIFACT_INDEX.md")
+
+COMPREHENSIVE_MODE = _env_flag("PLANNER_COMPREHENSIVE_MODE", False)
+COMPREHENSIVE_FILE_NAME = os.getenv("PLANNER_COMPREHENSIVE_NAME", "COMPREHENSIVE_ANALYSIS.md")
 
 DEEP_INDEX_JSON_EN  = _env_flag("PLANNER_DEEP_INDEX_JSON", True)
 DEEP_INDEX_JSON_NAME= os.getenv("PLANNER_DEEP_INDEX_JSON_NAME","STRUCTURAL_INDEX.json")
@@ -687,11 +691,15 @@ class UltraHyperPlanner(BasePlanner):
             inline_struct=inline_struct
         )
 
-        # ---------- Artifact index ----------
-        idx=self._maybe_add_artifact_index(tasks, idx, lang, final_writes, files)
+        # ---------- Comprehensive Analysis (replaces fragmented outputs) ----------
+        if COMPREHENSIVE_MODE:
+            idx = self._add_comprehensive_analysis(tasks, idx, lang, final_writes, files, struct_meta)
+        else:
+            # ---------- Artifact index ----------
+            idx=self._maybe_add_artifact_index(tasks, idx, lang, final_writes, files)
 
-        # ---------- Architecture deep report ----------
-        deep_report_task=None
+            # ---------- Architecture deep report ----------
+            deep_report_task=None
         if struct_meta["attached"]:
             deep_report_task=self._maybe_add_deep_arch_report(tasks, idx, lang, (index_deps or analysis_dependency_ids), struct_meta)
             if deep_report_task:
@@ -998,6 +1006,69 @@ class UltraHyperPlanner(BasePlanner):
             dependencies=[think_id]
         ))
         return {"next_idx": idx, "write_id": write_id, "think_id": think_id}
+
+    def _add_comprehensive_analysis(self, tasks: List[PlannedTask], idx: int, lang: str,
+                                    deps: List[str], files: List[str], struct_meta: Dict[str, Any]) -> int:
+        """Create one comprehensive analysis file instead of multiple fragmented files."""
+        prompt_ar = """حلل المشروع بشكل شامل وقدم تقرير واحد متكامل يتضمن:
+
+- طبقات النظام والخدمات (الحاويات الثلاث: db, web, ai_service)
+- التبعيات والعلاقات بين المكونات
+- النقاط الساخنة والمناطق الحرجة في الكود
+
+- ملخص الملفات الرئيسية ووظائفها
+- الفئات والوظائف المهمة
+- نقاط الدخول والواجهات البرمجية
+
+- التكرار في الكود وفرص التحسين
+- فرص إعادة الهيكلة والتنظيم
+- المخاطر المحتملة ونقاط الضعف
+
+- أولويات التحسين والتطوير
+- الخطوات التالية المقترحة
+- أفضل الممارسات للصيانة
+
+قدم تحليل عميق ومنظم بذكاء خارق في ملف واحد شامل."""
+
+        prompt_en = """Analyze the project comprehensively and provide one integrated report including:
+
+- System layers and services (three containers: db, web, ai_service)
+- Dependencies and relationships between components
+- Hotspots and critical areas in the code
+
+- Summary of key files and their functions
+- Important classes and functions
+- Entry points and APIs
+
+- Code duplication and improvement opportunities
+- Refactoring and reorganization opportunities
+- Potential risks and weaknesses
+
+- Improvement and development priorities
+- Suggested next steps
+- Best practices for maintenance
+
+Provide deep, organized analysis with superhuman intelligence in one comprehensive file."""
+
+        think_id = _tid(idx); idx += 1
+        tasks.append(PlannedTask(
+            task_id=think_id,
+            description="Generate comprehensive project analysis.",
+            tool_name=TOOL_THINK,
+            tool_args={"prompt": prompt_ar if lang == 'ar' else prompt_en},
+            dependencies=deps
+        ))
+        
+        write_id = _tid(idx); idx += 1
+        tasks.append(PlannedTask(
+            task_id=write_id,
+            description=f"Write comprehensive analysis {COMPREHENSIVE_FILE_NAME}.",
+            tool_name=TOOL_WRITE,
+            tool_args={"path": COMPREHENSIVE_FILE_NAME, "content": f"{{{{{think_id}.answer}}}}"},
+            dependencies=[think_id]
+        ))
+        
+        return idx
 
     def _prune_if_needed(self, tasks:List[PlannedTask], idx:int, final_writes:List[str])->Tuple[int,List[str]]:
         if len(tasks) <= GLOBAL_TASK_CAP: return idx, []
