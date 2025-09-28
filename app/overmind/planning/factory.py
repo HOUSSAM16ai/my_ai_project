@@ -119,7 +119,7 @@ _env_manual = os.getenv("OVERMIND_PLANNER_MANUAL", "")
 ENV_MANUAL_MODULES: List[str] = [m.strip() for m in _env_manual.split(",") if m.strip()]
 
 _env_exclude = os.getenv("OVERMIND_PLANNER_EXCLUDE", "")
-ENV_EXCLUDE_MODULES: Set[str] = {m.strip() for m in _env_exclude.split(",") if m.strip()}
+ENV_EXCLUDE_MODULES: Set[str] = set(m.strip() for m in _env_exclude.split(",") if m.strip())
 
 MANUAL_IMPORT_MODULES: List[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
 EXCLUDE_MODULES: Set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
@@ -205,7 +205,7 @@ def _now() -> float:
     return time.time()
 
 def _safe_lower_set(values: Optional[Iterable[str]]) -> Set[str]:
-    return {v.lower().strip() for v in values or [] if v is not None}
+    return set(v.lower().strip() for v in values or [] if v is not None)
 
 # ======================================================================================
 # INTERNAL HELPERS
@@ -263,7 +263,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
         return set()
     val = getattr(obj, attr)
     if isinstance(val, (list, tuple, set)):
-        return {str(v).strip() for v in val if v is not None}
+        return set(str(v).strip() for v in val if v is not None)
     return set()
 
 def _extract_bool(obj: Any, attr: str) -> Optional[bool]:

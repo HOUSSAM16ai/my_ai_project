@@ -94,8 +94,8 @@ CONFIG = {
     "MAX_FILE_BYTES": _env_int("DEEP_INDEX_MAX_FILE_BYTES", 300_000),
     "MAX_FILES": _env_int("DEEP_INDEX_MAX_FILES", 4000),
     "THREADS": _env_int("DEEP_INDEX_THREADS", 4),
-    "EXCLUDE_DIRS": {d.strip() for d in _env("DEEP_INDEX_EXCLUDE_DIRS",
-                    ".git,__pycache__,venv,env,.venv,node_modules,dist,build,migrations").split(",") if d.strip()},
+    "EXCLUDE_DIRS": [d.strip() for d in _env("DEEP_INDEX_EXCLUDE_DIRS",
+                    ".git,__pycache__,venv,env,.venv,node_modules,dist,build,migrations").split(",") if d.strip()],
     "INCLUDE_GLOBS": [g.strip() for g in _env("DEEP_INDEX_INCLUDE_GLOBS", "").split(",") if g.strip()],
     "INTERNAL_PREFIXES": tuple(p.strip() for p in _env("DEEP_INDEX_INTERNAL_PREFIXES", "app,src").split(",") if p.strip()),
     "DUP_HASH_PREFIX": _env_int("DEEP_INDEX_DUP_HASH_PREFIX", 16),
@@ -226,7 +226,7 @@ def _estimate_complexity(node: ast.AST) -> int:
             complexity += 1
     return complexity
 
-def _categorize(code: str) -> Set[str]:
+def _categorize(code: str) -> List[str]:
     lower = code.lower()
     tags: Set[str] = set()
     if "async def " in lower:
@@ -247,7 +247,7 @@ def _categorize(code: str) -> Set[str]:
         tags.add("ml")
     if any(x in lower for x in ("openai", "anthropic", "gemini", "langchain", "llama")):
         tags.add("llm")
-    return tags
+    return sorted(list(tags))
 
 def _layer_for_path(path: str) -> Optional[str]:
     if not CONFIG["LAYER_HEURISTICS"]:
@@ -375,7 +375,7 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
                 isinstance(ch, ast.Call) and isinstance(ch.func, ast.Name) and ch.func.id == node.name
                 for ch in ast.walk(node)
             )
-            tags = list(sorted(_categorize(slice_src)))
+            tags = _categorize(slice_src)
             calls_out = []
             for ch in ast.walk(node):
                 if isinstance(ch, ast.Call):
@@ -632,7 +632,7 @@ def _service_candidates(file_metrics: List[Dict[str, Any]], file_sources: Dict[s
         code = file_sources.get(path, "")
         if _service_candidate(path, code):
             cands.append(path)
-    return sorted(set(cands))
+    return sorted(list(set(cands)))
 
 # --------------------------------------------------------------------------------------
 # Public API: build_index
