@@ -224,15 +224,15 @@ CODE_HINTS      = _env_flag("PLANNER_ENABLE_CODE_HINTS", True)
 ENSURE_FILE     = _env_flag("PLANNER_ENSURE_FILE", True)
 STRICT_WRITE_ENF= _env_flag("PLANNER_STRICT_WRITE_ENFORCE", True)
 
-INDEX_FILE_EN   = _env_flag("PLANNER_INDEX_FILE", True)
-INDEX_FILE_NAME = os.getenv("PLANNER_INDEX_NAME","ARTIFACT_INDEX.md")
-
 COMPREHENSIVE_MODE = _env_flag("PLANNER_COMPREHENSIVE_MODE", False)
 COMPREHENSIVE_FILE_NAME = os.getenv("PLANNER_COMPREHENSIVE_NAME", "COMPREHENSIVE_ANALYSIS.md")
 
-DEEP_INDEX_JSON_EN  = _env_flag("PLANNER_DEEP_INDEX_JSON", True)
+INDEX_FILE_EN   = _env_flag("PLANNER_INDEX_FILE", True) and not COMPREHENSIVE_MODE
+INDEX_FILE_NAME = os.getenv("PLANNER_INDEX_NAME","ARTIFACT_INDEX.md")
+
+DEEP_INDEX_JSON_EN  = _env_flag("PLANNER_DEEP_INDEX_JSON", True) and not COMPREHENSIVE_MODE
 DEEP_INDEX_JSON_NAME= os.getenv("PLANNER_DEEP_INDEX_JSON_NAME","STRUCTURAL_INDEX.json")
-DEEP_INDEX_MD_EN    = _env_flag("PLANNER_DEEP_INDEX_MD", True)
+DEEP_INDEX_MD_EN    = _env_flag("PLANNER_DEEP_INDEX_MD", True) and not COMPREHENSIVE_MODE
 DEEP_INDEX_MD_NAME  = os.getenv("PLANNER_DEEP_INDEX_MD_NAME","STRUCTURAL_INDEX_SUMMARY.md")
 DEEP_INDEX_MAX_JSON = _env_int("PLANNER_DEEP_INDEX_MAX_JSON_BYTES", 220_000)
 DEEP_INDEX_SUMMARY_MAX = _env_int("PLANNER_DEEP_INDEX_SUMMARY_MAX_LEN", 6000)
@@ -700,11 +700,11 @@ class UltraHyperPlanner(BasePlanner):
 
             # ---------- Architecture deep report ----------
             deep_report_task=None
-        if struct_meta["attached"]:
-            deep_report_task=self._maybe_add_deep_arch_report(tasks, idx, lang, (index_deps or analysis_dependency_ids), struct_meta)
-            if deep_report_task:
-                idx=deep_report_task["next_idx"]
-                final_writes.append(deep_report_task["write_id"])
+            if struct_meta["attached"]:
+                deep_report_task=self._maybe_add_deep_arch_report(tasks, idx, lang, (index_deps or analysis_dependency_ids), struct_meta)
+                if deep_report_task:
+                    idx=deep_report_task["next_idx"]
+                    final_writes.append(deep_report_task["write_id"])
 
         # ---------- Optional pruning if cap exceeded ----------
         tasks_pruned=[]
