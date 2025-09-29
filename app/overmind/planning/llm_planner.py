@@ -700,11 +700,11 @@ class UltraHyperPlanner(BasePlanner):
 
             # ---------- Architecture deep report ----------
             deep_report_task=None
-        if struct_meta["attached"]:
-            deep_report_task=self._maybe_add_deep_arch_report(tasks, idx, lang, (index_deps or analysis_dependency_ids), struct_meta)
-            if deep_report_task:
-                idx=deep_report_task["next_idx"]
-                final_writes.append(deep_report_task["write_id"])
+            if struct_meta["attached"]:
+                deep_report_task=self._maybe_add_deep_arch_report(tasks, idx, lang, (index_deps or analysis_dependency_ids), struct_meta)
+                if deep_report_task:
+                    idx=deep_report_task["next_idx"]
+                    final_writes.append(deep_report_task["write_id"])
 
         # ---------- Optional pruning if cap exceeded ----------
         tasks_pruned=[]
