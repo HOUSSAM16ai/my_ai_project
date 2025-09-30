@@ -123,3 +123,178 @@ def list_users():
     # --- [THE CRITICAL FIX] ---
     # Assuming `admin_users.html` is also in the `admin/templates` folder.
     return render_template("admin_users.html", title="User Roster", users=all_users)
+
+# --------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+
+try:
+    from app.services.admin_ai_service import get_admin_ai_service
+    from app.models import AdminConversation, AdminMessage
+except ImportError:
+    get_admin_ai_service = None
+    AdminConversation = None
+    AdminMessage = None
+
+@bp.route("/api/chat", methods=["POST"])
+@admin_required
+def handle_chat():
+    """API endpoint للمحادثة الذكية"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    data = request.json
+    question = data.get("question", "").strip()
+    conversation_id = data.get("conversation_id")
+    use_deep_context = data.get("use_deep_context", True)
+    
+    if not question:
+        return jsonify({"status": "error", "message": "Question is required."}), 400
+    
+    try:
+        service = get_admin_ai_service()
+        
+        if not conversation_id:
+            conv = service.create_conversation(
+                user=current_user._get_current_object(),
+                title=question[:100],
+                conversation_type="general"
+            )
+            conversation_id = conv.id
+        
+        result = service.answer_question(
+            question=question,
+            user=current_user._get_current_object(),
+            conversation_id=conversation_id,
+            use_deep_context=use_deep_context
+        )
+        
+        result["conversation_id"] = conversation_id
+        return jsonify(result)
+        
+    except Exception as e:
+        current_app.logger.error(f"Chat API failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/analyze-project", methods=["POST"])
+@admin_required
+def handle_analyze_project():
+    """API endpoint لتحليل المشروع"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    data = request.json or {}
+    conversation_id = data.get("conversation_id")
+    
+    try:
+        service = get_admin_ai_service()
+        result = service.analyze_project(
+            user=current_user._get_current_object(),
+            conversation_id=conversation_id
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        current_app.logger.error(f"Project analysis API failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/execute-modification", methods=["POST"])
+@admin_required
+def handle_execute_modification():
+    """API endpoint لتنفيذ تعديلات على المشروع"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    data = request.json
+    objective = data.get("objective", "").strip()
+    conversation_id = data.get("conversation_id")
+    
+    if not objective:
+        return jsonify({"status": "error", "message": "Objective is required."}), 400
+    
+    try:
+        service = get_admin_ai_service()
+        result = service.execute_modification(
+            objective=objective,
+            user=current_user._get_current_object(),
+            conversation_id=conversation_id
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        current_app.logger.error(f"Modification API failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/conversations", methods=["GET"])
+@admin_required
+def handle_get_conversations():
+    """API endpoint لجلب محادثات المستخدم"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    try:
+        service = get_admin_ai_service()
+        conversations = service.get_user_conversations(
+            user=current_user._get_current_object()
+        )
+        
+        return jsonify({
+            "status": "success",
+            "conversations": [
+                {
+                    "id": conv.id,
+                    "title": conv.title,
+                    "type": conv.conversation_type,
+                    "created_at": conv.created_at.isoformat(),
+                    "updated_at": conv.updated_at.isoformat(),
+                    "message_count": len(conv.messages)
+                }
+                for conv in conversations
+            ]
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Get conversations API failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/conversation/<int:conversation_id>", methods=["GET"])
+@admin_required
+def handle_get_conversation_detail(conversation_id):
+    """API endpoint لجلب تفاصيل محادثة"""
+    try:
+        if not AdminConversation:
+            return jsonify({"status": "error", "message": "Admin conversations not available."}), 503
+            
+        conv = db.session.get(AdminConversation, conversation_id)
+        
+        if not conv or conv.user_id != current_user.id:
+            return jsonify({"status": "error", "message": "Conversation not found."}), 404
+        
+        return jsonify({
+            "status": "success",
+            "conversation": {
+                "id": conv.id,
+                "title": conv.title,
+                "type": conv.conversation_type,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "messages": [
+                    {
+                        "id": msg.id,
+                        "role": msg.role,
+                        "content": msg.content,
+                        "created_at": msg.created_at.isoformat(),
+                        "tokens_used": msg.tokens_used,
+                        "model_used": msg.model_used
+                    }
+                    for msg in conv.messages
+                ]
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Get conversation detail failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500

@@ -556,6 +556,66 @@ class MissionEvent(Timestamped, db.Model):
         return f"<MissionEvent id={self.id} type={self.event_type.value}>"
 
 # ======================================================================================
+# ======================================================================================
+
+class AdminConversation(Timestamped, db.Model):
+    """
+    نموذج المحادثات في صفحة الأدمن.
+    كل محادثة تحتوي على عدة رسائل وترتبط بمستخدم معين.
+    """
+    __tablename__ = "admin_conversations"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(db.String(500), nullable=False)
+    user_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    conversation_type: Mapped[str] = mapped_column(
+        db.String(50), 
+        default="general",
+        nullable=False
+    )
+    
+    deep_index_summary: Mapped[Optional[str]] = mapped_column(db.Text)
+    context_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
+    
+    user: Mapped[User] = relationship("User", backref="admin_conversations")
+    messages: Mapped[List["AdminMessage"]] = relationship(
+        "AdminMessage", 
+        back_populates="conversation", 
+        cascade="all, delete-orphan",
+        order_by="AdminMessage.created_at"
+    )
+    
+    def __repr__(self):
+        return f"<AdminConversation id={self.id} title={self.title[:30]!r}>"
+
+
+class AdminMessage(Timestamped, db.Model):
+    """
+    نموذج الرسائل في المحادثات.
+    كل رسالة لها دور (user/assistant/system) ومحتوى.
+    """
+    __tablename__ = "admin_messages"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        db.Integer, 
+        db.ForeignKey("admin_conversations.id", ondelete="CASCADE"), 
+        index=True
+    )
+    role: Mapped[str] = mapped_column(db.String(20), nullable=False)
+    content: Mapped[str] = mapped_column(db.Text, nullable=False)
+    
+    tokens_used: Mapped[Optional[int]] = mapped_column(db.Integer)
+    model_used: Mapped[Optional[str]] = mapped_column(db.String(100))
+    latency_ms: Mapped[Optional[float]] = mapped_column(db.Float)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
+    
+    conversation: Mapped[AdminConversation] = relationship("AdminConversation", back_populates="messages")
+    
+    def __repr__(self):
+        return f"<AdminMessage id={self.id} role={self.role} content={self.content[:30]!r}>"
+
+# ======================================================================================
 # MODEL EVENT LISTENERS (Timestamp Coercion)
 # ======================================================================================
 

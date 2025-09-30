@@ -1,198 +1,823 @@
 {% extends "base.html" %}
-{% block title %}Overmind Mission Control{% endblock %}
+{% block title %}Overmind Super Admin AI Control{% endblock %}
 
 {% block content %}
 <style>
-/* --- (All CSS variables and styles from your previous superb version remain the same) --- */
-:root { --cf-bg: #f8f9fb; --cf-bg-alt: #ffffff; /* ... and so on */ }
-[data-theme="dark"] { --cf-bg: #0e1116; --cf-bg-alt: #161b22; /* ... and so on */ }
-/* ... (pasting all CSS here would be too long, assume it's the same beautiful CSS) ... */
-
-/* --- [NEW MISSION-CENTRIC STYLES] --- */
-.mission-list {
-  list-style: none;
-  padding: 0;
-  max-height: 600px;
-  overflow-y: auto;
-  scrollbar-width: thin;
+:root {
+  --cf-bg: #0a0e27;
+  --cf-bg-alt: #141b3d;
+  --cf-bg-card: #1a2249;
+  --cf-border: #2d3b6b;
+  --cf-text: #e8eaf6;
+  --cf-text-dim: #9fa8da;
+  --cf-accent: #4fc3f7;
+  --cf-accent-rgb: 79, 195, 247;
+  --cf-success: #66bb6a;
+  --cf-danger: #ef5350;
+  --cf-warning: #ffca28;
+  --cf-shadow: rgba(0, 0, 0, 0.3);
+  --cf-glow: rgba(79, 195, 247, 0.2);
 }
-.mission-item {
+
+[data-theme="light"] {
+  --cf-bg: #f5f7fa;
+  --cf-bg-alt: #ffffff;
+  --cf-bg-card: #ffffff;
+  --cf-border: #e0e3e8;
+  --cf-text: #1a1a2e;
+  --cf-text-dim: #6c757d;
+  --cf-accent: #2196f3;
+  --cf-accent-rgb: 33, 150, 243;
+  --cf-shadow: rgba(0, 0, 0, 0.08);
+  --cf-glow: rgba(33, 150, 243, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--cf-bg);
+  color: var(--cf-text);
+  line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
+}
+
+.admin-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: .8rem .9rem;
-  border-bottom: 1px solid var(--cf-border);
-  transition: background-color .2s;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--cf-border);
 }
-.mission-item:last-child { border-bottom: none; }
-.mission-item:hover { background-color: rgba(var(--cf-accent-rgb), 0.05); }
-.mission-objective {
-  font-weight: 500;
-  color: var(--cf-text);
-  text-decoration: none;
-}
-.mission-objective a { color: inherit; text-decoration: none; }
-.mission-meta {
-  font-size: .7rem;
-  color: var(--cf-text-dim);
+
+.admin-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--cf-accent) 0%, #64b5f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
 }
-.mission-status {
-  font-weight: 600;
-  padding: .2rem .5rem;
-  border-radius: 1rem;
-  font-size: .6rem;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-}
-.mission-status.PENDING { background-color: rgba(108, 117, 125, 0.1); color: #6c757d; }
-.mission-status.RUNNING { background-color: rgba(var(--cf-accent-rgb), 0.1); color: var(--cf-accent); animation: pulse 1.5s infinite; }
-.mission-status.SUCCESS { background-color: rgba(25, 135, 84, 0.1); color: var(--cf-success); }
-.mission-status.FAILED { background-color: rgba(220, 53, 69, 0.1); color: var(--cf-danger); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-#objective-input { min-height: 80px; }
-#start-mission-btn.sending .spinner-inline { display: inline-block; }
-.spinner-inline { display: none; }
+.ai-badge {
+  background: linear-gradient(135deg, var(--cf-accent), #64b5f6);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px var(--cf-glow); }
+  50% { box-shadow: 0 0 20px var(--cf-glow); }
+}
+
+.theme-toggle {
+  background: var(--cf-bg-card);
+  border: 1px solid var(--cf-border);
+  color: var(--cf-text);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.theme-toggle:hover {
+  background: var(--cf-accent);
+  color: white;
+  border-color: var(--cf-accent);
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+.admin-sidebar {
+  background: var(--cf-bg-card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px var(--cf-shadow);
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.sidebar-section {
+  margin-bottom: 2rem;
+}
+
+.sidebar-section h3 {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  color: var(--cf-text-dim);
+  margin-bottom: 1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.sidebar-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 1px solid var(--cf-border);
+  color: var(--cf-text);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-btn:hover, .sidebar-btn.active {
+  background: var(--cf-accent);
+  color: white;
+  border-color: var(--cf-accent);
+  transform: translateX(4px);
+}
+
+.conversation-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  padding: 0.75rem;
+  background: var(--cf-bg-alt);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+
+.conversation-item:hover {
+  border-color: var(--cf-accent);
+  transform: translateX(4px);
+}
+
+.conversation-item.active {
+  background: var(--cf-accent);
+  color: white;
+}
+
+.chat-container {
+  background: var(--cf-bg-card);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--cf-shadow);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+}
+
+.chat-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--cf-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  background: var(--cf-accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn:hover {
+  background: #29b6f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--cf-glow);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message {
+  display: flex;
+  gap: 1rem;
+  max-width: 85%;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.message.user .message-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.message.assistant .message-avatar {
+  background: linear-gradient(135deg, var(--cf-accent) 0%, #64b5f6 100%);
+  color: white;
+}
+
+.message.system .message-avatar {
+  background: linear-gradient(135deg, var(--cf-warning) 0%, #ffa726 100%);
+  color: white;
+}
+
+.message-content {
+  background: var(--cf-bg-alt);
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  flex: 1;
+}
+
+.message.user .message-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.message-meta {
+  font-size: 0.75rem;
+  color: var(--cf-text-dim);
+  margin-top: 0.5rem;
+}
+
+.message.user .message-meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.input-area {
+  padding: 1.5rem;
+  border-top: 1px solid var(--cf-border);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.input-container {
+  flex: 1;
+  position: relative;
+}
+
+#chat-input {
+  width: 100%;
+  padding: 1rem;
+  padding-right: 3rem;
+  background: var(--cf-bg-alt);
+  border: 1px solid var(--cf-border);
+  border-radius: 8px;
+  color: var(--cf-text);
+  font-size: 1rem;
+  resize: none;
+  min-height: 60px;
+  max-height: 150px;
+  transition: all 0.3s;
+}
+
+#chat-input:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 3px var(--cf-glow);
+}
+
+.input-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-icon-btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--cf-text-dim);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-icon-btn:hover {
+  background: var(--cf-accent);
+  color: white;
+}
+
+.send-btn {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, var(--cf-accent) 0%, #64b5f6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.send-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--cf-glow);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--cf-accent);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+@media (max-width: 1024px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-sidebar {
+    position: static;
+  }
+}
+
+.message-content pre {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.message-content code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Fira Code', monospace;
+}
+
+.message-content ul, .message-content ol {
+  margin-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.message-content h1, .message-content h2, .message-content h3 {
+  margin: 1rem 0 0.5rem;
+}
 </style>
 
-<header class="mb-4 d-flex justify-content-between align-items-center">
-  <div>
-    <h1 class="h4 mb-1 cf-heading">
-      <span>Overmind Mission Control</span>
-      <span class="cf-badge">v1.0</span>
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>
+      <span>🧠</span>
+      Super Admin AI Control
+      <span class="ai-badge">AI Powered</span>
     </h1>
-    <p class="text-muted small">Strategic command interface for AI-driven development.</p>
+    <button id="theme-toggle" class="theme-toggle">
+      <span id="theme-label">🌙 Dark</span>
+    </button>
   </div>
-  <button id="theme-toggle" class="theming-toggle" aria-label="Toggle theme" type="button">
-    <span id="theme-label">🌙 Dark</span>
-  </button>
-</header>
 
-<main class="row g-4">
-  <section class="col-lg-8">
-    <div class="cf-panel mb-3" aria-label="Mission Roster">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h6 mb-0">Mission Roster</h2>
-        <small class="text-muted" id="mission-count">{{ missions|length }} missions logged</small>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="sidebar-section">
+        <h3>Actions</h3>
+        <button class="sidebar-btn active" data-action="chat">
+          💬 AI Chat
+        </button>
+        <button class="sidebar-btn" data-action="analyze">
+          📊 Analyze Project
+        </button>
+        <button class="sidebar-btn" data-action="missions" onclick="window.location.href='{{ url_for('admin.admin_dashboard') }}'">
+          🎯 View Missions
+        </button>
       </div>
-      <ul class="mission-list">
-        {% if missions %}
-          {% for mission in missions %}
-            <li class="mission-item">
-              <div class="mission-objective">
-                <a href="{{ url_for('admin.mission_detail', mission_id=mission.id) }}" title="View Mission Details">
-                  #{{ mission.id }}: {{ mission.objective|truncate(100) }}
-                </a>
-              </div>
-              <div class="mission-meta">
-                <span class="mission-status {{ mission.status.value }}">{{ mission.status.value }}</span>
-                <time datetime="{{ mission.updated_at.isoformat() }}">{{ mission.updated_at.strftime('%Y-%m-%d %H:%M') }}</time>
-              </div>
-            </li>
-          {% endfor %}
-        {% else %}
-          <li class="text-center text-muted p-4">No missions found in the Akashic Records.</li>
-        {% endif %}
-      </ul>
-    </div>
-  </section>
 
-  <aside class="col-lg-4">
-    <div class="cf-panel">
-      <h2 class="h6 mb-2">Launch New Mission</h2>
-      <form id="mission-form">
-        <textarea id="objective-input" class="form-control mb-2" placeholder="Define a high-level strategic objective... e.g., 'Implement a 5-star rating system for AI messages.'" required></textarea>
-        <div class="d-flex justify-content-end">
-          <button id="start-mission-btn" type="submit" class="btn btn-primary">
-            <span class="spinner-inline"></span>
-            <i class="fas fa-rocket"></i> Launch
+      <div class="sidebar-section">
+        <h3>Recent Conversations</h3>
+        <div class="conversation-list" id="conversation-list">
+          <button class="sidebar-btn" data-action="new-chat">
+            ➕ New Conversation
           </button>
         </div>
-      </form>
-    </div>
-  </aside>
-</main>
+      </div>
+    </aside>
 
-<footer class="cf-footer">
-  CogniForge Overmind · The Genesis of Autonomous Architecture
-</footer>
+    <main class="admin-main">
+      <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+          <div class="chat-title">AI Assistant</div>
+          <div class="chat-actions">
+            <button class="action-btn" id="analyze-btn">
+              📊 Analyze
+            </button>
+            <button class="action-btn" id="clear-btn">
+              🗑️ Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="messages-area" id="messages-area">
+          <div class="message system">
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+              <p>مرحباً! أنا مساعد الذكاء الاصطناعي الخارق لمشروع CogniForge.</p>
+              <p>يمكنني مساعدتك في:</p>
+              <ul>
+                <li>تحليل عميق لبنية المشروع والكود</li>
+                <li>الإجابة على أسئلة تقنية معقدة</li>
+                <li>تنفيذ تعديلات وإضافة ميزات جديدة</li>
+                <li>اقتراح تحسينات ومراجعة الكود</li>
+              </ul>
+              <p>كيف يمكنني مساعدتك اليوم؟</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-container">
+            <textarea 
+              id="chat-input" 
+              placeholder="اطرح سؤالك هنا... مثال: احلل بنية المشروع، أو اشرح كيف يعمل Overmind"
+              rows="1"
+            ></textarea>
+            <div class="input-actions">
+              <button class="input-icon-btn" id="attach-btn" title="Attach file">
+                📎
+              </button>
+            </div>
+          </div>
+          <button class="send-btn" id="send-btn">
+            <span>إرسال</span>
+            <span>🚀</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
 
 <script>
-(function(){
-  // --- [ELEMENT SELECTORS] ---
-  const missionForm = document.getElementById('mission-form');
-  const objectiveInput = document.getElementById('objective-input');
-  const startMissionBtn = document.getElementById('start-mission-btn');
-  const themeToggle = document.getElementById('theme-toggle');
-  const themeLabel = document.getElementById('theme-label');
-  
+(function() {
   const STATE = {
-    isSubmitting: false
+    currentConversationId: null,
+    isLoading: false,
+    conversations: []
   };
 
-  // --- [UTILITIES] ---
-  function setSubmitting(submitting) {
-    STATE.isSubmitting = submitting;
-    if (submitting) {
-      startMissionBtn.classList.add('sending');
-      startMissionBtn.disabled = true;
-      startMissionBtn.querySelector('i').style.display = 'none';
-    } else {
-      startMissionBtn.classList.remove('sending');
-      startMissionBtn.disabled = false;
-      startMissionBtn.querySelector('i').style.display = 'inline-block';
-    }
+  const messagesArea = document.getElementById('messages-area');
+  const chatInput = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const conversationList = document.getElementById('conversation-list');
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeLabel = document.getElementById('theme-label');
+
+  function showLoading() {
+    STATE.isLoading = true;
+    sendBtn.disabled = true;
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'message assistant';
+    loadingMsg.id = 'loading-message';
+    loadingMsg.innerHTML = `
+      <div class="message-avatar">🤖</div>
+      <div class="message-content">
+        <div class="loading">
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+        </div>
+      </div>
+    `;
+    messagesArea.appendChild(loadingMsg);
+    messagesArea.scrollTop = messagesArea.scrollHeight;
   }
 
-  // --- [API CALLS] ---
-  async function startNewMission() {
-    const objective = objectiveInput.value.trim();
-    if (!objective || STATE.isSubmitting) return;
+  function hideLoading() {
+    STATE.isLoading = false;
+    sendBtn.disabled = false;
+    const loadingMsg = document.getElementById('loading-message');
+    if (loadingMsg) loadingMsg.remove();
+  }
+
+  function addMessage(role, content, metadata = {}) {
+    const msg = document.createElement('div');
+    msg.className = `message ${role}`;
     
-    setSubmitting(true);
+    const avatar = role === 'user' ? '👤' : (role === 'system' ? '⚙️' : '🤖');
+    
+    let metaHtml = '';
+    if (metadata.model_used || metadata.tokens_used) {
+      metaHtml = `
+        <div class="message-meta">
+          ${metadata.model_used ? `Model: ${metadata.model_used}` : ''}
+          ${metadata.tokens_used ? ` • Tokens: ${metadata.tokens_used}` : ''}
+          ${metadata.elapsed_seconds ? ` • ${metadata.elapsed_seconds}s` : ''}
+        </div>
+      `;
+    }
+    
+    msg.innerHTML = `
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-content">
+        ${content}
+        ${metaHtml}
+      </div>
+    `;
+    
+    messagesArea.appendChild(msg);
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+  }
+
+  function formatContent(text) {
+    return text
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
+
+  async function sendMessage(question) {
+    showLoading();
     
     try {
-      const response = await fetch("{{ url_for('admin.handle_start_mission') }}", {
+      const response = await fetch("{{ url_for('admin.handle_chat') }}", {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ objective: objective })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: question,
+          conversation_id: STATE.currentConversationId,
+          use_deep_context: true
+        })
       });
       
       const result = await response.json();
-      console.log('Mission Start Result:', result);
-
-      if (response.ok && result.status === 'success' && result.redirect_url) {
-        // SUCCESS: Redirect to the new mission's detail page.
-        window.location.href = result.redirect_url;
+      hideLoading();
+      
+      if (result.status === 'success') {
+        STATE.currentConversationId = result.conversation_id;
+        addMessage('assistant', formatContent(result.answer), {
+          model_used: result.model_used,
+          tokens_used: result.tokens_used,
+          elapsed_seconds: result.elapsed_seconds
+        });
+        
+        loadConversations();
       } else {
-        // FAILURE: Display an alert or a more sophisticated notification.
-        alert(`Error: ${result.message || 'Failed to start mission.'}`);
-        setSubmitting(false);
+        addMessage('system', `❌ Error: ${result.message || result.error}`);
       }
-    } catch (err) {
-      console.error('[CRITICAL] Mission start failed:', err);
-      alert('A critical network or server error occurred.');
-      setSubmitting(false);
+    } catch (error) {
+      hideLoading();
+      addMessage('system', `❌ Network error: ${error.message}`);
     }
   }
 
-  // --- [EVENT LISTENERS] ---
-  missionForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    startNewMission();
-  });
-  
-  objectiveInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          startNewMission();
+  async function analyzeProject() {
+    showLoading();
+    addMessage('system', '🔍 Starting deep project analysis...');
+    
+    try {
+      const response = await fetch("{{ url_for('admin.handle_analyze_project') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: STATE.currentConversationId
+        })
+      });
+      
+      const result = await response.json();
+      hideLoading();
+      
+      if (result.status === 'success') {
+        const stats = result.project_stats;
+        const arch = result.architecture;
+        const hotspots = result.hotspots;
+        const recommendations = result.recommendations;
+        
+        let analysisHtml = `
+          <h3>📊 Project Statistics</h3>
+          <p>Files scanned: <strong>${stats.files_scanned}</strong></p>
+          <p>Functions: <strong>${stats.total_functions}</strong></p>
+          <p>Classes: <strong>${stats.total_classes}</strong></p>
+          <p>Complexity Hotspots: <strong>${stats.complexity_hotspots}</strong></p>
+          
+          <h3>🏗️ Architecture</h3>
+          <p>Services: <strong>${arch.services_count}</strong></p>
+          <p>Models: <strong>${arch.models_count}</strong></p>
+          <p>Routes: <strong>${arch.routes_count}</strong></p>
+          
+          <h3>🔥 Top Complexity Hotspots</h3>
+          <ul>
+        `;
+        
+        hotspots.slice(0, 5).forEach(h => {
+          analysisHtml += `<li>${h.file} - ${h.function} (complexity: ${h.complexity})</li>`;
+        });
+        
+        analysisHtml += '</ul><h3>💡 Recommendations</h3><ul>';
+        recommendations.forEach(r => {
+          analysisHtml += `<li>${r}</li>`;
+        });
+        analysisHtml += '</ul>';
+        
+        addMessage('assistant', analysisHtml);
+      } else {
+        addMessage('system', `❌ Analysis failed: ${result.error}`);
       }
+    } catch (error) {
+      hideLoading();
+      addMessage('system', `❌ Network error: ${error.message}`);
+    }
+  }
+
+  async function loadConversations() {
+    try {
+      const response = await fetch("{{ url_for('admin.handle_get_conversations') }}");
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        STATE.conversations = result.conversations;
+        renderConversations();
+      }
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    }
+  }
+
+  function renderConversations() {
+    const newChatBtn = conversationList.querySelector('[data-action="new-chat"]');
+    conversationList.innerHTML = '';
+    conversationList.appendChild(newChatBtn);
+    
+    STATE.conversations.forEach(conv => {
+      const item = document.createElement('div');
+      item.className = 'conversation-item';
+      if (conv.id === STATE.currentConversationId) {
+        item.classList.add('active');
+      }
+      item.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 0.25rem;">${conv.title}</div>
+        <div style="font-size: 0.75rem; color: var(--cf-text-dim);">
+          ${conv.message_count} messages • ${new Date(conv.updated_at).toLocaleDateString()}
+        </div>
+      `;
+      item.addEventListener('click', () => loadConversation(conv.id));
+      conversationList.appendChild(item);
+    });
+  }
+
+  async function loadConversation(conversationId) {
+    try {
+      const response = await fetch(`{{ url_for('admin.handle_get_conversation_detail', conversation_id=0) }}`.replace('0', conversationId));
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        STATE.currentConversationId = conversationId;
+        messagesArea.innerHTML = '';
+        
+        result.conversation.messages.forEach(msg => {
+          addMessage(msg.role, formatContent(msg.content), {
+            model_used: msg.model_used,
+            tokens_used: msg.tokens_used
+          });
+        });
+        
+        renderConversations();
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    }
+  }
+
+  sendBtn.addEventListener('click', () => {
+    const question = chatInput.value.trim();
+    if (question && !STATE.isLoading) {
+      addMessage('user', question);
+      chatInput.value = '';
+      sendMessage(question);
+    }
   });
 
-  // --- [THEME INITIALIZATION] ---
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  analyzeBtn.addEventListener('click', analyzeProject);
+
+  clearBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to start a new conversation?')) {
+      STATE.currentConversationId = null;
+      messagesArea.innerHTML = '';
+      addMessage('system', 'Started new conversation. How can I help you?');
+      renderConversations();
+    }
+  });
+
+  document.querySelectorAll('[data-action="new-chat"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.currentConversationId = null;
+      messagesArea.innerHTML = '';
+      addMessage('system', 'Started new conversation. How can I help you?');
+      renderConversations();
+    });
+  });
+
   function initTheme() {
     const saved = localStorage.getItem('cf-theme');
     const isDark = saved === 'dark';
@@ -207,9 +832,14 @@
       themeLabel.textContent = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
     });
   }
-  
-  initTheme();
 
+  initTheme();
+  loadConversations();
+  
+  chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+  });
 })();
 </script>
 {% endblock %}
