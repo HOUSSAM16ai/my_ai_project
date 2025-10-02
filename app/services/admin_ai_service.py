@@ -314,6 +314,36 @@ class AdminAIService:
                 "elapsed_seconds": round(time.time() - start_time, 2)
             }
     
+    def _read_key_project_files(self) -> Dict[str, str]:
+        """قراءة ملفات المشروع الرئيسية للسياق"""
+        project_files = {}
+        key_files = [
+            'docker-compose.yml',
+            'README.md',
+            'requirements.txt',
+            'pyproject.toml',
+            'package.json',
+            '.env.example',
+            'Dockerfile'
+        ]
+        
+        project_root = os.path.abspath('.')
+        
+        for filename in key_files:
+            filepath = os.path.join(project_root, filename)
+            if os.path.exists(filepath):
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        if len(content) < 10000:
+                            project_files[filename] = content
+                        else:
+                            project_files[filename] = content[:10000] + "\n[... truncated ...]"
+                except Exception as e:
+                    self.logger.warning(f"Failed to read {filename}: {e}")
+        
+        return project_files
+    
     def _build_super_system_prompt(
         self,
         deep_index_summary: Optional[str] = None,
@@ -335,9 +365,16 @@ class AdminAIService:
             "- يستخدم العربية والإنجليزية حسب السياق",
         ]
         
+        project_files = self._read_key_project_files()
+        if project_files:
+            parts.append("\n## ملفات المشروع الرئيسية:")
+            for filename, content in project_files.items():
+                parts.append(f"\n### {filename}:")
+                parts.append(f"```\n{content}\n```")
+        
         if deep_index_summary:
             parts.extend([
-                "\n## بنية المشروع:",
+                "\n## بنية الكود (تحليل هيكلي):",
                 deep_index_summary
             ])
         
