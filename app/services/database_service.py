@@ -65,9 +65,11 @@ def get_all_tables() -> List[Dict[str, Any]]:
     
     return tables
 
-def get_table_data(table_name: str, page: int = 1, per_page: int = 50) -> Dict[str, Any]:
+def get_table_data(table_name: str, page: int = 1, per_page: int = 50, 
+                   search: Optional[str] = None, order_by: Optional[str] = None,
+                   order_dir: str = 'asc') -> Dict[str, Any]:
     """
-    احصل على بيانات جدول معين مع الترقيم
+    احصل على بيانات جدول معين مع الترقيم والبحث والترتيب
     """
     if table_name not in ALL_MODELS:
         return {'status': 'error', 'message': f'Table {table_name} not found'}
@@ -75,11 +77,33 @@ def get_table_data(table_name: str, page: int = 1, per_page: int = 50) -> Dict[s
     model = ALL_MODELS[table_name]
     
     try:
+        # Build query
+        query = db.session.query(model)
+        
+        # Apply search if provided
+        if search:
+            mapper = class_mapper(model)
+            search_filters = []
+            for col in mapper.columns:
+                # Search in string columns
+                if hasattr(col.type, 'python_type') and col.type.python_type == str:
+                    search_filters.append(getattr(model, col.key).ilike(f'%{search}%'))
+            if search_filters:
+                from sqlalchemy import or_
+                query = query.filter(or_(*search_filters))
+        
+        # Apply ordering
+        if order_by and hasattr(model, order_by):
+            order_col = getattr(model, order_by)
+            if order_dir.lower() == 'desc':
+                query = query.order_by(order_col.desc())
+            else:
+                query = query.order_by(order_col.asc())
+        
         # Get total count
-        total = db.session.query(model).count()
+        total = query.count()
         
         # Get paginated data
-        query = db.session.query(model)
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
         # Convert to dict

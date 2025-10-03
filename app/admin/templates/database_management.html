@@ -487,6 +487,7 @@ textarea.form-input {
       <div class="db-toolbar">
         <div class="toolbar-title" id="current-table">Select a table</div>
         <div class="toolbar-actions">
+          <input type="text" id="search-input" placeholder="🔍 Search..." style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--db-border); background: var(--db-bg-alt); color: var(--db-text); display: none;">
           <button class="btn btn-success" id="add-record-btn" style="display: none;">
             ➕ Add Record
           </button>
@@ -550,7 +551,10 @@ textarea.form-input {
     currentPage: 1,
     totalPages: 1,
     tables: [],
-    currentData: null
+    currentData: null,
+    searchTerm: '',
+    orderBy: null,
+    orderDir: 'asc'
   };
 
   async function loadStats() {
@@ -610,6 +614,7 @@ textarea.form-input {
     document.getElementById('current-table').textContent = tableName;
     document.getElementById('add-record-btn').style.display = 'block';
     document.getElementById('export-btn').style.display = 'block';
+    document.getElementById('search-input').style.display = 'block';
     
     renderTables();
     
@@ -617,7 +622,16 @@ textarea.form-input {
     content.innerHTML = '<div class="loading">Loading data...</div>';
     
     try {
-      const response = await fetch(`{{ url_for('admin.get_table_data', table_name='__TABLE__') }}`.replace('__TABLE__', tableName) + `?page=${page}`);
+      let url = `{{ url_for('admin.get_table_data', table_name='__TABLE__') }}`.replace('__TABLE__', tableName) + `?page=${page}`;
+      
+      if (STATE.searchTerm) {
+        url += `&search=${encodeURIComponent(STATE.searchTerm)}`;
+      }
+      if (STATE.orderBy) {
+        url += `&order_by=${STATE.orderBy}&order_dir=${STATE.orderDir}`;
+      }
+      
+      const response = await fetch(url);
       const result = await response.json();
       
       if (result.status === 'success') {
@@ -860,6 +874,18 @@ textarea.form-input {
   // Initialize
   loadStats();
   loadTables();
+  
+  // Search functionality
+  let searchTimeout;
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      STATE.searchTerm = e.target.value.trim();
+      if (STATE.currentTable) {
+        loadTableData(STATE.currentTable, 1);
+      }
+    }, 500);
+  });
 })();
 </script>
 {% endblock %}

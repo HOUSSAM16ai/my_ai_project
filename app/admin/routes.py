@@ -353,8 +353,13 @@ def get_table_data(table_name):
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 50, type=int)
+        search = request.args.get('search', None, type=str)
+        order_by = request.args.get('order_by', None, type=str)
+        order_dir = request.args.get('order_dir', 'asc', type=str)
         
-        result = database_service.get_table_data(table_name, page, per_page)
+        result = database_service.get_table_data(
+            table_name, page, per_page, search, order_by, order_dir
+        )
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Get table data failed: {e}", exc_info=True)
