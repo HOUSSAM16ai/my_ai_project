@@ -344,7 +344,7 @@ Planned features:
 - [x] Routes are registered
 - [x] UI renders properly
 - [x] Navigation links work
-- [ ] Database connection to Supabase
+- [x] Database connection to Supabase
 - [ ] CRUD operations functional
 - [ ] Search and filter working
 - [ ] Custom queries execute
