@@ -56,10 +56,34 @@ def print_section(title):
 def test_admin_conversations():
     """اختبار نظام محادثات الأدمن"""
     
-    app = create_app()
+    # Check if DATABASE_URL is configured, otherwise use testing config
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        app = create_app()  # Use default/development config with real database
+        is_testing = False
+    else:
+        app = create_app('testing')  # Use testing config with in-memory database
+        is_testing = True
     
     with app.app_context():
         print_section("🧪 اختبار محادثات الأدمن المباشر")
+        
+        # If using testing config, create tables and seed a test user
+        if is_testing:
+            print(f"{C.Y}🔧 وضع الاختبار: إنشاء الجداول وبيانات الاختبار...{C.E}")
+            db.create_all()
+            
+            # Create a test user
+            from werkzeug.security import generate_password_hash
+            test_user = User(
+                full_name="Test Admin",
+                email="test@admin.com",
+                password_hash=generate_password_hash("test123"),
+                is_admin=True
+            )
+            db.session.add(test_user)
+            db.session.commit()
+            print(f"{C.G}✅ تم إنشاء الجداول والمستخدم الاختباري{C.E}\n")
         
         # الخطوة 1: التحقق من الاتصال
         print(f"{C.Y}🔍 الخطوة 1: التحقق من الاتصال بقاعدة البيانات...{C.E}")
@@ -81,7 +105,7 @@ def test_admin_conversations():
         
         print(f"{C.G}✅ وجد {len(users)} مستخدم{C.E}")
         admin_user = users[0]  # استخدام أول مستخدم للاختبار
-        print(f"{C.B}   👤 المستخدم: {admin_user.username} (ID: {admin_user.id}){C.E}\n")
+        print(f"{C.B}   👤 المستخدم: {admin_user.full_name} (ID: {admin_user.id}){C.E}\n")
         
         # الخطوة 3: عرض المحادثات الموجودة
         print(f"{C.Y}🔍 الخطوة 3: عرض المحادثات الموجودة...{C.E}")
