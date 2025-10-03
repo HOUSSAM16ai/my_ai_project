@@ -298,3 +298,161 @@ def handle_get_conversation_detail(conversation_id):
     except Exception as e:
         current_app.logger.error(f"Get conversation detail failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --------------------------------------------------------------------------------------
+# DATABASE MANAGEMENT ROUTES
+# --------------------------------------------------------------------------------------
+
+try:
+    from app.services import database_service
+except ImportError:
+    database_service = None
+
+@bp.route("/database")
+@admin_required
+def database_management():
+    """عرض صفحة إدارة قاعدة البيانات"""
+    return render_template("database_management.html", title="Database Management")
+
+@bp.route("/api/database/tables", methods=["GET"])
+@admin_required
+def get_tables():
+    """API endpoint لجلب قائمة الجداول"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        tables = database_service.get_all_tables()
+        return jsonify({"status": "success", "tables": tables})
+    except Exception as e:
+        current_app.logger.error(f"Get tables failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/stats", methods=["GET"])
+@admin_required
+def get_db_stats():
+    """API endpoint لجلب إحصائيات قاعدة البيانات"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        stats = database_service.get_database_stats()
+        return jsonify({"status": "success", "stats": stats})
+    except Exception as e:
+        current_app.logger.error(f"Get database stats failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/table/<table_name>", methods=["GET"])
+@admin_required
+def get_table_data(table_name):
+    """API endpoint لجلب بيانات جدول معين"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        search = request.args.get('search', None, type=str)
+        order_by = request.args.get('order_by', None, type=str)
+        order_dir = request.args.get('order_dir', 'asc', type=str)
+        
+        result = database_service.get_table_data(
+            table_name, page, per_page, search, order_by, order_dir
+        )
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Get table data failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/record/<table_name>/<int:record_id>", methods=["GET"])
+@admin_required
+def get_record(table_name, record_id):
+    """API endpoint لجلب سجل واحد"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        result = database_service.get_record(table_name, record_id)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Get record failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/record/<table_name>", methods=["POST"])
+@admin_required
+def create_record(table_name):
+    """API endpoint لإنشاء سجل جديد"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        data = request.json
+        result = database_service.create_record(table_name, data)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Create record failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/record/<table_name>/<int:record_id>", methods=["PUT"])
+@admin_required
+def update_record(table_name, record_id):
+    """API endpoint لتحديث سجل"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        data = request.json
+        result = database_service.update_record(table_name, record_id, data)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Update record failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/record/<table_name>/<int:record_id>", methods=["DELETE"])
+@admin_required
+def delete_record(table_name, record_id):
+    """API endpoint لحذف سجل"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        result = database_service.delete_record(table_name, record_id)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Delete record failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/query", methods=["POST"])
+@admin_required
+def execute_query():
+    """API endpoint لتنفيذ استعلام SQL"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        data = request.json
+        sql = data.get('sql', '').strip()
+        
+        if not sql:
+            return jsonify({"status": "error", "message": "SQL query is required"}), 400
+        
+        result = database_service.execute_query(sql)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Execute query failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@bp.route("/api/database/export/<table_name>", methods=["GET"])
+@admin_required
+def export_table(table_name):
+    """API endpoint لتصدير بيانات جدول"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        result = database_service.export_table_data(table_name)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Export table failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500

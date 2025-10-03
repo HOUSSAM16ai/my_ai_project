@@ -1,0 +1,891 @@
+{% extends "base.html" %}
+{% block title %}Database Management - CogniForge{% endblock %}
+
+{% block content %}
+<style>
+:root {
+  --db-bg: #0a0e27;
+  --db-bg-alt: #141b3d;
+  --db-bg-card: #1a2249;
+  --db-border: #2d3b6b;
+  --db-text: #e8eaf6;
+  --db-text-dim: #9fa8da;
+  --db-accent: #4fc3f7;
+  --db-success: #66bb6a;
+  --db-danger: #ef5350;
+  --db-warning: #ffca28;
+  --db-shadow: rgba(0, 0, 0, 0.3);
+  --db-glow: rgba(79, 195, 247, 0.2);
+}
+
+[data-theme="light"] {
+  --db-bg: #f5f7fa;
+  --db-bg-alt: #ffffff;
+  --db-bg-card: #ffffff;
+  --db-border: #e0e3e8;
+  --db-text: #1a1a2e;
+  --db-text-dim: #6c757d;
+  --db-accent: #2196f3;
+  --db-shadow: rgba(0, 0, 0, 0.08);
+  --db-glow: rgba(33, 150, 243, 0.1);
+}
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--db-bg);
+  color: var(--db-text);
+  margin: 0;
+  padding: 0;
+}
+
+.db-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.db-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--db-border);
+}
+
+.db-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--db-accent) 0%, #64b5f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.db-badge {
+  background: linear-gradient(135deg, var(--db-accent), #64b5f6);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.db-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--db-bg-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--db-shadow);
+  border: 1px solid var(--db-border);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--db-text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--db-accent);
+}
+
+.db-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+.db-sidebar {
+  background: var(--db-bg-card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px var(--db-shadow);
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.sidebar-section h3 {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  color: var(--db-text-dim);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.table-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.table-item {
+  padding: 0.75rem;
+  background: var(--db-bg-alt);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+
+.table-item:hover {
+  border-color: var(--db-accent);
+  transform: translateX(4px);
+}
+
+.table-item.active {
+  background: var(--db-accent);
+  color: white;
+}
+
+.table-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.table-count {
+  font-size: 0.75rem;
+  color: var(--db-text-dim);
+}
+
+.table-item.active .table-count {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.db-main {
+  background: var(--db-bg-card);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--db-shadow);
+  overflow: hidden;
+}
+
+.db-toolbar {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--db-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background: var(--db-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #29b6f6;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: var(--db-success);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--db-danger);
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--db-bg-alt);
+  color: var(--db-text);
+  border: 1px solid var(--db-border);
+}
+
+.db-content {
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table th {
+  background: var(--db-bg-alt);
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--db-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--db-border);
+}
+
+.data-table tr:hover {
+  background: var(--db-bg-alt);
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--db-text);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.icon-btn:hover {
+  background: var(--db-accent);
+  color: white;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--db-border);
+}
+
+.page-btn {
+  padding: 0.5rem 0.75rem;
+  background: var(--db-bg-alt);
+  border: 1px solid var(--db-border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--db-text);
+}
+
+.page-btn:hover:not(:disabled) {
+  background: var(--db-accent);
+  color: white;
+}
+
+.page-btn.active {
+  background: var(--db-accent);
+  color: white;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--db-bg-card);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--db-text);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--db-text-dim);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--db-bg-alt);
+  border: 1px solid var(--db-border);
+  border-radius: 6px;
+  color: var(--db-text);
+  font-size: 1rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--db-accent);
+}
+
+textarea.form-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--db-text-dim);
+}
+
+.error-msg {
+  background: var(--db-danger);
+  color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.success-msg {
+  background: var(--db-success);
+  color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.query-editor {
+  background: var(--db-bg-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.query-input {
+  width: 100%;
+  min-height: 150px;
+  background: var(--db-bg-alt);
+  border: 1px solid var(--db-border);
+  border-radius: 6px;
+  color: var(--db-text);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.875rem;
+  padding: 1rem;
+  resize: vertical;
+}
+
+@media (max-width: 1024px) {
+  .db-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .db-sidebar {
+    position: static;
+  }
+}
+</style>
+
+<div class="db-container">
+  <div class="db-header">
+    <h1>
+      <span>🗄️</span>
+      Database Management
+      <span class="db-badge">Supabase Connected</span>
+    </h1>
+    <button id="refresh-btn" class="btn btn-primary">
+      🔄 Refresh
+    </button>
+  </div>
+
+  <div class="db-stats" id="db-stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Tables</div>
+      <div class="stat-value" id="total-tables">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Records</div>
+      <div class="stat-value" id="total-records">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Database</div>
+      <div class="stat-value" style="font-size: 1.2rem;">PostgreSQL</div>
+    </div>
+  </div>
+
+  <div class="db-layout">
+    <aside class="db-sidebar">
+      <div class="sidebar-section">
+        <h3>Tables</h3>
+        <div class="table-list" id="table-list">
+          <div class="loading">Loading tables...</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="db-main">
+      <div class="db-toolbar">
+        <div class="toolbar-title" id="current-table">Select a table</div>
+        <div class="toolbar-actions">
+          <input type="text" id="search-input" placeholder="🔍 Search..." style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--db-border); background: var(--db-bg-alt); color: var(--db-text); display: none;">
+          <button class="btn btn-success" id="add-record-btn" style="display: none;">
+            ➕ Add Record
+          </button>
+          <button class="btn btn-primary" id="export-btn" style="display: none;">
+            📥 Export
+          </button>
+          <button class="btn btn-secondary" id="query-btn">
+            📝 Custom Query
+          </button>
+        </div>
+      </div>
+
+      <div class="db-content" id="db-content">
+        <div style="text-align: center; padding: 3rem; color: var(--db-text-dim);">
+          <h2>👈 Select a table to view data</h2>
+          <p>Choose a table from the sidebar to browse, edit, or manage records.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal" id="edit-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Edit Record</h2>
+      <button class="close-btn" onclick="closeModal('edit-modal')">×</button>
+    </div>
+    <div id="modal-body">
+      <!-- Form will be generated dynamically -->
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+      <button class="btn btn-secondary" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Query Modal -->
+<div class="modal" id="query-modal">
+  <div class="modal-content" style="max-width: 900px;">
+    <div class="modal-header">
+      <h2 class="modal-title">Custom SQL Query</h2>
+      <button class="close-btn" onclick="closeModal('query-modal')">×</button>
+    </div>
+    <div class="query-editor">
+      <textarea class="query-input" id="sql-input" placeholder="SELECT * FROM users WHERE ..."></textarea>
+      <button class="btn btn-primary" id="execute-query-btn" style="margin-top: 1rem;">
+        ▶️ Execute Query
+      </button>
+    </div>
+    <div id="query-results"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STATE = {
+    currentTable: null,
+    currentPage: 1,
+    totalPages: 1,
+    tables: [],
+    currentData: null,
+    searchTerm: '',
+    orderBy: null,
+    orderDir: 'asc'
+  };
+
+  async function loadStats() {
+    try {
+      const response = await fetch("{{ url_for('admin.get_db_stats') }}");
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        const stats = result.stats;
+        document.getElementById('total-tables').textContent = stats.tables.length;
+        document.getElementById('total-records').textContent = stats.total_records;
+      }
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  }
+
+  async function loadTables() {
+    try {
+      const response = await fetch("{{ url_for('admin.get_tables') }}");
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        STATE.tables = result.tables;
+        renderTables();
+      }
+    } catch (error) {
+      console.error('Failed to load tables:', error);
+    }
+  }
+
+  function renderTables() {
+    const list = document.getElementById('table-list');
+    list.innerHTML = '';
+    
+    STATE.tables.forEach(table => {
+      const item = document.createElement('div');
+      item.className = 'table-item';
+      if (table.name === STATE.currentTable) {
+        item.classList.add('active');
+      }
+      
+      item.innerHTML = `
+        <div class="table-name">${table.name}</div>
+        <div class="table-count">${table.count} records</div>
+      `;
+      
+      item.addEventListener('click', () => loadTableData(table.name));
+      list.appendChild(item);
+    });
+  }
+
+  async function loadTableData(tableName, page = 1) {
+    STATE.currentTable = tableName;
+    STATE.currentPage = page;
+    
+    document.getElementById('current-table').textContent = tableName;
+    document.getElementById('add-record-btn').style.display = 'block';
+    document.getElementById('export-btn').style.display = 'block';
+    document.getElementById('search-input').style.display = 'block';
+    
+    renderTables();
+    
+    const content = document.getElementById('db-content');
+    content.innerHTML = '<div class="loading">Loading data...</div>';
+    
+    try {
+      let url = `{{ url_for('admin.get_table_data', table_name='__TABLE__') }}`.replace('__TABLE__', tableName) + `?page=${page}`;
+      
+      if (STATE.searchTerm) {
+        url += `&search=${encodeURIComponent(STATE.searchTerm)}`;
+      }
+      if (STATE.orderBy) {
+        url += `&order_by=${STATE.orderBy}&order_dir=${STATE.orderDir}`;
+      }
+      
+      const response = await fetch(url);
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        STATE.currentData = result;
+        STATE.totalPages = result.pages;
+        renderTableData(result);
+      } else {
+        content.innerHTML = `<div class="error-msg">Error: ${result.message}</div>`;
+      }
+    } catch (error) {
+      content.innerHTML = `<div class="error-msg">Failed to load table data: ${error.message}</div>`;
+    }
+  }
+
+  function renderTableData(data) {
+    const content = document.getElementById('db-content');
+    
+    let html = '<table class="data-table"><thead><tr>';
+    
+    // Headers
+    data.columns.forEach(col => {
+      html += `<th>${col}</th>`;
+    });
+    html += '<th>Actions</th></tr></thead><tbody>';
+    
+    // Rows
+    data.rows.forEach(row => {
+      html += '<tr>';
+      data.columns.forEach(col => {
+        let value = row[col];
+        if (value === null || value === undefined) {
+          value = '<span style="color: var(--db-text-dim);">NULL</span>';
+        } else if (typeof value === 'object') {
+          value = JSON.stringify(value);
+        } else {
+          value = String(value);
+        }
+        
+        // Truncate long values
+        if (value.length > 100) {
+          value = value.substring(0, 100) + '...';
+        }
+        
+        html += `<td>${value}</td>`;
+      });
+      
+      html += `
+        <td class="row-actions">
+          <button class="icon-btn" onclick="editRecord('${data.table}', ${row.id})" title="Edit">✏️</button>
+          <button class="icon-btn" onclick="deleteRecord('${data.table}', ${row.id})" title="Delete">🗑️</button>
+        </td>
+      </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    
+    // Pagination
+    if (data.pages > 1) {
+      html += '<div class="pagination">';
+      html += `<button class="page-btn" ${data.page === 1 ? 'disabled' : ''} onclick="loadTableData('${data.table}', ${data.page - 1})">← Prev</button>`;
+      html += `<span style="color: var(--db-text-dim);">Page ${data.page} of ${data.pages}</span>`;
+      html += `<button class="page-btn" ${data.page === data.pages ? 'disabled' : ''} onclick="loadTableData('${data.table}', ${data.page + 1})">Next →</button>`;
+      html += '</div>';
+    }
+    
+    content.innerHTML = html;
+  }
+
+  window.editRecord = async function(tableName, recordId) {
+    try {
+      const response = await fetch(`{{ url_for('admin.get_record', table_name='__TABLE__', record_id=0) }}`.replace('__TABLE__', tableName).replace('0', recordId));
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        showEditModal(tableName, recordId, result.data);
+      } else {
+        alert('Error: ' + result.message);
+      }
+    } catch (error) {
+      alert('Failed to load record: ' + error.message);
+    }
+  };
+
+  function showEditModal(tableName, recordId, data) {
+    const modal = document.getElementById('edit-modal');
+    const title = document.getElementById('modal-title');
+    const body = document.getElementById('modal-body');
+    
+    title.textContent = `Edit Record #${recordId} in ${tableName}`;
+    
+    let html = '';
+    for (const [key, value] of Object.entries(data)) {
+      // Skip id field
+      if (key === 'id') continue;
+      
+      html += `
+        <div class="form-group">
+          <label class="form-label">${key}</label>
+          <input type="text" class="form-input" id="field-${key}" value="${value || ''}" data-field="${key}">
+        </div>
+      `;
+    }
+    
+    body.innerHTML = html;
+    modal.classList.add('active');
+    
+    // Save handler
+    document.getElementById('save-btn').onclick = async () => {
+      const updatedData = {};
+      body.querySelectorAll('.form-input').forEach(input => {
+        updatedData[input.dataset.field] = input.value;
+      });
+      
+      try {
+        const response = await fetch(`{{ url_for('admin.update_record', table_name='__TABLE__', record_id=0) }}`.replace('__TABLE__', tableName).replace('0', recordId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          closeModal('edit-modal');
+          loadTableData(STATE.currentTable, STATE.currentPage);
+        } else {
+          alert('Error: ' + result.message);
+        }
+      } catch (error) {
+        alert('Failed to update record: ' + error.message);
+      }
+    };
+  }
+
+  window.deleteRecord = async function(tableName, recordId) {
+    if (!confirm(`Are you sure you want to delete record #${recordId}?`)) return;
+    
+    try {
+      const response = await fetch(`{{ url_for('admin.delete_record', table_name='__TABLE__', record_id=0) }}`.replace('__TABLE__', tableName).replace('0', recordId), {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        loadTableData(STATE.currentTable, STATE.currentPage);
+      } else {
+        alert('Error: ' + result.message);
+      }
+    } catch (error) {
+      alert('Failed to delete record: ' + error.message);
+    }
+  };
+
+  window.closeModal = function(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+  };
+
+  document.getElementById('refresh-btn').addEventListener('click', () => {
+    loadStats();
+    loadTables();
+    if (STATE.currentTable) {
+      loadTableData(STATE.currentTable, STATE.currentPage);
+    }
+  });
+
+  document.getElementById('query-btn').addEventListener('click', () => {
+    document.getElementById('query-modal').classList.add('active');
+  });
+
+  document.getElementById('execute-query-btn').addEventListener('click', async () => {
+    const sql = document.getElementById('sql-input').value.trim();
+    if (!sql) return;
+    
+    const resultsDiv = document.getElementById('query-results');
+    resultsDiv.innerHTML = '<div class="loading">Executing query...</div>';
+    
+    try {
+      const response = await fetch("{{ url_for('admin.execute_query') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql })
+      });
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        let html = '<div class="success-msg">Query executed successfully. ' + result.count + ' rows returned.</div>';
+        
+        if (result.rows.length > 0) {
+          html += '<table class="data-table"><thead><tr>';
+          result.columns.forEach(col => {
+            html += `<th>${col}</th>`;
+          });
+          html += '</tr></thead><tbody>';
+          
+          result.rows.forEach(row => {
+            html += '<tr>';
+            result.columns.forEach(col => {
+              html += `<td>${row[col] || 'NULL'}</td>`;
+            });
+            html += '</tr>';
+          });
+          
+          html += '</tbody></table>';
+        }
+        
+        resultsDiv.innerHTML = html;
+      } else {
+        resultsDiv.innerHTML = `<div class="error-msg">Error: ${result.message}</div>`;
+      }
+    } catch (error) {
+      resultsDiv.innerHTML = `<div class="error-msg">Failed to execute query: ${error.message}</div>`;
+    }
+  });
+
+  document.getElementById('export-btn').addEventListener('click', async () => {
+    if (!STATE.currentTable) return;
+    
+    try {
+      const response = await fetch(`{{ url_for('admin.export_table', table_name='__TABLE__') }}`.replace('__TABLE__', STATE.currentTable));
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        const dataStr = JSON.stringify(result.data, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${STATE.currentTable}_export.json`;
+        a.click();
+      } else {
+        alert('Export failed: ' + result.message);
+      }
+    } catch (error) {
+      alert('Export failed: ' + error.message);
+    }
+  });
+
+  // Initialize
+  loadStats();
+  loadTables();
+  
+  // Search functionality
+  let searchTimeout;
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      STATE.searchTerm = e.target.value.trim();
+      if (STATE.currentTable) {
+        loadTableData(STATE.currentTable, 1);
+      }
+    }, 500);
+  });
+})();
+</script>
+{% endblock %}

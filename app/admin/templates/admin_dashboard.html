@@ -480,6 +480,9 @@ body {
         <button class="sidebar-btn" data-action="analyze">
           📊 Analyze Project
         </button>
+        <button class="sidebar-btn" data-action="database" onclick="window.location.href='{{ url_for('admin.database_management') }}'">
+          🗄️ Database Management
+        </button>
         <button class="sidebar-btn" data-action="missions" onclick="window.location.href='{{ url_for('admin.admin_dashboard') }}'">
           🎯 View Missions
         </button>
