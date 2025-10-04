@@ -95,9 +95,10 @@ def _register_blueprints(app: Flask) -> None:
     from .admin import routes as admin_routes
     app.register_blueprint(admin_routes.bp, url_prefix="/admin")
 
-    from .cli import user_commands, mindgate_commands
+    from .cli import user_commands, mindgate_commands, database_commands
     app.register_blueprint(user_commands.users_cli)
     app.register_blueprint(mindgate_commands.mindgate_cli)
+    app.register_blueprint(database_commands.database_cli)
 
 
 def _configure_logging(app: Flask) -> None:
