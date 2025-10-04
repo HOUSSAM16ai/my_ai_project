@@ -42,6 +42,23 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 
 ## 🎯 Quick Start | البدء السريع
 
+### 🚀 Simplified Setup (3 Steps)
+
+```bash
+# 1. Apply Migrations
+python3 apply_migrations.py
+
+# 2. Verify Connection  
+python3 setup_supabase_connection.py
+
+# 3. Start Application
+python3 run.py
+```
+
+**📖 Detailed Guide**: See [`NEXT_STEPS_GUIDE.md`](NEXT_STEPS_GUIDE.md) for complete instructions.
+
+---
+
 ### 1️⃣ Installation | التثبيت
 
 ```bash
@@ -58,6 +75,8 @@ cp .env.example .env
 
 # Run migrations
 flask db upgrade
+# OR use the simplified script:
+python3 apply_migrations.py
 
 # Create admin user
 flask users create-admin
@@ -66,7 +85,10 @@ flask users create-admin
 ### 2️⃣ Run Application | تشغيل التطبيق
 
 ```bash
-# Development mode
+# Simplified way (recommended)
+python3 run.py
+
+# OR Development mode
 flask run
 
 # Or with specific config
