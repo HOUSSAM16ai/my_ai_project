@@ -38,19 +38,6 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 - **Task Management**: Comprehensive task tracking and monitoring
 - **Event Logging**: Complete mission event history
 
-### 📚 Educational System | النظام التعليمي
-
-- **Subjects Management**: Organize academic subjects
-- **Lesson Content**: Rich lesson content with multimedia support
-- **Exercises**: Interactive exercises and assessments
-- **Submissions**: Track and grade student submissions
-
-### 💬 Admin AI Chat | دردشة الأدمن الذكية
-
-- **Intelligent Assistant**: AI-powered admin conversations
-- **Deep Context**: Project-aware responses
-- **History Tracking**: Complete conversation history
-
 ---
 
 ## 🎯 Quick Start | البدء السريع
@@ -180,21 +167,11 @@ Creates:
 ### 🎯 Core Tables
 - **👤 users** - User accounts and permissions
 
-### 📚 Education Tables
-- **📚 subjects** - Academic subjects
-- **📖 lessons** - Lesson content
-- **✏️ exercises** - Exercises and questions
-- **📝 submissions** - Student submissions
-
 ### 🎯 Overmind Tables
 - **🎯 missions** - AI missions
 - **📋 mission_plans** - Mission execution plans
 - **✅ tasks** - Subtasks
 - **📊 mission_events** - Event logs
-
-### 💬 Admin Tables
-- **💬 admin_conversations** - Admin conversations
-- **💌 admin_messages** - Chat messages
 
 ---
 
