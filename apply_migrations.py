@@ -18,12 +18,11 @@ Author: Houssam Benmerah
 
 import os
 import sys
+import subprocess
 from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
-
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
 
 # ANSI Colors
@@ -50,9 +49,6 @@ def main():
     else:
         print(f"{Y}⚠️  DATABASE_URL doesn't point to expected Supabase project{E}")
     
-    # Set Flask app
-    os.environ['FLASK_APP'] = 'app.py'
-    
     print(f"\n{B}📋 Migration files to apply:{E}")
     
     migrations_dir = Path(__file__).parent / 'migrations' / 'versions'
@@ -64,10 +60,16 @@ def main():
     
     print(f"\n{B}🔄 Running: flask db upgrade{E}\n")
     
-    # Run flask db upgrade
-    result = os.system('flask db upgrade')
+    # Run flask db upgrade with FLASK_APP in environment
+    env = os.environ.copy()
+    env['FLASK_APP'] = 'app.py'
+    result = subprocess.run(
+        ['flask', 'db', 'upgrade'],
+        env=env,
+        capture_output=False
+    )
     
-    if result == 0:
+    if result.returncode == 0:
         print(f"\n{G}{'=' * 70}{E}")
         print(f"{G}🎉 SUCCESS! All migrations applied successfully!{E}")
         print(f"{G}{'=' * 70}{E}\n")

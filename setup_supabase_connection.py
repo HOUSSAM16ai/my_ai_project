@@ -17,11 +17,9 @@ Version: 1.0.0
 import os
 import sys
 from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
-
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
 
 from sqlalchemy import create_engine, text, inspect
@@ -177,9 +175,6 @@ def apply_migrations(engine):
     
     try:
         print_info("Importing Flask app to apply migrations...")
-        
-        # Set Flask app environment
-        os.environ['FLASK_APP'] = 'app.py'
         
         from app import create_app, db as flask_db
         from flask_migrate import upgrade
