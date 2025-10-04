@@ -456,3 +456,53 @@ def export_table(table_name):
     except Exception as e:
         current_app.logger.error(f"Export table failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --------------------------------------------------------------------------------------
+# ADVANCED DATABASE MANAGEMENT ENDPOINTS (v2.0) 🚀
+# --------------------------------------------------------------------------------------
+
+@bp.route("/api/database/health", methods=["GET"])
+@admin_required
+def get_database_health():
+    """API endpoint لفحص صحة قاعدة البيانات"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        health = database_service.get_database_health()
+        return jsonify(health)
+    except Exception as e:
+        current_app.logger.error(f"Database health check failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/database/optimize", methods=["POST"])
+@admin_required
+def optimize_database():
+    """API endpoint لتحسين قاعدة البيانات"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        result = database_service.optimize_database()
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Database optimization failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/database/schema/<table_name>", methods=["GET"])
+@admin_required
+def get_table_schema(table_name):
+    """API endpoint للحصول على مخطط جدول"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        schema = database_service.get_table_schema(table_name)
+        return jsonify(schema)
+    except Exception as e:
+        current_app.logger.error(f"Get table schema failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
