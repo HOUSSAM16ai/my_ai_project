@@ -20,9 +20,8 @@ from sqlalchemy.orm import class_mapper
 from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.models import (
-    User, Subject, Lesson, Exercise, Submission,
-    Mission, MissionPlan, Task, MissionEvent,
-    AdminConversation, AdminMessage
+    User,
+    Mission, MissionPlan, Task, MissionEvent
 )
 import json
 from datetime import datetime, timedelta
@@ -36,31 +35,19 @@ import hashlib
 # Map of all models - النماذج المتاحة للإدارة
 ALL_MODELS = {
     'users': User,
-    'subjects': Subject,
-    'lessons': Lesson,
-    'exercises': Exercise,
-    'submissions': Submission,
     'missions': Mission,
     'mission_plans': MissionPlan,
     'tasks': Task,
     'mission_events': MissionEvent,
-    'admin_conversations': AdminConversation,
-    'admin_messages': AdminMessage,
 }
 
 # Model metadata - معلومات وصفية عن كل نموذج
 MODEL_METADATA = {
     'users': {'icon': '👤', 'category': 'Core', 'description': 'User accounts and permissions'},
-    'subjects': {'icon': '📚', 'category': 'Education', 'description': 'Academic subjects'},
-    'lessons': {'icon': '📖', 'category': 'Education', 'description': 'Lesson content'},
-    'exercises': {'icon': '✏️', 'category': 'Education', 'description': 'Exercises and questions'},
-    'submissions': {'icon': '📝', 'category': 'Education', 'description': 'Student submissions'},
     'missions': {'icon': '🎯', 'category': 'Overmind', 'description': 'AI missions'},
     'mission_plans': {'icon': '📋', 'category': 'Overmind', 'description': 'Mission execution plans'},
     'tasks': {'icon': '✅', 'category': 'Overmind', 'description': 'Mission tasks'},
     'mission_events': {'icon': '📊', 'category': 'Overmind', 'description': 'Mission event logs'},
-    'admin_conversations': {'icon': '💬', 'category': 'Admin', 'description': 'Admin chat conversations'},
-    'admin_messages': {'icon': '💌', 'category': 'Admin', 'description': 'Admin chat messages'},
 }
 
 # Query optimization cache - ذاكرة تخزين مؤقتة للأداء

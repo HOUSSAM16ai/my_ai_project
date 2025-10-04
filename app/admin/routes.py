@@ -129,11 +129,8 @@ def list_users():
 
 try:
     from app.services.admin_ai_service import get_admin_ai_service
-    from app.models import AdminConversation, AdminMessage
 except ImportError:
     get_admin_ai_service = None
-    AdminConversation = None
-    AdminMessage = None
 
 @bp.route("/api/chat", methods=["POST"])
 @admin_required
@@ -264,40 +261,7 @@ def handle_get_conversations():
 @admin_required
 def handle_get_conversation_detail(conversation_id):
     """API endpoint لجلب تفاصيل محادثة"""
-    try:
-        if not AdminConversation:
-            return jsonify({"status": "error", "message": "Admin conversations not available."}), 503
-            
-        conv = db.session.get(AdminConversation, conversation_id)
-        
-        if not conv or conv.user_id != current_user.id:
-            return jsonify({"status": "error", "message": "Conversation not found."}), 404
-        
-        return jsonify({
-            "status": "success",
-            "conversation": {
-                "id": conv.id,
-                "title": conv.title,
-                "type": conv.conversation_type,
-                "created_at": conv.created_at.isoformat(),
-                "updated_at": conv.updated_at.isoformat(),
-                "messages": [
-                    {
-                        "id": msg.id,
-                        "role": msg.role,
-                        "content": msg.content,
-                        "created_at": msg.created_at.isoformat(),
-                        "tokens_used": msg.tokens_used,
-                        "model_used": msg.model_used
-                    }
-                    for msg in conv.messages
-                ]
-            }
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Get conversation detail failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return jsonify({"status": "error", "message": "Admin conversations feature has been removed."}), 503
 
 
 # --------------------------------------------------------------------------------------

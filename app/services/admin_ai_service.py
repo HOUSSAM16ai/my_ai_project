@@ -40,7 +40,7 @@ from sqlalchemy import select, desc
 
 from app import db
 from app.models import (
-    User, AdminConversation, AdminMessage,
+    User,
     Mission, MissionStatus, utc_now
 )
 
@@ -198,19 +198,8 @@ class AdminAIService:
         return recommendations
     
     def _save_analysis_to_conversation(self, conversation_id: int, analysis: Dict):
-        """حفظ التحليل في المحادثة"""
-        try:
-            conv = db.session.get(AdminConversation, conversation_id)
-            if conv:
-                conv.deep_index_summary = analysis.get("deep_index_summary")
-                conv.context_snapshot = {
-                    "project_stats": analysis.get("project_stats"),
-                    "architecture": analysis.get("architecture"),
-                    "timestamp": analysis.get("timestamp")
-                }
-                db.session.commit()
-        except Exception as e:
-            self.logger.error(f"Failed to save analysis to conversation: {e}")
+        """حفظ التحليل في المحادثة - DISABLED: AdminConversation model removed"""
+        pass
     
     def answer_question(
         self,
@@ -239,9 +228,7 @@ class AdminAIService:
             
             if conversation_id:
                 conversation_history = self._get_conversation_history(conversation_id)
-                conv = db.session.get(AdminConversation, conversation_id)
-                if conv and conv.deep_index_summary:
-                    deep_index_summary = conv.deep_index_summary
+                # AdminConversation model removed - no deep_index_summary available
             
             related_context = []
             if system_service and hasattr(system_service, 'find_related_context'):
@@ -446,29 +433,13 @@ class AdminAIService:
         user: User,
         title: str,
         conversation_type: str = "general"
-    ) -> AdminConversation:
-        """إنشاء محادثة جديدة"""
-        conv = AdminConversation(
-            title=title,
-            user_id=user.id,
-            conversation_type=conversation_type
-        )
-        db.session.add(conv)
-        db.session.commit()
-        return conv
+    ):
+        """إنشاء محادثة جديدة - DISABLED: AdminConversation model removed"""
+        raise NotImplementedError("AdminConversation model has been removed")
     
     def _get_conversation_history(self, conversation_id: int) -> List[Dict[str, str]]:
-        """جلب تاريخ المحادثة"""
-        messages = db.session.scalars(
-            select(AdminMessage)
-            .where(AdminMessage.conversation_id == conversation_id)
-            .order_by(AdminMessage.created_at)
-        ).all()
-        
-        return [
-            {"role": msg.role, "content": msg.content}
-            for msg in messages
-        ]
+        """جلب تاريخ المحادثة - DISABLED: AdminMessage model removed"""
+        return []
     
     def _save_message(
         self,
@@ -480,31 +451,16 @@ class AdminAIService:
         latency_ms: Optional[float] = None,
         metadata_json: Optional[Dict] = None
     ):
-        """حفظ رسالة في المحادثة"""
-        msg = AdminMessage(
-            conversation_id=conversation_id,
-            role=role,
-            content=content,
-            tokens_used=tokens_used,
-            model_used=model_used,
-            latency_ms=latency_ms,
-            metadata_json=metadata_json
-        )
-        db.session.add(msg)
-        db.session.commit()
+        """حفظ رسالة في المحادثة - DISABLED: AdminMessage model removed"""
+        pass
     
     def get_user_conversations(
         self,
         user: User,
         limit: int = 20
-    ) -> List[AdminConversation]:
-        """جلب محادثات المستخدم"""
-        return db.session.scalars(
-            select(AdminConversation)
-            .where(AdminConversation.user_id == user.id)
-            .order_by(desc(AdminConversation.updated_at))
-            .limit(limit)
-        ).all()
+    ) -> List:
+        """جلب محادثات المستخدم - DISABLED: AdminConversation model removed"""
+        return []
 
 
 _service_instance = None
