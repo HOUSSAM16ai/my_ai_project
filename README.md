@@ -2,6 +2,8 @@
 
 > **نظام تعليمي ذكي خارق مدعوم بالذكاء الاصطناعي**
 
+> **🚀 NEW TO COGNIFORGE?** → Start with [`SETUP_GUIDE.md`](SETUP_GUIDE.md) for complete setup instructions!
+
 ---
 
 ## 🚀 Overview | نظرة عامة
@@ -42,6 +44,8 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 
 ## 🎯 Quick Start | البدء السريع
 
+> **📖 For detailed setup instructions, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md)**
+
 ### 1️⃣ Installation | التثبيت
 
 ```bash
@@ -49,28 +53,30 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 git clone https://github.com/HOUSSAM16ai/my_ai_project.git
 cd my_ai_project
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment
+# Setup environment (IMPORTANT!)
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env and ensure DATABASE_URL uses local database:
+# DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres
+
+# Start services with Docker Compose
+docker-compose up -d
 
 # Run migrations
-flask db upgrade
+docker-compose run --rm web flask db upgrade
 
 # Create admin user
-flask users create-admin
+docker-compose run --rm web flask users create-admin
 ```
 
 ### 2️⃣ Run Application | تشغيل التطبيق
 
 ```bash
-# Development mode
-flask run
+# Using Docker Compose (recommended)
+docker-compose up -d
 
-# Or with specific config
-FLASK_CONFIG=development flask run
+# Access the application
+# Application: http://localhost:5000
+# Admin Dashboard: http://localhost:5000/admin/dashboard
 ```
 
 ### 3️⃣ Access Admin Dashboard | الوصول للوحة الإدارة
