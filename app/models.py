@@ -1,32 +1,34 @@
 # ======================================================================================
-#  COGNIFORGE DOMAIN MODELS  v13.2  • "UNIFIED OVERMIND⇄MAESTRO NEURO-LAYER (Pro+)"   #
+#  COGNIFORGE DOMAIN MODELS  v14.0  • "PURIFIED OVERMIND CORE (Pro++)"              #
 # ======================================================================================
 #  PURPOSE (الغرض):
-#    نموذج نطاق (Domain Model) موحّد دلالياً بين طبقات:
-#      - Overmind Orchestrator
-#      - Maestro Generation Service
-#    مع دعم أحداث مهمة (Mission Events) تحليلية/نهائية أوسع.
+#    نموذج نطاق (Domain Model) نقي ومركّز حصرياً على نظام Overmind:
+#      - إزالة جميع الجداول القديمة غير المتعلقة بـ Overmind
+#      - إزالة جداول التعليم القديمة (subjects, lessons, exercises, submissions)
+#      - إزالة جداول الأدمن القديمة (admin_conversations, admin_messages)
+#      - إزالة جدول task_dependencies المساعد (نستخدم depends_on_json بدلاً منه)
 #
-#  WHAT'S NEW in v13.2 (مقارنة بـ v13.1):
-#    - توضيح الوضع الفعلي لعمود mission_events.event_type بعد الهجرة "الخارقة":
-#        أصبح نوعه TEXT (غير محدود عملياً) + (اختياري) CHECK ≤ 128.
-#    - تصحيح الملاحظة السابقة (لم تكن دقيقة دائماً) بخصوص "لا حاجة لهجرة":
-#        رغم استخدام native_enum=False، الإنشاء الأولي أعطى VARCHAR(17) فتطلّبنا هجرة
-#        لتوسيعه عند إضافة قيمة أطول (ARCHITECTURE_CLASSIFIED).
-#    - توثيق سلسلة الهجرات المتعلقة بالموديلات الأساسية.
+#  WHAT'S NEW in v14.0 (مقارنة بـ v13.2):
+#    - تنقية كاملة: إزالة task_dependencies table والعلاقات المعقدة
+#    - إزالة backref من imports لأنه لم يعد مستخدماً
+#    - الإبقاء فقط على الكيانات الأساسية: User, Mission, MissionPlan, Task, MissionEvent
+#    - قاعدة البيانات الآن نقية 100% ومركزة على Overmind فقط
+#
+#  CORE MODELS (النماذج الأساسية النقية):
+#    ✅ User          - حسابات المستخدمين
+#    ✅ Mission       - المهام الرئيسية
+#    ✅ MissionPlan   - خطط تنفيذ المهام
+#    ✅ Task          - المهام الفرعية (باستخدام depends_on_json للتبعيات)
+#    ✅ MissionEvent  - سجل أحداث المهام
+#
+#  REMOVED LEGACY SYSTEMS:
+#    ❌ Education Kingdom (subjects, lessons, exercises, submissions)
+#    ❌ Old Admin Chat (admin_conversations, admin_messages)
+#    ❌ task_dependencies helper table (replaced by depends_on_json)
 #
 #  SEMANTIC MISSION EVENTS (الإصدار التحليلي):
 #      MISSION_UPDATED, RISK_SUMMARY, ARCHITECTURE_CLASSIFIED,
 #      MISSION_COMPLETED, MISSION_FAILED, FINALIZED
-#
-#  CORE UPGRADES vs v13.0 (مراجعة سريعة):
-#    1) توسيع MissionEventType لتحليلات أغنى ولوحات مراقبة.
-#    2) توافق خلفي: المستهلكون القدامى ما زالوا يعتمدون على FINALIZED و STATUS_CHANGE.
-#    3) فصل واضح بين:
-#         - الأحداث الانتقالية  (STATUS_CHANGE)
-#         - التصنيف التحليلي   (RISK_SUMMARY / ARCHITECTURE_CLASSIFIED)
-#         - المخرجات النهائية   (MISSION_COMPLETED / MISSION_FAILED / FINALIZED)
-#    4) المحافظة على finalize_task idempotent.
 #
 #  PRE-EXISTING FEATURES:
 #    - result_meta_json قناة وصفية للنتائج
@@ -40,28 +42,20 @@
 #    - JSONB_or_JSON تجريد PostgreSQL/SQLite
 #
 #  MIGRATION HISTORY (ذات صلة):
-#    - 0fe9bd3b1f3c : Genesis schema
+#    - 0fe9bd3b1f3c : Genesis schema (with legacy tables)
 #    - 0b5107e8283d : إضافة result_meta_json لِـ Task
-#    - 20250902_event_type_text_and_index_super :
-#         * تحويل mission_events.event_type إلى TEXT
-#         * فهرس مركّب (mission_id, created_at, event_type)
-#         * (اختياري) CHECK (char_length(event_type) <= 128)
+#    - 20250902_event_type_text_and_index_super : تحويل event_type إلى TEXT
+#    - c670e137ea84 : إضافة admin chat system (legacy)
+#    - 20250103_purify_db : 🔥 PURIFICATION - إزالة جميع الجداول القديمة
 #
 #  NOTE (مهم):
-#    - استخدام db.Enum(..., native_enum=False) يعني تخزين القيم كسلاسل (VARCHAR/TEXT)،
-#      ولكن الطول الابتدائي يمكن أن يكون محدوداً (كما حدث: 17) => إضافة قيمة أطول
-#      قد تتطلب هجرة توسيع أو تحويل إلى TEXT (وهو ما تم الآن).
-#    - حالياً العمود TEXT: لا يلزم تعديل إضافي في هذا الملف لحل الخطأ السابق.
-#    - إذا كان CHECK ≤ 128 مفعل في قاعدة البيانات، فهو طبقة حماية فقط؛ جميع القيم الحالية
-#      أقل بكثير من 128.
+#    - استخدام db.Enum(..., native_enum=False) يعني تخزين القيم كسلاسل (VARCHAR/TEXT)
+#    - Task.depends_on_json يحتوي على قائمة task_keys للتبعيات (أبسط وأكثر مرونة)
+#    - لا توجد علاقات many-to-many معقدة بعد الآن
 #
 #  TRANSACTION POLICY:
 #    - هذا الملف لا يقوم بالـ commit. مسؤولية إدارة المعاملات تقع على الطبقات العليا
 #      (الخدمات / orchestrator).
-#
-#  OPTIONAL FUTURE EXTENSIONS:
-#    - إضافة Validator قبل log_mission_event للتحقق من الطول أو منع أحداث مكررة.
-#    - استبدال Enum بنص حر + طبقة تحقق إذا أصبح التطور سريع الإيقاع جداً.
 #
 # ======================================================================================
 
@@ -84,7 +78,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
-    relationship, backref,
+    relationship,
     Mapped, mapped_column
 )
 
@@ -387,13 +381,6 @@ class MissionPlan(Timestamped, db.Model):
     def __repr__(self):
         return f"<MissionPlan id={self.id} v={self.version} planner={self.planner_name} score={self.score}>"
 
-# --- Optional explicit dependencies table ---
-task_dependencies = db.Table(
-    'task_dependencies',
-    db.Column('task_id', db.Integer, db.ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True),
-    db.Column('depends_on_task_id', db.Integer, db.ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True),
-)
-
 class Task(Timestamped, db.Model):
     __tablename__ = "tasks"
 
@@ -437,14 +424,6 @@ class Task(Timestamped, db.Model):
     mission: Mapped[Mission] = relationship("Mission", back_populates="tasks")
     plan: Mapped[MissionPlan] = relationship(
         "MissionPlan", back_populates="tasks", overlaps="plans,active_plan,mission"
-    )
-
-    dependencies: Mapped[List["Task"]] = relationship(
-        "Task",
-        secondary=task_dependencies,
-        primaryjoin=(id == task_dependencies.c.task_id),
-        secondaryjoin=(id == task_dependencies.c.depends_on_task_id),
-        backref=backref("dependents")
     )
 
     __table_args__ = (
