@@ -6,11 +6,17 @@
 #   أوامر CLI خارقة لإدارة قاعدة البيانات - Superior database management commands
 #   
 #   Commands:
-#   - flask db-health: Check database health
-#   - flask db-stats: Show database statistics
-#   - flask db-optimize: Optimize database
-#   - flask db-backup: Create database backup
-#   - flask db-schema <table>: Show table schema
+#   - flask database health: Check database health
+#   - flask database stats: Show database statistics
+#   - flask database optimize: Optimize database
+#   - flask database backup: Create database backup
+#   - flask database schema <table>: Show table schema
+#
+#   Note: Flask-Migrate commands (migrate, upgrade, etc.) are available under:
+#   - flask db migrate
+#   - flask db upgrade
+#   - flask db downgrade
+#   etc.
 
 import click
 from flask import Blueprint
@@ -21,7 +27,7 @@ import json
 from datetime import datetime
 import os
 
-database_cli = Blueprint('database_cli', __name__, cli_group='db')
+database_cli = Blueprint('database_cli', __name__, cli_group='database')
 
 
 @database_cli.cli.command('health')

@@ -3,7 +3,8 @@
 > ⚡ **النظام المطور v2.0**: تم تطوير نظام خارق متقدم! 
 > - 📖 دليل شامل: [`DATABASE_SYSTEM_SUPREME_AR.md`](DATABASE_SYSTEM_SUPREME_AR.md)
 > - 🚀 مرجع سريع: [`DATABASE_QUICK_REFERENCE.md`](DATABASE_QUICK_REFERENCE.md)
-> - 🔧 أوامر CLI جديدة: `flask db health`, `flask db stats`, `flask db optimize`, إلخ.
+> - 🔧 أوامر CLI لإدارة قاعدة البيانات: `flask database health`, `flask database stats`, `flask database optimize`, إلخ.
+> - 🔄 أوامر الترحيلات (Flask-Migrate): `flask db migrate`, `flask db upgrade`, `flask db downgrade`, إلخ.
 
 ---
 
