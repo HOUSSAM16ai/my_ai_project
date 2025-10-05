@@ -103,26 +103,21 @@ def list_tables():
             # تصنيف الجداول - Categorize tables
             core_tables = []
             overmind_tables = []
-            admin_tables = []
             system_tables = []
             other_tables = []
             
-            # الجداول المتوقعة - Expected tables
+            # الجداول المتوقعة - Expected tables (PURIFIED v14.0)
             table_categories = {
+                # Core Overmind Tables Only (النقي)
                 'users': ('core', '👤', 'جدول المستخدمين', 'User accounts'),
-                'subjects': ('core', '📚', 'جدول المواد الدراسية', 'Educational subjects'),
-                'lessons': ('core', '📖', 'جدول الدروس', 'Lessons'),
-                'exercises': ('core', '✏️', 'جدول التمارين', 'Exercises'),
-                'submissions': ('core', '📝', 'جدول الإجابات', 'Student submissions'),
                 
+                # Overmind System Tables
                 'missions': ('overmind', '🎯', 'جدول المهام الرئيسية', 'Main missions'),
                 'mission_plans': ('overmind', '📋', 'جدول خطط المهام', 'Mission plans'),
                 'tasks': ('overmind', '✅', 'جدول المهام الفرعية', 'Sub-tasks'),
                 'mission_events': ('overmind', '📊', 'جدول أحداث المهام', 'Mission events'),
                 
-                'admin_conversations': ('admin', '💬', 'جدول محادثات الأدمن', 'Admin conversations'),
-                'admin_messages': ('admin', '💌', 'جدول رسائل الأدمن', 'Admin messages'),
-                
+                # System Tables
                 'alembic_version': ('system', '🔄', 'جدول إصدارات الهجرات', 'Migration versions'),
             }
             
@@ -134,8 +129,6 @@ def list_tables():
                         core_tables.append(table)
                     elif category == 'overmind':
                         overmind_tables.append(table)
-                    elif category == 'admin':
-                        admin_tables.append(table)
                     elif category == 'system':
                         system_tables.append(table)
                 else:
@@ -146,14 +139,13 @@ def list_tables():
             print(f"{BOLD}إجمالي عدد الجداول / Total Tables:{E} {C}{len(all_tables)}{E}")
             print(f"  • {G}الجداول الأساسية / Core Tables:{E} {len(core_tables)}")
             print(f"  • {B}جداول Overmind / Overmind Tables:{E} {len(overmind_tables)}")
-            print(f"  • {M}جداول الأدمن / Admin Tables:{E} {len(admin_tables)}")
             print(f"  • {Y}جداول النظام / System Tables:{E} {len(system_tables)}")
             if other_tables:
                 print(f"  • {C}جداول أخرى / Other Tables:{E} {len(other_tables)}")
             
             # عرض الجداول الأساسية - Display core tables
             if core_tables:
-                print_section(f"📚 الجداول الأساسية / Core Tables ({len(core_tables)})")
+                print_section(f"👤 الجداول الأساسية / Core Tables ({len(core_tables)})")
                 for table in sorted(core_tables):
                     icon, _, desc_ar, desc_en = table_categories.get(table, ('', '📄', table, table))[1:]
                     info = get_table_info(table)
@@ -171,22 +163,6 @@ def list_tables():
             if overmind_tables:
                 print_section(f"🎯 جداول Overmind / Overmind Tables ({len(overmind_tables)})")
                 for table in sorted(overmind_tables):
-                    icon, _, desc_ar, desc_en = table_categories.get(table, ('', '📄', table, table))[1:]
-                    info = get_table_info(table)
-                    if 'error' in info:
-                        print(f"{R}❌ {icon} {table:<25}{E} ({desc_ar})")
-                        print(f"   {R}خطأ: {info['error']}{E}")
-                    else:
-                        print(f"{G}✅ {icon} {table:<25}{E}")
-                        print(f"   {C}📝 الوصف / Description:{E} {desc_ar} / {desc_en}")
-                        print(f"   {C}🔢 عدد السجلات / Records:{E} {info['count']}")
-                        print(f"   {C}📋 عدد الأعمدة / Columns:{E} {info['columns']}")
-                        print()
-            
-            # عرض جداول الأدمن - Display admin tables
-            if admin_tables:
-                print_section(f"💬 جداول الأدمن / Admin Tables ({len(admin_tables)})")
-                for table in sorted(admin_tables):
                     icon, _, desc_ar, desc_en = table_categories.get(table, ('', '📄', table, table))[1:]
                     info = get_table_info(table)
                     if 'error' in info:
