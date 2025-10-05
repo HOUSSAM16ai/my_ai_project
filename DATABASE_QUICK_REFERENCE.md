@@ -2,26 +2,44 @@
 
 ## ⚡ Quick Commands | الأوامر السريعة
 
-### CLI Commands
+### Database Management CLI Commands
 ```bash
 # Health Check (فحص الصحة)
-flask db health
+flask database health
 
 # Statistics (إحصائيات)
-flask db stats
+flask database stats
 
 # List Tables (قائمة الجداول)
-flask db tables
+flask database tables
 
 # Show Schema (عرض المخطط)
-flask db schema <table_name>
+flask database schema <table_name>
 
 # Optimize (تحسين)
-flask db optimize
+flask database optimize
 
 # Backup (نسخ احتياطي)
-flask db backup
-flask db backup --output=/path/to/backup
+flask database backup
+flask database backup --output=/path/to/backup
+```
+
+### Database Migration CLI Commands (Flask-Migrate)
+```bash
+# Create migration (إنشاء ترحيل)
+flask db migrate -m "migration message"
+
+# Apply migrations (تطبيق الترحيلات)
+flask db upgrade
+
+# Rollback migrations (التراجع عن الترحيلات)
+flask db downgrade
+
+# Show current version (عرض الإصدار الحالي)
+flask db current
+
+# Show migration history (عرض تاريخ الترحيلات)
+flask db history
 ```
 
 ## 🌐 Web Interface
@@ -111,31 +129,43 @@ curl -X POST http://localhost:5000/admin/api/database/query \
 
 ### 1. Check Database Health
 ```bash
-flask db health
+flask database health
 ```
 
 ### 2. View All Tables
 ```bash
-flask db tables
+flask database tables
 ```
 
 ### 3. Inspect Table Structure
 ```bash
-flask db schema users
-flask db schema missions
+flask database schema users
+flask database schema missions
 ```
 
 ### 4. Optimize Database
 ```bash
-flask db optimize
+flask database optimize
 ```
 
 ### 5. Create Backup
 ```bash
-flask db backup
+flask database backup
 ```
 
-### 6. Search Records
+### 6. Apply Database Migrations
+```bash
+# Create a new migration
+flask db migrate -m "Add new column"
+
+# Apply migrations
+flask db upgrade
+
+# Rollback last migration
+flask db downgrade
+```
+
+### 7. Search Records
 ```bash
 # Via API
 curl "http://localhost:5000/admin/api/database/table/missions?search=analyze"
