@@ -26,6 +26,22 @@ This guide will help you set up CogniForge for local development using Docker Co
 
 ## 🔧 Quick Setup (Local Database)
 
+### Option A: Automated Setup (Recommended) 🚀
+
+```bash
+# Run the setup script
+./setup-env.sh
+```
+
+This script will:
+- Create `.env` from `.env.example`
+- Configure for local database automatically
+- Guide you through the setup process
+
+### Option B: Manual Setup
+
+If you prefer to set up manually, follow these steps:
+
 ### Step 1: Copy Environment File
 
 ```bash
@@ -92,21 +108,38 @@ You'll need to modify `docker-compose.yml` or ensure your services don't depend 
 
 ## 🐛 Common Issues / المشاكل الشائعة
 
-### Issue 1: "Cannot assign requested address" Error
+### Issue 1: "Cannot assign requested address" Error ⚠️
+
+**This is the MOST COMMON issue when setting up CogniForge!**
 
 **Error Message:**
 ```
 psycopg2.OperationalError: connection to server at "db.aocnuqhxrhxgbfcgbxfy.supabase.co" (2a05:d012:42e:5712:e46:41a4:b061:a164), port 5432 failed: Cannot assign requested address
 ```
 
-**Cause:**
-- Your `.env` file has `DATABASE_URL` pointing to remote Supabase
-- But you're using `docker-compose` which expects local database
+**What This Means:**
+- You're trying to run `docker-compose run --rm web flask db migrate/upgrade`
+- But your `.env` file has `DATABASE_URL` pointing to remote Supabase
+- Docker Compose expects a local database (the `db` service)
+
+**Root Cause:**
+- Missing or incorrectly configured `.env` file
+- The app is trying to connect to remote Supabase instead of local Docker database
 
 **Solution:**
 ```bash
-# Edit .env and change DATABASE_URL to:
-DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres
+# Quick fix - run the setup script:
+./setup-env.sh
+
+# OR manually edit .env and change DATABASE_URL to:
+DATABASE_URL=postgresql://postgres:Aog2Df4lIlIXiCGk@db:5432/postgres
+
+# Then restart your services:
+docker-compose down
+docker-compose up -d
+
+# Now try your migration again:
+docker-compose run --rm web flask db upgrade
 ```
 
 ### Issue 2: ".env file not found"
