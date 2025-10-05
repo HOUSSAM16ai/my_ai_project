@@ -122,6 +122,36 @@ from app import create_app, db as flask_db
 - Flask's factory pattern (`create_app`) doesn't require FLASK_APP environment variable
 - The app is created programmatically, not via Flask CLI
 
+### 3. check_migrations_status.py
+
+#### Issue #1: sys.path manipulation
+**Before:**
+```python
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from dotenv import load_dotenv
+load_dotenv()
+
+os.environ['FLASK_APP'] = 'app.py'
+```
+
+**After:**
+```python
+import os
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+```
+
+**Rationale:** Same as apply_migrations.py and setup_supabase_connection.py - removed unnecessary `sys.path.insert()` manipulation and global `os.environ['FLASK_APP']` modification. The Flask app is created programmatically using `create_app()`, so FLASK_APP environment variable is not needed.
+
 ## Benefits | الفوائد
 
 ### 1. Cleaner Import Management
@@ -189,12 +219,14 @@ tests/test_app.py::test_mission_factory_creates_mission_with_initiator PASSED
 
 All code review issues have been addressed with minimal, surgical changes:
 
-- **2 files modified**: `apply_migrations.py` and `setup_supabase_connection.py`
-- **4 issues fixed**: 
+- **3 files modified**: `apply_migrations.py`, `setup_supabase_connection.py`, and `check_migrations_status.py`
+- **6 issues fixed**: 
   1. Removed sys.path manipulation from apply_migrations.py
   2. Removed sys.path manipulation from setup_supabase_connection.py
-  3. Fixed FLASK_APP handling in apply_migrations.py
-  4. Removed unnecessary FLASK_APP in setup_supabase_connection.py
+  3. Removed sys.path manipulation from check_migrations_status.py
+  4. Fixed FLASK_APP handling in apply_migrations.py
+  5. Removed unnecessary FLASK_APP in setup_supabase_connection.py
+  6. Removed unnecessary FLASK_APP in check_migrations_status.py
 
 - **0 tests broken**: All existing tests continue to pass
 - **100% functionality preserved**: Scripts work exactly as before

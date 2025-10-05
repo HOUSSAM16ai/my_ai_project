@@ -18,13 +18,10 @@ Version: 1.0.0
 import os
 import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-
 from dotenv import load_dotenv
-load_dotenv()
 
-os.environ['FLASK_APP'] = 'app.py'
+# Load environment variables
+load_dotenv()
 
 from app import create_app, db
 from sqlalchemy import inspect, text
