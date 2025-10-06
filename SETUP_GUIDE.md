@@ -2,29 +2,24 @@
 
 ## Overview / نظرة عامة
 
-This guide will help you set up CogniForge for local development using Docker Compose.
-هذا الدليل سيساعدك على إعداد CogniForge للتطوير المحلي باستخدام Docker Compose.
+This guide will help you set up CogniForge using Supabase as the database.
+هذا الدليل سيساعدك على إعداد CogniForge باستخدام Supabase كقاعدة بيانات.
 
 ---
 
 ## ⚠️ Important: Database Configuration
 
-**CogniForge supports TWO database modes:**
+**CogniForge uses Supabase PostgreSQL database:**
 
-### 1. **Local Database (Recommended for Development)** ✅
-- Uses Docker Compose with local PostgreSQL container
-- Faster and works offline
-- No external dependencies
-- **This is the default configuration**
-
-### 2. **Remote Supabase Database** 🌐
+### **Remote Supabase Database** 🌐
 - Uses external Supabase PostgreSQL
 - Requires internet connection
-- For production or remote collaboration
+- Scalable and managed database solution
+- **This is the only supported configuration**
 
 ---
 
-## 🔧 Quick Setup (Local Database)
+## 🔧 Quick Setup (Supabase Database)
 
 ### Option A: Automated Setup (Recommended) 🚀
 
@@ -35,8 +30,8 @@ This guide will help you set up CogniForge for local development using Docker Co
 
 This script will:
 - Create `.env` from `.env.example`
-- Configure for local database automatically
-- Guide you through the setup process
+- Guide you through the Supabase configuration
+- Set up your database connection
 
 ### Option B: Manual Setup
 
@@ -50,29 +45,36 @@ cp .env.example .env
 
 ### Step 2: Edit .env File
 
-Open `.env` and ensure these lines are configured for **local database**:
+Open `.env` and configure your **Supabase database connection**:
 
 ```bash
-# For LOCAL development with Docker Compose:
-DATABASE_PASSWORD=Aog2Df4lIlIXiCGk
-DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres
+# For Supabase (Remote Database):
+DATABASE_URL=postgresql://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:5432/postgres
 ```
 
+**How to get your Supabase connection string:**
+1. Go to your Supabase project dashboard
+2. Navigate to Settings → Database
+3. Find "Connection String" section
+4. Copy the "URI" connection string
+5. Replace `[YOUR-PASSWORD]` with your actual database password
+
 **Key Points:**
-- The hostname is `db` (the Docker Compose service name)
-- **NOT** `db.aocnuqhxrhxgbfcgbxfy.supabase.co` (remote Supabase)
+- The hostname will be something like `aws-0-us-east-1.pooler.supabase.com`
+- Make sure to use the pooler connection (port 5432)
+- Replace the password placeholder with your actual password
 
 ### Step 3: Start Services
 
 ```bash
-# Start database and application
+# Start application services (no local database needed)
 docker-compose up -d
 ```
 
 ### Step 4: Run Migrations
 
 ```bash
-# Apply database migrations
+# Apply database migrations to Supabase
 docker-compose run --rm web flask db upgrade
 
 # Or create new migration
@@ -83,91 +85,6 @@ docker-compose run --rm web flask db migrate -m "Your migration message"
 
 ```bash
 docker-compose run --rm web flask users create-admin
-```
-
----
-
-## 🌐 Remote Supabase Configuration (Optional)
-
-If you want to use **remote Supabase** instead:
-
-### Step 1: Update .env
-
-Replace the DATABASE_URL in `.env` with your Supabase connection string:
-
-```bash
-# For REMOTE Supabase:
-DATABASE_URL=postgresql://postgres.your-project-id:your-password@aws-0-region.pooler.supabase.com:5432/postgres
-```
-
-### Step 2: Remove Local Database Dependency
-
-You'll need to modify `docker-compose.yml` or ensure your services don't depend on the local `db` service.
-
----
-
-## 🐛 Common Issues / المشاكل الشائعة
-
-### Issue 1: "Cannot assign requested address" Error ⚠️
-
-**This is the MOST COMMON issue when setting up CogniForge!**
-
-**Error Message:**
-```
-psycopg2.OperationalError: connection to server at "db.aocnuqhxrhxgbfcgbxfy.supabase.co" (2a05:d012:42e:5712:e46:41a4:b061:a164), port 5432 failed: Cannot assign requested address
-```
-
-**What This Means:**
-- You're trying to run `docker-compose run --rm web flask db migrate/upgrade`
-- But your `.env` file has `DATABASE_URL` pointing to remote Supabase
-- Docker Compose expects a local database (the `db` service)
-
-**Root Cause:**
-- Missing or incorrectly configured `.env` file
-- The app is trying to connect to remote Supabase instead of local Docker database
-
-**Solution:**
-```bash
-# Quick fix - run the setup script:
-./setup-env.sh
-
-# OR manually edit .env and change DATABASE_URL to:
-DATABASE_URL=postgresql://postgres:Aog2Df4lIlIXiCGk@db:5432/postgres
-
-# Then restart your services:
-docker-compose down
-docker-compose up -d
-
-# Now try your migration again:
-docker-compose run --rm web flask db upgrade
-```
-
-### Issue 2: ".env file not found"
-
-**Cause:**
-- You haven't created the `.env` file
-
-**Solution:**
-```bash
-cp .env.example .env
-# Then edit .env with your configuration
-```
-
-### Issue 3: "Database connection failed"
-
-**Cause:**
-- Database container is not running
-
-**Solution:**
-```bash
-# Start the database
-docker-compose up -d db
-
-# Wait for it to be healthy
-docker-compose ps
-
-# Then try your command again
-docker-compose run --rm web flask db upgrade
 ```
 
 ---
@@ -186,12 +103,12 @@ print('DATABASE_URL:', os.getenv('DATABASE_URL'))
 "
 ```
 
-**Expected output for LOCAL database:**
+**Expected output for Supabase database:**
 ```
-DATABASE_URL: postgresql://postgres:Aog2Df4lIlIXiCGk@db:5432/postgres
+DATABASE_URL: postgresql://postgres.xxx:xxx@aws-0-xx.pooler.supabase.com:5432/postgres
 ```
 
-### Check Database is Running
+### Check Services are Running
 
 ```bash
 docker-compose ps
@@ -200,7 +117,72 @@ docker-compose ps
 **Expected output:**
 ```
 NAME                IMAGE                        STATUS
-cogniforge-db       supabase/postgres:15.1.0.118 Up (healthy)
+flask-frontend      my_ai_project-web           Up
+fastapi-ai-service  my_ai_project-ai_service    Up
+```
+
+---
+
+## 🐛 Common Issues / المشاكل الشائعة
+
+### Issue 1: "Connection refused" or "Cannot connect to database" ⚠️
+
+**Error Message:**
+```
+psycopg2.OperationalError: connection to server failed
+```
+
+**What This Means:**
+- Your Supabase connection string is incorrect
+- Or your Supabase database is not accessible
+
+**Solution:**
+```bash
+# Verify your DATABASE_URL in .env:
+# 1. Check the connection string format
+# 2. Ensure the password is correct
+# 3. Verify the hostname and port
+
+# Test the connection:
+docker-compose run --rm web python3 -c "
+from sqlalchemy import create_engine
+import os
+from dotenv import load_dotenv
+load_dotenv()
+engine = create_engine(os.getenv('DATABASE_URL'))
+with engine.connect() as conn:
+    print('Connection successful!')
+"
+```
+
+### Issue 2: ".env file not found"
+
+**Cause:**
+- You haven't created the `.env` file
+
+**Solution:**
+```bash
+cp .env.example .env
+# Then edit .env with your Supabase configuration
+```
+
+### Issue 3: "Migration failed"
+
+**Cause:**
+- Database migrations haven't been applied to Supabase
+
+**Solution:**
+```bash
+# Apply migrations to Supabase
+docker-compose run --rm web flask db upgrade
+
+# If that fails, check your connection first
+docker-compose run --rm web python3 -c "
+from dotenv import load_dotenv
+import os
+load_dotenv()
+print('DATABASE_URL:', os.getenv('DATABASE_URL'))
+"
 ```
 
 ---

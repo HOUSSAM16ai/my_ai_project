@@ -54,12 +54,11 @@
     }
   },
 
-  "forwardPorts": [5000, 8000, 8001, 5432],
+  "forwardPorts": [5000, 8000, 8001],
   "portsAttributes": {
     "5000": { "label": "Flask Frontend (Web)" },
     "8000": { "label": "FastAPI (AI Core)" },
-    "8001": { "label": "ChromaDB (Vector Memory)" },
-    "5432": { "label": "PostgreSQL (Database)" }
+    "8001": { "label": "ChromaDB (Vector Memory)" }
   },
 
   "containerEnv": {
@@ -70,7 +69,7 @@
 
     "SKIP_ENV_BOOTSTRAP": "false",
     "SKIP_PIP_INSTALL": "false",
-    "SKIP_DB_WAIT": "false",
+    "SKIP_DB_WAIT": "true",
     "SKIP_MIGRATIONS": "false",
     "SKIP_SEED": "false",
 
@@ -80,9 +79,7 @@
     "RUN_APP_ON_START": "false",
     "APP_START_CMD": "flask run --host=0.0.0.0 --port=8000",
 
-    "SHOW_MIGRATION_STATUS": "true",
-    "DB_HOST": "db",
-    "DB_PORT": "5432"
+    "SHOW_MIGRATION_STATUS": "true"
   },
 
   "mounts": [
