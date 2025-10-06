@@ -1,6 +1,6 @@
 {
   "//": "Dev Container Configuration (Ultimate Optimized Edition)",
-  "name": "CogniForge – Architect Dev Env",
+  "name": "CogniForge – Multi-Platform Dev Env",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
@@ -11,7 +11,7 @@
   "containerUser": "root",
   "overrideCommand": false,
 
-  "initializeCommand": "",
+  "initializeCommand": "echo '🚀 Initializing CogniForge Dev Container...'",
 
   "postCreateCommand": "bash .devcontainer/on-create.sh",
   "postStartCommand": "bash .devcontainer/on-start.sh",
@@ -67,19 +67,28 @@
     "PYTHONDONTWRITEBYTECODE": "1",
     "FORCE_COLOR": "1",
 
+    "//": "Environment Setup Flags",
     "SKIP_ENV_BOOTSTRAP": "false",
     "SKIP_PIP_INSTALL": "false",
     "SKIP_DB_WAIT": "true",
     "SKIP_MIGRATIONS": "false",
     "SKIP_SEED": "false",
 
+    "//": "GitHub Codespaces & Gitpod Compatibility",
+    "CODESPACES": "true",
+    "GITPOD_WORKSPACE_ID": "${localEnv:GITPOD_WORKSPACE_ID}",
+
+    "//": "Migration Control",
     "RUN_MIGRATIONS_DURING_CREATE": "false",
     "RUN_SEED_DURING_CREATE": "false",
 
+    "//": "Application Runtime",
     "RUN_APP_ON_START": "false",
     "APP_START_CMD": "flask run --host=0.0.0.0 --port=8000",
 
-    "SHOW_MIGRATION_STATUS": "true"
+    "//": "Database Connection (External Supabase)",
+    "SHOW_MIGRATION_STATUS": "true",
+    "DB_CONNECTION_TIMEOUT": "30"
   },
 
   "mounts": [
