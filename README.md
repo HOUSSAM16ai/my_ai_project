@@ -43,7 +43,8 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 - ✅ **Local Development** - Works with or without Docker
 
 **📖 Detailed Documentation:**
-- 🔍 **[PLATFORM_STATUS_AR.md](PLATFORM_STATUS_AR.md)** - Complete status report in Arabic (إجابة شاملة على جميع الأسئلة)
+- 📚 **[PLATFORM_DOCS_INDEX.md](PLATFORM_DOCS_INDEX.md)** - 🌟 Complete documentation index (دليل شامل لجميع المستندات)
+- 🔍 **[PLATFORM_STATUS_AR.md](PLATFORM_STATUS_AR.md)** - Status report in Arabic (إجابة شاملة على جميع الأسئلة)
 - 🌍 **[MULTI_PLATFORM_SETUP.md](MULTI_PLATFORM_SETUP.md)** - Setup guide for all platforms
 - 🚀 **[PLATFORM_ACCESS_GUIDE.md](PLATFORM_ACCESS_GUIDE.md)** - Quick access guide
 
