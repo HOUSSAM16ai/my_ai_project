@@ -55,8 +55,8 @@ cd my_ai_project
 
 # Setup environment (IMPORTANT!)
 cp .env.example .env
-# Edit .env and ensure DATABASE_URL uses local database:
-# DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres
+# Edit .env and configure your Supabase connection:
+# DATABASE_URL=postgresql://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:5432/postgres
 
 # Start services with Docker Compose
 docker-compose up -d
