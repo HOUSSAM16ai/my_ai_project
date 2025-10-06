@@ -1,1 +1,78 @@
-{}
+# ======================================================================================
+# CogniForge - Gitpod Configuration
+# Optimized for cloud development with external Supabase database
+# ======================================================================================
+
+# Expose ports for services
+ports:
+  - port: 5000
+    name: "Flask Web App"
+    description: "Main Flask application"
+    onOpen: notify
+    visibility: public
+  - port: 8000
+    name: "Development Server"
+    description: "Alternative development port"
+    onOpen: ignore
+    visibility: public
+  - port: 8001
+    name: "AI Service (FastAPI)"
+    description: "FastAPI AI microservice"
+    onOpen: ignore
+    visibility: public
+
+# Tasks to run on workspace initialization
+tasks:
+  - name: "Setup Environment"
+    init: |
+      echo "🚀 Setting up CogniForge environment..."
+      
+      # Create .env file if it doesn't exist
+      if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+          cp .env.example .env
+          echo "✅ Created .env from .env.example"
+          echo "⚠️  Please configure your DATABASE_URL in .env with your Supabase connection string"
+        fi
+      fi
+      
+      # Install Python dependencies
+      echo "📦 Installing Python dependencies..."
+      pip install --no-cache-dir -r requirements.txt
+      
+      echo "✅ Environment setup complete!"
+    
+    command: |
+      echo "🎯 CogniForge is ready!"
+      echo ""
+      echo "📋 Quick Start Commands:"
+      echo "  1. Configure DATABASE_URL in .env (if not done)"
+      echo "  2. Run migrations: docker-compose run --rm web flask db upgrade"
+      echo "  3. Create admin user: docker-compose run --rm web flask users create-admin"
+      echo "  4. Start services: docker-compose up -d"
+      echo ""
+      echo "🌐 Access: http://localhost:5000"
+      echo ""
+
+# VS Code extensions to install
+vscode:
+  extensions:
+    - ms-python.python
+    - ms-python.vscode-pylance
+    - github.copilot
+    - ms-azuretools.vscode-docker
+    - esbenp.prettier-vscode
+    - ms-python.black-formatter
+    - mtxr.sqltools
+    - mtxr.sqltools-driver-pg
+
+# GitHub integration
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: false
+    addCheck: true
+    addComment: false
+    addBadge: false

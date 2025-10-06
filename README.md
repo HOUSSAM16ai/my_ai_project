@@ -4,13 +4,24 @@
 
 > **🚀 NEW TO COGNIFORGE?** → Start with [`SETUP_GUIDE.md`](SETUP_GUIDE.md) for complete setup instructions!
 
+> **🌍 MULTI-PLATFORM SUPPORT** → Works on Gitpod, GitHub Codespaces, Dev Containers! See [`MULTI_PLATFORM_SETUP.md`](MULTI_PLATFORM_SETUP.md)
+
 ---
 
 ## 🚀 Overview | نظرة عامة
 
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/HOUSSAM16ai/my_ai_project)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=HOUSSAM16ai/my_ai_project)
+
 CogniForge is an advanced, AI-powered educational platform that combines cutting-edge technology with intuitive design. It features a superior database management system, intelligent mission orchestration (Overmind), and comprehensive educational tools.
 
 نظام تعليمي متطور يجمع بين أحدث التقنيات والتصميم البديهي، مع نظام إدارة قاعدة بيانات خارق، ونظام تنسيق مهام ذكي (Overmind)، وأدوات تعليمية شاملة.
+
+**🌍 Multi-Platform Support:**
+- ✅ Gitpod - Cloud IDE
+- ✅ GitHub Codespaces - GitHub's cloud dev environment  
+- ✅ VS Code Dev Containers - Local containerized development
+- ✅ Local Development - Traditional setup
 
 ---
 
