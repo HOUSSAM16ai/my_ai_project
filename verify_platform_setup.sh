@@ -83,6 +83,14 @@ if [ -f ".gitpod.yml" ]; then
     error "  ↳ المنفذ 5000 غير مُكوّن ❌"
     ((ISSUES++))
   fi
+  
+  # Verify port 5432 for Supabase connection
+  if grep -q "port: 5432" .gitpod.yml; then
+    success "  ↳ المنفذ 5432 (Supabase) مُكوّن ✅"
+  else
+    warning "  ↳ المنفذ 5432 (Supabase) غير مُكوّن ⚠️"
+    warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
+  fi
 else
   warning "ملف .gitpod.yml غير موجود ⚠️"
 fi

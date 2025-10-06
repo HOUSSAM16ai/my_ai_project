@@ -20,6 +20,16 @@ ports:
     description: "FastAPI AI microservice"
     onOpen: ignore
     visibility: public
+  - port: 5432
+    name: "PostgreSQL/Supabase"
+    description: "Database connection port for Supabase"
+    onOpen: ignore
+    visibility: private
+  - port: 6543
+    name: "Supabase Connection Pooling"
+    description: "Connection pooling port for Supabase"
+    onOpen: ignore
+    visibility: private
 
 # Tasks to run on workspace initialization
 tasks:

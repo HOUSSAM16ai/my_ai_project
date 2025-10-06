@@ -211,11 +211,13 @@ print('DATABASE_URL:', os.getenv('DATABASE_URL'))
 
 ### Issue: "Port 5432 failed" (Gitpod)
 
+**Problem**: `Cannot assign requested address` - Gitpod blocks outbound connections on port 5432
+
 **Solution**:
-- This is normal! We're not using port 5432 locally
-- We connect to **external** Supabase database
-- The error happens when scripts try to wait for local database
-- Already fixed with `SKIP_DB_WAIT: true` in configuration
+- Port 5432 is now configured in `.gitpod.yml` to allow connections to external Supabase database
+- Port 6543 is also configured for connection pooling
+- If you still see this error, restart your Gitpod workspace (Stop Workspace → Start)
+- Note: Changes to `.gitpod.yml` require a workspace restart to take effect
 
 ### Issue: "Migrations fail"
 

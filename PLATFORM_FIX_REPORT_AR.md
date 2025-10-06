@@ -29,7 +29,8 @@
 **كان**: ملف فارغ `{}`
 
 **أصبح**: 
-- ✅ تكوين المنافذ (5000, 8000, 8001) تلقائيًا
+- ✅ تكوين المنافذ (5000, 8000, 8001, 5432, 6543) تلقائيًا
+- ✅ إضافة المنفذ 5432 للاتصال بـ Supabase
 - ✅ مهام التهيئة الأولية (pip install, .env setup)
 - ✅ إضافات VS Code المفيدة
 - ✅ رسائل توجيهية عند البدء
@@ -39,6 +40,9 @@ ports:
   - port: 5000
     name: "Flask Web App"
     onOpen: notify
+  - port: 5432
+    name: "PostgreSQL/Supabase"
+    onOpen: ignore
   
 tasks:
   - name: "Setup Environment"
@@ -158,9 +162,11 @@ DATABASE_URL=postgresql://postgres.xxx:yyy@aws-0-region.pooler.supabase.com:6543
 | 5000 | Flask Web | جميع المنصات |
 | 8000 | Dev Server | اختياري |
 | 8001 | AI Service | اختياري |
+| 5432 | PostgreSQL/Supabase | للاتصال بقاعدة البيانات |
+| 6543 | Supabase Connection Pooling | اختياري |
 
 **التكوين التلقائي**:
-- **Gitpod**: منافذ معرّفة في `.gitpod.yml`
+- **Gitpod**: منافذ معرّفة في `.gitpod.yml` (شامل 5432 و 6543 للـ Supabase)
 - **Codespaces**: منافذ معرّفة في `devcontainer.json`
 - **Local**: استخدام localhost مباشرة
 
@@ -288,10 +294,13 @@ cat .env | grep DATABASE_URL
 - تأكد من وجود `.devcontainer/devcontainer.json`
 
 ### 3. "Port 5432 failed" (Gitpod)
+**المشكلة**: Cannot assign requested address - Gitpod يمنع الاتصالات الخارجية على المنفذ 5432
+
 **الحل**:
-- هذا طبيعي! نحن لا نستخدم قاعدة بيانات محلية
+- تأكد من إضافة المنفذ 5432 في `.gitpod.yml`
+- المنفذ 5432 مُضاف الآن تلقائيًا للاتصال بـ Supabase
+- إذا استمرت المشكلة، أعد تشغيل workspace من جديد (Stop Workspace ثم Start)
 - قاعدة البيانات خارجية (Supabase)
-- الإعدادات تتخطى انتظار القاعدة المحلية
 
 ### 4. "Migrations fail"
 **الحل**:
