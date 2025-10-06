@@ -47,7 +47,7 @@ def check_migrations():
     app = create_app()
     
     with app.app_context():
-        print_header("🔄 فحص حالة الهجرات")
+        print_header("🔄 فحص حالة الهجرات - v14.0 Purified")
         
         try:
             # الاتصال
@@ -71,13 +71,15 @@ def check_migrations():
                 
                 print(f"\n{G}✅ آخر هجرة: {versions[-1]}{E}\n")
                 
-                # التحقق من هجرة جداول الأدمن
+                # Check for purification migration
+                purify_migration = '20250103_purify_db'
                 admin_migration = 'c670e137ea84'
-                if any(admin_migration in v for v in versions):
-                    print(f"{G}✅ هجرة جداول الأدمن مطبقة ({admin_migration}){E}")
-                else:
-                    print(f"{R}❌ هجرة جداول الأدمن غير مطبقة!{E}")
-                    print(f"{Y}💡 يجب تطبيق هجرة {admin_migration}{E}")
+                
+                if purify_migration in versions:
+                    print(f"{G}🔥 هجرة التنقية مطبقة! قاعدة البيانات نقية ومجهزة للسحابة{E}")
+                elif any(admin_migration in v for v in versions):
+                    print(f"{Y}⚠️  هجرة الأدمن القديمة موجودة - يُنصح بتطبيق هجرة التنقية{E}")
+                    print(f"{Y}💡 للتنقية الكاملة: flask db upgrade (لتطبيق {purify_migration}){E}")
             else:
                 print(f"{R}❌ لا توجد هجرات مطبقة!{E}")
                 print(f"{Y}💡 يرجى تشغيل: flask db upgrade{E}")
@@ -90,12 +92,21 @@ def check_migrations():
             print(f"{G}✅ عدد الجداول: {len(tables)}{E}\n")
             
             expected_tables = [
-                'users', 'subjects', 'lessons', 'exercises', 'submissions',
-                'missions', 'mission_plans', 'tasks', 'mission_events',
-                'admin_conversations', 'admin_messages'
+                'users',           # User accounts  
+                'missions',        # Main missions
+                'mission_plans',   # Mission execution plans
+                'tasks',           # Sub-tasks
+                'mission_events'   # Mission event logs
             ]
             
-            print(f"{B}🔍 الجداول المتوقعة:{E}")
+            # Purified tables (should NOT exist)
+            purified_tables = [
+                'subjects', 'lessons', 'exercises', 'submissions',
+                'admin_conversations', 'admin_messages', 
+                'task_dependencies'
+            ]
+            
+            print(f"{B}🔍 الجداول المتوقعة (Overmind v14.0):{E}")
             for table in expected_tables:
                 if table in tables:
                     # عد السجلات
@@ -108,8 +119,22 @@ def check_migrations():
                 else:
                     print(f"   {R}❌{E} {table:<25} (غير موجود!)")
             
+            # Check for purified tables
+            print(f"\n{B}🔥 فحص النقاء المعماري:{E}")
+            impurities_found = False
+            for table in purified_tables:
+                if table in tables:
+                    print(f"   {R}⚠️  {table:<25} (يجب حذفه!){E}")
+                    impurities_found = True
+                else:
+                    print(f"   {G}✨{E} {table:<25} (تم تنقيته)")
+            
+            if not impurities_found:
+                print(f"\n{G}🎉 النقاء المعماري 100%! جميع الجداول القديمة محذوفة{E}")
+            
             # جداول إضافية
-            extra_tables = [t for t in tables if t not in expected_tables and not t.startswith('alembic')]
+            all_known = expected_tables + purified_tables + ['alembic_version']
+            extra_tables = [t for t in tables if t not in all_known]
             if extra_tables:
                 print(f"\n{B}📋 جداول إضافية:{E}")
                 for table in extra_tables:
@@ -123,12 +148,16 @@ def check_migrations():
                 print(f"{R}❌ توجد جداول مفقودة: {', '.join(missing_tables)}{E}")
                 print(f"{Y}💡 الحل: تشغيل الهجرات{E}")
                 print(f"   {B}flask db upgrade{E}\n")
+            elif impurities_found:
+                print(f"{Y}⚠️  توجد جداول قديمة يجب تنقيتها{E}")
+                print(f"{Y}💡 الحل: تطبيق هجرة التنقية{E}")
+                print(f"   {B}flask db upgrade{E}\n")
             elif not versions:
                 print(f"{R}❌ لا توجد هجرات مطبقة!{E}")
                 print(f"{Y}💡 الحل:{E}")
                 print(f"   {B}flask db upgrade{E}\n")
             else:
-                print(f"{G}✅ كل شيء على ما يرام! جميع الجداول موجودة والهجرات مطبقة{E}\n")
+                print(f"{G}✅ كل شيء مثالي! قاعدة بيانات نقية جاهزة للسحابة 100%{E}\n")
             
             # معلومات إضافية
             print(f"{B}📚 معلومات إضافية:{E}")

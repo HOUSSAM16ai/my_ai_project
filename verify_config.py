@@ -47,13 +47,19 @@ def check_database_url():
     
     print(f"{G}✅ DATABASE_URL is configured{E}")
     
-    # Check components
+    # Check essential components (Supabase cloud-ready)
     checks = {
-        'Supabase host': 'aocnuqhxrhxgbfcgbxfy.supabase.co' in db_url,
         'PostgreSQL protocol': db_url.startswith('postgresql://'),
-        'Correct port': ':5432/' in db_url,
-        'URL-encoded password': '199720242025%40HOUSSAMbenmerah' in db_url,
+        'Contains host': '@' in db_url and '/' in db_url.split('@')[-1],
+        'Contains port': ':5432/' in db_url or ':6543/' in db_url,  # 5432 or 6543 (pooler)
     }
+    
+    # Check if Supabase (optional, not required for architectural purity)
+    if 'supabase.co' in db_url:
+        print(f"{G}   ✓ Supabase cloud database detected{E}")
+        checks['Cloud-ready Supabase'] = True
+    else:
+        print(f"{Y}   ℹ Non-Supabase PostgreSQL (still cloud-ready){E}")
     
     all_good = True
     for check, passed in checks.items():
@@ -129,8 +135,8 @@ def check_helper_scripts():
 
 def main():
     print(f"\n{C}{'=' * 70}{E}")
-    print(f"{C}✅ SUPABASE CONFIGURATION VERIFICATION{E}")
-    print(f"{C}   Project: aocnuqhxrhxgbfcgbxfy (New Clean Project){E}")
+    print(f"{C}✅ CLOUD-READY DATABASE CONFIGURATION VERIFICATION{E}")
+    print(f"{C}   🔥 PURIFIED OVERMIND ARCHITECTURE - v14.0{E}")
     print(f"{C}{'=' * 70}{E}\n")
     
     results = []
