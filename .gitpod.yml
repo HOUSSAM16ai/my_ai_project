@@ -1,70 +1,56 @@
 # ======================================================================================
-# CogniForge - Gitpod Configuration
-# Optimized for cloud development with external Supabase database
+# CogniForge - Gitpod Constitution (v2.0 - Supabase Native)
 # ======================================================================================
+# This configuration is optimized for a Supabase-first workflow.
 
-# Expose ports for services
+# === [PORT EXPOSURE PROTOCOL] ===
+# Define which ports inside the workspace should be accessible.
 ports:
+  # Port for the main Flask web application.
   - port: 5000
     name: "Flask Web App"
-    description: "Main Flask application"
-    onOpen: notify
+    onOpen: open-preview  # Automatically open a preview tab.
     visibility: public
-  - port: 8000
-    name: "Development Server"
-    description: "Alternative development port"
-    onOpen: ignore
-    visibility: public
-  - port: 8001
-    name: "AI Service (FastAPI)"
-    description: "FastAPI AI microservice"
-    onOpen: ignore
-    visibility: public
-  - port: 5432
-    name: "PostgreSQL/Supabase"
-    description: "Database connection port for Supabase"
-    onOpen: ignore
-    visibility: private
-  - port: 6543
-    name: "Supabase Connection Pooling"
-    description: "Connection pooling port for Supabase"
-    onOpen: ignore
-    visibility: private
 
-# Tasks to run on workspace initialization
+  # Port for the FastAPI AI service.
+  - port: 8001
+    name: "AI Service"
+    onOpen: ignore
+    visibility: public
+
+# === [THE GENESIS PROTOCOL] ===
+# Tasks to run ONCE when the workspace is created for the first time.
 tasks:
-  - name: "Setup Environment"
+  - name: "Initial Setup & Bootstrap"
+    # This runs only when you create the workspace.
     init: |
-      echo "🚀 Setting up CogniForge environment..."
+      echo "🚀 Initializing CogniForge Environment..."
       
-      # Create .env file if it doesn't exist
+      # 1. Create .env file from template.
       if [ ! -f .env ]; then
-        if [ -f .env.example ]; then
-          cp .env.example .env
-          echo "✅ Created .env from .env.example"
-          echo "⚠️  Please configure your DATABASE_URL in .env with your Supabase connection string"
-        fi
+        cp .env.example .env
+        echo "✅ Created .env file. ⚠️ PLEASE CONFIGURE YOUR DATABASE_URL NOW."
       fi
       
-      # Install Python dependencies
-      echo "📦 Installing Python dependencies..."
+      # 2. Install Python dependencies.
+      echo "📦 Installing Python packages..."
       pip install --no-cache-dir -r requirements.txt
       
-      echo "✅ Environment setup complete!"
-    
-    command: |
-      echo "🎯 CogniForge is ready!"
-      echo ""
-      echo "📋 Quick Start Commands:"
-      echo "  1. Configure DATABASE_URL in .env (if not done)"
-      echo "  2. Run migrations: docker-compose run --rm web flask db upgrade"
-      echo "  3. Create admin user: docker-compose run --rm web flask users create-admin"
-      echo "  4. Start services: docker-compose up -d"
-      echo ""
-      echo "🌐 Access: http://localhost:5000"
-      echo ""
+      echo "✅ Initial setup complete! Your workspace is ready."
 
-# VS Code extensions to install
+    # This runs every time you start the workspace.
+    command: |
+      echo "🎯 CogniForge Workspace is ready!"
+      echo "--------------------------------------------------"
+      echo "NEXT STEPS:"
+      echo "1. Ensure DATABASE_URL in '.env' is correct."
+      echo "2. Start all services: docker-compose up --build -d"
+      echo "3. Apply database migrations: docker-compose run --rm web flask db upgrade"
+      echo "4. Create your admin user: docker-compose run --rm web flask users create-admin"
+      echo "--------------------------------------------------"
+      
+# === [VS CODE INTEGRATION] ===
+# Install essential extensions for a productive environment.
 vscode:
   extensions:
     - ms-python.python
@@ -76,7 +62,8 @@ vscode:
     - mtxr.sqltools
     - mtxr.sqltools-driver-pg
 
-# GitHub integration
+# === [GITHUB INTEGRATION] ===
+# Enable prebuilds to speed up workspace creation.
 github:
   prebuilds:
     master: true
