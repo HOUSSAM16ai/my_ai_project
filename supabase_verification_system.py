@@ -157,7 +157,7 @@ class SupabaseVerificationSystem:
     
     def verify_tables(self) -> bool:
         """التحقق من وجود جميع الجداول"""
-        print_header("📋 STEP 3: التحقق من الجداول")
+        print_header("📋 STEP 3: التحقق من الجداول (Purified v14.0)")
         
         if not self.engine:
             print_error("لا يوجد اتصال بقاعدة البيانات")
@@ -169,11 +169,21 @@ class SupabaseVerificationSystem:
             
             print_info(f"عدد الجداول الموجودة: {len(tables)}")
             
-            # الجداول المتوقعة
+            # الجداول المتوقعة (PURIFIED OVERMIND v14.0 - Cloud-Ready)
+            # ✅ Only 5 core tables for Overmind system
             expected_tables = [
-                'users', 'subjects', 'lessons', 'exercises', 'submissions',
-                'missions', 'mission_plans', 'tasks', 'mission_events',
-                'admin_conversations', 'admin_messages'
+                'users',           # User accounts
+                'missions',        # Main missions
+                'mission_plans',   # Mission execution plans  
+                'tasks',           # Sub-tasks
+                'mission_events'   # Mission event logs
+            ]
+            
+            # Tables that SHOULD NOT exist (purified/removed)
+            removed_tables = [
+                'subjects', 'lessons', 'exercises', 'submissions',  # Old education system
+                'admin_conversations', 'admin_messages',             # Old admin chat
+                'task_dependencies'                                  # Old helper table
             ]
             
             # التحقق من كل جدول
@@ -183,7 +193,7 @@ class SupabaseVerificationSystem:
                     try:
                         result = self.session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                         count = result.scalar()
-                        print_success(f"{table}: موجود ({count} سجل)")
+                        print_success(f"✅ {table}: موجود ({count} سجل)")
                         self.test_results['tables'][table] = {
                             'exists': True,
                             'count': count
@@ -196,17 +206,38 @@ class SupabaseVerificationSystem:
                             'error': str(e)
                         }
                 else:
-                    print_error(f"{table}: غير موجود!")
+                    print_error(f"❌ {table}: غير موجود!")
                     self.test_results['tables'][table] = {
                         'exists': False
                     }
             
-            # جداول إضافية (غير متوقعة)
-            extra_tables = [t for t in tables if t not in expected_tables and not t.startswith('alembic')]
-            if extra_tables:
-                print_info(f"جداول إضافية: {', '.join(extra_tables)}")
+            # التحقق من عدم وجود الجداول المحذوفة (architectural purity)
+            print_info("\n🔥 التحقق من النقاء المعماري (Architectural Purity):")
+            impurities_found = False
+            for removed_table in removed_tables:
+                if removed_table in tables:
+                    print_error(f"⚠️  IMPURITY: {removed_table} لا يجب أن يكون موجوداً!")
+                    impurities_found = True
+                else:
+                    print_success(f"✨ {removed_table}: تم إزالته بنجاح (purified)")
             
-            return all(self.test_results['tables'][t].get('exists', False) for t in expected_tables)
+            if not impurities_found:
+                print_success("\n🎉 النقاء المعماري 100%! جميع الجداول القديمة تم إزالتها!")
+            
+            # جداول إضافية (غير متوقعة وليست من الجداول المحذوفة)
+            all_known_tables = expected_tables + removed_tables + ['alembic_version']
+            extra_tables = [t for t in tables if t not in all_known_tables]
+            if extra_tables:
+                print_warning(f"\nجداول إضافية غير متوقعة: {', '.join(extra_tables)}")
+            
+            # النتيجة النهائية: يجب أن تكون جميع الجداول المتوقعة موجودة + لا توجد شوائب
+            all_expected_exist = all(self.test_results['tables'][t].get('exists', False) for t in expected_tables)
+            
+            if all_expected_exist and not impurities_found:
+                print_success("\n✅ قاعدة البيانات نقية وجاهزة للسحابة 100%!")
+                return True
+            else:
+                return False
             
         except Exception as e:
             print_error(f"فشل التحقق من الجداول: {str(e)}")
@@ -265,83 +296,79 @@ class SupabaseVerificationSystem:
             })
             return False
     
-    def test_admin_conversations(self) -> bool:
-        """اختبار محادثات الأدمن"""
-        print_header("💬 STEP 5: اختبار محادثات الأدمن")
+    def test_overmind_operations(self) -> bool:
+        """اختبار عمليات Overmind الأساسية"""
+        print_header("🧠 STEP 5: اختبار عمليات Overmind")
         
         if not self.session:
             print_error("لا يوجد اتصال بقاعدة البيانات")
             return False
         
         try:
-            # التحقق من عدد المحادثات الموجودة
-            result = self.session.execute(text("SELECT COUNT(*) FROM admin_conversations"))
-            count = result.scalar()
-            print_info(f"عدد المحادثات الموجودة: {count}")
+            # التحقق من عدد المهام الموجودة
+            result = self.session.execute(text("SELECT COUNT(*) FROM missions"))
+            mission_count = result.scalar()
+            print_info(f"عدد المهام الموجودة: {mission_count}")
             
-            # التحقق من عدد الرسائل
-            result = self.session.execute(text("SELECT COUNT(*) FROM admin_messages"))
-            msg_count = result.scalar()
-            print_info(f"عدد الرسائل الموجودة: {msg_count}")
+            # التحقق من عدد الأحداث
+            result = self.session.execute(text("SELECT COUNT(*) FROM mission_events"))
+            event_count = result.scalar()
+            print_info(f"عدد أحداث المهام الموجودة: {event_count}")
             
-            # جلب آخر 5 محادثات
+            # جلب آخر 5 مهام
             result = self.session.execute(
                 text("""
-                    SELECT id, title, created_at, updated_at 
-                    FROM admin_conversations 
+                    SELECT id, objective, status, created_at 
+                    FROM missions 
                     ORDER BY created_at DESC 
                     LIMIT 5
                 """)
             )
             
-            conversations = []
+            missions = []
             for row in result.fetchall():
-                conv = {
+                mission = {
                     'id': row[0],
-                    'title': row[1],
-                    'created_at': str(row[2]),
-                    'updated_at': str(row[3])
+                    'objective': row[1],
+                    'status': row[2],
+                    'created_at': str(row[3])
                 }
-                conversations.append(conv)
-                print_success(f"  💬 ID: {conv['id']} | {conv['title'][:50]}...")
+                missions.append(mission)
+                print_success(f"  🎯 ID: {mission['id']} | Status: {mission['status']} | {mission['objective'][:50]}...")
             
-            self.test_results['admin_conversations'] = {
-                'total_conversations': count,
-                'total_messages': msg_count,
-                'recent_conversations': conversations
+            self.test_results['overmind_operations'] = {
+                'total_missions': mission_count,
+                'total_events': event_count,
+                'recent_missions': missions
             }
             
-            if count > 0:
-                print_success(f"✨ المحادثات محفوظة في Supabase! ({count} محادثة)")
-                return True
-            else:
-                print_warning("لا توجد محادثات محفوظة بعد")
-                return True  # ليس خطأ، فقط لا توجد بيانات
+            print_success(f"✨ نظام Overmind يعمل بشكل مثالي!")
+            return True
                 
         except Exception as e:
-            print_error(f"فشل اختبار المحادثات: {str(e)}")
+            print_error(f"فشل اختبار Overmind: {str(e)}")
             self.test_results['errors'].append({
-                'step': 'admin_conversations',
+                'step': 'overmind_operations',
                 'error': str(e),
                 'traceback': traceback.format_exc()
             })
             return False
     
     def test_crud_operations(self) -> bool:
-        """اختبار عمليات CRUD"""
+        """اختبار عمليات CRUD على جدول missions"""
         print_header("🔧 STEP 6: اختبار عمليات CRUD")
         
         if not self.session:
             print_error("لا يوجد اتصال بقاعدة البيانات")
             return False
         
-        test_table = "admin_conversations"
+        test_table = "missions"
         test_passed = True
         
         try:
             # CREATE - إنشاء سجل اختبار
-            print_info("اختبار CREATE...")
-            test_title = f"TEST_CONVERSATION_{int(time.time())}"
+            print_info("اختبار CREATE على جدول missions...")
+            test_objective = f"TEST_MISSION_VERIFICATION_{int(time.time())}"
             
             # نحتاج user_id صحيح، لنحصل على أول مستخدم
             result = self.session.execute(text("SELECT id FROM users LIMIT 1"))
@@ -352,24 +379,24 @@ class SupabaseVerificationSystem:
                 
                 insert_result = self.session.execute(
                     text(f"""
-                        INSERT INTO {test_table} (title, user_id, conversation_type, created_at, updated_at)
-                        VALUES (:title, :user_id, 'test', NOW(), NOW())
+                        INSERT INTO {test_table} (objective, status, initiator_id, created_at, updated_at, locked, adaptive_cycles)
+                        VALUES (:objective, 'PENDING', :user_id, NOW(), NOW(), false, 0)
                         RETURNING id
                     """),
-                    {'title': test_title, 'user_id': user_id}
+                    {'objective': test_objective, 'user_id': user_id}
                 )
                 test_id = insert_result.scalar()
                 self.session.commit()
-                print_success(f"CREATE: تم إنشاء سجل اختبار (ID: {test_id})")
+                print_success(f"CREATE: تم إنشاء مهمة اختبار (ID: {test_id})")
                 
                 # READ - قراءة السجل
                 print_info("اختبار READ...")
                 result = self.session.execute(
-                    text(f"SELECT title FROM {test_table} WHERE id = :id"),
+                    text(f"SELECT objective FROM {test_table} WHERE id = :id"),
                     {'id': test_id}
                 )
                 row = result.fetchone()
-                if row and row[0] == test_title:
+                if row and row[0] == test_objective:
                     print_success("READ: تم قراءة السجل بنجاح")
                 else:
                     print_error("READ: فشل في قراءة السجل")
@@ -377,19 +404,19 @@ class SupabaseVerificationSystem:
                 
                 # UPDATE - تحديث السجل
                 print_info("اختبار UPDATE...")
-                new_title = f"UPDATED_{test_title}"
+                new_objective = f"UPDATED_{test_objective}"
                 self.session.execute(
-                    text(f"UPDATE {test_table} SET title = :title WHERE id = :id"),
-                    {'title': new_title, 'id': test_id}
+                    text(f"UPDATE {test_table} SET objective = :objective WHERE id = :id"),
+                    {'objective': new_objective, 'id': test_id}
                 )
                 self.session.commit()
                 
                 result = self.session.execute(
-                    text(f"SELECT title FROM {test_table} WHERE id = :id"),
+                    text(f"SELECT objective FROM {test_table} WHERE id = :id"),
                     {'id': test_id}
                 )
                 row = result.fetchone()
-                if row and row[0] == new_title:
+                if row and row[0] == new_objective:
                     print_success("UPDATE: تم تحديث السجل بنجاح")
                 else:
                     print_error("UPDATE: فشل في تحديث السجل")
@@ -460,7 +487,7 @@ class SupabaseVerificationSystem:
         if self.test_results['migrations']:
             passed_tests += 1
         
-        if self.test_results['admin_conversations']:
+        if self.test_results['overmind_operations']:
             passed_tests += 1
         
         if self.test_results.get('crud_tests', {}).get('all_passed', False):
@@ -477,8 +504,9 @@ class SupabaseVerificationSystem:
         print(f"الاختبارات الناجحة: {passed_tests}/{total_tests}\n")
         
         if success_rate == 100:
-            print_success("🎉 ممتاز! النظام متصل بـ Supabase بشكل مثالي 100%!")
-            print_success("✨ جميع الجداول موجودة والعمليات تعمل بشكل خارق!")
+            print_success("🎉 ممتاز! قاعدة البيانات نقية ومتصلة بالسحابة بشكل مثالي 100%!")
+            print_success("✨ هندسة Overmind المنقاة - جاهزة للسحابة بشكل خارق!")
+            print_success("🔥 النقاء المعماري: تم التحقق من إزالة جميع الجداول القديمة!")
         elif success_rate >= 80:
             print_success("✅ جيد جداً! النظام يعمل بشكل صحيح مع بعض التحسينات الممكنة")
         elif success_rate >= 60:
@@ -497,9 +525,9 @@ class SupabaseVerificationSystem:
     
     def run_complete_verification(self) -> bool:
         """تشغيل التحقق الكامل"""
-        print_header("🚀 نظام التحقق الخارق من Supabase")
-        print_info("CogniForge Enterprise Verification System v1.0.0")
-        print_info("يتفوق على أنظمة الشركات العملاقة! 💪\n")
+        print_header("🚀 نظام التحقق الخارق من النقاء المعماري")
+        print_info("CogniForge Purified Architecture Verification v14.0")
+        print_info("Cloud-Ready Overmind System - يتفوق على أنظمة الشركات العملاقة! 💪\n")
         
         # تشغيل جميع الاختبارات
         success = True
@@ -516,7 +544,7 @@ class SupabaseVerificationSystem:
         if not self.verify_migrations():
             success = False
         
-        if not self.test_admin_conversations():
+        if not self.test_overmind_operations():
             success = False
         
         if not self.test_crud_operations():
