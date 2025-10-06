@@ -32,9 +32,10 @@ CogniForge is an advanced, AI-powered educational platform that combines cutting
 ### 🎯 جميع المنصات تعمل بشكل مثالي! | All Platforms Working Perfectly!
 
 **✅ Port 5432 Issue RESOLVED**
-- ❌ **OLD**: System tried to connect to local port 5432 (failed on Gitpod)
-- ✅ **NOW**: System skips local DB wait with `SKIP_DB_WAIT=true`
-- ✅ **RESULT**: Direct connection to external Supabase database
+- ❌ **OLD**: System tried to connect to local port 5432 (failed on Gitpod - "Cannot assign requested address")
+- ✅ **FIX 1**: System skips local DB wait with `SKIP_DB_WAIT=true`
+- ✅ **FIX 2**: Port 5432 & 6543 now configured in `.gitpod.yml` for Supabase connection
+- ✅ **RESULT**: Direct connection to external Supabase database works perfectly
 
 **✅ Verified Working On:**
 - ✅ **Gitpod** - Full configuration with `.gitpod.yml`
