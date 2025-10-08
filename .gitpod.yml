@@ -18,6 +18,10 @@ ports:
     onOpen: ignore
     visibility: public
 
+  # Port for Supabase outbound connection (PostgreSQL)
+  - port: 5432
+    onOpen: ignore
+
 # === [THE GENESIS PROTOCOL] ===
 # Tasks to run ONCE when the workspace is created for the first time.
 tasks:
