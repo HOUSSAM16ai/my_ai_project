@@ -52,6 +52,12 @@ else
     if [ -f ".env.example" ]; then
       cp .env.example .env
       ok "تم إنشاء .env من .env.example"
+      
+      if grep -q "your-password@your-host.supabase.co" .env 2>/dev/null; then
+        warn "⚠️  DATABASE_URL contains placeholder values!"
+        warn "   Please update .env with your actual Supabase connection string."
+        warn "   Get it from: https://supabase.com/dashboard/project/_/settings/database"
+      fi
     else
       warn "لا يوجد .env ولا .env.example — أنشئ .env يدويًا لاحقًا."
     fi
