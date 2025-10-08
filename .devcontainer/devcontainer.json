@@ -11,7 +11,7 @@
   "containerUser": "root",
   "overrideCommand": true,
 
-  "initializeCommand": "echo '🚀 Initializing CogniForge Dev Container...'",
+  "initializeCommand": "bash -c 'echo \"🚀 Initializing CogniForge Dev Container...\" && [ ! -f .env ] && cp .env.example .env || true'",
 
   "postCreateCommand": "bash .devcontainer/on-create.sh",
   "postStartCommand": "bash .devcontainer/on-start.sh",
