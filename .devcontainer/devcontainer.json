@@ -9,7 +9,7 @@
 
   "remoteUser": "root",
   "containerUser": "root",
-  "overrideCommand": false,
+  "overrideCommand": true,
 
   "initializeCommand": "echo '🚀 Initializing CogniForge Dev Container...'",
 
