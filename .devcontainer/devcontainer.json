@@ -68,11 +68,13 @@
     "FORCE_COLOR": "1",
 
     "//": "Environment Setup Flags",
+    "//": "SKIP_PIP_INSTALL: Packages already in Docker image via Dockerfile",
+    "//": "SKIP_MIGRATIONS/SEED: User must configure .env with DATABASE_URL first",
     "SKIP_ENV_BOOTSTRAP": "false",
-    "SKIP_PIP_INSTALL": "false",
+    "SKIP_PIP_INSTALL": "true",
     "SKIP_DB_WAIT": "true",
-    "SKIP_MIGRATIONS": "false",
-    "SKIP_SEED": "false",
+    "SKIP_MIGRATIONS": "true",
+    "SKIP_SEED": "true",
 
     "//": "GitHub Codespaces & Gitpod Compatibility",
     "CODESPACES": "true",
