@@ -5,7 +5,7 @@
     "../docker-compose.yml"
   ],
   "service": "web",
-  "workspaceFolder": "/app",
+  "workspaceFolder": "/workspaces/my_ai_project",
 
   "remoteUser": "root",
   "containerUser": "root",
