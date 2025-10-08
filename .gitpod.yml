@@ -26,6 +26,12 @@ ports:
 # Tasks to run ONCE when the workspace is created for the first time.
 tasks:
   - name: "Initial Setup & Bootstrap"
+    # Environment variables to prevent auto-execution before user configures DATABASE_URL
+    env:
+      SKIP_MIGRATIONS: "true"
+      SKIP_SEED: "true"
+      SKIP_DB_WAIT: "true"
+    
     # This runs only when you create the workspace.
     init: |
       echo "🚀 Initializing CogniForge Environment..."
@@ -33,25 +39,34 @@ tasks:
       # 1. Create .env file from template.
       if [ ! -f .env ]; then
         cp .env.example .env
-        echo "✅ Created .env file. ⚠️ PLEASE CONFIGURE YOUR DATABASE_URL NOW."
+        echo "✅ Created .env file."
+        echo "⚠️  IMPORTANT: You MUST configure DATABASE_URL in .env before running the app!"
       fi
       
       # 2. Install Python dependencies.
       echo "📦 Installing Python packages..."
       pip install --no-cache-dir -r requirements.txt
       
-      echo "✅ Initial setup complete! Your workspace is ready."
+      echo ""
+      echo "✅ Initial setup complete!"
+      echo "⚠️  Remember to configure DATABASE_URL in .env before running docker-compose!"
 
     # This runs every time you start the workspace.
     command: |
       echo "🎯 CogniForge Workspace is ready!"
-      echo "--------------------------------------------------"
-      echo "NEXT STEPS:"
-      echo "1. Ensure DATABASE_URL in '.env' is correct."
-      echo "2. Start all services: docker-compose up --build -d"
-      echo "3. Apply database migrations: docker-compose run --rm web flask db upgrade"
-      echo "4. Create your admin user: docker-compose run --rm web flask users create-admin"
-      echo "--------------------------------------------------"
+      echo "=================================================="
+      echo "⚠️  CRITICAL: Configure DATABASE_URL first!"
+      echo "=================================================="
+      echo ""
+      echo "STEP 1: Open .env and set your Supabase DATABASE_URL"
+      echo "  Example: postgresql://postgres.PROJECT:PASSWORD@HOST:5432/postgres"
+      echo ""
+      echo "STEP 2: After configuring .env, run these commands:"
+      echo "  docker-compose up --build -d"
+      echo "  docker-compose run --rm web flask db upgrade"
+      echo "  docker-compose run --rm web flask users create-admin"
+      echo ""
+      echo "=================================================="
       
 # === [VS CODE INTEGRATION] ===
 # Install essential extensions for a productive environment.
