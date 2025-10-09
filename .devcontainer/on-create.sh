@@ -86,11 +86,41 @@ else
   fi
 fi
 
-# (3) تحميل متغيرات من .env (اختياري)
-if [ -f ".env" ]; then
-  # shellcheck disable=SC2046
-  export $(grep -E '^[A-Za-z0-9_]+=' .env | sed 's/\r$//') || true
-fi
+# تحميل متغيرات من .env بطريقة آمنة
+load_env_file() {
+  local env_file="${1:-.env}"
+  [[ ! -f "$env_file" ]] && return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # إزالة المسافات في الأطراف
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    # تجاهل الفارغ والتعليقات
+    [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+    # تخطي الأسطر غير المطابقة للشكل KEY=VALUE
+    [[ "$line" != *"="* ]] && continue
+
+    local key="${line%%=*}"
+    local val="${line#*=}"
+
+    # تنظيف المفتاح من المسافات
+    key="$(echo -n "$key" | sed -E 's/[[:space:]]+//g')"
+    # التحقق من صلاحية اسم المتغير
+    if ! [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      continue
+    fi
+
+    # إزالة التعليقات الداخلية إن كانت القيمة غير محاطة باقتباس
+    if [[ "$val" != \"*\" && "$val" != \'*\' ]]; then
+      val="${val%%#*}"
+      val="${val%"${val##*[![:space:]]}"}"
+    fi
+
+    export "$key=$val"
+  done < "$env_file"
+}
+
+load_env_file ".env" || true
 
 # (4) الترحيلات أثناء on-create (اختياري)
 if [ "${RUN_MIGRATIONS_DURING_CREATE:-false}" = "true" ] && [ "${SKIP_MIGRATIONS:-false}" != "true" ]; then
