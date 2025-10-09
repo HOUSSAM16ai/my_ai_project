@@ -45,21 +45,24 @@ Go to your Supabase Dashboard:
 
 #### 3️⃣ اختر نوع الاتصال | Choose Connection Type
 
-**Direct Connection (5432)** - للعمليات الكتابية | For write operations:
-```
-postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.supabase.co:5432/postgres?sslmode=require
-```
-
-**Pooled Connection (6543)** - للتحميل العالي | For high load:
+**Pooled Connection (6543)** - موصى به | Recommended:
 ```
 postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.pooler.supabase.co:6543/postgres?sslmode=require
 ```
 
+**Direct Connection (5432)** - للعمليات الكتابية المباشرة | For direct write operations:
+```
+postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.supabase.co:5432/postgres?sslmode=require
+```
+
+ℹ️ **ملاحظة | Note**: يُنصح باستخدام Pooler (6543) للتطبيقات في Codespaces لأداء أفضل  
+It's recommended to use Pooler (6543) for applications in Codespaces for better performance
+
 #### 4️⃣ تعديل .env
 افتح `.env` وعدّل القيم التالية:
 ```bash
-# قاعدة البيانات | Database
-DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.supabase.co:5432/postgres?sslmode=require"
+# قاعدة البيانات | Database (استخدم Pooler للأداء الأفضل | Use Pooler for better performance)
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.pooler.supabase.co:6543/postgres?sslmode=require"
 
 # للتكاملات المتقدمة (اختياري) | For advanced integrations (optional)
 SUPABASE_URL="https://YOUR-PROJECT-REF.supabase.co"
@@ -106,7 +109,7 @@ Add the following secrets:
 
 | Secret Name | Example Value |
 |-------------|---------------|
-| `DATABASE_URL` | `postgresql://postgres:pass@host.supabase.co:5432/postgres?sslmode=require` |
+| `DATABASE_URL` | `postgresql://postgres:pass@host.pooler.supabase.co:6543/postgres?sslmode=require` |
 | `OPENROUTER_API_KEY` | `sk-or-v1-...` |
 | `SECRET_KEY` | `your-strong-secret-key` |
 | `ADMIN_EMAIL` | `admin@example.com` |
@@ -114,6 +117,13 @@ Add the following secrets:
 | `ADMIN_NAME` | `Admin User` |
 | `SUPABASE_URL` | `https://xxx.supabase.co` |
 | `SUPABASE_ANON_KEY` | `eyJhbGci...` |
+
+**ℹ️ ملاحظة مهمة | Important Note**:  
+في Codespaces، لا تحتاج لفتح المنافذ (5432 أو 6543) لأن الاتصال خارجي (Outbound) إلى Supabase.  
+فتح المنافذ يُستخدم فقط للاتصالات الواردة (Inbound) للتطبيق نفسه.  
+
+In Codespaces, you don't need to open ports (5432 or 6543) because the connection is outbound to Supabase.  
+Port forwarding is only used for inbound connections to your application.
 
 #### 2️⃣ إنشاء أو إعادة بناء Codespace
 - احذف Codespace الحالي إن وُجد
@@ -171,6 +181,24 @@ flask db upgrade
    - Add `0.0.0.0/0` to allow all connections (development only)
 
 2. تأكد من أن المنفذ صحيح (5432 للـ Direct، 6543 للـ Pooled)
+
+### ℹ️ ملاحظة: الفرق بين Gitpod و Codespaces | Note: Difference between Gitpod & Codespaces
+
+**في Gitpod | In Gitpod**:
+- يجب إضافة المنافذ 5432 و 6543 في `.gitpod.yml` للاتصال بـ Supabase
+- Ports 5432 and 6543 must be added to `.gitpod.yml` to connect to Supabase
+- راجع ملف `GITPOD_PORT_5432_FIX.md` للتفاصيل
+- See `GITPOD_PORT_5432_FIX.md` for details
+
+**في Codespaces | In Codespaces**:
+- لا تحتاج لفتح المنافذ 5432 أو 6543
+- No need to open ports 5432 or 6543  
+- الاتصال بـ Supabase خارجي (Outbound) ويعمل مباشرة
+- Connection to Supabase is outbound and works directly
+- فتح المنافذ يُستخدم فقط للاتصالات الواردة (Inbound) للتطبيق نفسه
+- Port forwarding is only for inbound connections to your application
+- استخدم Codespaces Secrets لتخزين DATABASE_URL
+- Use Codespaces Secrets to store DATABASE_URL
 
 ---
 
