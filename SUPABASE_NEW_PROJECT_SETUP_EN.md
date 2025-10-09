@@ -25,8 +25,14 @@ The `.env` file has been created with:
 
 ⚠️ **Important Note**: The password contains a `@` symbol which has been URL-encoded to `%40` in the connection string.
 
+**Recommended (Pooler - Better for Codespaces/Gitpod):**
 ```bash
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+**Alternative (Direct Connection):**
+```bash
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 ```
 
 ### 2. ✅ Created comprehensive setup and verification script
@@ -134,9 +140,14 @@ There are 4 migrations ready to be applied:
 cat .env | grep DATABASE_URL
 ```
 
-Should show:
+Should show (Pooler - Recommended):
 ```
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+Or (Direct):
+```
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 ```
 
 ### Apply migrations manually:
@@ -238,10 +249,13 @@ flask db upgrade
 **Cause:** Incorrect password encoding
 
 **Solution:**
-Ensure `@` is encoded as `%40` in DATABASE_URL:
+Ensure `@` is encoded as `%40` in DATABASE_URL, and use pooler for better compatibility:
 ```bash
-# Correct ✅
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+# Correct - Pooler (Recommended) ✅
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+
+# Correct - Direct ✅
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 
 # Wrong ❌
 DATABASE_URL="postgresql://postgres:199720242025@HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"

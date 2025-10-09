@@ -17,6 +17,12 @@ ports:
     onOpen: ignore
     visibility: public
 
+  # Port for Supabase Connection Pooler (pgbouncer)
+  - port: 6543
+    name: "Supabase Pooler"
+    onOpen: ignore
+    visibility: private
+
 tasks:
   - name: "Initial Setup & Bootstrap"
     # This runs ONCE when the workspace is created.
