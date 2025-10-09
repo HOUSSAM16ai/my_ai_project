@@ -29,6 +29,7 @@ success() { printf "%s[✓]%s %s\n"     "$GREEN" "$RESET" "$1"; }
 warning() { printf "%s[!]%s %s\n"     "$YELLOW" "$RESET" "$1"; }
 error()   { printf "%s[✗]%s %s\n"     "$RED"   "$RESET" "$1" >&2; }
 section() { printf "\n%s=== %s ===%s\n" "$BOLD$CYAN" "$1" "$RESET"; }
+info()    { printf "%s[ℹ]%s %s\n"     "$CYAN"  "$RESET" "$1"; }
 
 # Banner
 clear
