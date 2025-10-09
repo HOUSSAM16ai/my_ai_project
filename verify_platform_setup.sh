@@ -25,6 +25,7 @@ fi
 
 # Helper functions
 log()     { printf "%s[INFO]%s %s\n"  "$CYAN"  "$RESET" "$1"; }
+info()    { printf "%s[ℹ]%s %s\n"     "$CYAN"  "$RESET" "$1"; }
 success() { printf "%s[✓]%s %s\n"     "$GREEN" "$RESET" "$1"; }
 warning() { printf "%s[!]%s %s\n"     "$YELLOW" "$RESET" "$1"; }
 error()   { printf "%s[✗]%s %s\n"     "$RED"   "$RESET" "$1" >&2; }
@@ -76,23 +77,42 @@ section "2️⃣  فحص ملفات التكوين / Configuration Files"
 if [ -f ".gitpod.yml" ]; then
   success "وجد ملف .gitpod.yml ✅"
   
-  # Verify ports configuration
-  if grep -q "port: 5000" .gitpod.yml; then
-    success "  ↳ المنفذ 5000 مُكوّن ✅"
+  # Only check Gitpod port configuration when actually running on Gitpod
+  if [ "$PLATFORM" = "Gitpod" ]; then
+    # Verify ports configuration
+    if grep -q "port: 5000" .gitpod.yml; then
+      success "  ↳ المنفذ 5000 مُكوّن ✅"
+    else
+      error "  ↳ المنفذ 5000 غير مُكوّن ❌"
+      ((ISSUES++))
+    fi
+    
+    # Verify port 5432 for Supabase connection
+    if grep -q "port: 5432" .gitpod.yml; then
+      success "  ↳ المنفذ 5432 (Supabase Direct) مُكوّن ✅"
+    else
+      warning "  ↳ المنفذ 5432 (Supabase Direct) غير مُكوّن ⚠️"
+      warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
+    fi
+    
+    # Verify port 6543 for Supabase Pooler
+    if grep -q "port: 6543" .gitpod.yml; then
+      success "  ↳ المنفذ 6543 (Supabase Pooler - موصى به) مُكوّن ✅"
+    else
+      warning "  ↳ المنفذ 6543 (Supabase Pooler) غير مُكوّن ⚠️"
+      warning "     يُنصح بإضافة المنفذ 6543 (Pooler - موصى به)"
+    fi
   else
-    error "  ↳ المنفذ 5000 غير مُكوّن ❌"
-    ((ISSUES++))
-  fi
-  
-  # Verify port 5432 for Supabase connection
-  if grep -q "port: 5432" .gitpod.yml; then
-    success "  ↳ المنفذ 5432 (Supabase) مُكوّن ✅"
-  else
-    warning "  ↳ المنفذ 5432 (Supabase) غير مُكوّن ⚠️"
-    warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
+    info "  ↳ تخطي فحص منافذ Gitpod (غير مطلوب لـ $PLATFORM)"
+    info "     Skipping Gitpod port checks (not required for $PLATFORM)"
   fi
 else
-  warning "ملف .gitpod.yml غير موجود ⚠️"
+  if [ "$PLATFORM" = "Gitpod" ]; then
+    error "ملف .gitpod.yml غير موجود ❌"
+    ((ISSUES++))
+  else
+    info "ملف .gitpod.yml غير موجود (غير مطلوب لـ $PLATFORM)"
+  fi
 fi
 
 # Check .devcontainer/devcontainer.json
