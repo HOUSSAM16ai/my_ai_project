@@ -36,10 +36,18 @@ cd /app || { err "لا يمكن الدخول إلى /app"; exit 1; }
 echo
 section "On-Attach: Runtime Snapshot"
 
-# تحميل .env بطريقة آمنة
-load_env_file() {
+# تحميل .env بطريقة آمنة - فقط إذا لم تكن Secrets موجودة
+load_env_file_if_needed() {
+  # إذا secrets موجودة، لا تحمّل .env
+  if [[ -n "${DATABASE_URL:-}" && -n "${OPENROUTER_API_KEY:-}" ]]; then
+    log "🔐 استخدام Codespaces Secrets (DATABASE_URL و OPENROUTER_API_KEY موجودة)"
+    return 0
+  fi
+
   local env_file="${1:-.env}"
   [[ ! -f "$env_file" ]] && return 0
+
+  log "📄 تحميل المتغيرات من $env_file"
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     # إزالة المسافات في الأطراف
@@ -66,11 +74,14 @@ load_env_file() {
       val="${val%"${val##*[![:space:]]}"}"
     fi
 
-    export "$key=$val"
+    # لا تطغى على المتغير إن كان قادماً من Secrets
+    if [[ -z "${!key:-}" ]]; then
+      export "$key=$val"
+    fi
   done < "$env_file"
 }
 
-load_env_file ".env" || true
+load_env_file_if_needed ".env" || true
 
 DB_HOST="${DB_HOST:-${POSTGRES_HOST:-db}}"
 DB_PORT="${DB_PORT:-5432}"
@@ -88,10 +99,35 @@ if [ "${SKIP_ATTACH_DB_CHECK:-false}" = "true" ]; then
 else
   log "فحص جاهزية قاعدة البيانات (سريع)..."
   if command -v pg_isready >/dev/null 2>&1; then
-    if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
-      ok "PostgreSQL جاهز."
+    # جرّب المضيف من DATABASE_URL إن أمكن
+    if [[ -n "${DATABASE_URL:-}" ]]; then
+      host="$(python3 - <<'PY'
+import os,sys,urllib.parse
+u=os.environ.get("DATABASE_URL","")
+try:
+    p=urllib.parse.urlparse(u)
+    print(p.hostname or "")
+except Exception:
+    print("")
+PY
+)"
+      port="$(python3 - <<'PY'
+import os,sys,urllib.parse
+u=os.environ.get("DATABASE_URL","")
+try:
+    p=urllib.parse.urlparse(u)
+    print(p.port or 5432)
+except Exception:
+    print(5432)
+PY
+)"
+      pg_isready -h "${host:-localhost}" -p "${port:-5432}" || warn "PostgreSQL غير جاهز حالياً."
     else
-      warn "PostgreSQL غير جاهز حالياً."
+      if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+        ok "PostgreSQL جاهز."
+      else
+        warn "PostgreSQL غير جاهز حالياً."
+      fi
     fi
   else
     warn "pg_isready غير متوفر — تخطي الفحص."
@@ -101,14 +137,15 @@ fi
 # حالة الترحيلات
 if [ "${SHOW_MIGRATION_STATUS:-true}" = "true" ]; then
   log "فحص حالة الترحيلات..."
-  if command -v flask >/dev/null 2>&1 && flask --help 2>&1 | grep -q "db"; then
-    if FLASK_APP="${FLASK_APP:-app.py}" flask db current 2>/dev/null; then
-      ok "تم استرجاع حالة الترحيلات."
+  if command -v flask >/dev/null 2>&1; then
+    export FLASK_APP="${FLASK_APP:-run:app}"
+    if python3 -c "import flask_migrate" >/dev/null 2>&1; then
+      flask db current || warn "تعذر الحصول على حالة الترحيلات."
     else
-      warn "تعذر استرجاع حالة الترحيلات (تحقق من FLASK_APP)."
+      warn "Flask-Migrate غير مثبت."
     fi
   else
-    warn "flask db غير متاح."
+    warn "flask غير متاح."
   fi
 else
   warn "تخطي عرض حالة الترحيلات (SHOW_MIGRATION_STATUS=false)."

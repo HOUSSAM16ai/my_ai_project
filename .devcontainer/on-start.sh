@@ -39,10 +39,18 @@ cd /app || { err "لا يمكن الدخول إلى /app"; exit 1; }
 echo
 log "🚀 On-Start: Igniting the ecosystem..."
 
-# تحميل .env بطريقة آمنة
-load_env_file() {
+# تحميل .env بطريقة آمنة - فقط إذا لم تكن Secrets موجودة
+load_env_file_if_needed() {
+  # إذا secrets موجودة، لا تحمّل .env
+  if [[ -n "${DATABASE_URL:-}" && -n "${OPENROUTER_API_KEY:-}" ]]; then
+    log "🔐 استخدام Codespaces Secrets (DATABASE_URL و OPENROUTER_API_KEY موجودة)"
+    return 0
+  fi
+
   local env_file="${1:-.env}"
   [[ ! -f "$env_file" ]] && return 0
+
+  log "📄 تحميل المتغيرات من $env_file"
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     # إزالة المسافات في الأطراف
@@ -69,11 +77,14 @@ load_env_file() {
       val="${val%"${val##*[![:space:]]}"}"
     fi
 
-    export "$key=$val"
+    # لا تطغى على المتغير إن كان قادماً من Secrets
+    if [[ -z "${!key:-}" ]]; then
+      export "$key=$val"
+    fi
   done < "$env_file"
 }
 
-load_env_file ".env" || true
+load_env_file_if_needed ".env" || true
 
 DB_HOST="${DB_HOST:-${POSTGRES_HOST:-db}}"
 DB_PORT="${DB_PORT:-5432}"

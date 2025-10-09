@@ -86,10 +86,18 @@ else
   fi
 fi
 
-# تحميل متغيرات من .env بطريقة آمنة
-load_env_file() {
+# تحميل متغيرات من .env بطريقة آمنة - فقط إذا لم تكن Secrets موجودة
+load_env_file_if_needed() {
+  # إذا secrets موجودة، لا تحمّل .env
+  if [[ -n "${DATABASE_URL:-}" && -n "${OPENROUTER_API_KEY:-}" ]]; then
+    log "🔐 استخدام Codespaces Secrets (DATABASE_URL و OPENROUTER_API_KEY موجودة)"
+    return 0
+  fi
+
   local env_file="${1:-.env}"
   [[ ! -f "$env_file" ]] && return 0
+
+  log "📄 تحميل المتغيرات من $env_file"
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     # إزالة المسافات في الأطراف
@@ -116,11 +124,14 @@ load_env_file() {
       val="${val%"${val##*[![:space:]]}"}"
     fi
 
-    export "$key=$val"
+    # لا تطغى على المتغير إن كان قادماً من Secrets
+    if [[ -z "${!key:-}" ]]; then
+      export "$key=$val"
+    fi
   done < "$env_file"
 }
 
-load_env_file ".env" || true
+load_env_file_if_needed ".env" || true
 
 # (4) الترحيلات أثناء on-create (اختياري)
 if [ "${RUN_MIGRATIONS_DURING_CREATE:-false}" = "true" ] && [ "${SKIP_MIGRATIONS:-false}" != "true" ]; then
