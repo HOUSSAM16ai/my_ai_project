@@ -1,75 +1,60 @@
 # ======================================================================================
-# CogniForge - Gitpod Constitution (v2.0 - Supabase Native)
+# CogniForge - Gitpod Constitution (v3.0 - Native Execution)
 # ======================================================================================
-# This configuration is optimized for a Supabase-first workflow.
+# This configuration runs database commands NATIVELY in Gitpod to bypass
+# complex Docker networking issues, ensuring a stable connection to Supabase.
 
-# === [PORT EXPOSURE PROTOCOL] ===
-# Define which ports inside the workspace should be accessible.
 ports:
-  # Port for the main Flask web application.
+  # Port for the main Flask web application (running inside Docker).
   - port: 5000
     name: "Flask Web App"
-    onOpen: open-preview  # Automatically open a preview tab.
+    onOpen: open-preview
     visibility: public
 
-  # Port for the FastAPI AI service.
+  # Port for the FastAPI AI service (running inside Docker).
   - port: 8001
     name: "AI Service"
     onOpen: ignore
     visibility: public
 
-  # Port for Supabase outbound connection (PostgreSQL)
-  - port: 5432
-    onOpen: ignore
-
-# === [THE GENESIS PROTOCOL] ===
-# Tasks to run ONCE when the workspace is created for the first time.
 tasks:
   - name: "Initial Setup & Bootstrap"
-    # Environment variables to prevent auto-execution before user configures DATABASE_URL
-    env:
-      SKIP_MIGRATIONS: "true"
-      SKIP_SEED: "true"
-      SKIP_DB_WAIT: "true"
-    
-    # This runs only when you create the workspace.
+    # This runs ONCE when the workspace is created.
     init: |
       echo "🚀 Initializing CogniForge Environment..."
       
-      # 1. Create .env file from template.
+      # 1. Create .env from template.
       if [ ! -f .env ]; then
         cp .env.example .env
-        echo "✅ Created .env file."
-        echo "⚠️  IMPORTANT: You MUST configure DATABASE_URL in .env before running the app!"
+        echo "✅ Created .env file. ⚠️ PLEASE CONFIGURE YOUR DATABASE_URL NOW."
       fi
       
-      # 2. Install Python dependencies.
+      # 2. Install all Python dependencies into the main Gitpod environment.
       echo "📦 Installing Python packages..."
       pip install --no-cache-dir -r requirements.txt
       
-      echo ""
-      echo "✅ Initial setup complete!"
-      echo "⚠️  Remember to configure DATABASE_URL in .env before running docker-compose!"
+      echo "✅ Initial setup complete! The environment is ready."
 
-    # This runs every time you start the workspace.
+    # This runs EVERY time you start the workspace.
     command: |
       echo "🎯 CogniForge Workspace is ready!"
       echo "=================================================="
-      echo "⚠️  CRITICAL: Configure DATABASE_URL first!"
+      echo "⚠️  CRITICAL: Configure DATABASE_URL in .env first!"
       echo "=================================================="
       echo ""
-      echo "STEP 1: Open .env and set your Supabase DATABASE_URL"
-      echo "  Example: postgresql://postgres.PROJECT:PASSWORD@HOST:5432/postgres"
+      echo "STEP 1: Open .env and set your Supabase DATABASE_URL."
       echo ""
-      echo "STEP 2: After configuring .env, run these commands:"
+      echo "STEP 2: Start background services (Docker):"
       echo "  docker-compose up --build -d"
-      echo "  docker-compose run --rm web flask db upgrade"
-      echo "  docker-compose run --rm web flask users create-admin"
+      echo ""
+      echo "STEP 3: Run database migrations (NATIVELY):"
+      echo "  flask db upgrade"
+      echo ""
+      echo "STEP 4: Create admin user (NATIVELY):"
+      echo "  flask users create-admin"
       echo ""
       echo "=================================================="
       
-# === [VS CODE INTEGRATION] ===
-# Install essential extensions for a productive environment.
 vscode:
   extensions:
     - ms-python.python
@@ -81,8 +66,6 @@ vscode:
     - mtxr.sqltools
     - mtxr.sqltools-driver-pg
 
-# === [GITHUB INTEGRATION] ===
-# Enable prebuilds to speed up workspace creation.
 github:
   prebuilds:
     master: true
