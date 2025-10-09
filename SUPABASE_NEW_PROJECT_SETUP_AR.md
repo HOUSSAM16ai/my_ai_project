@@ -25,8 +25,14 @@
 
 ⚠️ **ملاحظة مهمة**: كلمة المرور تحتوي على رمز `@` الذي تم ترميزه إلى `%40` في URL الاتصال.
 
+**الموصى به (Pooler - أفضل لـ Codespaces/Gitpod):**
 ```bash
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+**بديل (اتصال مباشر):**
+```bash
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 ```
 
 ### 2. ✅ إنشاء سكريبت إعداد وتحقق شامل
@@ -134,9 +140,14 @@ flask run
 cat .env | grep DATABASE_URL
 ```
 
-يجب أن تشاهد:
+يجب أن تشاهد (Pooler - موصى به):
 ```
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+أو (اتصال مباشر):
+```
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 ```
 
 ### تطبيق الهجرات يدويًا:
@@ -232,10 +243,13 @@ flask db upgrade
 **السبب:** ترميز كلمة المرور غير صحيح
 
 **الحل:**
-تأكد من أن `@` مُرَمَّز إلى `%40` في DATABASE_URL:
+تأكد من أن `@` مُرَمَّز إلى `%40` في DATABASE_URL، واستخدم pooler لتوافق أفضل:
 ```bash
-# الصحيح ✅
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+# الصحيح - Pooler (موصى به) ✅
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+
+# الصحيح - اتصال مباشر ✅
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 
 # الخاطئ ❌
 DATABASE_URL="postgresql://postgres:199720242025@HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"

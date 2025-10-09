@@ -95,9 +95,14 @@ $ python3 verify_config.py
    - ✅ All application configuration variables
    - ✅ Properly excluded from Git (.gitignore)
 
-2. **Verified database connection string**:
+2. **Verified database connection string** (Pooler recommended):
    ```
-   DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+   DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+   ```
+   
+   Or (Direct):
+   ```
+   DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
    ```
 
 ### ✅ Phase 2: Helper Scripts Created (COMPLETED)
@@ -302,11 +307,19 @@ python3 run.py
 
 ### Database Connection String
 
+**Recommended (Pooler - Best for Codespaces/Gitpod):**
 ```bash
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
 ```
 
-**Note:** Password contains `@` which is URL-encoded as `%40`
+**Alternative (Direct):**
+```bash
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
+```
+
+**Note:** 
+- Password contains `@` which is URL-encoded as `%40`
+- Pooler connection (port 6543) resolves IPv6 compatibility issues in containerized environments
 
 ---
 

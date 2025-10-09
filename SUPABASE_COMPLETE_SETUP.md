@@ -13,20 +13,31 @@ This document provides a complete summary of the Supabase connection setup for t
 | Property | Value |
 |----------|-------|
 | **Project ID** | `aocnuqhxrhxgbfcgbxfy` |
-| **Database Host** | `db.aocnuqhxrhxgbfcgbxfy.supabase.co` |
-| **Port** | `5432` |
+| **Database Host (Pooler)** | `aocnuqhxrhxgbfcgbxfy.pooler.supabase.com` |
+| **Port (Pooler)** | `6543` |
+| **Database Host (Direct)** | `db.aocnuqhxrhxgbfcgbxfy.supabase.co` |
+| **Port (Direct)** | `5432` |
 | **Database Name** | `postgres` |
 | **Username** | `postgres` |
 | **Password** | `199720242025@HOUSSAMbenmerah` |
 | **URL-Encoded Password** | `199720242025%40HOUSSAMbenmerah` |
 
-### Connection String
+### Connection String (Recommended: Pooler)
 
 ```bash
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
 ```
 
-⚠️ **Important**: The `@` symbol in the password is URL-encoded as `%40`.
+### Connection String (Alternative: Direct)
+
+```bash
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
+```
+
+⚠️ **Important**: 
+- The `@` symbol in the password is URL-encoded as `%40`
+- **Pooler connection (port 6543) is recommended** for better compatibility with Codespaces and Gitpod (resolves IPv6 issues)
+- Always include `?sslmode=require` at the end of the connection string
 
 ---
 
@@ -202,9 +213,14 @@ After applying migrations, the following tables will exist in Supabase:
 cat .env | grep DATABASE_URL
 ```
 
-**Should show:**
+**Should show (Pooler - Recommended):**
 ```
-DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@aocnuqhxrhxgbfcgbxfy.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+**Or (Direct connection):**
+```
+DATABASE_URL="postgresql://postgres:199720242025%40HOUSSAMbenmerah@db.aocnuqhxrhxgbfcgbxfy.supabase.co:5432/postgres?sslmode=require"
 ```
 
 #### 2. Test Connection (requires internet)
