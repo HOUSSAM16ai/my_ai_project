@@ -1,5 +1,14 @@
 # 🔧 مخطط حل مشكلة Port 5432 | Port 5432 Fix Diagram
 
+> ⚠️ **تحذير مهم | Important Warning**  
+> هذا المخطط يوضح الحل الخاص بـ **Gitpod فقط**  
+> This diagram shows the **Gitpod-specific** fix
+> 
+> - ✅ **Gitpod**: يحتاج إلى تصريح المنافذ في `.gitpod.yml`  
+> - ✅ **Gitpod**: Requires port declaration in `.gitpod.yml`
+> - ❌ **Codespaces**: لا ينطبق - الاتصالات الخارجية تعمل بدون تكوين  
+> - ❌ **Codespaces**: Does not apply - outbound connections work without configuration
+
 ## 📊 المشكلة الأصلية | Original Problem
 
 ```

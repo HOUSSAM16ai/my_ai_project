@@ -5,6 +5,31 @@
 تم تحديث المشروع للعمل مع قاعدة بيانات Supabase الخارجية مع دعم محسّن لـ GitHub Codespaces.  
 The project has been updated to work with external Supabase database with enhanced support for GitHub Codespaces.
 
+### 🌐 إعدادات المنصة | Platform-Specific Configuration
+
+**GitHub Codespaces:**
+- ✅ لا حاجة لفتح المنافذ 5432 أو 6543 - الاتصالات الخارجية إلى Supabase تعمل مباشرة
+- ✅ No need to open ports 5432 or 6543 - outbound connections to Supabase work directly
+- ✅ إعادة توجيه المنافذ مطلوبة فقط للاتصالات الواردة إلى التطبيق نفسه
+- ✅ Port forwarding is only required for inbound connections to the application itself
+- ✅ الاتصال بـ Supabase هو اتصال خارجي ولا يتطلب تكوين المنفذ
+- ✅ Connection to Supabase is outbound and doesn't require port configuration
+
+**Gitpod:**
+- ⚠️ يجب إضافة المنافذ 5432 و 6543 بشكل صريح في `.gitpod.yml`
+- ⚠️ Must explicitly add ports 5432 and 6543 to `.gitpod.yml`
+- ⚠️ Gitpod تمنع الاتصالات الخارجية بشكل افتراضي، مما يتطلب تصريح المنفذ بشكل صريح
+- ⚠️ Gitpod blocks outbound connections by default, requiring explicit port declaration
+- 📖 راجع [GITPOD_PORT_5432_FIX.md](./GITPOD_PORT_5432_FIX.md) للتفاصيل
+- 📖 See [GITPOD_PORT_5432_FIX.md](./GITPOD_PORT_5432_FIX.md) for details
+
+**توصية | Recommendation:**
+- 🎯 استخدم **Supabase Pooler (المنفذ 6543)** كطريقة الاتصال الموصى بها
+- 🎯 Use **Supabase Pooler (port 6543)** as the recommended connection method
+- 🎯 أداء أفضل للتطبيقات | Better performance for applications
+- 🎯 تجميع الاتصالات مدمج | Built-in connection pooling
+- 🎯 معالجة أفضل للاتصالات المتزامنة | Better handling of concurrent connections
+
 ## التحديثات الرئيسية | Key Updates
 
 ### ✅ 1. docker-compose.yml
@@ -45,21 +70,27 @@ Go to your Supabase Dashboard:
 
 #### 3️⃣ اختر نوع الاتصال | Choose Connection Type
 
-**Direct Connection (5432)** - للعمليات الكتابية | For write operations:
+**⭐ Pooled Connection (6543) - موصى به | Recommended:**
+```
+postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.pooler.supabase.com:6543/postgres?sslmode=require
+```
+- ✅ أداء أفضل للتطبيقات | Better performance for applications
+- ✅ تجميع الاتصالات مدمج | Built-in connection pooling
+- ✅ معالجة أفضل للاتصالات المتزامنة | Better handling of concurrent connections
+- ✅ موصى به لـ Codespaces/Gitpod | Recommended for Codespaces/Gitpod
+
+**Direct Connection (5432) - بديل | Alternative:**
 ```
 postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.supabase.co:5432/postgres?sslmode=require
 ```
-
-**Pooled Connection (6543)** - للتحميل العالي | For high load:
-```
-postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.pooler.supabase.co:6543/postgres?sslmode=require
-```
+- للعمليات الكتابية الخاصة | For specific write operations
+- للقراءة المباشرة | For direct reads
 
 #### 4️⃣ تعديل .env
 افتح `.env` وعدّل القيم التالية:
 ```bash
-# قاعدة البيانات | Database
-DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.supabase.co:5432/postgres?sslmode=require"
+# قاعدة البيانات | Database (استخدم Pooler - موصى به | Use Pooler - Recommended)
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@YOUR-PROJECT-HOST.pooler.supabase.com:6543/postgres?sslmode=require"
 
 # للتكاملات المتقدمة (اختياري) | For advanced integrations (optional)
 SUPABASE_URL="https://YOUR-PROJECT-REF.supabase.co"
@@ -106,7 +137,7 @@ Add the following secrets:
 
 | Secret Name | Example Value |
 |-------------|---------------|
-| `DATABASE_URL` | `postgresql://postgres:pass@host.supabase.co:5432/postgres?sslmode=require` |
+| `DATABASE_URL` | `postgresql://postgres:pass@host.pooler.supabase.com:6543/postgres?sslmode=require` |
 | `OPENROUTER_API_KEY` | `sk-or-v1-...` |
 | `SECRET_KEY` | `your-strong-secret-key` |
 | `ADMIN_EMAIL` | `admin@example.com` |
@@ -170,7 +201,9 @@ flask db upgrade
    - أضف `0.0.0.0/0` للسماح بجميع الاتصالات (للتطوير فقط)
    - Add `0.0.0.0/0` to allow all connections (development only)
 
-2. تأكد من أن المنفذ صحيح (5432 للـ Direct، 6543 للـ Pooled)
+2. تأكد من أن المنفذ صحيح:
+   - 6543 للـ Pooled (موصى به | Recommended)
+   - 5432 للـ Direct (بديل | Alternative)
 
 ---
 

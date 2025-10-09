@@ -1,5 +1,14 @@
 # 🔓 حل مشكلة Port 5432 على Gitpod | Gitpod Port 5432 Fix
 
+> ⚠️ **تحذير مهم | Important Warning**  
+> هذا الحل خاص بـ **Gitpod فقط** ولا ينطبق على GitHub Codespaces  
+> This fix is **Gitpod-specific** and does NOT apply to GitHub Codespaces
+> 
+> - ✅ **Gitpod**: يحتاج إلى تصريح صريح للمنافذ في `.gitpod.yml`  
+> - ✅ **Gitpod**: Requires explicit port declaration in `.gitpod.yml`
+> - ❌ **Codespaces**: لا حاجة لفتح المنافذ - الاتصالات الخارجية تعمل مباشرة  
+> - ❌ **Codespaces**: No need to open ports - outbound connections work directly
+
 ## 📋 ملخص المشكلة | Problem Summary
 
 ### المشكلة الأصلية | Original Issue
