@@ -131,7 +131,7 @@
 
 ### 4. حاوية التطوير (Development Container)
 - **البيئة**: VS Code Dev Container
-- **الأدوات**: Python, Docker, Kubernetes, AWS CLI, Azure CLI
+- **الأدوات**: Python, Docker, Kubernetes, AWS CLI
 - **الإضافات**: 10+ إضافات VS Code للتطوير
 - **المنافذ المفتوحة**: 5000, 8000, 8001
 
