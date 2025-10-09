@@ -76,23 +76,30 @@ section "2️⃣  فحص ملفات التكوين / Configuration Files"
 if [ -f ".gitpod.yml" ]; then
   success "وجد ملف .gitpod.yml ✅"
   
-  # Verify ports configuration
-  if grep -q "port: 5000" .gitpod.yml; then
-    success "  ↳ المنفذ 5000 مُكوّن ✅"
+  # Only check Gitpod ports if actually running on Gitpod
+  if [ "$PLATFORM" = "Gitpod" ]; then
+    # Verify ports configuration
+    if grep -q "port: 5000" .gitpod.yml; then
+      success "  ↳ المنفذ 5000 مُكوّن ✅"
+    else
+      error "  ↳ المنفذ 5000 غير مُكوّن ❌"
+      ((ISSUES++))
+    fi
+    
+    # Verify port 5432 for Supabase connection
+    if grep -q "port: 5432" .gitpod.yml; then
+      success "  ↳ المنفذ 5432 (Supabase) مُكوّن ✅"
+    else
+      warning "  ↳ المنفذ 5432 (Supabase) غير مُكوّن ⚠️"
+      warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
+    fi
   else
-    error "  ↳ المنفذ 5000 غير مُكوّن ❌"
-    ((ISSUES++))
-  fi
-  
-  # Verify port 5432 for Supabase connection
-  if grep -q "port: 5432" .gitpod.yml; then
-    success "  ↳ المنفذ 5432 (Supabase) مُكوّن ✅"
-  else
-    warning "  ↳ المنفذ 5432 (Supabase) غير مُكوّن ⚠️"
-    warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
+    info "  ↳ تخطي فحص منافذ Gitpod (غير مطلوب على $PLATFORM)"
   fi
 else
-  warning "ملف .gitpod.yml غير موجود ⚠️"
+  if [ "$PLATFORM" = "Gitpod" ]; then
+    warning "ملف .gitpod.yml غير موجود ⚠️"
+  fi
 fi
 
 # Check .devcontainer/devcontainer.json

@@ -1,5 +1,19 @@
 # 🔓 حل مشكلة Port 5432 على Gitpod | Gitpod Port 5432 Fix
 
+**⚠️ ملاحظة مهمة | Important Note**:  
+هذا الحل خاص بـ Gitpod فقط ولا ينطبق على GitHub Codespaces.  
+This fix is Gitpod-specific and does NOT apply to GitHub Codespaces.
+
+**في Codespaces | In Codespaces**:
+- لا تحتاج لفتح المنافذ 5432 أو 6543
+- No need to open ports 5432 or 6543
+- الاتصال بـ Supabase خارجي (Outbound) ولا يتطلب تكوين منافذ
+- Connection to Supabase is outbound and doesn't require port configuration
+- استخدم Codespaces Secrets لتخزين DATABASE_URL بشكل آمن
+- Use Codespaces Secrets to store DATABASE_URL securely
+
+---
+
 ## 📋 ملخص المشكلة | Problem Summary
 
 ### المشكلة الأصلية | Original Issue

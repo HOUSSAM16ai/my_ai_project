@@ -68,7 +68,7 @@ if [ ! -f ".env" ]; then
     warn "⚠️  IMPORTANT: You need to configure DATABASE_URL in .env"
     echo ""
     info "Edit .env and set:"
-    info "DATABASE_URL=postgresql://postgres.YOUR_PROJECT:PASSWORD@aws-0-region.pooler.supabase.com:5432/postgres"
+    info "DATABASE_URL=postgresql://postgres.YOUR_PROJECT:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require"
     echo ""
     
     if [ "$AUTO_MODE" = false ]; then
