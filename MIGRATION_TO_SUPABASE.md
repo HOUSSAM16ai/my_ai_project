@@ -35,10 +35,10 @@ This document explains the migration from local PostgreSQL to Supabase-only data
 1. Go to your Supabase project dashboard
 2. Navigate to **Settings → Database**
 3. Find the **Connection String** section
-4. Copy the **URI** format (pooler connection, port 5432)
+4. Copy the **URI** format (pooler connection recommended, port 6543)
 5. It should look like:
    ```
-   postgresql://postgres.xxxxx:your-password@aws-0-region.pooler.supabase.com:5432/postgres
+   postgresql://postgres.xxxxx:your-password@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require
    ```
 
 ### Step 2: Update Your .env File
@@ -54,8 +54,8 @@ Replace the old local database configuration:
 With your Supabase connection string:
 
 ```bash
-# NEW (Supabase Remote Database):
-DATABASE_URL=postgresql://postgres.xxxxx:your-password@aws-0-region.pooler.supabase.com:5432/postgres
+# NEW (Supabase Remote Database - Pooler Recommended):
+DATABASE_URL=postgresql://postgres.xxxxx:your-password@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require
 ```
 
 ### Step 3: Stop and Remove Old Containers
@@ -108,9 +108,9 @@ docker-compose run --rm web flask db upgrade
 
 **Solution:**
 1. Verify your DATABASE_URL is correct in `.env`
-2. Check your Supabase password is not URL-encoded
+2. Check your Supabase password is not URL-encoded (or use percent-encoding: @ → %40, # → %23)
 3. Ensure your IP is whitelisted in Supabase (if using direct connection)
-4. Use the pooler connection (port 5432) not direct (port 6543)
+4. Use the pooler connection (port 6543) for better performance, or direct connection (port 5432) for write-heavy operations
 
 ### Issue: "Old database data is lost"
 
