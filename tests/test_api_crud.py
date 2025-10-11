@@ -259,8 +259,8 @@ class TestPaginationAndFiltering:
         """Test search functionality"""
         with client:
             # Create users with specific patterns
-            user_factory(email='search_test@test.com')
-            user_factory(email='other@test.com')
+            user_factory(email='search_test@test.com', full_name='Searchable User')
+            user_factory(email='other@test.com', full_name='Other User')
             
             # Login as admin
             client.post('/login', data={
