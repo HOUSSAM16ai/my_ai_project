@@ -19,7 +19,7 @@ from app.admin import bp
 from app import db
 
 # --- [THE GRAND BLUEPRINT IMPORTS] ---
-from app.models import User, Mission, Task
+from app.models import User, Mission, Task, AdminConversation, AdminMessage
 
 # --- [THE COGNITIVE ENGINE IMPORTS] ---
 try:
@@ -150,8 +150,17 @@ def handle_chat():
     try:
         service = get_admin_ai_service()
         
-        # Note: AdminConversation model has been removed.
-        # conversation_id is now optional and only used for context tracking in memory
+        # Auto-create conversation if not provided
+        if not conversation_id:
+            # Generate a smart title from the first question
+            title = question[:100] + "..." if len(question) > 100 else question
+            conversation = service.create_conversation(
+                user=current_user._get_current_object(),
+                title=title,
+                conversation_type="general"
+            )
+            conversation_id = conversation.id
+            current_app.logger.info(f"Auto-created conversation #{conversation_id} for user {current_user.id}")
         
         result = service.answer_question(
             question=question,
@@ -160,9 +169,8 @@ def handle_chat():
             use_deep_context=use_deep_context
         )
         
-        # Return the conversation_id for client-side tracking
-        if conversation_id:
-            result["conversation_id"] = conversation_id
+        # Always return the conversation_id for client-side tracking
+        result["conversation_id"] = conversation_id
         
         return jsonify(result)
         
@@ -183,10 +191,25 @@ def handle_analyze_project():
     
     try:
         service = get_admin_ai_service()
+        
+        # Auto-create conversation if not provided
+        if not conversation_id:
+            conversation = service.create_conversation(
+                user=current_user._get_current_object(),
+                title="Project Analysis",
+                conversation_type="project_analysis"
+            )
+            conversation_id = conversation.id
+            current_app.logger.info(f"Auto-created analysis conversation #{conversation_id} for user {current_user.id}")
+        
         result = service.analyze_project(
             user=current_user._get_current_object(),
             conversation_id=conversation_id
         )
+        
+        # Always return the conversation_id for client-side tracking
+        result["conversation_id"] = conversation_id
+        
         return jsonify(result)
         
     except Exception as e:
@@ -210,11 +233,28 @@ def handle_execute_modification():
     
     try:
         service = get_admin_ai_service()
+        
+        # Auto-create conversation if not provided
+        if not conversation_id:
+            # Generate a smart title from the objective
+            title = f"Modification: {objective[:80]}..." if len(objective) > 80 else f"Modification: {objective}"
+            conversation = service.create_conversation(
+                user=current_user._get_current_object(),
+                title=title,
+                conversation_type="modification"
+            )
+            conversation_id = conversation.id
+            current_app.logger.info(f"Auto-created modification conversation #{conversation_id} for user {current_user.id}")
+        
         result = service.execute_modification(
             objective=objective,
             user=current_user._get_current_object(),
             conversation_id=conversation_id
         )
+        
+        # Always return the conversation_id for client-side tracking
+        result["conversation_id"] = conversation_id
+        
         return jsonify(result)
         
     except Exception as e:
@@ -226,19 +266,95 @@ def handle_execute_modification():
 @admin_required
 def handle_get_conversations():
     """API endpoint لجلب محادثات المستخدم"""
-    # Note: AdminConversation model has been removed.
-    # Return empty list to maintain API compatibility
-    return jsonify({
-        "status": "success",
-        "conversations": []
-    })
+    try:
+        # Get all conversations for the current user, ordered by most recent first
+        conversations = AdminConversation.query.filter_by(
+            user_id=current_user.id,
+            is_archived=False
+        ).order_by(AdminConversation.updated_at.desc()).all()
+        
+        # Format conversations for response
+        conversations_list = [
+            {
+                "id": conv.id,
+                "title": conv.title,
+                "conversation_type": conv.conversation_type,
+                "total_messages": conv.total_messages,
+                "total_tokens": conv.total_tokens,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "tags": conv.tags or []
+            }
+            for conv in conversations
+        ]
+        
+        return jsonify({
+            "status": "success",
+            "conversations": conversations_list,
+            "count": len(conversations_list)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Failed to get conversations: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @bp.route("/api/conversation/<int:conversation_id>", methods=["GET"])
 @admin_required
 def handle_get_conversation_detail(conversation_id):
     """API endpoint لجلب تفاصيل محادثة"""
-    return jsonify({"status": "error", "message": "Admin conversations feature has been removed."}), 503
+    try:
+        # Get conversation and verify ownership
+        conversation = AdminConversation.query.filter_by(
+            id=conversation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not conversation:
+            return jsonify({"status": "error", "message": "Conversation not found or access denied."}), 404
+        
+        # Get all messages for this conversation
+        messages = AdminMessage.query.filter_by(
+            conversation_id=conversation_id
+        ).order_by(AdminMessage.created_at).all()
+        
+        # Format messages for response
+        messages_list = [
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "tokens_used": msg.tokens_used,
+                "model_used": msg.model_used,
+                "latency_ms": msg.latency_ms,
+                "created_at": msg.created_at.isoformat(),
+                "metadata": msg.metadata_json
+            }
+            for msg in messages
+        ]
+        
+        return jsonify({
+            "status": "success",
+            "conversation": {
+                "id": conversation.id,
+                "title": conversation.title,
+                "conversation_type": conversation.conversation_type,
+                "total_messages": conversation.total_messages,
+                "total_tokens": conversation.total_tokens,
+                "avg_response_time_ms": conversation.avg_response_time_ms,
+                "is_archived": conversation.is_archived,
+                "last_message_at": conversation.last_message_at.isoformat() if conversation.last_message_at else None,
+                "created_at": conversation.created_at.isoformat(),
+                "updated_at": conversation.updated_at.isoformat(),
+                "tags": conversation.tags or [],
+                "messages": messages_list
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Failed to get conversation detail: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # --------------------------------------------------------------------------------------
