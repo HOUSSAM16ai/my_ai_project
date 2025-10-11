@@ -338,7 +338,11 @@ class AdminConversation(Timestamped, db.Model):
             self.avg_response_time_ms = sum(response_times) / len(response_times)
         
         if self.messages:
-            self.last_message_at = max(m.created_at for m in self.messages)
+            # Ensure all datetimes are timezone-aware before comparison
+            message_times = [coerce_datetime(m.created_at) for m in self.messages]
+            message_times = [t for t in message_times if t is not None]
+            if message_times:
+                self.last_message_at = max(message_times)
 
 
 class AdminMessage(Timestamped, db.Model):
