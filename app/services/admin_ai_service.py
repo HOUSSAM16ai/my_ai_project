@@ -205,7 +205,7 @@ class AdminAIService:
         Saves project analysis results to conversation for future reference.
         """
         try:
-            conversation = AdminConversation.query.get(conversation_id)
+            conversation = db.session.get(AdminConversation, conversation_id)
             if conversation:
                 # Update deep index summary if available
                 if analysis.get("deep_index_summary"):
@@ -258,7 +258,7 @@ class AdminAIService:
             if conversation_id:
                 conversation_history = self._get_conversation_history(conversation_id)
                 # Get deep index summary from conversation if available
-                conversation = AdminConversation.query.get(conversation_id)
+                conversation = db.session.get(AdminConversation, conversation_id)
                 if conversation:
                     deep_index_summary = conversation.deep_index_summary
             
@@ -584,7 +584,7 @@ class AdminAIService:
             db.session.add(message)
             
             # Update conversation statistics
-            conversation = AdminConversation.query.get(conversation_id)
+            conversation = db.session.get(AdminConversation, conversation_id)
             if conversation:
                 conversation.update_stats()
                 conversation.updated_at = utc_now()
@@ -657,7 +657,7 @@ class AdminAIService:
             bool: True if successful
         """
         try:
-            conversation = AdminConversation.query.get(conversation_id)
+            conversation = db.session.get(AdminConversation, conversation_id)
             if conversation:
                 conversation.is_archived = True
                 conversation.updated_at = utc_now()
@@ -684,7 +684,7 @@ class AdminAIService:
             Dict with comprehensive analytics data
         """
         try:
-            conversation = AdminConversation.query.get(conversation_id)
+            conversation = db.session.get(AdminConversation, conversation_id)
             if not conversation:
                 return {"status": "error", "error": "Conversation not found"}
             
