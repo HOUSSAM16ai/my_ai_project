@@ -150,13 +150,8 @@ def handle_chat():
     try:
         service = get_admin_ai_service()
         
-        if not conversation_id:
-            conv = service.create_conversation(
-                user=current_user._get_current_object(),
-                title=question[:100],
-                conversation_type="general"
-            )
-            conversation_id = conv.id
+        # Note: AdminConversation model has been removed.
+        # conversation_id is now optional and only used for context tracking in memory
         
         result = service.answer_question(
             question=question,
@@ -165,7 +160,10 @@ def handle_chat():
             use_deep_context=use_deep_context
         )
         
-        result["conversation_id"] = conversation_id
+        # Return the conversation_id for client-side tracking
+        if conversation_id:
+            result["conversation_id"] = conversation_id
+        
         return jsonify(result)
         
     except Exception as e:
@@ -228,33 +226,12 @@ def handle_execute_modification():
 @admin_required
 def handle_get_conversations():
     """API endpoint لجلب محادثات المستخدم"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-    
-    try:
-        service = get_admin_ai_service()
-        conversations = service.get_user_conversations(
-            user=current_user._get_current_object()
-        )
-        
-        return jsonify({
-            "status": "success",
-            "conversations": [
-                {
-                    "id": conv.id,
-                    "title": conv.title,
-                    "type": conv.conversation_type,
-                    "created_at": conv.created_at.isoformat(),
-                    "updated_at": conv.updated_at.isoformat(),
-                    "message_count": len(conv.messages)
-                }
-                for conv in conversations
-            ]
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Get conversations API failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    # Note: AdminConversation model has been removed.
+    # Return empty list to maintain API compatibility
+    return jsonify({
+        "status": "success",
+        "conversations": []
+    })
 
 
 @bp.route("/api/conversation/<int:conversation_id>", methods=["GET"])
