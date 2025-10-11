@@ -91,12 +91,17 @@ echo -e "   - إنشاء محادثة اختبارية"
 echo -e "   - إضافة رسائل"
 echo -e "   - التحقق من الحفظ في Supabase"
 echo ""
-echo -e "${GREEN}3)${NC} 📚 عرض الدليل الكامل"
+echo -e "${GREEN}3)${NC} 🔧 إصلاح خطأ سجل الهجرات في Dashboard"
+echo -e "   - إنشاء supabase_migrations schema"
+echo -e "   - مزامنة Alembic مع Supabase"
+echo -e "   - إصلاح خطأ 'relation does not exist'"
 echo ""
-echo -e "${GREEN}4)${NC} 🚪 الخروج"
+echo -e "${GREEN}4)${NC} 📚 عرض الدليل الكامل"
+echo ""
+echo -e "${GREEN}5)${NC} 🚪 الخروج"
 echo ""
 
-read -p "اختر (1-4): " choice
+read -p "اختر (1-5): " choice
 
 case $choice in
     1)
@@ -113,6 +118,12 @@ case $choice in
         ;;
     3)
         echo ""
+        echo -e "${BLUE}🔧 إصلاح خطأ سجل الهجرات...${NC}"
+        echo ""
+        python3 fix_supabase_migration_schema.py
+        ;;
+    4)
+        echo ""
         echo -e "${BLUE}📚 فتح الدليل الكامل...${NC}"
         echo ""
         if [ -f SUPABASE_VERIFICATION_GUIDE_AR.md ]; then
@@ -125,7 +136,7 @@ case $choice in
             echo -e "${RED}❌ ملف الدليل غير موجود!${NC}"
         fi
         ;;
-    4)
+    5)
         echo ""
         echo -e "${YELLOW}👋 وداعاً!${NC}"
         exit 0
