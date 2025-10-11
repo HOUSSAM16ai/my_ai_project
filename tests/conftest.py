@@ -77,7 +77,20 @@ def session(_connection):
     try:
         yield real_session
     finally:
-        test_scoped_session.remove()
+        # Remove the event listener first
+        event.remove(real_session, "after_transaction_end", _restart_nested)
+        # Properly close nested transaction if active
+        try:
+            if nested_transaction and nested_transaction.is_active:
+                nested_transaction.rollback()
+        except Exception:
+            pass  # Already rolled back or closed
+        # Remove the scoped session
+        try:
+            test_scoped_session.remove()
+        except Exception:
+            pass  # Session might already be closed
+        # Rollback top-level transaction
         if top_level_transaction.is_active:
             top_level_transaction.rollback()
         db.session = original_scoped_session
@@ -87,6 +100,9 @@ def session(_connection):
 # --------------------------------------------------------------------------------------
 @pytest.fixture
 def client(app):
+    """Client with independent cookie jar for each test"""
+    # Return a fresh test client for each test
+    # Each client has its own cookie jar, ensuring test isolation
     return app.test_client()
 
 # --------------------------------------------------------------------------------------
