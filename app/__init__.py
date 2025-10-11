@@ -85,6 +85,16 @@ def _register_extensions(app: Flask) -> None:
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    
+    # Setup enterprise-grade middleware
+    try:
+        from app.middleware import setup_error_handlers, setup_cors, setup_request_logging
+        setup_error_handlers(app)
+        setup_cors(app)
+        setup_request_logging(app)
+        app.logger.info("Enterprise middleware initialized successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to initialize middleware: %s", exc, exc_info=True)
 
 
 def _register_blueprints(app: Flask) -> None:
