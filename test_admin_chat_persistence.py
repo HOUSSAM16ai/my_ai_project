@@ -52,18 +52,29 @@ def test_conversation_persistence():
     
     print_header("🧪 ADMIN CHAT PERSISTENCE TEST")
     
-    app = create_app()
+    app = create_app('testing')
     
     with app.app_context():
+        # Create all database tables for testing
+        db.create_all()
+        
         try:
             # Step 1: Get or create a test user
             print(f"{C}📝 Step 1: Getting test user...{E}")
             user = User.query.first()
-            if not user:
-                print(f"{R}❌ No users found in database. Please create a user first.{E}")
-                return False
             
-            print(f"{G}✓ Found user: {user.username} (ID: {user.id}){E}")
+            if not user:
+                user = User(
+                    full_name="Test User",
+                    email="test@test.com",
+                    is_admin=True
+                )
+                user.set_password("test123")
+                db.session.add(user)
+                db.session.commit()
+                print(f"{G}✓ Created test user: {user.email} (ID: {user.id}){E}")
+            else:
+                print(f"{G}✓ Found user: {user.username} (ID: {user.id}){E}")
             
             # Step 2: Create a test conversation using the service
             print(f"\n{C}📝 Step 2: Creating test conversation...{E}")
