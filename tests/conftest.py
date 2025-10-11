@@ -99,11 +99,22 @@ def session(_connection):
 # عملاء HTTP
 # --------------------------------------------------------------------------------------
 @pytest.fixture
-def client(app):
-    """Client with independent cookie jar for each test"""
-    # Return a fresh test client for each test
-    # Each client has its own cookie jar, ensuring test isolation
-    return app.test_client()
+def client(app, request):
+    """Client with automatic logout after each test"""
+    test_client = app.test_client()
+    
+    def logout_cleanup():
+        """Ensure user is logged out after test"""
+        try:
+            with test_client:
+                test_client.get('/logout')
+        except Exception:
+            pass  # Logout may fail if not logged in
+    
+    # Register cleanup to run after test
+    request.addfinalizer(logout_cleanup)
+    
+    return test_client
 
 # --------------------------------------------------------------------------------------
 # المصانع (Factories) - مركزة على Overmind
