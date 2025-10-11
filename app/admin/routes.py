@@ -386,6 +386,20 @@ def get_tables():
         current_app.logger.error(f"Get tables failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@bp.route("/api/database/health", methods=["GET"])
+@admin_required
+def get_database_health():
+    """API endpoint لفحص صحة قاعدة البيانات"""
+    if not database_service:
+        return jsonify({"status": "error", "message": "Database service not available"}), 503
+    
+    try:
+        health = database_service.get_database_health()
+        return jsonify(health)
+    except Exception as e:
+        current_app.logger.error(f"Database health check failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @bp.route("/api/database/stats", methods=["GET"])
 @admin_required
 def get_db_stats():

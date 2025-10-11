@@ -447,7 +447,7 @@ def get_record(table_name: str, record_id: int) -> Dict[str, Any]:
 
 def create_record(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    إنشاء سجل جديد
+    إنشاء سجل جديد - Create new record with validation
     """
     if table_name not in ALL_MODELS:
         return {'status': 'error', 'message': f'Table {table_name} not found'}
@@ -455,6 +455,37 @@ def create_record(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
     model = ALL_MODELS[table_name]
     
     try:
+        # Validate input data if schema exists
+        try:
+            from app.validators import BaseValidator
+            schema_map = {
+                'users': 'UserSchema',
+                'missions': 'MissionSchema',
+                'tasks': 'TaskSchema',
+                'mission_plans': 'MissionPlanSchema',
+            }
+            
+            if table_name in schema_map:
+                schema_name = schema_map[table_name]
+                from app.validators import schemas
+                schema_class = getattr(schemas, schema_name, None)
+                
+                if schema_class:
+                    success, validated_data, errors = BaseValidator.validate(
+                        schema_class, data
+                    )
+                    if not success:
+                        return {
+                            'status': 'error',
+                            'message': 'Validation failed',
+                            'errors': errors
+                        }
+                    # Use validated data
+                    data = validated_data
+        except ImportError:
+            # Validators not available, proceed without validation
+            pass
+        
         # Create new instance
         new_record = model(**data)
         db.session.add(new_record)
@@ -471,7 +502,7 @@ def create_record(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
 
 def update_record(table_name: str, record_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    تحديث سجل موجود
+    تحديث سجل موجود - Update existing record with validation
     """
     if table_name not in ALL_MODELS:
         return {'status': 'error', 'message': f'Table {table_name} not found'}
@@ -479,6 +510,37 @@ def update_record(table_name: str, record_id: int, data: Dict[str, Any]) -> Dict
     model = ALL_MODELS[table_name]
     
     try:
+        # Validate input data if schema exists (partial update)
+        try:
+            from app.validators import BaseValidator
+            schema_map = {
+                'users': 'UserSchema',
+                'missions': 'MissionSchema',
+                'tasks': 'TaskSchema',
+                'mission_plans': 'MissionPlanSchema',
+            }
+            
+            if table_name in schema_map:
+                schema_name = schema_map[table_name]
+                from app.validators import schemas
+                schema_class = getattr(schemas, schema_name, None)
+                
+                if schema_class:
+                    success, validated_data, errors = BaseValidator.validate(
+                        schema_class, data, partial=True
+                    )
+                    if not success:
+                        return {
+                            'status': 'error',
+                            'message': 'Validation failed',
+                            'errors': errors
+                        }
+                    # Use validated data
+                    data = validated_data
+        except ImportError:
+            # Validators not available, proceed without validation
+            pass
+        
         record = db.session.get(model, record_id)
         if not record:
             return {'status': 'error', 'message': 'Record not found'}
