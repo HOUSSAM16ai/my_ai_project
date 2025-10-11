@@ -89,14 +89,14 @@ class TestCRUDOperations:
             # Verify user was created
             user = User.query.filter_by(email='newuser@example.com').first()
             assert user is not None
-            assert user.username == 'newuser'
+            assert user.full_name == 'newuser'
     
     def test_read_users(self, client, admin_user, user_factory):
         """Test reading users with pagination"""
         with client:
             # Create some test users
             for i in range(5):
-                user_factory(email=f'user{i}@test.com', username=f'user{i}')
+                user_factory(email=f'user{i}@test.com')
             
             # Login as admin
             client.post('/login', data={
@@ -116,7 +116,7 @@ class TestCRUDOperations:
         """Test reading a single user"""
         with client:
             # Create test user
-            test_user = user_factory(email='testread@test.com', username='testread')
+            test_user = user_factory(email='testread@test.com')
             
             # Login as admin
             client.post('/login', data={
@@ -135,7 +135,7 @@ class TestCRUDOperations:
         """Test updating a user"""
         with client:
             # Create test user
-            test_user = user_factory(email='testupdate@test.com', username='testupdate')
+            test_user = user_factory(email='testupdate@test.com')
             
             # Login as admin
             client.post('/login', data={
@@ -144,7 +144,7 @@ class TestCRUDOperations:
             })
             
             # Update user
-            update_data = {'username': 'updated_username'}
+            update_data = {'full_name': 'Updated Name'}
             response = client.put(
                 f'/admin/api/database/record/users/{test_user.id}',
                 json=update_data
@@ -155,13 +155,13 @@ class TestCRUDOperations:
             
             # Verify update
             updated_user = User.query.get(test_user.id)
-            assert updated_user.username == 'updated_username'
+            assert updated_user.full_name == 'Updated Name'
     
     def test_delete_user(self, client, admin_user, user_factory, session):
         """Test deleting a user"""
         with client:
             # Create test user
-            test_user = user_factory(email='testdelete@test.com', username='testdelete')
+            test_user = user_factory(email='testdelete@test.com')
             user_id = test_user.id
             session.commit()
             
@@ -233,7 +233,7 @@ class TestPaginationAndFiltering:
         with client:
             # Create many users
             for i in range(25):
-                user_factory(email=f'page{i}@test.com', username=f'page{i}')
+                user_factory(email=f'page{i}@test.com')
             
             # Login as admin
             client.post('/login', data={
@@ -259,8 +259,8 @@ class TestPaginationAndFiltering:
         """Test search functionality"""
         with client:
             # Create users with specific patterns
-            user_factory(email='search_test@test.com', username='searchable')
-            user_factory(email='other@test.com', username='other')
+            user_factory(email='search_test@test.com', full_name='Searchable User')
+            user_factory(email='other@test.com', full_name='Other User')
             
             # Login as admin
             client.post('/login', data={
@@ -279,8 +279,8 @@ class TestPaginationAndFiltering:
         """Test ordering"""
         with client:
             # Create users
-            user1 = user_factory(email='a@test.com', username='aaa')
-            user2 = user_factory(email='b@test.com', username='bbb')
+            user1 = user_factory(email='a@test.com')
+            user2 = user_factory(email='b@test.com')
             
             # Login as admin
             client.post('/login', data={
