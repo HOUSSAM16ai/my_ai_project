@@ -21,12 +21,12 @@ from typing import Any
 class PaginationSchema(Schema):
     """Schema للترقيم - Pagination parameters"""
     page = fields.Integer(
-        missing=1,
+        load_default=1,
         validate=validate.Range(min=1),
         metadata={'description': 'Page number (starts from 1)'}
     )
     per_page = fields.Integer(
-        missing=50,
+        load_default=50,
         validate=validate.Range(min=1, max=100),
         metadata={'description': 'Items per page (max 100)'}
     )
@@ -41,7 +41,7 @@ class PaginationSchema(Schema):
         metadata={'description': 'Field to order by'}
     )
     order_dir = fields.String(
-        missing='asc',
+        load_default='asc',
         validate=validate.OneOf(['asc', 'desc']),
         metadata={'description': 'Order direction: asc or desc'}
     )
@@ -80,10 +80,15 @@ class UserSchema(Schema):
         validate=validate.Length(max=120),
         metadata={'description': 'User email address'}
     )
+    full_name = fields.String(
+        required=False,
+        validate=validate.Length(min=3, max=150),
+        metadata={'description': 'Full name (3-150 characters)'}
+    )
     username = fields.String(
-        required=True,
+        required=False,
         validate=validate.Length(min=3, max=80),
-        metadata={'description': 'Username (3-80 characters)'}
+        metadata={'description': 'Username (3-80 characters) - maps to full_name'}
     )
     password = fields.String(
         load_only=True,
@@ -92,7 +97,8 @@ class UserSchema(Schema):
         metadata={'description': 'Password (min 4 characters)'}
     )
     is_admin = fields.Boolean(
-        missing=False,
+        required=False,
+        load_default=False,
         metadata={'description': 'Administrator flag'}
     )
     
@@ -102,10 +108,29 @@ class UserSchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
     
     @validates('username')
-    def validate_username(self, value):
+    def validate_username(self, value, **kwargs):
         """التحقق من اسم المستخدم - Validate username"""
-        if not value.replace('_', '').replace('-', '').isalnum():
+        if value and not value.replace('_', '').replace('-', '').isalnum():
             raise ValidationError('Username must contain only letters, numbers, hyphens and underscores')
+    
+    @post_load
+    def map_username_to_full_name(self, data, **kwargs):
+        """Map username to full_name for backward compatibility and handle password"""
+        if 'username' in data and 'full_name' not in data:
+            data['full_name'] = data.pop('username')
+        elif 'username' in data:
+            # If both are provided, remove username
+            data.pop('username')
+        # Ensure at least one name field is provided
+        if 'full_name' not in data:
+            raise ValidationError('Either full_name or username must be provided')
+        
+        # Handle password: convert to password_hash
+        if 'password' in data:
+            from werkzeug.security import generate_password_hash
+            data['password_hash'] = generate_password_hash(data.pop('password'))
+        
+        return data
 
 
 # ======================================================================================
@@ -120,7 +145,7 @@ class MissionSchema(Schema):
         metadata={'description': 'Mission objective (10-5000 characters)'}
     )
     status = fields.String(
-        missing='PENDING',
+        load_default='PENDING',
         validate=validate.OneOf([
             'PENDING', 'PLANNED', 'IN_PROGRESS', 'BLOCKED', 
             'COMPLETED', 'FAILED', 'CANCELLED'
@@ -128,7 +153,7 @@ class MissionSchema(Schema):
         metadata={'description': 'Mission status'}
     )
     priority = fields.String(
-        missing='MEDIUM',
+        load_default='MEDIUM',
         validate=validate.OneOf(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
         metadata={'description': 'Mission priority'}
     )
@@ -162,7 +187,7 @@ class TaskSchema(Schema):
         metadata={'description': 'Task description'}
     )
     status = fields.String(
-        missing='PENDING',
+        load_default='PENDING',
         validate=validate.OneOf([
             'PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'SKIPPED'
         ]),
@@ -170,7 +195,7 @@ class TaskSchema(Schema):
     )
     depends_on_json = fields.List(
         fields.String(),
-        missing=[],
+        load_default=[],
         metadata={'description': 'List of task dependencies'}
     )
     
@@ -192,12 +217,12 @@ class MissionPlanSchema(Schema):
         metadata={'description': 'Mission ID'}
     )
     plan_version = fields.Integer(
-        missing=1,
+        load_default=1,
         validate=validate.Range(min=1),
         metadata={'description': 'Plan version number'}
     )
     tasks_planned = fields.Integer(
-        missing=0,
+        load_default=0,
         validate=validate.Range(min=0),
         metadata={'description': 'Number of planned tasks'}
     )
@@ -220,17 +245,17 @@ class AdminConversationSchema(Schema):
         metadata={'description': 'Conversation title'}
     )
     conversation_type = fields.String(
-        missing='general',
+        load_default='general',
         validate=validate.OneOf(['general', 'database', 'mission', 'support']),
         metadata={'description': 'Type of conversation'}
     )
     is_archived = fields.Boolean(
-        missing=False,
+        load_default=False,
         metadata={'description': 'Archive status'}
     )
     tags = fields.List(
         fields.String(),
-        missing=[],
+        load_default=[],
         metadata={'description': 'Conversation tags'}
     )
     

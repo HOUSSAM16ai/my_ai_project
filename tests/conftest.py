@@ -122,6 +122,17 @@ def mission_factory(session, user_factory):
         return mission
     return _create
 
+@pytest.fixture
+def admin_user(session, user_factory):
+    """Fixture لإنشاء مستخدم أدمن للاختبارات."""
+    admin = user_factory(
+        full_name="Test Admin",
+        email="admin@test.com",
+        password="1111",
+        is_admin=True
+    )
+    return admin
+
 # ... يمكنك إضافة مصانع أخرى لـ MissionPlan و Task هنا بنفس النمط ...
 
 # --------------------------------------------------------------------------------------
