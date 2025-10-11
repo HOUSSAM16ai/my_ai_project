@@ -115,11 +115,11 @@ def test_conversation_persistence():
             
             # Step 4: Verify conversation exists in database
             print(f"\n{C}📝 Step 4: Verifying conversation in database...{E}")
-            db_conversation = AdminConversation.query.get(conversation.id)
+            db_conversation = db.session.get(AdminConversation, conversation.id)
             
             if not db_conversation:
                 print(f"{R}❌ Conversation not found in database!{E}")
-                return False
+                assert False, "Conversation not found in database"
             
             print(f"{G}✓ Conversation found in database{E}")
             print(f"  ID: {db_conversation.id}")
@@ -133,9 +133,7 @@ def test_conversation_persistence():
                 conversation_id=conversation.id
             ).order_by(AdminMessage.created_at).all()
             
-            if len(messages) != 2:
-                print(f"{R}❌ Expected 2 messages, found {len(messages)}{E}")
-                return False
+            assert len(messages) == 2, f"Expected 2 messages, found {len(messages)}"
             
             print(f"{G}✓ Found {len(messages)} messages{E}")
             
@@ -153,9 +151,7 @@ def test_conversation_persistence():
             print(f"\n{C}📝 Step 6: Testing conversation history retrieval...{E}")
             history = service._get_conversation_history(conversation.id)
             
-            if len(history) != 2:
-                print(f"{R}❌ Expected 2 history items, got {len(history)}{E}")
-                return False
+            assert len(history) == 2, f"Expected 2 history items, got {len(history)}"
             
             print(f"{G}✓ Retrieved conversation history{E}")
             for i, item in enumerate(history, 1):
@@ -165,9 +161,7 @@ def test_conversation_persistence():
             print(f"\n{C}📝 Step 7: Testing conversation analytics...{E}")
             analytics = service.get_conversation_analytics(conversation.id)
             
-            if analytics.get("status") != "success":
-                print(f"{R}❌ Failed to get analytics: {analytics.get('error')}{E}")
-                return False
+            assert analytics.get("status") == "success", f"Failed to get analytics: {analytics.get('error')}"
             
             print(f"{G}✓ Retrieved conversation analytics{E}")
             print(f"  Total Messages: {analytics.get('total_messages')}")
@@ -186,9 +180,7 @@ def test_conversation_persistence():
             )
             conv_count = result.scalar()
             
-            if conv_count == 0:
-                print(f"{R}❌ Conversation not found in raw query!{E}")
-                return False
+            assert conv_count > 0, "Conversation not found in raw query"
             
             print(f"{G}✓ Conversation found via raw query (count: {conv_count}){E}")
             
@@ -199,9 +191,7 @@ def test_conversation_persistence():
             )
             msg_count = result.scalar()
             
-            if msg_count != 2:
-                print(f"{R}❌ Expected 2 messages in raw query, found {msg_count}!{E}")
-                return False
+            assert msg_count == 2, f"Expected 2 messages in raw query, found {msg_count}"
             
             print(f"{G}✓ Messages found via raw query (count: {msg_count}){E}")
             
@@ -222,14 +212,12 @@ def test_conversation_persistence():
             print(f"   3. View 'admin_conversations' and 'admin_messages' tables")
             print(f"   4. Look for conversation ID: {conversation.id}\n")
             
-            return True
-            
         except Exception as e:
             print(f"\n{R}❌ Test failed with error:{E}")
             print(f"{R}{str(e)}{E}")
             import traceback
             traceback.print_exc()
-            return False
+            raise
 
 
 if __name__ == "__main__":

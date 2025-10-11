@@ -53,13 +53,9 @@ def test_script_exists():
     
     script_path = Path(__file__).parent / 'fix_supabase_migration_schema.py'
     
-    if script_path.exists():
-        print_success("fix_supabase_migration_schema.py exists")
-        print_info(f"Size: {script_path.stat().st_size} bytes")
-        return True
-    else:
-        print_error("fix_supabase_migration_schema.py NOT found")
-        return False
+    assert script_path.exists(), "fix_supabase_migration_schema.py NOT found"
+    print_success("fix_supabase_migration_schema.py exists")
+    print_info(f"Size: {script_path.stat().st_size} bytes")
 
 def test_script_syntax():
     """Test that the script has valid Python syntax"""
@@ -67,21 +63,12 @@ def test_script_syntax():
     
     script_path = Path(__file__).parent / 'fix_supabase_migration_schema.py'
     
-    try:
-        # First, just compile to check syntax
-        with open(script_path, 'r', encoding='utf-8') as f:
-            code = f.read()
-        
-        compile(code, script_path, 'exec')
-        print_success("Script syntax is valid (compilation successful)")
-        return True
-        
-    except SyntaxError as e:
-        print_error(f"Syntax error: {str(e)}")
-        return False
-    except Exception as e:
-        print_error(f"Unexpected error: {str(e)}")
-        return False
+    # First, just compile to check syntax
+    with open(script_path, 'r', encoding='utf-8') as f:
+        code = f.read()
+    
+    compile(code, script_path, 'exec')
+    print_success("Script syntax is valid (compilation successful)")
 
 def test_functions_defined():
     """Test that all required functions are defined"""
@@ -101,14 +88,16 @@ def test_functions_defined():
     ]
     
     all_found = True
+    missing_functions = []
     for func in required_functions:
         if f"def {func}(" in content:
             print_success(f"Function '{func}' is defined")
         else:
             print_error(f"Function '{func}' NOT found")
             all_found = False
+            missing_functions.append(func)
     
-    return all_found
+    assert all_found, f"Missing functions: {', '.join(missing_functions)}"
 
 def test_sql_statements():
     """Test that SQL statements are present and correct"""
@@ -130,14 +119,16 @@ def test_sql_statements():
     ]
     
     all_found = True
+    missing_statements = []
     for sql, description in sql_checks:
         if sql in content:
             print_success(f"{description} present")
         else:
             print_error(f"{description} NOT found")
             all_found = False
+            missing_statements.append(description)
     
-    return all_found
+    assert all_found, f"Missing SQL statements: {', '.join(missing_statements)}"
 
 def test_documentation_exists():
     """Test that documentation files exist"""
@@ -150,6 +141,7 @@ def test_documentation_exists():
     ]
     
     all_found = True
+    missing_docs = []
     for filename, description in docs:
         doc_path = Path(__file__).parent / filename
         if doc_path.exists():
@@ -158,8 +150,9 @@ def test_documentation_exists():
         else:
             print_error(f"{description} NOT found")
             all_found = False
+            missing_docs.append(description)
     
-    return all_found
+    assert all_found, f"Missing documentation files: {', '.join(missing_docs)}"
 
 def test_integration():
     """Test integration with other scripts"""
@@ -172,11 +165,8 @@ def test_integration():
         with open(apply_migrations_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        if 'fix_supabase_migration_schema.py' in content:
-            print_success("Integrated with apply_migrations.py")
-        else:
-            print_error("NOT integrated with apply_migrations.py")
-            return False
+        assert 'fix_supabase_migration_schema.py' in content, "NOT integrated with apply_migrations.py"
+        print_success("Integrated with apply_migrations.py")
     
     # Check quick_start script integration
     quick_start_path = Path(__file__).parent / 'quick_start_supabase_verification.sh'
@@ -185,11 +175,8 @@ def test_integration():
         with open(quick_start_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        if 'fix_supabase_migration_schema.py' in content:
-            print_success("Integrated with quick_start_supabase_verification.sh")
-        else:
-            print_error("NOT integrated with quick_start script")
-            return False
+        assert 'fix_supabase_migration_schema.py' in content, "NOT integrated with quick_start script"
+        print_success("Integrated with quick_start_supabase_verification.sh")
     
     # Check tools listing
     tools_path = Path(__file__).parent / 'show_supabase_tools.py'
@@ -198,13 +185,8 @@ def test_integration():
         with open(tools_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        if 'fix_supabase_migration_schema.py' in content:
-            print_success("Listed in show_supabase_tools.py")
-        else:
-            print_error("NOT listed in tools")
-            return False
-    
-    return True
+        assert 'fix_supabase_migration_schema.py' in content, "NOT listed in tools"
+        print_success("Listed in show_supabase_tools.py")
 
 def test_error_handling():
     """Test that error handling is present"""
@@ -224,6 +206,7 @@ def test_error_handling():
     ]
     
     all_found = True
+    missing_checks = []
     for check, description in checks:
         count = content.count(check)
         if count > 0:
@@ -231,8 +214,9 @@ def test_error_handling():
         else:
             print_error(f"{description} NOT found")
             all_found = False
+            missing_checks.append(description)
     
-    return all_found
+    assert all_found, f"Missing error handling: {', '.join(missing_checks)}"
 
 def main():
     """Run all tests"""

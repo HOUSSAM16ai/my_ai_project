@@ -312,7 +312,7 @@ class AdminConversation(Timestamped, db.Model):
     last_message_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True), index=True)
     
     # Relationships
-    user: Mapped[User] = relationship("User")
+    user: Mapped[User] = relationship("User", overlaps="admin_conversations")
     messages: Mapped[List["AdminMessage"]] = relationship(
         "AdminMessage",
         back_populates="conversation",
