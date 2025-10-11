@@ -41,7 +41,8 @@ from sqlalchemy import select, desc
 from app import db
 from app.models import (
     User,
-    Mission, MissionStatus, utc_now
+    Mission, MissionStatus, utc_now,
+    AdminConversation, AdminMessage, MessageRole
 )
 
 try:
@@ -198,8 +199,36 @@ class AdminAIService:
         return recommendations
     
     def _save_analysis_to_conversation(self, conversation_id: int, analysis: Dict):
-        """حفظ التحليل في المحادثة - DISABLED: AdminConversation model removed"""
-        pass
+        """
+        حفظ التحليل في المحادثة - SUPERHUMAN INTEGRATION
+        
+        Saves project analysis results to conversation for future reference.
+        """
+        try:
+            conversation = AdminConversation.query.get(conversation_id)
+            if conversation:
+                # Update deep index summary if available
+                if analysis.get("deep_index_summary"):
+                    conversation.deep_index_summary = analysis["deep_index_summary"]
+                
+                # Save analysis as a system message
+                self._save_message(
+                    conversation_id,
+                    "system",
+                    f"📊 Project Analysis Complete\n\n"
+                    f"Files: {analysis.get('project_stats', {}).get('files_scanned', 0)}\n"
+                    f"Functions: {analysis.get('project_stats', {}).get('total_functions', 0)}\n"
+                    f"Hotspots: {analysis.get('project_stats', {}).get('complexity_hotspots', 0)}",
+                    metadata_json={"analysis": analysis}
+                )
+                
+                # Add 'analysis' tag
+                if conversation.tags and 'analysis' not in conversation.tags:
+                    conversation.tags.append('analysis')
+                
+                db.session.commit()
+        except Exception as e:
+            self.logger.error(f"Failed to save analysis to conversation: {e}", exc_info=True)
     
     def answer_question(
         self,
@@ -228,7 +257,10 @@ class AdminAIService:
             
             if conversation_id:
                 conversation_history = self._get_conversation_history(conversation_id)
-                # AdminConversation model removed - no deep_index_summary available
+                # Get deep index summary from conversation if available
+                conversation = AdminConversation.query.get(conversation_id)
+                if conversation:
+                    deep_index_summary = conversation.deep_index_summary
             
             related_context = []
             if system_service and hasattr(system_service, 'find_related_context'):
@@ -433,13 +465,80 @@ class AdminAIService:
         user: User,
         title: str,
         conversation_type: str = "general"
-    ):
-        """إنشاء محادثة جديدة - DISABLED: AdminConversation model removed"""
-        raise NotImplementedError("AdminConversation model has been removed")
+    ) -> AdminConversation:
+        """
+        إنشاء محادثة جديدة - SUPERHUMAN IMPLEMENTATION
+        
+        Creates a new conversation with intelligent defaults and metadata.
+        Automatically captures project context for superior intelligence.
+        
+        Args:
+            user: المستخدم الذي يبدأ المحادثة
+            title: عنوان المحادثة
+            conversation_type: نوع المحادثة (general, project_analysis, modification, etc.)
+        
+        Returns:
+            AdminConversation: المحادثة الجديدة
+        """
+        try:
+            # Create conversation with enhanced metadata
+            conversation = AdminConversation(
+                title=title,
+                user_id=user.id,
+                conversation_type=conversation_type,
+                tags=[conversation_type],  # Initial tag
+                total_messages=0,
+                total_tokens=0,
+                is_archived=False
+            )
+            
+            # Optionally capture deep index summary if enabled
+            if ENABLE_DEEP_INDEX and build_index and summarize_for_prompt:
+                try:
+                    index = build_index(root=".")
+                    conversation.deep_index_summary = summarize_for_prompt(index, max_len=2000)
+                except Exception as e:
+                    self.logger.warning(f"Failed to build deep index for conversation: {e}")
+            
+            db.session.add(conversation)
+            db.session.commit()
+            
+            self.logger.info(f"Created conversation #{conversation.id} for user {user.id}: {title}")
+            return conversation
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create conversation: {e}", exc_info=True)
+            db.session.rollback()
+            raise
     
     def _get_conversation_history(self, conversation_id: int) -> List[Dict[str, str]]:
-        """جلب تاريخ المحادثة - DISABLED: AdminMessage model removed"""
-        return []
+        """
+        جلب تاريخ المحادثة - SUPERHUMAN RETRIEVAL
+        
+        Retrieves conversation history with intelligent formatting.
+        Optimized query with proper indexing for blazing-fast performance.
+        
+        Args:
+            conversation_id: معرف المحادثة
+        
+        Returns:
+            List of message dicts in OpenAI format [{role, content}, ...]
+        """
+        try:
+            messages = AdminMessage.query.filter_by(
+                conversation_id=conversation_id
+            ).order_by(AdminMessage.created_at).all()
+            
+            return [
+                {
+                    "role": msg.role,
+                    "content": msg.content
+                }
+                for msg in messages
+            ]
+        except Exception as e:
+            self.logger.error(f"Failed to get conversation history: {e}", exc_info=True)
+            return []
     
     def _save_message(
         self,
@@ -451,16 +550,187 @@ class AdminAIService:
         latency_ms: Optional[float] = None,
         metadata_json: Optional[Dict] = None
     ):
-        """حفظ رسالة في المحادثة - DISABLED: AdminMessage model removed"""
-        pass
+        """
+        حفظ رسالة في المحادثة - SUPERHUMAN PERSISTENCE
+        
+        Saves a message with comprehensive metadata tracking.
+        Automatically updates conversation statistics for analytics.
+        Uses content hashing for deduplication and integrity.
+        
+        Args:
+            conversation_id: معرف المحادثة
+            role: دور المرسل (user, assistant, system, tool)
+            content: محتوى الرسالة
+            tokens_used: عدد tokens المستخدمة
+            model_used: نموذج الذكاء الاصطناعي المستخدم
+            latency_ms: زمن الاستجابة بالميلي ثانية
+            metadata_json: بيانات إضافية
+        """
+        try:
+            # Create message with all metadata
+            message = AdminMessage(
+                conversation_id=conversation_id,
+                role=role,
+                content=content,
+                tokens_used=tokens_used,
+                model_used=model_used,
+                latency_ms=latency_ms,
+                metadata_json=metadata_json
+            )
+            
+            # Compute content hash for integrity and deduplication
+            message.compute_content_hash()
+            
+            db.session.add(message)
+            
+            # Update conversation statistics
+            conversation = AdminConversation.query.get(conversation_id)
+            if conversation:
+                conversation.update_stats()
+                conversation.updated_at = utc_now()
+            
+            db.session.commit()
+            
+            self.logger.debug(
+                f"Saved message to conversation #{conversation_id}: "
+                f"role={role}, tokens={tokens_used}, model={model_used}"
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save message: {e}", exc_info=True)
+            db.session.rollback()
     
     def get_user_conversations(
         self,
         user: User,
-        limit: int = 20
-    ) -> List:
-        """جلب محادثات المستخدم - DISABLED: AdminConversation model removed"""
-        return []
+        limit: int = 20,
+        include_archived: bool = False,
+        conversation_type: Optional[str] = None
+    ) -> List[AdminConversation]:
+        """
+        جلب محادثات المستخدم - SUPERHUMAN QUERY
+        
+        Retrieves user conversations with intelligent filtering.
+        Optimized with composite indexes for enterprise-grade performance.
+        
+        Args:
+            user: المستخدم
+            limit: الحد الأقصى لعدد المحادثات
+            include_archived: تضمين المحادثات المؤرشفة
+            conversation_type: فلترة حسب النوع
+        
+        Returns:
+            List of conversations ordered by last activity
+        """
+        try:
+            query = AdminConversation.query.filter_by(user_id=user.id)
+            
+            if not include_archived:
+                query = query.filter_by(is_archived=False)
+            
+            if conversation_type:
+                query = query.filter_by(conversation_type=conversation_type)
+            
+            # Order by most recent activity
+            query = query.order_by(AdminConversation.updated_at.desc())
+            
+            if limit:
+                query = query.limit(limit)
+            
+            return query.all()
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get user conversations: {e}", exc_info=True)
+            return []
+    
+    def archive_conversation(self, conversation_id: int) -> bool:
+        """
+        أرشفة محادثة - SUPERHUMAN ORGANIZATION
+        
+        Archives a conversation for intelligent organization.
+        Archived conversations are excluded from default queries but remain searchable.
+        
+        Args:
+            conversation_id: معرف المحادثة
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            conversation = AdminConversation.query.get(conversation_id)
+            if conversation:
+                conversation.is_archived = True
+                conversation.updated_at = utc_now()
+                db.session.commit()
+                self.logger.info(f"Archived conversation #{conversation_id}")
+                return True
+            return False
+        except Exception as e:
+            self.logger.error(f"Failed to archive conversation: {e}", exc_info=True)
+            db.session.rollback()
+            return False
+    
+    def get_conversation_analytics(self, conversation_id: int) -> Dict[str, Any]:
+        """
+        تحليلات المحادثة - SUPERHUMAN ANALYTICS
+        
+        Provides comprehensive analytics for a conversation.
+        Surpasses tech giants with detailed metrics and insights.
+        
+        Args:
+            conversation_id: معرف المحادثة
+        
+        Returns:
+            Dict with comprehensive analytics data
+        """
+        try:
+            conversation = AdminConversation.query.get(conversation_id)
+            if not conversation:
+                return {"status": "error", "error": "Conversation not found"}
+            
+            messages = conversation.messages
+            
+            # Message distribution by role
+            role_distribution = {}
+            for msg in messages:
+                role_distribution[msg.role] = role_distribution.get(msg.role, 0) + 1
+            
+            # Token usage by model
+            model_tokens = {}
+            for msg in messages:
+                if msg.model_used and msg.tokens_used:
+                    model_tokens[msg.model_used] = model_tokens.get(msg.model_used, 0) + msg.tokens_used
+            
+            # Response time statistics
+            response_times = [m.latency_ms for m in messages if m.latency_ms and m.role == "assistant"]
+            avg_latency = sum(response_times) / len(response_times) if response_times else None
+            min_latency = min(response_times) if response_times else None
+            max_latency = max(response_times) if response_times else None
+            
+            # Total cost calculation
+            total_cost = sum(float(m.cost_usd or 0) for m in messages)
+            
+            return {
+                "status": "success",
+                "conversation_id": conversation_id,
+                "title": conversation.title,
+                "conversation_type": conversation.conversation_type,
+                "created_at": conversation.created_at.isoformat(),
+                "updated_at": conversation.updated_at.isoformat(),
+                "total_messages": len(messages),
+                "role_distribution": role_distribution,
+                "total_tokens": conversation.total_tokens,
+                "model_tokens": model_tokens,
+                "avg_response_time_ms": avg_latency,
+                "min_response_time_ms": min_latency,
+                "max_response_time_ms": max_latency,
+                "total_cost_usd": total_cost,
+                "is_archived": conversation.is_archived
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get conversation analytics: {e}", exc_info=True)
+            return {"status": "error", "error": str(e)}
 
 
 _service_instance = None
