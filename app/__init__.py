@@ -95,6 +95,14 @@ def _register_extensions(app: Flask) -> None:
         app.logger.info("Enterprise middleware initialized successfully")
     except Exception as exc:
         app.logger.warning("Failed to initialize middleware: %s", exc, exc_info=True)
+    
+    # Setup Swagger/OpenAPI documentation (optional)
+    try:
+        from app.swagger_integration import init_swagger
+        init_swagger(app)
+        app.logger.info("Swagger documentation enabled at /api/docs/")
+    except Exception as exc:
+        app.logger.warning("Failed to initialize Swagger: %s (continuing without it)", exc)
 
 
 def _register_blueprints(app: Flask) -> None:
