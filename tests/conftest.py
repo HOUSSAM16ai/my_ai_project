@@ -77,7 +77,20 @@ def session(_connection):
     try:
         yield real_session
     finally:
-        test_scoped_session.remove()
+        # Remove the event listener first
+        event.remove(real_session, "after_transaction_end", _restart_nested)
+        # Properly close nested transaction if active
+        try:
+            if nested_transaction and nested_transaction.is_active:
+                nested_transaction.rollback()
+        except Exception:
+            pass  # Already rolled back or closed
+        # Remove the scoped session
+        try:
+            test_scoped_session.remove()
+        except Exception:
+            pass  # Session might already be closed
+        # Rollback top-level transaction
         if top_level_transaction.is_active:
             top_level_transaction.rollback()
         db.session = original_scoped_session
@@ -86,8 +99,22 @@ def session(_connection):
 # عملاء HTTP
 # --------------------------------------------------------------------------------------
 @pytest.fixture
-def client(app):
-    return app.test_client()
+def client(app, request):
+    """Client with automatic logout after each test"""
+    test_client = app.test_client()
+    
+    def logout_cleanup():
+        """Ensure user is logged out after test"""
+        try:
+            with test_client:
+                test_client.get('/logout')
+        except Exception:
+            pass  # Logout may fail if not logged in
+    
+    # Register cleanup to run after test
+    request.addfinalizer(logout_cleanup)
+    
+    return test_client
 
 # --------------------------------------------------------------------------------------
 # المصانع (Factories) - مركزة على Overmind

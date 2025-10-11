@@ -84,6 +84,9 @@ class TestingConfig(Config):
     
     # Security law for testing: Disable CSRF protection for simpler test requests.
     WTF_CSRF_ENABLED = False
+    
+    # Ensure login is NOT disabled in tests - we want to test authentication
+    LOGIN_DISABLED = False
 
 
 class ProductionConfig(Config):
