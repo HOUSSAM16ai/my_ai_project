@@ -43,9 +43,12 @@ def test_admin_conversation_system():
     Comprehensive test of the admin conversation system
     """
     
-    app = create_app()
+    app = create_app('testing')
     
     with app.app_context():
+        # Create all database tables for testing
+        db.create_all()
+        
         print_section("🚀 SUPERHUMAN ADMIN CONVERSATION SYSTEM - TEST")
         
         # 1. Get or create a test admin user
