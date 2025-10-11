@@ -86,6 +86,27 @@ print("""
 
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
+5. 🔧 FIX SUPABASE MIGRATION SCHEMA - إصلاح schema الهجرات
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📄 File: fix_supabase_migration_schema.py
+   🎯 Purpose: إصلاح خطأ سجل الهجرات في Supabase Dashboard
+   
+   ✨ Usage:
+      python3 fix_supabase_migration_schema.py
+   
+   ✅ Features:
+      • إنشاء supabase_migrations schema
+      • إنشاء جدول schema_migrations
+      • مزامنة Alembic مع Supabase
+      • إصلاح خطأ "relation does not exist"
+   
+   🔥 Superhuman Solution:
+      • يحل مشكلة عرض الهجرات في Dashboard
+      • يحافظ على نظام Alembic الموجود
+      • توثيق شامل في SUPABASE_MIGRATION_SCHEMA_FIX_AR.md
+
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+
 ┌────────────────────────────────────────────────────────────────────────────┐
 │ 📚 التوثيق المتاح / Available Documentation                                │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -96,6 +117,17 @@ print("""
    • أمثلة الاستخدام
    • استكشاف الأخطاء
    • شرح نظام الهجرات
+
+2. 📖 SUPABASE_MIGRATION_SCHEMA_FIX_AR.md
+   • 🔥 دليل إصلاح خطأ الهجرات - جديد!
+   • الحل الخارق لمشكلة schema_migrations
+   • شرح النظام المزدوج (Alembic + Supabase)
+   • أمثلة وتطبيقات عملية
+
+3. 📖 SUPABASE_VERIFICATION_README.md
+   • دليل البدء السريع (3.5 KB)
+   • نظرة عامة سريعة
+   • حل المشاكل الشائعة
 
 2. 📖 SUPABASE_VERIFICATION_README.md
    • دليل البدء السريع (3.5 KB)
@@ -125,6 +157,9 @@ print("""
 
 للتحقق السريع:
    • python3 check_migrations_status.py
+
+لإصلاح خطأ Migrations في Dashboard:
+   • python3 fix_supabase_migration_schema.py
 
 لاختبار المحادثات:
    • python3 test_admin_conversations_live.py

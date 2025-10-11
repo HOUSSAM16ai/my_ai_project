@@ -175,6 +175,19 @@ flask db upgrade
 2. تحقق من صحة كلمة المرور
 3. تحقق من URL
 
+### 🔥 خطأ في صفحة Migrations في Supabase Dashboard
+
+**الخطأ**: `relation "supabase_migrations.schema_migrations" does not exist`
+
+**الحل الخارق** - نفذ هذا الأمر:
+```bash
+python3 fix_supabase_migration_schema.py
+```
+
+هذا السكريبت يُنشئ الـ schema المطلوب ويُزامن سجل هجرات Alembic مع تنسيق Supabase.
+
+📖 **للتفاصيل الكاملة**: راجع `SUPABASE_MIGRATION_SCHEMA_FIX_AR.md`
+
 ---
 
 ## 📊 كيف يعمل حفظ محادثات الأدمن؟

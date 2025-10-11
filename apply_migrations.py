@@ -78,6 +78,17 @@ def main():
         print(f"{B}📊 Verifying tables in database...{E}\n")
         os.system('python3 check_migrations_status.py')
         
+        # Optionally sync to Supabase format
+        print(f"\n{B}🔄 Syncing migrations to Supabase format...{E}")
+        print(f"{Y}💡 This fixes the Dashboard migration history display{E}\n")
+        sync_result = os.system('python3 fix_supabase_migration_schema.py')
+        
+        if sync_result == 0:
+            print(f"\n{G}✅ Supabase migration schema is up to date!{E}")
+        else:
+            print(f"\n{Y}⚠️  Migration sync had issues, but your migrations are applied{E}")
+            print(f"{Y}   You can run 'python3 fix_supabase_migration_schema.py' manually later{E}")
+        
         return 0
     else:
         print(f"\n{R}{'=' * 70}{E}")
