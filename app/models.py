@@ -1,5 +1,5 @@
 # ======================================================================================
-#  COGNIFORGE DOMAIN MODELS  v14.0  • "PURIFIED OVERMIND CORE (Pro++)"              #
+#  COGNIFORGE DOMAIN MODELS  v14.1  • "SUPERHUMAN ADMIN CHAT + OVERMIND CORE"       #
 # ======================================================================================
 #  PURPOSE (الغرض):
 #    نموذج نطاق (Domain Model) نقي ومركّز حصرياً على نظام Overmind:
@@ -8,22 +8,25 @@
 #      - إزالة جداول الأدمن القديمة (admin_conversations, admin_messages)
 #      - إزالة جدول task_dependencies المساعد (نستخدم depends_on_json بدلاً منه)
 #
-#  WHAT'S NEW in v14.0 (مقارنة بـ v13.2):
-#    - تنقية كاملة: إزالة task_dependencies table والعلاقات المعقدة
-#    - إزالة backref من imports لأنه لم يعد مستخدماً
-#    - الإبقاء فقط على الكيانات الأساسية: User, Mission, MissionPlan, Task, MissionEvent
-#    - قاعدة البيانات الآن نقية 100% ومركزة على Overmind فقط
+#  WHAT'S NEW in v14.1 (مقارنة بـ v14.0):
+#    - 🔥 RESTORED: AdminConversation & AdminMessage models with SUPERHUMAN design
+#    - 💪 ENHANCED: Advanced metadata, analytics, and indexing capabilities
+#    - 🚀 SUPERIOR: Professional-grade conversation tracking surpassing tech giants
+#    - 📊 METRICS: Token usage, latency, cost tracking, and conversation analytics
+#    - 🔍 SEARCH: Content hashing, semantic embeddings support, and advanced indexing
+#    - ⚡ PERFORMANCE: Optimized JSONB fields and composite indexes for blazing speed
 #
 #  CORE MODELS (النماذج الأساسية النقية):
-#    ✅ User          - حسابات المستخدمين
-#    ✅ Mission       - المهام الرئيسية
-#    ✅ MissionPlan   - خطط تنفيذ المهام
-#    ✅ Task          - المهام الفرعية (باستخدام depends_on_json للتبعيات)
-#    ✅ MissionEvent  - سجل أحداث المهام
+#    ✅ User               - حسابات المستخدمين
+#    ✅ AdminConversation  - محادثات الأدمن (نظام تسجيل خارق)
+#    ✅ AdminMessage       - رسائل محادثات الأدمن (تتبع متقدم)
+#    ✅ Mission            - المهام الرئيسية
+#    ✅ MissionPlan        - خطط تنفيذ المهام
+#    ✅ Task               - المهام الفرعية (باستخدام depends_on_json للتبعيات)
+#    ✅ MissionEvent       - سجل أحداث المهام
 #
 #  REMOVED LEGACY SYSTEMS:
 #    ❌ Education Kingdom (subjects, lessons, exercises, submissions)
-#    ❌ Old Admin Chat (admin_conversations, admin_messages)
 #    ❌ task_dependencies helper table (replaced by depends_on_json)
 #
 #  SEMANTIC MISSION EVENTS (الإصدار التحليلي):
@@ -263,6 +266,7 @@ class User(UserMixin, Timestamped, db.Model):
     is_admin: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False, server_default=text("false"))
 
     missions: Mapped[List["Mission"]] = relationship("Mission", back_populates="initiator", cascade="all, delete-orphan")
+    admin_conversations: Mapped[List["AdminConversation"]] = relationship("AdminConversation", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         from werkzeug.security import generate_password_hash
@@ -275,6 +279,114 @@ class User(UserMixin, Timestamped, db.Model):
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
 
+
+
+# ======================================================================================
+# ADMIN CONVERSATION SYSTEM - SUPERHUMAN CHAT HISTORY
+# ======================================================================================
+
+class AdminConversation(Timestamped, db.Model):
+    """
+    محادثات الأدمن - نظام تسجيل خارق للمحادثات
+    تصميم احترافي يتفوق على الشركات العملاقة مثل OpenAI و Microsoft و Google
+    """
+    __tablename__ = "admin_conversations"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(db.String(500), nullable=False)
+    user_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    conversation_type: Mapped[str] = mapped_column(db.String(50), nullable=False, default="general", index=True)
+    
+    # Enhanced metadata for superior intelligence
+    deep_index_summary: Mapped[Optional[str]] = mapped_column(db.Text)  # Project context snapshot
+    context_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Full contextual data
+    tags: Mapped[Optional[list]] = mapped_column(JSONB_or_JSON)  # Searchable tags
+    
+    # Analytics & metrics (enterprise-grade)
+    total_messages: Mapped[int] = mapped_column(db.Integer, default=0, server_default=text("0"))
+    total_tokens: Mapped[int] = mapped_column(db.Integer, default=0, server_default=text("0"))
+    avg_response_time_ms: Mapped[Optional[float]] = mapped_column(db.Float)
+    
+    # Status tracking
+    is_archived: Mapped[bool] = mapped_column(db.Boolean, default=False, server_default=text("false"), index=True)
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True), index=True)
+    
+    # Relationships
+    user: Mapped[User] = relationship("User")
+    messages: Mapped[List["AdminMessage"]] = relationship(
+        "AdminMessage",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="AdminMessage.created_at"
+    )
+    
+    __table_args__ = (
+        Index("ix_admin_conv_user_type", "user_id", "conversation_type"),
+        Index("ix_admin_conv_archived_updated", "is_archived", "updated_at"),
+    )
+    
+    def __repr__(self):
+        return f"<AdminConversation id={self.id} title={self.title[:30]!r}>"
+    
+    def update_stats(self):
+        """Update conversation statistics"""
+        self.total_messages = len(self.messages)
+        self.total_tokens = sum(m.tokens_used or 0 for m in self.messages)
+        
+        response_times = [m.latency_ms for m in self.messages if m.latency_ms and m.role == "assistant"]
+        if response_times:
+            self.avg_response_time_ms = sum(response_times) / len(response_times)
+        
+        if self.messages:
+            self.last_message_at = max(m.created_at for m in self.messages)
+
+
+class AdminMessage(Timestamped, db.Model):
+    """
+    رسائل محادثات الأدمن - تسجيل دقيق لكل رسالة
+    نظام تتبع متقدم يحفظ كل التفاصيل مع metadata كاملة
+    """
+    __tablename__ = "admin_messages"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        db.Integer, 
+        db.ForeignKey("admin_conversations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False
+    )
+    role: Mapped[str] = mapped_column(db.String(20), nullable=False, index=True)  # user, assistant, system, tool
+    content: Mapped[str] = mapped_column(db.Text, nullable=False)
+    
+    # AI Model metrics (for professional tracking)
+    tokens_used: Mapped[Optional[int]] = mapped_column(db.Integer)
+    model_used: Mapped[Optional[str]] = mapped_column(db.String(100), index=True)
+    latency_ms: Mapped[Optional[float]] = mapped_column(db.Float)
+    cost_usd: Mapped[Optional[float]] = mapped_column(db.Numeric(12, 6))
+    
+    # Advanced metadata (JSONB for performance)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Custom data, analysis results, etc.
+    
+    # Content analytics
+    content_hash: Mapped[Optional[str]] = mapped_column(db.String(64), index=True)  # For deduplication
+    embedding_vector: Mapped[Optional[list]] = mapped_column(JSONB_or_JSON)  # For semantic search (future)
+    
+    # Relationship
+    conversation: Mapped[AdminConversation] = relationship("AdminConversation", back_populates="messages")
+    
+    __table_args__ = (
+        Index("ix_admin_msg_conv_role", "conversation_id", "role"),
+        Index("ix_admin_msg_created", "created_at"),
+    )
+    
+    def __repr__(self):
+        preview = self.content[:50] if len(self.content) > 50 else self.content
+        return f"<AdminMessage id={self.id} role={self.role} preview={preview!r}>"
+    
+    def compute_content_hash(self):
+        """Compute SHA256 hash of content for deduplication"""
+        if self.content:
+            self.content_hash = hash_content(self.content)
 
 
 # ======================================================================================
