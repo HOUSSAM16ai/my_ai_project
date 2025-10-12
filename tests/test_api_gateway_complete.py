@@ -11,52 +11,34 @@
 import pytest
 import json
 from datetime import datetime
-from app import create_app, db
 from app.models import User, Mission, Task
 
 
 @pytest.fixture
-def app():
-    """Create and configure a test application"""
-    app = create_app('testing')
-    
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
-
-
-@pytest.fixture
-def client(app):
-    """Create a test client"""
-    return app.test_client()
-
-
-@pytest.fixture
-def sample_user(app):
+def sample_user(session, user_factory):
     """Create a sample user for testing"""
-    with app.app_context():
-        user = User(full_name='Test User', email='test@example.com', is_admin=True)
-        user.set_password('test_password')
-        db.session.add(user)
-        db.session.commit()
-        return user
+    import uuid
+    unique_email = f'test-{uuid.uuid4().hex[:8]}@example.com'
+    user = user_factory(
+        full_name='Test User',
+        email=unique_email,
+        password='test_password',
+        is_admin=True
+    )
+    session.commit()
+    return user
 
 
 @pytest.fixture
-def sample_mission(app, sample_user):
+def sample_mission(session, sample_user, mission_factory):
     """Create a sample mission for testing"""
-    with app.app_context():
-        mission = Mission(
-            title='Test Mission',
-            description='Test Description',
-            status='PENDING',
-            user_id=sample_user.id
-        )
-        db.session.add(mission)
-        db.session.commit()
-        return mission
+    mission = mission_factory(
+        objective='Test Mission',
+        status='PENDING',
+        initiator_id=sample_user.id
+    )
+    session.commit()
+    return mission
 
 
 # ======================================================================================
