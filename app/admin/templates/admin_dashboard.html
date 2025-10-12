@@ -293,6 +293,16 @@ body {
   color: white;
 }
 
+.message.error-message .message-avatar {
+  background: linear-gradient(135deg, var(--cf-danger) 0%, #f44336 100%);
+  color: white;
+}
+
+.message.error-message .message-content {
+  border-left: 4px solid var(--cf-danger);
+  background: rgba(239, 83, 80, 0.1);
+}
+
 .message-content {
   background: var(--cf-bg-alt);
   padding: 1rem 1.25rem;
@@ -516,15 +526,19 @@ body {
           <div class="message system">
             <div class="message-avatar">🤖</div>
             <div class="message-content">
-              <p>مرحباً! أنا مساعد الذكاء الاصطناعي الخارق لمشروع CogniForge.</p>
-              <p>يمكنني مساعدتك في:</p>
+              <p><strong>مرحباً! أنا مساعد الذكاء الاصطناعي المتقدم لمشروع CogniForge.</strong></p>
+              <p>نظام ذكاء اصطناعي شامل مدعوم بتقنيات متطورة:</p>
               <ul>
-                <li>تحليل عميق لبنية المشروع والكود</li>
-                <li>الإجابة على أسئلة تقنية معقدة</li>
-                <li>تنفيذ تعديلات وإضافة ميزات جديدة</li>
-                <li>اقتراح تحسينات ومراجعة الكود</li>
+                <li><strong>🔍 تحليل عميق للمشروع:</strong> فهم كامل لبنية الكود والعلاقات بين المكونات</li>
+                <li><strong>💡 إجابات ذكية:</strong> استخدام قاعدة بيانات متجهية (Vector DB) لسياق دقيق</li>
+                <li><strong>🛠️ تنفيذ التعديلات:</strong> القدرة على إنشاء وتعديل الملفات باستخدام Overmind</li>
+                <li><strong>📊 تحليلات متقدمة:</strong> اكتشاف نقاط التعقيد والتحسينات المقترحة</li>
+                <li><strong>💬 محادثات ذكية:</strong> حفظ السياق والتعلم من المحادثات السابقة</li>
               </ul>
-              <p>كيف يمكنني مساعدتك اليوم؟</p>
+              <p><strong>🚀 كيف يمكنني مساعدتك اليوم؟</strong></p>
+              <p style="font-size: 0.9em; color: var(--cf-text-dim); margin-top: 0.5rem;">
+                جرّب: "احلل بنية المشروع" أو "اشرح كيف يعمل نظام Vector Database" أو "اقترح تحسينات للأداء"
+              </p>
             </div>
           </div>
         </div>
@@ -533,11 +547,11 @@ body {
           <div class="input-container">
             <textarea 
               id="chat-input" 
-              placeholder="اطرح سؤالك هنا... مثال: احلل بنية المشروع، أو اشرح كيف يعمل Overmind"
+              placeholder="اطرح سؤالك هنا... مثال: احلل بنية المشروع، اشرح كيف يعمل Overmind، أو اقترح تحسينات للأداء 🚀"
               rows="1"
             ></textarea>
             <div class="input-actions">
-              <button class="input-icon-btn" id="attach-btn" title="Attach file">
+              <button class="input-icon-btn" id="attach-btn" title="Attach file" style="display: none;">
                 📎
               </button>
             </div>
@@ -600,6 +614,12 @@ body {
     const msg = document.createElement('div');
     msg.className = `message ${role}`;
     
+    // Detect if this is an error message
+    const isError = content.includes('❌') || content.toLowerCase().includes('error');
+    if (isError && role === 'system') {
+      msg.classList.add('error-message');
+    }
+    
     const avatar = role === 'user' ? '👤' : (role === 'system' ? '⚙️' : '🤖');
     
     let metaHtml = '';
@@ -647,8 +667,31 @@ body {
         })
       });
       
-      const result = await response.json();
       hideLoading();
+      
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Try to get error message from response
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // Failed to parse JSON error
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}). Please check your connection and authentication.`;
+        }
+        
+        addMessage('system', `❌ ${errorMessage}`);
+        return;
+      }
+      
+      const result = await response.json();
       
       if (result.status === 'success') {
         STATE.currentConversationId = result.conversation_id;
@@ -681,8 +724,31 @@ body {
         })
       });
       
-      const result = await response.json();
       hideLoading();
+      
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Try to get error message from response
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // Failed to parse JSON error
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}). Please check your connection and authentication.`;
+        }
+        
+        addMessage('system', `❌ ${errorMessage}`);
+        return;
+      }
+      
+      const result = await response.json();
       
       if (result.status === 'success') {
         const stats = result.project_stats;
@@ -718,7 +784,7 @@ body {
         
         addMessage('assistant', analysisHtml);
       } else {
-        addMessage('system', `❌ Analysis failed: ${result.error}`);
+        addMessage('system', `❌ Analysis failed: ${result.error || result.message}`);
       }
     } catch (error) {
       hideLoading();

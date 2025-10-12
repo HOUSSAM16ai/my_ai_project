@@ -140,7 +140,14 @@ def handle_chat():
     if not get_admin_ai_service:
         return jsonify({"status": "error", "message": "AI service not available."}), 503
     
-    data = request.json
+    # Handle JSON parsing errors
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "Invalid JSON in request body."}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
+    
     question = data.get("question", "").strip()
     conversation_id = data.get("conversation_id")
     use_deep_context = data.get("use_deep_context", True)
@@ -179,7 +186,6 @@ def handle_chat():
         current_app.logger.error(f"Chat API failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
 @bp.route("/api/analyze-project", methods=["POST"])
 @admin_required
 def handle_analyze_project():
@@ -187,7 +193,12 @@ def handle_analyze_project():
     if not get_admin_ai_service:
         return jsonify({"status": "error", "message": "AI service not available."}), 503
     
-    data = request.json or {}
+    # Handle JSON parsing errors
+    try:
+        data = request.get_json() or {}
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
+    
     conversation_id = data.get("conversation_id")
     
     try:
@@ -225,7 +236,14 @@ def handle_execute_modification():
     if not get_admin_ai_service:
         return jsonify({"status": "error", "message": "AI service not available."}), 503
     
-    data = request.json
+    # Handle JSON parsing errors
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "Invalid JSON in request body."}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
+    
     objective = data.get("objective", "").strip()
     conversation_id = data.get("conversation_id")
     
