@@ -106,8 +106,7 @@ def test_sli_tracking():
 
 def test_error_budget_calculation():
     """Test error budget calculation"""
-    from app.services.api_slo_sli_service import SLO, APIVersionStatus
-    from app.services.api_slo_sli_service import APIVersionStatus as SLOStatus
+    from app.services.api_slo_sli_service import SLO
     
     slo = SLO(
         slo_id='test_slo',
@@ -119,7 +118,7 @@ def test_error_budget_calculation():
     )
     
     # Error budget should be 0.1% (100 - 99.9)
-    assert slo.error_budget == 0.1
+    assert abs(slo.error_budget - 0.1) < 0.001  # Use approximate equality for floating point
 
 
 def test_burn_rate_calculation():

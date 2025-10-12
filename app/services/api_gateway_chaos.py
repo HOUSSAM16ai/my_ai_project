@@ -433,6 +433,9 @@ class BulkheadService:
         with self.lock:
             self.bulkheads[service_id] = config
             self.semaphores[service_id] = threading.Semaphore(config.max_concurrent)
+            # Initialize stats for the service if not already present
+            if service_id not in self.stats:
+                self.stats[service_id] = BulkheadStats()
     
     def call(
         self,
