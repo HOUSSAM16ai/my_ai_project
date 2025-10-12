@@ -19,6 +19,8 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .coverage
+coverage.xml
+htmlcov/
 
 # 3. Python Build Artifacts
 # Files generated when building or distributing the package.
