@@ -24,7 +24,7 @@ from app.models import (
     Mission, MissionPlan, Task, MissionEvent
 )
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import hashlib
 
@@ -66,7 +66,7 @@ def get_database_health() -> Dict[str, Any]:
     """
     health = {
         'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
         'checks': {},
         'metrics': {},
         'warnings': [],
@@ -75,9 +75,9 @@ def get_database_health() -> Dict[str, Any]:
     
     try:
         # 1. Connection test
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         db.session.execute(text("SELECT 1"))
-        connection_time = (datetime.utcnow() - start).total_seconds() * 1000
+        connection_time = (datetime.now(timezone.utc) - start).total_seconds() * 1000
         
         health['checks']['connection'] = {
             'status': 'ok',
@@ -130,7 +130,7 @@ def get_database_health() -> Dict[str, Any]:
         
         # 5. Recent activity check (last 24 hours)
         try:
-            yesterday = datetime.utcnow() - timedelta(days=1)
+            yesterday = datetime.now(timezone.utc) - timedelta(days=1)
             recent_missions = db.session.query(Mission).filter(
                 Mission.created_at >= yesterday
             ).count()
@@ -284,7 +284,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
     cache_key = 'all_tables'
     if cache_key in _table_stats_cache:
         cache_time = _cache_timestamp.get(cache_key, datetime.min)
-        if (datetime.utcnow() - cache_time).total_seconds() < CACHE_TTL:
+        if (datetime.now(timezone.utc) - cache_time).total_seconds() < CACHE_TTL:
             return _table_stats_cache[cache_key]
     
     for table_name, model in ALL_MODELS.items():
@@ -297,7 +297,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
             recent_count = 0
             try:
                 if hasattr(model, 'created_at'):
-                    yesterday = datetime.utcnow() - timedelta(days=1)
+                    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
                     recent_count = db.session.query(model).filter(
                         model.created_at >= yesterday
                     ).count()
@@ -334,7 +334,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
     
     # Update cache
     _table_stats_cache[cache_key] = tables
-    _cache_timestamp[cache_key] = datetime.utcnow()
+    _cache_timestamp[cache_key] = datetime.now(timezone.utc)
     
     return tables
 

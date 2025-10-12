@@ -11,6 +11,7 @@
 
 import pytest
 from app.models import User, Mission, Task
+from app import db
 
 
 class TestHealthEndpoints:
@@ -154,7 +155,7 @@ class TestCRUDOperations:
             assert data['status'] == 'success'
             
             # Verify update
-            updated_user = User.query.get(test_user.id)
+            updated_user = db.session.get(User, test_user.id)
             assert updated_user.full_name == 'Updated Name'
     
     def test_delete_user(self, client, admin_user, user_factory, session):
@@ -178,7 +179,7 @@ class TestCRUDOperations:
             assert data['status'] == 'success'
             
             # Verify deletion
-            deleted_user = User.query.get(user_id)
+            deleted_user = db.session.get(User, user_id)
             assert deleted_user is None
 
 
