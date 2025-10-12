@@ -9,8 +9,13 @@
 #   ✅ Intelligent test generation
 #   ✅ Smart deployment decisions
 #   ✅ Real-time GitHub API integration
-#   ✅ MCP Server for AI context
+#   ✅ MCP Server validation (stdio-based, for local dev)
 #   ✅ GitHub Copilot integration
+#
+# Note: The GitHub MCP Server runs on stdio (standard input/output) for MCP protocol
+#       communication. It's designed for interactive use with AI assistants in local
+#       development, not as a background daemon in CI/CD. This workflow validates
+#       the MCP setup without actually running the server.
 #
 # Token: AI_AGENT_TOKEN (set in repository secrets)
 # ======================================================================================
@@ -89,32 +94,21 @@ jobs:
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
         run: |
-          echo "🚀 Starting GitHub MCP Server..."
+          echo "🚀 Validating GitHub MCP Server setup..."
           
-          # Pull MCP Server image
+          # Pull MCP Server image to validate availability
           docker pull ${{ env.MCP_SERVER_IMAGE }}
           
-          # Start MCP Server in background
-          docker run -d \
-            --name github-mcp-server \
-            --network host \
-            -e GITHUB_PERSONAL_ACCESS_TOKEN="${AI_AGENT_TOKEN}" \
-            ${{ env.MCP_SERVER_IMAGE }}
+          echo "✅ MCP Server image pulled successfully"
           
-          # Wait for server to be ready
-          echo "⏳ Waiting for MCP Server to be ready..."
-          sleep 5
+          # Note: The GitHub MCP Server runs on stdio (standard input/output) for MCP protocol.
+          # It's designed for interactive use with AI assistants, not as a background daemon.
+          # In CI/CD, we validate the setup but don't need to run the server.
+          # For local development, use: docker-compose --profile mcp up
           
-          # Check if container is running
-          if docker ps | grep -q github-mcp-server; then
-            echo "✅ MCP Server is running"
-            echo "status=running" >> $GITHUB_OUTPUT
-          else
-            echo "❌ MCP Server failed to start"
-            docker logs github-mcp-server
-            echo "status=failed" >> $GITHUB_OUTPUT
-            exit 1
-          fi
+          echo "📝 MCP Server is ready for local/development use"
+          echo "💡 Run locally with: docker-compose --profile mcp up github_mcp"
+          echo "status=validated" >> $GITHUB_OUTPUT
       
       - name: ⚙️  Configuration Summary
         id: config
@@ -125,6 +119,8 @@ jobs:
           echo "  - Python Version: ${{ env.PYTHON_VERSION }}"
           echo "  - Branch: ${{ github.ref_name }}"
           echo "  - Event: ${{ github.event_name }}"
+          echo ""
+          echo "ℹ️  Note: MCP Server validated (stdio-based, for local dev use)"
           
           echo "ai_review_enabled=${{ env.AI_ENABLED }}" >> $GITHUB_OUTPUT
 
@@ -322,17 +318,17 @@ jobs:
   # JOB 6: Cleanup
   # ====================================================================================
   cleanup:
-    name: 🧹 Cleanup
+    name: 🧹 Cleanup & Summary
     runs-on: ubuntu-latest
     needs: [build-and-test, ai-code-review, security-analysis, deployment-preview]
     if: always()
     
     steps:
-      - name: 🐳 Stop MCP Server
+      - name: 🐳 Cleanup Docker Resources
         run: |
-          echo "🧹 Cleaning up MCP Server..."
-          docker stop github-mcp-server || true
-          docker rm github-mcp-server || true
+          echo "🧹 Cleaning up Docker resources..."
+          # Remove any dangling MCP containers (if any were created)
+          docker ps -a | grep github-mcp-server | awk '{print $1}' | xargs -r docker rm -f || true
           echo "✅ Cleanup completed"
       
       - name: 📊 Workflow Summary
@@ -340,10 +336,14 @@ jobs:
           echo "## 🎉 Workflow Completed Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🚀 Superhuman Features Used:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ GitHub MCP Server Integration" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ GitHub MCP Server Validation" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ AI-Powered Code Review" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Intelligent Test Analysis" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Automated Security Scanning" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Smart Deployment Decisions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ℹ️ MCP Server Notes:" >> $GITHUB_STEP_SUMMARY
+          echo "The GitHub MCP Server runs on stdio for interactive AI assistant use." >> $GITHUB_STEP_SUMMARY
+          echo "For local development: \`docker-compose --profile mcp up github_mcp\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "*Powered by CogniForge - Technology surpassing Google, Microsoft, OpenAI, and Apple!*" >> $GITHUB_STEP_SUMMARY
