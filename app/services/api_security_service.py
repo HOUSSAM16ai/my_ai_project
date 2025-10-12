@@ -128,7 +128,7 @@ class APISecurityService:
         self.security_audit_logs: deque = deque(maxlen=10000)
         self.ip_blacklist: set = set()
         self.ip_whitelist: set = set()
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to allow recursive locking
         
         # ML-based adaptive rate limiting
         self.client_behavior_baseline: Dict[str, float] = {}

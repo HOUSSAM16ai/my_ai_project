@@ -97,7 +97,7 @@ class APIObservabilityService:
         self.active_requests: Dict[str, float] = {}
         self.endpoint_stats: Dict[str, List[float]] = defaultdict(list)
         self.anomaly_alerts: List[AnomalyAlert] = []
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to allow recursive locking
         
         # ML-based baseline (simple moving average for now, can be enhanced)
         self.baseline_latency: Dict[str, float] = {}
