@@ -1322,7 +1322,7 @@ def get_canary_deployments():
         }), 200
     
     except Exception as e:
-        current_app.logger.error(f("Get canary deployments failed: {e}", exc_info=True)
+        current_app.logger.error(f"Get canary deployments failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
