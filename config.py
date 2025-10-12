@@ -32,7 +32,9 @@ from dotenv import load_dotenv
 # At the very moment of import, this ritual reads the high-level will from the
 # master `.env` file and injects it into the cosmic consciousness (os.environ).
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '../.env'))
+# Load .env from project root (where config.py is located)
+# If .env doesn't exist, environment variables will still be available (e.g., from Codespaces secrets)
+load_dotenv(os.path.join(basedir, '.env'), override=False)
 
 
 class Config:

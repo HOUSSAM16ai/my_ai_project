@@ -8,6 +8,8 @@
 
 > **✅ STATUS VERIFIED** → Port 5432 issue RESOLVED! All platforms working! See [`PLATFORM_STATUS_AR.md`](PLATFORM_STATUS_AR.md)
 
+> **🔧 TROUBLESHOOTING** → Getting 500 error in Admin AI? → See [`FIX_ANALYZE_PROJECT_500_ERROR.md`](FIX_ANALYZE_PROJECT_500_ERROR.md)
+
 ---
 
 ## 🚀 Overview | نظرة عامة
