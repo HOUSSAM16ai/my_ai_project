@@ -130,6 +130,72 @@ POST /api/gateway/cache/clear       # Clear cache
 - 📖 [CRUD API Guide](CRUD_API_GUIDE_AR.md)
 - 💡 [API Examples](api_examples.py)
 
+### 🔗 NEW: GitHub MCP Server Integration | تكامل خادم GitHub MCP
+
+> **🌟 Professional GitHub integration through Model Context Protocol (MCP)!**
+>
+> **✅ World-class implementation surpassing enterprise standards!**
+
+**Key Features:**
+- **✅ Direct GitHub API Access**: Repositories, Issues, PRs, Actions via MCP protocol
+- **✅ AI-Powered Automation**: Let AI assistants interact with GitHub naturally
+- **✅ Multi-IDE Support**: VSCode, Cursor IDE, and any MCP-compatible editor
+- **✅ Secure Authentication**: Token-based with encrypted storage
+- **✅ Docker Containerized**: Isolated, reproducible, multi-platform
+- **✅ Comprehensive Monitoring**: Audit logs, health checks, performance metrics
+- **✅ Multi-Platform Ready**: Works on Gitpod, Codespaces, Dev Containers, Local
+
+**🎯 Quick Start:**
+```bash
+# 1. Get GitHub token from: https://github.com/settings/tokens
+# 2. Add to .env file:
+GITHUB_PERSONAL_ACCESS_TOKEN="ghp_your_token_here"
+
+# 3. Run quick setup:
+./quick_start_mcp.sh
+
+# 4. Verify installation:
+./verify_mcp_setup.sh
+```
+
+**📚 Comprehensive Documentation:**
+- 🚀 **[MCP Quick Start](MCP_README.md)** - ⭐ START HERE! 5-minute guide
+- 📖 **[Complete Integration Guide](MCP_INTEGRATION_GUIDE_AR.md)** - Full documentation in Arabic
+- 🏗️ **[Architecture Diagrams](MCP_ARCHITECTURE_DIAGRAM.md)** - System design and flow
+- 📚 **[Documentation Index](MCP_DOCUMENTATION_INDEX.md)** - Complete docs navigation
+- 🧪 **[Test Script](test_github_mcp.py)** - Example usage and testing
+- ⚡ **[Setup Script](quick_start_mcp.sh)** - Interactive setup wizard
+- ✅ **[Verification Script](verify_mcp_setup.sh)** - Health check tool
+
+**What You Can Do:**
+```bash
+# With MCP, AI assistants can now:
+✅ Create and manage GitHub issues
+✅ Review and merge pull requests  
+✅ Search code across all repositories
+✅ Trigger GitHub Actions workflows
+✅ Manage teams and permissions
+✅ Automate GitHub operations naturally
+```
+
+**Configuration Files:**
+- `.vscode/mcp-settings.json` - VSCode MCP configuration
+- `.cursor/mcp.json` - Cursor IDE MCP configuration  
+- `docker-compose.yml` - MCP service definition (profile: mcp)
+
+**Run MCP Server:**
+```bash
+# Start with Docker Compose (recommended)
+docker-compose --profile mcp up -d github_mcp
+
+# Or start all services including MCP
+docker-compose --profile full up -d
+
+# Check status
+docker ps | grep github-mcp
+docker logs github-mcp-server
+```
+
 ### 🗄️ Superior Database System v2.0 | نظام قاعدة بيانات خارق
 > **تفوق على أنظمة الشركات العملاقة!**
 
