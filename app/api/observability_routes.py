@@ -10,7 +10,7 @@ from flask import request, jsonify, current_app
 from app.api import api_bp
 from app.services.api_observability_service import get_observability_service, monitor_performance
 from app.services.api_security_service import rate_limit, require_jwt_auth
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ======================================================================================
 # METRICS & PERFORMANCE
@@ -40,7 +40,7 @@ def get_metrics():
         return jsonify({
             'status': 'success',
             'data': metrics,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
         
     except Exception as e:
@@ -336,7 +336,7 @@ def get_performance_snapshot():
         return jsonify({
             'status': 'success',
             'data': snapshot,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
         
     except Exception as e:
@@ -429,7 +429,7 @@ def observability_health():
                     'distributed_tracing': 'active',
                     'error_tracking': 'active'
                 },
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
         }), 200
         

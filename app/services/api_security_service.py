@@ -69,6 +69,11 @@ class SecurityToken:
     issued_at: datetime
     jti: str  # JWT ID for revocation
     scopes: List[str] = field(default_factory=list)
+    
+    @property
+    def expires_in(self) -> int:
+        """Get token expiration time in seconds"""
+        return int((self.expires_at - self.issued_at).total_seconds())
 
 
 @dataclass

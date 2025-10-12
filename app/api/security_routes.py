@@ -10,7 +10,7 @@ from flask import request, jsonify, current_app, g
 from app.api import api_bp
 from app.services.api_security_service import get_security_service, require_jwt_auth, rate_limit
 from app.services.api_observability_service import monitor_performance
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ======================================================================================
 # TOKEN MANAGEMENT
@@ -484,7 +484,7 @@ def security_health():
                     'audit_logging': 'active',
                     'ip_filtering': 'active'
                 },
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
         }), 200
         
