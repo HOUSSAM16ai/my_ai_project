@@ -299,6 +299,7 @@ def handle_get_conversations():
                 "title": conv.title,
                 "conversation_type": conv.conversation_type,
                 "total_messages": conv.total_messages,
+                "message_count": conv.total_messages,  # For frontend compatibility
                 "total_tokens": conv.total_tokens,
                 "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
                 "created_at": conv.created_at.isoformat(),

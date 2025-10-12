@@ -355,12 +355,59 @@ class AdminAIService:
             conversation_history = []
             deep_index_summary = None
             
+            # ============================================================
+            # SUPERHUMAN SECURITY - Validate conversation ownership
+            # ============================================================
             if conversation_id:
-                conversation_history = self._get_conversation_history(conversation_id)
-                # Get deep index summary from conversation if available
                 conversation = db.session.get(AdminConversation, conversation_id)
-                if conversation:
-                    deep_index_summary = conversation.deep_index_summary
+                
+                # Security check: ensure conversation exists and belongs to user
+                if not conversation:
+                    error_msg = (
+                        f"⚠️ المحادثة #{conversation_id} غير موجودة.\n\n"
+                        f"Conversation #{conversation_id} not found.\n\n"
+                        f"**Possible reasons:**\n"
+                        f"- Conversation was deleted or archived\n"
+                        f"- Invalid conversation ID\n\n"
+                        f"**Solution:**\n"
+                        f"Start a new conversation or select an existing one from the sidebar."
+                    )
+                    self.logger.warning(f"User {user.id} tried to access non-existent conversation {conversation_id}")
+                    return {
+                        "status": "error",
+                        "error": "Conversation not found",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2)
+                    }
+                
+                if conversation.user_id != user.id:
+                    error_msg = (
+                        f"⚠️ ليس لديك صلاحية للوصول إلى هذه المحادثة.\n\n"
+                        f"You don't have permission to access this conversation.\n\n"
+                        f"**Security Notice:**\n"
+                        f"This conversation belongs to another user.\n\n"
+                        f"**Solution:**\n"
+                        f"Please use your own conversations or start a new one."
+                    )
+                    self.logger.warning(
+                        f"User {user.id} attempted unauthorized access to conversation {conversation_id} "
+                        f"(owner: {conversation.user_id})"
+                    )
+                    return {
+                        "status": "error",
+                        "error": "Unauthorized access",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2)
+                    }
+                
+                # Load conversation history and context
+                conversation_history = self._get_conversation_history(conversation_id)
+                deep_index_summary = conversation.deep_index_summary
+                
+                self.logger.info(
+                    f"Continuing conversation #{conversation_id} for user {user.id} "
+                    f"(history: {len(conversation_history)} messages)"
+                )
             
             related_context = []
             if system_service and hasattr(system_service, 'find_related_context'):
