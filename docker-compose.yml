@@ -137,21 +137,32 @@ services:
     tty: true
     networks:
       - appnet
+    volumes:
+      - ./mcp-server-wrapper.sh:/usr/local/bin/mcp-wrapper.sh:ro
+    entrypoint: ["/usr/local/bin/mcp-wrapper.sh"]
     environment:
-      # Primary token (superhuman standard)
-      GITHUB_PERSONAL_ACCESS_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
-      # Also expose as AI_AGENT_TOKEN for future integrations
+      # Primary token (superhuman standard) - automatically from GitHub Secrets
       AI_AGENT_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
+      # Legacy token for backward compatibility
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
+    healthcheck:
+      test: ["CMD", "test", "-n", "$GITHUB_PERSONAL_ACCESS_TOKEN"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     profiles:
       - mcp
       - full
     labels:
       com.cogniforge.service: "mcp"
       com.cogniforge.description: "GitHub Model Context Protocol Server - SUPERHUMAN EDITION"
-      com.cogniforge.version: "2.0.0-superhuman"
+      com.cogniforge.version: "3.0.0-superhuman"
+      com.cogniforge.mode: "stdio-interactive"
       com.cogniforge.documentation: "https://github.com/github/github-mcp-server"
       com.cogniforge.ai-integration: "github-copilot,actions,codespaces,dependabot"
       com.cogniforge.capabilities: "legendary"
+      com.cogniforge.token-source: "ai-agent-token-auto"
 
 networks:
   appnet:
