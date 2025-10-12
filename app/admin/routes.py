@@ -299,6 +299,7 @@ def handle_get_conversations():
                 "title": conv.title,
                 "conversation_type": conv.conversation_type,
                 "total_messages": conv.total_messages,
+                "message_count": conv.total_messages,  # For frontend compatibility
                 "total_tokens": conv.total_tokens,
                 "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
                 "created_at": conv.created_at.isoformat(),
@@ -373,6 +374,118 @@ def handle_get_conversation_detail(conversation_id):
         
     except Exception as e:
         current_app.logger.error(f"Failed to get conversation detail: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/conversation/<int:conversation_id>/title", methods=["PUT"])
+@admin_required
+def handle_update_conversation_title(conversation_id):
+    """API endpoint لتحديث عنوان المحادثة - SUPERHUMAN UX"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    try:
+        data = request.get_json() or {}
+        new_title = data.get("title")
+        auto_generate = data.get("auto_generate", False)
+        
+        # Verify ownership
+        conversation = AdminConversation.query.filter_by(
+            id=conversation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not conversation:
+            return jsonify({"status": "error", "message": "Conversation not found or access denied."}), 404
+        
+        service = get_admin_ai_service()
+        success = service.update_conversation_title(
+            conversation_id=conversation_id,
+            new_title=new_title,
+            auto_generate=auto_generate
+        )
+        
+        if success:
+            # Get updated conversation
+            conversation = db.session.get(AdminConversation, conversation_id)
+            return jsonify({
+                "status": "success",
+                "message": "Title updated successfully",
+                "title": conversation.title
+            })
+        else:
+            return jsonify({"status": "error", "message": "Failed to update title"}), 500
+        
+    except Exception as e:
+        current_app.logger.error(f"Update conversation title failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/conversation/<int:conversation_id>/export", methods=["GET"])
+@admin_required
+def handle_export_conversation(conversation_id):
+    """API endpoint لتصدير المحادثة - SUPERHUMAN PORTABILITY"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    try:
+        # Verify ownership
+        conversation = AdminConversation.query.filter_by(
+            id=conversation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not conversation:
+            return jsonify({"status": "error", "message": "Conversation not found or access denied."}), 404
+        
+        export_format = request.args.get("format", "markdown")
+        
+        service = get_admin_ai_service()
+        result = service.export_conversation(
+            conversation_id=conversation_id,
+            format=export_format
+        )
+        
+        if result.get("status") == "success":
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+        
+    except Exception as e:
+        current_app.logger.error(f"Export conversation failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/conversation/<int:conversation_id>/archive", methods=["POST"])
+@admin_required
+def handle_archive_conversation(conversation_id):
+    """API endpoint لأرشفة المحادثة - SUPERHUMAN ORGANIZATION"""
+    if not get_admin_ai_service:
+        return jsonify({"status": "error", "message": "AI service not available."}), 503
+    
+    try:
+        # Verify ownership
+        conversation = AdminConversation.query.filter_by(
+            id=conversation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not conversation:
+            return jsonify({"status": "error", "message": "Conversation not found or access denied."}), 404
+        
+        service = get_admin_ai_service()
+        success = service.archive_conversation(conversation_id)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": "Conversation archived successfully"
+            })
+        else:
+            return jsonify({"status": "error", "message": "Failed to archive conversation"}), 500
+        
+    except Exception as e:
+        current_app.logger.error(f"Archive conversation failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
