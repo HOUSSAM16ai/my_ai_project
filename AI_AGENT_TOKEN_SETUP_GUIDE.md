@@ -160,8 +160,12 @@ env:
 - ✅ مراجعة كود ذكية تلقائية | Automated AI code review
 - ✅ تحليل التغطية الذكي | Intelligent coverage analysis  
 - ✅ قرارات نشر ذكية | Smart deployment decisions
-- ✅ تكامل MCP Server | MCP Server integration
+- ✅ تحقق من إعداد MCP Server | MCP Server setup validation
 - ✅ GitHub Copilot في CI/CD | GitHub Copilot in CI/CD
+
+> **ملاحظة:** خادم GitHub MCP يعمل على stdio للاستخدام التفاعلي المحلي، ليس كخدمة خلفية في CI/CD. يتم التحقق من الإعداد فقط في GitHub Actions.
+>
+> **Note:** The GitHub MCP Server runs on stdio for interactive local use, not as a background service in CI/CD. Only setup validation is performed in GitHub Actions.
 
 ---
 

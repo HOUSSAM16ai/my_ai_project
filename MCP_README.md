@@ -112,6 +112,25 @@ docker-compose logs github_mcp
 docker-compose restart github_mcp
 ```
 
+### Container exits immediately in CI/CD?
+**This is expected!** The GitHub MCP Server runs on stdio (standard input/output) for MCP protocol communication. It's designed for interactive use with AI assistants in local development, not as a background daemon.
+
+**In CI/CD (GitHub Actions, etc.):**
+- ✅ Validate setup by pulling the image
+- ✅ Use the token for direct GitHub API calls
+- ❌ Don't try to run the server in detached mode
+
+**For local development:**
+```bash
+# Use docker-compose with interactive terminal support
+docker-compose --profile mcp up github_mcp
+
+# Or with docker run (requires interactive terminal)
+docker run -it --rm \
+  -e GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_PERSONAL_ACCESS_TOKEN" \
+  ghcr.io/github/github-mcp-server:latest
+```
+
 ### 401 Unauthorized?
 - Token is invalid or expired
 - Generate new token and update `.env`
