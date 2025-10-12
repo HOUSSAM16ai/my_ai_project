@@ -107,45 +107,100 @@ class AdminAIService:
         start_time = time.time()
         
         try:
-            if build_index and ENABLE_DEEP_INDEX:
-                self.logger.info(f"Building deep index for project analysis (user_id={user.id})")
-                index = build_index(root=".")
-                
-                analysis = {
-                    "status": "success",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "user_id": user.id,
-                    "project_stats": {
-                        "files_scanned": index.get("files_scanned", 0),
-                        "total_functions": index.get("global_metrics", {}).get("total_functions", 0),
-                        "total_classes": len([c for m in index.get("modules", []) for c in m.get("classes", [])]),
-                        "complexity_hotspots": len(index.get("complexity_hotspots_top50", [])),
-                        "duplicate_functions": len(index.get("duplicate_function_bodies", {})),
-                    },
-                    "architecture": self._analyze_architecture(index),
-                    "hotspots": self._analyze_hotspots(index),
-                    "recommendations": self._generate_recommendations(index),
-                    "deep_index_summary": summarize_for_prompt(index, max_len=3000) if summarize_for_prompt else None,
-                    "full_index": index,
-                    "elapsed_seconds": round(time.time() - start_time, 2)
-                }
-                
-                if conversation_id:
-                    self._save_analysis_to_conversation(conversation_id, analysis)
-                
-                return analysis
-            else:
+            # ============================================================
+            # SUPERHUMAN VALIDATION - Check deep indexer availability
+            # ============================================================
+            if not build_index or not ENABLE_DEEP_INDEX:
+                error_msg = (
+                    "⚠️ خدمة التحليل العميق غير متاحة حالياً.\n\n"
+                    "Deep analysis service is currently unavailable.\n\n"
+                    "**Possible causes:**\n"
+                    "- Deep indexer module not loaded\n"
+                    "- ADMIN_AI_ENABLE_DEEP_INDEX is disabled\n\n"
+                    "**Solution:**\n"
+                    "Please ensure the deep indexer module is properly configured."
+                )
+                self.logger.warning("Deep indexer not available for project analysis")
                 return {
                     "status": "error",
                     "error": "Deep indexer not available",
+                    "message": error_msg,
                     "elapsed_seconds": round(time.time() - start_time, 2)
                 }
+            
+            # ============================================================
+            # SUPERHUMAN ANALYSIS - Build comprehensive index
+            # ============================================================
+            self.logger.info(f"Building deep index for project analysis (user_id={user.id})")
+            
+            try:
+                index = build_index(root=".")
+            except Exception as e:
+                self.logger.error(f"Deep index build failed: {e}", exc_info=True)
+                error_msg = (
+                    f"⚠️ فشل بناء فهرس المشروع.\n\n"
+                    f"Failed to build project index.\n\n"
+                    f"**Error:** {str(e)}\n\n"
+                    f"**Solution:**\n"
+                    f"This might be due to:\n"
+                    f"- Insufficient file permissions\n"
+                    f"- Corrupted project files\n"
+                    f"- Missing dependencies\n\n"
+                    f"Please check the logs for more details."
+                )
+                return {
+                    "status": "error",
+                    "error": f"Index build failed: {str(e)}",
+                    "message": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2)
+                }
+            
+            # ============================================================
+            # SUPERHUMAN SYNTHESIS - Generate comprehensive analysis
+            # ============================================================
+            analysis = {
+                "status": "success",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "user_id": user.id,
+                "project_stats": {
+                    "files_scanned": index.get("files_scanned", 0),
+                    "total_functions": index.get("global_metrics", {}).get("total_functions", 0),
+                    "total_classes": len([c for m in index.get("modules", []) for c in m.get("classes", [])]),
+                    "complexity_hotspots": len(index.get("complexity_hotspots_top50", [])),
+                    "duplicate_functions": len(index.get("duplicate_function_bodies", {})),
+                },
+                "architecture": self._analyze_architecture(index),
+                "hotspots": self._analyze_hotspots(index),
+                "recommendations": self._generate_recommendations(index),
+                "deep_index_summary": summarize_for_prompt(index, max_len=3000) if summarize_for_prompt else None,
+                "full_index": index,
+                "elapsed_seconds": round(time.time() - start_time, 2)
+            }
+            
+            # ============================================================
+            # SUPERHUMAN PERSISTENCE - Save to conversation
+            # ============================================================
+            if conversation_id:
+                try:
+                    self._save_analysis_to_conversation(conversation_id, analysis)
+                except Exception as e:
+                    self.logger.warning(f"Failed to save analysis to conversation: {e}")
+                    # Don't fail the entire analysis if saving fails
+            
+            return analysis
                 
         except Exception as e:
             self.logger.error(f"Project analysis failed: {e}", exc_info=True)
+            error_msg = (
+                f"⚠️ حدث خطأ غير متوقع أثناء التحليل.\n\n"
+                f"An unexpected error occurred during analysis.\n\n"
+                f"**Error:** {str(e)}\n\n"
+                f"The error has been logged. Please try again or contact support."
+            )
             return {
                 "status": "error",
                 "error": str(e),
+                "message": error_msg,
                 "elapsed_seconds": round(time.time() - start_time, 2)
             }
     
@@ -252,6 +307,51 @@ class AdminAIService:
         start_time = time.time()
         
         try:
+            # ============================================================
+            # SUPERHUMAN ERROR PREVENTION - Validate AI availability first
+            # ============================================================
+            if not get_llm_client:
+                error_msg = (
+                    "⚠️ خدمة الذكاء الاصطناعي غير متاحة حالياً.\n\n"
+                    "AI service is currently unavailable.\n\n"
+                    "**Possible reasons:**\n"
+                    "- LLM client service not loaded\n"
+                    "- Missing dependencies\n\n"
+                    "**Solution:** Please contact the administrator to configure the AI service."
+                )
+                return {
+                    "status": "error",
+                    "error": "AI service unavailable",
+                    "answer": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2)
+                }
+            
+            # Check if API keys are configured
+            api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                error_msg = (
+                    "⚠️ لم يتم تكوين مفاتيح API للذكاء الاصطناعي.\n\n"
+                    "AI API keys are not configured.\n\n"
+                    "**Required Configuration:**\n"
+                    "Please set one of the following environment variables:\n"
+                    "- `OPENROUTER_API_KEY` (recommended)\n"
+                    "- `OPENAI_API_KEY`\n\n"
+                    "**How to fix:**\n"
+                    "1. Create a `.env` file in the project root\n"
+                    "2. Add: `OPENROUTER_API_KEY=sk-or-v1-your-key-here`\n"
+                    "3. Restart the application\n\n"
+                    "**Get your API key:**\n"
+                    "- OpenRouter: https://openrouter.ai/keys\n"
+                    "- OpenAI: https://platform.openai.com/api-keys"
+                )
+                self.logger.warning("AI API key not configured - cannot answer questions")
+                return {
+                    "status": "error",
+                    "error": "API key not configured",
+                    "answer": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2)
+                }
+            
             conversation_history = []
             deep_index_summary = None
             
@@ -283,10 +383,35 @@ class AdminAIService:
             messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
             messages.append({"role": "user", "content": question})
             
-            if get_llm_client:
+            # ============================================================
+            # SUPERHUMAN AI INVOCATION - With comprehensive error handling
+            # ============================================================
+            try:
                 client = get_llm_client()
+                
+                # Check if we got a mock client (indicates no API key)
+                try:
+                    from app.services.llm_client_service import is_mock_client
+                    if is_mock_client(client):
+                        error_msg = (
+                            "⚠️ نظام الذكاء الاصطناعي يعمل في وضع التجريب.\n\n"
+                            "AI system is running in mock mode.\n\n"
+                            "This means no API key is configured. Please set:\n"
+                            "- `OPENROUTER_API_KEY` or\n"
+                            "- `OPENAI_API_KEY`\n\n"
+                            "in your `.env` file to enable real AI responses."
+                        )
+                        return {
+                            "status": "error",
+                            "error": "Mock mode - API key required",
+                            "answer": error_msg,
+                            "elapsed_seconds": round(time.time() - start_time, 2)
+                        }
+                except ImportError:
+                    pass  # is_mock_client not available, continue
+                
                 response = client.chat.completions.create(
-                    model=DEFAULT_MODEL,
+                    model=DEFAULT_MODEL or "openai/gpt-4o",
                     messages=messages,
                     temperature=0.7,
                     max_tokens=2000
@@ -296,10 +421,46 @@ class AdminAIService:
                 tokens_used = getattr(response.usage, 'total_tokens', None)
                 model_used = response.model
                 
-            else:
-                answer = "خدمة الذكاء الاصطناعي غير متاحة حالياً."
-                tokens_used = None
-                model_used = None
+            except AttributeError as e:
+                # This happens when mock client is used
+                self.logger.warning(f"Mock client detected or invalid response: {e}")
+                error_msg = (
+                    "⚠️ خطأ في الاتصال بخدمة الذكاء الاصطناعي.\n\n"
+                    "Error connecting to AI service.\n\n"
+                    "**Possible causes:**\n"
+                    "- API key not configured correctly\n"
+                    "- Mock mode is active\n"
+                    "- Invalid API key format\n\n"
+                    "**Solution:**\n"
+                    "Please ensure OPENROUTER_API_KEY or OPENAI_API_KEY is set in your .env file."
+                )
+                return {
+                    "status": "error",
+                    "error": f"AI service error: {str(e)}",
+                    "answer": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2)
+                }
+            except Exception as e:
+                # Other AI-related errors (rate limits, network, etc.)
+                self.logger.error(f"AI invocation failed: {e}", exc_info=True)
+                error_msg = (
+                    f"⚠️ حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.\n\n"
+                    f"An error occurred while contacting the AI service.\n\n"
+                    f"**Error details:** {str(e)}\n\n"
+                    f"**Possible causes:**\n"
+                    f"- Rate limit exceeded\n"
+                    f"- Network connectivity issues\n"
+                    f"- Invalid API key\n"
+                    f"- Service temporarily unavailable\n\n"
+                    f"**Solution:**\n"
+                    f"Please try again in a few moments. If the problem persists, contact support."
+                )
+                return {
+                    "status": "error",
+                    "error": str(e),
+                    "answer": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2)
+                }
             
             elapsed = round(time.time() - start_time, 2)
             
@@ -327,9 +488,17 @@ class AdminAIService:
             
         except Exception as e:
             self.logger.error(f"Question answering failed: {e}", exc_info=True)
+            # Return user-friendly error message
+            error_msg = (
+                f"⚠️ حدث خطأ غير متوقع.\n\n"
+                f"An unexpected error occurred.\n\n"
+                f"**Error:** {str(e)}\n\n"
+                f"The error has been logged. Please try again or contact support if the issue persists."
+            )
             return {
                 "status": "error",
                 "error": str(e),
+                "answer": error_msg,
                 "elapsed_seconds": round(time.time() - start_time, 2)
             }
     
