@@ -33,7 +33,7 @@ import os
 import time
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app, has_app_context
 from sqlalchemy import select, desc
@@ -113,7 +113,7 @@ class AdminAIService:
                 
                 analysis = {
                     "status": "success",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "user_id": user.id,
                     "project_stats": {
                         "files_scanned": index.get("files_scanned", 0),

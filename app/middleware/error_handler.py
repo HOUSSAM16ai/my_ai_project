@@ -14,7 +14,7 @@ from werkzeug.exceptions import HTTPException
 from marshmallow import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def setup_error_handlers(app: Flask):
@@ -35,7 +35,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Bad Request',
                 'details': str(error.description) if hasattr(error, 'description') else str(error)
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 400
     
     @app.errorhandler(401)
@@ -48,7 +48,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Unauthorized',
                 'details': 'Authentication required. Please login to access this resource.'
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 401
     
     @app.errorhandler(403)
@@ -61,7 +61,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Forbidden',
                 'details': 'You do not have permission to access this resource.'
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 403
     
     @app.errorhandler(404)
@@ -74,7 +74,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Not Found',
                 'details': f'The requested resource was not found: {request.path}'
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 404
     
     @app.errorhandler(405)
@@ -87,7 +87,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Method Not Allowed',
                 'details': f'Method {request.method} is not allowed for {request.path}'
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 405
     
     @app.errorhandler(422)
@@ -100,7 +100,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Unprocessable Entity',
                 'details': str(error.description) if hasattr(error, 'description') else str(error)
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 422
     
     @app.errorhandler(500)
@@ -124,7 +124,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Internal Server Error',
                 'details': error_details
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 500
     
     @app.errorhandler(503)
@@ -137,7 +137,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Service Unavailable',
                 'details': 'The service is temporarily unavailable. Please try again later.'
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 503
     
     @app.errorhandler(ValidationError)
@@ -153,7 +153,7 @@ def setup_error_handlers(app: Flask):
                     'invalid_fields': list(error.messages.keys())
                 }
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 400
     
     @app.errorhandler(SQLAlchemyError)
@@ -173,7 +173,7 @@ def setup_error_handlers(app: Flask):
                 'message': 'Database Error',
                 'details': error_details
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 500
     
     @app.errorhandler(HTTPException)
@@ -186,7 +186,7 @@ def setup_error_handlers(app: Flask):
                 'message': error.name,
                 'details': error.description
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), error.code
     
     @app.errorhandler(Exception)
@@ -210,5 +210,5 @@ def setup_error_handlers(app: Flask):
                 'message': 'Unexpected Error',
                 'details': error_details
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 500
