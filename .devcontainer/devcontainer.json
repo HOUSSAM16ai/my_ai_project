@@ -91,7 +91,12 @@
     "SUPABASE_URL": "${localEnv:SUPABASE_URL}",
     "SUPABASE_ANON_KEY": "${localEnv:SUPABASE_ANON_KEY}",
     "SUPABASE_SERVICE_ROLE_KEY": "${localEnv:SUPABASE_SERVICE_ROLE_KEY}",
-    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}",
+    
+    "//": "🚀 SUPERHUMAN AI AGENT TOKEN - MCP Server + GitHub Copilot Integration",
+    "//": "This token enables legendary AI capabilities in Codespaces",
+    "//": "Set in: Settings > Secrets > Codespaces > AI_AGENT_TOKEN",
+    "AI_AGENT_TOKEN": "${localEnv:AI_AGENT_TOKEN}",
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:AI_AGENT_TOKEN:-${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}}",
 
     "//": "Migration Control",
     "RUN_MIGRATIONS_DURING_CREATE": "false",

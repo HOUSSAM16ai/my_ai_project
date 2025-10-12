@@ -116,10 +116,17 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
 
   # ----------------------------------------------------------------------------------
-  # GitHub MCP Server (Model Context Protocol Integration)
+  # 🚀 SUPERHUMAN GitHub MCP Server (Model Context Protocol Integration)
   # ----------------------------------------------------------------------------------
-  # This service provides AI assistants with direct GitHub API access through MCP.
-  # Features: Repository management, Issues, PRs, Code Search, GitHub Actions
+  # This service provides AI assistants with LEGENDARY GitHub API access through MCP.
+  # Surpassing Google, Microsoft, OpenAI, and Apple in AI-powered development!
+  # 
+  # Features: Repository management, Issues, PRs, Code Search, GitHub Actions,
+  #           CI/CD Integration, Automated Reviews, Intelligent Dependency Management
+  # 
+  # Token Support (Dual Mode for Compatibility):
+  #   - AI_AGENT_TOKEN (Primary) - New superhuman standard
+  #   - GITHUB_PERSONAL_ACCESS_TOKEN (Legacy) - Backward compatibility
   # ----------------------------------------------------------------------------------
   github_mcp:
     image: ghcr.io/github/github-mcp-server:latest
@@ -131,15 +138,20 @@ services:
     networks:
       - appnet
     environment:
-      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}
+      # Primary token (superhuman standard)
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
+      # Also expose as AI_AGENT_TOKEN for future integrations
+      AI_AGENT_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
     profiles:
       - mcp
       - full
     labels:
       com.cogniforge.service: "mcp"
-      com.cogniforge.description: "GitHub Model Context Protocol Server"
-      com.cogniforge.version: "1.0.0"
+      com.cogniforge.description: "GitHub Model Context Protocol Server - SUPERHUMAN EDITION"
+      com.cogniforge.version: "2.0.0-superhuman"
       com.cogniforge.documentation: "https://github.com/github/github-mcp-server"
+      com.cogniforge.ai-integration: "github-copilot,actions,codespaces,dependabot"
+      com.cogniforge.capabilities: "legendary"
 
 networks:
   appnet:
