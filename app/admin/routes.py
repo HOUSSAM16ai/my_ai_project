@@ -1109,3 +1109,219 @@ def comprehensive_health_check():
     
     return jsonify(health_status)
 
+
+# ======================================================================================
+# API GATEWAY ENDPOINTS (SUPERHUMAN EDITION)
+# ======================================================================================
+# نقاط نهاية بوابة API الخارقة - Superhuman API Gateway endpoints
+
+try:
+    from app.services.api_gateway_service import get_gateway_service
+    from app.services.api_gateway_chaos import get_chaos_service, get_circuit_breaker
+    from app.services.api_gateway_deployment import (
+        get_ab_testing_service,
+        get_canary_deployment_service,
+        get_feature_flag_service
+    )
+except ImportError:
+    get_gateway_service = None
+    get_chaos_service = None
+    get_circuit_breaker = None
+    get_ab_testing_service = None
+    get_canary_deployment_service = None
+    get_feature_flag_service = None
+
+
+@bp.route("/api/gateway/stats", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_gateway_stats():
+    """
+    Get API Gateway comprehensive statistics
+    
+    نقطة نهاية للحصول على إحصائيات البوابة الشاملة
+    """
+    try:
+        if not get_gateway_service:
+            return jsonify({
+                "status": "error",
+                "message": "API Gateway service not available"
+            }), 503
+        
+        gateway = get_gateway_service()
+        stats = gateway.get_gateway_stats()
+        
+        return jsonify({
+            "status": "success",
+            "data": stats
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get gateway stats failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/gateway/chaos/experiments", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_chaos_experiments():
+    """
+    Get active chaos engineering experiments
+    
+    الحصول على تجارب هندسة الفوضى النشطة
+    """
+    try:
+        if not get_chaos_service:
+            return jsonify({
+                "status": "error",
+                "message": "Chaos engineering service not available"
+            }), 503
+        
+        chaos = get_chaos_service()
+        experiments = chaos.get_active_experiments()
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "active_experiments": [
+                    {
+                        "experiment_id": exp.experiment_id,
+                        "name": exp.name,
+                        "fault_type": exp.fault_type.value,
+                        "target_service": exp.target_service,
+                        "fault_rate": exp.fault_rate,
+                        "started_at": exp.started_at.isoformat() if exp.started_at else None
+                    }
+                    for exp in experiments
+                ]
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get chaos experiments failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/gateway/circuit-breakers", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_circuit_breaker_states():
+    """
+    Get circuit breaker states for all services
+    
+    الحصول على حالات قاطع الدائرة لجميع الخدمات
+    """
+    try:
+        if not get_circuit_breaker:
+            return jsonify({
+                "status": "error",
+                "message": "Circuit breaker service not available"
+            }), 503
+        
+        cb = get_circuit_breaker()
+        states = cb.get_all_states()
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "circuit_breakers": states
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get circuit breaker states failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/gateway/ab-tests", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_ab_tests():
+    """
+    Get all A/B test experiments
+    
+    الحصول على جميع تجارب A/B
+    """
+    try:
+        if not get_ab_testing_service:
+            return jsonify({
+                "status": "error",
+                "message": "A/B testing service not available"
+            }), 503
+        
+        ab_service = get_ab_testing_service()
+        
+        # Get all experiments (placeholder - would need to add method to service)
+        return jsonify({
+            "status": "success",
+            "data": {
+                "message": "A/B testing service active",
+                "experiments": []
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get A/B tests failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/gateway/feature-flags", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_feature_flags():
+    """
+    Get all feature flags
+    
+    الحصول على جميع أعلام الميزات
+    """
+    try:
+        if not get_feature_flag_service:
+            return jsonify({
+                "status": "error",
+                "message": "Feature flag service not available"
+            }), 503
+        
+        flag_service = get_feature_flag_service()
+        flags = flag_service.get_all_flags()
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "feature_flags": flags
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get feature flags failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/gateway/canary-deployments", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_canary_deployments():
+    """
+    Get all canary deployments
+    
+    الحصول على جميع عمليات النشر التدريجي
+    """
+    try:
+        if not get_canary_deployment_service:
+            return jsonify({
+                "status": "error",
+                "message": "Canary deployment service not available"
+            }), 503
+        
+        # Placeholder - would return actual deployments
+        return jsonify({
+            "status": "success",
+            "data": {
+                "message": "Canary deployment service active",
+                "deployments": []
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get canary deployments failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
