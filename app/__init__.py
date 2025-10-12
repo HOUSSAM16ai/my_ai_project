@@ -106,21 +106,41 @@ def _register_extensions(app: Flask) -> None:
 
 
 def _register_blueprints(app: Flask) -> None:
-    # تأكد أن الاستيراد يتم داخل السياق لتفادي دوائر الاستيراد
-    from . import routes
-    app.register_blueprint(routes.bp)
+    """Register all blueprints with graceful failure handling for optional components."""
+    # Core routes (required)
+    try:
+        from . import routes
+        app.register_blueprint(routes.bp)
+        app.logger.info("Core routes registered successfully")
+    except Exception as exc:
+        app.logger.error("Failed to register core routes: %s", exc, exc_info=True)
+        raise  # Core routes are critical, so we re-raise
 
-    from .admin import routes as admin_routes
-    app.register_blueprint(admin_routes.bp, url_prefix="/admin")
+    # Admin routes (optional but recommended)
+    try:
+        from .admin import routes as admin_routes
+        app.register_blueprint(admin_routes.bp, url_prefix="/admin")
+        app.logger.info("Admin routes registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register admin routes: %s (continuing without admin panel)", exc)
     
-    # Register World-Class API Gateway blueprints
-    from .api import init_api
-    init_api(app)
+    # API Gateway blueprints (optional)
+    try:
+        from .api import init_api
+        init_api(app)
+        app.logger.info("API Gateway registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register API Gateway: %s (continuing without API)", exc)
 
-    from .cli import user_commands, mindgate_commands, database_commands
-    app.register_blueprint(user_commands.users_cli)
-    app.register_blueprint(mindgate_commands.mindgate_cli)
-    app.register_blueprint(database_commands.database_cli)
+    # CLI commands (optional)
+    try:
+        from .cli import user_commands, mindgate_commands, database_commands
+        app.register_blueprint(user_commands.users_cli)
+        app.register_blueprint(mindgate_commands.mindgate_cli)
+        app.register_blueprint(database_commands.database_cli)
+        app.logger.info("CLI commands registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register CLI commands: %s (continuing without CLI)", exc)
 
 
 def _configure_logging(app: Flask) -> None:

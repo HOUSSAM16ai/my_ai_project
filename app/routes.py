@@ -14,16 +14,24 @@ from flask import render_template, flash, redirect, url_for, Blueprint
 from flask_login import current_user, login_user, logout_user, login_required
 
 from app import db
-# This import might fail if you have already deleted app/forms.py.
-# If so, you will need to recreate a minimal version of this file.
+# This import might fail if you have already deleted app/forms.py or if flask_wtf is not installed.
+# If so, we create minimal placeholders to avoid crashing.
 try:
     from app.forms import LoginForm, RegistrationForm
 except ImportError:
-    # If forms.py was deleted, create a placeholder to avoid crashing.
-    # In a real scenario, we would recreate a minimal forms.py.
-    from flask_wtf import FlaskForm
-    class LoginForm(FlaskForm): pass
-    class RegistrationForm(FlaskForm): pass
+    # If forms.py was deleted or flask_wtf is not installed, create minimal placeholders
+    # These won't be functional but will prevent import errors
+    import warnings
+    warnings.warn("LoginForm and RegistrationForm not available - authentication routes may not work", RuntimeWarning)
+    
+    # Create minimal placeholder classes that inherit from object instead of FlaskForm
+    class LoginForm:
+        """Placeholder for LoginForm when flask_wtf is not available"""
+        pass
+    
+    class RegistrationForm:
+        """Placeholder for RegistrationForm when flask_wtf is not available"""
+        pass
     
 from app.models import User
 
