@@ -256,13 +256,29 @@ def create_app(config_name: Optional[str] = None) -> Flask:
 # --------------------------------------------------------------------------------------
 # Providing a global instance helps CLI usage when user sets FLASK_APP=app.
 # If you prefer pure factory mode, you can ignore this and set FLASK_APP='app:create_app'
-try:
-    app = create_app()
-except Exception as _global_exc:  # Fail softly so unit tests can still import modules.
-    # We do a minimal fallback logger
-    _fallback_logger = logging.getLogger("genesis.factory")
-    _fallback_logger.error("Global app instantiation failed: %s", _global_exc, exc_info=True)
-    app = None  # type: ignore
+#
+# Smart initialization: Skip global app creation in test environments to avoid
+# premature database connection attempts before test fixtures are ready.
+app = None  # type: ignore
+
+def _should_create_global_app() -> bool:
+    """Determine if we should create a global app instance at module import time."""
+    # Skip if we're in a test environment
+    if os.getenv("TESTING") == "1" or os.getenv("FLASK_ENV") == "testing":
+        return False
+    # Skip if pytest is running (detected by PYTEST_CURRENT_TEST env var)
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return False
+    return True
+
+if _should_create_global_app():
+    try:
+        app = create_app()
+    except Exception as _global_exc:  # Fail softly so unit tests can still import modules.
+        # We do a minimal fallback logger
+        _fallback_logger = logging.getLogger("genesis.factory")
+        _fallback_logger.error("Global app instantiation failed: %s", _global_exc, exc_info=True)
+        app = None  # type: ignore
 
 
 # --------------------------------------------------------------------------------------

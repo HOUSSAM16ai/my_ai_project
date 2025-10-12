@@ -46,4 +46,5 @@ cryptography>=41.0.0
 python-dotenv
 pytest
 pytest-flask
+pytest-cov
 requests

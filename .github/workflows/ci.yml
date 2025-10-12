@@ -26,5 +26,15 @@ jobs:
         pip install -r requirements.txt
     
     - name: Run tests with pytest
+      env:
+        FLASK_ENV: testing
+        TESTING: "1"
+        SECRET_KEY: test-secret-key-for-ci
       run: |
-        pytest
+        echo "🧪 Running test suite..."
+        pytest --verbose --cov=app --cov-report=xml --cov-report=html
+        
+        # Save coverage for AI analysis
+        if [ -f coverage.xml ]; then
+          echo "✅ Tests completed with coverage report"
+        fi
