@@ -24,7 +24,7 @@ api_v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 
 def init_api(app):
     """Initialize API blueprints with all services"""
-    from app.api import gateway_routes, crud_routes, security_routes, observability_routes
+    from app.api import gateway_routes, crud_routes, security_routes, observability_routes, docs_routes
     
     # Register blueprints
     app.register_blueprint(api_bp)
@@ -33,3 +33,4 @@ def init_api(app):
     
     app.logger.info("🚀 World-Class API Gateway initialized successfully")
     app.logger.info("📡 API endpoints available at /api, /api/v1, /api/v2")
+    app.logger.info("📚 API Documentation available at /api/docs")
