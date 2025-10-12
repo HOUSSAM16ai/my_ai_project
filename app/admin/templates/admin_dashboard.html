@@ -703,7 +703,17 @@ body {
         
         loadConversations();
       } else {
-        addMessage('system', `❌ Error: ${result.message || result.error}`);
+        // Handle error - check if we have a user-friendly answer message
+        if (result.answer) {
+          // Display the formatted error answer (contains helpful troubleshooting info)
+          addMessage('assistant', formatContent(result.answer), {
+            model_used: result.model_used || 'Error',
+            elapsed_seconds: result.elapsed_seconds
+          });
+        } else {
+          // Fallback to simple error message
+          addMessage('system', `❌ Error: ${result.message || result.error}`);
+        }
       }
     } catch (error) {
       hideLoading();
@@ -784,7 +794,14 @@ body {
         
         addMessage('assistant', analysisHtml);
       } else {
-        addMessage('system', `❌ Analysis failed: ${result.error || result.message}`);
+        // Handle error - check if we have a user-friendly message
+        if (result.message) {
+          // Display the formatted error message (contains helpful troubleshooting info)
+          addMessage('assistant', formatContent(result.message));
+        } else {
+          // Fallback to simple error message
+          addMessage('system', `❌ Analysis failed: ${result.error}`);
+        }
       }
     } catch (error) {
       hideLoading();
