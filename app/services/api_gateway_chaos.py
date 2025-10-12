@@ -7,6 +7,7 @@
 #   ✨ المميزات:
 #   - Fault injection (latency, errors, timeouts)
 #   - Circuit breaker pattern implementation
+#   - Bulkheads pattern for resource isolation
 #   - Resilience testing and validation
 #   - Automated disaster recovery
 #   - Chaos experiments management
@@ -352,3 +353,218 @@ def get_circuit_breaker() -> CircuitBreakerService:
                 _circuit_breaker_instance = CircuitBreakerService()
     
     return _circuit_breaker_instance
+
+
+# ======================================================================================
+# BULKHEADS PATTERN SERVICE
+# ======================================================================================
+
+@dataclass
+class BulkheadConfig:
+    """Bulkhead configuration for resource isolation"""
+    max_concurrent: int = 10
+    max_queue: int = 100
+    timeout_seconds: int = 30
+
+
+@dataclass
+class BulkheadStats:
+    """Bulkhead statistics"""
+    total_calls: int = 0
+    successful_calls: int = 0
+    failed_calls: int = 0
+    rejected_calls: int = 0
+    current_concurrent: int = 0
+    current_queued: int = 0
+
+
+class BulkheadService:
+    """
+    خدمة الحواجز المانعة - Bulkheads Service
+    
+    Implements the bulkheads pattern for resource isolation.
+    Prevents cascading failures by limiting concurrent operations per service.
+    
+    Features:
+    - Per-service resource pools
+    - Queue management with limits
+    - Timeout handling
+    - Real-time statistics
+    """
+    
+    def __init__(self):
+        self.bulkheads: Dict[str, BulkheadConfig] = {}
+        self.stats: Dict[str, BulkheadStats] = defaultdict(BulkheadStats)
+        self.semaphores: Dict[str, threading.Semaphore] = {}
+        self.lock = threading.RLock()
+        
+        # Initialize default bulkheads
+        self._initialize_bulkheads()
+    
+    def _initialize_bulkheads(self):
+        """Initialize default bulkheads for critical services"""
+        
+        # Database bulkhead
+        self.register_bulkhead(
+            'database',
+            BulkheadConfig(max_concurrent=20, max_queue=50, timeout_seconds=30)
+        )
+        
+        # AI/LLM bulkhead
+        self.register_bulkhead(
+            'llm',
+            BulkheadConfig(max_concurrent=10, max_queue=100, timeout_seconds=60)
+        )
+        
+        # External API bulkhead
+        self.register_bulkhead(
+            'external_api',
+            BulkheadConfig(max_concurrent=15, max_queue=50, timeout_seconds=30)
+        )
+        
+        # File operations bulkhead
+        self.register_bulkhead(
+            'file_operations',
+            BulkheadConfig(max_concurrent=5, max_queue=20, timeout_seconds=20)
+        )
+    
+    def register_bulkhead(self, service_id: str, config: BulkheadConfig):
+        """Register a new bulkhead for a service"""
+        with self.lock:
+            self.bulkheads[service_id] = config
+            self.semaphores[service_id] = threading.Semaphore(config.max_concurrent)
+    
+    def call(
+        self,
+        service_id: str,
+        operation: Callable[[], Any],
+        timeout: Optional[int] = None
+    ) -> tuple[bool, Any, Optional[str]]:
+        """
+        Execute operation within bulkhead constraints
+        
+        Returns:
+            (success, result, error_message)
+        """
+        if service_id not in self.bulkheads:
+            # No bulkhead configured, execute directly
+            try:
+                result = operation()
+                return True, result, None
+            except Exception as e:
+                return False, None, str(e)
+        
+        config = self.bulkheads[service_id]
+        stats = self.stats[service_id]
+        semaphore = self.semaphores[service_id]
+        
+        timeout = timeout or config.timeout_seconds
+        
+        with self.lock:
+            stats.total_calls += 1
+            
+            # Check queue limit
+            if stats.current_queued >= config.max_queue:
+                stats.rejected_calls += 1
+                return False, None, f"Bulkhead queue full for service: {service_id}"
+            
+            stats.current_queued += 1
+        
+        # Try to acquire semaphore with timeout
+        acquired = semaphore.acquire(timeout=timeout)
+        
+        with self.lock:
+            stats.current_queued -= 1
+        
+        if not acquired:
+            with self.lock:
+                stats.rejected_calls += 1
+            return False, None, f"Bulkhead timeout for service: {service_id}"
+        
+        try:
+            with self.lock:
+                stats.current_concurrent += 1
+            
+            # Execute operation
+            result = operation()
+            
+            with self.lock:
+                stats.successful_calls += 1
+            
+            return True, result, None
+            
+        except Exception as e:
+            with self.lock:
+                stats.failed_calls += 1
+            return False, None, str(e)
+            
+        finally:
+            with self.lock:
+                stats.current_concurrent -= 1
+            semaphore.release()
+    
+    def get_stats(self, service_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get bulkhead statistics"""
+        with self.lock:
+            if service_id:
+                if service_id not in self.stats:
+                    return {}
+                
+                stats = self.stats[service_id]
+                config = self.bulkheads.get(service_id)
+                
+                return {
+                    'service_id': service_id,
+                    'config': {
+                        'max_concurrent': config.max_concurrent if config else None,
+                        'max_queue': config.max_queue if config else None,
+                        'timeout_seconds': config.timeout_seconds if config else None
+                    },
+                    'stats': {
+                        'total_calls': stats.total_calls,
+                        'successful_calls': stats.successful_calls,
+                        'failed_calls': stats.failed_calls,
+                        'rejected_calls': stats.rejected_calls,
+                        'current_concurrent': stats.current_concurrent,
+                        'current_queued': stats.current_queued,
+                        'success_rate': (
+                            stats.successful_calls / stats.total_calls * 100
+                            if stats.total_calls > 0 else 0
+                        ),
+                        'rejection_rate': (
+                            stats.rejected_calls / stats.total_calls * 100
+                            if stats.total_calls > 0 else 0
+                        )
+                    }
+                }
+            else:
+                # Return all stats
+                return {
+                    service_id: self.get_stats(service_id)
+                    for service_id in self.bulkheads.keys()
+                }
+    
+    def reset_stats(self, service_id: Optional[str] = None):
+        """Reset statistics for a service or all services"""
+        with self.lock:
+            if service_id:
+                if service_id in self.stats:
+                    self.stats[service_id] = BulkheadStats()
+            else:
+                self.stats.clear()
+
+
+_bulkhead_instance: Optional[BulkheadService] = None
+
+
+def get_bulkhead_service() -> BulkheadService:
+    """Get singleton bulkhead service instance"""
+    global _bulkhead_instance
+    
+    if _bulkhead_instance is None:
+        with _service_lock:
+            if _bulkhead_instance is None:
+                _bulkhead_instance = BulkheadService()
+    
+    return _bulkhead_instance
+
