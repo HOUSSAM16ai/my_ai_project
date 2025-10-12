@@ -307,7 +307,8 @@ class APISecurityService:
         timestamp: int,
         nonce: str,
         body: Optional[bytes] = None,
-        max_age_seconds: int = 300
+        max_age_seconds: int = 300,
+        secret_key: Optional[str] = None
     ) -> bool:
         """Verify request signature"""
         # Check timestamp (prevent replay attacks)
@@ -323,7 +324,7 @@ class APISecurityService:
         
         # Calculate expected signature
         expected_signature = self.generate_request_signature(
-            method, path, timestamp, nonce, body
+            method, path, timestamp, nonce, body, secret_key
         )
         
         # Constant-time comparison to prevent timing attacks

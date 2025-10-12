@@ -19,6 +19,7 @@ from functools import wraps
 from flask import request, jsonify, current_app
 import json
 import hashlib
+import time
 from jsonschema import validate, ValidationError, Draft7Validator
 from collections import defaultdict
 
@@ -422,9 +423,9 @@ class APIContractService:
         parts = endpoint.split('/')
         normalized_parts = []
         
-        for part in parts:
+        for i, part in enumerate(parts):
             # Check if this looks like a path parameter (numeric or UUID-like)
-            if part.isdigit() or '-' in part and len(part) > 10:
+            if part.isdigit() or ('-' in part and len(part) > 10):
                 # Replace with placeholder based on context
                 if 'table' in endpoint:
                     normalized_parts.append('{table_name}')
@@ -432,6 +433,10 @@ class APIContractService:
                     normalized_parts.append('{id}')
                 else:
                     normalized_parts.append('{param}')
+            # Check if this is a table name after /record/ path (only when it's the last part)
+            elif (i > 0 and parts[i-1] == 'record' and '/api/database/record/' in endpoint 
+                  and i == len(parts) - 1):
+                normalized_parts.append('{table_name}')
             else:
                 normalized_parts.append(part)
         
