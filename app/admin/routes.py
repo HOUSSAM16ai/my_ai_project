@@ -1322,6 +1322,392 @@ def get_canary_deployments():
         }), 200
     
     except Exception as e:
-        current_app.logger.error(f"Get canary deployments failed: {e}", exc_info=True)
+        current_app.logger.error(f("Get canary deployments failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ======================================================================================
+# SUPERHUMAN API GOVERNANCE ENDPOINTS
+# ======================================================================================
+# نقاط نهاية حوكمة API الخارقة - Superhuman API Governance endpoints
+
+try:
+    from app.services.api_governance_service import get_governance_service
+    from app.services.api_slo_sli_service import get_slo_service
+    from app.services.api_config_secrets_service import get_config_secrets_service
+    from app.services.api_disaster_recovery_service import (
+        get_disaster_recovery_service,
+        get_oncall_incident_service
+    )
+except ImportError:
+    get_governance_service = None
+    get_slo_service = None
+    get_config_secrets_service = None
+    get_disaster_recovery_service = None
+    get_oncall_incident_service = None
+
+
+@bp.route("/api/governance/dashboard", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_governance_dashboard():
+    """
+    Get API governance dashboard
+    
+    الحصول على لوحة حوكمة API
+    """
+    try:
+        if not get_governance_service:
+            return jsonify({
+                "status": "error",
+                "message": "Governance service not available"
+            }), 503
+        
+        governance = get_governance_service()
+        dashboard = governance.get_governance_dashboard()
+        
+        return jsonify({
+            "status": "success",
+            "data": dashboard
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get governance dashboard failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/governance/owasp-compliance", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_owasp_compliance():
+    """
+    Get OWASP API Security Top 10 compliance report
+    
+    الحصول على تقرير الامتثال لـ OWASP API Security Top 10
+    """
+    try:
+        if not get_governance_service:
+            return jsonify({
+                "status": "error",
+                "message": "Governance service not available"
+            }), 503
+        
+        governance = get_governance_service()
+        report = governance.owasp_checker.get_compliance_report()
+        
+        return jsonify({
+            "status": "success",
+            "data": report
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get OWASP compliance failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/slo/dashboard", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_slo_dashboard():
+    """
+    Get SLO/SLI dashboard
+    
+    الحصول على لوحة SLO/SLI
+    """
+    try:
+        if not get_slo_service:
+            return jsonify({
+                "status": "error",
+                "message": "SLO service not available"
+            }), 503
+        
+        slo = get_slo_service()
+        dashboard = slo.get_dashboard()
+        
+        return jsonify({
+            "status": "success",
+            "data": dashboard
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get SLO dashboard failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/slo/burn-rate/<slo_id>", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_slo_burn_rate(slo_id: str):
+    """
+    Get error budget burn rate for an SLO
+    
+    الحصول على معدل استهلاك ميزانية الخطأ لـ SLO
+    """
+    try:
+        if not get_slo_service:
+            return jsonify({
+                "status": "error",
+                "message": "SLO service not available"
+            }), 503
+        
+        slo = get_slo_service()
+        burn_rate = slo.calculate_burn_rate(slo_id)
+        
+        if not burn_rate:
+            return jsonify({
+                "status": "error",
+                "message": "SLO not found"
+            }), 404
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "slo_id": burn_rate.slo_id,
+                "timestamp": burn_rate.timestamp.isoformat(),
+                "burn_rate_1h": burn_rate.burn_rate_1h,
+                "burn_rate_6h": burn_rate.burn_rate_6h,
+                "burn_rate_24h": burn_rate.burn_rate_24h,
+                "burn_rate_7d": burn_rate.burn_rate_7d,
+                "level": burn_rate.level.value,
+                "projected_depletion": burn_rate.projected_depletion.isoformat() if burn_rate.projected_depletion else None
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get SLO burn rate failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/config/environments", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_environment_configs():
+    """
+    Get configuration for all environments
+    
+    الحصول على التهيئة لجميع البيئات
+    """
+    try:
+        if not get_config_secrets_service:
+            return jsonify({
+                "status": "error",
+                "message": "Config service not available"
+            }), 503
+        
+        config_service = get_config_secrets_service()
+        
+        from app.services.api_config_secrets_service import Environment
+        
+        environments = {
+            env.value: {
+                "config": dict(config_service.config_store.get(env, {})),
+                "secrets_count": len([
+                    s for s in config_service.secrets_registry.values()
+                    if s.environment == env
+                ])
+            }
+            for env in Environment
+        }
+        
+        return jsonify({
+            "status": "success",
+            "data": environments
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get environment configs failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/config/secrets/audit", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_secrets_audit():
+    """
+    Get secrets access audit logs
+    
+    الحصول على سجلات تدقيق الوصول إلى الأسرار
+    """
+    try:
+        if not get_config_secrets_service:
+            return jsonify({
+                "status": "error",
+                "message": "Config service not available"
+            }), 503
+        
+        config_service = get_config_secrets_service()
+        
+        limit = request.args.get('limit', 100, type=int)
+        secret_id = request.args.get('secret_id')
+        
+        audit_logs = config_service.get_audit_report(
+            secret_id=secret_id,
+            limit=limit
+        )
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "audit_logs": audit_logs,
+                "total": len(audit_logs)
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get secrets audit failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/disaster-recovery/status", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_dr_status():
+    """
+    Get disaster recovery status
+    
+    الحصول على حالة التعافي من الكوارث
+    """
+    try:
+        if not get_disaster_recovery_service:
+            return jsonify({
+                "status": "error",
+                "message": "Disaster recovery service not available"
+            }), 503
+        
+        dr_service = get_disaster_recovery_service()
+        status = dr_service.get_rto_rpo_status()
+        
+        return jsonify({
+            "status": "success",
+            "data": status
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get DR status failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/disaster-recovery/failover", methods=["POST"])
+@admin_required
+@monitor_performance
+def initiate_dr_failover():
+    """
+    Initiate disaster recovery failover
+    
+    بدء التعافي من الكوارث
+    """
+    try:
+        if not get_disaster_recovery_service:
+            return jsonify({
+                "status": "error",
+                "message": "Disaster recovery service not available"
+            }), 503
+        
+        data = request.get_json()
+        plan_id = data.get('plan_id')
+        reason = data.get('reason', 'Manual failover initiated')
+        
+        if not plan_id:
+            return jsonify({
+                "status": "error",
+                "message": "plan_id is required"
+            }), 400
+        
+        dr_service = get_disaster_recovery_service()
+        result = dr_service.initiate_failover(
+            plan_id=plan_id,
+            initiated_by=current_user.name if current_user else 'unknown',
+            reason=reason
+        )
+        
+        return jsonify({
+            "status": "success" if result['success'] else "error",
+            "data": result
+        }), 200 if result['success'] else 400
+    
+    except Exception as e:
+        current_app.logger.error(f"Initiate DR failover failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/incidents", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_incidents():
+    """
+    Get all incidents
+    
+    الحصول على جميع الحوادث
+    """
+    try:
+        if not get_oncall_incident_service:
+            return jsonify({
+                "status": "error",
+                "message": "Incident service not available"
+            }), 503
+        
+        incident_service = get_oncall_incident_service()
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "incidents": [
+                    {
+                        "incident_id": i.incident_id,
+                        "title": i.title,
+                        "severity": i.severity.value,
+                        "status": i.status.value,
+                        "detected_at": i.detected_at.isoformat(),
+                        "assigned_to": i.assigned_to
+                    }
+                    for i in incident_service.incidents.values()
+                ],
+                "metrics": incident_service.get_incident_metrics()
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get incidents failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/incidents", methods=["POST"])
+@admin_required
+@monitor_performance
+def create_incident():
+    """
+    Create a new incident
+    
+    إنشاء حادث جديد
+    """
+    try:
+        if not get_oncall_incident_service:
+            return jsonify({
+                "status": "error",
+                "message": "Incident service not available"
+            }), 503
+        
+        data = request.get_json()
+        
+        from app.services.api_disaster_recovery_service import IncidentSeverity
+        
+        incident_service = get_oncall_incident_service()
+        incident_id = incident_service.create_incident(
+            title=data.get('title'),
+            description=data.get('description'),
+            severity=IncidentSeverity(data.get('severity', 'sev3')),
+            detected_by=current_user.name if current_user else 'unknown',
+            affected_services=data.get('affected_services', [])
+        )
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "incident_id": incident_id
+            }
+        }), 201
+    
+    except Exception as e:
+        current_app.logger.error(f"Create incident failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
