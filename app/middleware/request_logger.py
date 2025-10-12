@@ -10,7 +10,7 @@
 #   - Audit trail
 
 from flask import Flask, request, g
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import json
 
@@ -27,7 +27,7 @@ def setup_request_logging(app: Flask):
     def log_request_start():
         """تسجيل بداية الطلب - Log request start"""
         g.start_time = time.time()
-        g.request_id = f"{datetime.utcnow().timestamp()}-{id(request)}"
+        g.request_id = f"{datetime.now(timezone.utc).timestamp()}-{id(request)}"
         
         # Log request details
         app.logger.info(
