@@ -115,6 +115,32 @@ services:
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
 
+  # ----------------------------------------------------------------------------------
+  # GitHub MCP Server (Model Context Protocol Integration)
+  # ----------------------------------------------------------------------------------
+  # This service provides AI assistants with direct GitHub API access through MCP.
+  # Features: Repository management, Issues, PRs, Code Search, GitHub Actions
+  # ----------------------------------------------------------------------------------
+  github_mcp:
+    image: ghcr.io/github/github-mcp-server:latest
+    container_name: github-mcp-server
+    init: true
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - appnet
+    environment:
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}
+    profiles:
+      - mcp
+      - full
+    labels:
+      com.cogniforge.service: "mcp"
+      com.cogniforge.description: "GitHub Model Context Protocol Server"
+      com.cogniforge.version: "1.0.0"
+      com.cogniforge.documentation: "https://github.com/github/github-mcp-server"
+
 networks:
   appnet:
     driver: bridge

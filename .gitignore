@@ -40,6 +40,9 @@ MANIFEST
 # 4. IDE / Editor Specific Files
 # User-specific settings for code editors.
 .vscode/
+!.vscode/mcp-settings.json
+.cursor/
+!.cursor/mcp.json
 .idea/
 *.swp
 *.swo
