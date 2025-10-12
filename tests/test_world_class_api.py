@@ -273,7 +273,8 @@ class TestSecurityService:
             path='/api/test',
             timestamp=timestamp,
             nonce=nonce,
-            body=body
+            body=body,
+            secret_key='test-secret'
         )
         
         assert is_valid is True
