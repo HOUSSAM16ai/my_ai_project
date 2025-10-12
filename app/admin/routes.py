@@ -431,6 +431,13 @@ def get_table_data(table_name):
         result = database_service.get_table_data(
             table_name, page, per_page, search, order_by, order_dir
         )
+        
+        # Return appropriate status code based on result
+        if result.get('status') == 'error':
+            if 'not found' in result.get('message', '').lower():
+                return jsonify(result), 404
+            return jsonify(result), 500
+        
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Get table data failed: {e}", exc_info=True)
@@ -445,6 +452,13 @@ def get_record(table_name, record_id):
     
     try:
         result = database_service.get_record(table_name, record_id)
+        
+        # Return appropriate status code based on result
+        if result.get('status') == 'error':
+            if 'not found' in result.get('message', '').lower():
+                return jsonify(result), 404
+            return jsonify(result), 500
+        
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Get record failed: {e}", exc_info=True)
@@ -460,6 +474,16 @@ def create_record(table_name):
     try:
         data = request.json
         result = database_service.create_record(table_name, data)
+        
+        # Return appropriate status code based on result
+        if result.get('status') == 'error':
+            # Check if it's a validation error
+            if 'validation' in result.get('message', '').lower() or 'errors' in result:
+                return jsonify(result), 400
+            if 'not found' in result.get('message', '').lower():
+                return jsonify(result), 404
+            return jsonify(result), 500
+        
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Create record failed: {e}", exc_info=True)
@@ -475,6 +499,16 @@ def update_record(table_name, record_id):
     try:
         data = request.json
         result = database_service.update_record(table_name, record_id, data)
+        
+        # Return appropriate status code based on result
+        if result.get('status') == 'error':
+            # Check if it's a validation error
+            if 'validation' in result.get('message', '').lower() or 'errors' in result:
+                return jsonify(result), 400
+            if 'not found' in result.get('message', '').lower():
+                return jsonify(result), 404
+            return jsonify(result), 500
+        
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Update record failed: {e}", exc_info=True)
@@ -489,6 +523,13 @@ def delete_record(table_name, record_id):
     
     try:
         result = database_service.delete_record(table_name, record_id)
+        
+        # Return appropriate status code based on result
+        if result.get('status') == 'error':
+            if 'not found' in result.get('message', '').lower():
+                return jsonify(result), 404
+            return jsonify(result), 500
+        
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Delete record failed: {e}", exc_info=True)
