@@ -103,23 +103,31 @@ else
 fi
 
 ###############################################################################
-# Step 3: Check for GitHub token in .env
+# Step 3: Check for GitHub token in .env (AI_AGENT_TOKEN or legacy)
 ###############################################################################
 
-print_info "Checking for GitHub Personal Access Token..."
-if grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env 2>/dev/null; then
+print_info "Checking for AI Agent Token..."
+
+# Check for new AI_AGENT_TOKEN first
+if grep -q "^AI_AGENT_TOKEN=" .env 2>/dev/null; then
+    TOKEN_VALUE=$(grep "^AI_AGENT_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d ' ')
+    TOKEN_VAR_NAME="AI_AGENT_TOKEN"
+elif grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env 2>/dev/null; then
     TOKEN_VALUE=$(grep "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d ' ')
-    
-    if [ "$TOKEN_VALUE" == "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ] || [ -z "$TOKEN_VALUE" ]; then
-        print_warning "GitHub token is not configured yet"
-        TOKEN_NEEDS_SETUP=true
-    else
-        print_success "GitHub token is configured"
-        TOKEN_NEEDS_SETUP=false
-    fi
+    TOKEN_VAR_NAME="GITHUB_PERSONAL_ACCESS_TOKEN"
+    print_warning "Using legacy GITHUB_PERSONAL_ACCESS_TOKEN"
+    print_info "Consider updating to AI_AGENT_TOKEN for superhuman features"
 else
-    print_warning "GITHUB_PERSONAL_ACCESS_TOKEN not found in .env"
+    TOKEN_VALUE=""
+    TOKEN_VAR_NAME="AI_AGENT_TOKEN"
+fi
+
+if [ "$TOKEN_VALUE" == "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ] || [ -z "$TOKEN_VALUE" ]; then
+    print_warning "AI Agent Token is not configured yet"
     TOKEN_NEEDS_SETUP=true
+else
+    print_success "AI Agent Token is configured"
+    TOKEN_NEEDS_SETUP=false
 fi
 
 ###############################################################################
@@ -128,16 +136,21 @@ fi
 
 if [ "$TOKEN_NEEDS_SETUP" = true ]; then
     echo ""
-    print_header "${LOCK} GitHub Personal Access Token Setup"
+    print_header "${LOCK} 🚀 AI Agent Token Setup - SUPERHUMAN EDITION"
     echo ""
-    echo "You need a GitHub Personal Access Token to use MCP Server."
-    echo "تحتاج إلى رمز GitHub الشخصي لاستخدام خادم MCP."
+    echo "You need an AI Agent Token (GitHub Personal Access Token) for:"
+    echo "  ${ROCKET} MCP Server Integration"
+    echo "  ${ROCKET} GitHub Copilot AI Features"
+    echo "  ${ROCKET} Automated CI/CD with AI"
+    echo "  ${ROCKET} Intelligent Dependency Management"
+    echo ""
+    echo "تحتاج إلى رمز AI Agent لتفعيل المميزات الخارقة!"
     echo ""
     echo "How to get your token | كيفية الحصول على الرمز:"
     echo "  1. Visit: https://github.com/settings/tokens"
     echo "  2. Click 'Generate new token (classic)'"
     echo "  3. Select scopes | اختر الصلاحيات:"
-    echo "     ${CHECK} repo"
+    echo "     ${CHECK} repo (required)"
     echo "     ${CHECK} read:org"
     echo "     ${CHECK} workflow"
     echo "  4. Copy the generated token"
@@ -148,7 +161,7 @@ if [ "$TOKEN_NEEDS_SETUP" = true ]; then
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo ""
-        read -sp "Enter your GitHub Personal Access Token: " GITHUB_TOKEN
+        read -sp "Enter your AI Agent Token (GitHub PAT): " GITHUB_TOKEN
         echo ""
         
         if [ -z "$GITHUB_TOKEN" ]; then
@@ -157,13 +170,23 @@ if [ "$TOKEN_NEEDS_SETUP" = true ]; then
         else
             # Validate token format
             if [[ $GITHUB_TOKEN =~ ^(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})$ ]]; then
-                # Add or update token in .env
-                if grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env; then
-                    sed -i "s|^GITHUB_PERSONAL_ACCESS_TOKEN=.*|GITHUB_PERSONAL_ACCESS_TOKEN=\"${GITHUB_TOKEN}\"|" .env
+                # Add or update AI_AGENT_TOKEN in .env
+                if grep -q "^AI_AGENT_TOKEN=" .env; then
+                    sed -i "s|^AI_AGENT_TOKEN=.*|AI_AGENT_TOKEN=\"${GITHUB_TOKEN}\"|" .env
+                elif grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env; then
+                    # Replace legacy token with new one
+                    sed -i "s|^GITHUB_PERSONAL_ACCESS_TOKEN=.*|AI_AGENT_TOKEN=\"${GITHUB_TOKEN}\"|" .env
                 else
-                    echo "GITHUB_PERSONAL_ACCESS_TOKEN=\"${GITHUB_TOKEN}\"" >> .env
+                    echo "AI_AGENT_TOKEN=\"${GITHUB_TOKEN}\"" >> .env
                 fi
-                print_success "Token added to .env file"
+                
+                # Also add legacy token for backward compatibility
+                if ! grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env; then
+                    echo "GITHUB_PERSONAL_ACCESS_TOKEN=\"\${AI_AGENT_TOKEN}\"" >> .env
+                fi
+                
+                print_success "AI Agent Token added to .env file"
+                print_info "Token will work in GitHub Actions, Codespaces, and Dependabot!"
             else
                 print_error "Invalid token format!"
                 print_warning "Token should start with 'ghp_' or 'github_pat_'"
@@ -173,8 +196,14 @@ if [ "$TOKEN_NEEDS_SETUP" = true ]; then
     else
         print_info "Skipping token setup. You can add it manually to .env file."
         echo ""
-        echo "Add this line to .env:"
-        echo "GITHUB_PERSONAL_ACCESS_TOKEN=\"ghp_your_token_here\""
+        echo "Add these lines to .env:"
+        echo "AI_AGENT_TOKEN=\"ghp_your_token_here\""
+        echo "GITHUB_PERSONAL_ACCESS_TOKEN=\"\${AI_AGENT_TOKEN}\""
+        echo ""
+        echo "Then add to GitHub Secrets:"
+        echo "  - Actions: Settings > Secrets > Actions > AI_AGENT_TOKEN"
+        echo "  - Codespaces: Settings > Codespaces > Secrets > AI_AGENT_TOKEN"
+        echo "  - Dependabot: Settings > Secrets > Dependabot > AI_AGENT_TOKEN"
     fi
 fi
 
