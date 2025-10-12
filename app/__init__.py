@@ -112,6 +112,10 @@ def _register_blueprints(app: Flask) -> None:
 
     from .admin import routes as admin_routes
     app.register_blueprint(admin_routes.bp, url_prefix="/admin")
+    
+    # Register World-Class API Gateway blueprints
+    from .api import init_api
+    init_api(app)
 
     from .cli import user_commands, mindgate_commands, database_commands
     app.register_blueprint(user_commands.users_cli)
