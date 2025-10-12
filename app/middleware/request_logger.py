@@ -38,12 +38,15 @@ def setup_request_logging(app: Flask):
         
         # Log request body for POST/PUT/PATCH (be careful with sensitive data)
         if request.method in ['POST', 'PUT', 'PATCH'] and request.is_json:
-            # Don't log passwords and sensitive fields
-            safe_data = {
-                k: v for k, v in request.json.items() 
-                if k.lower() not in ['password', 'token', 'secret', 'api_key']
-            }
-            app.logger.debug(f"[{g.request_id}] Request body: {json.dumps(safe_data)}")
+            # Safely get JSON data without raising exceptions for invalid JSON
+            json_data = request.get_json(silent=True)
+            if json_data and isinstance(json_data, dict):
+                # Don't log passwords and sensitive fields
+                safe_data = {
+                    k: v for k, v in json_data.items() 
+                    if k.lower() not in ['password', 'token', 'secret', 'api_key']
+                }
+                app.logger.debug(f"[{g.request_id}] Request body: {json.dumps(safe_data)}")
     
     @app.after_request
     def log_request_end(response):
