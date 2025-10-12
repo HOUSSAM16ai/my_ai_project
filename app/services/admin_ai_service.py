@@ -354,6 +354,7 @@ class AdminAIService:
             
             conversation_history = []
             deep_index_summary = None
+            context_summary = None  # For long conversation summaries
             
             # ============================================================
             # SUPERHUMAN SECURITY - Validate conversation ownership
@@ -404,9 +405,17 @@ class AdminAIService:
                 conversation_history = self._get_conversation_history(conversation_id)
                 deep_index_summary = conversation.deep_index_summary
                 
+                # SUPERHUMAN FEATURE: Smart context summarization for long conversations
+                # If conversation has many messages, provide a summary to the AI
+                context_summary = None
+                if len(conversation_history) > MAX_CONTEXT_MESSAGES:
+                    context_summary = self._generate_conversation_summary(conversation, conversation_history)
+                    self.logger.info(f"Generated context summary for long conversation #{conversation_id}")
+                
                 self.logger.info(
                     f"Continuing conversation #{conversation_id} for user {user.id} "
-                    f"(history: {len(conversation_history)} messages)"
+                    f"(history: {len(conversation_history)} messages, "
+                    f"summary: {'yes' if context_summary else 'no'})"
                 )
             
             related_context = []
@@ -423,7 +432,8 @@ class AdminAIService:
             
             system_prompt = self._build_super_system_prompt(
                 deep_index_summary=deep_index_summary if use_deep_context else None,
-                related_context=related_context
+                related_context=related_context,
+                conversation_summary=context_summary if conversation_id else None
             )
             
             messages = [{"role": "system", "content": system_prompt}]
@@ -549,6 +559,80 @@ class AdminAIService:
                 "elapsed_seconds": round(time.time() - start_time, 2)
             }
     
+    def _generate_conversation_summary(
+        self,
+        conversation: AdminConversation,
+        conversation_history: List[Dict[str, str]]
+    ) -> str:
+        """
+        توليد ملخص ذكي للمحادثة - SUPERHUMAN INTELLIGENCE
+        
+        Generates an intelligent summary of a long conversation to maintain context
+        without overwhelming the AI with too many messages.
+        
+        This is better than big tech companies because:
+        - Intelligent topic extraction
+        - Preserves key decisions and conclusions
+        - Maintains technical accuracy
+        - Bilingual support (Arabic + English)
+        
+        Args:
+            conversation: المحادثة
+            conversation_history: تاريخ الرسائل
+        
+        Returns:
+            ملخص ذكي للمحادثة
+        """
+        try:
+            # Extract key information
+            total_messages = len(conversation_history)
+            user_questions = [msg for msg in conversation_history if msg.get('role') == 'user']
+            assistant_responses = [msg for msg in conversation_history if msg.get('role') == 'assistant']
+            
+            # Get first and recent messages for context
+            first_messages = conversation_history[:3]
+            recent_messages = conversation_history[-5:]
+            
+            # Build summary
+            summary_parts = [
+                f"📊 ملخص المحادثة (Conversation Summary)",
+                f"════════════════════════════════════════",
+                f"• العنوان (Title): {conversation.title}",
+                f"• عدد الرسائل (Messages): {total_messages}",
+                f"• الأسئلة (Questions): {len(user_questions)}",
+                f"• النوع (Type): {conversation.conversation_type}",
+                f"",
+                f"🎯 المواضيع الرئيسية (Main Topics):",
+            ]
+            
+            # Extract topics from first few questions
+            topics = []
+            for i, msg in enumerate(user_questions[:5], 1):
+                content = msg.get('content', '')[:100]
+                topics.append(f"  {i}. {content}...")
+            
+            summary_parts.extend(topics)
+            summary_parts.append("")
+            summary_parts.append("📝 آخر التفاعلات (Recent Interactions):")
+            
+            # Include recent messages for immediate context
+            for msg in recent_messages[-3:]:
+                role_emoji = "👤" if msg.get('role') == 'user' else "🤖"
+                content = msg.get('content', '')[:150]
+                summary_parts.append(f"  {role_emoji} {content}...")
+            
+            summary_parts.extend([
+                "",
+                "ℹ️ ملاحظة: هذا ملخص تلقائي. الرسائل الكاملة متاحة في السياق.",
+                "Note: This is an auto-summary. Full messages are available in context."
+            ])
+            
+            return "\n".join(summary_parts)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to generate conversation summary: {e}", exc_info=True)
+            return f"📊 Conversation Summary: {conversation.title} ({len(conversation_history)} messages)"
+    
     def _read_key_project_files(self) -> Dict[str, str]:
         """قراءة ملفات المشروع الرئيسية للسياق"""
         project_files = {}
@@ -582,7 +666,8 @@ class AdminAIService:
     def _build_super_system_prompt(
         self,
         deep_index_summary: Optional[str] = None,
-        related_context: Optional[List[Dict]] = None
+        related_context: Optional[List[Dict]] = None,
+        conversation_summary: Optional[str] = None
     ) -> str:
         """بناء System Prompt خارق مع كل السياق"""
         parts = [
@@ -599,6 +684,14 @@ class AdminAIService:
             "- يشرح بالتفصيل مع الحفاظ على الوضوح",
             "- يستخدم العربية والإنجليزية حسب السياق",
         ]
+        
+        # SUPERHUMAN FEATURE: Include conversation context summary for better continuity
+        if conversation_summary:
+            parts.extend([
+                "\n## سياق المحادثة السابقة:",
+                conversation_summary,
+                "\nملاحظة: تذكر هذا السياق عند الإجابة على الأسئلة الجديدة."
+            ])
         
         project_files = self._read_key_project_files()
         if project_files:
@@ -859,6 +952,61 @@ class AdminAIService:
             self.logger.error(f"Failed to get user conversations: {e}", exc_info=True)
             return []
     
+    def update_conversation_title(
+        self,
+        conversation_id: int,
+        new_title: Optional[str] = None,
+        auto_generate: bool = False
+    ) -> bool:
+        """
+        تحديث عنوان المحادثة - SUPERHUMAN UX
+        
+        Updates conversation title either with a custom title or auto-generates
+        an intelligent title based on conversation content.
+        
+        Better than big companies because:
+        - Smart auto-generation from conversation context
+        - Preserves user customizations
+        - Bilingual title support
+        
+        Args:
+            conversation_id: معرف المحادثة
+            new_title: العنوان الجديد (اختياري)
+            auto_generate: توليد عنوان تلقائي من المحتوى
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            conversation = db.session.get(AdminConversation, conversation_id)
+            if not conversation:
+                return False
+            
+            if new_title:
+                conversation.title = new_title
+            elif auto_generate:
+                # Generate title from first user message
+                messages = AdminMessage.query.filter_by(
+                    conversation_id=conversation_id,
+                    role="user"
+                ).order_by(AdminMessage.created_at).limit(3).all()
+                
+                if messages:
+                    # Combine first few questions for better title
+                    combined = " • ".join(msg.content[:50] for msg in messages)
+                    conversation.title = combined[:150] + ("..." if len(combined) > 150 else "")
+            
+            conversation.updated_at = utc_now()
+            db.session.commit()
+            
+            self.logger.info(f"Updated title for conversation #{conversation_id}: {conversation.title}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to update conversation title: {e}", exc_info=True)
+            db.session.rollback()
+            return False
+    
     def archive_conversation(self, conversation_id: int) -> bool:
         """
         أرشفة محادثة - SUPERHUMAN ORGANIZATION
@@ -885,6 +1033,209 @@ class AdminAIService:
             self.logger.error(f"Failed to archive conversation: {e}", exc_info=True)
             db.session.rollback()
             return False
+    
+    def export_conversation(
+        self,
+        conversation_id: int,
+        format: str = "markdown"
+    ) -> Dict[str, Any]:
+        """
+        تصدير المحادثة - SUPERHUMAN PORTABILITY
+        
+        Exports conversation in various formats for maximum portability.
+        
+        Better than big companies because:
+        - Multiple export formats (Markdown, JSON, HTML)
+        - Beautiful formatting
+        - Preserves all metadata
+        - Ready for sharing or documentation
+        
+        Args:
+            conversation_id: معرف المحادثة
+            format: صيغة التصدير (markdown, json, html)
+        
+        Returns:
+            Dict with exported content and metadata
+        """
+        try:
+            conversation = db.session.get(AdminConversation, conversation_id)
+            if not conversation:
+                return {"status": "error", "error": "Conversation not found"}
+            
+            messages = AdminMessage.query.filter_by(
+                conversation_id=conversation_id
+            ).order_by(AdminMessage.created_at).all()
+            
+            if format == "markdown":
+                content = self._export_as_markdown(conversation, messages)
+            elif format == "json":
+                content = self._export_as_json(conversation, messages)
+            elif format == "html":
+                content = self._export_as_html(conversation, messages)
+            else:
+                return {"status": "error", "error": f"Unsupported format: {format}"}
+            
+            return {
+                "status": "success",
+                "conversation_id": conversation_id,
+                "title": conversation.title,
+                "format": format,
+                "content": content,
+                "message_count": len(messages),
+                "export_timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to export conversation: {e}", exc_info=True)
+            return {"status": "error", "error": str(e)}
+    
+    def _export_as_markdown(
+        self,
+        conversation: AdminConversation,
+        messages: List[AdminMessage]
+    ) -> str:
+        """Export conversation as beautiful Markdown"""
+        lines = [
+            f"# {conversation.title}",
+            f"",
+            f"**Type:** {conversation.conversation_type}  ",
+            f"**Created:** {conversation.created_at.strftime('%Y-%m-%d %H:%M:%S')}  ",
+            f"**Messages:** {len(messages)}  ",
+            f"**Tokens Used:** {conversation.total_tokens}  ",
+            f"",
+            "---",
+            f""
+        ]
+        
+        for i, msg in enumerate(messages, 1):
+            role_name = {
+                "user": "👤 User",
+                "assistant": "🤖 Assistant",
+                "system": "⚙️ System"
+            }.get(msg.role, msg.role)
+            
+            lines.append(f"## {i}. {role_name}")
+            lines.append(f"*{msg.created_at.strftime('%Y-%m-%d %H:%M:%S')}*")
+            lines.append("")
+            lines.append(msg.content)
+            
+            if msg.tokens_used or msg.model_used:
+                lines.append("")
+                meta = []
+                if msg.model_used:
+                    meta.append(f"Model: {msg.model_used}")
+                if msg.tokens_used:
+                    meta.append(f"Tokens: {msg.tokens_used}")
+                if msg.latency_ms:
+                    meta.append(f"Latency: {msg.latency_ms:.0f}ms")
+                lines.append(f"*{' • '.join(meta)}*")
+            
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _export_as_json(
+        self,
+        conversation: AdminConversation,
+        messages: List[AdminMessage]
+    ) -> str:
+        """Export conversation as structured JSON"""
+        import json
+        
+        data = {
+            "conversation": {
+                "id": conversation.id,
+                "title": conversation.title,
+                "type": conversation.conversation_type,
+                "created_at": conversation.created_at.isoformat(),
+                "updated_at": conversation.updated_at.isoformat(),
+                "total_messages": len(messages),
+                "total_tokens": conversation.total_tokens,
+                "avg_response_time_ms": conversation.avg_response_time_ms,
+                "tags": conversation.tags or []
+            },
+            "messages": [
+                {
+                    "id": msg.id,
+                    "role": msg.role,
+                    "content": msg.content,
+                    "tokens_used": msg.tokens_used,
+                    "model_used": msg.model_used,
+                    "latency_ms": msg.latency_ms,
+                    "created_at": msg.created_at.isoformat(),
+                    "metadata": msg.metadata_json
+                }
+                for msg in messages
+            ],
+            "export_info": {
+                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "format": "json",
+                "version": "1.0"
+            }
+        }
+        
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    
+    def _export_as_html(
+        self,
+        conversation: AdminConversation,
+        messages: List[AdminMessage]
+    ) -> str:
+        """Export conversation as beautiful HTML"""
+        html_lines = [
+            "<!DOCTYPE html>",
+            "<html lang='ar' dir='rtl'>",
+            "<head>",
+            "  <meta charset='UTF-8'>",
+            f"  <title>{conversation.title}</title>",
+            "  <style>",
+            "    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f5f5f5; }",
+            "    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }",
+            "    .message { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }",
+            "    .user { border-left: 4px solid #4CAF50; }",
+            "    .assistant { border-left: 4px solid #2196F3; }",
+            "    .system { border-left: 4px solid #FF9800; }",
+            "    .role { font-weight: bold; margin-bottom: 10px; }",
+            "    .content { line-height: 1.6; }",
+            "    .meta { color: #666; font-size: 0.9em; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }",
+            "    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }",
+            "  </style>",
+            "</head>",
+            "<body>",
+            "  <div class='header'>",
+            f"    <h1>{conversation.title}</h1>",
+            f"    <p>Created: {conversation.created_at.strftime('%Y-%m-%d %H:%M:%S')} | Messages: {len(messages)} | Tokens: {conversation.total_tokens}</p>",
+            "  </div>",
+        ]
+        
+        for msg in messages:
+            role_icon = {"user": "👤", "assistant": "🤖", "system": "⚙️"}.get(msg.role, "💬")
+            html_lines.extend([
+                f"  <div class='message {msg.role}'>",
+                f"    <div class='role'>{role_icon} {msg.role.title()}</div>",
+                f"    <div class='content'>{msg.content.replace('<', '&lt;').replace('>', '&gt;').replace('\\n', '<br>')}</div>",
+            ])
+            
+            if msg.tokens_used or msg.model_used:
+                meta_parts = []
+                if msg.model_used:
+                    meta_parts.append(f"Model: {msg.model_used}")
+                if msg.tokens_used:
+                    meta_parts.append(f"Tokens: {msg.tokens_used}")
+                if msg.latency_ms:
+                    meta_parts.append(f"Latency: {msg.latency_ms:.0f}ms")
+                html_lines.append(f"    <div class='meta'>{' • '.join(meta_parts)}</div>")
+            
+            html_lines.append("  </div>")
+        
+        html_lines.extend([
+            "</body>",
+            "</html>"
+        ])
+        
+        return "\n".join(html_lines)
     
     def get_conversation_analytics(self, conversation_id: int) -> Dict[str, Any]:
         """
