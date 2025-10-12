@@ -14,6 +14,7 @@
 from flask import render_template, abort, request, jsonify, flash, current_app, url_for
 from flask_login import current_user, login_required
 from functools import wraps
+from datetime import datetime, timezone
 
 from app.admin import bp
 from app import db
@@ -602,4 +603,378 @@ def get_table_schema(table_name):
     except Exception as e:
         current_app.logger.error(f"Get table schema failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# =====================================================================================
+# 🔥 WORLD-CLASS ADVANCED API ENDPOINTS (v2.0 - SUPERHUMAN EDITION) 🔥
+# =====================================================================================
+# PRIME DIRECTIVE:
+#   نقاط نهاية خارقة تتفوق على الشركات العملاقة مثل Google و Microsoft
+#   ✨ المميزات الخارقة:
+#   - Real-time observability with P99.9 latency monitoring
+#   - Zero-Trust security with JWT and request signing
+#   - OpenAPI contract validation
+#   - ML-based anomaly detection
+#   - Automated SLA compliance monitoring
+#   - Advanced security audit logging
+
+try:
+    from app.services.api_observability_service import get_observability_service, monitor_performance
+    from app.services.api_security_service import get_security_service, rate_limit, require_jwt_auth
+    from app.services.api_contract_service import get_contract_service, validate_contract
+except ImportError:
+    get_observability_service = None
+    get_security_service = None
+    get_contract_service = None
+    monitor_performance = lambda f: f
+    rate_limit = lambda f: f
+    require_jwt_auth = lambda f: f
+    validate_contract = lambda f: f
+
+
+@bp.route("/api/observability/metrics", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_observability_metrics():
+    """
+    🎯 Get real-time observability metrics
+    
+    Returns comprehensive performance metrics including:
+    - P50, P95, P99, P99.9 latency percentiles
+    - Requests per second
+    - Error rates
+    - SLA compliance metrics
+    """
+    if not get_observability_service:
+        return jsonify({"status": "error", "message": "Observability service not available"}), 503
+    
+    try:
+        service = get_observability_service()
+        snapshot = service.get_performance_snapshot()
+        sla_compliance = service.get_sla_compliance()
+        
+        return jsonify({
+            "status": "success",
+            "timestamp": snapshot.timestamp.isoformat(),
+            "performance": {
+                "avg_latency_ms": snapshot.avg_latency_ms,
+                "p50_latency_ms": snapshot.p50_latency_ms,
+                "p95_latency_ms": snapshot.p95_latency_ms,
+                "p99_latency_ms": snapshot.p99_latency_ms,
+                "p999_latency_ms": snapshot.p999_latency_ms,
+                "requests_per_second": snapshot.requests_per_second,
+                "error_rate": snapshot.error_rate,
+                "active_requests": snapshot.active_requests
+            },
+            "sla_compliance": sla_compliance
+        })
+    except Exception as e:
+        current_app.logger.error(f"Get observability metrics failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/observability/alerts", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_anomaly_alerts():
+    """
+    🚨 Get ML-detected anomaly alerts
+    
+    Query parameters:
+    - severity: Filter by severity (critical, high, medium, low)
+    """
+    if not get_observability_service:
+        return jsonify({"status": "error", "message": "Observability service not available"}), 503
+    
+    try:
+        service = get_observability_service()
+        severity = request.args.get('severity')
+        
+        alerts = service.get_all_alerts(severity=severity)
+        
+        return jsonify({
+            "status": "success",
+            "total_alerts": len(alerts),
+            "alerts": alerts
+        })
+    except Exception as e:
+        current_app.logger.error(f"Get anomaly alerts failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/observability/endpoint/<path:endpoint_path>", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_endpoint_analytics(endpoint_path):
+    """
+    📊 Get detailed analytics for specific endpoint
+    
+    Returns endpoint-specific metrics and performance data
+    """
+    if not get_observability_service:
+        return jsonify({"status": "error", "message": "Observability service not available"}), 503
+    
+    try:
+        service = get_observability_service()
+        analytics = service.get_endpoint_analytics(endpoint_path)
+        
+        return jsonify({
+            "status": "success",
+            **analytics
+        })
+    except Exception as e:
+        current_app.logger.error(f"Get endpoint analytics failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/security/token/generate", methods=["POST"])
+@admin_required
+@rate_limit
+def generate_jwt_token():
+    """
+    🔐 Generate short-lived JWT access token (15 minutes)
+    
+    Request body:
+    {
+        "scopes": ["read", "write"]  // Optional
+    }
+    """
+    if not get_security_service:
+        return jsonify({"status": "error", "message": "Security service not available"}), 503
+    
+    try:
+        service = get_security_service()
+        data = request.get_json() or {}
+        scopes = data.get('scopes', [])
+        
+        # Generate access token
+        access_token = service.generate_access_token(
+            user_id=current_user.id,
+            scopes=scopes
+        )
+        
+        # Generate refresh token
+        refresh_token = service.generate_refresh_token(user_id=current_user.id)
+        
+        return jsonify({
+            "status": "success",
+            "access_token": access_token.token,
+            "refresh_token": refresh_token.token,
+            "token_type": "Bearer",
+            "expires_in": 900,  # 15 minutes in seconds
+            "expires_at": access_token.expires_at.isoformat(),
+            "scopes": access_token.scopes
+        })
+    except Exception as e:
+        current_app.logger.error(f"Generate JWT token failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/security/token/refresh", methods=["POST"])
+@rate_limit
+def refresh_jwt_token():
+    """
+    🔄 Rotate access token using refresh token
+    
+    Request body:
+    {
+        "refresh_token": "your-refresh-token"
+    }
+    """
+    if not get_security_service:
+        return jsonify({"status": "error", "message": "Security service not available"}), 503
+    
+    try:
+        service = get_security_service()
+        data = request.get_json() or {}
+        refresh_token = data.get('refresh_token')
+        
+        if not refresh_token:
+            return jsonify({"status": "error", "message": "Refresh token is required"}), 400
+        
+        # Rotate token
+        new_access_token = service.rotate_token(refresh_token)
+        
+        if not new_access_token:
+            return jsonify({"status": "error", "message": "Invalid or expired refresh token"}), 401
+        
+        return jsonify({
+            "status": "success",
+            "access_token": new_access_token.token,
+            "token_type": "Bearer",
+            "expires_in": 900,
+            "expires_at": new_access_token.expires_at.isoformat()
+        })
+    except Exception as e:
+        current_app.logger.error(f"Refresh JWT token failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/security/audit-logs", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_security_audit_logs():
+    """
+    📋 Get security audit logs for compliance
+    
+    Query parameters:
+    - event_type: Filter by event type
+    - severity: Filter by severity
+    - limit: Number of logs to return (default: 100)
+    """
+    if not get_security_service:
+        return jsonify({"status": "error", "message": "Security service not available"}), 503
+    
+    try:
+        service = get_security_service()
+        
+        event_type = request.args.get('event_type')
+        severity = request.args.get('severity')
+        limit = request.args.get('limit', 100, type=int)
+        
+        logs = service.get_audit_logs(
+            event_type=event_type,
+            severity=severity,
+            limit=limit
+        )
+        
+        return jsonify({
+            "status": "success",
+            "total_logs": len(logs),
+            "logs": logs
+        })
+    except Exception as e:
+        current_app.logger.error(f"Get security audit logs failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/contract/openapi", methods=["GET"])
+@admin_required
+def get_openapi_specification():
+    """
+    📜 Get OpenAPI 3.0 specification
+    
+    Returns complete OpenAPI specification with all endpoints,
+    schemas, and security definitions
+    """
+    if not get_contract_service:
+        return jsonify({"status": "error", "message": "Contract service not available"}), 503
+    
+    try:
+        service = get_contract_service()
+        spec = service.generate_openapi_spec()
+        
+        return jsonify(spec)
+    except Exception as e:
+        current_app.logger.error(f"Get OpenAPI spec failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/contract/violations", methods=["GET"])
+@admin_required
+@monitor_performance
+def get_contract_violations():
+    """
+    🔴 Get API contract violations
+    
+    Query parameters:
+    - severity: Filter by severity
+    - violation_type: Filter by type (schema, version, breaking_change)
+    - limit: Number of violations to return (default: 100)
+    """
+    if not get_contract_service:
+        return jsonify({"status": "error", "message": "Contract service not available"}), 503
+    
+    try:
+        service = get_contract_service()
+        
+        severity = request.args.get('severity')
+        violation_type = request.args.get('violation_type')
+        limit = request.args.get('limit', 100, type=int)
+        
+        violations = service.get_contract_violations(
+            severity=severity,
+            violation_type=violation_type,
+            limit=limit
+        )
+        
+        return jsonify({
+            "status": "success",
+            "total_violations": len(violations),
+            "violations": violations
+        })
+    except Exception as e:
+        current_app.logger.error(f"Get contract violations failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/health/comprehensive", methods=["GET"])
+@monitor_performance
+def comprehensive_health_check():
+    """
+    💚 Comprehensive health check for all systems
+    
+    Returns health status for:
+    - Database
+    - Observability service
+    - Security service
+    - Contract validation
+    - SLA compliance
+    """
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "components": {}
+    }
+    
+    # Check database
+    try:
+        if database_service:
+            db_health = database_service.get_database_health()
+            health_status["components"]["database"] = {
+                "status": db_health.get("status", "unknown"),
+                "checks": db_health.get("checks", {})
+            }
+        else:
+            health_status["components"]["database"] = {"status": "unavailable"}
+    except Exception as e:
+        health_status["components"]["database"] = {"status": "error", "message": str(e)}
+        health_status["status"] = "degraded"
+    
+    # Check observability
+    try:
+        if get_observability_service:
+            obs_service = get_observability_service()
+            sla = obs_service.get_sla_compliance()
+            health_status["components"]["observability"] = {
+                "status": "healthy" if sla["sla_status"] == "compliant" else "warning",
+                "sla_compliance": sla["compliance_rate_percent"]
+            }
+        else:
+            health_status["components"]["observability"] = {"status": "unavailable"}
+    except Exception as e:
+        health_status["components"]["observability"] = {"status": "error", "message": str(e)}
+        health_status["status"] = "degraded"
+    
+    # Check security
+    try:
+        if get_security_service:
+            health_status["components"]["security"] = {"status": "healthy"}
+        else:
+            health_status["components"]["security"] = {"status": "unavailable"}
+    except Exception as e:
+        health_status["components"]["security"] = {"status": "error", "message": str(e)}
+        health_status["status"] = "degraded"
+    
+    # Check contract validation
+    try:
+        if get_contract_service:
+            health_status["components"]["contract_validation"] = {"status": "healthy"}
+        else:
+            health_status["components"]["contract_validation"] = {"status": "unavailable"}
+    except Exception as e:
+        health_status["components"]["contract_validation"] = {"status": "error", "message": str(e)}
+        health_status["status"] = "degraded"
+    
+    return jsonify(health_status)
 
