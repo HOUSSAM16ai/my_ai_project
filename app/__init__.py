@@ -106,21 +106,41 @@ def _register_extensions(app: Flask) -> None:
 
 
 def _register_blueprints(app: Flask) -> None:
-    # تأكد أن الاستيراد يتم داخل السياق لتفادي دوائر الاستيراد
-    from . import routes
-    app.register_blueprint(routes.bp)
+    """Register all blueprints with graceful failure handling for optional components."""
+    # Core routes (required)
+    try:
+        from . import routes
+        app.register_blueprint(routes.bp)
+        app.logger.info("Core routes registered successfully")
+    except Exception as exc:
+        app.logger.error("Failed to register core routes: %s", exc, exc_info=True)
+        raise  # Core routes are critical, so we re-raise
 
-    from .admin import routes as admin_routes
-    app.register_blueprint(admin_routes.bp, url_prefix="/admin")
+    # Admin routes (optional but recommended)
+    try:
+        from .admin import routes as admin_routes
+        app.register_blueprint(admin_routes.bp, url_prefix="/admin")
+        app.logger.info("Admin routes registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register admin routes: %s (continuing without admin panel)", exc)
     
-    # Register World-Class API Gateway blueprints
-    from .api import init_api
-    init_api(app)
+    # API Gateway blueprints (optional)
+    try:
+        from .api import init_api
+        init_api(app)
+        app.logger.info("API Gateway registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register API Gateway: %s (continuing without API)", exc)
 
-    from .cli import user_commands, mindgate_commands, database_commands
-    app.register_blueprint(user_commands.users_cli)
-    app.register_blueprint(mindgate_commands.mindgate_cli)
-    app.register_blueprint(database_commands.database_cli)
+    # CLI commands (optional)
+    try:
+        from .cli import user_commands, mindgate_commands, database_commands
+        app.register_blueprint(user_commands.users_cli)
+        app.register_blueprint(mindgate_commands.mindgate_cli)
+        app.register_blueprint(database_commands.database_cli)
+        app.logger.info("CLI commands registered successfully")
+    except Exception as exc:
+        app.logger.warning("Failed to register CLI commands: %s (continuing without CLI)", exc)
 
 
 def _configure_logging(app: Flask) -> None:
@@ -256,13 +276,29 @@ def create_app(config_name: Optional[str] = None) -> Flask:
 # --------------------------------------------------------------------------------------
 # Providing a global instance helps CLI usage when user sets FLASK_APP=app.
 # If you prefer pure factory mode, you can ignore this and set FLASK_APP='app:create_app'
-try:
-    app = create_app()
-except Exception as _global_exc:  # Fail softly so unit tests can still import modules.
-    # We do a minimal fallback logger
-    _fallback_logger = logging.getLogger("genesis.factory")
-    _fallback_logger.error("Global app instantiation failed: %s", _global_exc, exc_info=True)
-    app = None  # type: ignore
+#
+# Smart initialization: Skip global app creation in test environments to avoid
+# premature database connection attempts before test fixtures are ready.
+app = None  # type: ignore
+
+def _should_create_global_app() -> bool:
+    """Determine if we should create a global app instance at module import time."""
+    # Skip if we're in a test environment
+    if os.getenv("TESTING") == "1" or os.getenv("FLASK_ENV") == "testing":
+        return False
+    # Skip if pytest is running (detected by PYTEST_CURRENT_TEST env var)
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return False
+    return True
+
+if _should_create_global_app():
+    try:
+        app = create_app()
+    except Exception as _global_exc:  # Fail softly so unit tests can still import modules.
+        # We do a minimal fallback logger
+        _fallback_logger = logging.getLogger("genesis.factory")
+        _fallback_logger.error("Global app instantiation failed: %s", _global_exc, exc_info=True)
+        app = None  # type: ignore
 
 
 # --------------------------------------------------------------------------------------

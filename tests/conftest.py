@@ -9,6 +9,14 @@
 # ======================================================================================
 
 import os
+# --------------------------------------------------------------------------------------
+# إعداد بيئة الاختبار - يجب أن يكون قبل أي استيراد!
+# Set test environment BEFORE any imports to prevent premature app instantiation
+# --------------------------------------------------------------------------------------
+os.environ.setdefault("FLASK_ENV", "testing")
+os.environ["TESTING"] = "1"
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
+
 import pytest
 from sqlalchemy import event
 from werkzeug.security import generate_password_hash
@@ -23,12 +31,6 @@ except ImportError as e:
     raise RuntimeError(
         "فشل استيراد نماذج Overmind. تأكد من أن app/models.py (v10.0+) محدث."
     ) from e
-
-# --------------------------------------------------------------------------------------
-# إعداد بيئة الاختبار
-# --------------------------------------------------------------------------------------
-os.environ.setdefault("FLASK_ENV", "testing")
-os.environ["TESTING"] = "1"
 
 # --------------------------------------------------------------------------------------
 # تطبيق الاختبار (يُنشأ مرة واحدة لكل جلسة)
