@@ -647,8 +647,31 @@ body {
         })
       });
       
-      const result = await response.json();
       hideLoading();
+      
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Try to get error message from response
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // Failed to parse JSON error
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}). Please check your connection and authentication.`;
+        }
+        
+        addMessage('system', `❌ ${errorMessage}`);
+        return;
+      }
+      
+      const result = await response.json();
       
       if (result.status === 'success') {
         STATE.currentConversationId = result.conversation_id;
@@ -681,8 +704,31 @@ body {
         })
       });
       
-      const result = await response.json();
       hideLoading();
+      
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Try to get error message from response
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // Failed to parse JSON error
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}). Please check your connection and authentication.`;
+        }
+        
+        addMessage('system', `❌ ${errorMessage}`);
+        return;
+      }
+      
+      const result = await response.json();
       
       if (result.status === 'success') {
         const stats = result.project_stats;
@@ -718,7 +764,7 @@ body {
         
         addMessage('assistant', analysisHtml);
       } else {
-        addMessage('system', `❌ Analysis failed: ${result.error}`);
+        addMessage('system', `❌ Analysis failed: ${result.error || result.message}`);
       }
     } catch (error) {
       hideLoading();
