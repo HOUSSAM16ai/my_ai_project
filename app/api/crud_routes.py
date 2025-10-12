@@ -26,8 +26,8 @@ from app.services.api_security_service import require_jwt_auth, rate_limit
 from app.services.api_observability_service import monitor_performance
 from app.services.api_contract_service import validate_contract
 from marshmallow import ValidationError
-from sqlalchemy import desc, asc
-from datetime import datetime
+from sqlalchemy import desc, asc, text
+from datetime import datetime, timezone
 
 # ======================================================================================
 # HELPER FUNCTIONS
@@ -83,7 +83,7 @@ def success_response(data, message="Success", status_code=200):
         'status': 'success',
         'message': message,
         'data': data,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }), status_code
 
 
@@ -92,7 +92,7 @@ def error_response(message, status_code=400, errors=None):
     response = {
         'status': 'error',
         'message': message,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }
     if errors:
         response['errors'] = errors
@@ -313,10 +313,10 @@ def get_missions():
         result['items'] = [
             {
                 'id': m.id,
-                'title': m.title,
-                'description': m.description,
-                'status': m.status,
-                'user_id': m.user_id,
+                'objective': m.objective,
+                'status': m.status.value if hasattr(m.status, 'value') else m.status,
+                'initiator_id': m.initiator_id,
+                'result_summary': m.result_summary,
                 'created_at': m.created_at.isoformat() if m.created_at else None,
                 'updated_at': m.updated_at.isoformat() if m.updated_at else None
             }
@@ -339,10 +339,10 @@ def get_mission(mission_id):
         mission = Mission.query.get_or_404(mission_id)
         data = {
             'id': mission.id,
-            'title': mission.title,
-            'description': mission.description,
-            'status': mission.status,
-            'user_id': mission.user_id,
+            'objective': mission.objective,
+            'status': mission.status.value if hasattr(mission.status, 'value') else mission.status,
+            'initiator_id': mission.initiator_id,
+            'result_summary': mission.result_summary,
             'created_at': mission.created_at.isoformat() if mission.created_at else None,
             'updated_at': mission.updated_at.isoformat() if mission.updated_at else None
         }
@@ -666,7 +666,7 @@ def health_check():
     """API health check endpoint"""
     try:
         # Check database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         
         return success_response({
             'status': 'healthy',
