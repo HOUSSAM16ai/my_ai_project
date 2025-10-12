@@ -198,6 +198,9 @@ class SLITracker:
                 return statistics.mean(recent_measurements)
             elif sli.sli_type == SLIType.LATENCY:
                 # Latency: p99 or similar percentile
+                # Need at least 2 data points for quantiles
+                if len(recent_measurements) < 2:
+                    return recent_measurements[0] if recent_measurements else None
                 return statistics.quantiles(recent_measurements, n=100)[98]  # P99
             elif sli.sli_type == SLIType.ERROR_RATE:
                 # Error rate: percentage of failed requests
