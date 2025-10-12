@@ -22,7 +22,7 @@ def test_error_handling():
         print("   ✅ Service imported successfully")
     except ImportError as e:
         print(f"   ❌ Failed to import service: {e}")
-        return False
+        assert False, f"Failed to import service: {e}"
     
     # Test 2: Create service instance
     print("\n2️⃣ Testing service instantiation...")
@@ -31,7 +31,7 @@ def test_error_handling():
         print("   ✅ Service instantiated successfully")
     except Exception as e:
         print(f"   ❌ Failed to create service: {e}")
-        return False
+        assert False, f"Failed to create service: {e}"
     
     # Test 3: Check API key detection
     print("\n3️⃣ Testing API key detection...")
@@ -89,13 +89,11 @@ def test_error_handling():
         print("   ./setup-api-key.sh")
         print("\n   Or manually create .env file with:")
         print("   OPENROUTER_API_KEY=sk-or-v1-your-key-here")
-    
-    return True
 
 if __name__ == "__main__":
     try:
-        success = test_error_handling()
-        sys.exit(0 if success else 1)
+        test_error_handling()
+        sys.exit(0)
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         import traceback
