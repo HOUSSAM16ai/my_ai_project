@@ -290,24 +290,21 @@ def test_conversation_continuation():
             print(f"\n{G}{BOLD}🎉 SUPERHUMAN FEATURES VERIFIED!{E}")
             print(f"{C}Your conversation system is now better than big tech companies!{E}\n")
             
-            return True
-            
     except Exception as e:
         print(f"\n{R}❌ Test failed with error:{E}")
         print(f"{R}{str(e)}{E}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 if __name__ == "__main__":
     print(f"\n{Y}Starting Conversation Continuation Test...{E}\n")
     
-    success = test_conversation_continuation()
-    
-    if success:
+    try:
+        test_conversation_continuation()
         print(f"\n{G}✅ All tests completed successfully!{E}\n")
         sys.exit(0)
-    else:
+    except Exception:
         print(f"\n{R}❌ Some tests failed!{E}\n")
         sys.exit(1)
