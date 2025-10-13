@@ -225,9 +225,7 @@ class InMemoryBroker(MessageBroker):
 
     def subscribe(self, topic: str, handler: Callable[[Event], bool]) -> str:
         """Subscribe to topic"""
-        subscription_id = hashlib.sha256(
-            f"{topic}{datetime.now(UTC)}".encode()
-        ).hexdigest()[:16]
+        subscription_id = hashlib.sha256(f"{topic}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
         subscription = EventSubscription(
             subscription_id=subscription_id, event_type=topic, handler=handler
@@ -387,9 +385,7 @@ class EventDrivenService:
     ) -> str:
         """Publish an event"""
 
-        event_id = hashlib.sha256(f"{event_type}{datetime.now(UTC)}".encode()).hexdigest()[
-            :16
-        ]
+        event_id = hashlib.sha256(f"{event_type}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
         event = Event(
             event_id=event_id,
@@ -574,9 +570,7 @@ class CQRSService:
         self, command_type: str, payload: dict[str, Any], issued_by: str = "system"
     ) -> tuple[bool, Any]:
         """Execute a command"""
-        command_id = hashlib.sha256(
-            f"{command_type}{datetime.now(UTC)}".encode()
-        ).hexdigest()[:16]
+        command_id = hashlib.sha256(f"{command_type}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
         command = Command(
             command_id=command_id,
@@ -617,9 +611,7 @@ class CQRSService:
             handler = self.query_handlers[query_type]
 
         query = Query(
-            query_id=hashlib.sha256(
-                f"{query_type}{datetime.now(UTC)}".encode()
-            ).hexdigest()[:16],
+            query_id=hashlib.sha256(f"{query_type}{datetime.now(UTC)}".encode()).hexdigest()[:16],
             query_type=query_type,
             parameters=parameters,
             requested_by=requested_by,

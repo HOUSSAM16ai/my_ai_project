@@ -242,9 +242,7 @@ class CircuitBreakerService:
         self.circuit_states: dict[str, CircuitBreakerState] = defaultdict(CircuitBreakerState)
         self.lock = threading.RLock()
 
-    def call(
-        self, service_id: str, operation: Callable[[], Any]
-    ) -> tuple[bool, Any, str | None]:
+    def call(self, service_id: str, operation: Callable[[], Any]) -> tuple[bool, Any, str | None]:
         """
         Execute operation through circuit breaker
 

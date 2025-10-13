@@ -149,9 +149,7 @@ class APISecurityService:
     # JWT TOKEN MANAGEMENT (SHORT-LIVED)
     # ==================================================================================
 
-    def generate_access_token(
-        self, user_id: int, scopes: list[str] | None = None
-    ) -> SecurityToken:
+    def generate_access_token(self, user_id: int, scopes: list[str] | None = None) -> SecurityToken:
         """Generate short-lived access token (15 minutes)"""
         jti = secrets.token_urlsafe(16)
         now = datetime.now(UTC)

@@ -430,7 +430,8 @@ def manage_ip_blacklist():
 def security_health():
     """Security service health check"""
     try:
-        security = get_security_service()
+        # Verify service is available
+        _ = get_security_service()
 
         return (
             jsonify(

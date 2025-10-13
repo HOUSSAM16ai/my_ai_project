@@ -552,7 +552,9 @@ class SLOService:
 
         statuses = [slo.status for slo in self.slos.values()]
 
-        if any(s == SLOStatus.BREACHED for s in statuses) or any(s == SLOStatus.CRITICAL for s in statuses):
+        if any(s == SLOStatus.BREACHED for s in statuses) or any(
+            s == SLOStatus.CRITICAL for s in statuses
+        ):
             return "critical"
         elif any(s == SLOStatus.WARNING for s in statuses):
             return "warning"

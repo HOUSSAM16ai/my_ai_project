@@ -815,10 +815,18 @@ except ImportError:
     get_observability_service = None
     get_security_service = None
     get_contract_service = None
-    monitor_performance = lambda f: f
-    rate_limit = lambda f: f
-    require_jwt_auth = lambda f: f
-    validate_contract = lambda f: f
+
+    def monitor_performance(f):
+        return f
+
+    def rate_limit(f):
+        return f
+
+    def require_jwt_auth(f):
+        return f
+
+    def validate_contract(f):
+        return f
 
 
 @bp.route("/api/observability/metrics", methods=["GET"])
@@ -1284,7 +1292,8 @@ def get_ab_tests():
         if not get_ab_testing_service:
             return jsonify({"status": "error", "message": "A/B testing service not available"}), 503
 
-        ab_service = get_ab_testing_service()
+        # Get the service (currently unused, placeholder for future implementation)
+        _ = get_ab_testing_service()
 
         # Get all experiments (placeholder - would need to add method to service)
         return (

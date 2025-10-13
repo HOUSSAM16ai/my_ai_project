@@ -42,9 +42,7 @@ class RefactorTool:
         data = path.read_bytes()
         return data.decode(errors="replace"), "unknown"
 
-    def _write_atomic(
-        self, path: Path, text: str, preserve_meta_from: Path | None = None
-    ) -> None:
+    def _write_atomic(self, path: Path, text: str, preserve_meta_from: Path | None = None) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tf:
             tmp_name = tf.name

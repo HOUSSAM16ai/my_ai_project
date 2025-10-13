@@ -376,9 +376,7 @@ class AdvancedAnalyticsService:
                 )
 
             # Calculate statistics
-            days_active = (
-                datetime.now(UTC) - min(m.timestamp for m in user_metrics)
-            ).days + 1
+            days_active = (datetime.now(UTC) - min(m.timestamp for m in user_metrics)).days + 1
             avg_requests_per_day = len(user_metrics) / max(days_active, 1)
 
             # Find favorite endpoints

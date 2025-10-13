@@ -129,9 +129,7 @@ def coerce_datetime(value: Any) -> datetime | None:
     if value is None:
         return None
     if isinstance(value, datetime):
-        return (
-            value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
-        )
+        return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
     if isinstance(value, (int, float)):
         try:
             return datetime.fromtimestamp(float(value), tz=UTC)
@@ -335,9 +333,7 @@ class AdminConversation(Timestamped, db.Model):
     is_archived: Mapped[bool] = mapped_column(
         db.Boolean, default=False, server_default=text("false"), index=True
     )
-    last_message_at: Mapped[datetime | None] = mapped_column(
-        db.DateTime(timezone=True), index=True
-    )
+    last_message_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), index=True)
 
     # Relationships
     user: Mapped[User] = relationship("User", overlaps="admin_conversations")
@@ -407,9 +403,7 @@ class AdminMessage(Timestamped, db.Model):
     )  # Custom data, analysis results, etc.
 
     # Content analytics
-    content_hash: Mapped[str | None] = mapped_column(
-        db.String(64), index=True
-    )  # For deduplication
+    content_hash: Mapped[str | None] = mapped_column(db.String(64), index=True)  # For deduplication
     embedding_vector: Mapped[list | None] = mapped_column(
         JSONB_or_JSON
     )  # For semantic search (future)
