@@ -159,7 +159,7 @@ def get_users():
 def get_user(user_id):
     """Get a specific user by ID"""
     try:
-        user = User.query.get_or_404(user_id)
+        user = db.get_or_404(User, user_id)
         schema = UserSchema()
         return success_response(schema.dump(user), "User retrieved successfully")
     except Exception as e:
@@ -230,7 +230,7 @@ def update_user(user_id):
     Request Body: Same as create, all fields optional
     """
     try:
-        user = User.query.get_or_404(user_id)
+        user = db.get_or_404(User, user_id)
         schema = UserSchema(partial=True)
         data = schema.load(request.get_json())
         
@@ -267,7 +267,7 @@ def update_user(user_id):
 def delete_user(user_id):
     """Delete a user"""
     try:
-        user = User.query.get_or_404(user_id)
+        user = db.get_or_404(User, user_id)
         db.session.delete(user)
         db.session.commit()
         
@@ -336,7 +336,7 @@ def get_missions():
 def get_mission(mission_id):
     """Get a specific mission by ID"""
     try:
-        mission = Mission.query.get_or_404(mission_id)
+        mission = db.get_or_404(Mission, mission_id)
         data = {
             'id': mission.id,
             'objective': mission.objective,
@@ -395,7 +395,7 @@ def create_mission():
 def update_mission(mission_id):
     """Update a mission"""
     try:
-        mission = Mission.query.get_or_404(mission_id)
+        mission = db.get_or_404(Mission, mission_id)
         data = request.get_json()
         
         if 'title' in data:
@@ -431,7 +431,7 @@ def update_mission(mission_id):
 def delete_mission(mission_id):
     """Delete a mission"""
     try:
-        mission = Mission.query.get_or_404(mission_id)
+        mission = db.get_or_404(Mission, mission_id)
         db.session.delete(mission)
         db.session.commit()
         
@@ -487,7 +487,7 @@ def get_tasks():
 def get_task(task_id):
     """Get a specific task by ID"""
     try:
-        task = Task.query.get_or_404(task_id)
+        task = db.get_or_404(Task, task_id)
         schema = TaskSchema()
         return success_response(schema.dump(task), "Task retrieved successfully")
     except Exception as e:
@@ -539,7 +539,7 @@ def create_task():
 def update_task(task_id):
     """Update a task"""
     try:
-        task = Task.query.get_or_404(task_id)
+        task = db.get_or_404(Task, task_id)
         schema = TaskSchema(partial=True)
         data = schema.load(request.get_json())
         
@@ -570,7 +570,7 @@ def update_task(task_id):
 def delete_task(task_id):
     """Delete a task"""
     try:
-        task = Task.query.get_or_404(task_id)
+        task = db.get_or_404(Task, task_id)
         db.session.delete(task)
         db.session.commit()
         
