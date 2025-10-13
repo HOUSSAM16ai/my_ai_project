@@ -20,10 +20,10 @@ import hashlib
 import threading
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
 
@@ -105,7 +105,7 @@ class QueryPlan:
 class GraphQLFederationManager:
     """
     GraphQL Federation Manager
-    
+
     Manages federated GraphQL schemas across microservices,
     providing a unified query interface
     """
@@ -125,12 +125,12 @@ class GraphQLFederationManager:
     ) -> str:
         """
         Register a GraphQL schema from a microservice
-        
+
         Args:
             service_name: Name of the service
             schema_definition: Schema definition (types, queries, mutations)
             version: Schema version
-        
+
         Returns:
             Schema ID
         """
@@ -184,9 +184,7 @@ class GraphQLFederationManager:
         with self.lock:
             self.schemas[service_name] = schema
 
-        current_app.logger.info(
-            f"GraphQL schema registered: {service_name} (version {version})"
-        )
+        current_app.logger.info(f"GraphQL schema registered: {service_name} (version {version})")
 
         # Recompose federated schema
         self._compose_federated_schema()
@@ -206,14 +204,12 @@ class GraphQLFederationManager:
         with self.lock:
             self.resolvers[service_name][key] = resolver
 
-        current_app.logger.info(
-            f"Resolver registered: {service_name}.{type_name}.{field_name}"
-        )
+        current_app.logger.info(f"Resolver registered: {service_name}.{type_name}.{field_name}")
 
     def _compose_federated_schema(self):
         """
         Compose federated schema from all registered schemas
-        
+
         Merges schemas from different services into unified schema
         """
         with self.lock:
@@ -260,12 +256,12 @@ class GraphQLFederationManager:
     ) -> dict[str, Any]:
         """
         Execute a federated GraphQL query
-        
+
         Args:
             query: GraphQL query string
             variables: Query variables
             operation_name: Optional operation name
-        
+
         Returns:
             Query result
         """
@@ -294,7 +290,7 @@ class GraphQLFederationManager:
     ) -> QueryPlan:
         """
         Create query execution plan
-        
+
         Analyzes query and determines which services to call
         and in what order
         """
@@ -309,11 +305,13 @@ class GraphQLFederationManager:
         # Parse query to determine which fields are requested
         # This is a simplified version - production would use graphql-core
         if "query" in query.lower():
-            plan.steps.append({
-                "service": "federated",
-                "operation": "query",
-                "fields": self._extract_fields(query),
-            })
+            plan.steps.append(
+                {
+                    "service": "federated",
+                    "operation": "query",
+                    "fields": self._extract_fields(query),
+                }
+            )
 
         return plan
 
@@ -338,10 +336,12 @@ class GraphQLFederationManager:
                     except Exception as e:
                         if "errors" not in result:
                             result["errors"] = []
-                        result["errors"].append({
-                            "message": str(e),
-                            "path": [field],
-                        })
+                        result["errors"].append(
+                            {
+                                "message": str(e),
+                                "path": [field],
+                            }
+                        )
                 else:
                     # No resolver found, return null
                     result["data"][field] = None
@@ -373,15 +373,15 @@ class GraphQLFederationManager:
     def _extract_fields(self, query: str) -> list[str]:
         """
         Extract field names from query
-        
+
         Simplified version - production would use proper parser
         """
         # Remove query keyword and braces
         cleaned = query.replace("query", "").replace("{", "").replace("}", "")
-        
+
         # Split by whitespace and newlines
         fields = [f.strip() for f in cleaned.split() if f.strip()]
-        
+
         return fields
 
     def _get_cache_key(
@@ -396,7 +396,7 @@ class GraphQLFederationManager:
     def get_schema_sdl(self) -> str:
         """
         Get Schema Definition Language (SDL) representation
-        
+
         Returns the federated schema in GraphQL SDL format
         """
         if not self.federated_schema:
@@ -445,15 +445,9 @@ class GraphQLFederationManager:
         """Get federation metrics"""
         with self.lock:
             total_services = len(self.schemas)
-            total_types = (
-                len(self.federated_schema.types) if self.federated_schema else 0
-            )
-            total_queries = (
-                len(self.federated_schema.queries) if self.federated_schema else 0
-            )
-            total_mutations = (
-                len(self.federated_schema.mutations) if self.federated_schema else 0
-            )
+            total_types = len(self.federated_schema.types) if self.federated_schema else 0
+            total_queries = len(self.federated_schema.queries) if self.federated_schema else 0
+            total_mutations = len(self.federated_schema.mutations) if self.federated_schema else 0
 
             return {
                 "total_services": total_services,

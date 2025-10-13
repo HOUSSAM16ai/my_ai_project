@@ -16,16 +16,16 @@
 
 from __future__ import annotations
 
-import hashlib
 import random
 import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
 
@@ -128,7 +128,7 @@ class TrafficSplit:
 class CircuitBreaker:
     """
     Circuit Breaker pattern implementation
-    
+
     Prevents cascading failures by stopping requests to failing services
     """
 
@@ -144,7 +144,7 @@ class CircuitBreaker:
     def call(self, func: Callable, *args, **kwargs) -> Any:
         """
         Execute function through circuit breaker
-        
+
         Raises:
             Exception: If circuit is open or function fails
         """
@@ -244,7 +244,7 @@ class CircuitBreaker:
 class ServiceMeshManager:
     """
     Service Mesh Manager
-    
+
     Manages service discovery, load balancing, traffic splitting,
     and resilience patterns
     """
@@ -341,12 +341,12 @@ class ServiceMeshManager:
     ) -> str:
         """
         Configure traffic splitting
-        
+
         Args:
             service_name: Name of service
             strategy: Traffic splitting strategy
             destinations: List of {endpoint_id, weight, version}
-        
+
         Returns:
             Split ID
         """
@@ -362,9 +362,7 @@ class ServiceMeshManager:
         with self.lock:
             self.traffic_splits[service_name] = split
 
-        current_app.logger.info(
-            f"Traffic split configured: {service_name} ({strategy.value})"
-        )
+        current_app.logger.info(f"Traffic split configured: {service_name} ({strategy.value})")
 
         return split_id
 
@@ -375,7 +373,7 @@ class ServiceMeshManager:
     ) -> ServiceEndpoint | None:
         """
         Get service endpoint (with load balancing)
-        
+
         Applies traffic splitting strategy if configured
         """
         with self.lock:
@@ -470,7 +468,7 @@ class ServiceMeshManager:
     ) -> Any:
         """
         Call function with full resilience patterns
-        
+
         Applies:
         - Circuit breaker
         - Retry with exponential backoff
@@ -496,7 +494,7 @@ class ServiceMeshManager:
 
                 # Calculate backoff
                 backoff_ms = min(
-                    retry_policy.initial_backoff_ms * (retry_policy.backoff_multiplier ** attempt),
+                    retry_policy.initial_backoff_ms * (retry_policy.backoff_multiplier**attempt),
                     retry_policy.max_backoff_ms,
                 )
 
@@ -545,9 +543,7 @@ class ServiceMeshManager:
             total_endpoints = sum(len(eps) for eps in self.services.values())
 
             circuit_breakers_open = sum(
-                1
-                for cb in self.circuit_breakers.values()
-                if cb.state == CircuitState.OPEN
+                1 for cb in self.circuit_breakers.values() if cb.state == CircuitState.OPEN
             )
 
             return {
