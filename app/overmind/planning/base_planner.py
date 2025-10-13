@@ -72,14 +72,13 @@ import re
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import (
-    Any, ClassVar, Dict, List, Optional, Type, Union, Set, Iterable, Tuple
-)
+from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
 
 # =============================================================================
 # Strict schema imports – MUST succeed (single source of truth)
 # =============================================================================
 from .schemas import MissionPlanSchema, PlanningContext  # type: ignore
+
 try:
     from .schemas import PlanMeta  # type hint only
 except Exception:  # pragma: no cover
@@ -92,8 +91,9 @@ logger = logging.getLogger("overmind.planning.base_planner")
 if not logger.handlers:
     logging.basicConfig(
         level=os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+
 
 # =============================================================================
 # Error Helpers
@@ -108,12 +108,9 @@ def _flatten_extras(extra: Dict[str, Any]) -> Dict[str, Any]:
 
 class PlannerError(Exception):
     """Unified planner exception with context rich formatting."""
+
     def __init__(
-        self,
-        message: str,
-        planner_name: str = "unknown_planner",
-        objective: str = "",
-        **extra: Any
+        self, message: str, planner_name: str = "unknown_planner", objective: str = "", **extra: Any
     ):
         base_msg = f"[{planner_name}] objective='{objective}' :: {message}"
         if extra:
@@ -171,12 +168,8 @@ class PlannerAdmissionError(PlannerError):
 # Environment / Governance
 # =============================================================================
 _ENV = os.getenv("OVERMIND_ENV", "dev").strip().lower()
-_ALLOW_LIST = {
-    x.strip().lower() for x in os.getenv("PLANNERS_ALLOW", "").split(",") if x.strip()
-}
-_BLOCK_LIST = {
-    x.strip().lower() for x in os.getenv("PLANNERS_BLOCK", "").split(",") if x.strip()
-}
+_ALLOW_LIST = {x.strip().lower() for x in os.getenv("PLANNERS_ALLOW", "").split(",") if x.strip()}
+_BLOCK_LIST = {x.strip().lower() for x in os.getenv("PLANNERS_BLOCK", "").split(",") if x.strip()}
 _DECAY_HALF_LIFE = float(os.getenv("PLANNER_DECAY_HALF_LIFE", "900"))
 _MIN_RELIABILITY = float(os.getenv("PLANNER_MIN_RELIABILITY", "0.05"))
 _SELF_TEST_TIMEOUT = float(os.getenv("PLANNER_SELF_TEST_TIMEOUT", "5"))
@@ -197,6 +190,7 @@ _RELIABILITY_NUDGE = float(os.getenv("PLANNER_STRUCT_RELIABILITY_NUDGE", "0.01")
 
 # Cache last structural snapshot per planner
 _LAST_STRUCT: Dict[str, Dict[str, Any]] = {}
+
 
 # =============================================================================
 # Reliability State (exponential decay laplace-smoothed)
@@ -288,7 +282,9 @@ class BasePlanner:
         if planner_cls is BasePlanner:
             return
         if not getattr(planner_cls, "allow_registration", True):
-            logger.debug("Planner %s registration skipped (allow_registration=False).", planner_cls.__name__)
+            logger.debug(
+                "Planner %s registration skipped (allow_registration=False).", planner_cls.__name__
+            )
             return
         planner_name = getattr(planner_cls, "name", None)
         if not isinstance(planner_name, str):
@@ -312,13 +308,16 @@ class BasePlanner:
                 quarantined=not _DISABLE_QUARANTINE,
                 production_ready=getattr(planner_cls, "production_ready", False),
                 tier=getattr(planner_cls, "tier", "experimental"),
-                risk_rating=getattr(planner_cls, "risk_rating", "medium")
+                risk_rating=getattr(planner_cls, "risk_rating", "medium"),
             )
             cls._registry[key] = planner_cls
             cls._reliability[key] = state
         logger.info(
             "Registered planner '%s' (tier=%s prod_ready=%s quarantine=%s)",
-            key, state.tier, state.production_ready, state.quarantined
+            key,
+            state.tier,
+            state.production_ready,
+            state.quarantined,
         )
         cls._run_self_test(planner_cls, key, state)
 
@@ -368,7 +367,9 @@ class BasePlanner:
             if not _DISABLE_QUARANTINE:
                 state.quarantined = True
             else:
-                logger.warning("Quarantine disabled; allowing planner '%s' after failed self-test.", key)
+                logger.warning(
+                    "Quarantine disabled; allowing planner '%s' after failed self-test.", key
+                )
         else:
             state.self_test_passed = True
             if planner_cls.production_ready or _ENV != "prod" or _DISABLE_QUARANTINE:
@@ -379,17 +380,13 @@ class BasePlanner:
     # Abstract contract
     # --------------------------------------------------------------
     def generate_plan(
-        self,
-        objective: str,
-        context: Optional[PlanningContext] = None
+        self, objective: str, context: Optional[PlanningContext] = None
     ) -> MissionPlanSchema:
         """Implement in subclass."""
         raise NotImplementedError
 
     async def a_generate_plan(
-        self,
-        objective: str,
-        context: Optional[PlanningContext] = None
+        self, objective: str, context: Optional[PlanningContext] = None
     ) -> MissionPlanSchema:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.generate_plan, objective, context)
@@ -398,10 +395,7 @@ class BasePlanner:
     # Plan validation hook (lightweight)
     # --------------------------------------------------------------
     def validate_plan(
-        self,
-        plan: MissionPlanSchema,
-        objective: str,
-        context: Optional[PlanningContext] = None
+        self, plan: MissionPlanSchema, objective: str, context: Optional[PlanningContext] = None
     ) -> None:
         if not hasattr(plan, "objective"):
             raise PlanValidationError("Plan missing 'objective' attribute.", self.name, objective)
@@ -412,7 +406,9 @@ class BasePlanner:
     # Reliability internal update
     # --------------------------------------------------------------
     @classmethod
-    def _update_reliability(cls, name: str, success: bool, duration_seconds: float, error: Optional[str] = None):
+    def _update_reliability(
+        cls, name: str, success: bool, duration_seconds: float, error: Optional[str] = None
+    ):
         lower = name.lower()
         with cls._lock:
             state = cls._reliability.get(lower)
@@ -517,10 +513,7 @@ class BasePlanner:
     # Timeout helpers (sync)
     # --------------------------------------------------------------
     def _run_with_timeout(
-        self,
-        objective: str,
-        context: Optional[PlanningContext],
-        timeout: float
+        self, objective: str, context: Optional[PlanningContext], timeout: float
     ) -> MissionPlanSchema:
         container: Dict[str, Union[BaseException, MissionPlanSchema]] = {}
         q: "queue.Queue[int]" = queue.Queue()
@@ -538,7 +531,9 @@ class BasePlanner:
         try:
             q.get(timeout=timeout)
         except queue.Empty as exc:
-            raise PlannerTimeoutError(f"Timeout {timeout:.2f}s exceeded.", self.name, objective) from exc
+            raise PlannerTimeoutError(
+                f"Timeout {timeout:.2f}s exceeded.", self.name, objective
+            ) from exc
 
         if "error" in container:
             err = container["error"]
@@ -552,7 +547,7 @@ class BasePlanner:
                     "Planner returned non-canonical MissionPlanSchema (duck-type detected). "
                     "Ensure canonical schema usage.",
                     self.name,
-                    objective
+                    objective,
                 )
             raise PlannerError("Planner returned invalid result type.", self.name, objective)
         return result
@@ -561,18 +556,14 @@ class BasePlanner:
     # Timeout helpers (async)
     # --------------------------------------------------------------
     async def _a_run_with_timeout(
-        self,
-        objective: str,
-        context: Optional[PlanningContext],
-        timeout: float
+        self, objective: str, context: Optional[PlanningContext], timeout: float
     ) -> MissionPlanSchema:
         try:
-            return await asyncio.wait_for(
-                self.a_generate_plan(objective, context),
-                timeout=timeout
-            )
+            return await asyncio.wait_for(self.a_generate_plan(objective, context), timeout=timeout)
         except asyncio.TimeoutError as exc:
-            raise PlannerTimeoutError(f"Async timeout {timeout:.2f}s exceeded.", self.name, objective) from exc
+            raise PlannerTimeoutError(
+                f"Async timeout {timeout:.2f}s exceeded.", self.name, objective
+            ) from exc
 
     # --------------------------------------------------------------
     # Instrumented sync
@@ -585,7 +576,7 @@ class BasePlanner:
         include_node_count: bool = True,
         extra_metadata: Optional[Dict[str, Any]] = None,
         enforce_timeout: bool = True,
-        deep_context: Optional[Dict[str, Any]] = None
+        deep_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
@@ -595,8 +586,9 @@ class BasePlanner:
         with BasePlanner._lock:
             st = BasePlanner._reliability.get(self.name.lower())
             if st and st.quarantined:
-                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).",
-                                            self.name, objective)
+                raise PlannerAdmissionError(
+                    "Planner is quarantined (self-test failed or pending).", self.name, objective
+                )
 
         try:
             if enforce_timeout and timeout:
@@ -622,7 +614,9 @@ class BasePlanner:
         except PlannerError:
             raise
         except Exception as exc:
-            raise PlanValidationError(f"Unexpected validation failure: {exc}", self.name, objective) from exc
+            raise PlanValidationError(
+                f"Unexpected validation failure: {exc}", self.name, objective
+            ) from exc
 
         node_count = self._infer_node_count(plan) if include_node_count else None
         duration = time.perf_counter() - start
@@ -665,7 +659,9 @@ class BasePlanner:
             grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
             grade_component = grade_map.get(grade_used, 0.5)
 
-            struct_base = (grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy) / 4.0
+            struct_base = (
+                grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy
+            ) / 4.0
             struct_base = max(0.0, min(1.0, struct_base))
 
             # Grade bonus
@@ -682,7 +678,10 @@ class BasePlanner:
             if prev:
                 prev_tasks = prev.get("tasks", task_count)
                 prev_grade = prev.get("grade")
-                if prev_tasks > 0 and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO:
+                if (
+                    prev_tasks > 0
+                    and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO
+                ):
                     drift_flag = True
                 if prev_grade and grade_used:
                     order = {"A": 3, "B": 2, "C": 1}
@@ -691,15 +690,17 @@ class BasePlanner:
             _LAST_STRUCT[self.name.lower()] = {
                 "tasks": task_count,
                 "grade": grade_used,
-                "ts": time.time()
+                "ts": time.time(),
             }
 
-            meta.update({
-                "struct_base_score": round(struct_base, 4),
-                "struct_grade": grade_used,
-                "struct_bonus": round(struct_bonus, 4),
-                "struct_drift": drift_flag
-            })
+            meta.update(
+                {
+                    "struct_base_score": round(struct_base, 4),
+                    "struct_grade": grade_used,
+                    "struct_bonus": round(struct_bonus, 4),
+                    "struct_drift": drift_flag,
+                }
+            )
 
             if grade_used == "A" and _RELIABILITY_NUDGE > 0:
                 meta["reliability_nudge_applied"] = True
@@ -708,7 +709,9 @@ class BasePlanner:
         base_selection = self.compute_selection_score(objective, None)
         final_selection = base_selection
         if _STRUCT_ENABLE and struct_base:
-            final_selection = min(1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus)
+            final_selection = min(
+                1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus
+            )
 
         meta["selection_score_base"] = round(base_selection, 4)
         meta["selection_score"] = round(final_selection, 4)
@@ -726,7 +729,7 @@ class BasePlanner:
         include_node_count: bool = True,
         extra_metadata: Optional[Dict[str, Any]] = None,
         enforce_timeout: bool = True,
-        deep_context: Optional[Dict[str, Any]] = None
+        deep_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
@@ -736,8 +739,9 @@ class BasePlanner:
         with BasePlanner._lock:
             st = BasePlanner._reliability.get(self.name.lower())
             if st and st.quarantined:
-                raise PlannerAdmissionError("Planner is quarantined (self-test failed or pending).",
-                                            self.name, objective)
+                raise PlannerAdmissionError(
+                    "Planner is quarantined (self-test failed or pending).", self.name, objective
+                )
 
         try:
             if enforce_timeout and timeout:
@@ -762,7 +766,9 @@ class BasePlanner:
         except PlannerError:
             raise
         except Exception as exc:
-            raise PlanValidationError(f"Unexpected validation failure: {exc}", self.name, objective) from exc
+            raise PlanValidationError(
+                f"Unexpected validation failure: {exc}", self.name, objective
+            ) from exc
 
         node_count = self._infer_node_count(plan) if include_node_count else None
         duration = time.perf_counter() - start
@@ -804,7 +810,9 @@ class BasePlanner:
             grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
             grade_component = grade_map.get(grade_used, 0.5)
 
-            struct_base = (grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy) / 4.0
+            struct_base = (
+                grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy
+            ) / 4.0
             struct_base = max(0.0, min(1.0, struct_base))
 
             if grade_used == "A":
@@ -819,20 +827,29 @@ class BasePlanner:
             if prev:
                 prev_tasks = prev.get("tasks", task_count)
                 prev_grade = prev.get("grade")
-                if prev_tasks > 0 and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO:
+                if (
+                    prev_tasks > 0
+                    and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO
+                ):
                     drift_flag = True
                 if prev_grade and grade_used:
                     order = {"A": 3, "B": 2, "C": 1}
                     if (order.get(prev_grade, 2) - order.get(grade_used, 2)) >= _DRIFT_GRADE_DROP:
                         drift_flag = True
-            _LAST_STRUCT[self.name.lower()] = {"tasks": task_count, "grade": grade_used, "ts": time.time()}
+            _LAST_STRUCT[self.name.lower()] = {
+                "tasks": task_count,
+                "grade": grade_used,
+                "ts": time.time(),
+            }
 
-            meta.update({
-                "struct_base_score": round(struct_base, 4),
-                "struct_grade": grade_used,
-                "struct_bonus": round(struct_bonus, 4),
-                "struct_drift": drift_flag
-            })
+            meta.update(
+                {
+                    "struct_base_score": round(struct_base, 4),
+                    "struct_grade": grade_used,
+                    "struct_bonus": round(struct_bonus, 4),
+                    "struct_drift": drift_flag,
+                }
+            )
             if grade_used == "A" and _RELIABILITY_NUDGE > 0:
                 meta["reliability_nudge_applied"] = True
                 meta["reliability_score_apparent"] = min(1.0, rel_score + _RELIABILITY_NUDGE)
@@ -840,7 +857,9 @@ class BasePlanner:
         base_selection = self.compute_selection_score(objective, None)
         final_selection = base_selection
         if _STRUCT_ENABLE and struct_base:
-            final_selection = min(1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus)
+            final_selection = min(
+                1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus
+            )
 
         meta["selection_score_base"] = round(base_selection, 4)
         meta["selection_score"] = round(final_selection, 4)
@@ -862,9 +881,7 @@ class BasePlanner:
         return None
 
     def compute_selection_score(
-        self,
-        objective: str,
-        desired_capabilities: Optional[Set[str]] = None
+        self, objective: str, desired_capabilities: Optional[Set[str]] = None
     ) -> float:
         # Base compute (structural injection occurs AFTER in instrumented pipeline)
         rel_score = self.current_reliability_score()
@@ -896,7 +913,7 @@ class BasePlanner:
                 "total_failures": st.total_failures,
                 "avg_duration_ms": round(st.avg_duration_ms, 2),
                 "last_success_ts": st.last_success_ts,
-                "last_error": st.last_error
+                "last_error": st.last_error,
             }
 
 

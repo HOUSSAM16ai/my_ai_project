@@ -69,18 +69,18 @@ FORWARD ROADMAP (Not implemented yet)
 """
 from __future__ import annotations
 
-import os
-import json
-import time
-import uuid
-import stat
 import gzip
-import re
 import hashlib
-import traceback
+import json
 import logging
+import os
+import re
+import stat
 import threading
-from dataclasses import dataclass, asdict
+import time
+import traceback
+import uuid
+from dataclasses import asdict, dataclass
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 # ======================================================================================
@@ -95,14 +95,16 @@ logger = logging.getLogger("agent_tools")
 if not logger.handlers:
     logging.basicConfig(
         level=os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 else:
     logger.setLevel(os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"))
 
+
 def _dbg(msg: str):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(msg)
+
 
 # ======================================================================================
 # Environment Helpers
@@ -113,35 +115,45 @@ def _int_env(name: str, default: int) -> int:
     except Exception:
         return default
 
+
 def _bool_env(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(int(1 if default else 0))).strip().lower() in ("1","true","yes","on")
+    return os.getenv(name, str(int(1 if default else 0))).strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
 
 def _now() -> float:
     return time.time()
+
 
 # ======================================================================================
 # Core Limits / Config
 # ======================================================================================
 PROJECT_ROOT = os.path.abspath(os.getenv("AGENT_TOOLS_PROJECT_ROOT", "/app"))
 
-MAX_WRITE_BYTES  = _int_env("AGENT_TOOLS_MAX_WRITE_BYTES", 5_000_000)
+MAX_WRITE_BYTES = _int_env("AGENT_TOOLS_MAX_WRITE_BYTES", 5_000_000)
 MAX_APPEND_BYTES = _int_env("AGENT_TOOLS_MAX_APPEND_BYTES", 3_000_000)
-MAX_READ_BYTES   = _int_env("AGENT_TOOLS_MAX_READ_BYTES", 800_000)
+MAX_READ_BYTES = _int_env("AGENT_TOOLS_MAX_READ_BYTES", 800_000)
 
 ENFORCE_APPEND_TOTAL = _bool_env("AGENT_TOOLS_APPEND_ENFORCE_TOTAL", True)
-HASH_AFTER_WRITE      = _bool_env("AGENT_TOOLS_HASH_AFTER_WRITE", True)
-COMPRESS_JSON         = _bool_env("AGENT_TOOLS_COMPRESS_JSON", True)
+HASH_AFTER_WRITE = _bool_env("AGENT_TOOLS_HASH_AFTER_WRITE", True)
+COMPRESS_JSON = _bool_env("AGENT_TOOLS_COMPRESS_JSON", True)
 
-GENERIC_THINK_MAX_CHARS        = _int_env("GENERIC_THINK_MAX_CHARS_INPUT", 12_000)
+GENERIC_THINK_MAX_CHARS = _int_env("GENERIC_THINK_MAX_CHARS_INPUT", 12_000)
 GENERIC_THINK_MAX_ANSWER_CHARS = _int_env("GENERIC_THINK_MAX_ANSWER_CHARS", 24_000)
 
-AUTOFILL      = _bool_env("AGENT_TOOLS_AUTOFILL_MISSING", True)
-AUTOFILL_EXT  = os.getenv("AGENT_TOOLS_AUTOFILL_EXTENSION", ".txt")
+AUTOFILL = _bool_env("AGENT_TOOLS_AUTOFILL_MISSING", True)
+AUTOFILL_EXT = os.getenv("AGENT_TOOLS_AUTOFILL_EXTENSION", ".txt")
 ACCEPT_DOTTED = _bool_env("AGENT_TOOLS_ACCEPT_DOTTED", True)
-FORCE_INTENT  = _bool_env("AGENT_TOOLS_FORCE_INTENT", True)
+FORCE_INTENT = _bool_env("AGENT_TOOLS_FORCE_INTENT", True)
 
 DISABLED: Set[str] = {t.strip() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
-DISPATCH_ALLOW: Set[str] = {t.strip() for t in os.getenv("DISPATCH_ALLOWLIST", "").split(",") if t.strip()}
+DISPATCH_ALLOW: Set[str] = {
+    t.strip() for t in os.getenv("DISPATCH_ALLOWLIST", "").split(",") if t.strip()
+}
 
 _MEMORY_ALLOWLIST: Optional[Set[str]] = None
 _mem_list_raw = os.getenv("MEMORY_ALLOWLIST", "").strip()
@@ -149,30 +161,32 @@ if _mem_list_raw:
     _MEMORY_ALLOWLIST = {k.strip() for k in _mem_list_raw.split(",") if k.strip()}
 
 AUTO_CREATE_ENABLED = _bool_env("AGENT_TOOLS_CREATE_MISSING", True)
-AUTO_CREATE_DEFAULT_CONTENT = os.getenv("AGENT_TOOLS_CREATE_DEFAULT_CONTENT", "Auto-generated placeholder file.")
+AUTO_CREATE_DEFAULT_CONTENT = os.getenv(
+    "AGENT_TOOLS_CREATE_DEFAULT_CONTENT", "Auto-generated placeholder file."
+)
 AUTO_CREATE_ALLOWED_EXTS = {
-    e.strip().lower() for e in os.getenv(
-        "AGENT_TOOLS_CREATE_ALLOWED_EXTS", ".md,.txt,.json,.log"
-    ).split(",") if e.strip()
+    e.strip().lower()
+    for e in os.getenv("AGENT_TOOLS_CREATE_ALLOWED_EXTS", ".md,.txt,.json,.log").split(",")
+    if e.strip()
 }
 AUTO_CREATE_MAX_BYTES = _int_env("AGENT_TOOLS_CREATE_MAX_BYTES", 300_000)
 
 # Structural Map Config
 DEEP_MAP_PATH = os.getenv("AGENT_TOOLS_DEEP_MAP_PATH", "")
-DEEP_MAP_TTL = _int_env("AGENT_TOOLS_DEEP_MAP_TTL", 60)    # seconds
+DEEP_MAP_TTL = _int_env("AGENT_TOOLS_DEEP_MAP_TTL", 60)  # seconds
 DEEP_LIMIT_KEYS = _int_env("AGENT_TOOLS_DEEP_LIMIT_KEYS", 0)
 
 # Index / Search Config
 CODE_INDEX_MAX_FILES = _int_env("CODE_INDEX_MAX_FILES", 2200)
-CODE_INDEX_INCLUDE_EXTS = os.getenv(
-    "CODE_INDEX_INCLUDE_EXTS",
-    ".py,.md,.txt,.js,.ts,.json,.yml,.yaml"
-).lower().split(",")
+CODE_INDEX_INCLUDE_EXTS = (
+    os.getenv("CODE_INDEX_INCLUDE_EXTS", ".py,.md,.txt,.js,.ts,.json,.yml,.yaml").lower().split(",")
+)
 CODE_INDEX_EXCLUDE_DIRS = {
-    d.strip() for d in os.getenv(
-        "CODE_INDEX_EXCLUDE_DIRS",
-        ".git,__pycache__,venv,.venv,node_modules,dist,build"
-    ).split(",") if d.strip()
+    d.strip()
+    for d in os.getenv(
+        "CODE_INDEX_EXCLUDE_DIRS", ".git,__pycache__,venv,.venv,node_modules,dist,build"
+    ).split(",")
+    if d.strip()
 }
 CODE_INDEX_MAX_FILE_BYTES = _int_env("CODE_INDEX_MAX_FILE_BYTES", 180_000)
 
@@ -201,16 +215,18 @@ _DEEP_LOCK = threading.Lock()
 _LAYER_STATS: Dict[str, Dict[str, Any]] = {}
 _LAYER_LOCK = threading.Lock()
 
+
 def _touch_layer(layer: str, op: str):
     if not layer:
         return
     with _LAYER_LOCK:
-        d = _LAYER_STATS.setdefault(layer, {
-            "reads": 0, "writes": 0, "appends": 0, "ensures": 0, "last_ts": 0.0
-        })
+        d = _LAYER_STATS.setdefault(
+            layer, {"reads": 0, "writes": 0, "appends": 0, "ensures": 0, "last_ts": 0.0}
+        )
         if op in d:
             d[op] += 1
         d["last_ts"] = _now()
+
 
 def _load_deep_struct_map(force: bool = False) -> bool:
     global _DEEP_STRUCT_MAP, _DEEP_STRUCT_HASH, _DEEP_STRUCT_LOADED_AT
@@ -243,6 +259,7 @@ def _load_deep_struct_map(force: bool = False) -> bool:
             _dbg(f"[deep_struct_map] load failed: {e}")
             return False
 
+
 def _maybe_reload_struct_map():
     if not DEEP_MAP_PATH:
         return
@@ -252,6 +269,7 @@ def _maybe_reload_struct_map():
         return
     if (_now() - _DEEP_STRUCT_LOADED_AT) >= DEEP_MAP_TTL:
         _load_deep_struct_map(force=False)
+
 
 def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
     _maybe_reload_struct_map()
@@ -263,11 +281,8 @@ def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
     layer = info.get("layer")
     hotspot = info.get("hotspot")
     dup_group = info.get("dup_group")
-    meta.update({
-        "struct_layer": layer,
-        "struct_hotspot": hotspot,
-        "struct_dup_group": dup_group
-    })
+    meta.update({"struct_layer": layer, "struct_hotspot": hotspot, "struct_dup_group": dup_group})
+
 
 # ======================================================================================
 # Data Structures
@@ -279,17 +294,19 @@ class ToolResult:
     error: Optional[str] = None
     meta: Dict[str, Any] = None
     trace_id: Optional[str] = None
+
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         return {k: v for k, v in d.items() if v is not None}
+
 
 # ======================================================================================
 # Registries
 # ======================================================================================
 _TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
-_TOOL_STATS:    Dict[str, Dict[str, Any]] = {}
-_ALIAS_INDEX:   Dict[str, str] = {}
-_CAPABILITIES:  Dict[str, List[str]] = {}
+_TOOL_STATS: Dict[str, Dict[str, Any]] = {}
+_ALIAS_INDEX: Dict[str, str] = {}
+_CAPABILITIES: Dict[str, List[str]] = {}
 _REGISTRY_LOCK = threading.Lock()
 
 # ======================================================================================
@@ -297,24 +314,28 @@ _REGISTRY_LOCK = threading.Lock()
 # ======================================================================================
 CANON_WRITE = "write_file"
 CANON_WRITE_IF_CHANGED = "write_file_if_changed"
-CANON_READ  = "read_file"
+CANON_READ = "read_file"
 CANON_THINK = "generic_think"
 
 WRITE_SUFFIXES = {"write", "create", "generate", "append", "touch"}
-READ_SUFFIXES  = {"read", "open", "load", "view", "show"}
+READ_SUFFIXES = {"read", "open", "load", "view", "show"}
 
 WRITE_KEYWORDS = {"write", "create", "generate", "append", "produce", "persist", "save"}
-READ_KEYWORDS  = {"read", "inspect", "load", "open", "view", "show", "display"}
+READ_KEYWORDS = {"read", "inspect", "load", "open", "view", "show", "display"}
 
 WRITE_ALIASES_BASE = {
-    "file_writer", "file_system", "file_system_tool",
-    "file_writer_tool", "writer", "create_file", "make_file"
+    "file_writer",
+    "file_system",
+    "file_system_tool",
+    "file_writer_tool",
+    "writer",
+    "create_file",
+    "make_file",
 }
-READ_ALIASES_BASE = {
-    "file_reader", "file_reader_tool"
-}
+READ_ALIASES_BASE = {"file_reader", "file_reader_tool"}
 WRITE_DOTTED_ALIASES = {f"file_system.{s}" for s in WRITE_SUFFIXES}
-READ_DOTTED_ALIASES  = {f"file_system.{s}" for s in READ_SUFFIXES}
+READ_DOTTED_ALIASES = {f"file_system.{s}" for s in READ_SUFFIXES}
+
 
 # ======================================================================================
 # Policy Hooks (stubs)
@@ -322,8 +343,10 @@ READ_DOTTED_ALIASES  = {f"file_system.{s}" for s in READ_SUFFIXES}
 def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
     return True
 
+
 def transform_arguments(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
     return args
+
 
 # ======================================================================================
 # Metrics Helpers
@@ -331,6 +354,7 @@ def transform_arguments(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
 def _init_tool_stats(name: str):
     if name not in _TOOL_STATS:
         _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0, "last_error": None}
+
 
 def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: Optional[str]):
     st = _TOOL_STATS[name]
@@ -340,11 +364,13 @@ def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: Optional[s
         st["errors"] += 1
         st["last_error"] = (error or "")[:300]
 
+
 # ======================================================================================
 # Utility
 # ======================================================================================
 def _generate_trace_id() -> str:
     return uuid.uuid4().hex[:16]
+
 
 def _coerce_to_tool_result(obj: Any) -> ToolResult:
     if isinstance(obj, ToolResult):
@@ -360,23 +386,27 @@ def _coerce_to_tool_result(obj: Any) -> ToolResult:
         return ToolResult(ok=True, data={"text": obj})
     return ToolResult(ok=True, data=obj)
 
+
 def _lower(s: Any) -> str:
     return str(s or "").strip().lower()
+
 
 def _looks_like_write(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in WRITE_KEYWORDS)
 
+
 def _looks_like_read(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in READ_KEYWORDS)
+
 
 def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
     raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     b = raw.encode("utf-8")
     if len(b) <= max_bytes:
         return raw
-    trimmed = b[:max_bytes - 10]
+    trimmed = b[: max_bytes - 10]
     while True:
         try:
             return trimmed.decode("utf-8", errors="strict") + "...TRUNCATED"
@@ -384,6 +414,7 @@ def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
             trimmed = trimmed[:-1]
             if not trimmed:
                 return "{}"
+
 
 def _file_hash(path: str) -> Optional[str]:
     try:
@@ -395,8 +426,10 @@ def _file_hash(path: str) -> Optional[str]:
     except Exception:
         return None
 
+
 def _content_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8", errors="ignore")).hexdigest()
+
 
 # ======================================================================================
 # Path Safety
@@ -406,7 +439,7 @@ def _safe_path(
     *,
     must_exist_parent: bool = False,
     enforce_ext: Optional[List[str]] = None,
-    forbid_overwrite_large: bool = True
+    forbid_overwrite_large: bool = True,
 ) -> str:
     if not isinstance(path, str) or not path.strip():
         raise ValueError("Empty path.")
@@ -421,7 +454,7 @@ def _safe_path(
     if not abs_path.startswith(PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
     cur = PROJECT_ROOT
-    rel_parts = abs_path[len(PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
+    rel_parts = abs_path[len(PROJECT_ROOT) :].lstrip(os.sep).split(os.sep)
     for part in rel_parts:
         if not part:
             continue
@@ -443,6 +476,7 @@ def _safe_path(
             pass
     return abs_path
 
+
 # ======================================================================================
 # Decorator
 # ======================================================================================
@@ -454,7 +488,7 @@ def tool(
     category: str = "general",
     aliases: Optional[List[str]] = None,
     allow_disable: bool = True,
-    capabilities: Optional[List[str]] = None
+    capabilities: Optional[List[str]] = None,
 ):
     if parameters is None:
         parameters = {"type": "object", "properties": {}}
@@ -514,11 +548,18 @@ def tool(
 
                     schema = meta_entry.get("parameters") or {}
 
-                    if AUTOFILL and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED, CANON_READ}:
+                    if AUTOFILL and canonical_name in {
+                        CANON_WRITE,
+                        CANON_WRITE_IF_CHANGED,
+                        CANON_READ,
+                    }:
                         if canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}:
                             if not kwargs.get("path"):
                                 kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
-                            if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
+                            if (
+                                not isinstance(kwargs.get("content"), str)
+                                or not kwargs["content"].strip()
+                            ):
                                 kwargs["content"] = "Auto-generated content placeholder."
 
                     try:
@@ -543,20 +584,26 @@ def tool(
                 stats = _TOOL_STATS[reg_name]
                 if result.meta is None:
                     result.meta = {}
-                result.meta.update({
-                    "tool": reg_name,
-                    "canonical": canonical_name,
-                    "elapsed_ms": round(elapsed_ms, 2),
-                    "invocations": stats["invocations"],
-                    "errors": stats["errors"],
-                    "avg_ms": round(stats["total_ms"] / stats["invocations"], 2) if stats["invocations"] else 0.0,
-                    "version": __version__,
-                    "category": category,
-                    "capabilities": capabilities,
-                    "is_alias": meta_entry.get("is_alias", False),
-                    "disabled": meta_entry.get("disabled", False),
-                    "last_error": stats["last_error"],
-                })
+                result.meta.update(
+                    {
+                        "tool": reg_name,
+                        "canonical": canonical_name,
+                        "elapsed_ms": round(elapsed_ms, 2),
+                        "invocations": stats["invocations"],
+                        "errors": stats["errors"],
+                        "avg_ms": (
+                            round(stats["total_ms"] / stats["invocations"], 2)
+                            if stats["invocations"]
+                            else 0.0
+                        ),
+                        "version": __version__,
+                        "category": category,
+                        "capabilities": capabilities,
+                        "is_alias": meta_entry.get("is_alias", False),
+                        "disabled": meta_entry.get("disabled", False),
+                        "last_error": stats["last_error"],
+                    }
+                )
                 result.trace_id = trace_id
                 return result
 
@@ -564,7 +611,9 @@ def tool(
             for a in aliases:
                 _TOOL_REGISTRY[a]["handler"] = wrapper
         return wrapper
+
     return decorator
+
 
 # ======================================================================================
 # Argument Validation
@@ -575,13 +624,15 @@ SUPPORTED_TYPES = {
     "number": (int, float),
     "boolean": bool,
     "object": dict,
-    "array": list
+    "array": list,
 }
+
 
 def _validate_type(name: str, value: Any, expected: str):
     py_type = SUPPORTED_TYPES.get(expected)
     if py_type and not isinstance(value, py_type):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
+
 
 def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(schema, dict) or schema.get("type") != "object":
@@ -605,6 +656,7 @@ def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[st
     if missing:
         raise ValueError(f"Missing required parameters: {missing}")
     return cleaned
+
 
 # ======================================================================================
 # Canonicalization
@@ -659,6 +711,7 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
             return CANON_READ, notes
     return raw_name, notes
 
+
 def resolve_tool_name(name: str) -> Optional[str]:
     canon, _ = canonicalize_tool_name(name)
     if canon in _TOOL_REGISTRY and not _TOOL_REGISTRY[canon].get("is_alias"):
@@ -667,14 +720,17 @@ def resolve_tool_name(name: str) -> Optional[str]:
         return _ALIAS_INDEX[canon]
     return None
 
+
 def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
+
 
 def get_tool(name: str) -> Optional[Dict[str, Any]]:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
+
 
 def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
     out = []
@@ -684,9 +740,11 @@ def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
         out.append(meta)
     return out
 
+
 # ======================================================================================
 # Tools
 # ======================================================================================
+
 
 @tool(
     name="introspect_tools",
@@ -702,9 +760,9 @@ def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
             "name_contains": {"type": "string"},
             "enabled_only": {"type": "boolean", "default": False},
             "telemetry_only": {"type": "boolean", "default": False},
-            "include_layers": {"type": "boolean", "default": False}
-        }
-    }
+            "include_layers": {"type": "boolean", "default": False},
+        },
+    },
 )
 def introspect_tools(
     include_aliases: bool = True,
@@ -713,7 +771,7 @@ def introspect_tools(
     name_contains: Optional[str] = None,
     enabled_only: bool = False,
     telemetry_only: bool = False,
-    include_layers: bool = False
+    include_layers: bool = False,
 ) -> ToolResult:
     out = []
     for name, meta in sorted(_TOOL_REGISTRY.items()):
@@ -736,10 +794,14 @@ def introspect_tools(
             "category": meta.get("category"),
             "invocations": st.get("invocations", 0),
             "errors": st.get("errors", 0),
-            "avg_ms": round(st.get("total_ms", 0.0) / st.get("invocations", 1), 2) if st.get("invocations") else 0.0,
+            "avg_ms": (
+                round(st.get("total_ms", 0.0) / st.get("invocations", 1), 2)
+                if st.get("invocations")
+                else 0.0
+            ),
             "last_error": st.get("last_error"),
             "version": __version__,
-            "capabilities": _CAPABILITIES.get(name, [])
+            "capabilities": _CAPABILITIES.get(name, []),
         }
         if not telemetry_only:
             base["description"] = meta.get("description")
@@ -752,6 +814,7 @@ def introspect_tools(
             payload["layer_stats"] = _LAYER_STATS.copy()
     return ToolResult(ok=True, data=payload)
 
+
 # Memory Tools ---------------------------------------------------------------
 @tool(
     name="memory_put",
@@ -762,10 +825,10 @@ def introspect_tools(
         "type": "object",
         "properties": {
             "key": {"type": "string"},
-            "value": {"type": "string", "description": "JSON-serializable string content"}
+            "value": {"type": "string", "description": "JSON-serializable string content"},
         },
-        "required": ["key", "value"]
-    }
+        "required": ["key", "value"],
+    },
 )
 def memory_put(key: str, value: str) -> ToolResult:
     if len(key) > 120:
@@ -782,16 +845,13 @@ def memory_put(key: str, value: str) -> ToolResult:
         _MEMORY_STORE[key] = value
     return ToolResult(ok=True, data={"stored": True, "key": key})
 
+
 @tool(
     name="memory_get",
     description="Retrieve a value by key from ephemeral memory.",
     category="memory",
     capabilities=["kv_store"],
-    parameters={
-        "type": "object",
-        "properties": {"key": {"type": "string"}},
-        "required": ["key"]
-    }
+    parameters={"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]},
 )
 def memory_get(key: str) -> ToolResult:
     with _MEMORY_LOCK:
@@ -799,12 +859,16 @@ def memory_get(key: str) -> ToolResult:
             return ToolResult(ok=False, error="KEY_NOT_FOUND")
         return ToolResult(ok=True, data={"key": key, "value": _MEMORY_STORE[key]})
 
+
 # LLM / Cognitive ------------------------------------------------------------
 try:
     from . import generation_service as maestro  # type: ignore
 except Exception:
     maestro = None
-    logger.warning("LLM backend (generation_service) not available; generic_think fallback mode active.")
+    logger.warning(
+        "LLM backend (generation_service) not available; generic_think fallback mode active."
+    )
+
 
 @tool(
     name=CANON_THINK,
@@ -815,10 +879,10 @@ except Exception:
         "type": "object",
         "properties": {
             "prompt": {"type": "string"},
-            "mode": {"type": "string", "default": "analysis"}
+            "mode": {"type": "string", "default": "analysis"},
         },
-        "required": ["prompt"]
-    }
+        "required": ["prompt"],
+    },
 )
 def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
     clean = (prompt or "").strip()
@@ -830,13 +894,16 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         truncated = True
     if not maestro:
         answer = f"[fallback-{mode}] {clean[:400]}"
-        return ToolResult(ok=True, data={
-            "answer": answer,
-            "content": answer,
-            "mode": mode,
-            "fallback": True,
-            "truncated_input": truncated
-        })
+        return ToolResult(
+            ok=True,
+            data={
+                "answer": answer,
+                "content": answer,
+                "mode": mode,
+                "fallback": True,
+                "truncated_input": truncated,
+            },
+        )
     model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
     candidate_methods = ["generate_text", "forge_new_code", "run", "complete", "structured"]
     response = None
@@ -854,13 +921,20 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
                 last_err = e
                 continue
     if response is None:
-        return ToolResult(ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}" if last_err else "NO_LLM_METHOD")
+        return ToolResult(
+            ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}" if last_err else "NO_LLM_METHOD"
+        )
 
     if isinstance(response, str):
         answer = response
     elif isinstance(response, dict):
-        answer = (response.get("answer") or response.get("content") or
-                  response.get("text") or response.get("output") or "")
+        answer = (
+            response.get("answer")
+            or response.get("content")
+            or response.get("text")
+            or response.get("output")
+            or ""
+        )
     else:
         answer = str(response)
 
@@ -868,27 +942,31 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         return ToolResult(ok=False, error="EMPTY_ANSWER")
     if len(answer) > GENERIC_THINK_MAX_ANSWER_CHARS:
         answer = answer[:GENERIC_THINK_MAX_ANSWER_CHARS] + "\n[ANSWER_TRIMMED]"
-    return ToolResult(ok=True, data={
-        "answer": answer,
-        "content": answer,
-        "mode": mode,
-        "fallback": False,
-        "truncated_input": truncated
-    })
+    return ToolResult(
+        ok=True,
+        data={
+            "answer": answer,
+            "content": answer,
+            "mode": mode,
+            "fallback": False,
+            "truncated_input": truncated,
+        },
+    )
+
 
 @tool(
     name="summarize_text",
     description="Summarize provided text (delegates to generic_think).",
     category="cognitive",
-    capabilities=["llm","summarization"],
+    capabilities=["llm", "summarization"],
     parameters={
-        "type":"object",
-        "properties":{
-            "text":{"type":"string"},
-            "style":{"type":"string","default":"concise"}
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "style": {"type": "string", "default": "concise"},
         },
-        "required":["text"]
-    }
+        "required": ["text"],
+    },
 )
 def summarize_text(text: str, style: str = "concise") -> ToolResult:
     t = (text or "").strip()
@@ -898,19 +976,20 @@ def summarize_text(text: str, style: str = "concise") -> ToolResult:
     prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
     return generic_think(prompt=prompt, mode="summary")
 
+
 @tool(
     name="refine_text",
     description="Refine text style/tone (delegates to generic_think).",
     category="cognitive",
-    capabilities=["llm","refinement"],
+    capabilities=["llm", "refinement"],
     parameters={
-        "type":"object",
-        "properties":{
-            "text":{"type":"string"},
-            "tone":{"type":"string","default":"professional"}
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "tone": {"type": "string", "default": "professional"},
         },
-        "required":["text"]
-    }
+        "required": ["text"],
+    },
 )
 def refine_text(text: str, tone: str = "professional") -> ToolResult:
     t = (text or "").strip()
@@ -922,6 +1001,7 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
     )
     return generic_think(prompt=prompt, mode="refine")
 
+
 # ======================================================================================
 # File System Tools
 # ======================================================================================
@@ -932,6 +1012,7 @@ def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
             result_data["size_after"] = os.path.getsize(abs_path)
         except Exception:
             pass
+
 
 def _apply_struct_limit(meta: Dict[str, Any]):
     if not DEEP_LIMIT_KEYS or not meta:
@@ -947,21 +1028,22 @@ def _apply_struct_limit(meta: Dict[str, Any]):
             meta.pop(k, None)
     meta["_struct_limited"] = True
 
+
 @tool(
     name="ensure_directory",
     description="Ensure a directory exists (create parents). Returns created/existed.",
     category="fs",
-    capabilities=["fs","ensure"],
+    capabilities=["fs", "ensure"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "must_be_new":{"type":"boolean","default":False}
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "must_be_new": {"type": "boolean", "default": False},
         },
-        "required":["path"]
-    }
+        "required": ["path"],
+    },
 )
-def ensure_directory(path: str, must_be_new: bool=False) -> ToolResult:
+def ensure_directory(path: str, must_be_new: bool = False) -> ToolResult:
     try:
         abs_path = _safe_path(path)
         if os.path.exists(abs_path):
@@ -975,29 +1057,36 @@ def ensure_directory(path: str, must_be_new: bool=False) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name=CANON_WRITE,
     description="Create or overwrite a UTF-8 file. Supports large JSON compression.",
     category="fs",
-    capabilities=["fs","write"],
+    capabilities=["fs", "write"],
     aliases=list(WRITE_ALIASES_BASE | WRITE_DOTTED_ALIASES),
     parameters={
         "type": "object",
         "properties": {
-            "path": {"type":"string"},
-            "content": {"type":"string"},
-            "enforce_ext": {"type":"string"},
-            "compress_json_if_large": {"type":"boolean","default":True}
+            "path": {"type": "string"},
+            "content": {"type": "string"},
+            "enforce_ext": {"type": "string"},
+            "compress_json_if_large": {"type": "boolean", "default": True},
         },
-        "required":["path","content"]
-    }
+        "required": ["path", "content"],
+    },
 )
-def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
-               compress_json_if_large: bool=True) -> ToolResult:
+def write_file(
+    path: str, content: str, enforce_ext: Optional[str] = None, compress_json_if_large: bool = True
+) -> ToolResult:
     try:
         if not isinstance(content, str):
             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
-        if COMPRESS_JSON and compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
+        if (
+            COMPRESS_JSON
+            and compress_json_if_large
+            and path.lower().endswith(".json")
+            and len(content) > 400_000
+        ):
             gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
             path = gz_path
             out_bytes = gzip.compress(content.encode("utf-8"))
@@ -1007,7 +1096,12 @@ def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
             os.makedirs(os.path.dirname(abs_path), exist_ok=True)
             with open(abs_path, "wb") as f:
                 f.write(out_bytes)
-            data = {"written": abs_path, "bytes": len(out_bytes), "compressed": True, "original_len": len(content)}
+            data = {
+                "written": abs_path,
+                "bytes": len(out_bytes),
+                "compressed": True,
+                "original_len": len(content),
+            }
             _annotate_struct_meta(abs_path, data)
             _maybe_hash_and_size(abs_path, data)
             if data.get("struct_layer"):
@@ -1032,22 +1126,23 @@ def write_file(path: str, content: str, enforce_ext: Optional[str] = None,
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name=CANON_WRITE_IF_CHANGED,
     description="Write only if content hash changes (skip if identical).",
     category="fs",
-    capabilities=["fs","write","optimize"],
+    capabilities=["fs", "write", "optimize"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "content":{"type":"string"},
-            "enforce_ext":{"type":"string"}
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "content": {"type": "string"},
+            "enforce_ext": {"type": "string"},
         },
-        "required":["path","content"]
-    }
+        "required": ["path", "content"],
+    },
 )
-def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=None) -> ToolResult:
+def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str] = None) -> ToolResult:
     try:
         abs_path = _safe_path(path, enforce_ext=[enforce_ext] if enforce_ext else None)
         new_hash = _content_hash(content)
@@ -1058,7 +1153,7 @@ def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=No
                     "path": abs_path,
                     "skipped": True,
                     "reason": "UNCHANGED",
-                    "hash": existing_hash
+                    "hash": existing_hash,
                 }
                 _annotate_struct_meta(abs_path, data)
                 if data.get("struct_layer"):
@@ -1069,19 +1164,17 @@ def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str]=No
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="append_file",
     description="Append UTF-8 text. Enforces total size if configured.",
     category="fs",
-    capabilities=["fs","write","stream"],
+    capabilities=["fs", "write", "stream"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "content":{"type":"string"}
-        },
-        "required":["path","content"]
-    }
+        "type": "object",
+        "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+        "required": ["path", "content"],
+    },
 )
 def append_file(path: str, content: str) -> ToolResult:
     try:
@@ -1108,21 +1201,22 @@ def append_file(path: str, content: str) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name=CANON_READ,
     description="Read UTF-8 text (soft-missing support).",
     category="fs",
-    capabilities=["fs","read"],
+    capabilities=["fs", "read"],
     aliases=list(READ_ALIASES_BASE | READ_DOTTED_ALIASES),
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "max_bytes":{"type":"integer","default":20000},
-            "ignore_missing":{"type":"boolean","default":True}
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "default": 20000},
+            "ignore_missing": {"type": "boolean", "default": True},
         },
-        "required":["path"]
-    }
+        "required": ["path"],
+    },
 )
 def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
     try:
@@ -1130,7 +1224,13 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
         abs_path = _safe_path(path)
         if not os.path.exists(abs_path):
             if ignore_missing:
-                data = {"path": abs_path, "content": "", "truncated": False, "exists": False, "missing": True}
+                data = {
+                    "path": abs_path,
+                    "content": "",
+                    "truncated": False,
+                    "exists": False,
+                    "missing": True,
+                }
                 _annotate_struct_meta(abs_path, data)
                 if data.get("struct_layer"):
                     _touch_layer(data["struct_layer"], "reads")
@@ -1148,7 +1248,14 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
                 text = data_bytes[:max_eff].decode("utf-8", errors="replace")
             except Exception:
                 text = ""
-            res = {"path": abs_path, "content": text, "truncated": truncated, "exists": True, "missing": False, "binary_mode": True}
+            res = {
+                "path": abs_path,
+                "content": text,
+                "truncated": truncated,
+                "exists": True,
+                "missing": False,
+                "binary_mode": True,
+            }
             _annotate_struct_meta(abs_path, res)
             if res.get("struct_layer"):
                 _touch_layer(res["struct_layer"], "reads")
@@ -1157,7 +1264,13 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
         with open(abs_path, "r", encoding="utf-8") as f:
             data_txt = f.read(max_eff + 10)
         truncated = len(data_txt) > max_eff
-        res = {"path": abs_path, "content": data_txt[:max_eff], "truncated": truncated, "exists": True, "missing": False}
+        res = {
+            "path": abs_path,
+            "content": data_txt[:max_eff],
+            "truncated": truncated,
+            "exists": True,
+            "missing": False,
+        }
         _annotate_struct_meta(abs_path, res)
         if res.get("struct_layer"):
             _touch_layer(res["struct_layer"], "reads")
@@ -1168,39 +1281,42 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="file_exists",
     description="Check path existence and type.",
     category="fs",
-    capabilities=["fs","meta"],
-    parameters={
-        "type":"object",
-        "properties":{"path":{"type":"string"}},
-        "required":["path"]
-    }
+    capabilities=["fs", "meta"],
+    parameters={"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
 )
 def file_exists(path: str) -> ToolResult:
     try:
         abs_path = _safe_path(path)
-        data = {"path": abs_path, "exists": os.path.exists(abs_path), "is_dir": os.path.isdir(abs_path), "is_file": os.path.isfile(abs_path)}
+        data = {
+            "path": abs_path,
+            "exists": os.path.exists(abs_path),
+            "is_dir": os.path.isdir(abs_path),
+            "is_file": os.path.isfile(abs_path),
+        }
         _annotate_struct_meta(abs_path, data)
         _apply_struct_limit(data)
         return ToolResult(ok=True, data=data)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="list_dir",
     description="List directory entries (name,type,size).",
     category="fs",
-    capabilities=["fs","meta"],
+    capabilities=["fs", "meta"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string","default":"."},
-            "max_entries":{"type":"integer","default":400}
-        }
-    }
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "default": "."},
+            "max_entries": {"type": "integer", "default": 400},
+        },
+    },
 )
 def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
     try:
@@ -1210,12 +1326,14 @@ def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
         entries = []
         for name in sorted(os.listdir(abs_path))[:max_entries]:
             p = os.path.join(abs_path, name)
-            entries.append({
-                "name": name,
-                "is_dir": os.path.isdir(p),
-                "is_file": os.path.isfile(p),
-                "size": os.path.getsize(p) if os.path.isfile(p) else None
-            })
+            entries.append(
+                {
+                    "name": name,
+                    "is_dir": os.path.isdir(p),
+                    "is_file": os.path.isfile(p),
+                    "size": os.path.getsize(p) if os.path.isfile(p) else None,
+                }
+            )
         data = {"path": abs_path, "entries": entries}
         _annotate_struct_meta(abs_path, data)
         _apply_struct_limit(data)
@@ -1223,19 +1341,20 @@ def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="delete_file",
     description="Delete a file (confirm=True required).",
     category="fs",
-    capabilities=["fs","write"],
+    capabilities=["fs", "write"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "confirm":{"type":"boolean","default":False}
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "confirm": {"type": "boolean", "default": False},
         },
-        "required":["path"]
-    }
+        "required": ["path"],
+    },
 )
 def delete_file(path: str, confirm: bool = False) -> ToolResult:
     try:
@@ -1254,23 +1373,24 @@ def delete_file(path: str, confirm: bool = False) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="ensure_file",
     description="Ensure text file exists; create if allowed.",
     category="fs",
-    capabilities=["fs","ensure"],
+    capabilities=["fs", "ensure"],
     parameters={
-        "type":"object",
-        "properties":{
-            "path":{"type":"string"},
-            "max_bytes":{"type":"integer","default":40000},
-            "initial_content":{"type":"string","default":""},
-            "force_create":{"type":"boolean","default":False},
-            "allow_create":{"type":"boolean","default":True},
-            "enforce_ext":{"type":"string"}
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "default": 40000},
+            "initial_content": {"type": "string", "default": ""},
+            "force_create": {"type": "boolean", "default": False},
+            "allow_create": {"type": "boolean", "default": True},
+            "enforce_ext": {"type": "string"},
         },
-        "required":["path"]
-    }
+        "required": ["path"],
+    },
 )
 def ensure_file(
     path: str,
@@ -1278,7 +1398,7 @@ def ensure_file(
     initial_content: str = "",
     force_create: bool = False,
     allow_create: bool = True,
-    enforce_ext: Optional[str] = None
+    enforce_ext: Optional[str] = None,
 ) -> ToolResult:
     try:
         max_eff = int(min(max_bytes, MAX_READ_BYTES))
@@ -1287,7 +1407,9 @@ def ensure_file(
             if not lowered.endswith(enforce_ext.lower()):
                 return ToolResult(ok=False, error="EXTENSION_MISMATCH")
         else:
-            if AUTO_CREATE_ALLOWED_EXTS and not any(lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS):
+            if AUTO_CREATE_ALLOWED_EXTS and not any(
+                lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS
+            ):
                 return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
         abs_path = _safe_path(path)
         path_exists = os.path.exists(abs_path)
@@ -1308,7 +1430,14 @@ def ensure_file(
                     d = f.read(max_eff + 10)
                 truncated = len(d) > max_eff
                 preview = d[:max_eff]
-            data = {"path": abs_path, "content": preview, "truncated": truncated, "exists": True, "missing": False, "created": False}
+            data = {
+                "path": abs_path,
+                "content": preview,
+                "truncated": truncated,
+                "exists": True,
+                "missing": False,
+                "created": False,
+            }
             _annotate_struct_meta(abs_path, data)
             if data.get("struct_layer"):
                 _touch_layer(data["struct_layer"], "ensures")
@@ -1317,15 +1446,21 @@ def ensure_file(
         if not path_exists:
             if not allow_create or not AUTO_CREATE_ENABLED:
                 return ToolResult(ok=False, error="FILE_NOT_FOUND")
-        content = (initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT)
+        content = initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT
         encoded = content.encode("utf-8")
         if len(encoded) > AUTO_CREATE_MAX_BYTES:
             return ToolResult(ok=False, error="INITIAL_CONTENT_TOO_LARGE")
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
-        data = {"path": abs_path, "content": content[:max_eff], "truncated": len(content) > max_eff,
-                "exists": True, "missing": False, "created": True}
+        data = {
+            "path": abs_path,
+            "content": content[:max_eff],
+            "truncated": len(content) > max_eff,
+            "exists": True,
+            "missing": False,
+            "created": True,
+        }
         _annotate_struct_meta(abs_path, data)
         if data.get("struct_layer"):
             _touch_layer(data["struct_layer"], "ensures")
@@ -1336,6 +1471,7 @@ def ensure_file(
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 # ======================================================================================
 # Bulk & Index / Search Tools
 # ======================================================================================
@@ -1343,23 +1479,23 @@ def ensure_file(
     name="read_bulk_files",
     description="Read multiple small text files. Returns JSON or concatenated blob.",
     category="fs",
-    capabilities=["fs","read","batch"],
+    capabilities=["fs", "read", "batch"],
     parameters={
-        "type":"object",
-        "properties":{
-            "paths":{"type":"array","default":[]},
-            "max_bytes_per_file":{"type":"integer","default":60000},
-            "ignore_missing":{"type":"boolean","default":True},
-            "merge_mode":{"type":"string","default":"json","description":"json|concat"}
+        "type": "object",
+        "properties": {
+            "paths": {"type": "array", "default": []},
+            "max_bytes_per_file": {"type": "integer", "default": 60000},
+            "ignore_missing": {"type": "boolean", "default": True},
+            "merge_mode": {"type": "string", "default": "json", "description": "json|concat"},
         },
-        "required":["paths"]
-    }
+        "required": ["paths"],
+    },
 )
 def read_bulk_files(
     paths: List[str],
     max_bytes_per_file: int = 60000,
     ignore_missing: bool = True,
-    merge_mode: str = "json"
+    merge_mode: str = "json",
 ) -> ToolResult:
     out = []
     max_eff = int(min(max_bytes_per_file, MAX_READ_BYTES))
@@ -1386,12 +1522,9 @@ def read_bulk_files(
                     content = f.read()
                 truncated = False
             total_chars += len(content)
-            out.append({
-                "path": abs_path,
-                "exists": True,
-                "truncated": truncated,
-                "content": content
-            })
+            out.append(
+                {"path": abs_path, "exists": True, "truncated": truncated, "content": content}
+            )
             if total_chars > 1_500_000:  # Hard safety limit
                 break
         except Exception as e:
@@ -1399,31 +1532,42 @@ def read_bulk_files(
                 return ToolResult(ok=False, error=str(e))
             out.append({"path": p, "exists": False, "error": str(e)})
     if merge_mode == "concat":
-        merged = "\n\n".join(f"# {os.path.basename(o['path'])}\n{o.get('content','')}" for o in out if o.get("content"))
-        return ToolResult(ok=True, data={
-            "mode": "concat",
-            "content": merged,
-            "files_count": len(out),
-            "total_chars": len(merged)
-        })
+        merged = "\n\n".join(
+            f"# {os.path.basename(o['path'])}\n{o.get('content','')}"
+            for o in out
+            if o.get("content")
+        )
+        return ToolResult(
+            ok=True,
+            data={
+                "mode": "concat",
+                "content": merged,
+                "files_count": len(out),
+                "total_chars": len(merged),
+            },
+        )
     return ToolResult(ok=True, data={"mode": "json", "files": out, "files_count": len(out)})
+
 
 @tool(
     name="code_index_project",
     description="Lightweight lexical project index: collects file metadata, size, line counts, simple complexity heuristic.",
     category="index",
-    capabilities=["index","scan"],
+    capabilities=["index", "scan"],
     parameters={
-        "type":"object",
-        "properties":{
-            "root":{"type":"string","default":"."},
-            "max_files":{"type":"integer","default":CODE_INDEX_MAX_FILES},
-            "include_exts":{"type":"string","default":",".join(CODE_INDEX_INCLUDE_EXTS)}
-        }
-    }
+        "type": "object",
+        "properties": {
+            "root": {"type": "string", "default": "."},
+            "max_files": {"type": "integer", "default": CODE_INDEX_MAX_FILES},
+            "include_exts": {"type": "string", "default": ",".join(CODE_INDEX_INCLUDE_EXTS)},
+        },
+    },
 )
-def code_index_project(root: str = ".", max_files: int = CODE_INDEX_MAX_FILES,
-                       include_exts: str = ",".join(CODE_INDEX_INCLUDE_EXTS)) -> ToolResult:
+def code_index_project(
+    root: str = ".",
+    max_files: int = CODE_INDEX_MAX_FILES,
+    include_exts: str = ",".join(CODE_INDEX_INCLUDE_EXTS),
+) -> ToolResult:
     try:
         root_abs = _safe_path(root)
         if not os.path.isdir(root_abs):
@@ -1452,57 +1596,67 @@ def code_index_project(root: str = ".", max_files: int = CODE_INDEX_MAX_FILES,
                         lines = f.readlines()
                     line_count = len(lines)
                     non_empty = sum(1 for l in lines if l.strip())
-                    avg_len = sum(len(l) for l in lines)/line_count if line_count else 0
+                    avg_len = sum(len(l) for l in lines) / line_count if line_count else 0
                     complexity_score = round(
                         (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
                     )
-                    files_meta.append({
-                        "path": os.path.relpath(fpath, root_abs),
-                        "lines": line_count,
-                        "non_empty": non_empty,
-                        "avg_line_len": round(avg_len, 2),
-                        "size": st.st_size,
-                        "complexity_score": complexity_score
-                    })
+                    files_meta.append(
+                        {
+                            "path": os.path.relpath(fpath, root_abs),
+                            "lines": line_count,
+                            "non_empty": non_empty,
+                            "avg_line_len": round(avg_len, 2),
+                            "size": st.st_size,
+                            "complexity_score": complexity_score,
+                        }
+                    )
                     count += 1
                 except Exception:
                     continue
             if count >= max_files:
                 break
-        elapsed_ms = int((time.perf_counter() - start)*1000)
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
         files_meta.sort(key=lambda x: x["complexity_score"], reverse=True)
         top_hotspots = files_meta[: min(20, len(files_meta))]
-        return ToolResult(ok=True, data={
-            "root": root_abs,
-            "indexed_files": len(files_meta),
-            "hotspots_top20": top_hotspots,
-            "elapsed_ms": elapsed_ms,
-            "exts": sorted(exts),
-            "limit_reached": count >= max_files
-        })
+        return ToolResult(
+            ok=True,
+            data={
+                "root": root_abs,
+                "indexed_files": len(files_meta),
+                "hotspots_top20": top_hotspots,
+                "elapsed_ms": elapsed_ms,
+                "exts": sorted(exts),
+                "limit_reached": count >= max_files,
+            },
+        )
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
 
 @tool(
     name="code_search_lexical",
     description="Lexical scan for a query (substring or optional regex) returning contextual snippets.",
     category="search",
-    capabilities=["search","scan","lexical"],
+    capabilities=["search", "scan", "lexical"],
     parameters={
-        "type":"object",
-        "properties":{
-            "query":{"type":"string"},
-            "root":{"type":"string","default":"."},
-            "regex":{"type":"boolean","default":False},
-            "limit":{"type":"integer","default":CODE_SEARCH_MAX_RESULTS},
-            "context_radius":{"type":"integer","default":CODE_SEARCH_CONTEXT_RADIUS}
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"},
+            "root": {"type": "string", "default": "."},
+            "regex": {"type": "boolean", "default": False},
+            "limit": {"type": "integer", "default": CODE_SEARCH_MAX_RESULTS},
+            "context_radius": {"type": "integer", "default": CODE_SEARCH_CONTEXT_RADIUS},
         },
-        "required":["query"]
-    }
+        "required": ["query"],
+    },
 )
-def code_search_lexical(query: str, root: str = ".", regex: bool = False,
-                        limit: int = CODE_SEARCH_MAX_RESULTS,
-                        context_radius: int = CODE_SEARCH_CONTEXT_RADIUS) -> ToolResult:
+def code_search_lexical(
+    query: str,
+    root: str = ".",
+    regex: bool = False,
+    limit: int = CODE_SEARCH_MAX_RESULTS,
+    context_radius: int = CODE_SEARCH_CONTEXT_RADIUS,
+) -> ToolResult:
     try:
         q = (query or "").strip()
         if not q:
@@ -1547,81 +1701,86 @@ def code_search_lexical(query: str, root: str = ".", regex: bool = False,
                         snippet_lines = lines[start:end]
                         snippet = "".join(snippet_lines)[:1000]
                         rel = os.path.relpath(fpath, root_abs)
-                        results.append({
-                            "file": rel,
-                            "line": idx+1,
-                            "snippet": snippet,
-                            "match_line_excerpt": line.strip()[:300]
-                        })
+                        results.append(
+                            {
+                                "file": rel,
+                                "line": idx + 1,
+                                "snippet": snippet,
+                                "match_line_excerpt": line.strip()[:300],
+                            }
+                        )
                         if len(results) >= limit:
-                            return ToolResult(ok=True, data={
-                                "query": q,
-                                "regex": regex,
-                                "results": results,
-                                "scanned_files": scanned,
-                                "limit_reached": True
-                            })
-        return ToolResult(ok=True, data={
-            "query": q,
-            "regex": regex,
-            "results": results,
-            "scanned_files": scanned,
-            "limit_reached": False
-        })
+                            return ToolResult(
+                                ok=True,
+                                data={
+                                    "query": q,
+                                    "regex": regex,
+                                    "results": results,
+                                    "scanned_files": scanned,
+                                    "limit_reached": True,
+                                },
+                            )
+        return ToolResult(
+            ok=True,
+            data={
+                "query": q,
+                "regex": regex,
+                "results": results,
+                "scanned_files": scanned,
+                "limit_reached": False,
+            },
+        )
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
 
 @tool(
     name="code_search_semantic",
     description="(Stub) Semantic search placeholder. Returns informative stub unless SEMANTIC_SEARCH_ENABLED=1.",
     category="search",
-    capabilities=["search","semantic","stub"],
+    capabilities=["search", "semantic", "stub"],
     parameters={
-        "type":"object",
-        "properties":{
-            "query":{"type":"string"},
-            "top_k":{"type":"integer","default":5}
-        },
-        "required":["query"]
-    }
+        "type": "object",
+        "properties": {"query": {"type": "string"}, "top_k": {"type": "integer", "default": 5}},
+        "required": ["query"],
+    },
 )
 def code_search_semantic(query: str, top_k: int = 5) -> ToolResult:
     q = (query or "").strip()
     if not q:
         return ToolResult(ok=False, error="EMPTY_QUERY")
     if not SEMANTIC_SEARCH_ENABLED:
-        return ToolResult(ok=True, data={
-            "query": q,
-            "enabled": False,
-            "message": "Semantic search disabled (SEMANTIC_SEARCH_ENABLED=0). This is a stub.",
-            "results": []
-        })
+        return ToolResult(
+            ok=True,
+            data={
+                "query": q,
+                "enabled": False,
+                "message": "Semantic search disabled (SEMANTIC_SEARCH_ENABLED=0). This is a stub.",
+                "results": [],
+            },
+        )
     # Future real embedding logic
     if SEMANTIC_SEARCH_FAKE_LATENCY_MS > 0:
         time.sleep(SEMANTIC_SEARCH_FAKE_LATENCY_MS / 1000.0)
     # Dummy placeholder results
-    dummy = [{
-        "file": f"placeholder_{i}.py",
-        "score": round(1.0 - (i * 0.07), 3),
-        "excerpt": f"Simulated semantic match for '{q}' (rank {i+1})."
-    } for i in range(min(top_k, 8))]
-    return ToolResult(ok=True, data={
-        "query": q,
-        "enabled": True,
-        "results": dummy
-    })
+    dummy = [
+        {
+            "file": f"placeholder_{i}.py",
+            "score": round(1.0 - (i * 0.07), 3),
+            "excerpt": f"Simulated semantic match for '{q}' (rank {i+1}).",
+        }
+        for i in range(min(top_k, 8))
+    ]
+    return ToolResult(ok=True, data={"query": q, "enabled": True, "results": dummy})
+
 
 # Structural Analysis --------------------------------------------------------
 @tool(
     name="analyze_path_semantics",
     description="Return structural meta (layer/hotspot/dup_group) for a path if present in deep map.",
     category="structural",
-    capabilities=["struct","meta"],
-    parameters={
-        "type":"object",
-        "properties":{"path":{"type":"string"}},
-        "required":["path"]
-    }
+    capabilities=["struct", "meta"],
+    parameters={"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
 )
 def analyze_path_semantics(path: str) -> ToolResult:
     try:
@@ -1637,21 +1796,19 @@ def analyze_path_semantics(path: str) -> ToolResult:
             "known": True,
             "layer": info.get("layer"),
             "hotspot": info.get("hotspot"),
-            "dup_group": info.get("dup_group")
+            "dup_group": info.get("dup_group"),
         }
         return ToolResult(ok=True, data=payload)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="reload_deep_struct_map",
     description="Force reload of deep structural map. Returns reloaded + entry count.",
     category="structural",
-    capabilities=["struct","control"],
-    parameters={
-        "type":"object",
-        "properties":{}
-    }
+    capabilities=["struct", "control"],
+    parameters={"type": "object", "properties": {}},
 )
 def reload_deep_struct_map() -> ToolResult:
     try:
@@ -1661,20 +1818,21 @@ def reload_deep_struct_map() -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 # Dispatch -------------------------------------------------------------------
 @tool(
     name="dispatch_tool",
     description="Dynamically call another tool (allowlist via DISPATCH_ALLOWLIST).",
     category="meta",
-    capabilities=["meta","routing"],
+    capabilities=["meta", "routing"],
     parameters={
-        "type":"object",
-        "properties":{
-            "tool_name":{"type":"string"},
-            "arguments":{"type":"object","default":{}}
+        "type": "object",
+        "properties": {
+            "tool_name": {"type": "string"},
+            "arguments": {"type": "object", "default": {}},
         },
-        "required":["tool_name"]
-    }
+        "required": ["tool_name"],
+    },
 )
 def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
     arguments = arguments or {}
@@ -1699,6 +1857,7 @@ def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) ->
         return ToolResult(ok=False, error=f"DISPATCH_FAILED: {e}")
     return result
 
+
 # ======================================================================================
 # Public Schema Access
 # ======================================================================================
@@ -1709,43 +1868,111 @@ def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
             continue
         if meta.get("disabled") and not include_disabled:
             continue
-        schema.append({
-            "name": meta["name"],
-            "description": meta["description"],
-            "parameters": meta["parameters"],
-            "category": meta.get("category"),
-            "aliases": meta.get("aliases", []),
-            "disabled": meta.get("disabled", False),
-            "capabilities": _CAPABILITIES.get(meta["name"], []),
-            "version": __version__
-        })
+        schema.append(
+            {
+                "name": meta["name"],
+                "description": meta["description"],
+                "parameters": meta["parameters"],
+                "category": meta.get("category"),
+                "aliases": meta.get("aliases", []),
+                "disabled": meta.get("disabled", False),
+                "capabilities": _CAPABILITIES.get(meta["name"], []),
+                "version": __version__,
+            }
+        )
     return schema
+
 
 # ======================================================================================
 # Backwards Compatibility Function Aliases
 # ======================================================================================
-def generic_think_tool(**kwargs): return generic_think(**kwargs)
-def summarize_text_tool(**kwargs): return summarize_text(**kwargs)
-def refine_text_tool(**kwargs): return refine_text(**kwargs)
-def write_file_tool(**kwargs): return write_file(**kwargs)
-def write_file_if_changed_tool(**kwargs): return write_file_if_changed(**kwargs)
-def append_file_tool(**kwargs): return append_file(**kwargs)
-def read_file_tool(**kwargs): return read_file(**kwargs)
-def file_exists_tool(**kwargs): return file_exists(**kwargs)
-def list_dir_tool(**kwargs): return list_dir(**kwargs)
-def delete_file_tool(**kwargs): return delete_file(**kwargs)
-def ensure_file_tool(**kwargs): return ensure_file(**kwargs)
-def ensure_directory_tool(**kwargs): return ensure_directory(**kwargs)
-def introspect_tools_tool(**kwargs): return introspect_tools(**kwargs)
-def memory_put_tool(**kwargs): return memory_put(**kwargs)
-def memory_get_tool(**kwargs): return memory_get(**kwargs)
-def dispatch_tool_tool(**kwargs): return dispatch_tool(**kwargs)
-def analyze_path_semantics_tool(**kwargs): return analyze_path_semantics(**kwargs)
-def reload_deep_struct_map_tool(**kwargs): return reload_deep_struct_map(**kwargs)
-def read_bulk_files_tool(**kwargs): return read_bulk_files(**kwargs)
-def code_index_project_tool(**kwargs): return code_index_project(**kwargs)
-def code_search_lexical_tool(**kwargs): return code_search_lexical(**kwargs)
-def code_search_semantic_tool(**kwargs): return code_search_semantic(**kwargs)
+def generic_think_tool(**kwargs):
+    return generic_think(**kwargs)
+
+
+def summarize_text_tool(**kwargs):
+    return summarize_text(**kwargs)
+
+
+def refine_text_tool(**kwargs):
+    return refine_text(**kwargs)
+
+
+def write_file_tool(**kwargs):
+    return write_file(**kwargs)
+
+
+def write_file_if_changed_tool(**kwargs):
+    return write_file_if_changed(**kwargs)
+
+
+def append_file_tool(**kwargs):
+    return append_file(**kwargs)
+
+
+def read_file_tool(**kwargs):
+    return read_file(**kwargs)
+
+
+def file_exists_tool(**kwargs):
+    return file_exists(**kwargs)
+
+
+def list_dir_tool(**kwargs):
+    return list_dir(**kwargs)
+
+
+def delete_file_tool(**kwargs):
+    return delete_file(**kwargs)
+
+
+def ensure_file_tool(**kwargs):
+    return ensure_file(**kwargs)
+
+
+def ensure_directory_tool(**kwargs):
+    return ensure_directory(**kwargs)
+
+
+def introspect_tools_tool(**kwargs):
+    return introspect_tools(**kwargs)
+
+
+def memory_put_tool(**kwargs):
+    return memory_put(**kwargs)
+
+
+def memory_get_tool(**kwargs):
+    return memory_get(**kwargs)
+
+
+def dispatch_tool_tool(**kwargs):
+    return dispatch_tool(**kwargs)
+
+
+def analyze_path_semantics_tool(**kwargs):
+    return analyze_path_semantics(**kwargs)
+
+
+def reload_deep_struct_map_tool(**kwargs):
+    return reload_deep_struct_map(**kwargs)
+
+
+def read_bulk_files_tool(**kwargs):
+    return read_bulk_files(**kwargs)
+
+
+def code_index_project_tool(**kwargs):
+    return code_index_project(**kwargs)
+
+
+def code_search_lexical_tool(**kwargs):
+    return code_search_lexical(**kwargs)
+
+
+def code_search_semantic_tool(**kwargs):
+    return code_search_semantic(**kwargs)
+
 
 # ======================================================================================
 # __all__
@@ -1811,7 +2038,7 @@ __all__ = [
     "_ALIAS_INDEX",
     "_CAPABILITIES",
     "PROJECT_ROOT",
-    "_LAYER_STATS"
+    "_LAYER_STATS",
 ]
 
 # END OF FILE (v4.5.0-hyper-l5++-omniplan)

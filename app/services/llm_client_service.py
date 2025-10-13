@@ -112,14 +112,14 @@
 from __future__ import annotations
 
 import json
-import os
-import time
-import threading
-import uuid
 import math
+import os
 import random
 import re
-from typing import Any, Dict, Optional, List, Callable, Generator, Union
+import threading
+import time
+import uuid
+from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
 # --------------------------------------------------------------------------------------
 # Optional dependencies
@@ -141,6 +141,7 @@ except Exception:  # pragma: no cover
 
     def has_app_context() -> bool:  # type: ignore
         return False
+
 
 import logging
 
@@ -172,6 +173,7 @@ _CLIENT_BUILD_SEQ = 0
 # MOCK CLIENT
 # ======================================================================================
 
+
 class MockLLMClient:
     """
     Mock client with minimal compatibility.
@@ -192,7 +194,14 @@ class MockLLMClient:
             def __init__(self, parent: "MockLLMClient"):
                 self._parent = parent
 
-            def create(self, model: str, messages: List[Dict[str, str]], tools=None, tool_choice=None, **kwargs):
+            def create(
+                self,
+                model: str,
+                messages: List[Dict[str, str]],
+                tools=None,
+                tool_choice=None,
+                **kwargs,
+            ):
                 self._parent._calls += 1
                 last_user = ""
                 for m in reversed(messages):
@@ -219,7 +228,7 @@ class MockLLMClient:
                 usage = {
                     "prompt_tokens": prompt_tokens,
                     "completion_tokens": completion_tokens,
-                    "total_tokens": prompt_tokens + completion_tokens
+                    "total_tokens": prompt_tokens + completion_tokens,
                 }
 
                 msg = _Msg(synthetic)
@@ -240,12 +249,14 @@ class MockLLMClient:
             "model": self._model,
             "created_at": self._created_at,
             "calls": self._calls,
-            "id": self._id
+            "id": self._id,
         }
+
 
 # ======================================================================================
 # FALLBACK HTTP CLIENT
 # ======================================================================================
+
 
 class _HttpFallbackClient:
     """
@@ -276,7 +287,7 @@ class _HttpFallbackClient:
                 tool_choice=None,
                 temperature: float = 0.7,
                 max_tokens: Optional[int] = None,
-                **kwargs
+                **kwargs,
             ):
                 self._parent._calls += 1
                 if requests is None:
@@ -298,12 +309,16 @@ class _HttpFallbackClient:
                     "X-Title": os.getenv("OPENROUTER_TITLE", "Overmind"),
                 }
                 try:
-                    resp = requests.post(url, json=payload, headers=headers, timeout=self._parent._timeout)
+                    resp = requests.post(
+                        url, json=payload, headers=headers, timeout=self._parent._timeout
+                    )
                 except Exception as e:
                     raise RuntimeError(f"HTTP fallback request error: {e}")
 
                 if resp.status_code >= 400:
-                    raise RuntimeError(f"HTTP fallback bad status {resp.status_code}: {resp.text[:400]}")
+                    raise RuntimeError(
+                        f"HTTP fallback bad status {resp.status_code}: {resp.text[:400]}"
+                    )
 
                 data = resp.json()
                 choices = data.get("choices", [])
@@ -330,7 +345,9 @@ class _HttpFallbackClient:
                 }
 
                 msg = _Msg(content)
-                return type("HttpFallbackCompletion", (), {"choices": [_Choice(msg)], "usage": usage})()
+                return type(
+                    "HttpFallbackCompletion", (), {"choices": [_Choice(msg)], "usage": usage}
+                )()
 
         @property
         def completions(self):
@@ -347,12 +364,14 @@ class _HttpFallbackClient:
             "created_at": self._created_at,
             "calls": self._calls,
             "id": self._id,
-            "base_url": self._base
+            "base_url": self._base,
         }
+
 
 # ======================================================================================
 # INTERNAL CONFIG HELPERS
 # ======================================================================================
+
 
 def _read_config_key(key: str) -> Optional[str]:
     if has_app_context() and current_app:
@@ -363,6 +382,7 @@ def _read_config_key(key: str) -> Optional[str]:
         except Exception:
             pass
     return os.environ.get(key)
+
 
 def _resolve_api_credentials() -> Dict[str, Any]:
     """
@@ -378,25 +398,25 @@ def _resolve_api_credentials() -> Dict[str, Any]:
         return {
             "provider": "openrouter",
             "api_key": openrouter_key,
-            "base_url": base_url_env or "https://openrouter.ai/api/v1"
+            "base_url": base_url_env or "https://openrouter.ai/api/v1",
         }
     if openai_key:
-        return {
-            "provider": "openai",
-            "api_key": openai_key,
-            "base_url": base_url_env or None
-        }
+        return {"provider": "openai", "api_key": openai_key, "base_url": base_url_env or None}
     return {"provider": None, "api_key": None, "base_url": None}
+
 
 def _should_force_mock() -> bool:
     return any(os.getenv(flag, "0") == "1" for flag in ("LLM_FORCE_MOCK", "LLM_MOCK_MODE"))
 
+
 def _bool_env(name: str) -> bool:
     return os.getenv(name, "0") == "1"
+
 
 # ======================================================================================
 # REAL CLIENT BUILDERS
 # ======================================================================================
+
 
 def _build_openai_modern_client(creds: Dict[str, Any], timeout: float):
     if openai is None:
@@ -411,6 +431,7 @@ def _build_openai_modern_client(creds: Dict[str, Any], timeout: float):
         _LOG.warning("Failed to build modern OpenAI client: %s", e)
         return None
 
+
 def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
     if openai is None:
         return None
@@ -419,7 +440,16 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
 
     class _LegacyChatWrapper:
         class _CompletionsWrapper:
-            def create(self, model: str, messages, tools=None, tool_choice=None, temperature=0.7, max_tokens=None, **kwargs):
+            def create(
+                self,
+                model: str,
+                messages,
+                tools=None,
+                tool_choice=None,
+                temperature=0.7,
+                max_tokens=None,
+                **kwargs,
+            ):
                 try:
                     resp = openai.ChatCompletion.create(  # type: ignore
                         model=model,
@@ -447,7 +477,9 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
                     "completion_tokens": usage.get("completion_tokens"),
                     "total_tokens": usage.get("total_tokens"),
                 }
-                return type("LegacyCompletion", (), {"choices": [_Choice(msg)], "usage": usage_norm})()
+                return type(
+                    "LegacyCompletion", (), {"choices": [_Choice(msg)], "usage": usage_norm}
+                )()
 
         @property
         def completions(self):
@@ -471,6 +503,7 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
         pass
     return _LegacyClientWrapper()
 
+
 def _build_real_client(creds: Dict[str, Any], timeout: float):
     provider = creds["provider"]
     if provider not in ("openrouter", "openai"):
@@ -493,9 +526,11 @@ def _build_real_client(creds: Dict[str, Any], timeout: float):
 
     return None
 
+
 # ======================================================================================
 # BUILD / FACTORY
 # ======================================================================================
+
 
 def _build_client() -> Any:
     global _CLIENT_BUILD_SEQ
@@ -508,14 +543,16 @@ def _build_client() -> Any:
     forced_mock = _should_force_mock()
 
     _CLIENT_META.clear()
-    _CLIENT_META.update({
-        "build_seq": build_id,
-        "forced_mock": forced_mock,
-        "provider_target": creds["provider"],
-        "disable_cache": disable_cache,
-        "timeout": timeout_s,
-        "ts": time.time(),
-    })
+    _CLIENT_META.update(
+        {
+            "build_seq": build_id,
+            "forced_mock": forced_mock,
+            "provider_target": creds["provider"],
+            "disable_cache": disable_cache,
+            "timeout": timeout_s,
+            "ts": time.time(),
+        }
+    )
 
     if forced_mock:
         client = MockLLMClient("forced-mock-flag")
@@ -527,35 +564,43 @@ def _build_client() -> Any:
         real = _build_real_client(creds, timeout_s)
         if real:
             http_fb = isinstance(real, _HttpFallbackClient)
-            _CLIENT_META.update({
-                "provider_actual": creds["provider"],
-                "base_url": creds.get("base_url"),
-                "http_fallback_mode": http_fb,
-            })
+            _CLIENT_META.update(
+                {
+                    "provider_actual": creds["provider"],
+                    "base_url": creds.get("base_url"),
+                    "http_fallback_mode": http_fb,
+                }
+            )
             mode = "HTTP-FALLBACK" if http_fb else "SDK"
             _LOG.info("[LLM] Real client established: provider=%s mode=%s", creds["provider"], mode)
             return real
         else:
             _LOG.warning("[LLM] Real client init failed, switching to mock.")
         client = MockLLMClient("real-client-init-failure")
-        _CLIENT_META.update({
-            "provider_actual": "mock",
-            "reason": "real-client-init-failure",
-            "base_url": creds.get("base_url"),
-        })
+        _CLIENT_META.update(
+            {
+                "provider_actual": "mock",
+                "reason": "real-client-init-failure",
+                "base_url": creds.get("base_url"),
+            }
+        )
         return client
 
     client = MockLLMClient("no-api-key")
-    _CLIENT_META.update({
-        "provider_actual": "mock",
-        "reason": "no-api-key",
-    })
+    _CLIENT_META.update(
+        {
+            "provider_actual": "mock",
+            "reason": "no-api-key",
+        }
+    )
     _LOG.info("[LLM] No API key detected; mock client in use.")
     return client
+
 
 # ======================================================================================
 # PUBLIC CORE ACCESS
 # ======================================================================================
+
 
 def get_llm_client() -> Any:
     global _CLIENT_SINGLETON
@@ -572,15 +617,18 @@ def get_llm_client() -> Any:
             _CLIENT_SINGLETON = _build_client()
         return _CLIENT_SINGLETON
 
+
 def reset_llm_client() -> None:
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
         _CLIENT_META.clear()
 
+
 def is_mock_client(client: Optional[Any] = None) -> bool:
     c = client or _CLIENT_SINGLETON
     return isinstance(c, MockLLMClient)
+
 
 # ======================================================================================
 # METRICS / STATE / COST / HOOKS / BREAKER
@@ -613,9 +661,9 @@ _BREAKER_WINDOW = float(os.getenv("LLM_BREAKER_WINDOW", "60") or 60.0)
 _BREAKER_THRESHOLD = int(os.getenv("LLM_BREAKER_ERROR_THRESHOLD", "6") or 6)
 _BREAKER_COOLDOWN = float(os.getenv("LLM_BREAKER_COOLDOWN", "30") or 30.0)
 _BREAKER_STATE = {
-    "errors": [],        # list[timestamps]
-    "open_until": 0.0,   # timestamp if open
-    "open_events": 0
+    "errors": [],  # list[timestamps]
+    "open_until": 0.0,  # timestamp if open
+    "open_events": 0,
 }
 
 # Sanitization regex list
@@ -627,11 +675,14 @@ except Exception:
 _PRE_HOOKS: List[Callable[[Dict[str, Any]], None]] = []
 _POST_HOOKS: List[Callable[[Dict[str, Any], Dict[str, Any]], None]] = []
 
+
 def register_llm_pre_hook(fn: Callable[[Dict[str, Any]], None]) -> None:
     _PRE_HOOKS.append(fn)
 
+
 def register_llm_post_hook(fn: Callable[[Dict[str, Any], Dict[str, Any]], None]) -> None:
     _POST_HOOKS.append(fn)
+
 
 # Cumulative stats
 _LLMTOTAL = {
@@ -642,11 +693,12 @@ _LLMTOTAL = {
     "errors": 0,
     "last_error_kind": None,
     "latencies_ms": [],
-    "cost_usd": 0.0
+    "cost_usd": 0.0,
 }
 _LAT_WIN = 300
 
 _SENSITIVE_MARKERS = ("OPENAI_API_KEY=", "sk-or-", "sk-")
+
 
 def _classify_error(exc: Exception) -> str:
     msg = str(exc).lower()
@@ -662,6 +714,7 @@ def _classify_error(exc: Exception) -> str:
         return "parse"
     return "unknown"
 
+
 def _retry_allowed(kind: str) -> bool:
     if kind == "auth_error" and not _LLM_RETRY_ON_AUTH:
         return False
@@ -669,7 +722,10 @@ def _retry_allowed(kind: str) -> bool:
         return False
     return kind in ("rate_limit", "network", "timeout", "parse") or True  # 'unknown' fallback
 
-def _estimate_cost(model: str, prompt_tokens: Optional[int], completion_tokens: Optional[int]) -> Optional[float]:
+
+def _estimate_cost(
+    model: str, prompt_tokens: Optional[int], completion_tokens: Optional[int]
+) -> Optional[float]:
     if not model:
         return None
     model_key = _MODEL_ALIAS_MAP.get(model, model)
@@ -681,6 +737,7 @@ def _estimate_cost(model: str, prompt_tokens: Optional[int], completion_tokens: 
     pt = prompt_tokens or 0
     ct = completion_tokens or 0
     return round(pt * p_rate + ct * c_rate, 6)
+
 
 def _sanitize(text: str) -> str:
     if not _LLM_SANITIZE_OUTPUT or not isinstance(text, str):
@@ -697,19 +754,23 @@ def _sanitize(text: str) -> str:
             pass
     return sanitized
 
+
 def _apply_force_model(payload: Dict[str, Any]) -> None:
     if _LLM_FORCE_MODEL:
         payload["model"] = _LLM_FORCE_MODEL
 
+
 def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
     for i in range(0, len(full_text), chunk_size):
-        yield full_text[i:i + chunk_size]
+        yield full_text[i : i + chunk_size]
+
 
 def _circuit_allowed() -> bool:
     now = time.time()
     if _BREAKER_STATE["open_until"] > now:
         return False
     return True
+
 
 def _note_error_for_breaker():
     now = time.time()
@@ -721,14 +782,18 @@ def _note_error_for_breaker():
         _BREAKER_STATE["open_events"] += 1
         _LOG.warning(
             "LLM Circuit Breaker OPEN (errors=%d threshold=%d cooldown=%ds)",
-            len(_BREAKER_STATE["errors"]), _BREAKER_THRESHOLD, _BREAKER_COOLDOWN
+            len(_BREAKER_STATE["errors"]),
+            _BREAKER_THRESHOLD,
+            _BREAKER_COOLDOWN,
         )
+
 
 def _maybe_close_breaker():
     now = time.time()
     if _BREAKER_STATE["open_until"] and _BREAKER_STATE["open_until"] <= now:
         # Passive closure
         pass
+
 
 def _enforce_cost_budget(new_cost: Optional[float]):
     if not new_cost:
@@ -745,9 +810,11 @@ def _enforce_cost_budget(new_cost: Optional[float]):
             raise RuntimeError(msg)
         _LOG.warning("[LLM] %s (soft warn).", msg)
 
+
 # ======================================================================================
 # HIGH LEVEL INVOCATION
 # ======================================================================================
+
 
 def invoke_chat(
     model: str,
@@ -777,7 +844,7 @@ def invoke_chat(
         "tool_choice": tool_choice,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        "extra": extra or {}
+        "extra": extra or {},
     }
     _apply_force_model(payload)
 
@@ -818,9 +885,12 @@ def invoke_chat(
                 ct = usage.get("completion_tokens")
                 total = usage.get("total_tokens")
                 _LLMTOTAL["calls"] += 1
-                if pt: _LLMTOTAL["prompt_tokens"] += pt
-                if ct: _LLMTOTAL["completion_tokens"] += ct
-                if total: _LLMTOTAL["total_tokens"] += total
+                if pt:
+                    _LLMTOTAL["prompt_tokens"] += pt
+                if ct:
+                    _LLMTOTAL["completion_tokens"] += ct
+                if total:
+                    _LLMTOTAL["total_tokens"] += total
                 _LLMTOTAL["latencies_ms"].append(latency_ms)
                 if len(_LLMTOTAL["latencies_ms"]) > _LAT_WIN:
                     _LLMTOTAL["latencies_ms"] = _LLMTOTAL["latencies_ms"][-_LAT_WIN:]
@@ -847,8 +917,8 @@ def invoke_chat(
                         "start_ts": start_build,
                         "end_ts": time.time(),
                         "circuit_breaker_open": False,
-                        "retry_schedule": retry_schedule
-                    }
+                        "retry_schedule": retry_schedule,
+                    },
                 }
                 for hook in _POST_HOOKS:
                     try:
@@ -865,8 +935,7 @@ def invoke_chat(
                 if attempts > _LLM_MAX_RETRIES or not _retry_allowed(kind):
                     if _LOG_ATTEMPTS:
                         _LOG.error(
-                            "LLM final failure attempt=%d kind=%s err=%s",
-                            attempts, kind, exc
+                            "LLM final failure attempt=%d kind=%s err=%s", attempts, kind, exc
                         )
                     break
                 sleep_for = backoff
@@ -875,8 +944,7 @@ def invoke_chat(
                 retry_schedule.append(round(sleep_for, 3))
                 if _LOG_ATTEMPTS:
                     _LOG.warning(
-                        "LLM retry #%d (kind=%s in %.2fs) err=%s",
-                        attempts, kind, sleep_for, exc
+                        "LLM retry #%d (kind=%s in %.2fs) err=%s", attempts, kind, sleep_for, exc
                     )
                 time.sleep(sleep_for)
                 backoff *= _LLM_RETRY_BACKOFF_BASE
@@ -901,6 +969,7 @@ def invoke_chat(
 
     return _stream_gen()
 
+
 def invoke_chat_stream(*args, **kwargs) -> Generator[Dict[str, Any], None, None]:
     """
     Explicit streaming helper. Forces stream=True.
@@ -911,9 +980,11 @@ def invoke_chat_stream(*args, **kwargs) -> Generator[Dict[str, Any], None, None]
         raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
     return result  # type: ignore
 
+
 # ======================================================================================
 # HEALTH & SNAPSHOT
 # ======================================================================================
+
 
 def llm_health() -> Dict[str, Any]:
     client = _CLIENT_SINGLETON
@@ -936,7 +1007,7 @@ def llm_health() -> Dict[str, Any]:
     else:
         base["client_kind"] = "real_or_legacy"
     lat = _LLMTOTAL["latencies_ms"]
-    avg_lat = round(sum(lat)/len(lat), 2) if lat else None
+    avg_lat = round(sum(lat) / len(lat), 2) if lat else None
     base["cumulative"] = {
         "prompt_tokens": _LLMTOTAL["prompt_tokens"],
         "completion_tokens": _LLMTOTAL["completion_tokens"],
@@ -945,17 +1016,19 @@ def llm_health() -> Dict[str, Any]:
         "errors": _LLMTOTAL["errors"],
         "last_error_kind": _LLMTOTAL["last_error_kind"],
         "avg_latency_ms": avg_lat,
-        "cost_usd": round(_LLMTOTAL["cost_usd"], 6)
+        "cost_usd": round(_LLMTOTAL["cost_usd"], 6),
     }
     now = time.time()
     base["circuit_breaker"] = {
         "open": _BREAKER_STATE["open_until"] > now,
         "open_until": _BREAKER_STATE["open_until"],
-        "recent_error_count": len([t for t in _BREAKER_STATE["errors"] if t >= now - _BREAKER_WINDOW]),
+        "recent_error_count": len(
+            [t for t in _BREAKER_STATE["errors"] if t >= now - _BREAKER_WINDOW]
+        ),
         "window": _BREAKER_WINDOW,
         "threshold": _BREAKER_THRESHOLD,
         "cooldown": _BREAKER_COOLDOWN,
-        "open_events": _BREAKER_STATE["open_events"]
+        "open_events": _BREAKER_STATE["open_events"],
     }
     base["features"] = {
         "retry": _LLM_MAX_RETRIES > 0,
@@ -967,13 +1040,15 @@ def llm_health() -> Dict[str, Any]:
         "cost_table_loaded": bool(_MODEL_COST_TABLE),
         "model_alias_map": bool(_MODEL_ALIAS_MAP),
         "cost_budget_session": _COST_BUDGET_SESSION,
-        "cost_budget_hard_fail": _COST_BUDGET_HARD_FAIL
+        "cost_budget_hard_fail": _COST_BUDGET_HARD_FAIL,
     }
     return base
+
 
 # ======================================================================================
 # INTERNAL / DEBUG UTILS
 # ======================================================================================
+
 
 def _debug_snapshot() -> Dict[str, Any]:
     return {
@@ -981,6 +1056,7 @@ def _debug_snapshot() -> Dict[str, Any]:
         "cumulative": llm_health().get("cumulative"),
         "breaker": llm_health().get("circuit_breaker"),
     }
+
 
 # ======================================================================================
 # EXPORTS
@@ -1011,8 +1087,8 @@ if __name__ == "__main__":  # pragma: no cover
             model="test-model",
             messages=[
                 {"role": "system", "content": "You are test."},
-                {"role": "user", "content": "Say ONLY OK."}
-            ]
+                {"role": "user", "content": "Say ONLY OK."},
+            ],
         )
         if isinstance(resp, dict):
             print("Response content:", resp.get("content"))
@@ -1028,8 +1104,7 @@ if __name__ == "__main__":  # pragma: no cover
         print("\n-- Streaming Test --")
         try:
             for part in invoke_chat_stream(
-                model="test-model",
-                messages=[{"role": "user", "content": "Stream test please."}]
+                model="test-model", messages=[{"role": "user", "content": "Stream test please."}]
             ):
                 print("STREAM PART:", part)
         except Exception as se:

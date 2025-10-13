@@ -64,16 +64,16 @@ import os
 import pkgutil
 import threading
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import ModuleType
 from typing import (
+    Any,
     Dict,
+    Iterable,
     List,
     Optional,
-    Iterable,
     Set,
-    Any,
     Tuple,
     Union,
 )
@@ -82,21 +82,26 @@ from typing import (
 try:
     from .base_planner import BasePlanner, PlannerError  # type: ignore
 except Exception:
+
     class PlannerError(RuntimeError):
         def __init__(self, msg: str, where: str = "factory", context: str = ""):
             super().__init__(msg)
             self.where = where
             self.context = context
+
     class BasePlanner:  # type: ignore
         @staticmethod
         def live_planner_classes():
             return {}
+
         @staticmethod
         def planner_metadata():
             return {}
+
         @staticmethod
         def compute_rank_hint(**kwargs):
             return 0.0
+
 
 # ======================================================================================
 # CONSTANTS / ENV
@@ -139,6 +144,7 @@ HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
 # DATA STRUCTURES
 # ======================================================================================
 
+
 @dataclass
 class PlannerRecord:
     name: str
@@ -168,6 +174,7 @@ class PlannerRecord:
         d["tags"] = sorted(self.tags)
         return d
 
+
 @dataclass
 class FactoryState:
     lock: threading.RLock = field(default_factory=threading.RLock)
@@ -183,6 +190,7 @@ class FactoryState:
     selection_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
     instantiation_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
 
+
 _STATE = FactoryState()
 _INSTANCE_CACHE: Dict[str, BasePlanner] = {}
 _DEPRECATION_FLAGS: Set[str] = set()
@@ -191,8 +199,10 @@ _DEPRECATION_FLAGS: Set[str] = set()
 # LOGGING / UTIL
 # ======================================================================================
 
+
 def _log(message: str, level: str = "INFO"):
     print(f"[PlannerFactory::{level}] {message}")
+
 
 def _warn_once(key: str, msg: str):
     with _STATE.lock:
@@ -201,15 +211,19 @@ def _warn_once(key: str, msg: str):
         _STATE.issued_warnings.add(key)
     _log(msg, "WARN")
 
+
 def _now() -> float:
     return time.time()
+
 
 def _safe_lower_set(values: Optional[Iterable[str]]) -> Set[str]:
     return set(v.lower().strip() for v in values or [] if v is not None)
 
+
 # ======================================================================================
 # INTERNAL HELPERS
 # ======================================================================================
+
 
 def _active_planner_names(include_quarantined: bool = False) -> List[str]:
     names: List[str] = []
@@ -220,6 +234,7 @@ def _active_planner_names(include_quarantined: bool = False) -> List[str]:
             continue
         names.append(n)
     return sorted(names)
+
 
 def _iter_submodules(package_name: str):
     try:
@@ -233,6 +248,7 @@ def _iter_submodules(package_name: str):
     for m in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
         yield m.name
 
+
 def _import_module(module_name: str) -> Optional[ModuleType]:
     try:
         return importlib.import_module(module_name)
@@ -240,6 +256,7 @@ def _import_module(module_name: str) -> Optional[ModuleType]:
         _STATE.import_failures[module_name] = str(exc)
         _log(f"Module import failed: {module_name} -> {exc}", "ERROR")
         return None
+
 
 def _get_planner_class(name: str):
     if hasattr(BasePlanner, "live_planner_classes"):
@@ -258,6 +275,7 @@ def _get_planner_class(name: str):
             pass
     raise KeyError(f"Planner class '{name}' not found")
 
+
 def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
     if not hasattr(obj, attr):
         return set()
@@ -265,6 +283,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
     if isinstance(val, (list, tuple, set)):
         return set(str(v).strip() for v in val if v is not None)
     return set()
+
 
 def _extract_bool(obj: Any, attr: str) -> Optional[bool]:
     if not hasattr(obj, attr):
@@ -274,11 +293,13 @@ def _extract_bool(obj: Any, attr: str) -> Optional[bool]:
     except Exception:
         return None
 
+
 def _extract_string(obj: Any, attr: str) -> Optional[str]:
     if not hasattr(obj, attr):
         return None
     v = getattr(obj, attr)
     return None if v is None else str(v)
+
 
 def _file_fingerprint(root_package: str) -> str:
     try:
@@ -291,6 +312,7 @@ def _file_fingerprint(root_package: str) -> str:
     except Exception:
         return "na"
 
+
 def _compute_discovery_signature(root: str) -> str:
     parts = [
         root,
@@ -300,6 +322,7 @@ def _compute_discovery_signature(root: str) -> str:
         _file_fingerprint(root),
     ]
     return hashlib.md5("::".join(parts).encode("utf-8")).hexdigest()
+
 
 def _sync_registry_into_records():
     metadata_map = {}
@@ -348,12 +371,17 @@ def _sync_registry_into_records():
             rec.production_ready = meta.get("production_ready", rec.production_ready)
             rec.version = meta.get("version", rec.version)
 
+
 def _discover_and_register(force: bool = False, package: Optional[str] = None):
     with _STATE.lock:
         root = package or DEFAULT_ROOT_PACKAGE
         signature = _compute_discovery_signature(root)
-        if (_STATE.discovered and not force and not _FORCE_REDISCOVER
-                and _STATE.discovery_signature == signature):
+        if (
+            _STATE.discovered
+            and not force
+            and not _FORCE_REDISCOVER
+            and _STATE.discovery_signature == signature
+        ):
             return
         start = time.perf_counter()
         _STATE.discovery_runs += 1
@@ -371,6 +399,7 @@ def _discover_and_register(force: bool = False, package: Optional[str] = None):
         _STATE.discovered = True
         elapsed = time.perf_counter() - start
         _log(f"Discovery completed in {elapsed:.4f}s planners={len(_STATE.planner_records)}")
+
 
 def _instantiate_planner(name: str) -> BasePlanner:
     key = name.lower().strip()
@@ -396,13 +425,16 @@ def _instantiate_planner(name: str) -> BasePlanner:
         _INSTANCE_CACHE[key] = inst
         _STATE.total_instantiations += 1
         if PROFILE_INSTANTIATION:
-            _STATE.instantiation_profile_samples.append({
-                "name": key,
-                "duration_s": elapsed,
-                "ts": rec.instantiation_ts,
-            })
+            _STATE.instantiation_profile_samples.append(
+                {
+                    "name": key,
+                    "duration_s": elapsed,
+                    "ts": rec.instantiation_ts,
+                }
+            )
     _log(f"Instantiated planner '{key}' in {elapsed:.4f}s")
     return inst
+
 
 def _capabilities_match_ratio(required: Set[str], offered: Set[str]) -> float:
     if not required:
@@ -412,12 +444,15 @@ def _capabilities_match_ratio(required: Set[str], offered: Set[str]) -> float:
     inter = required & offered
     return len(inter) / max(len(required), 1)
 
-def _rank_hint(name: str,
-               objective: str,
-               capabilities_match_ratio: float,
-               reliability_score: float,
-               tier: Optional[str],
-               production_ready: bool) -> float:
+
+def _rank_hint(
+    name: str,
+    objective: str,
+    capabilities_match_ratio: float,
+    reliability_score: float,
+    tier: Optional[str],
+    production_ready: bool,
+) -> float:
     if hasattr(BasePlanner, "compute_rank_hint"):
         try:
             return BasePlanner.compute_rank_hint(  # type: ignore
@@ -425,7 +460,7 @@ def _rank_hint(name: str,
                 capabilities_match_ratio=capabilities_match_ratio,
                 reliability_score=reliability_score,
                 tier=tier,
-                production_ready=production_ready
+                production_ready=production_ready,
             )
         except Exception as e:
             _warn_once("compute_rank_hint_fail", f"compute_rank_hint failed: {e}")
@@ -438,14 +473,17 @@ def _rank_hint(name: str,
     score += (hash(name) & 0xFFFF) * 1e-10
     return score
 
+
 # ======================================================================================
 # PUBLIC API: DISCOVERY / METADATA
 # ======================================================================================
+
 
 def discover(force: bool = False, package: Optional[str] = None):
     _discover_and_register(force=force, package=package)
     if not _active_planner_names():
         _warn_once("post_discover_empty", "After discover(): no active planners.")
+
 
 def refresh_metadata():
     with _STATE.lock:
@@ -453,14 +491,18 @@ def refresh_metadata():
             return
     _sync_registry_into_records()
 
+
 # Backward compatibility: available_planners
 if not hasattr(BasePlanner, "available_planners"):
+
     def _legacy_available_planners() -> List[str]:  # type: ignore
         return _active_planner_names()
+
     setattr(BasePlanner, "available_planners", staticmethod(_legacy_available_planners))  # type: ignore
 else:
     try:
         original_available = BasePlanner.available_planners  # type: ignore
+
         def _wrapped_available_planners():
             try:
                 base_names = set(original_available())  # type: ignore
@@ -468,6 +510,7 @@ else:
                 base_names = set()
             base_names.update(_active_planner_names())
             return sorted(base_names)
+
         setattr(BasePlanner, "available_planners", staticmethod(_wrapped_available_planners))  # type: ignore
     except Exception:
         pass
@@ -475,6 +518,7 @@ else:
 # ======================================================================================
 # PUBLIC API: RETRIEVAL / SELECTION
 # ======================================================================================
+
 
 def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     if not _STATE.discovered:
@@ -492,8 +536,8 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     cls = _get_planner_class(key)
     return cls()  # type: ignore
 
-def list_planners(include_quarantined: bool = False,
-                  include_errors: bool = False) -> List[str]:
+
+def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> List[str]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -506,10 +550,11 @@ def list_planners(include_quarantined: bool = False,
         out.append(n)
     return sorted(out)
 
+
 # --- Legacy Shim: get_all_planners (returns INSTANCES by default for backward compatibility) ---
-def get_all_planners(include_quarantined: bool = True,
-                     include_errors: bool = False,
-                     auto_instantiate: bool = True):
+def get_all_planners(
+    include_quarantined: bool = True, include_errors: bool = False, auto_instantiate: bool = True
+):
     """
     Legacy compatibility wrapper (DEPRECATED).
     Historically: returned a list of instantiated planner objects.
@@ -519,8 +564,7 @@ def get_all_planners(include_quarantined: bool = True,
       include_errors: include records that have import/record errors
       auto_instantiate: if True return planner instances, else just names
     """
-    names = list_planners(include_quarantined=include_quarantined,
-                          include_errors=include_errors)
+    names = list_planners(include_quarantined=include_quarantined, include_errors=include_errors)
     if not auto_instantiate:
         return names
     instances = []
@@ -531,9 +575,10 @@ def get_all_planners(include_quarantined: bool = True,
             _warn_once(f"shim_get_all_planners_{n}", f"Failed instantiating '{n}' via shim: {e}")
     return instances
 
-def _compute_deep_boosts(rec: PlannerRecord,
-                         req_caps: Set[str],
-                         deep_context: Optional[Dict[str, Any]]) -> Tuple[float, Dict[str, Any]]:
+
+def _compute_deep_boosts(
+    rec: PlannerRecord, req_caps: Set[str], deep_context: Optional[Dict[str, Any]]
+) -> Tuple[float, Dict[str, Any]]:
     breakdown = {"deep_boost": 0.0, "hotspot_boost": 0.0}
     if not deep_context or not isinstance(deep_context, dict):
         return 0.0, breakdown
@@ -552,12 +597,15 @@ def _compute_deep_boosts(rec: PlannerRecord,
 
     return breakdown["deep_boost"] + breakdown["hotspot_boost"], breakdown
 
-def select_best_planner(objective: str,
-                        required_capabilities: Optional[Iterable[str]] = None,
-                        prefer_production: bool = True,
-                        auto_instantiate: bool = True,
-                        self_heal_on_empty: Optional[bool] = None,
-                        deep_context: Optional[Dict[str, Any]] = None) -> Union[BasePlanner, str]:
+
+def select_best_planner(
+    objective: str,
+    required_capabilities: Optional[Iterable[str]] = None,
+    prefer_production: bool = True,
+    auto_instantiate: bool = True,
+    self_heal_on_empty: Optional[bool] = None,
+    deep_context: Optional[Dict[str, Any]] = None,
+) -> Union[BasePlanner, str]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -590,7 +638,7 @@ def select_best_planner(objective: str,
             capabilities_match_ratio=cap_ratio,
             reliability_score=reliability,
             tier=rec.tier,
-            production_ready=prod
+            production_ready=prod,
         )
         add_score, boost_breakdown = _compute_deep_boosts(rec, req_set, deep_context)
         total_score = base_score + add_score
@@ -602,7 +650,7 @@ def select_best_planner(objective: str,
             "production_ready": prod,
             "deep_boost": boost_breakdown["deep_boost"],
             "hotspot_boost": boost_breakdown["hotspot_boost"],
-            "total_score": total_score
+            "total_score": total_score,
         }
         candidates.append((total_score, name, breakdown))
     if not candidates:
@@ -612,33 +660,38 @@ def select_best_planner(objective: str,
     sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
         with _STATE.lock:
-            _STATE.selection_profile_samples.append({
-                "objective_len": len(objective or ""),
-                "required_caps": sorted(req_set),
-                "best": best_name,
-                "score": best_score,
-                "candidates_considered": len(candidates),
-                "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
-                "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
-                "breakdown": best_breakdown,
-                "boost_config": {
-                    "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
-                    "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
-                    "hotspot_threshold": HOTSPOT_THRESHOLD
-                },
-                "duration_s": sel_elapsed,
-                "ts": _now(),
-            })
+            _STATE.selection_profile_samples.append(
+                {
+                    "objective_len": len(objective or ""),
+                    "required_caps": sorted(req_set),
+                    "best": best_name,
+                    "score": best_score,
+                    "candidates_considered": len(candidates),
+                    "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
+                    "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
+                    "breakdown": best_breakdown,
+                    "boost_config": {
+                        "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
+                        "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
+                        "hotspot_threshold": HOTSPOT_THRESHOLD,
+                    },
+                    "duration_s": sel_elapsed,
+                    "ts": _now(),
+                }
+            )
     if auto_instantiate:
         return get_planner(best_name, auto_instantiate=True)
     return best_name
 
-def batch_select_best_planners(objective: str,
-                               required_capabilities: Optional[Iterable[str]] = None,
-                               n: int = 3,
-                               prefer_production: bool = True,
-                               auto_instantiate: bool = False,
-                               deep_context: Optional[Dict[str, Any]] = None) -> List[Union[str, BasePlanner]]:
+
+def batch_select_best_planners(
+    objective: str,
+    required_capabilities: Optional[Iterable[str]] = None,
+    n: int = 3,
+    prefer_production: bool = True,
+    auto_instantiate: bool = False,
+    deep_context: Optional[Dict[str, Any]] = None,
+) -> List[Union[str, BasePlanner]]:
     if n <= 0:
         return []
     if not _STATE.discovered:
@@ -666,7 +719,7 @@ def batch_select_best_planners(objective: str,
             capabilities_match_ratio=cap_ratio,
             reliability_score=reliability,
             tier=rec.tier,
-            production_ready=prod
+            production_ready=prod,
         )
         extra, _bd = _compute_deep_boosts(rec, req_set, deep_context)
         candidates.append((base_score + extra, name))
@@ -676,13 +729,15 @@ def batch_select_best_planners(objective: str,
         return [get_planner(n) for n in selected_names]
     return selected_names
 
+
 # ======================================================================================
 # SELF-HEAL
 # ======================================================================================
 
-def self_heal(force: bool = True,
-              cooldown_seconds: float = 5.0,
-              max_attempts: int = 2) -> Dict[str, Any]:
+
+def self_heal(
+    force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 2
+) -> Dict[str, Any]:
     report = {
         "before_active": len(_active_planner_names()),
         "attempts": 0,
@@ -708,9 +763,11 @@ def self_heal(force: bool = True,
     report["after_active"] = len(_active_planner_names())
     return report
 
+
 # ======================================================================================
 # DIAGNOSTICS / INTROSPECTION
 # ======================================================================================
+
 
 def planner_stats() -> Dict[str, Any]:
     with _STATE.lock:
@@ -730,6 +787,7 @@ def planner_stats() -> Dict[str, Any]:
             "planner_record_count": len(_STATE.planner_records),
         }
 
+
 def describe_planner(name: str) -> Dict[str, Any]:
     if not _STATE.discovered:
         discover()
@@ -747,6 +805,7 @@ def describe_planner(name: str) -> Dict[str, Any]:
     data = rec.to_public_dict()
     data["doc_excerpt"] = doc_excerpt
     return data
+
 
 def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
     if not _STATE.discovered:
@@ -771,10 +830,11 @@ def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
             "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
             "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
             "hotspot_threshold": HOTSPOT_THRESHOLD,
-            "min_reliability": MIN_RELIABILITY
+            "min_reliability": MIN_RELIABILITY,
         },
         "timestamp": _now(),
     }
+
 
 def diagnostics_report(verbose: bool = False) -> str:
     data = diagnostics_json(verbose=verbose)
@@ -807,12 +867,16 @@ def diagnostics_report(verbose: bool = False) -> str:
     if quarantined:
         lines.append("-- Quarantined --")
         for r in quarantined:
-            lines.append(f"  * {r.name} reliability={r.reliability_score} self_test={r.self_test_passed}")
+            lines.append(
+                f"  * {r.name} reliability={r.reliability_score} self_test={r.self_test_passed}"
+            )
     lines.append("-- Recommendations --")
     if not active:
         lines.append("  * Use self_heal() or set OVERMIND_PLANNER_MANUAL.")
     else:
-        lines.append("  * Use select_best_planner(...) with deep_context for structural prioritization.")
+        lines.append(
+            "  * Use select_best_planner(...) with deep_context for structural prioritization."
+        )
     if verbose:
         lines.append("\n-- Detailed Records --")
         for n, r in sorted(_STATE.planner_records.items()):
@@ -824,10 +888,10 @@ def diagnostics_report(verbose: bool = False) -> str:
                 lines.append(f"   ERROR: {r.error}")
     return "\n".join(lines)
 
-def export_diagnostics(path: Union[str, Path],
-                       fmt: str = "json",
-                       verbose: bool = False,
-                       ensure_dir: bool = True) -> Path:
+
+def export_diagnostics(
+    path: Union[str, Path], fmt: str = "json", verbose: bool = False, ensure_dir: bool = True
+) -> Path:
     p = Path(path)
     if ensure_dir and p.parent and not p.parent.exists():
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -839,14 +903,18 @@ def export_diagnostics(path: Union[str, Path],
     _log(f"Diagnostics exported -> {p}")
     return p
 
+
 def health_check(min_required: int = 1) -> Dict[str, Any]:
     active_count = len(_active_planner_names())
     quarantined_count = sum(1 for r in _STATE.planner_records.values() if r.quarantined)
     reliability_vals = [
-        r.reliability_score for r in _STATE.planner_records.values()
+        r.reliability_score
+        for r in _STATE.planner_records.values()
         if r.reliability_score is not None
     ]
-    avg_reliability = round(sum(reliability_vals) / len(reliability_vals), 4) if reliability_vals else None
+    avg_reliability = (
+        round(sum(reliability_vals) / len(reliability_vals), 4) if reliability_vals else None
+    )
     suggestions: List[str] = []
     if active_count < min_required:
         suggestions.append("Verify manual import modules (OVERMIND_PLANNER_MANUAL).")
@@ -864,14 +932,17 @@ def health_check(min_required: int = 1) -> Dict[str, Any]:
     }
     return result
 
+
 def list_quarantined() -> List[str]:
     if not _STATE.discovered:
         discover()
     return sorted([n for n, r in _STATE.planner_records.items() if r.quarantined])
 
+
 # ======================================================================================
 # RELOAD
 # ======================================================================================
+
 
 def reload_planners():
     with _STATE.lock:
@@ -885,39 +956,48 @@ def reload_planners():
         _INSTANCE_CACHE.clear()
     discover(force=True)
 
+
 # ======================================================================================
 # ASYNC WRAPPERS
 # ======================================================================================
 
+
 async def a_get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     return get_planner(name, auto_instantiate=auto_instantiate)
 
-async def a_select_best_planner(objective: str,
-                                required_capabilities: Optional[Iterable[str]] = None,
-                                prefer_production: bool = True,
-                                auto_instantiate: bool = True,
-                                self_heal_on_empty: Optional[bool] = None,
-                                deep_context: Optional[Dict[str, Any]] = None) -> Union[BasePlanner, str]:
+
+async def a_select_best_planner(
+    objective: str,
+    required_capabilities: Optional[Iterable[str]] = None,
+    prefer_production: bool = True,
+    auto_instantiate: bool = True,
+    self_heal_on_empty: Optional[bool] = None,
+    deep_context: Optional[Dict[str, Any]] = None,
+) -> Union[BasePlanner, str]:
     return select_best_planner(
         objective,
         required_capabilities=required_capabilities,
         prefer_production=prefer_production,
         auto_instantiate=auto_instantiate,
         self_heal_on_empty=self_heal_on_empty,
-        deep_context=deep_context
+        deep_context=deep_context,
     )
+
 
 # ======================================================================================
 # PROFILING ACCESSORS
 # ======================================================================================
 
+
 def selection_profiles(limit: int = 50) -> List[Dict[str, Any]]:
     with _STATE.lock:
         return _STATE.selection_profile_samples[-limit:]
 
+
 def instantiation_profiles(limit: int = 50) -> List[Dict[str, Any]]:
     with _STATE.lock:
         return _STATE.instantiation_profile_samples[-limit:]
+
 
 # ======================================================================================
 # EXPORTS
@@ -953,10 +1033,10 @@ if __name__ == "__main__":
     discover(force=True)
     print(diagnostics_report(verbose=True))
     if _active_planner_names():
-        p = select_best_planner("Analyze repository architecture.", deep_context={
-            "deep_index_summary": "demo",
-            "hotspots_count": 12
-        })
+        p = select_best_planner(
+            "Analyze repository architecture.",
+            deep_context={"deep_index_summary": "demo", "hotspots_count": 12},
+        )
         print("Selected planner:", p)
     export_diagnostics("planner_diagnostics.json", fmt="json", verbose=True)
     print("Diagnostics exported -> planner_diagnostics.json")

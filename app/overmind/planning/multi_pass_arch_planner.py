@@ -120,13 +120,13 @@ To extend, bump version to avoid plan hash reuse.
 """
 
 from __future__ import annotations
+
 import os
-import time
 import textwrap
-from typing import List, Optional, Dict, Any
+import time
+from typing import Any, Dict, List, Optional
 
 from .base_planner import BasePlanner
-
 
 # =============================== CONFIG LISTS ===============================
 
@@ -140,29 +140,69 @@ CORE_FILES = [
 ]
 
 SECTION_SPECS = [
-    ("t11", "Executive Summary", "High-level purpose, current maturity, constraints, major value streams."),
-    ("t12", "Layered Architecture", "List layers, boundaries, inbound/outbound responsibilities, interface clarity."),
-    ("t13", "Service Inventory", "Enumerate services/modules: name, role, critical interactions, coupling indicators."),
-    ("t14", "Data Flow", "Primary request flow, async/event pipelines, ingress/egress channels, data transformation hotspots."),
-    ("t15", "Hotspots & Complexity", "List complex/large files, duplication hints, performance bottlenecks, potential instability."),
-    ("t16", "Refactor & Improvement Plan", "Phased actionable plan: quick wins vs deeper refactors; expected impact."),
-    ("t17", "Risk Matrix & Resilience", "Failure modes, severity, likelihood, mitigation, resilience posture gaps."),
-    ("t18", "Arabic Mirror Sections", "Arabic concise reflection of English insights (not literal translation)."),
+    (
+        "t11",
+        "Executive Summary",
+        "High-level purpose, current maturity, constraints, major value streams.",
+    ),
+    (
+        "t12",
+        "Layered Architecture",
+        "List layers, boundaries, inbound/outbound responsibilities, interface clarity.",
+    ),
+    (
+        "t13",
+        "Service Inventory",
+        "Enumerate services/modules: name, role, critical interactions, coupling indicators.",
+    ),
+    (
+        "t14",
+        "Data Flow",
+        "Primary request flow, async/event pipelines, ingress/egress channels, data transformation hotspots.",
+    ),
+    (
+        "t15",
+        "Hotspots & Complexity",
+        "List complex/large files, duplication hints, performance bottlenecks, potential instability.",
+    ),
+    (
+        "t16",
+        "Refactor & Improvement Plan",
+        "Phased actionable plan: quick wins vs deeper refactors; expected impact.",
+    ),
+    (
+        "t17",
+        "Risk Matrix & Resilience",
+        "Failure modes, severity, likelihood, mitigation, resilience posture gaps.",
+    ),
+    (
+        "t18",
+        "Arabic Mirror Sections",
+        "Arabic concise reflection of English insights (not literal translation).",
+    ),
 ]
 
 
 # =============================== PLANNER CLASS ==============================
+
 
 class AdaptiveMultiPassArchPlanner(BasePlanner):
     """
     Epic Adaptive Multi-Pass Architecture Planner
     Builds a deeply structured bilingual architecture dossier with audits and QA.
     """
+
     name = "adaptive_multi_pass_arch_planner"
     version = "0.9.0-epic-l5"
     production_ready = False
     capabilities = {
-        "architecture", "multi_stage", "llm", "deep_index", "adaptive", "qa", "bilingual"
+        "architecture",
+        "multi_stage",
+        "llm",
+        "deep_index",
+        "adaptive",
+        "qa",
+        "bilingual",
     }
 
     # ------------------------------------------------------------------ PUBLIC ENTRY
@@ -198,23 +238,27 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
         tasks: List[MissionTaskSchema] = []
 
         # ------------------- t01: Repo listing
-        tasks.append(MissionTaskSchema(
-            task_id="t01",
-            description="List repository root (structural discovery).",
-            tool_name="list_dir",
-            tool_args={"path": ".", "max_entries": 800},
-            dependencies=[]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t01",
+                description="List repository root (structural discovery).",
+                tool_name="list_dir",
+                tool_args={"path": ".", "max_entries": 800},
+                dependencies=[],
+            )
+        )
 
         # ------------------- t02..t07: Core file reads (soft-missing)
         for tid, path in CORE_FILES:
-            tasks.append(MissionTaskSchema(
-                task_id=tid,
-                description=f"Read core file {path} (soft-missing).",
-                tool_name="read_file",
-                tool_args={"path": path, "ignore_missing": True, "max_bytes": max_core_bytes},
-                dependencies=[]
-            ))
+            tasks.append(
+                MissionTaskSchema(
+                    task_id=tid,
+                    description=f"Read core file {path} (soft-missing).",
+                    tool_name="read_file",
+                    tool_args={"path": path, "ignore_missing": True, "max_bytes": max_core_bytes},
+                    dependencies=[],
+                )
+            )
 
         # ------------------- t08: Structural index (simulate or enriched)
         if deep_context and isinstance(deep_context, dict):
@@ -239,27 +283,27 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
                 " - Duplication / risk signals\n\n"
                 f"DEEP_CONTEXT:\n{dc_block}\n\n"
                 "ROOT LISTING:\n{{t01.content}}\n\n"
-                "CORE FILE SNAPSHOTS (truncated if large):\n" +
-                "\n".join(f"{tid}: {{{{{tid}.content}}}}"
-                          for tid, _ in CORE_FILES)
+                "CORE FILE SNAPSHOTS (truncated if large):\n"
+                + "\n".join(f"{tid}: {{{{{tid}.content}}}}" for tid, _ in CORE_FILES)
             )
         else:
             structural_prompt = (
                 "No precomputed deep context. Infer a pseudostructural index from listing + core files.\n"
                 "Produce structured bullet clusters covering: layers, major services/modules, probable hotspots, duplication, initial refactor hints.\n\n"
                 "ROOT LISTING:\n{{t01.content}}\n\n"
-                "CORE FILE SNAPSHOTS:\n" +
-                "\n".join(f"{tid}: {{{{{tid}.content}}}}"
-                          for tid, _ in CORE_FILES)
+                "CORE FILE SNAPSHOTS:\n"
+                + "\n".join(f"{tid}: {{{{{tid}.content}}}}" for tid, _ in CORE_FILES)
             )
 
-        tasks.append(MissionTaskSchema(
-            task_id="t08",
-            description="Structural index synthesis (simulated or enriched).",
-            tool_name="generic_think",
-            tool_args={"prompt": structural_prompt},
-            dependencies=["t01"] + [tid for tid, _ in CORE_FILES]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t08",
+                description="Structural index synthesis (simulated or enriched).",
+                tool_name="generic_think",
+                tool_args={"prompt": structural_prompt},
+                dependencies=["t01"] + [tid for tid, _ in CORE_FILES],
+            )
+        )
 
         # ------------------- t09: Semantic JSON request
         semantic_json_prompt = (
@@ -269,13 +313,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "layers, services, hotspots, risks, refactor_opportunities\n\n"
             "Return ONLY JSON."
         )
-        tasks.append(MissionTaskSchema(
-            task_id="t09",
-            description="Semantic structural JSON (raw attempt).",
-            tool_name="generic_think",
-            tool_args={"prompt": semantic_json_prompt},
-            dependencies=["t08"]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t09",
+                description="Semantic structural JSON (raw attempt).",
+                tool_name="generic_think",
+                tool_args={"prompt": semantic_json_prompt},
+                dependencies=["t08"],
+            )
+        )
 
         # ------------------- t10: Validation / correction (optional)
         if validate_semantic:
@@ -285,13 +331,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
                 "If invalid, repair silently.\n"
                 "Return ONLY valid JSON.\n\nRAW:\n{{t09.answer}}"
             )
-            tasks.append(MissionTaskSchema(
-                task_id="t10",
-                description="Semantic JSON validation & normalization.",
-                tool_name="generic_think",
-                tool_args={"prompt": validation_prompt},
-                dependencies=["t09"]
-            ))
+            tasks.append(
+                MissionTaskSchema(
+                    task_id="t10",
+                    description="Semantic JSON validation & normalization.",
+                    tool_name="generic_think",
+                    tool_args={"prompt": validation_prompt},
+                    dependencies=["t09"],
+                )
+            )
             semantic_source_id = "t10"
         else:
             semantic_source_id = "t09"
@@ -311,16 +359,16 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
                 "- Target ≤ ~450 words.\n"
             )
             if tid == "t18":
-                section_prompt += (
-                    "\nArabic Mirror: Provide an Arabic concise perspective (موجز تحليلي) distilling key English architectural insights."
+                section_prompt += "\nArabic Mirror: Provide an Arabic concise perspective (موجز تحليلي) distilling key English architectural insights."
+            tasks.append(
+                MissionTaskSchema(
+                    task_id=tid,
+                    description=f"Draft section: {title}",
+                    tool_name="generic_think",
+                    tool_args={"prompt": section_prompt},
+                    dependencies=[semantic_source_id],
                 )
-            tasks.append(MissionTaskSchema(
-                task_id=tid,
-                description=f"Draft section: {title}",
-                tool_name="generic_think",
-                tool_args={"prompt": section_prompt},
-                dependencies=[semantic_source_id]
-            ))
+            )
 
         # ------------------- t19: Gap Audit
         section_refs_block = "\n\n".join(
@@ -328,8 +376,7 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
         )
         gap_audit_prompt = (
             f"SEMANTIC JSON:\n{{{semantic_source_id}.answer}}\n\n"
-            "SECTIONS:\n" + section_refs_block +
-            "\n\nPerform coverage audit:\n"
+            "SECTIONS:\n" + section_refs_block + "\n\nPerform coverage audit:\n"
             "- missing_services: services in JSON not referenced in any section\n"
             "- missing_layers: layers not referenced\n"
             "- missing_hotspots: hotspots not addressed\n"
@@ -338,13 +385,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "Return STRICT JSON:\n"
             "{missing_services:[], missing_layers:[], missing_hotspots:[], missing_risks:[], notes:[]}"
         )
-        tasks.append(MissionTaskSchema(
-            task_id="t19",
-            description="Gap audit vs semantic JSON.",
-            tool_name="generic_think",
-            tool_args={"prompt": gap_audit_prompt},
-            dependencies=[tid for tid, _, _ in SECTION_SPECS]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t19",
+                description="Gap audit vs semantic JSON.",
+                tool_name="generic_think",
+                tool_args={"prompt": gap_audit_prompt},
+                dependencies=[tid for tid, _, _ in SECTION_SPECS],
+            )
+        )
 
         # ------------------- t20: Gap Fill
         gap_fill_prompt = (
@@ -352,13 +401,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "If every array empty → respond EXACTLY 'NO_GAPS'.\n"
             "Else produce bullet expansions addressing each missing element. Include concise English + optional inline Arabic hints."
         )
-        tasks.append(MissionTaskSchema(
-            task_id="t20",
-            description="Gap fill expansions.",
-            tool_name="generic_think",
-            tool_args={"prompt": gap_fill_prompt},
-            dependencies=["t19"]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t20",
+                description="Gap fill expansions.",
+                tool_name="generic_think",
+                tool_args={"prompt": gap_fill_prompt},
+                dependencies=["t19"],
+            )
+        )
 
         # ------------------- t21: Synthesis
         synthesis_prompt = (
@@ -372,13 +423,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "- Unified phased refactor priority\n"
             "- Key resilience and performance improvement levers"
         )
-        tasks.append(MissionTaskSchema(
-            task_id="t21",
-            description="Cross-link synthesis.",
-            tool_name="generic_think",
-            tool_args={"prompt": synthesis_prompt},
-            dependencies=[tid for tid, _, _ in SECTION_SPECS] + ["t20"]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t21",
+                description="Cross-link synthesis.",
+                tool_name="generic_think",
+                tool_args={"prompt": synthesis_prompt},
+                dependencies=[tid for tid, _, _ in SECTION_SPECS] + ["t20"],
+            )
+        )
 
         # ------------------- t22: QA Metrics
         qa_prompt = (
@@ -395,13 +448,15 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "Return JSON EXACT KEYS:\n"
             "{word_count:int, referenced_files_count:int, coverage_ratio:float, bilingual_completeness:float, notes:[]}"
         )
-        tasks.append(MissionTaskSchema(
-            task_id="t22",
-            description="QA coverage metrics.",
-            tool_name="generic_think",
-            tool_args={"prompt": qa_prompt},
-            dependencies=["t21"]
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t22",
+                description="QA coverage metrics.",
+                tool_name="generic_think",
+                tool_args={"prompt": qa_prompt},
+                dependencies=["t21"],
+            )
+        )
 
         # ------------------- t23: Optional Polish (Executive Summary refinement)
         if enable_polish:
@@ -414,34 +469,33 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
                 "- Keep ≤ 380 words.\n"
                 "Else respond EXACTLY: NO_POLISH_NEEDED"
             )
-            tasks.append(MissionTaskSchema(
-                task_id="t23",
-                description="Executive Summary polish (conditional).",
-                tool_name="generic_think",
-                tool_args={"prompt": polish_prompt},
-                dependencies=["t22"]
-            ))
+            tasks.append(
+                MissionTaskSchema(
+                    task_id="t23",
+                    description="Executive Summary polish (conditional).",
+                    tool_name="generic_think",
+                    tool_args={"prompt": polish_prompt},
+                    dependencies=["t22"],
+                )
+            )
 
         # ------------------- t24: Final Merge
         merge_content = self._final_merge_template(
-            semantic_source_id=semantic_source_id,
-            use_polish=enable_polish,
-            target_file=target_file
+            semantic_source_id=semantic_source_id, use_polish=enable_polish, target_file=target_file
         )
         merge_dependencies = ["t22"]
         if enable_polish:
             merge_dependencies.append("t23")
 
-        tasks.append(MissionTaskSchema(
-            task_id="t24",
-            description="Write final bilingual architecture dossier with QA and (optional) polished summary.",
-            tool_name="write_file",
-            tool_args={
-                "path": target_file,
-                "content": merge_content
-            },
-            dependencies=merge_dependencies
-        ))
+        tasks.append(
+            MissionTaskSchema(
+                task_id="t24",
+                description="Write final bilingual architecture dossier with QA and (optional) polished summary.",
+                tool_name="write_file",
+                tool_args={"path": target_file, "content": merge_content},
+                dependencies=merge_dependencies,
+            )
+        )
 
         return MissionPlanSchema(objective=objective, tasks=tasks)
 
@@ -463,13 +517,18 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
     @staticmethod
     def _detect_target_file(objective: str) -> str:
         # Priority: FILE:Name.ext in objective (if allowed) > ARCH_PLANNER_OUTPUT_FILE > ARCH_PLANNER_DEFAULT_FILE
-        allow_obj = os.getenv("ARCH_PLANNER_FILE_FROM_OBJECTIVE", "1").lower() in ("1", "true", "yes")
+        allow_obj = os.getenv("ARCH_PLANNER_FILE_FROM_OBJECTIVE", "1").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
         default_file = os.getenv("ARCH_PLANNER_DEFAULT_FILE", "ARCHITECTURE_overmind.md")
         env_file = os.getenv("ARCH_PLANNER_OUTPUT_FILE", "").strip()
         candidate = None
         if allow_obj:
             import re
-            m = re.search(r'FILE\s*:\s*([A-Za-z0-9_\-./]+)', objective, flags=re.IGNORECASE)
+
+            m = re.search(r"FILE\s*:\s*([A-Za-z0-9_\-./]+)", objective, flags=re.IGNORECASE)
             if m:
                 candidate = m.group(1).strip()
         if not candidate and env_file:
@@ -518,7 +577,7 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
             "{{t22.answer}}",
             "",
             f"<!-- Generated by AdaptiveMultiPassArchPlanner v0.9.0 targeting file: {target_file} -->",
-            f"<!-- Semantic JSON Source: {semantic_source_id} -->"
+            f"<!-- Semantic JSON Source: {semantic_source_id} -->",
         ]
         return "\n".join(sections)
 

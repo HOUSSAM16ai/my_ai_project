@@ -9,28 +9,29 @@
 #   - Request/response examples
 #   - Schema validation
 
-from flask import Flask, jsonify
 from flasgger import Swagger, swag_from
+from flask import Flask, jsonify
+
 from app.api_docs import get_openapi_config
 
 
 def init_swagger(app: Flask):
     """
     تهيئة Swagger - Initialize Swagger documentation
-    
+
     Args:
         app: Flask application instance
     """
     # Get base configuration
     config = get_openapi_config()
-    
+
     # Flasgger configuration
     swagger_config = {
         "headers": [],
         "specs": [
             {
-                "endpoint": 'apispec',
-                "route": '/api/docs/spec.json',
+                "endpoint": "apispec",
+                "route": "/api/docs/spec.json",
                 "rule_filter": lambda rule: True,  # Include all rules
                 "model_filter": lambda tag: True,  # Include all models
             }
@@ -38,19 +39,19 @@ def init_swagger(app: Flask):
         "static_url_path": "/flasgger_static",
         "swagger_ui": True,
         "specs_route": "/api/docs/",
-        "title": config['title'],
-        "version": config['version'],
-        "description": config['description'],
-        "termsOfService": config['termsOfService'],
-        "contact": config['contact'],
-        "license": config['license']
+        "title": config["title"],
+        "version": config["version"],
+        "description": config["description"],
+        "termsOfService": config["termsOfService"],
+        "contact": config["contact"],
+        "license": config["license"],
     }
-    
+
     # Initialize Swagger
     swagger = Swagger(app, config=swagger_config, template=config)
-    
+
     app.logger.info("Swagger documentation initialized at /api/docs/")
-    
+
     return swagger
 
 

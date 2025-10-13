@@ -37,16 +37,16 @@
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
-from typing import Optional, Callable
+from typing import Callable, Optional
 
-from flask import Flask, current_app
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager
 from dotenv import load_dotenv
+from flask import Flask, current_app
+from flask_login import LoginManager
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 # --------------------------------------------------------------------------------------
 # Load .env FIRST (env overrides must exist before config object import)
@@ -67,6 +67,7 @@ login_manager.login_message_category = "info"
 # --------------------------------------------------------------------------------------
 from config import config_by_name  # noqa: E402
 
+
 # --------------------------------------------------------------------------------------
 # Internal Helpers
 # --------------------------------------------------------------------------------------
@@ -85,20 +86,22 @@ def _register_extensions(app: Flask) -> None:
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    
+
     # Setup enterprise-grade middleware
     try:
-        from app.middleware import setup_error_handlers, setup_cors, setup_request_logging
+        from app.middleware import setup_cors, setup_error_handlers, setup_request_logging
+
         setup_error_handlers(app)
         setup_cors(app)
         setup_request_logging(app)
         app.logger.info("Enterprise middleware initialized successfully")
     except Exception as exc:
         app.logger.warning("Failed to initialize middleware: %s", exc, exc_info=True)
-    
+
     # Setup Swagger/OpenAPI documentation (optional)
     try:
         from app.swagger_integration import init_swagger
+
         init_swagger(app)
         app.logger.info("Swagger documentation enabled at /api/docs/")
     except Exception as exc:
@@ -110,6 +113,7 @@ def _register_blueprints(app: Flask) -> None:
     # Core routes (required)
     try:
         from . import routes
+
         app.register_blueprint(routes.bp)
         app.logger.info("Core routes registered successfully")
     except Exception as exc:
@@ -119,14 +123,18 @@ def _register_blueprints(app: Flask) -> None:
     # Admin routes (optional but recommended)
     try:
         from .admin import routes as admin_routes
+
         app.register_blueprint(admin_routes.bp, url_prefix="/admin")
         app.logger.info("Admin routes registered successfully")
     except Exception as exc:
-        app.logger.warning("Failed to register admin routes: %s (continuing without admin panel)", exc)
-    
+        app.logger.warning(
+            "Failed to register admin routes: %s (continuing without admin panel)", exc
+        )
+
     # API Gateway blueprints (optional)
     try:
         from .api import init_api
+
         init_api(app)
         app.logger.info("API Gateway registered successfully")
     except Exception as exc:
@@ -134,7 +142,8 @@ def _register_blueprints(app: Flask) -> None:
 
     # CLI commands (optional)
     try:
-        from .cli import user_commands, mindgate_commands, database_commands
+        from .cli import database_commands, mindgate_commands, user_commands
+
         app.register_blueprint(user_commands.users_cli)
         app.register_blueprint(mindgate_commands.mindgate_cli)
         app.register_blueprint(database_commands.database_cli)
@@ -169,8 +178,7 @@ def _configure_logging(app: Flask) -> None:
     )
     file_handler.setFormatter(
         logging.Formatter(
-            "%(asctime)s %(levelname)s [%(name)s] %(message)s "
-            "[in %(pathname)s:%(lineno)d]"
+            "%(asctime)s %(levelname)s [%(name)s] %(message)s " "[in %(pathname)s:%(lineno)d]"
         )
     )
     file_handler.setLevel(level)
@@ -187,6 +195,7 @@ def _import_models(app: Flask) -> None:
     """
     try:
         from . import models  # noqa: F401
+
         app.logger.debug("Models imported successfully.")
     except Exception as exc:
         app.logger.error("Failed to import models: %s", exc, exc_info=True)
@@ -228,6 +237,7 @@ def _register_shutdown_signals(app: Flask) -> None:
     """
     Placeholder for hooking signals/teardown logic (thread pools, caches, etc.).
     """
+
     @app.teardown_appcontext
     def _teardown(exc):
         # Add resource cleanup if needed
@@ -281,6 +291,7 @@ def create_app(config_name: Optional[str] = None) -> Flask:
 # premature database connection attempts before test fixtures are ready.
 app = None  # type: ignore
 
+
 def _should_create_global_app() -> bool:
     """Determine if we should create a global app instance at module import time."""
     # Skip if we're in a test environment
@@ -290,6 +301,7 @@ def _should_create_global_app() -> bool:
     if "PYTEST_CURRENT_TEST" in os.environ:
         return False
     return True
+
 
 if _should_create_global_app():
     try:

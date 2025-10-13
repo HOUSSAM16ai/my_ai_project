@@ -12,23 +12,25 @@
 #   - Traffic splitting
 #   - Rollback capabilities
 
-from typing import Dict, Any, Optional, List, Callable
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
-from enum import Enum
-import random
 import hashlib
+import random
 import threading
 from collections import defaultdict, deque
-from flask import current_app, request
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
+from flask import current_app, request
 
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
 
+
 class DeploymentStrategy(Enum):
     """Deployment strategies"""
+
     IMMEDIATE = "immediate"
     CANARY = "canary"
     BLUE_GREEN = "blue_green"
@@ -38,6 +40,7 @@ class DeploymentStrategy(Enum):
 
 class FeatureFlagStatus(Enum):
     """Feature flag statuses"""
+
     ENABLED = "enabled"
     DISABLED = "disabled"
     CANARY = "canary"
@@ -48,9 +51,11 @@ class FeatureFlagStatus(Enum):
 # DATA STRUCTURES
 # ======================================================================================
 
+
 @dataclass
 class ModelVersion:
     """AI Model version metadata"""
+
     version_id: str
     model_name: str
     version_number: str
@@ -64,6 +69,7 @@ class ModelVersion:
 @dataclass
 class ABTestExperiment:
     """A/B test experiment configuration"""
+
     experiment_id: str
     name: str
     description: str
@@ -79,6 +85,7 @@ class ABTestExperiment:
 @dataclass
 class CanaryDeployment:
     """Canary deployment configuration"""
+
     deployment_id: str
     service_id: str
     canary_version: str
@@ -95,6 +102,7 @@ class CanaryDeployment:
 @dataclass
 class FeatureFlag:
     """Feature flag configuration"""
+
     flag_id: str
     name: str
     description: str
@@ -109,42 +117,41 @@ class FeatureFlag:
 # AB TESTING SERVICE
 # ======================================================================================
 
+
 class ABTestingService:
     """
     خدمة اختبار A/B - A/B testing service
-    
+
     Features:
     - Traffic splitting between variants
     - Statistical significance testing
     - Automatic winner selection
     - User assignment consistency
     """
-    
+
     def __init__(self):
         self.experiments: Dict[str, ABTestExperiment] = {}
-        self.user_assignments: Dict[str, Dict[str, str]] = defaultdict(dict)  # user_id -> {exp_id: variant}
+        self.user_assignments: Dict[str, Dict[str, str]] = defaultdict(
+            dict
+        )  # user_id -> {exp_id: variant}
         self.lock = threading.RLock()
-    
+
     def create_experiment(self, experiment: ABTestExperiment) -> bool:
         """Create new A/B test experiment"""
         with self.lock:
             if experiment.experiment_id in self.experiments:
                 return False
-            
+
             experiment.started_at = datetime.now(timezone.utc)
             self.experiments[experiment.experiment_id] = experiment
-            
+
             current_app.logger.info(f"Created A/B test: {experiment.name}")
             return True
-    
-    def assign_variant(
-        self,
-        experiment_id: str,
-        user_id: str
-    ) -> Optional[str]:
+
+    def assign_variant(self, experiment_id: str, user_id: str) -> Optional[str]:
         """
         Assign user to a variant
-        
+
         Returns:
             Variant identifier (variant_a or variant_b)
         """
@@ -152,86 +159,80 @@ class ABTestingService:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
                 return None
-            
+
             # Check if user already assigned
             if experiment_id in self.user_assignments[user_id]:
                 return self.user_assignments[user_id][experiment_id]
-            
+
             # Assign based on traffic split
             # Use hash for consistent assignment
             hash_input = f"{user_id}:{experiment_id}"
             hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
             variant = (
-                experiment.variant_b 
-                if (hash_value % 100) / 100.0 < experiment.traffic_split 
+                experiment.variant_b
+                if (hash_value % 100) / 100.0 < experiment.traffic_split
                 else experiment.variant_a
             )
-            
+
             # Store assignment
             self.user_assignments[user_id][experiment_id] = variant
-            
+
             # Update metrics
-            variant_key = 'variant_b_assignments' if variant == experiment.variant_b else 'variant_a_assignments'
+            variant_key = (
+                "variant_b_assignments"
+                if variant == experiment.variant_b
+                else "variant_a_assignments"
+            )
             experiment.metrics[variant_key] = experiment.metrics.get(variant_key, 0) + 1
-            
+
             return variant
-    
-    def record_outcome(
-        self,
-        experiment_id: str,
-        user_id: str,
-        metric_name: str,
-        value: float
-    ):
+
+    def record_outcome(self, experiment_id: str, user_id: str, metric_name: str, value: float):
         """Record experiment outcome metric"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
                 return
-            
+
             variant = self.user_assignments[user_id].get(experiment_id)
             if not variant:
                 return
-            
+
             # Store metric
             metric_key = f"{variant}_{metric_name}"
             if metric_key not in experiment.metrics:
                 experiment.metrics[metric_key] = []
-            
+
             experiment.metrics[metric_key].append(value)
-    
+
     def get_experiment_results(self, experiment_id: str) -> Optional[Dict[str, Any]]:
         """Get experiment results with statistical analysis"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
                 return None
-            
+
             return {
-                'experiment_id': experiment.experiment_id,
-                'name': experiment.name,
-                'variant_a': experiment.variant_a,
-                'variant_b': experiment.variant_b,
-                'started_at': experiment.started_at.isoformat() if experiment.started_at else None,
-                'metrics': experiment.metrics,
-                'winning_variant': experiment.winning_variant
+                "experiment_id": experiment.experiment_id,
+                "name": experiment.name,
+                "variant_a": experiment.variant_a,
+                "variant_b": experiment.variant_b,
+                "started_at": experiment.started_at.isoformat() if experiment.started_at else None,
+                "metrics": experiment.metrics,
+                "winning_variant": experiment.winning_variant,
             }
-    
-    def end_experiment(
-        self,
-        experiment_id: str,
-        winning_variant: Optional[str] = None
-    ) -> bool:
+
+    def end_experiment(self, experiment_id: str, winning_variant: Optional[str] = None) -> bool:
         """End experiment and optionally declare winner"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
                 return False
-            
+
             experiment.ended_at = datetime.now(timezone.utc)
             if winning_variant:
                 experiment.winning_variant = winning_variant
-            
+
             current_app.logger.info(
                 f"Ended A/B test: {experiment.name}, winner: {winning_variant or 'undecided'}"
             )
@@ -242,44 +243,43 @@ class ABTestingService:
 # CANARY DEPLOYMENT SERVICE
 # ======================================================================================
 
+
 class CanaryDeploymentService:
     """
     خدمة النشر التدريجي - Canary deployment service
-    
+
     Features:
     - Gradual traffic shifting
     - Automated rollback on errors
     - Health monitoring during rollout
     - Progressive delivery
     """
-    
+
     def __init__(self):
         self.deployments: Dict[str, CanaryDeployment] = {}
         self.lock = threading.RLock()
-    
+
     def start_deployment(self, deployment: CanaryDeployment) -> bool:
         """Start canary deployment"""
         with self.lock:
             if deployment.deployment_id in self.deployments:
                 return False
-            
+
             deployment.started_at = datetime.now(timezone.utc)
             deployment.current_stage = "initial"
             self.deployments[deployment.deployment_id] = deployment
-            
+
             current_app.logger.info(
                 f"Started canary deployment: {deployment.service_id} -> {deployment.canary_version}"
             )
             return True
-    
+
     def get_version_for_request(
-        self,
-        deployment_id: str,
-        user_id: Optional[str] = None
+        self, deployment_id: str, user_id: Optional[str] = None
     ) -> Optional[str]:
         """
         Get version to use for request
-        
+
         Returns:
             Version identifier (canary or stable)
         """
@@ -287,7 +287,7 @@ class CanaryDeploymentService:
             deployment = self.deployments.get(deployment_id)
             if not deployment:
                 return None
-            
+
             # Use hash for consistent routing if user_id provided
             if user_id:
                 hash_input = f"{user_id}:{deployment_id}"
@@ -296,99 +296,91 @@ class CanaryDeploymentService:
             else:
                 # Random assignment
                 use_canary = random.random() * 100 < deployment.canary_traffic_percent
-            
+
             return deployment.canary_version if use_canary else deployment.stable_version
-    
+
     def record_request_outcome(
-        self,
-        deployment_id: str,
-        version: str,
-        success: bool,
-        latency_ms: float
+        self, deployment_id: str, version: str, success: bool, latency_ms: float
     ):
         """Record request outcome for canary monitoring"""
         with self.lock:
             deployment = self.deployments.get(deployment_id)
             if not deployment:
                 return
-            
+
             # Update metrics
-            version_key = 'canary' if version == deployment.canary_version else 'stable'
-            
-            if f'{version_key}_requests' not in deployment.metrics:
-                deployment.metrics[f'{version_key}_requests'] = 0
-                deployment.metrics[f'{version_key}_successes'] = 0
-                deployment.metrics[f'{version_key}_latencies'] = []
-            
-            deployment.metrics[f'{version_key}_requests'] += 1
+            version_key = "canary" if version == deployment.canary_version else "stable"
+
+            if f"{version_key}_requests" not in deployment.metrics:
+                deployment.metrics[f"{version_key}_requests"] = 0
+                deployment.metrics[f"{version_key}_successes"] = 0
+                deployment.metrics[f"{version_key}_latencies"] = []
+
+            deployment.metrics[f"{version_key}_requests"] += 1
             if success:
-                deployment.metrics[f'{version_key}_successes'] += 1
-            deployment.metrics[f'{version_key}_latencies'].append(latency_ms)
-    
+                deployment.metrics[f"{version_key}_successes"] += 1
+            deployment.metrics[f"{version_key}_latencies"].append(latency_ms)
+
     def should_increment_traffic(self, deployment_id: str) -> bool:
         """Check if canary traffic should be incremented"""
         with self.lock:
             deployment = self.deployments.get(deployment_id)
             if not deployment or not deployment.started_at:
                 return False
-            
+
             # Check time since last increment
             elapsed = (datetime.now(timezone.utc) - deployment.started_at).total_seconds()
             expected_increments = int(elapsed / (deployment.increment_interval_minutes * 60))
             current_percent = deployment.canary_traffic_percent
             expected_percent = min(
-                100.0,
-                10.0 + (expected_increments * deployment.increment_percent)
+                100.0, 10.0 + (expected_increments * deployment.increment_percent)
             )
-            
+
             if current_percent >= expected_percent:
                 return False
-            
+
             # Check success rate
-            canary_requests = deployment.metrics.get('canary_requests', 0)
+            canary_requests = deployment.metrics.get("canary_requests", 0)
             if canary_requests < 100:  # Need minimum sample size
                 return False
-            
-            canary_successes = deployment.metrics.get('canary_successes', 0)
+
+            canary_successes = deployment.metrics.get("canary_successes", 0)
             success_rate = canary_successes / canary_requests
-            
+
             return success_rate >= deployment.success_threshold
-    
+
     def increment_traffic(self, deployment_id: str) -> bool:
         """Increment canary traffic percentage"""
         with self.lock:
             deployment = self.deployments.get(deployment_id)
             if not deployment:
                 return False
-            
+
             new_percent = min(
-                100.0,
-                deployment.canary_traffic_percent + deployment.increment_percent
+                100.0, deployment.canary_traffic_percent + deployment.increment_percent
             )
             deployment.canary_traffic_percent = new_percent
-            
+
             current_app.logger.info(
                 f"Incremented canary traffic for {deployment.service_id}: {new_percent}%"
             )
-            
+
             if new_percent >= 100.0:
                 deployment.current_stage = "complete"
-            
+
             return True
-    
+
     def rollback(self, deployment_id: str) -> bool:
         """Rollback canary deployment"""
         with self.lock:
             deployment = self.deployments.get(deployment_id)
             if not deployment:
                 return False
-            
+
             deployment.canary_traffic_percent = 0.0
             deployment.current_stage = "rolled_back"
-            
-            current_app.logger.warning(
-                f"Rolled back canary deployment: {deployment.service_id}"
-            )
+
+            current_app.logger.warning(f"Rolled back canary deployment: {deployment.service_id}")
             return True
 
 
@@ -396,94 +388,92 @@ class CanaryDeploymentService:
 # FEATURE FLAG SERVICE
 # ======================================================================================
 
+
 class FeatureFlagService:
     """
     خدمة أعلام الميزات - Feature flag service
-    
+
     Features:
     - Feature toggles
     - Percentage rollouts
     - User/group targeting
     - Runtime feature control
     """
-    
+
     def __init__(self):
         self.flags: Dict[str, FeatureFlag] = {}
         self.lock = threading.RLock()
-    
+
     def create_flag(self, flag: FeatureFlag) -> bool:
         """Create feature flag"""
         with self.lock:
             if flag.flag_id in self.flags:
                 return False
-            
+
             self.flags[flag.flag_id] = flag
             current_app.logger.info(f"Created feature flag: {flag.name}")
             return True
-    
+
     def is_enabled(
-        self,
-        flag_id: str,
-        user_id: Optional[str] = None,
-        user_groups: Optional[List[str]] = None
+        self, flag_id: str, user_id: Optional[str] = None, user_groups: Optional[List[str]] = None
     ) -> bool:
         """Check if feature is enabled for user"""
         with self.lock:
             flag = self.flags.get(flag_id)
             if not flag:
                 return False
-            
+
             if flag.status == FeatureFlagStatus.DISABLED:
                 return False
-            
+
             if flag.status == FeatureFlagStatus.ENABLED:
                 return True
-            
+
             # Check user-specific enablement
             if user_id and user_id in flag.enabled_users:
                 return True
-            
+
             # Check group-specific enablement
             if user_groups:
                 for group in user_groups:
                     if group in flag.enabled_groups:
                         return True
-            
+
             # Percentage rollout
             if flag.status == FeatureFlagStatus.PERCENTAGE and user_id:
                 hash_input = f"{user_id}:{flag_id}"
                 hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
                 return (hash_value % 100) < (flag.enabled_percentage * 100)
-            
+
             return False
-    
+
     def update_flag(
         self,
         flag_id: str,
         status: Optional[FeatureFlagStatus] = None,
-        percentage: Optional[float] = None
+        percentage: Optional[float] = None,
     ) -> bool:
         """Update feature flag"""
         with self.lock:
             flag = self.flags.get(flag_id)
             if not flag:
                 return False
-            
+
             if status:
                 flag.status = status
             if percentage is not None:
                 flag.enabled_percentage = percentage
-            
+
             return True
-    
+
     def get_all_flags(self) -> Dict[str, Dict[str, Any]]:
         """Get all feature flags"""
         with self.lock:
             return {
                 flag_id: {
-                    'name': flag.name,
-                    'status': flag.status.value,
-                    'enabled_percentage': flag.enabled_percentage
+                    "name": flag.name,
+                    "status": flag.status.value,
+                    "enabled_percentage": flag.enabled_percentage,
                 }
                 for flag_id, flag in self.flags.items()
             }
@@ -502,34 +492,34 @@ _service_lock = threading.Lock()
 def get_ab_testing_service() -> ABTestingService:
     """Get singleton A/B testing service"""
     global _ab_testing_instance
-    
+
     if _ab_testing_instance is None:
         with _service_lock:
             if _ab_testing_instance is None:
                 _ab_testing_instance = ABTestingService()
-    
+
     return _ab_testing_instance
 
 
 def get_canary_deployment_service() -> CanaryDeploymentService:
     """Get singleton canary deployment service"""
     global _canary_deployment_instance
-    
+
     if _canary_deployment_instance is None:
         with _service_lock:
             if _canary_deployment_instance is None:
                 _canary_deployment_instance = CanaryDeploymentService()
-    
+
     return _canary_deployment_instance
 
 
 def get_feature_flag_service() -> FeatureFlagService:
     """Get singleton feature flag service"""
     global _feature_flag_instance
-    
+
     if _feature_flag_instance is None:
         with _service_lock:
             if _feature_flag_instance is None:
                 _feature_flag_instance = FeatureFlagService()
-    
+
     return _feature_flag_instance

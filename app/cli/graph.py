@@ -1,18 +1,23 @@
 # app/cli/graph.py - The Code Structure Analyzer
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Dict, List, Tuple
+
 import ast
 import re
+from pathlib import Path
+from typing import Dict, List, Tuple
+
 
 def list_py_files(root: Path) -> List[Path]:
     files: List[Path] = []
     for p in root.rglob("*.py"):
-        if any(part in {".git", ".venv", "venv", "__pycache__", "node_modules"} for part in p.parts):
+        if any(
+            part in {".git", ".venv", "venv", "__pycache__", "node_modules"} for part in p.parts
+        ):
             continue
         files.append(p)
     return files
+
 
 def find_symbol(root: Path, name: str) -> List[Tuple[Path, int, str]]:
     hits: List[Tuple[Path, int, str]] = []
@@ -22,9 +27,13 @@ def find_symbol(root: Path, name: str) -> List[Tuple[Path, int, str]]:
         except Exception:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
+            if (
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                and node.name == name
+            ):
                 hits.append((p, node.lineno, type(node).__name__))
     return hits
+
 
 def import_graph(root: Path) -> Dict[str, List[str]]:
     graph: Dict[str, List[str]] = {}
@@ -43,6 +52,7 @@ def import_graph(root: Path) -> Dict[str, List[str]]:
                 if node.module:
                     graph[mod].append(node.module.split(".")[0])
     return graph
+
 
 def find_routes(root: Path) -> List[Tuple[str, str, str]]:
     routes: List[Tuple[str, str, str]] = []

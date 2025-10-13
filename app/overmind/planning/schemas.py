@@ -47,23 +47,22 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import os
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import (
-    List, Dict, Any, Optional, Callable
-)
+from typing import Any, Callable, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 __schema_version__ = "4.2.0"
 
 # =============================================================================
 # SETTINGS
 # =============================================================================
+
 
 @dataclass
 class PlanSettings:
@@ -78,11 +77,13 @@ class PlanSettings:
     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
     MAX_META_BYTES: int = int(os.environ.get("PLAN_MAX_META_BYTES", 64000))
 
+
 SETTINGS = PlanSettings()
 
 # =============================================================================
 # ENUMS
 # =============================================================================
+
 
 class TaskType(str, Enum):
     TOOL = "TOOL"
@@ -91,14 +92,17 @@ class TaskType(str, Enum):
     VERIFY = "VERIFY"
     GATE = "GATE"
 
+
 class Criticality(str, Enum):
     BLOCKING = "BLOCKING"
     SOFT = "SOFT"
+
 
 class RiskLevel(str, Enum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
+
 
 class WarningSeverity(str, Enum):
     INFO = "INFO"
@@ -107,15 +111,18 @@ class WarningSeverity(str, Enum):
     PERFORMANCE = "PERFORMANCE"
     STRUCTURE = "STRUCTURE"
 
+
 # =============================================================================
 # VALIDATION DATA STRUCTURES
 # =============================================================================
+
 
 class PlanValidationIssue(BaseModel):
     code: str
     message: str
     task_id: Optional[str] = None
     detail: Optional[Dict[str, Any]] = None
+
 
 class PlanWarning(BaseModel):
     code: str
@@ -124,22 +131,28 @@ class PlanWarning(BaseModel):
     task_id: Optional[str] = None
     detail: Optional[Dict[str, Any]] = None
 
+
 class PlanValidationError(ValueError):
     def __init__(self, issues: List[PlanValidationIssue]):
         self.issues = issues
         super().__init__(f"Plan validation failed with {len(issues)} issues.")
+
     def to_dict(self) -> Dict[str, Any]:
         return {"issues": [i.model_dump() for i in self.issues]}
+
 
 # =============================================================================
 # TOOL REGISTRY (OPTIONAL EXTERNAL INJECTION)
 # =============================================================================
 
+
 class ToolRegistryInterface:
     def has(self, tool_name: str) -> bool:  # pragma: no cover
         return False
+
     def validate(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:  # pragma: no cover
         return args
+
 
 TOOL_REGISTRY: Optional[ToolRegistryInterface] = None
 
@@ -147,15 +160,18 @@ TOOL_REGISTRY: Optional[ToolRegistryInterface] = None
 # POLICY HOOKS
 # =============================================================================
 
-PolicyHook = Callable[['MissionPlanSchema'], None]
+PolicyHook = Callable[["MissionPlanSchema"], None]
 _POLICY_HOOKS: List[PolicyHook] = []
+
 
 def register_policy_hook(hook: PolicyHook) -> None:
     _POLICY_HOOKS.append(hook)
 
+
 # =============================================================================
 # PLAN META (Structural Expansion)
 # =============================================================================
+
 
 class PlanMeta(BaseModel):
     """
@@ -166,6 +182,7 @@ class PlanMeta(BaseModel):
     - structural_hash: optional override (auto calculated separately in plan if missing).
     New fields are additive; consumers should treat unknown keys as optional hints.
     """
+
     language: Optional[str] = None
     section_task: Optional[str] = None
     files_scanned: Optional[int] = None
@@ -187,19 +204,20 @@ class PlanMeta(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
+
 # =============================================================================
 # TASK MODEL
 # =============================================================================
 
+
 class PlannedTask(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    task_id: str = Field(..., pattern=r'^[A-Za-z0-9_\-]+$', min_length=1, max_length=64)
+    task_id: str = Field(..., pattern=r"^[A-Za-z0-9_\-]+$", min_length=1, max_length=64)
     description: str = Field(..., min_length=3, max_length=SETTINGS.MAX_DESCRIPTION_LEN)
     task_type: TaskType = Field(default=TaskType.TOOL)
     tool_name: Optional[str] = Field(
-        None,
-        description="Required if task_type in (TOOL, TRANSFORM, AGGREGATE)."
+        None, description="Required if task_type in (TOOL, TRANSFORM, AGGREGATE)."
     )
     tool_args: Dict[str, Any] = Field(default_factory=dict)
     dependencies: List[str] = Field(default_factory=list)
@@ -207,7 +225,7 @@ class PlannedTask(BaseModel):
         100,
         ge=SETTINGS.PRIORITY_MIN,
         le=SETTINGS.PRIORITY_MAX,
-        description="Lower value means higher scheduling priority."
+        description="Lower value means higher scheduling priority.",
     )
     criticality: Criticality = Field(default=Criticality.BLOCKING)
     risk_level: RiskLevel = Field(default=RiskLevel.LOW)
@@ -215,8 +233,7 @@ class PlannedTask(BaseModel):
     tags: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     gate_condition: Optional[str] = Field(
-        None,
-        description="Expression required for GATE tasks (evaluated by policy layer)."
+        None, description="Expression required for GATE tasks (evaluated by policy layer)."
     )
 
     @field_validator("tool_name")
@@ -268,9 +285,11 @@ class PlannedTask(BaseModel):
             raise ValueError("gate_condition only allowed when task_type=GATE.")
         return v
 
+
 # =============================================================================
 # PLANNING CONTEXT (Optional, may be passed to planners)
 # =============================================================================
+
 
 class PlanningContext(BaseModel):
     user_id: Optional[str] = None
@@ -278,9 +297,11 @@ class PlanningContext(BaseModel):
     user_preferences: Dict[str, Any] = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
 
+
 # =============================================================================
 # MISSION PLAN MODEL
 # =============================================================================
+
 
 class MissionPlanSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -292,7 +313,7 @@ class MissionPlanSchema(BaseModel):
 
     meta: Optional[PlanMeta] = Field(
         default=None,
-        description="Dynamic telemetry / semantic guidance produced by planner (extended structural metrics)."
+        description="Dynamic telemetry / semantic guidance produced by planner (extended structural metrics).",
     )
 
     topological_order: Optional[List[str]] = Field(default=None)
@@ -317,16 +338,20 @@ class MissionPlanSchema(BaseModel):
             raise PlanValidationError(issues)
 
         if len(self.tasks) > SETTINGS.MAX_TASKS:
-            issues.append(PlanValidationIssue(
-                code="TOO_MANY_TASKS",
-                message=f"Task count {len(self.tasks)} exceeds MAX_TASKS={SETTINGS.MAX_TASKS}"
-            ))
+            issues.append(
+                PlanValidationIssue(
+                    code="TOO_MANY_TASKS",
+                    message=f"Task count {len(self.tasks)} exceeds MAX_TASKS={SETTINGS.MAX_TASKS}",
+                )
+            )
             raise PlanValidationError(issues)
 
         # Unique task IDs
         id_map = {t.task_id: t for t in self.tasks}
         if len(id_map) != len(self.tasks):
-            issues.append(PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id detected."))
+            issues.append(
+                PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id detected.")
+            )
             raise PlanValidationError(issues)
 
         # Build adjacency / indegree
@@ -335,11 +360,13 @@ class MissionPlanSchema(BaseModel):
         for t in self.tasks:
             for dep in t.dependencies:
                 if dep not in id_map:
-                    issues.append(PlanValidationIssue(
-                        code="INVALID_DEPENDENCY",
-                        message=f"Task '{t.task_id}' depends on unknown '{dep}'.",
-                        task_id=t.task_id
-                    ))
+                    issues.append(
+                        PlanValidationIssue(
+                            code="INVALID_DEPENDENCY",
+                            message=f"Task '{t.task_id}' depends on unknown '{dep}'.",
+                            task_id=t.task_id,
+                        )
+                    )
                 else:
                     adj[dep].append(t.task_id)
                     indegree[t.task_id] += 1
@@ -349,19 +376,24 @@ class MissionPlanSchema(BaseModel):
         # Fan-out limit
         for parent, children in adj.items():
             if len(children) > SETTINGS.MAX_OUT_DEGREE:
-                issues.append(PlanValidationIssue(
-                    code="EXCESS_OUT_DEGREE",
-                    message=f"Task '{parent}' fan-out {len(children)} > MAX_OUT_DEGREE={SETTINGS.MAX_OUT_DEGREE}",
-                    task_id=parent
-                ))
+                issues.append(
+                    PlanValidationIssue(
+                        code="EXCESS_OUT_DEGREE",
+                        message=f"Task '{parent}' fan-out {len(children)} > MAX_OUT_DEGREE={SETTINGS.MAX_OUT_DEGREE}",
+                        task_id=parent,
+                    )
+                )
         if issues:
             raise PlanValidationError(issues)
 
         # Topological sort
         import collections
+
         queue = collections.deque([tid for tid, deg in indegree.items() if deg == 0])
         if not queue:
-            issues.append(PlanValidationIssue(code="NO_ROOTS", message="No root tasks (possible cycle)."))
+            issues.append(
+                PlanValidationIssue(code="NO_ROOTS", message="No root tasks (possible cycle).")
+            )
             raise PlanValidationError(issues)
 
         topo: List[str] = []
@@ -379,73 +411,83 @@ class MissionPlanSchema(BaseModel):
 
         if len(topo) != len(id_map):
             cyclic_nodes = [tid for tid, d in remaining.items() if d > 0]
-            issues.append(PlanValidationIssue(
-                code="CYCLE_DETECTED",
-                message="Dependency cycle detected.",
-                detail={"nodes": cyclic_nodes}
-            ))
+            issues.append(
+                PlanValidationIssue(
+                    code="CYCLE_DETECTED",
+                    message="Dependency cycle detected.",
+                    detail={"nodes": cyclic_nodes},
+                )
+            )
             raise PlanValidationError(issues)
 
         longest_path = max(depth_map.values()) if depth_map else 0
         if longest_path > SETTINGS.MAX_DEPTH:
-            issues.append(PlanValidationIssue(
-                code="DEPTH_EXCEEDED",
-                message=f"Depth {longest_path} > MAX_DEPTH={SETTINGS.MAX_DEPTH}"
-            ))
+            issues.append(
+                PlanValidationIssue(
+                    code="DEPTH_EXCEEDED",
+                    message=f"Depth {longest_path} > MAX_DEPTH={SETTINGS.MAX_DEPTH}",
+                )
+            )
             raise PlanValidationError(issues)
 
         # Heuristic Warnings
         roots = [tid for tid, deg in indegree.items() if deg == 0]
         if len(roots) / len(id_map) > 0.5 and len(id_map) > 10:
-            warnings.append(PlanWarning(
-                code="HIGH_ROOT_COUNT",
-                message="More than 50% of tasks are roots.",
-                severity=WarningSeverity.STRUCTURE
-            ))
+            warnings.append(
+                PlanWarning(
+                    code="HIGH_ROOT_COUNT",
+                    message="More than 50% of tasks are roots.",
+                    severity=WarningSeverity.STRUCTURE,
+                )
+            )
         for tid in id_map:
             if indegree[tid] == 0 and not adj[tid] and len(id_map) > 1:
-                warnings.append(PlanWarning(
-                    code="ORPHAN_TASK",
-                    message=f"Task '{tid}' is isolated.",
-                    severity=WarningSeverity.STRUCTURE,
-                    task_id=tid
-                ))
+                warnings.append(
+                    PlanWarning(
+                        code="ORPHAN_TASK",
+                        message=f"Task '{tid}' is isolated.",
+                        severity=WarningSeverity.STRUCTURE,
+                        task_id=tid,
+                    )
+                )
         priorities = [t.priority for t in self.tasks]
         if len(priorities) > 5 and len(set(priorities)) == 1:
-            warnings.append(PlanWarning(
-                code="UNIFORM_PRIORITY",
-                message="All tasks share identical priority.",
-                severity=WarningSeverity.PERFORMANCE
-            ))
+            warnings.append(
+                PlanWarning(
+                    code="UNIFORM_PRIORITY",
+                    message="All tasks share identical priority.",
+                    severity=WarningSeverity.PERFORMANCE,
+                )
+            )
         high_risk = [t.task_id for t in self.tasks if t.risk_level == RiskLevel.HIGH]
         if high_risk and len(high_risk) / len(self.tasks) > 0.3:
-            warnings.append(PlanWarning(
-                code="HIGH_RISK_DENSITY",
-                message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 0.3.",
-                severity=WarningSeverity.RISK
-            ))
+            warnings.append(
+                PlanWarning(
+                    code="HIGH_RISK_DENSITY",
+                    message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 0.3.",
+                    severity=WarningSeverity.RISK,
+                )
+            )
         for t in self.tasks:
             if t.task_type == TaskType.GATE and not t.gate_condition:
-                warnings.append(PlanWarning(
-                    code="GATE_WITHOUT_CONDITION",
-                    message=f"GATE task '{t.task_id}' missing gate_condition.",
-                    severity=WarningSeverity.ADVISORY,
-                    task_id=t.task_id
-                ))
+                warnings.append(
+                    PlanWarning(
+                        code="GATE_WITHOUT_CONDITION",
+                        message=f"GATE task '{t.task_id}' missing gate_condition.",
+                        severity=WarningSeverity.ADVISORY,
+                        task_id=t.task_id,
+                    )
+                )
 
         # Stats construction
         risk_counts = {
             "LOW": sum(1 for t in self.tasks if t.risk_level == RiskLevel.LOW),
             "MEDIUM": sum(1 for t in self.tasks if t.risk_level == RiskLevel.MEDIUM),
-            "HIGH": len(high_risk)
+            "HIGH": len(high_risk),
         }
-        risk_score = (
-            risk_counts["LOW"] * 1 +
-            risk_counts["MEDIUM"] * 3 +
-            risk_counts["HIGH"] * 7
-        )
+        risk_score = risk_counts["LOW"] * 1 + risk_counts["MEDIUM"] * 3 + risk_counts["HIGH"] * 7
         out_degrees = [len(v) for v in adj.values()]
-        avg_fanout = round(sum(out_degrees)/len(out_degrees), 4) if out_degrees else 0.0
+        avg_fanout = round(sum(out_degrees) / len(out_degrees), 4) if out_degrees else 0.0
 
         stats = {
             "tasks": len(id_map),
@@ -461,12 +503,17 @@ class MissionPlanSchema(BaseModel):
         # Enforce meta size limit (if meta present & limit > 0)
         if self.meta:
             meta_json = json.dumps(self.meta.model_dump(mode="json"), ensure_ascii=False)
-            if SETTINGS.MAX_META_BYTES > 0 and len(meta_json.encode("utf-8")) > SETTINGS.MAX_META_BYTES:
-                warnings.append(PlanWarning(
-                    code="META_TRUNCATION_RISK",
-                    message=f"PlanMeta size exceeds {SETTINGS.MAX_META_BYTES} bytes (consider pruning).",
-                    severity=WarningSeverity.PERFORMANCE
-                ))
+            if (
+                SETTINGS.MAX_META_BYTES > 0
+                and len(meta_json.encode("utf-8")) > SETTINGS.MAX_META_BYTES
+            ):
+                warnings.append(
+                    PlanWarning(
+                        code="META_TRUNCATION_RISK",
+                        message=f"PlanMeta size exceeds {SETTINGS.MAX_META_BYTES} bytes (consider pruning).",
+                        severity=WarningSeverity.PERFORMANCE,
+                    )
+                )
 
         # Full content hash (semantic)
         hash_payload = {
@@ -485,10 +532,10 @@ class MissionPlanSchema(BaseModel):
                     "allow_high_risk": t.allow_high_risk,
                     "tags": sorted(t.tags),
                     "metadata": t.metadata,
-                    "gate_condition": t.gate_condition
+                    "gate_condition": t.gate_condition,
                 }
                 for t in sorted(self.tasks, key=lambda x: x.task_id)
-            ]
+            ],
         }
         self.content_hash = hashlib.sha256(
             json.dumps(hash_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
@@ -497,12 +544,12 @@ class MissionPlanSchema(BaseModel):
         # Structural hash (topology + structural hints)
         structural_vector = [
             {
-              "task_id": t.task_id,
-              "deps": sorted(t.dependencies),
-              "priority": t.priority,
-              "risk": t.risk_level,
-              "hotspot": bool(t.metadata.get("hotspot")),
-              "layer": t.metadata.get("layer")
+                "task_id": t.task_id,
+                "deps": sorted(t.dependencies),
+                "priority": t.priority,
+                "risk": t.risk_level,
+                "hotspot": bool(t.metadata.get("hotspot")),
+                "layer": t.metadata.get("layer"),
             }
             for t in sorted(self.tasks, key=lambda x: x.task_id)
         ]
@@ -551,15 +598,21 @@ class MissionPlanSchema(BaseModel):
         return self
 
     # Utility / export helpers
-    def _add_warning(self, code: str, message: str,
-                     severity: WarningSeverity = WarningSeverity.INFO,
-                     task_id: Optional[str] = None,
-                     detail: Optional[Dict[str, Any]] = None):
+    def _add_warning(
+        self,
+        code: str,
+        message: str,
+        severity: WarningSeverity = WarningSeverity.INFO,
+        task_id: Optional[str] = None,
+        detail: Optional[Dict[str, Any]] = None,
+    ):
         if self.warnings is None:
             self.warnings = []
-        self.warnings.append(PlanWarning(
-            code=code, message=message, severity=severity, task_id=task_id, detail=detail
-        ))
+        self.warnings.append(
+            PlanWarning(
+                code=code, message=message, severity=severity, task_id=task_id, detail=detail
+            )
+        )
 
     def get_task(self, task_id: str) -> Optional[PlannedTask]:
         return next((t for t in self.tasks if t.task_id == task_id), None)
@@ -596,14 +649,12 @@ class MissionPlanSchema(BaseModel):
         return {
             "nodes": [{"id": t.task_id, "depth": self.depth_of(t.task_id)} for t in self.tasks],
             "links": [
-                {"source": dep, "target": t.task_id}
-                for t in self.tasks
-                for dep in t.dependencies
+                {"source": dep, "target": t.task_id} for t in self.tasks for dep in t.dependencies
             ],
             "objective": self.objective,
             "stats": self.stats,
             "warnings": [w.model_dump() for w in self.warnings] if self.warnings else [],
-            "meta": self.meta.model_dump() if self.meta else None
+            "meta": self.meta.model_dump() if self.meta else None,
         }
 
     def to_networkx(self):
@@ -619,43 +670,53 @@ class MissionPlanSchema(BaseModel):
                 g.add_edge(dep, t.task_id)
         return g
 
+
 # =============================================================================
 # OPTIONAL RESULT WRAPPER
 # =============================================================================
+
 
 class PlanGenerationResult(BaseModel):
     plan: MissionPlanSchema
     warnings: List[PlanWarning] = Field(default_factory=list)
     validation_issues: List[PlanValidationIssue] = Field(default_factory=list)
 
+
 # =============================================================================
 # PUBLIC HELPERS
 # =============================================================================
 
+
 def validate_plan(payload: Dict[str, Any]) -> MissionPlanSchema:
     return MissionPlanSchema.model_validate(payload)
+
 
 # =============================================================================
 # POLICY HOOKS (Samples / Governance)
 # =============================================================================
 
+
 def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
     high_count = plan.stats.get("risk_counts", {}).get("HIGH", 0) if plan.stats else 0
     if high_count > 100:
-        raise PlanValidationError([
-            PlanValidationIssue(
-                code="POLICY_HIGH_RISK_CAP",
-                message=f"High-risk tasks {high_count} exceed cap (100)."
-            )
-        ])
+        raise PlanValidationError(
+            [
+                PlanValidationIssue(
+                    code="POLICY_HIGH_RISK_CAP",
+                    message=f"High-risk tasks {high_count} exceed cap (100).",
+                )
+            ]
+        )
     if high_count > 50:
         plan._add_warning(
             code="POLICY_HIGH_RISK_DENSE",
             message=f"High-risk tasks {high_count} exceed advisory threshold (50).",
-            severity=WarningSeverity.RISK
+            severity=WarningSeverity.RISK,
         )
 
+
 register_policy_hook(_sample_policy_high_risk_limit)
+
 
 def _policy_structural_sanity(plan: MissionPlanSchema):
     meta = plan.meta
@@ -666,22 +727,23 @@ def _policy_structural_sanity(plan: MissionPlanSchema):
         plan._add_warning(
             code="HOTSPOT_DENSITY_HIGH",
             message=f"Hotspot density {meta.hotspot_density:.2f} > 0.55 (narrow structural focus).",
-            severity=WarningSeverity.RISK
+            severity=WarningSeverity.RISK,
         )
     # Layer diversity low
     if meta.layer_diversity is not None and meta.layer_diversity < 0.15:
         plan._add_warning(
             code="LAYER_DIVERSITY_LOW",
             message=f"Layer diversity {meta.layer_diversity:.2f} < 0.15 (possible imbalance).",
-            severity=WarningSeverity.STRUCTURE
+            severity=WarningSeverity.STRUCTURE,
         )
     # Structural entropy low
     if meta.structural_entropy is not None and meta.structural_entropy < 0.35:
         plan._add_warning(
             code="STRUCTURAL_ENTROPY_LOW",
             message=f"Structural entropy {meta.structural_entropy:.2f} < 0.35 (over-concentration risk).",
-            severity=WarningSeverity.PERFORMANCE
+            severity=WarningSeverity.PERFORMANCE,
         )
+
 
 register_policy_hook(_policy_structural_sanity)
 

@@ -5,6 +5,7 @@
 # Serve OpenAPI specification and Swagger UI
 
 from flask import jsonify, render_template_string
+
 from app.api import api_bp
 from app.api.openapi_spec import get_openapi_spec
 
@@ -61,20 +62,21 @@ SWAGGER_UI_HTML = """
 </html>
 """
 
-@api_bp.route('/docs', methods=['GET'])
-@api_bp.route('/docs/', methods=['GET'])
+
+@api_bp.route("/docs", methods=["GET"])
+@api_bp.route("/docs/", methods=["GET"])
 def swagger_ui():
     """Serve Swagger UI for API documentation"""
     return render_template_string(SWAGGER_UI_HTML)
 
 
-@api_bp.route('/docs/openapi.json', methods=['GET'])
+@api_bp.route("/docs/openapi.json", methods=["GET"])
 def openapi_spec():
     """Serve OpenAPI 3.0 specification"""
     return jsonify(get_openapi_spec())
 
 
-@api_bp.route('/docs/redoc', methods=['GET'])
+@api_bp.route("/docs/redoc", methods=["GET"])
 def redoc_ui():
     """Serve ReDoc UI for API documentation"""
     redoc_html = """

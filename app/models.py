@@ -66,24 +66,22 @@ from __future__ import annotations
 
 import enum
 import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, Dict, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from flask_login import UserMixin
+from sqlalchemy import JSON as SAJSON
 from sqlalchemy import (
-    func, text,
     ForeignKey,
-    UniqueConstraint,
     Index,
     TypeDecorator,
-    JSON as SAJSON,
-    event
+    UniqueConstraint,
+    event,
+    func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import (
-    relationship,
-    Mapped, mapped_column
-)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import db, login_manager
 
@@ -97,26 +95,31 @@ EVENT_TYPE_MAX_LEN = 128  # مطابقة للهجرة (إن وُجد CHECK). م�
 # UTILITIES
 # ======================================================================================
 
+
 class JSONB_or_JSON(TypeDecorator):
     """
     استخدام JSONB في PostgreSQL وإلا JSON قياسي (JSON).
     يحافظ على واجهة موحّدة للبيئات المختلفة.
     """
+
     impl = SAJSON
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
         return (
             dialect.type_descriptor(JSONB())
-            if dialect.name == 'postgresql'
+            if dialect.name == "postgresql"
             else dialect.type_descriptor(SAJSON())
         )
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def hash_content(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
 
 def coerce_datetime(value: Any) -> Optional[datetime]:
     """
@@ -126,7 +129,9 @@ def coerce_datetime(value: Any) -> Optional[datetime]:
     if value is None:
         return None
     if isinstance(value, datetime):
-        return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return (
+            value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        )
     if isinstance(value, (int, float)):
         try:
             return datetime.fromtimestamp(float(value), tz=timezone.utc)
@@ -160,13 +165,16 @@ def coerce_datetime(value: Any) -> Optional[datetime]:
             return None
     return None
 
+
 @login_manager.user_loader
 def load_user(user_id: str):
     return db.session.get(User, int(user_id))
 
+
 # ======================================================================================
 # ENUMS
 # ======================================================================================
+
 
 class MessageRole(enum.Enum):
     USER = "user"
@@ -174,87 +182,90 @@ class MessageRole(enum.Enum):
     TOOL = "tool"
     SYSTEM = "system"
 
+
 class MissionStatus(enum.Enum):
-    PENDING  = "PENDING"
+    PENDING = "PENDING"
     PLANNING = "PLANNING"
-    PLANNED  = "PLANNED"
-    RUNNING  = "RUNNING"
+    PLANNED = "PLANNED"
+    RUNNING = "RUNNING"
     ADAPTING = "ADAPTING"
-    SUCCESS  = "SUCCESS"
-    FAILED   = "FAILED"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
     CANCELED = "CANCELED"
+
 
 class TaskStatus(enum.Enum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
-    FAILED  = "FAILED"
-    RETRY   = "RETRY"
+    FAILED = "FAILED"
+    RETRY = "RETRY"
     SKIPPED = "SKIPPED"
 
+
 class PlanStatus(enum.Enum):
-    DRAFT      = "DRAFT"
-    VALID      = "VALID"
+    DRAFT = "DRAFT"
+    VALID = "VALID"
     SUPERSEDED = "SUPERSEDED"
-    FAILED     = "FAILED"
+    FAILED = "FAILED"
+
 
 class TaskType(enum.Enum):
-    TOOL         = "TOOL"
-    SYSTEM       = "SYSTEM"
-    META         = "META"
+    TOOL = "TOOL"
+    SYSTEM = "SYSTEM"
+    META = "META"
     VERIFICATION = "VERIFICATION"
+
 
 class MissionEventType(enum.Enum):
     # Lifecycle & Planning
-    CREATED           = "CREATED"
-    STATUS_CHANGE     = "STATUS_CHANGE"
-    PLAN_SELECTED     = "PLAN_SELECTED"
+    CREATED = "CREATED"
+    STATUS_CHANGE = "STATUS_CHANGE"
+    PLAN_SELECTED = "PLAN_SELECTED"
     EXECUTION_STARTED = "EXECUTION_STARTED"
 
     # Task-level events
-    TASK_STARTED   = "TASK_STARTED"
+    TASK_STARTED = "TASK_STARTED"
     TASK_COMPLETED = "TASK_COMPLETED"
-    TASK_FAILED    = "TASK_FAILED"
+    TASK_FAILED = "TASK_FAILED"
 
     # Adaptation / Replanning
     REPLAN_TRIGGERED = "REPLAN_TRIGGERED"
-    REPLAN_APPLIED   = "REPLAN_APPLIED"
+    REPLAN_APPLIED = "REPLAN_APPLIED"
 
     # Generic / legacy
     MISSION_UPDATED = "MISSION_UPDATED"
 
     # Analytical
-    RISK_SUMMARY            = "RISK_SUMMARY"
+    RISK_SUMMARY = "RISK_SUMMARY"
     ARCHITECTURE_CLASSIFIED = "ARCHITECTURE_CLASSIFIED"
 
     # Terminal outcomes
     MISSION_COMPLETED = "MISSION_COMPLETED"
-    MISSION_FAILED    = "MISSION_FAILED"
+    MISSION_FAILED = "MISSION_FAILED"
 
     # Final closure marker
     FINALIZED = "FINALIZED"
+
 
 # ======================================================================================
 # MIXINS
 # ======================================================================================
 
+
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        default=utc_now
+        db.DateTime(timezone=True), nullable=False, server_default=func.now(), default=utc_now
     )
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        onupdate=utc_now
+        db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=utc_now
     )
+
 
 # ======================================================================================
 # USER
 # ======================================================================================
+
 
 class User(UserMixin, Timestamped, db.Model):
     __tablename__ = "users"
@@ -263,80 +274,99 @@ class User(UserMixin, Timestamped, db.Model):
     full_name: Mapped[str] = mapped_column(db.String(150), nullable=False)
     email: Mapped[str] = mapped_column(db.String(150), unique=True, index=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(db.String(256))
-    is_admin: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False, server_default=text("false"))
+    is_admin: Mapped[bool] = mapped_column(
+        db.Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
-    missions: Mapped[List["Mission"]] = relationship("Mission", back_populates="initiator", cascade="all, delete-orphan")
-    admin_conversations: Mapped[List["AdminConversation"]] = relationship("AdminConversation", cascade="all, delete-orphan")
+    missions: Mapped[List["Mission"]] = relationship(
+        "Mission", back_populates="initiator", cascade="all, delete-orphan"
+    )
+    admin_conversations: Mapped[List["AdminConversation"]] = relationship(
+        "AdminConversation", cascade="all, delete-orphan"
+    )
 
     def set_password(self, password: str):
         from werkzeug.security import generate_password_hash
+
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:
         from werkzeug.security import check_password_hash
+
         return bool(self.password_hash) and check_password_hash(self.password_hash, password)
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
 
 
-
 # ======================================================================================
 # ADMIN CONVERSATION SYSTEM - SUPERHUMAN CHAT HISTORY
 # ======================================================================================
+
 
 class AdminConversation(Timestamped, db.Model):
     """
     محادثات الأدمن - نظام تسجيل خارق للمحادثات
     تصميم احترافي يتفوق على الشركات العملاقة مثل OpenAI و Microsoft و Google
     """
+
     __tablename__ = "admin_conversations"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(db.String(500), nullable=False)
-    user_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    conversation_type: Mapped[str] = mapped_column(db.String(50), nullable=False, default="general", index=True)
-    
+    user_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    conversation_type: Mapped[str] = mapped_column(
+        db.String(50), nullable=False, default="general", index=True
+    )
+
     # Enhanced metadata for superior intelligence
     deep_index_summary: Mapped[Optional[str]] = mapped_column(db.Text)  # Project context snapshot
     context_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Full contextual data
     tags: Mapped[Optional[list]] = mapped_column(JSONB_or_JSON)  # Searchable tags
-    
+
     # Analytics & metrics (enterprise-grade)
     total_messages: Mapped[int] = mapped_column(db.Integer, default=0, server_default=text("0"))
     total_tokens: Mapped[int] = mapped_column(db.Integer, default=0, server_default=text("0"))
     avg_response_time_ms: Mapped[Optional[float]] = mapped_column(db.Float)
-    
+
     # Status tracking
-    is_archived: Mapped[bool] = mapped_column(db.Boolean, default=False, server_default=text("false"), index=True)
-    last_message_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True), index=True)
-    
+    is_archived: Mapped[bool] = mapped_column(
+        db.Boolean, default=False, server_default=text("false"), index=True
+    )
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), index=True
+    )
+
     # Relationships
     user: Mapped[User] = relationship("User", overlaps="admin_conversations")
     messages: Mapped[List["AdminMessage"]] = relationship(
         "AdminMessage",
         back_populates="conversation",
         cascade="all, delete-orphan",
-        order_by="AdminMessage.created_at"
+        order_by="AdminMessage.created_at",
     )
-    
+
     __table_args__ = (
         Index("ix_admin_conv_user_type", "user_id", "conversation_type"),
         Index("ix_admin_conv_archived_updated", "is_archived", "updated_at"),
     )
-    
+
     def __repr__(self):
         return f"<AdminConversation id={self.id} title={self.title[:30]!r}>"
-    
+
     def update_stats(self):
         """Update conversation statistics"""
         self.total_messages = len(self.messages)
         self.total_tokens = sum(m.tokens_used or 0 for m in self.messages)
-        
-        response_times = [m.latency_ms for m in self.messages if m.latency_ms and m.role == "assistant"]
+
+        response_times = [
+            m.latency_ms for m in self.messages if m.latency_ms and m.role == "assistant"
+        ]
         if response_times:
             self.avg_response_time_ms = sum(response_times) / len(response_times)
-        
+
         if self.messages:
             # Ensure all datetimes are timezone-aware before comparison
             message_times = [coerce_datetime(m.created_at) for m in self.messages]
@@ -350,43 +380,54 @@ class AdminMessage(Timestamped, db.Model):
     رسائل محادثات الأدمن - تسجيل دقيق لكل رسالة
     نظام تتبع متقدم يحفظ كل التفاصيل مع metadata كاملة
     """
+
     __tablename__ = "admin_messages"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey("admin_conversations.id", ondelete="CASCADE"),
         index=True,
-        nullable=False
+        nullable=False,
     )
-    role: Mapped[str] = mapped_column(db.String(20), nullable=False, index=True)  # user, assistant, system, tool
+    role: Mapped[str] = mapped_column(
+        db.String(20), nullable=False, index=True
+    )  # user, assistant, system, tool
     content: Mapped[str] = mapped_column(db.Text, nullable=False)
-    
+
     # AI Model metrics (for professional tracking)
     tokens_used: Mapped[Optional[int]] = mapped_column(db.Integer)
     model_used: Mapped[Optional[str]] = mapped_column(db.String(100), index=True)
     latency_ms: Mapped[Optional[float]] = mapped_column(db.Float)
     cost_usd: Mapped[Optional[float]] = mapped_column(db.Numeric(12, 6))
-    
+
     # Advanced metadata (JSONB for performance)
-    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Custom data, analysis results, etc.
-    
+    metadata_json: Mapped[Optional[dict]] = mapped_column(
+        JSONB_or_JSON
+    )  # Custom data, analysis results, etc.
+
     # Content analytics
-    content_hash: Mapped[Optional[str]] = mapped_column(db.String(64), index=True)  # For deduplication
-    embedding_vector: Mapped[Optional[list]] = mapped_column(JSONB_or_JSON)  # For semantic search (future)
-    
+    content_hash: Mapped[Optional[str]] = mapped_column(
+        db.String(64), index=True
+    )  # For deduplication
+    embedding_vector: Mapped[Optional[list]] = mapped_column(
+        JSONB_or_JSON
+    )  # For semantic search (future)
+
     # Relationship
-    conversation: Mapped[AdminConversation] = relationship("AdminConversation", back_populates="messages")
-    
+    conversation: Mapped[AdminConversation] = relationship(
+        "AdminConversation", back_populates="messages"
+    )
+
     __table_args__ = (
         Index("ix_admin_msg_conv_role", "conversation_id", "role"),
         Index("ix_admin_msg_created", "created_at"),
     )
-    
+
     def __repr__(self):
         preview = self.content[:50] if len(self.content) > 50 else self.content
         return f"<AdminMessage id={self.id} role={self.role} preview={preview!r}>"
-    
+
     def compute_content_hash(self):
         """Compute SHA256 hash of content for deduplication"""
         if self.content:
@@ -397,18 +438,21 @@ class AdminMessage(Timestamped, db.Model):
 # CORE: Mission / MissionPlan / Task / MissionEvent
 # ======================================================================================
 
+
 class Mission(Timestamped, db.Model):
     __tablename__ = "missions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     objective: Mapped[str] = mapped_column(db.Text, nullable=False)
     status: Mapped[MissionStatus] = mapped_column(
-        db.Enum(MissionStatus, native_enum=False),
-        default=MissionStatus.PENDING,
-        index=True
+        db.Enum(MissionStatus, native_enum=False), default=MissionStatus.PENDING, index=True
     )
-    initiator_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    active_plan_id: Mapped[Optional[int]] = mapped_column(db.Integer, ForeignKey("mission_plans.id", use_alter=True), nullable=True)
+    initiator_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    active_plan_id: Mapped[Optional[int]] = mapped_column(
+        db.Integer, ForeignKey("mission_plans.id", use_alter=True), nullable=True
+    )
 
     locked: Mapped[bool] = mapped_column(db.Boolean, default=False, server_default=text("false"))
     result_summary: Mapped[Optional[str]] = mapped_column(db.Text)
@@ -423,7 +467,7 @@ class Mission(Timestamped, db.Model):
         cascade="all, delete-orphan",
         order_by="desc(MissionPlan.version)",
         foreign_keys="MissionPlan.mission_id",
-        overlaps="active_plan,mission"
+        overlaps="active_plan,mission",
     )
 
     active_plan: Mapped[Optional["MissionPlan"]] = relationship(
@@ -431,15 +475,17 @@ class Mission(Timestamped, db.Model):
         foreign_keys=[active_plan_id],
         post_update=True,
         uselist=False,
-        overlaps="plans,mission"
+        overlaps="plans,mission",
     )
 
-    tasks: Mapped[List["Task"]] = relationship("Task", back_populates="mission", cascade="all, delete-orphan")
+    tasks: Mapped[List["Task"]] = relationship(
+        "Task", back_populates="mission", cascade="all, delete-orphan"
+    )
     events: Mapped[List["MissionEvent"]] = relationship(
         "MissionEvent",
         back_populates="mission",
         cascade="all, delete-orphan",
-        order_by="MissionEvent.id"
+        order_by="MissionEvent.id",
     )
 
     # ---- Derived analytics ----
@@ -462,19 +508,22 @@ class Mission(Timestamped, db.Model):
         return self.completed_tasks / len(self.tasks)
 
     def __repr__(self):
-        return f"<Mission id={self.id} status={self.status.value} objective={self.objective[:30]!r}>"
+        return (
+            f"<Mission id={self.id} status={self.status.value} objective={self.objective[:30]!r}>"
+        )
+
 
 class MissionPlan(Timestamped, db.Model):
     __tablename__ = "mission_plans"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
+    mission_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True
+    )
     version: Mapped[int] = mapped_column(db.Integer, nullable=False, default=1)
     planner_name: Mapped[Optional[str]] = mapped_column(db.String(120))
     status: Mapped[PlanStatus] = mapped_column(
-        db.Enum(PlanStatus, native_enum=False),
-        default=PlanStatus.VALID,
-        index=True
+        db.Enum(PlanStatus, native_enum=False), default=PlanStatus.VALID, index=True
     )
     score: Mapped[Optional[float]] = mapped_column(db.Float)
     rationale: Mapped[Optional[str]] = mapped_column(db.Text)
@@ -484,29 +533,35 @@ class MissionPlan(Timestamped, db.Model):
     content_hash: Mapped[Optional[str]] = mapped_column(db.String(128), index=True)
 
     mission: Mapped[Mission] = relationship(
-        "Mission",
-        back_populates="plans",
-        foreign_keys=[mission_id],
-        overlaps="active_plan,plans"
+        "Mission", back_populates="plans", foreign_keys=[mission_id], overlaps="active_plan,plans"
     )
 
-    tasks: Mapped[List["Task"]] = relationship("Task", back_populates="plan", cascade="all, delete-orphan")
+    tasks: Mapped[List["Task"]] = relationship(
+        "Task", back_populates="plan", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (UniqueConstraint("mission_id", "version", name="uq_mission_plan_version"),)
 
     def __repr__(self):
         return f"<MissionPlan id={self.id} v={self.version} planner={self.planner_name} score={self.score}>"
 
+
 class Task(Timestamped, db.Model):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
-    plan_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("mission_plans.id", ondelete="CASCADE"), index=True)
+    mission_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("mission_plans.id", ondelete="CASCADE"), index=True
+    )
 
     task_key: Mapped[str] = mapped_column(db.String(120), index=True)
     description: Mapped[Optional[str]] = mapped_column(db.Text)
-    task_type: Mapped[TaskType] = mapped_column(db.Enum(TaskType, native_enum=False), default=TaskType.TOOL, index=True)
+    task_type: Mapped[TaskType] = mapped_column(
+        db.Enum(TaskType, native_enum=False), default=TaskType.TOOL, index=True
+    )
 
     tool_name: Mapped[Optional[str]] = mapped_column(db.String(255), index=True)
     tool_args_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
@@ -517,9 +572,7 @@ class Task(Timestamped, db.Model):
     criticality: Mapped[Optional[str]] = mapped_column(db.String(20))
 
     status: Mapped[TaskStatus] = mapped_column(
-        db.Enum(TaskStatus, native_enum=False),
-        default=TaskStatus.PENDING,
-        index=True
+        db.Enum(TaskStatus, native_enum=False), default=TaskStatus.PENDING, index=True
     )
     attempt_count: Mapped[int] = mapped_column(db.Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(db.Integer, default=3)
@@ -533,7 +586,7 @@ class Task(Timestamped, db.Model):
     started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
 
-    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)           # Structured output
+    result: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Structured output
     result_meta_json: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)  # Free-form meta
     cost_usd = mapped_column(db.Numeric(12, 6))
 
@@ -568,7 +621,9 @@ class Task(Timestamped, db.Model):
         if not self.started_at:
             self.started_at = utc_now()
 
-    def mark_finished(self, status: TaskStatus, result_text: Optional[str] = None, error: Optional[str] = None):
+    def mark_finished(
+        self, status: TaskStatus, result_text: Optional[str] = None, error: Optional[str] = None
+    ):
         if status not in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.SKIPPED):
             raise ValueError("mark_finished expects a terminal status.")
         self.status = status
@@ -592,15 +647,19 @@ class Task(Timestamped, db.Model):
     def __repr__(self):
         return f"<Task id={self.id} key={self.task_key} status={self.status.value}>"
 
+
 class MissionEvent(Timestamped, db.Model):
     __tablename__ = "mission_events"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    mission_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True)
-    task_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey("tasks.id", ondelete="SET NULL"), index=True)
+    mission_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey("missions.id", ondelete="CASCADE"), index=True
+    )
+    task_id: Mapped[Optional[int]] = mapped_column(
+        db.Integer, db.ForeignKey("tasks.id", ondelete="SET NULL"), index=True
+    )
     event_type: Mapped[MissionEventType] = mapped_column(
-        db.Enum(MissionEventType, native_enum=False),
-        index=True
+        db.Enum(MissionEventType, native_enum=False), index=True
     )
     payload: Mapped[Optional[dict]] = mapped_column(JSONB_or_JSON)
     note: Mapped[Optional[str]] = mapped_column(db.String(500))
@@ -612,10 +671,10 @@ class MissionEvent(Timestamped, db.Model):
         return f"<MissionEvent id={self.id} type={self.event_type.value}>"
 
 
-
 # ======================================================================================
 # MODEL EVENT LISTENERS (Timestamp Coercion)
 # ======================================================================================
+
 
 def _coerce_task_datetime_fields(_mapper, _connection, target: Task):
     """
@@ -630,12 +689,14 @@ def _coerce_task_datetime_fields(_mapper, _connection, target: Task):
         else:
             setattr(target, attr, coerced)
 
+
 event.listen(Task, "before_insert", _coerce_task_datetime_fields)
 event.listen(Task, "before_update", _coerce_task_datetime_fields)
 
 # ======================================================================================
 # HELPERS / SERVICE-LAYER BRIDGES
 # ======================================================================================
+
 
 def update_mission_status(mission: Mission, new_status: MissionStatus, note: Optional[str] = None):
     """
@@ -648,9 +709,10 @@ def update_mission_status(mission: Mission, new_status: MissionStatus, note: Opt
             mission_id=mission.id,
             event_type=MissionEventType.STATUS_CHANGE,
             payload={"old": old_status.value, "new": new_status.value},
-            note=note
+            note=note,
         )
         db.session.add(evt)
+
 
 def log_mission_event(
     mission: Mission,
@@ -658,7 +720,7 @@ def log_mission_event(
     *,
     task: Optional[Task] = None,
     payload: Optional[Dict[str, Any]] = None,
-    note: Optional[str] = None
+    note: Optional[str] = None,
 ) -> MissionEvent:
     """
     إضافة حدث إلى سجل المهمة (دون commit).
@@ -669,17 +731,18 @@ def log_mission_event(
         task_id=task.id if task else None,
         event_type=event_type,
         payload=payload,
-        note=note
+        note=note,
     )
     db.session.add(evt)
     return evt
+
 
 def finalize_task(
     task: Task,
     status: TaskStatus,
     *,
     result_text: Optional[str] = None,
-    error_text: Optional[str] = None
+    error_text: Optional[str] = None,
 ):
     """
     إنهاء مهمة (Terminal) بشكل آمن و idempotent (بدون commit).
@@ -706,9 +769,11 @@ def finalize_task(
     if error_text is not None:
         task.error_text = error_text
 
-    event_type = (MissionEventType.TASK_COMPLETED
-                  if status == TaskStatus.SUCCESS
-                  else MissionEventType.TASK_FAILED)
+    event_type = (
+        MissionEventType.TASK_COMPLETED
+        if status == TaskStatus.SUCCESS
+        else MissionEventType.TASK_FAILED
+    )
     log_mission_event(
         task.mission,
         event_type,
@@ -718,9 +783,10 @@ def finalize_task(
             "result_excerpt": (task.result_text or "")[:160],
             "error_excerpt": (task.error_text or "")[:160],
             "duration_ms": task.duration_ms,
-            "attempts": task.attempt_count
-        }
+            "attempts": task.attempt_count,
+        },
     )
+
 
 # ======================================================================================
 # END OF FILE

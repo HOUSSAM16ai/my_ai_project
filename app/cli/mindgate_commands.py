@@ -28,12 +28,12 @@
 # ======================================================================================
 from __future__ import annotations
 
-import os
-import json
-import time
 import difflib
-import traceback
 import importlib
+import json
+import os
+import time
+import traceback
 import uuid
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple
@@ -53,16 +53,37 @@ DEFAULT_PLANNER_NAME = os.environ.get("MINDGATE_DEFAULT_PLANNER", "maestro_graph
 # ======================================================================================
 mindgate_cli = Blueprint("mindgate", __name__, cli_group="mindgate")
 
+
 # ======================================================================================
 # COLOR HELPERS
 # ======================================================================================
-def C_RED(s): click.secho(s, fg="red", err=True)
-def C_GREEN(s): click.secho(s, fg="green")
-def C_YELLOW(s): click.secho(s, fg="yellow")
-def C_CYAN(s): click.secho(s, fg="cyan")
-def C_MAGENTA(s): click.secho(s, fg="magenta")
-def C_DIM(s): click.secho(s, fg="white", dim=True)
-def C_BLUE(s): click.secho(s, fg="blue")
+def C_RED(s):
+    click.secho(s, fg="red", err=True)
+
+
+def C_GREEN(s):
+    click.secho(s, fg="green")
+
+
+def C_YELLOW(s):
+    click.secho(s, fg="yellow")
+
+
+def C_CYAN(s):
+    click.secho(s, fg="cyan")
+
+
+def C_MAGENTA(s):
+    click.secho(s, fg="magenta")
+
+
+def C_DIM(s):
+    click.secho(s, fg="white", dim=True)
+
+
+def C_BLUE(s):
+    click.secho(s, fg="blue")
+
 
 # ======================================================================================
 # IMPORT / SERVICE LOADING STATE
@@ -74,13 +95,15 @@ class ImportRecord:
         self.error: Optional[BaseException] = None
         self.trace: Optional[str] = None
         self.module: Optional[ModuleType] = None
+
     def to_dict(self):
         return {
             "name": self.name,
             "ok": self.ok,
             "error": repr(self.error) if self.error else None,
-            "trace": self.trace if (MINDGATE_DEBUG) else None
+            "trace": self.trace if (MINDGATE_DEBUG) else None,
         }
+
 
 IMPORTS: Dict[str, ImportRecord] = {}
 SERVICES_READY = False
@@ -120,6 +143,7 @@ DB_MODULES = [
     "app.models",
 ]
 
+
 # ======================================================================================
 # IMPORT HELPERS
 # ======================================================================================
@@ -134,12 +158,14 @@ def _import_module(path: str) -> ImportRecord:
     IMPORTS[path] = rec
     return rec
 
+
 def _root_cause_summary() -> List[str]:
     msgs = []
     for rec in IMPORTS.values():
         if not rec.ok and rec.error:
             msgs.append(f"{rec.name}: {type(rec.error).__name__}: {rec.error}")
     return msgs
+
 
 def _debug_print_imports():
     for name, rec in IMPORTS.items():
@@ -151,11 +177,13 @@ def _debug_print_imports():
             if MINDGATE_DEBUG:
                 C_DIM(rec.trace or "")
 
+
 def _maybe_suggest_planner(name: str, available: List[str]) -> Optional[str]:
     if not available:
         return None
     matches = difflib.get_close_matches(name, available, n=1, cutoff=0.45)
     return matches[0] if matches else None
+
 
 # ======================================================================================
 # LOADING / ENSURE
@@ -175,10 +203,13 @@ def load_services(force: bool = False):
     if IMPORTS.get("app.models") and IMPORTS["app.models"].ok:
         try:
             from app import db as _db
-            from app.models import (
-                User as _User, Mission as _Mission, MissionPlan as _MissionPlan, Task as _Task,
-                MissionStatus as _MissionStatus, TaskStatus as _TaskStatus
-            )
+            from app.models import Mission as _Mission
+            from app.models import MissionPlan as _MissionPlan
+            from app.models import MissionStatus as _MissionStatus
+            from app.models import Task as _Task
+            from app.models import TaskStatus as _TaskStatus
+            from app.models import User as _User
+
             db = _db
             User, Mission, MissionPlan, Task = _User, _Mission, _MissionPlan, _Task
             MissionStatus, TaskStatus = _MissionStatus, _TaskStatus
@@ -198,7 +229,8 @@ def load_services(force: bool = False):
         _import_module(m)
 
     critical_failures = [
-        r for r in IMPORTS.values()
+        r
+        for r in IMPORTS.values()
         if (r.name in SERVICE_MODULES or r.name in PLANNING_MODULES) and not r.ok
     ]
     if critical_failures and not MINDGATE_RELAX_IMPORTS:
@@ -209,21 +241,28 @@ def load_services(force: bool = False):
     try:
         if IMPORTS.get("app.services.generation_service", ImportRecord("")).ok:
             import app.services.generation_service as _gen
+
             generation_service = _gen
         if IMPORTS.get("app.services.system_service", ImportRecord("")).ok:
             import app.services.system_service as _sys
+
             system_service = _sys
         if IMPORTS.get("app.services.agent_tools", ImportRecord("")).ok:
             import app.services.agent_tools as _tools
+
             agent_tools = _tools
         if IMPORTS.get("app.services.master_agent_service", ImportRecord("")).ok:
             import app.services.master_agent_service as _over
+
             overmind = _over
         if IMPORTS.get("app.overmind.planning.schemas", ImportRecord("")).ok:
-            from app.overmind.planning.schemas import MissionPlanSchema as _MPS, PlanWarning as _PW
+            from app.overmind.planning.schemas import MissionPlanSchema as _MPS
+            from app.overmind.planning.schemas import PlanWarning as _PW
+
             MissionPlanSchema, PlanWarning = _MPS, _PW
         if IMPORTS.get("app.overmind.planning.factory", ImportRecord("")).ok:
             import app.overmind.planning.factory as _planning_factory
+
             planning = _planning_factory
         SERVICES_READY = True
     except Exception as e:
@@ -233,6 +272,7 @@ def load_services(force: bool = False):
         IMPORTS["binding-phase"] = rec
         SERVICES_READY = False
 
+
 def ensure_services(debug: bool = False):
     load_services()
     if SERVICES_READY:
@@ -241,11 +281,13 @@ def ensure_services(debug: bool = False):
         _debug_print_imports()
     raise RuntimeError("Core services not loaded. Use: flask mindgate debug-imports --verbose")
 
+
 def ensure_db():
     load_services()
     if DB_READY:
         return
     raise RuntimeError("Database layer not loaded. Check app.models import failures.")
+
 
 # ======================================================================================
 # UTILITIES
@@ -256,10 +298,12 @@ def _safe_json_dump(obj: Any, indent: int = 2) -> str:
     except Exception:
         return str(obj)
 
+
 def _print_exception(e: Exception, debug: bool = False):
     C_RED(f"{type(e).__name__}: {e}")
     if debug or MINDGATE_DEBUG:
         C_DIM(traceback.format_exc())
+
 
 def _get_initiator_user() -> Any:
     user = db.session.get(User, 1)
@@ -270,6 +314,7 @@ def _get_initiator_user() -> Any:
         raise RuntimeError("No user found (create at least one User row).")
     return user
 
+
 def _format_warnings(warnings) -> List[str]:
     result = []
     if not warnings:
@@ -277,19 +322,23 @@ def _format_warnings(warnings) -> List[str]:
     for w in warnings:
         if PlanWarning and isinstance(w, PlanWarning):
             result.append(
-                f"[{w.severity}] {w.code}: {w.message}" + (f" (task={w.task_id})" if w.task_id else "")
+                f"[{w.severity}] {w.code}: {w.message}"
+                + (f" (task={w.task_id})" if w.task_id else "")
             )
         else:
             result.append(str(w))
     return result
+
 
 def print_kv(title: str, data: Dict[str, Any]):
     C_YELLOW(f"\n-- {title} --")
     for k, v in data.items():
         click.echo(f"{k}: {v}")
 
+
 def _planner_default() -> str:
     return DEFAULT_PLANNER_NAME
+
 
 def _list_available_planners() -> List[str]:
     names: List[str] = []
@@ -305,6 +354,7 @@ def _list_available_planners() -> List[str]:
     except Exception:
         pass
     return names
+
 
 def _dump_plan_json(plan_obj: Any) -> str:
     """
@@ -334,6 +384,7 @@ def _dump_plan_json(plan_obj: Any) -> str:
         except Exception:
             return repr(plan_obj)
 
+
 # ======================================================================================
 # DEBUG IMPORTS
 # ======================================================================================
@@ -344,7 +395,11 @@ def debug_imports_command(verbose: bool, json_out: bool):
     load_services(force=True)
     data = {n: r.to_dict() for n, r in IMPORTS.items()}
     if json_out:
-        click.echo(_safe_json_dump({"imports": data, "SERVICES_READY": SERVICES_READY, "DB_READY": DB_READY}))
+        click.echo(
+            _safe_json_dump(
+                {"imports": data, "SERVICES_READY": SERVICES_READY, "DB_READY": DB_READY}
+            )
+        )
         return
     C_MAGENTA("=== Import Diagnostics ===")
     for n, r in IMPORTS.items():
@@ -359,6 +414,7 @@ def debug_imports_command(verbose: bool, json_out: bool):
     if not SERVICES_READY:
         C_YELLOW("\nFix failing modules before using planners / missions.")
         C_DIM("Hints: missing __init__.py, syntax errors, Pydantic mismatch, circular imports.")
+
 
 # ======================================================================================
 # PLANNERS LIST
@@ -391,6 +447,7 @@ def planners_command(json_out: bool, stats: bool):
             C_RED("Failed to list planners.")
             _print_exception(e)
 
+
 # ======================================================================================
 # MISSION CREATE
 # ======================================================================================
@@ -400,7 +457,8 @@ def planners_command(json_out: bool, stats: bool):
 @click.option("--debug", is_flag=True)
 def mission_command(objective: Tuple[str], json_out: bool, debug: bool):
     try:
-        ensure_services(debug); ensure_db()
+        ensure_services(debug)
+        ensure_db()
         objective_text = " ".join(objective).strip()
         if not objective_text:
             raise ValueError("Objective cannot be empty.")
@@ -409,7 +467,7 @@ def mission_command(objective: Tuple[str], json_out: bool, debug: bool):
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
-            "objective": mission.objective
+            "objective": mission.objective,
         }
         if json_out:
             click.echo(_safe_json_dump(payload))
@@ -424,6 +482,7 @@ def mission_command(objective: Tuple[str], json_out: bool, debug: bool):
         else:
             C_RED("Mission creation failed.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # MISSION STATUS
@@ -448,7 +507,7 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
             "status": getattr(mission.status, "name", str(mission.status)),
             "objective": mission.objective,
             "active_plan_id": mission.active_plan_id,
-            "task_counts": counts
+            "task_counts": counts,
         }
         if json_out:
             click.echo(_safe_json_dump(payload))
@@ -462,6 +521,7 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
         else:
             C_RED("Failed to fetch mission status.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # MISSION TASKS
@@ -477,30 +537,37 @@ def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bo
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
-        tasks = Task.query.filter_by(mission_id=mission.id).order_by(Task.id.asc()).limit(limit).all()
+        tasks = (
+            Task.query.filter_by(mission_id=mission.id).order_by(Task.id.asc()).limit(limit).all()
+        )
         rows = []
         for t in tasks:
-            rows.append({
-                "id": t.id,
-                "task_key": getattr(t, "task_key", None),
-                "status": getattr(t.status, "name", str(t.status)),
-                "attempts": getattr(t, "attempt_count", None),
-                "max_attempts": getattr(t, "max_attempts", None),
-                "tool_name": getattr(t, "tool_name", None),
-                "priority": getattr(t, "priority", None)
-            })
+            rows.append(
+                {
+                    "id": t.id,
+                    "task_key": getattr(t, "task_key", None),
+                    "status": getattr(t.status, "name", str(t.status)),
+                    "attempts": getattr(t, "attempt_count", None),
+                    "max_attempts": getattr(t, "max_attempts", None),
+                    "tool_name": getattr(t, "tool_name", None),
+                    "priority": getattr(t, "priority", None),
+                }
+            )
         if json_out:
             click.echo(_safe_json_dump(rows))
         else:
             C_CYAN(f"Mission #{mission.id} Tasks (showing {len(rows)})")
             for r in rows:
-                click.echo(f"[{r['status']}] {r['task_key']} (id={r['id']}, attempts={r['attempts']}/{r['max_attempts']}, tool={r['tool_name']})")
+                click.echo(
+                    f"[{r['status']}] {r['task_key']} (id={r['id']}, attempts={r['attempts']}/{r['max_attempts']}, tool={r['tool_name']})"
+                )
     except Exception as e:
         if json_out:
             click.echo(_safe_json_dump({"error": str(e)}))
         else:
             C_RED("Failed to list mission tasks.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # MISSION FOLLOW
@@ -535,6 +602,7 @@ def mission_follow_command(mission_id: int, interval: float, timeout: int, debug
     except Exception as e:
         C_RED("Follow failed.")
         _print_exception(e, debug)
+
 
 # ======================================================================================
 # PLAN (No DB persistence)
@@ -589,6 +657,7 @@ def plan_command(objective: Tuple[str], planner: str, json_out: bool, debug: boo
             C_RED("Planning failed.")
             _print_exception(e, debug)
 
+
 # ======================================================================================
 # PLAN MERMAID
 # ======================================================================================
@@ -607,11 +676,7 @@ def plan_mermaid_command(objective: Tuple[str], planner: str, json_out: bool, de
         if not hasattr(plan_obj, "to_mermaid"):
             raise RuntimeError("Plan object lacks to_mermaid()")
         mermaid = plan_obj.to_mermaid()
-        payload = {
-            "planner": res.planner_name,
-            "objective": obj,
-            "mermaid": mermaid
-        }
+        payload = {"planner": res.planner_name, "objective": obj, "mermaid": mermaid}
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -623,6 +688,7 @@ def plan_mermaid_command(objective: Tuple[str], planner: str, json_out: bool, de
         else:
             C_RED("plan-mermaid failed.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # PLAN DRY
@@ -648,7 +714,9 @@ def plan_dry_command(objective: Tuple[str], planner: str, json_out: bool, debug:
             "planner": res.planner_name,
             "content_hash": getattr(plan_obj, "content_hash", None),
             "task_count": task_count,
-            "warnings": [getattr(w, "code", str(w)) for w in getattr(plan_obj, "warnings", []) or []]
+            "warnings": [
+                getattr(w, "code", str(w)) for w in getattr(plan_obj, "warnings", []) or []
+            ],
         }
         if json_out:
             click.echo(_safe_json_dump(payload))
@@ -661,6 +729,7 @@ def plan_dry_command(objective: Tuple[str], planner: str, json_out: bool, debug:
         else:
             C_RED("Dry plan failed.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # PLAN DIFF
@@ -694,17 +763,15 @@ def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
             "plan_b": pb.id,
             "added": added,
             "removed": removed,
-            "changed": changed
+            "changed": changed,
         }
         if json_out:
             click.echo(_safe_json_dump(diff_obj))
         else:
             C_CYAN("Plan Diff")
-            print_kv("Counts", {
-                "added": len(added),
-                "removed": len(removed),
-                "changed": len(changed)
-            })
+            print_kv(
+                "Counts", {"added": len(added), "removed": len(removed), "changed": len(changed)}
+            )
             if added:
                 C_GREEN("\nAdded:")
                 for k in added:
@@ -724,6 +791,7 @@ def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
             C_RED("Plan diff failed.")
             _print_exception(e, debug)
 
+
 # ======================================================================================
 # REPLAN
 # ======================================================================================
@@ -733,7 +801,8 @@ def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
 @click.option("--debug", is_flag=True)
 def replan_command(mission_id: int, json_out: bool, debug: bool):
     try:
-        ensure_services(debug); ensure_db()
+        ensure_services(debug)
+        ensure_db()
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
@@ -743,7 +812,10 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
         mission.status = MissionStatus.ADAPTING
         db.session.commit()
         overmind.run_mission_lifecycle(mission.id)
-        payload = {"mission_id": mission.id, "status": getattr(mission.status, "name", str(mission.status))}
+        payload = {
+            "mission_id": mission.id,
+            "status": getattr(mission.status, "name", str(mission.status)),
+        }
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -756,13 +828,18 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
             C_RED("Replan command failed.")
             _print_exception(e, debug)
 
+
 # ======================================================================================
 # ASK (Direct LLM)
 # ======================================================================================
 @mindgate_cli.cli.command("ask")
 @click.argument("prompt", nargs=-1, required=True)
-@click.option("--mode", type=click.Choice(["legacy", "forge", "json", "comprehensive"]), default="comprehensive",
-              help="LLM mode: legacy | forge | json | comprehensive")
+@click.option(
+    "--mode",
+    type=click.Choice(["legacy", "forge", "json", "comprehensive"]),
+    default="comprehensive",
+    help="LLM mode: legacy | forge | json | comprehensive",
+)
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
@@ -789,15 +866,21 @@ def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
         elif mode == "forge":
             if not hasattr(generation_service, "forge_new_code"):
                 raise RuntimeError("forge_new_code not available.")
-            result = generation_service.forge_new_code(prompt=text, conversation_id=f"ask-{uuid.uuid4()}")
+            result = generation_service.forge_new_code(
+                prompt=text, conversation_id=f"ask-{uuid.uuid4()}"
+            )
         elif mode == "comprehensive":
             if not hasattr(generation_service, "generate_comprehensive_response"):
                 raise RuntimeError("generate_comprehensive_response not available.")
-            result = generation_service.generate_comprehensive_response(prompt=text, conversation_id=f"ask-{uuid.uuid4()}")
+            result = generation_service.generate_comprehensive_response(
+                prompt=text, conversation_id=f"ask-{uuid.uuid4()}"
+            )
         else:  # json
             if not hasattr(generation_service, "generate_json"):
                 raise RuntimeError("generate_json not available.")
-            result = generation_service.generate_json(prompt=text, conversation_id=f"ask-{uuid.uuid4()}")
+            result = generation_service.generate_json(
+                prompt=text, conversation_id=f"ask-{uuid.uuid4()}"
+            )
 
         if json_out:
             click.echo(_safe_json_dump(result))
@@ -824,6 +907,7 @@ def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
             C_RED("Ask command failed.")
             _print_exception(e, debug)
 
+
 # ======================================================================================
 # TOOLS
 # ======================================================================================
@@ -837,11 +921,7 @@ def tools_command(json_out: bool, debug: bool):
             raise RuntimeError("agent_tools module not available.")
         index = agent_tools.get_tools_index()
         tools = index.get("tools", [])
-        payload = {
-            "version": index.get("version"),
-            "count": len(tools),
-            "tools": tools
-        }
+        payload = {"version": index.get("version"), "count": len(tools), "tools": tools}
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -854,6 +934,7 @@ def tools_command(json_out: bool, debug: bool):
         else:
             C_RED("Failed to list tools.")
             _print_exception(e, debug)
+
 
 # ======================================================================================
 # INDEX PROJECT
@@ -873,7 +954,7 @@ def index_command(force: bool, json_out: bool, debug: bool):
             payload = {
                 "indexed_new": data.get("indexed_new"),
                 "total_in_store": data.get("total_in_store"),
-                "force": force
+                "force": force,
             }
             if json_out:
                 click.echo(_safe_json_dump(payload))
@@ -893,11 +974,13 @@ def index_command(force: bool, json_out: bool, debug: bool):
             C_RED("Index command failed.")
             _print_exception(e, debug)
 
+
 # ======================================================================================
 # REGISTER (Flask app factory hook)
 # ======================================================================================
 def init_app(app):
     app.cli.add_command(mindgate_cli)
+
 
 # ======================================================================================
 # END OF FILE
