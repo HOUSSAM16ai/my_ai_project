@@ -306,9 +306,7 @@ class DisasterRecoveryService:
             plan = self.dr_plans[plan_id]
 
             # Create recovery event
-            recovery_id = hashlib.sha256(
-                f"{plan_id}{datetime.now(UTC)}".encode()
-            ).hexdigest()[:16]
+            recovery_id = hashlib.sha256(f"{plan_id}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
             recovery_event = {
                 "recovery_id": recovery_id,
@@ -356,8 +354,7 @@ class DisasterRecoveryService:
                         "strategy": plan.strategy.value,
                         "last_tested": plan.last_tested.isoformat() if plan.last_tested else None,
                         "test_overdue": (
-                            (datetime.now(UTC) - plan.last_tested).days
-                            > plan.test_frequency_days
+                            (datetime.now(UTC) - plan.last_tested).days > plan.test_frequency_days
                             if plan.last_tested
                             else True
                         ),
@@ -466,9 +463,7 @@ class OnCallIncidentService:
         affected_services: list[str],
     ) -> str:
         """Create a new incident"""
-        incident_id = hashlib.sha256(f"{title}{datetime.now(UTC)}".encode()).hexdigest()[
-            :16
-        ]
+        incident_id = hashlib.sha256(f"{title}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
         incident = Incident(
             incident_id=incident_id,
@@ -624,9 +619,7 @@ class OnCallIncidentService:
         action_items: list[dict[str, Any]],
     ) -> str:
         """Create post-incident review"""
-        pir_id = hashlib.sha256(f"{incident_id}{datetime.now(UTC)}".encode()).hexdigest()[
-            :16
-        ]
+        pir_id = hashlib.sha256(f"{incident_id}{datetime.now(UTC)}".encode()).hexdigest()[:16]
 
         pir = PostIncidentReview(
             pir_id=pir_id,

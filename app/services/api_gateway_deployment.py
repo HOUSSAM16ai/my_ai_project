@@ -274,9 +274,7 @@ class CanaryDeploymentService:
             )
             return True
 
-    def get_version_for_request(
-        self, deployment_id: str, user_id: str | None = None
-    ) -> str | None:
+    def get_version_for_request(self, deployment_id: str, user_id: str | None = None) -> str | None:
         """
         Get version to use for request
 

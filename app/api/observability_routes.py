@@ -33,7 +33,8 @@ def get_metrics():
     try:
         observability = get_observability_service()
         endpoint = request.args.get("endpoint")
-        time_window = request.args.get("time_window", 3600, type=int)
+        # time_window parameter reserved for future use
+        _ = request.args.get("time_window", 3600, type=int)
 
         if endpoint:
             metrics = observability.get_endpoint_metrics(endpoint)
@@ -363,7 +364,8 @@ def get_error_rate():
 def observability_health():
     """Observability service health check"""
     try:
-        observability = get_observability_service()
+        # Verify service is available
+        _ = get_observability_service()
 
         return (
             jsonify(

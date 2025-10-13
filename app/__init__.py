@@ -299,9 +299,7 @@ def _should_create_global_app() -> bool:
     if os.getenv("TESTING") == "1" or os.getenv("FLASK_ENV") == "testing":
         return False
     # Skip if pytest is running (detected by PYTEST_CURRENT_TEST env var)
-    if "PYTEST_CURRENT_TEST" in os.environ:
-        return False
-    return True
+    return "PYTEST_CURRENT_TEST" not in os.environ
 
 
 if _should_create_global_app():

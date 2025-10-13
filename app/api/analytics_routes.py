@@ -271,7 +271,7 @@ def get_user_journeys(user_id: str):
 
         # Get user journeys
         journeys = []
-        for journey_key, journey in service.user_journeys.items():
+        for _, journey in service.user_journeys.items():
             if journey.user_id != user_id:
                 continue
             if session_id and journey.session_id != session_id:

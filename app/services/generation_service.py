@@ -86,6 +86,7 @@ DISCLAIMER
 This module does NOT perform deep indexing. It only consumes previously prepared
 context (if orchestrator supplies it). Absence of deep context is fully safe.
 """
+
 from __future__ import annotations
 
 import hashlib

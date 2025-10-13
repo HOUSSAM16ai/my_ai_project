@@ -9,6 +9,7 @@
 # ======================================================================================
 
 import os
+
 # --------------------------------------------------------------------------------------
 # إعداد بيئة الاختبار - يجب أن يكون قبل أي استيراد!
 # Set test environment BEFORE any imports to prevent premature app instantiation
@@ -26,11 +27,10 @@ from app import create_app, db
 # Fail Fast: استيراد النماذج الأساسية من "المخطط الأعظم".
 # تم تطهير كل الإشارات إلى النماذج التعليمية القديمة.
 try:
-    from app.models import User, Mission, MissionPlan, Task, MissionEvent
+    from app.models import Mission, User
 except ImportError as e:
-    raise RuntimeError(
-        "فشل استيراد نماذج Overmind. تأكد من أن app/models.py (v10.0+) محدث."
-    ) from e
+    raise RuntimeError("فشل استيراد نماذج Overmind. تأكد من أن app/models.py (v10.0+) محدث.") from e
+
 
 # --------------------------------------------------------------------------------------
 # تطبيق الاختبار (يُنشأ مرة واحدة لكل جلسة)
@@ -41,6 +41,7 @@ def app():
     application = create_app("testing")
     with application.app_context():
         yield application
+
 
 # --------------------------------------------------------------------------------------
 # اتصال قاعدة البيانات (مرة واحدة لكل جلسة)
@@ -55,6 +56,7 @@ def _connection(app):
     with app.app_context():
         db.metadata.drop_all(bind=conn)
     conn.close()
+
 
 # --------------------------------------------------------------------------------------
 # الجلسة المعزولة (لكل اختبار على حدة)
@@ -76,6 +78,7 @@ def session(_connection):
         nonlocal nested_transaction
         if trans is nested_transaction and top_level_transaction.is_active:
             nested_transaction = sess.begin_nested()
+
     try:
         yield real_session
     finally:
@@ -97,6 +100,7 @@ def session(_connection):
             top_level_transaction.rollback()
         db.session = original_scoped_session
 
+
 # --------------------------------------------------------------------------------------
 # عملاء HTTP
 # --------------------------------------------------------------------------------------
@@ -104,19 +108,20 @@ def session(_connection):
 def client(app, request):
     """Client with automatic logout after each test"""
     test_client = app.test_client()
-    
+
     def logout_cleanup():
         """Ensure user is logged out after test"""
         try:
             with test_client:
-                test_client.get('/logout')
+                test_client.get("/logout")
         except Exception:
             pass  # Logout may fail if not logged in
-    
+
     # Register cleanup to run after test
     request.addfinalizer(logout_cleanup)
-    
+
     return test_client
+
 
 # --------------------------------------------------------------------------------------
 # المصانع (Factories) - مركزة على Overmind
@@ -124,6 +129,7 @@ def client(app, request):
 @pytest.fixture
 def user_factory(session):
     """Factory لنموذج User."""
+
     def _create(**kwargs):
         count = session.query(User).count() + 1
         kwargs.setdefault("full_name", f"User {count}")
@@ -136,11 +142,14 @@ def user_factory(session):
         session.add(user)
         session.flush()
         return user
+
     return _create
+
 
 @pytest.fixture
 def mission_factory(session, user_factory):
     """Factory لنموذج Mission."""
+
     def _create(**kwargs):
         if "initiator" not in kwargs and "initiator_id" not in kwargs:
             kwargs["initiator"] = user_factory()
@@ -149,26 +158,28 @@ def mission_factory(session, user_factory):
         session.add(mission)
         session.flush()
         return mission
+
     return _create
+
 
 @pytest.fixture
 def admin_user(session, user_factory):
     """Fixture لإنشاء مستخدم أدمن للاختبارات."""
     # Check if admin already exists in this session
     from app.models import User
+
     existing_admin = session.query(User).filter_by(email="admin@test.com").first()
     if existing_admin:
         return existing_admin
-    
+
     admin = user_factory(
-        full_name="Test Admin",
-        email="admin@test.com",
-        password="1111",
-        is_admin=True
+        full_name="Test Admin", email="admin@test.com", password="1111", is_admin=True
     )
     return admin
 
+
 # ... يمكنك إضافة مصانع أخرى لـ MissionPlan و Task هنا بنفس النمط ...
+
 
 # --------------------------------------------------------------------------------------
 # Pytest Configuration
