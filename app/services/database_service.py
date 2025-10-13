@@ -86,7 +86,7 @@ def get_database_health() -> dict[str, Any]:
 
         # 2. Table integrity check
         missing_tables = []
-        for table_name, model in ALL_MODELS.items():
+        for table_name, _model in ALL_MODELS.items():
             if not inspect(db.engine).has_table(table_name):
                 missing_tables.append(table_name)
 
@@ -145,11 +145,11 @@ def get_database_health() -> dict[str, Any]:
             index_stats = db.session.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     schemaname,
                     tablename,
                     COUNT(*) as index_count
-                FROM pg_indexes 
+                FROM pg_indexes
                 WHERE schemaname = 'public'
                 GROUP BY schemaname, tablename
             """
@@ -366,7 +366,7 @@ def get_table_data(
             search_filters = []
             for col in mapper.columns:
                 # Search in string columns
-                if hasattr(col.type, "python_type") and col.type.python_type == str:
+                if hasattr(col.type, "python_type") and col.type.python_type is str:
                     search_filters.append(getattr(model, col.key).ilike(f"%{search}%"))
             if search_filters:
                 from sqlalchemy import or_

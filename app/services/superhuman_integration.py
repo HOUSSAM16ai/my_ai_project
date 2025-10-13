@@ -17,11 +17,7 @@ from typing import Any
 
 # Import all superhuman systems
 try:
-    from app.services.ai_adaptive_microservices import (
-        ScalingDecision,
-        SelfAdaptiveMicroservices,
-        ServiceMetrics,
-    )
+    from app.services.ai_adaptive_microservices import SelfAdaptiveMicroservices
 
     MICROSERVICES_AVAILABLE = True
 except ImportError:
@@ -46,7 +42,7 @@ except ImportError:
     REFACTORING_AVAILABLE = False
 
 try:
-    from app.services.ai_project_management import ProjectOrchestrator, Task, TeamMember
+    from app.services.ai_project_management import ProjectOrchestrator
 
     PROJECT_MGMT_AVAILABLE = True
 except ImportError:

@@ -465,9 +465,8 @@ def _safe_path(
     parent = os.path.dirname(abs_path)
     if must_exist_parent and not os.path.isdir(parent):
         raise FileNotFoundError("Parent directory does not exist.")
-    if enforce_ext:
-        if not any(abs_path.lower().endswith(e.lower()) for e in enforce_ext):
-            raise ValueError(f"Extension not allowed. Must be one of {enforce_ext}")
+    if enforce_ext and not any(abs_path.lower().endswith(e.lower()) for e in enforce_ext):
+        raise ValueError(f"Extension not allowed. Must be one of {enforce_ext}")
     if forbid_overwrite_large and os.path.exists(abs_path):
         try:
             st = os.stat(abs_path)
@@ -549,19 +548,23 @@ def tool(
 
                     schema = meta_entry.get("parameters") or {}
 
-                    if AUTOFILL and canonical_name in {
-                        CANON_WRITE,
-                        CANON_WRITE_IF_CHANGED,
-                        CANON_READ,
-                    }:
-                        if canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}:
-                            if not kwargs.get("path"):
-                                kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
-                            if (
-                                not isinstance(kwargs.get("content"), str)
-                                or not kwargs["content"].strip()
-                            ):
-                                kwargs["content"] = "Auto-generated content placeholder."
+                    if (
+                        AUTOFILL
+                        and canonical_name
+                        in {
+                            CANON_WRITE,
+                            CANON_WRITE_IF_CHANGED,
+                            CANON_READ,
+                        }
+                        and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}
+                    ):
+                        if not kwargs.get("path"):
+                            kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
+                        if (
+                            not isinstance(kwargs.get("content"), str)
+                            or not kwargs["content"].strip()
+                        ):
+                            kwargs["content"] = "Auto-generated content placeholder."
 
                     try:
                         validated = _validate_arguments(schema, kwargs)
@@ -1444,9 +1447,8 @@ def ensure_file(
                 _touch_layer(data["struct_layer"], "ensures")
             _apply_struct_limit(data)
             return ToolResult(ok=True, data=data)
-        if not path_exists:
-            if not allow_create or not AUTO_CREATE_ENABLED:
-                return ToolResult(ok=False, error="FILE_NOT_FOUND")
+        if not path_exists and (not allow_create or not AUTO_CREATE_ENABLED):
+            return ToolResult(ok=False, error="FILE_NOT_FOUND")
         content = initial_content if initial_content.strip() else AUTO_CREATE_DEFAULT_CONTENT
         encoded = content.encode("utf-8")
         if len(encoded) > AUTO_CREATE_MAX_BYTES:
@@ -1577,7 +1579,7 @@ def code_index_project(
         files_meta = []
         count = 0
         start = time.perf_counter()
-        for base, dirs, files in os.walk(root_abs):
+        for base, _dirs, files in os.walk(root_abs):
             # prune excluded dirs
             parts = base.replace("\\", "/").split("/")
             if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
@@ -1673,12 +1675,12 @@ def code_search_lexical(
                 return ToolResult(ok=False, error=f"REGEX_INVALID: {e}")
         results = []
         scanned = 0
-        for base, dirs, files in os.walk(root_abs):
+        for base, _dirs, files in os.walk(root_abs):
             parts = base.replace("\\", "/").split("/")
             if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
                 continue
             for fname in files:
-                ext = os.path.splitext(fname)[1].lower()
+                os.path.splitext(fname)[1].lower()
                 fpath = os.path.join(base, fname)
                 if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
                     continue

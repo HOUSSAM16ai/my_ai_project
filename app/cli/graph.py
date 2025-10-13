@@ -47,9 +47,8 @@ def import_graph(root: Path) -> dict[str, list[str]]:
             if isinstance(node, ast.Import):
                 for n in node.names:
                     graph[mod].append(n.name.split(".")[0])
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    graph[mod].append(node.module.split(".")[0])
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                graph[mod].append(node.module.split(".")[0])
     return graph
 
 

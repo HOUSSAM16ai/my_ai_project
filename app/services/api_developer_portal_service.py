@@ -476,7 +476,7 @@ from typing import Dict, Any, Optional, List
 
 class CogniForgeClient:
     """CogniForge API Client"""
-    
+
     def __init__(self, api_key: str, base_url: str = "https://api.cogniforge.ai/v1"):
         self.api_key = api_key
         self.base_url = base_url
@@ -485,33 +485,33 @@ class CogniForgeClient:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         })
-    
+
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make API request"""
         url = f"{self.base_url}{endpoint}"
         response = self.session.request(method, url, **kwargs)
         response.raise_for_status()
         return response.json()
-    
+
     # Users
     def list_users(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """List all users"""
         return self._request("GET", "/users", params={"page": page, "per_page": per_page})
-    
+
     def get_user(self, user_id: int) -> Dict[str, Any]:
         """Get user by ID"""
         return self._request("GET", f"/users/{user_id}")
-    
+
     def create_user(self, email: str, name: str, **kwargs) -> Dict[str, Any]:
         """Create a new user"""
         data = {"email": email, "name": name, **kwargs}
         return self._request("POST", "/users", json=data)
-    
+
     # Missions
     def list_missions(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """List all missions"""
         return self._request("GET", "/missions", params={"page": page, "per_page": per_page})
-    
+
     def get_mission(self, mission_id: int) -> Dict[str, Any]:
         """Get mission by ID"""
         return self._request("GET", f"/missions/{mission_id}")
@@ -610,7 +610,7 @@ func NewClient(apiKey string) *Client {
 
 func (c *Client) request(method, endpoint string, body interface{}) (map[string]interface{}, error) {
     url := c.BaseURL + endpoint
-    
+
     var reqBody []byte
     if body != nil {
         var err error
@@ -619,26 +619,26 @@ func (c *Client) request(method, endpoint string, body interface{}) (map[string]
             return nil, err
         }
     }
-    
+
     req, err := http.NewRequest(method, url, bytes.NewBuffer(reqBody))
     if err != nil {
         return nil, err
     }
-    
+
     req.Header.Set("Authorization", "Bearer "+c.APIKey)
     req.Header.Set("Content-Type", "application/json")
-    
+
     resp, err := c.client.Do(req)
     if err != nil {
         return nil, err
     }
     defer resp.Body.Close()
-    
+
     respBody, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         return nil, err
     }
-    
+
     var result map[string]interface{}
     err = json.Unmarshal(respBody, &result)
     return result, err

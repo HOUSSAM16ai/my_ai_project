@@ -900,7 +900,7 @@ class MaestroGenerationService:
         previous_tools: list[str] = []
         final_answer = "(no answer produced)"
         tool_call_limit: int | None = None
-        start_wall = time.perf_counter()
+        time.perf_counter()
 
         # Tool invocation signature counts (name+args hash)
         repeat_counter: dict[str, int] = {}

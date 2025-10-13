@@ -592,12 +592,10 @@ class AdminAIService:
             # Extract key information
             total_messages = len(conversation_history)
             user_questions = [msg for msg in conversation_history if msg.get("role") == "user"]
-            assistant_responses = [
-                msg for msg in conversation_history if msg.get("role") == "assistant"
-            ]
+            [msg for msg in conversation_history if msg.get("role") == "assistant"]
 
             # Get first and recent messages for context
-            first_messages = conversation_history[:3]
+            conversation_history[:3]
             recent_messages = conversation_history[-5:]
 
             # Build summary

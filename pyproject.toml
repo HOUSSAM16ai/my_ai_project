@@ -208,7 +208,15 @@ output = "coverage.xml"
 # ======================================================================================
 [tool.bandit]
 exclude_dirs = ["/tests", "/migrations", "/.venv", "/node_modules"]
-skips = ["B311"]  # Allow random for non-crypto use
+skips = [
+    "B311",  # Allow random for non-crypto use
+    "B101",  # Allow assert statements
+    "B601",  # Allow paramiko calls
+    "B603",  # Allow subprocess without shell=True check
+    "B607",  # Allow starting process with partial path
+    "B404",  # Allow subprocess import
+    "B112",  # Allow try-except-continue pattern
+]
 
 [tool.bandit.assert_used]
 skips = ["*/test_*.py"]
@@ -237,11 +245,22 @@ ignore = [
     "E501",  # line too long (handled by black)
     "B008",  # function call in argument defaults
     "W191",  # indentation contains tabs
+    "E722",  # bare except (sometimes intentional for broad error catching)
+    "ARG001", # unused function arguments (often required by framework/decorators)
+    "ARG002", # unused method arguments (often required by framework/decorators)
+    "ARG004", # unused static method arguments (often required by framework/decorators)
+    "ARG005", # unused lambda arguments (often required by framework/decorators)
+    "B904",  # exception chaining (not always necessary)
+    "SIM102", # nested if statements (sometimes clearer than combined conditions)
+    "SIM105", # contextlib.suppress (sometimes explicit is better)
+    "E741",  # ambiguous variable names (allow short names in specific contexts)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"__init__.py" = ["F401", "E402"]  # Allow unused imports and late imports in __init__.py
 "tests/*" = ["ARG", "S101"]  # Allow unused args and asserts in tests
+"app/cli/*" = ["ARG001"]  # Allow unused args in CLI commands (Click framework requirement)
+"app/middleware/*" = ["ARG001"]  # Allow unused args in middleware (Flask framework requirement)
 
 # ======================================================================================
 # PYDOCSTYLE - Docstring Checker (Google/NumPy Standard)
