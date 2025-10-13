@@ -19,7 +19,6 @@ from typing import Any
 try:
     from app.services.ai_adaptive_microservices import SelfAdaptiveMicroservices
 
-
     MICROSERVICES_AVAILABLE = True
 except ImportError:
     MICROSERVICES_AVAILABLE = False
@@ -48,7 +47,6 @@ try:
     PROJECT_MGMT_AVAILABLE = True
 except ImportError:
     PROJECT_MGMT_AVAILABLE = False
-
 
 
 class SuperhumanArchitectureOrchestrator:

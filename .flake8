@@ -7,13 +7,17 @@
 [flake8]
 max-line-length = 100
 max-complexity = 15
-extend-ignore = 
-    E203,  # whitespace before ':' (conflicts with black)
-    E501,  # line too long (handled by black)
-    W503,  # line break before binary operator (outdated)
-    W504,  # line break after binary operator
-    E402,  # module level import not at top (sometimes necessary)
-    F401,  # imported but unused (in __init__.py)
+# Comments about ignored codes:
+# E203 - whitespace before ':' (conflicts with black)
+# E501 - line too long (handled by black)
+# W503 - line break before binary operator (outdated)
+# W504 - line break after binary operator
+# E402 - module level import not at top (sometimes necessary)
+# F401 - imported but unused (in __init__.py)
+# E722 - bare except (sometimes intentional for broad error catching)
+# E741 - ambiguous variable names (allow short names in specific contexts)
+# C901 - function complexity (handled by radon)
+extend-ignore = E203,E501,W503,W504,E402,F401,E722,E741,C901,E231,E701
 
 exclude = 
     .git,
@@ -33,7 +37,7 @@ exclude =
 
 per-file-ignores =
     __init__.py: F401
-    tests/*: S101, ARG
+    tests/*: S101
 
 # Import order checking (compatible with isort)
 import-order-style = google

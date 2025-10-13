@@ -315,10 +315,15 @@ class CodeAnalyzer:
                         )
 
             # Check for hardcoded secrets
-            if isinstance(node, ast.Str) and any(
-                keyword in node.s.lower()
-                for keyword in ["password", "api_key", "secret", "token"]
-            ) and len(node.s) > 10 and not node.s.startswith("your_"):
+            if (
+                isinstance(node, ast.Str)
+                and any(
+                    keyword in node.s.lower()
+                    for keyword in ["password", "api_key", "secret", "token"]
+                )
+                and len(node.s) > 10
+                and not node.s.startswith("your_")
+            ):
                 self.issues_found.append(
                     CodeIssue(
                         issue_id=f"secret_{file_path}_{node.lineno}",

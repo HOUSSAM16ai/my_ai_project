@@ -245,7 +245,9 @@ def _estimate_complexity(node: ast.AST) -> int:
             complexity += 1
         elif isinstance(child, ast.BoolOp):
             complexity += max(1, len(getattr(child, "values", [])) - 1)
-        elif isinstance(child, (ast.ExceptHandler, ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+        elif isinstance(
+            child, (ast.ExceptHandler, ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
+        ):
             complexity += 1
     return complexity
 

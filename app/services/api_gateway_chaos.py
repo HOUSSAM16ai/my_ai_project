@@ -550,9 +550,7 @@ class BulkheadService:
                 }
             else:
                 # Return all stats
-                return {
-                    service_id: self.get_stats(service_id) for service_id in self.bulkheads
-                }
+                return {service_id: self.get_stats(service_id) for service_id in self.bulkheads}
 
     def reset_stats(self, service_id: str | None = None):
         """Reset statistics for a service or all services"""

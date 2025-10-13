@@ -26,7 +26,8 @@ except ImportError:
 
     warnings.warn(
         "LoginForm and RegistrationForm not available - authentication routes may not work",
-        RuntimeWarning, stacklevel=2,
+        RuntimeWarning,
+        stacklevel=2,
     )
 
     # Create minimal placeholder classes that inherit from object instead of FlaskForm

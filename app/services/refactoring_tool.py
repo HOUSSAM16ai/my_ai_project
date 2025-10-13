@@ -76,9 +76,7 @@ class RefactorTool:
         for cmd in self.formatter_cmds:
             cmd_expanded = [p.replace("{file}", str(file_path)) for p in cmd]
             try:
-                subprocess.run(
-                    cmd_expanded, check=True, capture_output=True
-                )
+                subprocess.run(cmd_expanded, check=True, capture_output=True)
             except (FileNotFoundError, subprocess.CalledProcessError):
                 continue
 

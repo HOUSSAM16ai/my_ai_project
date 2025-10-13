@@ -358,9 +358,7 @@ class BehavioralAnalyzer:
                     source_ip=event.source_ip,
                     user_id=event.user_id,
                     confidence=0.6,
-                    evidence=[
-                        f"Typical hours: {profile.typical_hours}, Current: {current_hour}"
-                    ],
+                    evidence=[f"Typical hours: {profile.typical_hours}, Current: {current_hour}"],
                     recommended_action="Monitor closely",
                     auto_blocked=False,
                 )

@@ -548,11 +548,16 @@ def tool(
 
                     schema = meta_entry.get("parameters") or {}
 
-                    if AUTOFILL and canonical_name in {
-                        CANON_WRITE,
-                        CANON_WRITE_IF_CHANGED,
-                        CANON_READ,
-                    } and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}:
+                    if (
+                        AUTOFILL
+                        and canonical_name
+                        in {
+                            CANON_WRITE,
+                            CANON_WRITE_IF_CHANGED,
+                            CANON_READ,
+                        }
+                        and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}
+                    ):
                         if not kwargs.get("path"):
                             kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
                         if (
