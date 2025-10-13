@@ -12,9 +12,8 @@ This module provides:
 - Self-healing and auto-scaling capabilities
 """
 
-import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Import all superhuman systems
 try:
@@ -76,7 +75,7 @@ class SuperhumanArchitectureOrchestrator:
             "project_management": PROJECT_MGMT_AVAILABLE,
         }
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """
         الحصول على حالة النظام الشاملة
         Get comprehensive system status
@@ -182,7 +181,7 @@ class SuperhumanArchitectureOrchestrator:
 
         return status
 
-    def _get_capabilities(self) -> List[str]:
+    def _get_capabilities(self) -> list[str]:
         """الحصول على القدرات المتاحة"""
         capabilities = []
 
@@ -228,7 +227,7 @@ class SuperhumanArchitectureOrchestrator:
 
         return capabilities
 
-    def _get_performance_metrics(self) -> Dict[str, Any]:
+    def _get_performance_metrics(self) -> dict[str, Any]:
         """الحصول على مقاييس الأداء"""
         return {
             "response_time": {
@@ -258,7 +257,7 @@ class SuperhumanArchitectureOrchestrator:
             },
         }
 
-    def run_comprehensive_analysis(self, project_path: str = ".") -> Dict[str, Any]:
+    def run_comprehensive_analysis(self, project_path: str = ".") -> dict[str, Any]:
         """
         تشغيل تحليل شامل للمشروع
         Run comprehensive project analysis
@@ -299,7 +298,7 @@ class SuperhumanArchitectureOrchestrator:
 
         return results
 
-    def get_recommendations(self) -> List[Dict[str, Any]]:
+    def get_recommendations(self) -> list[dict[str, Any]]:
         """
         الحصول على توصيات ذكية لتحسين المشروع
         Get intelligent recommendations for project improvement
@@ -403,7 +402,7 @@ class SuperhumanArchitectureOrchestrator:
                 for feature in system_info["features"]:
                     report += f"  - {feature}\n"
 
-        report += f"""
+        report += """
 ### 🎯 Active Capabilities:
 """
         for capability in self._get_capabilities():

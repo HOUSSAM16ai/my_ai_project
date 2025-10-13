@@ -15,14 +15,13 @@
 #   - Developer analytics
 
 import hashlib
-import json
 import secrets
 import threading
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from flask import current_app
 
@@ -89,20 +88,20 @@ class APIKey:
     created_at: datetime
 
     # Permissions
-    scopes: List[str] = field(default_factory=list)
-    allowed_ips: List[str] = field(default_factory=list)
+    scopes: list[str] = field(default_factory=list)
+    allowed_ips: list[str] = field(default_factory=list)
 
     # Usage tracking
     total_requests: int = 0
-    last_used_at: Optional[datetime] = None
+    last_used_at: datetime | None = None
 
     # Lifecycle
-    expires_at: Optional[datetime] = None
-    revoked_at: Optional[datetime] = None
-    revocation_reason: Optional[str] = None
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    revocation_reason: str | None = None
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -123,18 +122,18 @@ class SupportTicket:
     updated_at: datetime
 
     # Assignment
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
 
     # Timeline
-    messages: List[Dict[str, Any]] = field(default_factory=list)
+    messages: list[dict[str, Any]] = field(default_factory=list)
 
     # Resolution
-    resolved_at: Optional[datetime] = None
-    resolution: Optional[str] = None
+    resolved_at: datetime | None = None
+    resolution: str | None = None
 
     # Metadata
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -158,7 +157,7 @@ class SDKPackage:
 
     # Code
     source_code: str = ""
-    examples: List[Dict[str, str]] = field(default_factory=list)
+    examples: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -174,9 +173,9 @@ class CodeExample:
     endpoint: str
 
     # Metadata
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     difficulty: str = "beginner"  # beginner, intermediate, advanced
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ======================================================================================
@@ -198,15 +197,15 @@ class DeveloperPortalService:
     """
 
     def __init__(self):
-        self.api_keys: Dict[str, APIKey] = {}
-        self.tickets: Dict[str, SupportTicket] = {}
-        self.sdks: Dict[str, SDKPackage] = {}
-        self.code_examples: Dict[str, CodeExample] = {}
+        self.api_keys: dict[str, APIKey] = {}
+        self.tickets: dict[str, SupportTicket] = {}
+        self.sdks: dict[str, SDKPackage] = {}
+        self.code_examples: dict[str, CodeExample] = {}
 
         self.lock = threading.RLock()
 
         # Analytics
-        self.developer_metrics: Dict[str, Any] = defaultdict(
+        self.developer_metrics: dict[str, Any] = defaultdict(
             lambda: {
                 "total_developers": 0,
                 "active_developers_30d": 0,
@@ -280,9 +279,9 @@ axios.get('https://api.cogniforge.ai/v1/users', {
         self,
         developer_id: str,
         name: str,
-        scopes: Optional[List[str]] = None,
-        expires_in_days: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        scopes: list[str] | None = None,
+        expires_in_days: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> APIKey:
         """Create a new API key"""
         with self.lock:
@@ -290,7 +289,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
             key_value = f"sk_live_{secrets.token_urlsafe(32)}"
             key_id = f"key_{hashlib.md5(key_value.encode()).hexdigest()[:16]}"
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             expires_at = now + timedelta(days=expires_in_days) if expires_in_days else None
 
             api_key = APIKey(
@@ -311,12 +310,12 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             return api_key
 
-    def validate_api_key(self, key_value: str) -> Optional[APIKey]:
+    def validate_api_key(self, key_value: str) -> APIKey | None:
         """Validate an API key"""
         for api_key in self.api_keys.values():
             if api_key.key_value == key_value:
                 # Check if expired
-                if api_key.expires_at and datetime.now(timezone.utc) > api_key.expires_at:
+                if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
                     return None
 
                 # Check if active
@@ -325,7 +324,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
                 # Update usage
                 api_key.total_requests += 1
-                api_key.last_used_at = datetime.now(timezone.utc)
+                api_key.last_used_at = datetime.now(UTC)
 
                 return api_key
 
@@ -339,7 +338,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 return False
 
             api_key.status = APIKeyStatus.REVOKED
-            api_key.revoked_at = datetime.now(timezone.utc)
+            api_key.revoked_at = datetime.now(UTC)
             api_key.revocation_reason = reason
 
             current_app.logger.info(f"Revoked API key {key_id}: {reason}")
@@ -358,7 +357,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
         with self.lock:
             ticket_id = f"ticket_{secrets.token_hex(8)}"
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             ticket = SupportTicket(
                 ticket_id=ticket_id,
@@ -402,12 +401,12 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 "id": f"msg_{secrets.token_hex(6)}",
                 "author_id": author_id,
                 "content": content,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "is_staff": is_staff,
             }
 
             ticket.messages.append(message)
-            ticket.updated_at = datetime.now(timezone.utc)
+            ticket.updated_at = datetime.now(UTC)
 
             # Update status if customer responded
             if not is_staff and ticket.status == TicketStatus.WAITING_FOR_CUSTOMER:
@@ -423,9 +422,9 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 return False
 
             ticket.status = TicketStatus.RESOLVED
-            ticket.resolved_at = datetime.now(timezone.utc)
+            ticket.resolved_at = datetime.now(UTC)
             ticket.resolution = resolution
-            ticket.updated_at = datetime.now(timezone.utc)
+            ticket.updated_at = datetime.now(UTC)
 
             return True
 
@@ -443,7 +442,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 sdk_id=sdk_id,
                 language=language,
                 version=version,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
                 api_version=api_version,
                 package_url=f"https://sdk.cogniforge.ai/{language.value}/{version}",
                 documentation_url=f"https://docs.cogniforge.ai/sdk/{language.value}",
@@ -658,7 +657,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
 }
 """
 
-    def _generate_sdk_examples(self, language: SDKLanguage) -> List[Dict[str, str]]:
+    def _generate_sdk_examples(self, language: SDKLanguage) -> list[dict[str, str]]:
         """Generate SDK usage examples"""
         if language == SDKLanguage.PYTHON:
             return [
@@ -686,7 +685,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             ]
         return []
 
-    def get_developer_dashboard(self, developer_id: str) -> Dict[str, Any]:
+    def get_developer_dashboard(self, developer_id: str) -> dict[str, Any]:
         """Get developer dashboard data"""
         # Get developer's API keys
         api_keys = [
@@ -732,7 +731,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             },
         }
 
-    def get_available_sdks(self) -> List[Dict[str, Any]]:
+    def get_available_sdks(self) -> list[dict[str, Any]]:
         """Get list of available SDKs"""
         sdks = []
         for language in SDKLanguage:
@@ -763,7 +762,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_developer_portal_instance: Optional[DeveloperPortalService] = None
+_developer_portal_instance: DeveloperPortalService | None = None
 _service_lock = threading.Lock()
 
 

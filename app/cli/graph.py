@@ -5,11 +5,10 @@ from __future__ import annotations
 import ast
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
-def list_py_files(root: Path) -> List[Path]:
-    files: List[Path] = []
+def list_py_files(root: Path) -> list[Path]:
+    files: list[Path] = []
     for p in root.rglob("*.py"):
         if any(
             part in {".git", ".venv", "venv", "__pycache__", "node_modules"} for part in p.parts
@@ -19,8 +18,8 @@ def list_py_files(root: Path) -> List[Path]:
     return files
 
 
-def find_symbol(root: Path, name: str) -> List[Tuple[Path, int, str]]:
-    hits: List[Tuple[Path, int, str]] = []
+def find_symbol(root: Path, name: str) -> list[tuple[Path, int, str]]:
+    hits: list[tuple[Path, int, str]] = []
     for p in list_py_files(root):
         try:
             tree = ast.parse(p.read_text(encoding="utf-8"))
@@ -35,8 +34,8 @@ def find_symbol(root: Path, name: str) -> List[Tuple[Path, int, str]]:
     return hits
 
 
-def import_graph(root: Path) -> Dict[str, List[str]]:
-    graph: Dict[str, List[str]] = {}
+def import_graph(root: Path) -> dict[str, list[str]]:
+    graph: dict[str, list[str]] = {}
     for p in list_py_files(root):
         mod = str(p.with_suffix("")).replace(str(root) + "/", "").replace("/", ".")
         graph.setdefault(mod, [])
@@ -54,8 +53,8 @@ def import_graph(root: Path) -> Dict[str, List[str]]:
     return graph
 
 
-def find_routes(root: Path) -> List[Tuple[str, str, str]]:
-    routes: List[Tuple[str, str, str]] = []
+def find_routes(root: Path) -> list[tuple[str, str, str]]:
+    routes: list[tuple[str, str, str]] = []
     patterns = [
         r"@(?:[a-zA-Z_][\w\.]*)\.route\(['\"]([^'\"]+)['\"].*?\)\s*def\s+([a-zA-Z_]\w*)",
         r"@(?:[a-zA-Z_][\w\.]*)\.(get|post|put|patch|delete)\(['\"]([^'\"]+)['\"].*?\)\s*def\s+([a-zA-Z_]\w*)",

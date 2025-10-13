@@ -16,10 +16,11 @@ import random
 import threading
 import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from flask import current_app
 
@@ -63,9 +64,9 @@ class ChaosExperiment:
     target_service: str
     fault_rate: float  # 0.0 to 1.0
     duration_seconds: int
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -83,8 +84,8 @@ class CircuitBreakerState:
 
     state: CircuitState = CircuitState.CLOSED
     failure_count: int = 0
-    last_failure_time: Optional[datetime] = None
-    opened_at: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    opened_at: datetime | None = None
     success_count: int = 0
 
 
@@ -105,7 +106,7 @@ class ChaosEngineeringService:
     """
 
     def __init__(self):
-        self.active_experiments: Dict[str, ChaosExperiment] = {}
+        self.active_experiments: dict[str, ChaosExperiment] = {}
         self.experiment_history: deque = deque(maxlen=1000)
         self.lock = threading.RLock()
 
@@ -115,7 +116,7 @@ class ChaosEngineeringService:
             if experiment.experiment_id in self.active_experiments:
                 return False
 
-            experiment.started_at = datetime.now(timezone.utc)
+            experiment.started_at = datetime.now(UTC)
             self.active_experiments[experiment.experiment_id] = experiment
 
             current_app.logger.info(
@@ -130,7 +131,7 @@ class ChaosEngineeringService:
                 return False
 
             experiment = self.active_experiments[experiment_id]
-            experiment.ended_at = datetime.now(timezone.utc)
+            experiment.ended_at = datetime.now(UTC)
 
             # Move to history
             self.experiment_history.append(experiment)
@@ -140,8 +141,8 @@ class ChaosEngineeringService:
             return True
 
     def inject_fault(
-        self, service_id: str, request_context: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, service_id: str, request_context: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Inject fault if experiment is active
 
@@ -155,7 +156,7 @@ class ChaosEngineeringService:
 
                 # Check if experiment is still active
                 if experiment.started_at:
-                    elapsed = (datetime.now(timezone.utc) - experiment.started_at).total_seconds()
+                    elapsed = (datetime.now(UTC) - experiment.started_at).total_seconds()
                     if elapsed > experiment.duration_seconds:
                         self.stop_experiment(experiment.experiment_id)
                         continue
@@ -167,13 +168,13 @@ class ChaosEngineeringService:
         return None
 
     def _apply_fault(
-        self, experiment: ChaosExperiment, request_context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, experiment: ChaosExperiment, request_context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply specific fault type"""
         fault_data = {
             "experiment_id": experiment.experiment_id,
             "fault_type": experiment.fault_type.value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         if experiment.fault_type == FaultType.LATENCY:
@@ -197,12 +198,12 @@ class ChaosEngineeringService:
 
         return fault_data
 
-    def get_active_experiments(self) -> List[ChaosExperiment]:
+    def get_active_experiments(self) -> list[ChaosExperiment]:
         """Get all active experiments"""
         with self.lock:
             return list(self.active_experiments.values())
 
-    def get_experiment_results(self, experiment_id: str) -> Optional[Dict[str, Any]]:
+    def get_experiment_results(self, experiment_id: str) -> dict[str, Any] | None:
         """Get results of a completed experiment"""
         with self.lock:
             # Check in history
@@ -236,14 +237,14 @@ class CircuitBreakerService:
     Implements the circuit breaker pattern to prevent cascading failures
     """
 
-    def __init__(self, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, config: CircuitBreakerConfig | None = None):
         self.config = config or CircuitBreakerConfig()
-        self.circuit_states: Dict[str, CircuitBreakerState] = defaultdict(CircuitBreakerState)
+        self.circuit_states: dict[str, CircuitBreakerState] = defaultdict(CircuitBreakerState)
         self.lock = threading.RLock()
 
     def call(
         self, service_id: str, operation: Callable[[], Any]
-    ) -> tuple[bool, Any, Optional[str]]:
+    ) -> tuple[bool, Any, str | None]:
         """
         Execute operation through circuit breaker
 
@@ -257,7 +258,7 @@ class CircuitBreakerService:
             if state.state == CircuitState.OPEN:
                 # Check if timeout has passed
                 if state.opened_at:
-                    elapsed = (datetime.now(timezone.utc) - state.opened_at).total_seconds()
+                    elapsed = (datetime.now(UTC) - state.opened_at).total_seconds()
                     if elapsed >= self.config.timeout_seconds:
                         # Move to half-open
                         state.state = CircuitState.HALF_OPEN
@@ -291,12 +292,12 @@ class CircuitBreakerService:
             except Exception as e:
                 # Record failure
                 state.failure_count += 1
-                state.last_failure_time = datetime.now(timezone.utc)
+                state.last_failure_time = datetime.now(UTC)
 
                 # Check if threshold exceeded
                 if state.failure_count >= self.config.failure_threshold:
                     state.state = CircuitState.OPEN
-                    state.opened_at = datetime.now(timezone.utc)
+                    state.opened_at = datetime.now(UTC)
                     current_app.logger.warning(
                         f"Circuit breaker {service_id}: {state.state.value} -> OPEN "
                         f"(failures: {state.failure_count})"
@@ -318,7 +319,7 @@ class CircuitBreakerService:
             state.success_count = 0
             current_app.logger.info(f"Circuit breaker {service_id}: manually reset to CLOSED")
 
-    def get_all_states(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_states(self) -> dict[str, dict[str, Any]]:
         """Get states of all circuit breakers"""
         with self.lock:
             return {
@@ -337,8 +338,8 @@ class CircuitBreakerService:
 # SINGLETON INSTANCES
 # ======================================================================================
 
-_chaos_service_instance: Optional[ChaosEngineeringService] = None
-_circuit_breaker_instance: Optional[CircuitBreakerService] = None
+_chaos_service_instance: ChaosEngineeringService | None = None
+_circuit_breaker_instance: CircuitBreakerService | None = None
 _service_lock = threading.Lock()
 
 
@@ -407,9 +408,9 @@ class BulkheadService:
     """
 
     def __init__(self):
-        self.bulkheads: Dict[str, BulkheadConfig] = {}
-        self.stats: Dict[str, BulkheadStats] = defaultdict(BulkheadStats)
-        self.semaphores: Dict[str, threading.Semaphore] = {}
+        self.bulkheads: dict[str, BulkheadConfig] = {}
+        self.stats: dict[str, BulkheadStats] = defaultdict(BulkheadStats)
+        self.semaphores: dict[str, threading.Semaphore] = {}
         self.lock = threading.RLock()
 
         # Initialize default bulkheads
@@ -448,8 +449,8 @@ class BulkheadService:
                 self.stats[service_id] = BulkheadStats()
 
     def call(
-        self, service_id: str, operation: Callable[[], Any], timeout: Optional[int] = None
-    ) -> tuple[bool, Any, Optional[str]]:
+        self, service_id: str, operation: Callable[[], Any], timeout: int | None = None
+    ) -> tuple[bool, Any, str | None]:
         """
         Execute operation within bulkhead constraints
 
@@ -513,7 +514,7 @@ class BulkheadService:
                 stats.current_concurrent -= 1
             semaphore.release()
 
-    def get_stats(self, service_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_stats(self, service_id: str | None = None) -> dict[str, Any]:
         """Get bulkhead statistics"""
         with self.lock:
             if service_id:
@@ -555,7 +556,7 @@ class BulkheadService:
                     service_id: self.get_stats(service_id) for service_id in self.bulkheads.keys()
                 }
 
-    def reset_stats(self, service_id: Optional[str] = None):
+    def reset_stats(self, service_id: str | None = None):
         """Reset statistics for a service or all services"""
         with self.lock:
             if service_id:
@@ -565,7 +566,7 @@ class BulkheadService:
                 self.stats.clear()
 
 
-_bulkhead_instance: Optional[BulkheadService] = None
+_bulkhead_instance: BulkheadService | None = None
 
 
 def get_bulkhead_service() -> BulkheadService:

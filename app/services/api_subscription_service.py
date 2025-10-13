@@ -15,14 +15,13 @@
 #   - API monetization and marketplace
 
 import hashlib
-import json
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from flask import current_app
 
@@ -97,7 +96,7 @@ class SubscriptionPlan:
     monthly_compute_hours: float
 
     # Features
-    features: List[str] = field(default_factory=list)
+    features: list[str] = field(default_factory=list)
     max_team_members: int = 1
     support_level: str = "community"  # community, email, priority, dedicated
     sla_guarantee: float = 0.0  # 0.0 to 99.999
@@ -135,19 +134,19 @@ class Subscription:
     # Billing
     current_period_start: datetime
     current_period_end: datetime
-    trial_end: Optional[datetime] = None
+    trial_end: datetime | None = None
 
     # Usage tracking
-    current_usage: Dict[str, float] = field(default_factory=dict)
-    quota_remaining: Dict[str, float] = field(default_factory=dict)
+    current_usage: dict[str, float] = field(default_factory=dict)
+    quota_remaining: dict[str, float] = field(default_factory=dict)
 
     # History
     total_spent: Decimal = Decimal("0.00")
     lifetime_requests: int = 0
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    last_updated: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: dict[str, Any] = field(default_factory=dict)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -166,9 +165,9 @@ class UsageRecord:
     total_cost: Decimal
 
     # Context
-    endpoint: Optional[str] = None
-    resource_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    endpoint: str | None = None
+    resource_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -193,10 +192,10 @@ class Invoice:
     # Status
     status: str  # draft, finalized, paid, overdue, void
     due_date: datetime
-    paid_at: Optional[datetime] = None
+    paid_at: datetime | None = None
 
     # Line items
-    line_items: List[Dict[str, Any]] = field(default_factory=list)
+    line_items: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ======================================================================================
@@ -217,15 +216,15 @@ class APISubscriptionService:
     """
 
     def __init__(self):
-        self.plans: Dict[str, SubscriptionPlan] = {}
-        self.subscriptions: Dict[str, Subscription] = {}
+        self.plans: dict[str, SubscriptionPlan] = {}
+        self.subscriptions: dict[str, Subscription] = {}
         self.usage_records: deque = deque(maxlen=100000)
-        self.invoices: Dict[str, Invoice] = {}
+        self.invoices: dict[str, Invoice] = {}
 
         self.lock = threading.RLock()
 
         # Analytics
-        self.revenue_metrics: Dict[str, Any] = defaultdict(
+        self.revenue_metrics: dict[str, Any] = defaultdict(
             lambda: {
                 "total_revenue": Decimal("0.00"),
                 "active_subscriptions": 0,
@@ -405,17 +404,17 @@ class APISubscriptionService:
         customer_id: str,
         plan_id: str,
         trial_days: int = 0,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Subscription]:
+        metadata: dict[str, Any] | None = None,
+    ) -> Subscription | None:
         """Create a new subscription"""
         with self.lock:
             plan = self.plans.get(plan_id)
             if not plan:
                 return None
 
-            subscription_id = f"sub_{hashlib.md5(f'{customer_id}:{plan_id}:{datetime.now(timezone.utc)}'.encode()).hexdigest()[:16]}"
+            subscription_id = f"sub_{hashlib.md5(f'{customer_id}:{plan_id}:{datetime.now(UTC)}'.encode()).hexdigest()[:16]}"
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             period_end = now + timedelta(days=30)  # Default monthly
             trial_end = now + timedelta(days=trial_days) if trial_days > 0 else None
 
@@ -451,8 +450,8 @@ class APISubscriptionService:
         subscription_id: str,
         metric_type: UsageMetricType,
         quantity: float,
-        endpoint: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        endpoint: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """Record API usage"""
         with self.lock:
@@ -477,11 +476,11 @@ class APISubscriptionService:
             total_cost = unit_price * Decimal(str(quantity))
 
             # Record usage
-            record_id = f"usage_{hashlib.md5(f'{subscription_id}:{datetime.now(timezone.utc)}'.encode()).hexdigest()[:16]}"
+            record_id = f"usage_{hashlib.md5(f'{subscription_id}:{datetime.now(UTC)}'.encode()).hexdigest()[:16]}"
             usage_record = UsageRecord(
                 record_id=record_id,
                 subscription_id=subscription_id,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 metric_type=metric_type,
                 quantity=quantity,
                 unit_price=unit_price,
@@ -499,7 +498,7 @@ class APISubscriptionService:
                 subscription.quota_remaining[quota_key] -= quantity
 
             subscription.lifetime_requests += int(quantity)
-            subscription.last_updated = datetime.now(timezone.utc)
+            subscription.last_updated = datetime.now(UTC)
 
             return True
 
@@ -513,11 +512,11 @@ class APISubscriptionService:
             return plan.price_per_compute_hour
         return Decimal("0.00")
 
-    def get_subscription(self, subscription_id: str) -> Optional[Subscription]:
+    def get_subscription(self, subscription_id: str) -> Subscription | None:
         """Get subscription by ID"""
         return self.subscriptions.get(subscription_id)
 
-    def get_customer_subscriptions(self, customer_id: str) -> List[Subscription]:
+    def get_customer_subscriptions(self, customer_id: str) -> list[Subscription]:
         """Get all subscriptions for a customer"""
         return [sub for sub in self.subscriptions.values() if sub.customer_id == customer_id]
 
@@ -540,13 +539,13 @@ class APISubscriptionService:
                 return False
 
             subscription.plan = new_plan
-            subscription.last_updated = datetime.now(timezone.utc)
+            subscription.last_updated = datetime.now(UTC)
 
             current_app.logger.info(f"Upgraded subscription {subscription_id} to {new_plan.name}")
 
             return True
 
-    def get_usage_analytics(self, subscription_id: str) -> Dict[str, Any]:
+    def get_usage_analytics(self, subscription_id: str) -> dict[str, Any]:
         """Get usage analytics for a subscription"""
         subscription = self.subscriptions.get(subscription_id)
         if not subscription:
@@ -576,7 +575,7 @@ class APISubscriptionService:
             "lifetime_requests": subscription.lifetime_requests,
         }
 
-    def get_revenue_metrics(self) -> Dict[str, Any]:
+    def get_revenue_metrics(self) -> dict[str, Any]:
         """Get revenue analytics"""
         with self.lock:
             total_revenue = Decimal("0.00")
@@ -600,7 +599,7 @@ class APISubscriptionService:
                 "average_revenue_per_user": float(mrr / max(active_subs, 1)),
             }
 
-    def get_all_plans(self, public_only: bool = True) -> List[Dict[str, Any]]:
+    def get_all_plans(self, public_only: bool = True) -> list[dict[str, Any]]:
         """Get all available subscription plans"""
         plans = []
         for plan in self.plans.values():
@@ -638,7 +637,7 @@ class APISubscriptionService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_subscription_service_instance: Optional[APISubscriptionService] = None
+_subscription_service_instance: APISubscriptionService | None = None
 _service_lock = threading.Lock()
 
 

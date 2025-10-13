@@ -5,13 +5,11 @@ from __future__ import annotations
 import contextlib
 import difflib
 import os
-import re
 import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional, Tuple
 
 
 @dataclass
@@ -19,7 +17,7 @@ class RefactorResult:
     file_path: str
     changed: bool
     wrote: bool
-    backup_path: Optional[str]
+    backup_path: str | None
     diff: str
     message: str
 
@@ -28,14 +26,14 @@ class RefactorTool:
     def __init__(
         self,
         llm_client,  # This is an instance of openai.OpenAI
-        formatter_cmds: Optional[list[list[str]]] = None,
+        formatter_cmds: list[list[str]] | None = None,
         max_chars: int = 200_000,
     ):
         self.llm_client = llm_client
         self.formatter_cmds = formatter_cmds or []
         self.max_chars = max_chars
 
-    def _read_text_safely(self, path: Path) -> Tuple[str, str]:
+    def _read_text_safely(self, path: Path) -> tuple[str, str]:
         for enc in ("utf-8", "utf-8-sig", "latin-1"):
             try:
                 return path.read_text(encoding=enc), enc
@@ -45,7 +43,7 @@ class RefactorTool:
         return data.decode(errors="replace"), "unknown"
 
     def _write_atomic(
-        self, path: Path, text: str, preserve_meta_from: Optional[Path] = None
+        self, path: Path, text: str, preserve_meta_from: Path | None = None
     ) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tf:

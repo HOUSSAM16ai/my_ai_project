@@ -3,13 +3,12 @@
 # ==    SUPERHUMAN ANALYTICS API ROUTES (v1.0)                                     ==
 # ======================================================================================
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from flask import Blueprint, current_app, jsonify, request
 
 from app.middleware.decorators import monitor_performance, rate_limit, require_jwt_auth
 from app.services.api_advanced_analytics_service import (
-    BehaviorPattern,
     TimeGranularity,
     get_advanced_analytics_service,
 )
@@ -73,7 +72,7 @@ def generate_usage_report():
 
         if not start_date_str or not end_date_str:
             # Default to last 7 days
-            end_date = datetime.now(timezone.utc)
+            end_date = datetime.now(UTC)
             start_date = end_date - timedelta(days=7)
         else:
             start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))

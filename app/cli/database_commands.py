@@ -26,7 +26,6 @@ import click
 from flask import Blueprint
 from flask.cli import with_appcontext
 
-from app import db
 from app.services import database_service
 
 database_cli = Blueprint("database_cli", __name__, cli_group="database")
@@ -323,7 +322,7 @@ def backup(output):
             json.dump(metadata, f, indent=2)
 
         click.echo("\n" + "=" * 60)
-        click.echo(f"✅ Backup complete!")
+        click.echo("✅ Backup complete!")
         click.echo(f"📂 Location: {backup_dir}")
         click.echo(f"📊 {len(tables)} tables, {total_records:,} records")
 

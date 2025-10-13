@@ -1,5 +1,4 @@
 # app/overmind/planning/schemas.py
-# -*- coding: utf-8 -*-
 # =============================================================================
 # OVERMIND / MAESTRO – PLANNING SCHEMAS CORE
 # Ultra Sovereign Structural Edition
@@ -51,9 +50,10 @@ import hashlib
 import json
 import os
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -120,24 +120,24 @@ class WarningSeverity(str, Enum):
 class PlanValidationIssue(BaseModel):
     code: str
     message: str
-    task_id: Optional[str] = None
-    detail: Optional[Dict[str, Any]] = None
+    task_id: str | None = None
+    detail: dict[str, Any] | None = None
 
 
 class PlanWarning(BaseModel):
     code: str
     message: str
     severity: WarningSeverity = WarningSeverity.INFO
-    task_id: Optional[str] = None
-    detail: Optional[Dict[str, Any]] = None
+    task_id: str | None = None
+    detail: dict[str, Any] | None = None
 
 
 class PlanValidationError(ValueError):
-    def __init__(self, issues: List[PlanValidationIssue]):
+    def __init__(self, issues: list[PlanValidationIssue]):
         self.issues = issues
         super().__init__(f"Plan validation failed with {len(issues)} issues.")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"issues": [i.model_dump() for i in self.issues]}
 
 
@@ -150,18 +150,18 @@ class ToolRegistryInterface:
     def has(self, tool_name: str) -> bool:  # pragma: no cover
         return False
 
-    def validate(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:  # pragma: no cover
+    def validate(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover
         return args
 
 
-TOOL_REGISTRY: Optional[ToolRegistryInterface] = None
+TOOL_REGISTRY: ToolRegistryInterface | None = None
 
 # =============================================================================
 # POLICY HOOKS
 # =============================================================================
 
 PolicyHook = Callable[["MissionPlanSchema"], None]
-_POLICY_HOOKS: List[PolicyHook] = []
+_POLICY_HOOKS: list[PolicyHook] = []
 
 
 def register_policy_hook(hook: PolicyHook) -> None:
@@ -183,24 +183,24 @@ class PlanMeta(BaseModel):
     New fields are additive; consumers should treat unknown keys as optional hints.
     """
 
-    language: Optional[str] = None
-    section_task: Optional[str] = None
-    files_scanned: Optional[int] = None
-    streaming: Optional[bool] = None
-    chunk_count: Optional[int] = None
-    roles_inferred: Optional[int] = None
-    artifacts_expected: Optional[int] = None
+    language: str | None = None
+    section_task: str | None = None
+    files_scanned: int | None = None
+    streaming: bool | None = None
+    chunk_count: int | None = None
+    roles_inferred: int | None = None
+    artifacts_expected: int | None = None
 
     # Extended structural telemetry:
-    hotspots_count: Optional[int] = None
-    duplicate_groups: Optional[int] = None
-    layers_detected: Optional[int] = None
-    hotspot_density: Optional[float] = None
-    layer_diversity: Optional[float] = None
-    structural_entropy: Optional[float] = None
-    avg_task_fanout: Optional[float] = None
-    structural_quality_grade: Optional[str] = None
-    structural_hash: Optional[str] = None
+    hotspots_count: int | None = None
+    duplicate_groups: int | None = None
+    layers_detected: int | None = None
+    hotspot_density: float | None = None
+    layer_diversity: float | None = None
+    structural_entropy: float | None = None
+    avg_task_fanout: float | None = None
+    structural_quality_grade: str | None = None
+    structural_hash: str | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -216,11 +216,11 @@ class PlannedTask(BaseModel):
     task_id: str = Field(..., pattern=r"^[A-Za-z0-9_\-]+$", min_length=1, max_length=64)
     description: str = Field(..., min_length=3, max_length=SETTINGS.MAX_DESCRIPTION_LEN)
     task_type: TaskType = Field(default=TaskType.TOOL)
-    tool_name: Optional[str] = Field(
+    tool_name: str | None = Field(
         None, description="Required if task_type in (TOOL, TRANSFORM, AGGREGATE)."
     )
-    tool_args: Dict[str, Any] = Field(default_factory=dict)
-    dependencies: List[str] = Field(default_factory=list)
+    tool_args: dict[str, Any] = Field(default_factory=dict)
+    dependencies: list[str] = Field(default_factory=list)
     priority: int = Field(
         100,
         ge=SETTINGS.PRIORITY_MIN,
@@ -230,9 +230,9 @@ class PlannedTask(BaseModel):
     criticality: Criticality = Field(default=Criticality.BLOCKING)
     risk_level: RiskLevel = Field(default=RiskLevel.LOW)
     allow_high_risk: bool = Field(False, description="Must be True if risk_level=HIGH.")
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    gate_condition: Optional[str] = Field(
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    gate_condition: str | None = Field(
         None, description="Expression required for GATE tasks (evaluated by policy layer)."
     )
 
@@ -292,10 +292,10 @@ class PlannedTask(BaseModel):
 
 
 class PlanningContext(BaseModel):
-    user_id: Optional[str] = None
-    past_failures: List[str] = Field(default_factory=list)
-    user_preferences: Dict[str, Any] = Field(default_factory=dict)
-    tags: List[str] = Field(default_factory=list)
+    user_id: str | None = None
+    past_failures: list[str] = Field(default_factory=list)
+    user_preferences: dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
 
 
 # =============================================================================
@@ -309,28 +309,28 @@ class MissionPlanSchema(BaseModel):
     plan_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     revision: int = Field(default=1, ge=1)
     objective: str = Field(..., min_length=3)
-    tasks: List[PlannedTask] = Field(...)
+    tasks: list[PlannedTask] = Field(...)
 
-    meta: Optional[PlanMeta] = Field(
+    meta: PlanMeta | None = Field(
         default=None,
         description="Dynamic telemetry / semantic guidance produced by planner (extended structural metrics).",
     )
 
-    topological_order: Optional[List[str]] = Field(default=None)
-    stats: Optional[Dict[str, Any]] = Field(default=None)
-    warnings: Optional[List[PlanWarning]] = Field(default=None)
-    content_hash: Optional[str] = Field(default=None)
-    structural_hash: Optional[str] = Field(default=None)
+    topological_order: list[str] | None = Field(default=None)
+    stats: dict[str, Any] | None = Field(default=None)
+    warnings: list[PlanWarning] | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    structural_hash: str | None = Field(default=None)
 
     # internal
-    _adjacency: Dict[str, List[str]] = {}
-    _indegree: Dict[str, int] = {}
-    _depth_map: Dict[str, int] = {}
+    _adjacency: dict[str, list[str]] = {}
+    _indegree: dict[str, int] = {}
+    _depth_map: dict[str, int] = {}
 
     @model_validator(mode="after")
     def _full_graph_validation(self):
-        issues: List[PlanValidationIssue] = []
-        warnings: List[PlanWarning] = []
+        issues: list[PlanValidationIssue] = []
+        warnings: list[PlanWarning] = []
 
         # Basic tasks existence
         if not self.tasks:
@@ -355,8 +355,8 @@ class MissionPlanSchema(BaseModel):
             raise PlanValidationError(issues)
 
         # Build adjacency / indegree
-        adj: Dict[str, List[str]] = {tid: [] for tid in id_map}
-        indegree: Dict[str, int] = {tid: 0 for tid in id_map}
+        adj: dict[str, list[str]] = {tid: [] for tid in id_map}
+        indegree: dict[str, int] = dict.fromkeys(id_map, 0)
         for t in self.tasks:
             for dep in t.dependencies:
                 if dep not in id_map:
@@ -396,8 +396,8 @@ class MissionPlanSchema(BaseModel):
             )
             raise PlanValidationError(issues)
 
-        topo: List[str] = []
-        depth_map: Dict[str, int] = {tid: 0 for tid in id_map}
+        topo: list[str] = []
+        depth_map: dict[str, int] = dict.fromkeys(id_map, 0)
         remaining = indegree.copy()
 
         while queue:
@@ -603,8 +603,8 @@ class MissionPlanSchema(BaseModel):
         code: str,
         message: str,
         severity: WarningSeverity = WarningSeverity.INFO,
-        task_id: Optional[str] = None,
-        detail: Optional[Dict[str, Any]] = None,
+        task_id: str | None = None,
+        detail: dict[str, Any] | None = None,
     ):
         if self.warnings is None:
             self.warnings = []
@@ -614,14 +614,14 @@ class MissionPlanSchema(BaseModel):
             )
         )
 
-    def get_task(self, task_id: str) -> Optional[PlannedTask]:
+    def get_task(self, task_id: str) -> PlannedTask | None:
         return next((t for t in self.tasks if t.task_id == task_id), None)
 
-    def parents_of(self, task_id: str) -> List[str]:
+    def parents_of(self, task_id: str) -> list[str]:
         t = self.get_task(task_id)
         return list(t.dependencies) if t else []
 
-    def children_of(self, task_id: str) -> List[str]:
+    def children_of(self, task_id: str) -> list[str]:
         return self._adjacency.get(task_id, [])
 
     def indegree(self, task_id: str) -> int:
@@ -630,10 +630,10 @@ class MissionPlanSchema(BaseModel):
     def depth_of(self, task_id: str) -> int:
         return self._depth_map.get(task_id, 0)
 
-    def roots(self) -> List[str]:
+    def roots(self) -> list[str]:
         return [tid for tid, deg in self._indegree.items() if deg == 0]
 
-    def leaves(self) -> List[str]:
+    def leaves(self) -> list[str]:
         return [tid for tid, children in self._adjacency.items() if not children]
 
     def to_mermaid(self) -> str:
@@ -645,7 +645,7 @@ class MissionPlanSchema(BaseModel):
                 lines.append(f"    {parent}[{parent}] --> {child}[{child}]")
         return "\n".join(lines)
 
-    def to_d3_json(self) -> Dict[str, Any]:
+    def to_d3_json(self) -> dict[str, Any]:
         return {
             "nodes": [{"id": t.task_id, "depth": self.depth_of(t.task_id)} for t in self.tasks],
             "links": [
@@ -678,8 +678,8 @@ class MissionPlanSchema(BaseModel):
 
 class PlanGenerationResult(BaseModel):
     plan: MissionPlanSchema
-    warnings: List[PlanWarning] = Field(default_factory=list)
-    validation_issues: List[PlanValidationIssue] = Field(default_factory=list)
+    warnings: list[PlanWarning] = Field(default_factory=list)
+    validation_issues: list[PlanValidationIssue] = Field(default_factory=list)
 
 
 # =============================================================================
@@ -687,7 +687,7 @@ class PlanGenerationResult(BaseModel):
 # =============================================================================
 
 
-def validate_plan(payload: Dict[str, Any]) -> MissionPlanSchema:
+def validate_plan(payload: dict[str, Any]) -> MissionPlanSchema:
     return MissionPlanSchema.model_validate(payload)
 
 

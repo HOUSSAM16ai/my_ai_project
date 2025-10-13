@@ -18,9 +18,9 @@ import hashlib
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 from flask import current_app
 
@@ -98,16 +98,16 @@ class Incident:
     severity: IncidentSeverity
     status: IncidentStatus
     detected_at: datetime
-    acknowledged_at: Optional[datetime] = None
-    resolved_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
-    assigned_to: Optional[str] = None
-    affected_services: List[str] = field(default_factory=list)
+    acknowledged_at: datetime | None = None
+    resolved_at: datetime | None = None
+    closed_at: datetime | None = None
+    assigned_to: str | None = None
+    affected_services: list[str] = field(default_factory=list)
     impact_description: str = ""
-    root_cause: Optional[str] = None
-    resolution: Optional[str] = None
-    timeline: List[Dict[str, Any]] = field(default_factory=list)
-    notifications_sent: List[str] = field(default_factory=list)
+    root_cause: str | None = None
+    resolution: str | None = None
+    timeline: list[dict[str, Any]] = field(default_factory=list)
+    notifications_sent: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -118,7 +118,7 @@ class OnCallSchedule:
     role: OnCallRole
     engineer_id: str
     engineer_name: str
-    engineer_contact: Dict[str, str]  # email, phone, slack, etc.
+    engineer_contact: dict[str, str]  # email, phone, slack, etc.
     shift_start: datetime
     shift_end: datetime
     is_active: bool = True
@@ -131,8 +131,8 @@ class EscalationPolicy:
     policy_id: str
     name: str
     severity: IncidentSeverity
-    escalation_levels: List[Dict[str, Any]]  # Each level has timeout and contacts
-    notification_channels: List[NotificationChannel]
+    escalation_levels: list[dict[str, Any]]  # Each level has timeout and contacts
+    notification_channels: list[NotificationChannel]
 
 
 @dataclass
@@ -146,11 +146,11 @@ class DisasterRecoveryPlan:
     rto_minutes: int  # Recovery Time Objective in minutes
     rpo_minutes: int  # Recovery Point Objective in minutes
     runbook_url: str
-    backup_locations: List[str]
-    failover_regions: List[str]
-    automated_steps: List[Dict[str, Any]]
-    manual_steps: List[str]
-    last_tested: Optional[datetime] = None
+    backup_locations: list[str]
+    failover_regions: list[str]
+    automated_steps: list[dict[str, Any]]
+    manual_steps: list[str]
+    last_tested: datetime | None = None
     test_frequency_days: int = 90
 
 
@@ -166,7 +166,7 @@ class BackupMetadata:
     retention_days: int
     encryption_enabled: bool
     verified: bool = False
-    verification_date: Optional[datetime] = None
+    verification_date: datetime | None = None
 
 
 @dataclass
@@ -176,12 +176,12 @@ class PostIncidentReview:
     pir_id: str
     incident_id: str
     conducted_at: datetime
-    attendees: List[str]
+    attendees: list[str]
     what_happened: str
-    what_went_well: List[str]
-    what_could_improve: List[str]
-    action_items: List[Dict[str, Any]]  # owner, description, deadline
-    lessons_learned: List[str]
+    what_went_well: list[str]
+    what_could_improve: list[str]
+    action_items: list[dict[str, Any]]  # owner, description, deadline
+    lessons_learned: list[str]
 
 
 # ======================================================================================
@@ -202,8 +202,8 @@ class DisasterRecoveryService:
     """
 
     def __init__(self):
-        self.dr_plans: Dict[str, DisasterRecoveryPlan] = {}
-        self.backups: Dict[str, BackupMetadata] = {}
+        self.dr_plans: dict[str, DisasterRecoveryPlan] = {}
+        self.backups: dict[str, BackupMetadata] = {}
         self.recovery_history: deque = deque(maxlen=1000)
         self.lock = threading.RLock()
 
@@ -291,13 +291,13 @@ class DisasterRecoveryService:
             # In production, this would actually verify the backup
             # by attempting a test restore or checksum validation
             backup.verified = True
-            backup.verification_date = datetime.now(timezone.utc)
+            backup.verification_date = datetime.now(UTC)
 
             current_app.logger.info(f"Backup verified: {backup_id}")
 
             return True
 
-    def initiate_failover(self, plan_id: str, initiated_by: str, reason: str) -> Dict[str, Any]:
+    def initiate_failover(self, plan_id: str, initiated_by: str, reason: str) -> dict[str, Any]:
         """Initiate disaster recovery failover"""
         with self.lock:
             if plan_id not in self.dr_plans:
@@ -307,14 +307,14 @@ class DisasterRecoveryService:
 
             # Create recovery event
             recovery_id = hashlib.sha256(
-                f"{plan_id}{datetime.now(timezone.utc)}".encode()
+                f"{plan_id}{datetime.now(UTC)}".encode()
             ).hexdigest()[:16]
 
             recovery_event = {
                 "recovery_id": recovery_id,
                 "plan_id": plan_id,
                 "initiated_by": initiated_by,
-                "initiated_at": datetime.now(timezone.utc).isoformat(),
+                "initiated_at": datetime.now(UTC).isoformat(),
                 "reason": reason,
                 "status": "in_progress",
                 "steps_completed": [],
@@ -344,7 +344,7 @@ class DisasterRecoveryService:
                 "manual_steps": len(plan.manual_steps),
             }
 
-    def get_rto_rpo_status(self) -> Dict[str, Any]:
+    def get_rto_rpo_status(self) -> dict[str, Any]:
         """Get RTO/RPO compliance status"""
         with self.lock:
             return {
@@ -356,7 +356,7 @@ class DisasterRecoveryService:
                         "strategy": plan.strategy.value,
                         "last_tested": plan.last_tested.isoformat() if plan.last_tested else None,
                         "test_overdue": (
-                            (datetime.now(timezone.utc) - plan.last_tested).days
+                            (datetime.now(UTC) - plan.last_tested).days
                             > plan.test_frequency_days
                             if plan.last_tested
                             else True
@@ -390,10 +390,10 @@ class OnCallIncidentService:
     """
 
     def __init__(self):
-        self.incidents: Dict[str, Incident] = {}
-        self.on_call_schedules: List[OnCallSchedule] = []
-        self.escalation_policies: Dict[str, EscalationPolicy] = {}
-        self.post_incident_reviews: Dict[str, PostIncidentReview] = {}
+        self.incidents: dict[str, Incident] = {}
+        self.on_call_schedules: list[OnCallSchedule] = []
+        self.escalation_policies: dict[str, EscalationPolicy] = {}
+        self.post_incident_reviews: dict[str, PostIncidentReview] = {}
         self.lock = threading.RLock()
 
         # Initialize default escalation policies
@@ -463,10 +463,10 @@ class OnCallIncidentService:
         description: str,
         severity: IncidentSeverity,
         detected_by: str,
-        affected_services: List[str],
+        affected_services: list[str],
     ) -> str:
         """Create a new incident"""
-        incident_id = hashlib.sha256(f"{title}{datetime.now(timezone.utc)}".encode()).hexdigest()[
+        incident_id = hashlib.sha256(f"{title}{datetime.now(UTC)}".encode()).hexdigest()[
             :16
         ]
 
@@ -476,7 +476,7 @@ class OnCallIncidentService:
             description=description,
             severity=severity,
             status=IncidentStatus.DETECTED,
-            detected_at=datetime.now(timezone.utc),
+            detected_at=datetime.now(UTC),
             affected_services=affected_services,
         )
 
@@ -507,7 +507,7 @@ class OnCallIncidentService:
         incident_id: str,
         new_status: IncidentStatus,
         updated_by: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> bool:
         """Update incident status"""
         with self.lock:
@@ -519,7 +519,7 @@ class OnCallIncidentService:
             incident.status = new_status
 
             # Update timestamps
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if new_status == IncidentStatus.ACKNOWLEDGED:
                 incident.acknowledged_at = now
             elif new_status == IncidentStatus.RESOLVED:
@@ -556,7 +556,7 @@ class OnCallIncidentService:
 
             incident.timeline.append(
                 {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "event": "assigned",
                     "by": assigned_by,
                     "to": assigned_to,
@@ -598,9 +598,9 @@ class OnCallIncidentService:
         with self.lock:
             self.on_call_schedules.append(schedule)
 
-    def get_current_on_call(self, role: OnCallRole) -> Optional[OnCallSchedule]:
+    def get_current_on_call(self, role: OnCallRole) -> OnCallSchedule | None:
         """Get current on-call engineer for a role"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         with self.lock:
             for schedule in self.on_call_schedules:
@@ -617,21 +617,21 @@ class OnCallIncidentService:
         self,
         incident_id: str,
         conducted_by: str,
-        attendees: List[str],
+        attendees: list[str],
         what_happened: str,
-        what_went_well: List[str],
-        what_could_improve: List[str],
-        action_items: List[Dict[str, Any]],
+        what_went_well: list[str],
+        what_could_improve: list[str],
+        action_items: list[dict[str, Any]],
     ) -> str:
         """Create post-incident review"""
-        pir_id = hashlib.sha256(f"{incident_id}{datetime.now(timezone.utc)}".encode()).hexdigest()[
+        pir_id = hashlib.sha256(f"{incident_id}{datetime.now(UTC)}".encode()).hexdigest()[
             :16
         ]
 
         pir = PostIncidentReview(
             pir_id=pir_id,
             incident_id=incident_id,
-            conducted_at=datetime.now(timezone.utc),
+            conducted_at=datetime.now(UTC),
             attendees=attendees,
             what_happened=what_happened,
             what_went_well=what_went_well,
@@ -647,7 +647,7 @@ class OnCallIncidentService:
 
         return pir_id
 
-    def get_incident_metrics(self) -> Dict[str, Any]:
+    def get_incident_metrics(self) -> dict[str, Any]:
         """Get incident metrics"""
         with self.lock:
             total = len(self.incidents)
@@ -681,8 +681,8 @@ class OnCallIncidentService:
 # SINGLETON INSTANCES
 # ======================================================================================
 
-_dr_service_instance: Optional[DisasterRecoveryService] = None
-_oncall_service_instance: Optional[OnCallIncidentService] = None
+_dr_service_instance: DisasterRecoveryService | None = None
+_oncall_service_instance: OnCallIncidentService | None = None
 _service_lock = threading.Lock()
 
 

@@ -13,15 +13,12 @@ This module implements:
 - Zero-trust enforcement
 """
 
-import hashlib
 import re
-import statistics
-import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class ThreatLevel(Enum):
@@ -56,16 +53,16 @@ class SecurityEvent:
     event_id: str
     timestamp: datetime
     source_ip: str
-    user_id: Optional[str]
+    user_id: str | None
     event_type: str
     endpoint: str
     method: str
-    payload: Dict[str, Any]
-    headers: Dict[str, str]
+    payload: dict[str, Any]
+    headers: dict[str, str]
     response_code: int
     response_time: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "event_id": self.event_id,
             "timestamp": self.timestamp.isoformat(),
@@ -88,14 +85,14 @@ class ThreatDetection:
     threat_level: ThreatLevel
     description: str
     source_ip: str
-    user_id: Optional[str]
+    user_id: str | None
     confidence: float  # 0-1
-    evidence: List[str]
+    evidence: list[str]
     recommended_action: str
     auto_blocked: bool = False
     detected_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "detection_id": self.detection_id,
             "threat_type": self.threat_type.value,
@@ -116,12 +113,12 @@ class UserBehaviorProfile:
     """ملف سلوك المستخدم"""
 
     user_id: str
-    typical_endpoints: List[str]
-    typical_hours: List[int]  # 0-23
+    typical_endpoints: list[str]
+    typical_hours: list[int]  # 0-23
     typical_request_rate: float
-    typical_countries: List[str]
+    typical_countries: list[str]
     avg_session_duration: float
-    typical_user_agents: List[str]
+    typical_user_agents: list[str]
     risk_score: float = 0.0  # 0-100
     last_updated: datetime = field(default_factory=datetime.now)
 
@@ -152,12 +149,12 @@ class DeepLearningThreatDetector:
             r"<object",
         ]
 
-        self.threat_signatures: Dict[ThreatType, List[str]] = {
+        self.threat_signatures: dict[ThreatType, list[str]] = {
             ThreatType.SQL_INJECTION: self.sql_patterns,
             ThreatType.XSS_ATTACK: self.xss_patterns,
         }
 
-    def analyze_request(self, event: SecurityEvent) -> List[ThreatDetection]:
+    def analyze_request(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         تحليل طلب للكشف عن التهديدات
         """
@@ -180,7 +177,7 @@ class DeepLearningThreatDetector:
 
         return threats
 
-    def _detect_sql_injection(self, event: SecurityEvent) -> Optional[ThreatDetection]:
+    def _detect_sql_injection(self, event: SecurityEvent) -> ThreatDetection | None:
         """كشف SQL Injection"""
         evidence = []
 
@@ -215,7 +212,7 @@ class DeepLearningThreatDetector:
 
         return None
 
-    def _detect_xss(self, event: SecurityEvent) -> Optional[ThreatDetection]:
+    def _detect_xss(self, event: SecurityEvent) -> ThreatDetection | None:
         """كشف XSS"""
         evidence = []
 
@@ -243,7 +240,7 @@ class DeepLearningThreatDetector:
 
         return None
 
-    def _detect_malformed_request(self, event: SecurityEvent) -> Optional[ThreatDetection]:
+    def _detect_malformed_request(self, event: SecurityEvent) -> ThreatDetection | None:
         """كشف الطلبات المشوهة"""
         evidence = []
 
@@ -279,10 +276,10 @@ class BehavioralAnalyzer:
     """
 
     def __init__(self):
-        self.user_profiles: Dict[str, UserBehaviorProfile] = {}
-        self.event_history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.user_profiles: dict[str, UserBehaviorProfile] = {}
+        self.event_history: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
 
-    def analyze_behavior(self, event: SecurityEvent) -> List[ThreatDetection]:
+    def analyze_behavior(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         تحليل سلوك المستخدم
         """
@@ -322,7 +319,7 @@ class BehavioralAnalyzer:
 
     def _detect_behavioral_anomalies(
         self, event: SecurityEvent, profile: UserBehaviorProfile
-    ) -> List[ThreatDetection]:
+    ) -> list[ThreatDetection]:
         """كشف الشذوذ السلوكي"""
         anomalies = []
 
@@ -420,11 +417,11 @@ class AutomatedResponseSystem:
     """
 
     def __init__(self):
-        self.blocked_ips: Dict[str, datetime] = {}
-        self.blocked_users: Dict[str, datetime] = {}
-        self.rate_limits: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self.blocked_ips: dict[str, datetime] = {}
+        self.blocked_users: dict[str, datetime] = {}
+        self.rate_limits: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
 
-    def respond_to_threat(self, threat: ThreatDetection) -> Dict[str, Any]:
+    def respond_to_threat(self, threat: ThreatDetection) -> dict[str, Any]:
         """
         الاستجابة التلقائية للتهديد
         """
@@ -466,7 +463,7 @@ class AutomatedResponseSystem:
         """تطبيق rate limit"""
         self.rate_limits[ip].append(datetime.now())
 
-    def is_blocked(self, ip: str, user_id: Optional[str] = None) -> Tuple[bool, str]:
+    def is_blocked(self, ip: str, user_id: str | None = None) -> tuple[bool, str]:
         """فحص إذا كان محظور"""
         # Check IP block
         if ip in self.blocked_ips:
@@ -501,9 +498,9 @@ class SuperhumanSecuritySystem:
         self.behavior_analyzer = BehavioralAnalyzer()
         self.response_system = AutomatedResponseSystem()
         self.security_events: deque = deque(maxlen=10000)
-        self.detected_threats: List[ThreatDetection] = []
+        self.detected_threats: list[ThreatDetection] = []
 
-    def process_request(self, event: SecurityEvent) -> Tuple[bool, List[ThreatDetection]]:
+    def process_request(self, event: SecurityEvent) -> tuple[bool, list[ThreatDetection]]:
         """
         معالجة طلب وفحص الأمان
         Returns: (allowed, threats)
@@ -540,7 +537,7 @@ class SuperhumanSecuritySystem:
 
         return allowed, threats
 
-    def get_security_dashboard(self) -> Dict[str, Any]:
+    def get_security_dashboard(self) -> dict[str, Any]:
         """الحصول على لوحة معلومات الأمان"""
         # Calculate statistics
         now = datetime.now()
@@ -585,7 +582,7 @@ class SuperhumanSecuritySystem:
             "security_score": self._calculate_security_score(last_24h),
         }
 
-    def _calculate_security_score(self, threats_24h: List[ThreatDetection]) -> float:
+    def _calculate_security_score(self, threats_24h: list[ThreatDetection]) -> float:
         """حساب درجة الأمان (0-100)"""
         if not threats_24h:
             return 100.0
@@ -652,7 +649,7 @@ if __name__ == "__main__":
     # Get security dashboard
     dashboard = security.get_security_dashboard()
 
-    print(f"\n📊 Security Dashboard:")
+    print("\n📊 Security Dashboard:")
     print(f"  Security Score: {dashboard['security_score']:.1f}/100")
     print(f"  Total Threats (24h): {dashboard['statistics']['threats_last_24h']}")
     print(f"  Blocked IPs: {dashboard['statistics']['blocked_ips']}")

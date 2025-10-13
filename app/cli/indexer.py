@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 
@@ -89,8 +89,8 @@ def read_text(p: Path) -> str | None:
 
 def chunk_text(
     text: str, chunk_chars: int = 1200, overlap: int = 200
-) -> List[Tuple[int, int, str]]:
-    out: List[Tuple[int, int, str]] = []
+) -> list[tuple[int, int, str]]:
+    out: list[tuple[int, int, str]] = []
     n = len(text)
     i = 0
     while i < n:
@@ -132,12 +132,12 @@ def ensure_index_dir():
 
 def build_index(
     root: str = ".", model_name: str | None = None, chunk_chars: int = 1200, overlap: int = 200
-) -> Dict:
+) -> dict:
     ensure_index_dir()
     model = load_model(model_name)
     dim = model.get_sentence_embedding_dimension()
 
-    all_chunks: List[Dict] = []
+    all_chunks: list[dict] = []
     rid = 0
     root_path = Path(root).resolve()
 

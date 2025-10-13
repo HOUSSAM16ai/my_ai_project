@@ -39,8 +39,9 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from logging.handlers import RotatingFileHandler
-from typing import Callable, Optional
+from typing import Optional
 
 from dotenv import load_dotenv
 from flask import Flask, current_app
@@ -71,7 +72,7 @@ from config import config_by_name  # noqa: E402
 # --------------------------------------------------------------------------------------
 # Internal Helpers
 # --------------------------------------------------------------------------------------
-def _choose_config_name(explicit: Optional[str]) -> str:
+def _choose_config_name(explicit: str | None) -> str:
     """
     Decide which configuration profile to load.
     Order of precedence:
@@ -248,7 +249,7 @@ def _register_shutdown_signals(app: Flask) -> None:
 # --------------------------------------------------------------------------------------
 # Public Factory
 # --------------------------------------------------------------------------------------
-def create_app(config_name: Optional[str] = None) -> Flask:
+def create_app(config_name: str | None = None) -> Flask:
     """
     Create and configure a Flask application instance.
 

@@ -11,7 +11,7 @@
 #     "admin/admin_dashboard.html") to correctly leverage the blueprint's scoped
 #     `template_folder`.
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import wraps
 
 from flask import abort, current_app, flash, jsonify, render_template, request, url_for
@@ -21,7 +21,7 @@ from app import db
 from app.admin import bp
 
 # --- [THE GRAND BLUEPRINT IMPORTS] ---
-from app.models import AdminConversation, AdminMessage, Mission, Task, User
+from app.models import AdminConversation, AdminMessage, Mission, User
 
 # --- [THE COGNITIVE ENGINE IMPORTS] ---
 try:
@@ -1096,7 +1096,7 @@ def comprehensive_health_check():
     """
     health_status = {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "components": {},
     }
 

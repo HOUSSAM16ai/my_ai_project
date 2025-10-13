@@ -13,16 +13,15 @@
 #   - Contract compliance monitoring
 
 import hashlib
-import json
 import time
-from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from flask import current_app, jsonify, request
-from jsonschema import Draft7Validator, ValidationError, validate
+from jsonschema import Draft7Validator, ValidationError
 
 # ======================================================================================
 # API VERSION MANAGEMENT
@@ -36,9 +35,9 @@ class APIVersion:
     version: str
     release_date: datetime
     status: str  # 'active', 'deprecated', 'sunset'
-    deprecation_date: Optional[datetime] = None
-    sunset_date: Optional[datetime] = None
-    breaking_changes: List[str] = field(default_factory=list)
+    deprecation_date: datetime | None = None
+    sunset_date: datetime | None = None
+    breaking_changes: list[str] = field(default_factory=list)
     changelog: str = ""
 
 
@@ -46,13 +45,13 @@ class APIVersion:
 API_VERSIONS = {
     "v1": APIVersion(
         version="v1",
-        release_date=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        release_date=datetime(2025, 1, 1, tzinfo=UTC),
         status="active",
         changelog="Initial release with CRUD operations and observability",
     ),
     "v2": APIVersion(
         version="v2",
-        release_date=datetime(2025, 10, 12, tzinfo=timezone.utc),
+        release_date=datetime(2025, 10, 12, tzinfo=UTC),
         status="active",
         breaking_changes=[
             "Response format changed to include metadata wrapper",
@@ -243,9 +242,9 @@ class ContractViolation:
     method: str
     violation_type: str  # 'schema', 'version', 'breaking_change'
     severity: str  # 'critical', 'high', 'medium', 'low'
-    details: Dict[str, Any]
-    expected_schema: Optional[Dict[str, Any]] = None
-    actual_data: Optional[Any] = None
+    details: dict[str, Any]
+    expected_schema: dict[str, Any] | None = None
+    actual_data: Any | None = None
 
 
 class APIContractService:
@@ -262,8 +261,8 @@ class APIContractService:
     """
 
     def __init__(self):
-        self.contract_violations: List[ContractViolation] = []
-        self.schema_cache: Dict[str, Draft7Validator] = {}
+        self.contract_violations: list[ContractViolation] = []
+        self.schema_cache: dict[str, Draft7Validator] = {}
         self._compile_schemas()
 
     def _compile_schemas(self):
@@ -287,7 +286,7 @@ class APIContractService:
                         validator = Draft7Validator(resolved_schema)
                         self.schema_cache[f"{endpoint}_{method}_response_{status_code}"] = validator
 
-    def _resolve_schema_refs(self, schema: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_schema_refs(self, schema: dict[str, Any]) -> dict[str, Any]:
         """Resolve $ref references in schema"""
         if "$ref" in schema:
             ref_path = schema["$ref"]
@@ -306,7 +305,7 @@ class APIContractService:
 
         return schema
 
-    def _merge_schemas(self, schema1: Dict[str, Any], schema2: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_schemas(self, schema1: dict[str, Any], schema2: dict[str, Any]) -> dict[str, Any]:
         """Merge two schemas"""
         merged = schema1.copy()
 
@@ -326,7 +325,7 @@ class APIContractService:
 
     def validate_request(
         self, endpoint: str, method: str, data: Any
-    ) -> tuple[bool, Optional[List[str]]]:
+    ) -> tuple[bool, list[str] | None]:
         """
         Validate request data against contract
 
@@ -347,7 +346,7 @@ class APIContractService:
         try:
             validator.validate(data)
             return True, None
-        except ValidationError as e:
+        except ValidationError:
             errors = [str(err) for err in validator.iter_errors(data)]
 
             # Log violation
@@ -364,7 +363,7 @@ class APIContractService:
 
     def validate_response(
         self, endpoint: str, method: str, status_code: int, data: Any
-    ) -> tuple[bool, Optional[List[str]]]:
+    ) -> tuple[bool, list[str] | None]:
         """
         Validate response data against contract
 
@@ -392,7 +391,7 @@ class APIContractService:
         try:
             validator.validate(data)
             return True, None
-        except ValidationError as e:
+        except ValidationError:
             errors = [str(err) for err in validator.iter_errors(data)]
 
             # Log violation
@@ -509,16 +508,16 @@ class APIContractService:
         method: str,
         violation_type: str,
         severity: str,
-        details: Dict[str, Any],
-        expected_schema: Optional[Dict[str, Any]] = None,
-        actual_data: Optional[Any] = None,
+        details: dict[str, Any],
+        expected_schema: dict[str, Any] | None = None,
+        actual_data: Any | None = None,
     ):
         """Log a contract violation"""
         violation = ContractViolation(
             violation_id=hashlib.md5(
                 f"{endpoint}{method}{violation_type}{time.time()}".encode()
             ).hexdigest()[:12],
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             endpoint=endpoint,
             method=method,
             violation_type=violation_type,
@@ -540,8 +539,8 @@ class APIContractService:
         )
 
     def get_contract_violations(
-        self, severity: Optional[str] = None, violation_type: Optional[str] = None, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+        self, severity: str | None = None, violation_type: str | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """Get contract violations"""
         violations = self.contract_violations
 
@@ -571,7 +570,7 @@ class APIContractService:
     # OPENAPI SPECIFICATION GENERATION
     # ==================================================================================
 
-    def generate_openapi_spec(self) -> Dict[str, Any]:
+    def generate_openapi_spec(self) -> dict[str, Any]:
         """Generate OpenAPI 3.0 specification"""
         return {
             "openapi": "3.0.3",
@@ -613,7 +612,7 @@ class APIContractService:
             "paths": self._generate_paths(),
         }
 
-    def _generate_paths(self) -> Dict[str, Any]:
+    def _generate_paths(self) -> dict[str, Any]:
         """Generate OpenAPI paths from endpoint schemas"""
         paths = {}
 
@@ -645,7 +644,7 @@ class APIContractService:
 # GLOBAL SERVICE INSTANCE
 # ======================================================================================
 
-_contract_service: Optional[APIContractService] = None
+_contract_service: APIContractService | None = None
 
 
 def get_contract_service() -> APIContractService:

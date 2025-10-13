@@ -9,8 +9,8 @@
 #   - Request/response examples
 #   - Schema validation
 
-from flasgger import Swagger, swag_from
-from flask import Flask, jsonify
+from flasgger import Swagger
+from flask import Flask
 
 from app.api_docs import get_openapi_config
 

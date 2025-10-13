@@ -19,11 +19,12 @@ import hmac
 import secrets
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import jwt
 from flask import current_app, g, jsonify, request
@@ -70,7 +71,7 @@ class SecurityToken:
     expires_at: datetime
     issued_at: datetime
     jti: str  # JWT ID for revocation
-    scopes: List[str] = field(default_factory=list)
+    scopes: list[str] = field(default_factory=list)
 
     @property
     def expires_in(self) -> int:
@@ -87,7 +88,7 @@ class RequestSignature:
     nonce: str
     method: str
     path: str
-    body_hash: Optional[str] = None
+    body_hash: str | None = None
 
 
 @dataclass
@@ -97,11 +98,11 @@ class SecurityAuditLog:
     log_id: str
     timestamp: datetime
     event_type: str  # 'auth', 'rate_limit', 'signature_verify', 'vulnerability', etc.
-    user_id: Optional[int]
+    user_id: int | None
     ip_address: str
     endpoint: str
     status: str  # 'success', 'failure', 'blocked'
-    details: Dict[str, Any]
+    details: dict[str, Any]
     severity: str  # 'info', 'warning', 'critical'
 
 
@@ -111,7 +112,7 @@ class RateLimitState:
 
     client_id: str
     requests: deque
-    blocked_until: Optional[datetime] = None
+    blocked_until: datetime | None = None
     violation_count: int = 0
 
 
@@ -135,25 +136,25 @@ class APISecurityService:
 
     def __init__(self):
         self.revoked_tokens: set = set()
-        self.rate_limit_states: Dict[str, RateLimitState] = {}
+        self.rate_limit_states: dict[str, RateLimitState] = {}
         self.security_audit_logs: deque = deque(maxlen=10000)
         self.ip_blacklist: set = set()
         self.ip_whitelist: set = set()
         self.lock = threading.RLock()  # Use RLock to allow recursive locking
 
         # ML-based adaptive rate limiting
-        self.client_behavior_baseline: Dict[str, float] = {}
+        self.client_behavior_baseline: dict[str, float] = {}
 
     # ==================================================================================
     # JWT TOKEN MANAGEMENT (SHORT-LIVED)
     # ==================================================================================
 
     def generate_access_token(
-        self, user_id: int, scopes: Optional[List[str]] = None
+        self, user_id: int, scopes: list[str] | None = None
     ) -> SecurityToken:
         """Generate short-lived access token (15 minutes)"""
         jti = secrets.token_urlsafe(16)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expires_at = now + JWT_ACCESS_TOKEN_EXPIRES
 
         payload = {
@@ -182,7 +183,7 @@ class APISecurityService:
     def generate_refresh_token(self, user_id: int) -> SecurityToken:
         """Generate refresh token (7 days)"""
         jti = secrets.token_urlsafe(16)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expires_at = now + JWT_REFRESH_TOKEN_EXPIRES
 
         payload = {
@@ -206,7 +207,7 @@ class APISecurityService:
             jti=jti,
         )
 
-    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+    def verify_token(self, token: str) -> dict[str, Any] | None:
         """Verify JWT token"""
         try:
             secret = self._get_jwt_secret()
@@ -251,7 +252,7 @@ class APISecurityService:
             event_type="token_revoked", status="success", details={"jti": jti}, severity="info"
         )
 
-    def rotate_token(self, refresh_token: str) -> Optional[SecurityToken]:
+    def rotate_token(self, refresh_token: str) -> SecurityToken | None:
         """Rotate access token using refresh token"""
         payload = self.verify_token(refresh_token)
 
@@ -278,8 +279,8 @@ class APISecurityService:
         path: str,
         timestamp: int,
         nonce: str,
-        body: Optional[bytes] = None,
-        secret_key: Optional[str] = None,
+        body: bytes | None = None,
+        secret_key: str | None = None,
     ) -> str:
         """
         Generate HMAC-SHA256 signature for request
@@ -310,9 +311,9 @@ class APISecurityService:
         path: str,
         timestamp: int,
         nonce: str,
-        body: Optional[bytes] = None,
+        body: bytes | None = None,
         max_age_seconds: int = 300,
-        secret_key: Optional[str] = None,
+        secret_key: str | None = None,
     ) -> bool:
         """Verify request signature"""
         # Check timestamp (prevent replay attacks)
@@ -347,13 +348,13 @@ class APISecurityService:
     # RATE LIMITING & THROTTLING
     # ==================================================================================
 
-    def check_rate_limit(self, client_id: str) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def check_rate_limit(self, client_id: str) -> tuple[bool, dict[str, Any] | None]:
         """
         Check if client is within rate limit
 
         Returns: (is_allowed, limit_info)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         with self.lock:
             # Get or create rate limit state
@@ -485,7 +486,7 @@ class APISecurityService:
     # ==================================================================================
 
     def _log_security_event(
-        self, event_type: str, status: str, details: Dict[str, Any], severity: str = "info"
+        self, event_type: str, status: str, details: dict[str, Any], severity: str = "info"
     ):
         """Log security event for audit trail"""
         try:
@@ -502,7 +503,7 @@ class APISecurityService:
 
         log_entry = SecurityAuditLog(
             log_id=secrets.token_urlsafe(12),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             event_type=event_type,
             user_id=user_id,
             ip_address=ip_address,
@@ -516,8 +517,8 @@ class APISecurityService:
             self.security_audit_logs.append(log_entry)
 
     def get_audit_logs(
-        self, event_type: Optional[str] = None, severity: Optional[str] = None, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+        self, event_type: str | None = None, severity: str | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """Get security audit logs"""
         with self.lock:
             logs = list(self.security_audit_logs)
@@ -575,7 +576,7 @@ class APISecurityService:
 # GLOBAL SERVICE INSTANCE
 # ======================================================================================
 
-_security_service: Optional[APISecurityService] = None
+_security_service: APISecurityService | None = None
 
 
 def get_security_service() -> APISecurityService:

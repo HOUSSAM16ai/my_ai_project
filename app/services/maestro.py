@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ======================================================================================
 #  MAESTRO ADAPTER (v2.5.0 • "BRIDGE-FUSION-OMNI")
 #  File: app/services/maestro.py
@@ -54,7 +53,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 __version__ = "2.5.0"
 
@@ -93,7 +92,7 @@ except Exception:
 # --------------------------------------------------------------------------------------
 # State for diagnostics
 # --------------------------------------------------------------------------------------
-_LAST_ERRORS: Dict[str, str] = {}
+_LAST_ERRORS: dict[str, str] = {}
 _ADAPTER_MODE: str = "unknown"  # "pass_through" | "wrapped" | "pure"
 _BASE_OBJ_TYPE: str = "none"
 _CREATION_TS = time.time()
@@ -115,7 +114,7 @@ def _strip_markdown_fences(text: str) -> str:
     return t
 
 
-def _extract_first_json_object(text: str) -> Optional[str]:
+def _extract_first_json_object(text: str) -> str | None:
     if not text:
         return None
     t = _strip_markdown_fences(text)
@@ -133,14 +132,14 @@ def _extract_first_json_object(text: str) -> Optional[str]:
     return None
 
 
-def _safe_json_load(payload: str) -> Tuple[Optional[Any], Optional[str]]:
+def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
     try:
         return json.loads(payload), None
     except Exception as e:
         return None, str(e)
 
 
-def _select_model(explicit: Optional[str] = None) -> str:
+def _select_model(explicit: str | None = None) -> str:
     """
     Priority: explicit > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > DEFAULT_AI_MODEL > fallback
     """
@@ -205,7 +204,7 @@ class _GenerationServiceAdapter:
         max_tokens: int = 800,
         max_retries: int = None,
         fail_hard: bool = False,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> str:
         """
         Returns plain string. If fail_hard=False returns "" on failure.
@@ -276,8 +275,8 @@ class _GenerationServiceAdapter:
         temperature: float = 0.2,
         max_retries: int = None,
         fail_hard: bool = False,
-        model: Optional[str] = None,
-    ) -> Optional[dict]:
+        model: str | None = None,
+    ) -> dict | None:
         """
         Returns dict or None (unless fail_hard=True).
         """

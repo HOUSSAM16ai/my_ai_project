@@ -14,16 +14,13 @@
 #   - Performance insights
 #   - User journey mapping
 
-import json
 import statistics
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
-from flask import current_app
+from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
@@ -74,13 +71,13 @@ class UsageMetric:
     value: float
 
     # Dimensions
-    endpoint: Optional[str] = None
-    method: Optional[str] = None
-    status_code: Optional[int] = None
-    user_id: Optional[str] = None
+    endpoint: str | None = None
+    method: str | None = None
+    status_code: int | None = None
+    user_id: str | None = None
 
     # Metadata
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -91,10 +88,10 @@ class UserJourney:
     session_id: str
 
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
 
     # Events
-    events: List[Dict[str, Any]] = field(default_factory=list)
+    events: list[dict[str, Any]] = field(default_factory=list)
 
     # Analytics
     total_requests: int = 0
@@ -102,7 +99,7 @@ class UserJourney:
     total_duration_seconds: float = 0.0
 
     # Outcomes
-    completed_actions: List[str] = field(default_factory=list)
+    completed_actions: list[str] = field(default_factory=list)
     errors_encountered: int = 0
 
 
@@ -114,15 +111,15 @@ class AnalyticsReport:
     name: str
     generated_at: datetime
 
-    time_range: Tuple[datetime, datetime]
+    time_range: tuple[datetime, datetime]
     granularity: TimeGranularity
 
     # Metrics
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     # Insights
-    insights: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    insights: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -135,15 +132,15 @@ class BehaviorProfile:
     # Statistics
     avg_requests_per_day: float
     avg_session_duration: float
-    favorite_endpoints: List[str]
-    peak_usage_hours: List[int]
+    favorite_endpoints: list[str]
+    peak_usage_hours: list[int]
 
     # Predictions
     churn_probability: float = 0.0
     lifetime_value_estimate: float = 0.0
 
     # Metadata
-    last_updated: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ======================================================================================
@@ -168,13 +165,13 @@ class AdvancedAnalyticsService:
 
     def __init__(self):
         self.metrics: deque = deque(maxlen=1000000)  # 1M metrics
-        self.user_journeys: Dict[str, UserJourney] = {}
-        self.behavior_profiles: Dict[str, BehaviorProfile] = {}
+        self.user_journeys: dict[str, UserJourney] = {}
+        self.behavior_profiles: dict[str, BehaviorProfile] = {}
 
         self.lock = threading.RLock()
 
         # Aggregated metrics
-        self.hourly_metrics: Dict[str, Dict[str, Any]] = defaultdict(
+        self.hourly_metrics: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "total_requests": 0,
                 "successful_requests": 0,
@@ -185,7 +182,7 @@ class AdvancedAnalyticsService:
             }
         )
 
-        self.daily_metrics: Dict[str, Dict[str, Any]] = defaultdict(
+        self.daily_metrics: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "total_requests": 0,
                 "successful_requests": 0,
@@ -203,13 +200,13 @@ class AdvancedAnalyticsService:
         method: str,
         status_code: int,
         response_time_ms: float,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Track API request"""
         with self.lock:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Record metric
             metric = UsageMetric(
@@ -288,10 +285,10 @@ class AdvancedAnalyticsService:
         if status_code >= 400:
             journey.errors_encountered += 1
 
-    def get_realtime_dashboard(self) -> Dict[str, Any]:
+    def get_realtime_dashboard(self) -> dict[str, Any]:
         """Get real-time dashboard data"""
         with self.lock:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             hour_key = now.strftime("%Y-%m-%d-%H")
 
             # Last hour metrics
@@ -349,8 +346,8 @@ class AdvancedAnalyticsService:
             }
 
     def _get_top_endpoints(
-        self, metrics: List[UsageMetric], limit: int = 10
-    ) -> List[Dict[str, Any]]:
+        self, metrics: list[UsageMetric], limit: int = 10
+    ) -> list[dict[str, Any]]:
         """Get top endpoints by request count"""
         endpoint_counts = defaultdict(int)
 
@@ -380,7 +377,7 @@ class AdvancedAnalyticsService:
 
             # Calculate statistics
             days_active = (
-                datetime.now(timezone.utc) - min(m.timestamp for m in user_metrics)
+                datetime.now(UTC) - min(m.timestamp for m in user_metrics)
             ).days + 1
             avg_requests_per_day = len(user_metrics) / max(days_active, 1)
 
@@ -415,7 +412,7 @@ class AdvancedAnalyticsService:
 
             # Predict churn (simple heuristic)
             recent_requests = len(
-                [m for m in user_metrics if (datetime.now(timezone.utc) - m.timestamp).days < 7]
+                [m for m in user_metrics if (datetime.now(UTC) - m.timestamp).days < 7]
             )
             churn_probability = max(0, min(100, 100 - (recent_requests / 10 * 100)))
 
@@ -442,7 +439,7 @@ class AdvancedAnalyticsService:
     ) -> AnalyticsReport:
         """Generate comprehensive usage report"""
         with self.lock:
-            report_id = f"report_{int(datetime.now(timezone.utc).timestamp())}"
+            report_id = f"report_{int(datetime.now(UTC).timestamp())}"
 
             # Filter metrics by date range
             filtered_metrics = [
@@ -496,7 +493,7 @@ class AdvancedAnalyticsService:
             report = AnalyticsReport(
                 report_id=report_id,
                 name=f"Usage Report {start_date.date()} to {end_date.date()}",
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
                 time_range=(start_date, end_date),
                 granularity=granularity,
                 metrics={
@@ -516,11 +513,11 @@ class AdvancedAnalyticsService:
 
             return report
 
-    def detect_anomalies(self, window_hours: int = 24) -> List[Dict[str, Any]]:
+    def detect_anomalies(self, window_hours: int = 24) -> list[dict[str, Any]]:
         """Detect anomalies in API usage"""
         with self.lock:
             anomalies = []
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             cutoff = now - timedelta(hours=window_hours)
 
             # Get recent metrics
@@ -574,7 +571,7 @@ class AdvancedAnalyticsService:
 
             return anomalies
 
-    def get_cost_optimization_insights(self) -> Dict[str, Any]:
+    def get_cost_optimization_insights(self) -> dict[str, Any]:
         """Get cost optimization insights"""
         with self.lock:
             # Analyze endpoint efficiency
@@ -625,7 +622,7 @@ class AdvancedAnalyticsService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_analytics_service_instance: Optional[AdvancedAnalyticsService] = None
+_analytics_service_instance: AdvancedAnalyticsService | None = None
 _service_lock = threading.Lock()
 
 

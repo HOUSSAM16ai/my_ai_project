@@ -1,7 +1,7 @@
 # app/services/repo_inspector_service.py - The Local Intelligence Division
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 # قائمة المجلدات التي يجب تجاهلها عند العد والإحصاء
 IGNORED_DIRS = {
@@ -34,9 +34,9 @@ def count_files(root: str = ".", include_hidden: bool = False) -> int:
     return count
 
 
-def files_by_extension(root: str = ".", top_n: int = 10) -> Dict[str, int]:
+def files_by_extension(root: str = ".", top_n: int = 10) -> dict[str, int]:
     """Counts files grouped by their extension."""
-    ext_count: Dict[str, int] = {}
+    ext_count: dict[str, int] = {}
     root_path = Path(root)
     for p in root_path.rglob("*"):
         if any(ignored in p.parts for ignored in IGNORED_DIRS):
@@ -49,7 +49,7 @@ def files_by_extension(root: str = ".", top_n: int = 10) -> Dict[str, int]:
     return dict(sorted_items[:top_n])
 
 
-def total_lines_of_code(root: str = ".", exts: List[str] = None) -> int:
+def total_lines_of_code(root: str = ".", exts: list[str] = None) -> int:
     """Calculates total lines of code for specified file extensions."""
     if exts is None:
         exts = [".py", ".js", ".html", ".css", ".md"]
@@ -68,7 +68,7 @@ def total_lines_of_code(root: str = ".", exts: List[str] = None) -> int:
     return total
 
 
-def get_project_summary() -> Dict[str, Any]:
+def get_project_summary() -> dict[str, Any]:
     """Provides a high-level summary of the project repository."""
     # Note: We assume this runs from the project root.
     root = "."

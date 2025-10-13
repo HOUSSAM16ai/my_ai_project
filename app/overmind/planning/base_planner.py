@@ -71,8 +71,9 @@ import queue
 import re
 import threading
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import Any, ClassVar
 
 # =============================================================================
 # Strict schema imports – MUST succeed (single source of truth)
@@ -98,9 +99,9 @@ if not logger.handlers:
 # =============================================================================
 # Error Helpers
 # =============================================================================
-def _flatten_extras(extra: Dict[str, Any]) -> Dict[str, Any]:
+def _flatten_extras(extra: dict[str, Any]) -> dict[str, Any]:
     # Simple shallow flattening hook (reserve for nested expansions if needed).
-    flat: Dict[str, Any] = {}
+    flat: dict[str, Any] = {}
     for k, v in extra.items():
         flat[k] = v
     return flat
@@ -116,7 +117,7 @@ class PlannerError(Exception):
         if extra:
             try:
                 flat = _flatten_extras(extra)
-                preview_items: List[str] = []
+                preview_items: list[str] = []
                 for k, v in flat.items():
                     vs = repr(v)
                     if len(vs) > 40:
@@ -132,11 +133,11 @@ class PlannerError(Exception):
         self.planner_name = planner_name
         self.objective = objective
         self.raw_message = message
-        self.extra: Optional[Dict[str, Any]] = extra or None
-        self.extra_flat: Optional[Dict[str, Any]] = _flatten_extras(extra) if extra else None
+        self.extra: dict[str, Any] | None = extra or None
+        self.extra_flat: dict[str, Any] | None = _flatten_extras(extra) if extra else None
         self.timestamp = time.time()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.__class__.__name__,
             "planner": self.planner_name,
@@ -189,7 +190,7 @@ _DRIFT_GRADE_DROP = int(os.getenv("PLANNER_STRUCT_DRIFT_GRADE_DROP", "2") or 2)
 _RELIABILITY_NUDGE = float(os.getenv("PLANNER_STRUCT_RELIABILITY_NUDGE", "0.01") or 0.01)
 
 # Cache last structural snapshot per planner
-_LAST_STRUCT: Dict[str, Dict[str, Any]] = {}
+_LAST_STRUCT: dict[str, dict[str, Any]] = {}
 
 
 # =============================================================================
@@ -203,17 +204,17 @@ class _ReliabilityState:
     total_invocations: int = 0
     total_failures: int = 0
     total_duration_ms: float = 0.0
-    last_success_ts: Optional[float] = None
+    last_success_ts: float | None = None
     registration_time: float = field(default_factory=time.time)
-    last_error: Optional[str] = None
+    last_error: str | None = None
 
     quarantined: bool = False
-    self_test_passed: Optional[bool] = None
+    self_test_passed: bool | None = None
     production_ready: bool = False
     tier: str = "experimental"
     risk_rating: str = "medium"
 
-    def decay(self, now: Optional[float] = None):
+    def decay(self, now: float | None = None):
         now = now or time.time()
         dt = now - self.last_update_ts
         if dt <= 0 or _DECAY_HALF_LIFE <= 0:
@@ -253,18 +254,18 @@ class _ReliabilityState:
 # BasePlanner Class
 # =============================================================================
 class BasePlanner:
-    _registry: ClassVar[Dict[str, Type["BasePlanner"]]] = {}
-    _reliability: ClassVar[Dict[str, _ReliabilityState]] = {}
+    _registry: ClassVar[dict[str, type[BasePlanner]]] = {}
+    _reliability: ClassVar[dict[str, _ReliabilityState]] = {}
     _lock: ClassVar[threading.RLock] = threading.RLock()
 
     # Overridable static attributes
     name: ClassVar[str] = "abstract_base"
-    version: ClassVar[Optional[str]] = None
-    capabilities: ClassVar[Set[str]] = set()
+    version: ClassVar[str | None] = None
+    capabilities: ClassVar[set[str]] = set()
     production_ready: ClassVar[bool] = False
     tier: ClassVar[str] = "experimental"
     risk_rating: ClassVar[str] = "medium"
-    default_timeout_seconds: ClassVar[Optional[float]] = None
+    default_timeout_seconds: ClassVar[float | None] = None
     allow_registration: ClassVar[bool] = True
 
     # --------------------------------------------------------------
@@ -278,7 +279,7 @@ class BasePlanner:
             logger.error("Failed registering planner subclass %s: %s", cls.__name__, exc)
 
     @classmethod
-    def _attempt_register(cls, planner_cls: Type["BasePlanner"]):
+    def _attempt_register(cls, planner_cls: type[BasePlanner]):
         if planner_cls is BasePlanner:
             return
         if not getattr(planner_cls, "allow_registration", True):
@@ -322,7 +323,7 @@ class BasePlanner:
         cls._run_self_test(planner_cls, key, state)
 
     @classmethod
-    def _run_self_test(cls, planner_cls: Type["BasePlanner"], key: str, state: _ReliabilityState):
+    def _run_self_test(cls, planner_cls: type[BasePlanner], key: str, state: _ReliabilityState):
         test_method = getattr(planner_cls, "self_test", None)
         if not callable(test_method):
             if planner_cls.production_ready or _DISABLE_QUARANTINE:
@@ -333,7 +334,7 @@ class BasePlanner:
             return
 
         logger.debug("Running self-test for planner '%s'...", key)
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
 
         def runner():
             try:
@@ -380,13 +381,13 @@ class BasePlanner:
     # Abstract contract
     # --------------------------------------------------------------
     def generate_plan(
-        self, objective: str, context: Optional[PlanningContext] = None
+        self, objective: str, context: PlanningContext | None = None
     ) -> MissionPlanSchema:
         """Implement in subclass."""
         raise NotImplementedError
 
     async def a_generate_plan(
-        self, objective: str, context: Optional[PlanningContext] = None
+        self, objective: str, context: PlanningContext | None = None
     ) -> MissionPlanSchema:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.generate_plan, objective, context)
@@ -395,7 +396,7 @@ class BasePlanner:
     # Plan validation hook (lightweight)
     # --------------------------------------------------------------
     def validate_plan(
-        self, plan: MissionPlanSchema, objective: str, context: Optional[PlanningContext] = None
+        self, plan: MissionPlanSchema, objective: str, context: PlanningContext | None = None
     ) -> None:
         if not hasattr(plan, "objective"):
             raise PlanValidationError("Plan missing 'objective' attribute.", self.name, objective)
@@ -407,7 +408,7 @@ class BasePlanner:
     # --------------------------------------------------------------
     @classmethod
     def _update_reliability(
-        cls, name: str, success: bool, duration_seconds: float, error: Optional[str] = None
+        cls, name: str, success: bool, duration_seconds: float, error: str | None = None
     ):
         lower = name.lower()
         with cls._lock:
@@ -430,8 +431,8 @@ class BasePlanner:
             return state.reliability_score()
 
     @classmethod
-    def planner_metadata(cls) -> Dict[str, Any]:
-        data: Dict[str, Any] = {}
+    def planner_metadata(cls) -> dict[str, Any]:
+        data: dict[str, Any] = {}
         with cls._lock:
             for name, st in cls._reliability.items():
                 st.decay()
@@ -459,7 +460,7 @@ class BasePlanner:
     # Retrieval APIs
     # --------------------------------------------------------------
     @classmethod
-    def get_planner_class(cls, name: str) -> Type["BasePlanner"]:
+    def get_planner_class(cls, name: str) -> type[BasePlanner]:
         key = name.lower()
         with cls._lock:
             if key not in cls._registry:
@@ -470,14 +471,14 @@ class BasePlanner:
             return cls._registry[key]
 
     @classmethod
-    def instantiate(cls, name: str) -> "BasePlanner":
+    def instantiate(cls, name: str) -> BasePlanner:
         return cls.get_planner_class(name)()
 
     @classmethod
-    def live_planner_classes(cls) -> Dict[str, Type["BasePlanner"]]:
-        accepted: Dict[str, Type["BasePlanner"]] = {}
+    def live_planner_classes(cls) -> dict[str, type[BasePlanner]]:
+        accepted: dict[str, type[BasePlanner]] = {}
         with cls._lock:
-            scored: List[Tuple[str, Type["BasePlanner"], float]] = []
+            scored: list[tuple[str, type[BasePlanner], float]] = []
             for key, planner_cls in cls._registry.items():
                 st = cls._reliability.get(key)
                 if not st:
@@ -496,7 +497,7 @@ class BasePlanner:
         return accepted
 
     @classmethod
-    def instantiate_all(cls) -> List["BasePlanner"]:
+    def instantiate_all(cls) -> list[BasePlanner]:
         return [p() for p in cls.live_planner_classes().values()]
 
     @classmethod
@@ -513,10 +514,10 @@ class BasePlanner:
     # Timeout helpers (sync)
     # --------------------------------------------------------------
     def _run_with_timeout(
-        self, objective: str, context: Optional[PlanningContext], timeout: float
+        self, objective: str, context: PlanningContext | None, timeout: float
     ) -> MissionPlanSchema:
-        container: Dict[str, Union[BaseException, MissionPlanSchema]] = {}
-        q: "queue.Queue[int]" = queue.Queue()
+        container: dict[str, BaseException | MissionPlanSchema] = {}
+        q: queue.Queue[int] = queue.Queue()
 
         def runner():
             try:
@@ -556,11 +557,11 @@ class BasePlanner:
     # Timeout helpers (async)
     # --------------------------------------------------------------
     async def _a_run_with_timeout(
-        self, objective: str, context: Optional[PlanningContext], timeout: float
+        self, objective: str, context: PlanningContext | None, timeout: float
     ) -> MissionPlanSchema:
         try:
             return await asyncio.wait_for(self.a_generate_plan(objective, context), timeout=timeout)
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             raise PlannerTimeoutError(
                 f"Async timeout {timeout:.2f}s exceeded.", self.name, objective
             ) from exc
@@ -571,16 +572,16 @@ class BasePlanner:
     def instrumented_generate(
         self,
         objective: str,
-        context: Optional[PlanningContext] = None,
+        context: PlanningContext | None = None,
         *,
         include_node_count: bool = True,
-        extra_metadata: Optional[Dict[str, Any]] = None,
+        extra_metadata: dict[str, Any] | None = None,
         enforce_timeout: bool = True,
-        deep_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        deep_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
-        error_obj: Optional[Exception] = None
+        error_obj: Exception | None = None
         timeout = self.default_timeout_seconds or _FALLBACK_DEFAULT_TIMEOUT
 
         with BasePlanner._lock:
@@ -622,7 +623,7 @@ class BasePlanner:
         duration = time.perf_counter() - start
         rel_score = self.current_reliability_score()
 
-        meta: Dict[str, Any] = {
+        meta: dict[str, Any] = {
             "planner": self.name,
             "version": getattr(self, "version", None),
             "duration_ms": round(duration * 1000.0, 2),
@@ -724,16 +725,16 @@ class BasePlanner:
     async def a_instrumented_generate(
         self,
         objective: str,
-        context: Optional[PlanningContext] = None,
+        context: PlanningContext | None = None,
         *,
         include_node_count: bool = True,
-        extra_metadata: Optional[Dict[str, Any]] = None,
+        extra_metadata: dict[str, Any] | None = None,
         enforce_timeout: bool = True,
-        deep_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        deep_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         start = time.perf_counter()
         success_flag = False
-        error_obj: Optional[Exception] = None
+        error_obj: Exception | None = None
         timeout = self.default_timeout_seconds or _FALLBACK_DEFAULT_TIMEOUT
 
         with BasePlanner._lock:
@@ -774,7 +775,7 @@ class BasePlanner:
         duration = time.perf_counter() - start
         rel_score = self.current_reliability_score()
 
-        meta: Dict[str, Any] = {
+        meta: dict[str, Any] = {
             "planner": self.name,
             "version": getattr(self, "version", None),
             "duration_ms": round(duration * 1000.0, 2),
@@ -869,7 +870,7 @@ class BasePlanner:
     # --------------------------------------------------------------
     # Helpers
     # --------------------------------------------------------------
-    def _infer_node_count(self, plan: MissionPlanSchema) -> Optional[int]:
+    def _infer_node_count(self, plan: MissionPlanSchema) -> int | None:
         for attr in ("tasks", "nodes", "steps"):
             if hasattr(plan, attr):
                 seq = getattr(plan, attr)
@@ -881,7 +882,7 @@ class BasePlanner:
         return None
 
     def compute_selection_score(
-        self, objective: str, desired_capabilities: Optional[Set[str]] = None
+        self, objective: str, desired_capabilities: set[str] | None = None
     ) -> float:
         # Base compute (structural injection occurs AFTER in instrumented pipeline)
         rel_score = self.current_reliability_score()
@@ -899,7 +900,7 @@ class BasePlanner:
         score = base + tier_adjust + prod_adjust
         return max(0.0, min(1.0, score))
 
-    def reliability_snapshot(self) -> Dict[str, Any]:
+    def reliability_snapshot(self) -> dict[str, Any]:
         with BasePlanner._lock:
             st = BasePlanner._reliability.get(self.name.lower())
             if not st:
@@ -920,11 +921,11 @@ class BasePlanner:
 # =============================================================================
 # Public Utility Functions
 # =============================================================================
-def list_planner_metadata() -> Dict[str, Any]:
+def list_planner_metadata() -> dict[str, Any]:
     return BasePlanner.planner_metadata()
 
 
-def instantiate_all_planners() -> List[BasePlanner]:
+def instantiate_all_planners() -> list[BasePlanner]:
     return BasePlanner.instantiate_all()
 
 

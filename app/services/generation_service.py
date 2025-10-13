@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 MAESTRO COGNITIVE ORCHESTRATOR & LLM GATEWAY
 Ultra Re‑Engineered Sovereign Edition
@@ -96,8 +95,9 @@ import os
 import time
 import traceback
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 # -----------------------------------------------------------------------------
 # Flask (optional)
@@ -189,7 +189,7 @@ except Exception:  # pragma: no cover
             return {"ok": self.ok, "result": self.result, "error": self.error}
 
     class agent_tools:  # type: ignore
-        _TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
+        _TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
 
         @staticmethod
         def ToolResult(ok: bool, result=None, error=""):
@@ -231,8 +231,8 @@ class StepState:
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
     decision: str = ""  # "tool" | "final"
-    tool_calls: List[Dict[str, Any]] = field(default_factory=list)
-    duration_ms: Optional[float] = None
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    duration_ms: float | None = None
 
     def finish(self):
         if self.duration_ms is None:
@@ -250,8 +250,8 @@ class OrchestratorTelemetry:
     steps_taken: int = 0
     tools_invoked: int = 0
     distinct_tools: int = 0
-    finalization_reason: Optional[str] = None
-    error: Optional[str] = None
+    finalization_reason: str | None = None
+    error: str | None = None
     stagnation: bool = False
     tool_call_limit_hit: bool = False
     repeat_pattern_triggered: bool = False
@@ -324,7 +324,7 @@ def _strip_markdown_fences(text: str) -> str:
     return t
 
 
-def _extract_first_json_object(raw: str) -> Optional[str]:
+def _extract_first_json_object(raw: str) -> str | None:
     """
     Naive balanced brace extraction. Returns first top-level object or None.
     """
@@ -345,7 +345,7 @@ def _extract_first_json_object(raw: str) -> Optional[str]:
     return None
 
 
-def _soft_recover_json(raw: str) -> Optional[str]:
+def _soft_recover_json(raw: str) -> str | None:
     """
     Attempt to recover JSON if MAESTRO_JSON_SOFT_RECOVER=1 and parsing failed.
     Strategy:
@@ -376,14 +376,14 @@ def _soft_recover_json(raw: str) -> Optional[str]:
     return None
 
 
-def _safe_json_load(payload: str) -> Tuple[Optional[Any], Optional[str]]:
+def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
     try:
         return json.loads(payload), None
     except Exception as e:
         return None, str(e)
 
 
-def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]):
+def _invoke_tool(tool_name: str, tool_args: dict[str, Any]):
     reg = getattr(agent_tools, "_TOOL_REGISTRY", {})
     meta = reg.get(tool_name)
     if not meta or not callable(meta.get("handler")):
@@ -394,7 +394,7 @@ def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]):
         return agent_tools.ToolResult(ok=False, result=None, error=f"TOOL_EXEC_ERROR:{exc}")
 
 
-def _is_stagnation(prev_list: List[str], current_list: List[str]) -> bool:
+def _is_stagnation(prev_list: list[str], current_list: list[str]) -> bool:
     return bool(prev_list) and prev_list == current_list and len(current_list) > 0
 
 
@@ -438,7 +438,7 @@ EXECUTION RULES:
 # ======================================================================================
 # Usage extraction
 # ======================================================================================
-def _normalize_assistant_message(raw_msg) -> Dict[str, Any]:
+def _normalize_assistant_message(raw_msg) -> dict[str, Any]:
     content = getattr(raw_msg, "content", "") or ""
     base = {"role": getattr(raw_msg, "role", "assistant"), "content": content}
     tool_calls = getattr(raw_msg, "tool_calls", None) or []
@@ -456,7 +456,7 @@ def _normalize_assistant_message(raw_msg) -> Dict[str, Any]:
     return base
 
 
-def _extract_usage(resp) -> Dict[str, Any]:
+def _extract_usage(resp) -> dict[str, Any]:
     try:
         usage = getattr(resp, "usage", None)
         if not usage:
@@ -537,7 +537,7 @@ def _ensure_file_tools():
                 )
             if not os.path.exists(norm):
                 return agent_tools.ToolResult(ok=False, result=None, error="FILE_NOT_FOUND")
-            with open(norm, "r", encoding="utf-8", errors="replace") as f:
+            with open(norm, encoding="utf-8", errors="replace") as f:
                 data = f.read(max_bytes + 10)
             snippet = data[:max_bytes]
             truncated = len(data) > max_bytes
@@ -600,7 +600,7 @@ _ensure_file_tools()
 # ======================================================================================
 # Model Selection
 # ======================================================================================
-def _select_model(explicit: Optional[str] = None, task: Optional[Task] = None) -> str:
+def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     forced = os.getenv("MAESTRO_FORCE_MODEL")
     if forced and forced.strip():
         return forced.strip()
@@ -626,7 +626,7 @@ class MaestroGenerationService:
     def __init__(self):
         self.version = __version__
         self.log = _logger()
-        self.post_finalize_hook: Optional[Callable[[Any], None]] = None
+        self.post_finalize_hook: Callable[[Any], None] | None = None
 
     # ------------------------------------------------------------------
     # Plain Text Completion
@@ -639,7 +639,7 @@ class MaestroGenerationService:
         max_tokens: int = 800,
         max_retries: int = 1,
         fail_hard: bool = False,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> str:
         _attempt_auto_context()
         model_name = _select_model(explicit=model)
@@ -681,8 +681,8 @@ class MaestroGenerationService:
         temperature: float = 0.2,
         max_retries: int = 1,
         fail_hard: bool = False,
-        model: Optional[str] = None,
-    ) -> Optional[dict]:
+        model: str | None = None,
+    ) -> dict | None:
         required = []
         if isinstance(format_schema, dict):
             req = format_schema.get("required")
@@ -742,9 +742,9 @@ class MaestroGenerationService:
     def forge_new_code(
         self,
         prompt: str,
-        conversation_id: Optional[str] = None,
-        model: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        conversation_id: str | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
@@ -784,14 +784,14 @@ class MaestroGenerationService:
     # Convenience strict JSON wrapper
     # ------------------------------------------------------------------
     def generate_json(
-        self, prompt: str, conversation_id: Optional[str] = None, model: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, prompt: str, conversation_id: str | None = None, model: str | None = None
+    ) -> dict[str, Any]:
         strict_prompt = f"You must output ONLY valid JSON (no fences). User request:\n{prompt}"
         return self.forge_new_code(strict_prompt, conversation_id=conversation_id, model=model)
 
     def generate_comprehensive_response(
-        self, prompt: str, conversation_id: Optional[str] = None, model: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, prompt: str, conversation_id: str | None = None, model: str | None = None
+    ) -> dict[str, Any]:
         """Generate a comprehensive single-file response with deep analysis."""
         try:
             comprehensive_prompt = self._build_comprehensive_prompt(prompt)
@@ -843,7 +843,7 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     # Legacy single-shot wrapper (compat)
     # ------------------------------------------------------------------
-    def execute_task_legacy_wrapper(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_task_legacy_wrapper(self, payload: dict[str, Any]) -> dict[str, Any]:
         started = time.perf_counter()
         desc = ""
         if isinstance(payload, dict):
@@ -874,7 +874,7 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     # Multi-step Task Execution
     # ------------------------------------------------------------------
-    def execute_task(self, task: Task, model: Optional[str] = None) -> None:
+    def execute_task(self, task: Task, model: str | None = None) -> None:
         _attempt_auto_context()
         if not hasattr(task, "mission"):
             self._safe_log("Task missing 'mission' relation; aborting.", level="warning")
@@ -892,17 +892,17 @@ class MaestroGenerationService:
         repeat_abort = os.getenv("MAESTRO_TOOL_REPEAT_ABORT", "0") == "1"
 
         telemetry = OrchestratorTelemetry()
-        steps: List[StepState] = []
-        cumulative_usage: Dict[str, int] = {}
-        tools_used: List[str] = []
-        tool_repeat_warnings: List[str] = []
-        previous_tools: List[str] = []
+        steps: list[StepState] = []
+        cumulative_usage: dict[str, int] = {}
+        tools_used: list[str] = []
+        tool_repeat_warnings: list[str] = []
+        previous_tools: list[str] = []
         final_answer = "(no answer produced)"
-        tool_call_limit: Optional[int] = None
+        tool_call_limit: int | None = None
         start_wall = time.perf_counter()
 
         # Tool invocation signature counts (name+args hash)
-        repeat_counter: Dict[str, int] = {}
+        repeat_counter: dict[str, int] = {}
 
         try:
             raw_limit = os.getenv("MAESTRO_TOOL_CALL_LIMIT")
@@ -944,7 +944,7 @@ class MaestroGenerationService:
         context_blob = self._build_context_blob(task, hotspot_hint_enabled, telemetry)
 
         system_prompt = _build_system_prompt(task, context_blob)
-        messages: List[Dict[str, Any]] = [
+        messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": getattr(task, "description", "")},
         ]
@@ -986,7 +986,7 @@ class MaestroGenerationService:
                 tool_calls = assistant_msg.get("tool_calls") or []
                 if tool_calls:
                     state.decision = "tool"
-                    current_list: List[str] = []
+                    current_list: list[str] = []
 
                     for call in tool_calls:
                         fn_name = None
@@ -1138,7 +1138,7 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     # Diagnostics
     # ------------------------------------------------------------------
-    def diagnostics(self) -> Dict[str, Any]:
+    def diagnostics(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "has_app_context": has_app_context(),
@@ -1165,7 +1165,7 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     def _build_context_blob(
         self, task: Task, hotspot_hint_enabled: bool, telemetry: OrchestratorTelemetry
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Combine system_service context + deep index excerpt (optional).
         """
@@ -1203,7 +1203,7 @@ class MaestroGenerationService:
 
         return base_ctx
 
-    def _tool_signature(self, name: str, args: Dict[str, Any]) -> str:
+    def _tool_signature(self, name: str, args: dict[str, Any]) -> str:
         try:
             filtered = {k: v for k, v in sorted(args.items()) if k not in {"content"}}
             ser = json.dumps(filtered, sort_keys=True, ensure_ascii=False)
@@ -1255,7 +1255,7 @@ class MaestroGenerationService:
 # ======================================================================================
 # Singleton & Facade
 # ======================================================================================
-_generation_service_singleton: Optional[MaestroGenerationService] = None
+_generation_service_singleton: MaestroGenerationService | None = None
 
 
 def get_generation_service() -> MaestroGenerationService:
@@ -1284,7 +1284,7 @@ def execute_task_legacy_wrapper(*a, **k):
     return get_generation_service().execute_task_legacy_wrapper(*a, **k)
 
 
-def execute_task(task: Task, model: Optional[str] = None):
+def execute_task(task: Task, model: str | None = None):
     return get_generation_service().execute_task(task, model=model)
 
 

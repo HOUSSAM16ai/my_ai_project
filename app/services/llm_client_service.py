@@ -1,6 +1,4 @@
 # app/services/llm_client_service.py - The Central Communications Ministry
-# # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 # =================================================================================================
 #  LLM CLIENT SERVICE – HYPER PRO EDITION
 #  Version: 4.7.0  •  Codename: "RESILIENT-COMMS-ULTRA / RETRY+STREAM / COST / CIRCUIT / HOOKS"
@@ -112,14 +110,14 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import random
 import re
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, Generator, List, Optional, Union
+from collections.abc import Callable, Generator
+from typing import Any
 
 # --------------------------------------------------------------------------------------
 # Optional dependencies
@@ -164,9 +162,9 @@ _LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
 # --------------------------------------------------------------------------------------
 # GLOBAL SINGLETON STATE
 # --------------------------------------------------------------------------------------
-_CLIENT_SINGLETON: Optional[Any] = None
+_CLIENT_SINGLETON: Any | None = None
 _CLIENT_LOCK = threading.Lock()
-_CLIENT_META: Dict[str, Any] = {}
+_CLIENT_META: dict[str, Any] = {}
 _CLIENT_BUILD_SEQ = 0
 
 # ======================================================================================
@@ -187,17 +185,17 @@ class MockLLMClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: "MockLLMClient"):
+        def __init__(self, parent: MockLLMClient):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: "MockLLMClient"):
+            def __init__(self, parent: MockLLMClient):
                 self._parent = parent
 
             def create(
                 self,
                 model: str,
-                messages: List[Dict[str, str]],
+                messages: list[dict[str, str]],
                 tools=None,
                 tool_choice=None,
                 **kwargs,
@@ -242,7 +240,7 @@ class MockLLMClient:
     def chat(self):
         return MockLLMClient._ChatWrapper(self)
 
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         return {
             "mock": True,
             "reason": self._reason,
@@ -272,21 +270,21 @@ class _HttpFallbackClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: "_HttpFallbackClient"):
+        def __init__(self, parent: _HttpFallbackClient):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: "_HttpFallbackClient"):
+            def __init__(self, parent: _HttpFallbackClient):
                 self._parent = parent
 
             def create(
                 self,
                 model: str,
-                messages: List[Dict[str, str]],
+                messages: list[dict[str, str]],
                 tools=None,
                 tool_choice=None,
                 temperature: float = 0.7,
-                max_tokens: Optional[int] = None,
+                max_tokens: int | None = None,
                 **kwargs,
             ):
                 self._parent._calls += 1
@@ -357,7 +355,7 @@ class _HttpFallbackClient:
     def chat(self):
         return _HttpFallbackClient._ChatWrapper(self)
 
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         return {
             "mock": False,
             "http_fallback": True,
@@ -373,7 +371,7 @@ class _HttpFallbackClient:
 # ======================================================================================
 
 
-def _read_config_key(key: str) -> Optional[str]:
+def _read_config_key(key: str) -> str | None:
     if has_app_context() and current_app:
         try:
             val = current_app.config.get(key)
@@ -384,7 +382,7 @@ def _read_config_key(key: str) -> Optional[str]:
     return os.environ.get(key)
 
 
-def _resolve_api_credentials() -> Dict[str, Any]:
+def _resolve_api_credentials() -> dict[str, Any]:
     """
     Priority:
       1) OPENROUTER_API_KEY (base default: https://openrouter.ai/api/v1)
@@ -418,11 +416,11 @@ def _bool_env(name: str) -> bool:
 # ======================================================================================
 
 
-def _build_openai_modern_client(creds: Dict[str, Any], timeout: float):
+def _build_openai_modern_client(creds: dict[str, Any], timeout: float):
     if openai is None:
         return None
     try:
-        client_kwargs: Dict[str, Any] = {"api_key": creds["api_key"]}
+        client_kwargs: dict[str, Any] = {"api_key": creds["api_key"]}
         if creds.get("base_url"):
             client_kwargs["base_url"] = creds["base_url"]
         client_kwargs["timeout"] = timeout
@@ -432,7 +430,7 @@ def _build_openai_modern_client(creds: Dict[str, Any], timeout: float):
         return None
 
 
-def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
+def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
     if openai is None:
         return None
     if not hasattr(openai, "ChatCompletion"):
@@ -504,7 +502,7 @@ def _build_openai_legacy_wrapper(creds: Dict[str, Any], timeout: float):
     return _LegacyClientWrapper()
 
 
-def _build_real_client(creds: Dict[str, Any], timeout: float):
+def _build_real_client(creds: dict[str, Any], timeout: float):
     provider = creds["provider"]
     if provider not in ("openrouter", "openai"):
         return None
@@ -625,7 +623,7 @@ def reset_llm_client() -> None:
         _CLIENT_META.clear()
 
 
-def is_mock_client(client: Optional[Any] = None) -> bool:
+def is_mock_client(client: Any | None = None) -> bool:
     c = client or _CLIENT_SINGLETON
     return isinstance(c, MockLLMClient)
 
@@ -672,15 +670,15 @@ try:
 except Exception:
     _SANITIZE_REGEXES = []
 
-_PRE_HOOKS: List[Callable[[Dict[str, Any]], None]] = []
-_POST_HOOKS: List[Callable[[Dict[str, Any], Dict[str, Any]], None]] = []
+_PRE_HOOKS: list[Callable[[dict[str, Any]], None]] = []
+_POST_HOOKS: list[Callable[[dict[str, Any], dict[str, Any]], None]] = []
 
 
-def register_llm_pre_hook(fn: Callable[[Dict[str, Any]], None]) -> None:
+def register_llm_pre_hook(fn: Callable[[dict[str, Any]], None]) -> None:
     _PRE_HOOKS.append(fn)
 
 
-def register_llm_post_hook(fn: Callable[[Dict[str, Any], Dict[str, Any]], None]) -> None:
+def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None]) -> None:
     _POST_HOOKS.append(fn)
 
 
@@ -724,8 +722,8 @@ def _retry_allowed(kind: str) -> bool:
 
 
 def _estimate_cost(
-    model: str, prompt_tokens: Optional[int], completion_tokens: Optional[int]
-) -> Optional[float]:
+    model: str, prompt_tokens: int | None, completion_tokens: int | None
+) -> float | None:
     if not model:
         return None
     model_key = _MODEL_ALIAS_MAP.get(model, model)
@@ -755,7 +753,7 @@ def _sanitize(text: str) -> str:
     return sanitized
 
 
-def _apply_force_model(payload: Dict[str, Any]) -> None:
+def _apply_force_model(payload: dict[str, Any]) -> None:
     if _LLM_FORCE_MODEL:
         payload["model"] = _LLM_FORCE_MODEL
 
@@ -795,7 +793,7 @@ def _maybe_close_breaker():
         pass
 
 
-def _enforce_cost_budget(new_cost: Optional[float]):
+def _enforce_cost_budget(new_cost: float | None):
     if not new_cost:
         return
     if _COST_BUDGET_SESSION <= 0:
@@ -818,15 +816,15 @@ def _enforce_cost_budget(new_cost: Optional[float]):
 
 def invoke_chat(
     model: str,
-    messages: List[Dict[str, str]],
+    messages: list[dict[str, str]],
     *,
-    tools: Optional[List[Dict[str, Any]]] = None,
-    tool_choice: Optional[str] = None,
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | None = None,
     temperature: float = 0.7,
-    max_tokens: Optional[int] = None,
-    stream: Optional[bool] = None,
-    extra: Optional[Dict[str, Any]] = None,
-) -> Union[Dict[str, Any], Generator[Dict[str, Any], None, None]]:
+    max_tokens: int | None = None,
+    stream: bool | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any] | Generator[dict[str, Any], None, None]:
     """
     High-level resilient call.
     If stream True (and enabled), returns generator that yields partial {"delta": "..."} pieces,
@@ -856,9 +854,9 @@ def invoke_chat(
 
     use_stream = stream if stream is not None else _LLM_ENABLE_STREAM
     attempts = 0
-    last_exc: Optional[Exception] = None
+    last_exc: Exception | None = None
     backoff = _LLM_RETRY_BACKOFF_BASE
-    retry_schedule: List[float] = []
+    retry_schedule: list[float] = []
 
     def _do_call():
         return client.chat.completions.create(
@@ -870,7 +868,7 @@ def invoke_chat(
             max_tokens=payload["max_tokens"],
         )
 
-    def _complete_once() -> Dict[str, Any]:
+    def _complete_once() -> dict[str, Any]:
         nonlocal attempts, last_exc, backoff
         while attempts <= _LLM_MAX_RETRIES:
             attempts += 1
@@ -955,7 +953,7 @@ def invoke_chat(
         _maybe_close_breaker()
         return result
 
-    def _stream_gen() -> Generator[Dict[str, Any], None, None]:
+    def _stream_gen() -> Generator[dict[str, Any], None, None]:
         # Simulated streaming: first full call → break content into deltas.
         # After simulation, we still produce a final envelope (fresh call or reuse).
         envelope = _complete_once()
@@ -970,7 +968,7 @@ def invoke_chat(
     return _stream_gen()
 
 
-def invoke_chat_stream(*args, **kwargs) -> Generator[Dict[str, Any], None, None]:
+def invoke_chat_stream(*args, **kwargs) -> Generator[dict[str, Any], None, None]:
     """
     Explicit streaming helper. Forces stream=True.
     """
@@ -986,7 +984,7 @@ def invoke_chat_stream(*args, **kwargs) -> Generator[Dict[str, Any], None, None]
 # ======================================================================================
 
 
-def llm_health() -> Dict[str, Any]:
+def llm_health() -> dict[str, Any]:
     client = _CLIENT_SINGLETON
     base = {
         "initialized": client is not None,
@@ -1050,7 +1048,7 @@ def llm_health() -> Dict[str, Any]:
 # ======================================================================================
 
 
-def _debug_snapshot() -> Dict[str, Any]:
+def _debug_snapshot() -> dict[str, Any]:
     return {
         "client_kind": llm_health().get("client_kind"),
         "cumulative": llm_health().get("cumulative"),

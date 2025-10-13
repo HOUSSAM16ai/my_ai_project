@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -14,11 +14,11 @@ META_FILE = INDEX_DIR / "meta.json"
 CHUNKS_FILE = INDEX_DIR / "index.jsonl"
 
 
-def _load_index() -> Tuple[np.ndarray, List[Dict[str, Any]], Dict[str, Any]]:
+def _load_index() -> tuple[np.ndarray, list[dict[str, Any]], dict[str, Any]]:
     if not (EMB_FILE.exists() and CHUNKS_FILE.exists() and META_FILE.exists()):
         raise RuntimeError("Index does not exist. Please run: python -m app.cli.main index")
     embs = np.load(EMB_FILE).astype("float32")
-    metas: List[Dict[str, Any]] = []
+    metas: list[dict[str, Any]] = []
     with CHUNKS_FILE.open("r", encoding="utf-8") as f:
         for line in f:
             metas.append(json.loads(line))
@@ -36,7 +36,7 @@ def embed_query(text: str, model_name: str) -> np.ndarray:
     return q
 
 
-def search(text: str, k: int = 8) -> List[Dict[str, Any]]:
+def search(text: str, k: int = 8) -> list[dict[str, Any]]:
     embs, metas, meta = _load_index()
     q = embed_query(text, meta["model"])
     sims = (embs @ q.reshape(-1, 1)).ravel()

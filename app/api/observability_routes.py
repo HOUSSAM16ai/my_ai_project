@@ -6,7 +6,7 @@
 #   مسارات المراقبة الخارقة مع P99.9 Latency Tracking
 #   Superhuman observability routes with P99.9 latency tracking
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app, jsonify, request
 
@@ -45,7 +45,7 @@ def get_metrics():
                 {
                     "status": "success",
                     "data": metrics,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             ),
             200,
@@ -294,7 +294,7 @@ def get_performance_snapshot():
                 {
                     "status": "success",
                     "data": snapshot,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             ),
             200,
@@ -379,7 +379,7 @@ def observability_health():
                             "distributed_tracing": "active",
                             "error_tracking": "active",
                         },
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     },
                 }
             ),

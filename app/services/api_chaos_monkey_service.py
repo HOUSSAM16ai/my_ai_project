@@ -17,11 +17,11 @@
 import random
 import secrets
 import threading
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 from flask import current_app
 
@@ -78,10 +78,10 @@ class ChaosSchedule:
     # Scheduling
     cron_expression: str  # e.g., "0 */6 * * *" for every 6 hours
     next_run: datetime
-    last_run: Optional[datetime] = None
+    last_run: datetime | None = None
 
     # Configuration
-    target_services: List[str] = field(default_factory=list)
+    target_services: list[str] = field(default_factory=list)
     max_duration_minutes: int = 30
     blast_radius_limit: float = 0.1  # Affect max 10% of traffic
 
@@ -99,14 +99,14 @@ class ChaosExecution:
     """Chaos experiment execution record"""
 
     execution_id: str
-    schedule_id: Optional[str]
+    schedule_id: str | None
     scenario: FailureScenario
 
     started_at: datetime
-    ended_at: Optional[datetime] = None
+    ended_at: datetime | None = None
 
     # Targets
-    affected_services: List[str] = field(default_factory=list)
+    affected_services: list[str] = field(default_factory=list)
     affected_requests: int = 0
 
     # Results
@@ -125,7 +125,7 @@ class ChaosExecution:
 
     # Outcome
     passed: bool = False
-    lessons_learned: List[str] = field(default_factory=list)
+    lessons_learned: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -148,7 +148,7 @@ class ResilienceScore:
     avg_recovery_time: float = 0.0
     max_recovery_time: float = 0.0
 
-    calculated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    calculated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ======================================================================================
@@ -171,7 +171,7 @@ class ChaosMonkeyService:
 
     def __init__(self):
         self.mode: ChaosMonkeyMode = ChaosMonkeyMode.SCHEDULED
-        self.schedules: Dict[str, ChaosSchedule] = {}
+        self.schedules: dict[str, ChaosSchedule] = {}
         self.executions: deque = deque(maxlen=1000)
         self.resilience_history: deque = deque(maxlen=100)
 
@@ -181,7 +181,7 @@ class ChaosMonkeyService:
         self.enabled = False
         self.blast_radius_limit = 0.1  # Max 10% of traffic
         self.max_concurrent_experiments = 1
-        self.running_experiments: Set[str] = set()
+        self.running_experiments: set[str] = set()
 
         # Metrics
         self.total_experiments_run = 0
@@ -198,7 +198,7 @@ class ChaosMonkeyService:
             name="Database Connection Failure",
             scenario=FailureScenario.DATABASE_UNAVAILABLE,
             cron_expression="0 */12 * * *",  # Every 12 hours
-            next_run=datetime.now(timezone.utc) + timedelta(hours=12),
+            next_run=datetime.now(UTC) + timedelta(hours=12),
             target_services=["database"],
             max_duration_minutes=5,
             blast_radius_limit=0.05,
@@ -212,7 +212,7 @@ class ChaosMonkeyService:
             name="API Slow Response",
             scenario=FailureScenario.SLOW_RESPONSE,
             cron_expression="0 */6 * * *",  # Every 6 hours
-            next_run=datetime.now(timezone.utc) + timedelta(hours=6),
+            next_run=datetime.now(UTC) + timedelta(hours=6),
             target_services=["api"],
             max_duration_minutes=10,
             blast_radius_limit=0.1,
@@ -226,7 +226,7 @@ class ChaosMonkeyService:
             name="Network Partition",
             scenario=FailureScenario.NETWORK_FAILURE,
             cron_expression="0 0 * * 0",  # Weekly on Sunday
-            next_run=datetime.now(timezone.utc) + timedelta(days=7),
+            next_run=datetime.now(UTC) + timedelta(days=7),
             target_services=["external_api"],
             max_duration_minutes=15,
             blast_radius_limit=0.05,
@@ -251,9 +251,9 @@ class ChaosMonkeyService:
     def execute_chaos_experiment(
         self,
         scenario: FailureScenario,
-        target_services: List[str],
+        target_services: list[str],
         duration_minutes: int = 10,
-        schedule_id: Optional[str] = None,
+        schedule_id: str | None = None,
     ) -> ChaosExecution:
         """Execute a chaos experiment"""
         with self.lock:
@@ -265,7 +265,7 @@ class ChaosMonkeyService:
 
             execution_id = f"exec_{secrets.token_hex(8)}"
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             execution = ChaosExecution(
                 execution_id=execution_id,
@@ -291,9 +291,9 @@ class ChaosMonkeyService:
                 execution.alerts_triggered = self._count_alerts_triggered()
 
                 # Wait for recovery
-                recovery_start = datetime.now(timezone.utc)
+                recovery_start = datetime.now(UTC)
                 execution.system_recovered = self._wait_for_recovery(timeout_minutes=30)
-                recovery_end = datetime.now(timezone.utc)
+                recovery_end = datetime.now(UTC)
                 execution.recovery_time_seconds = (recovery_end - recovery_start).total_seconds()
 
                 # Capture post-experiment metrics
@@ -311,7 +311,7 @@ class ChaosMonkeyService:
                 execution.lessons_learned = self._generate_lessons(execution)
 
             finally:
-                execution.ended_at = datetime.now(timezone.utc)
+                execution.ended_at = datetime.now(UTC)
                 self.running_experiments.discard(execution_id)
                 self.executions.append(execution)
                 self.total_experiments_run += 1
@@ -327,7 +327,7 @@ class ChaosMonkeyService:
             return execution
 
     def _inject_failure(
-        self, scenario: FailureScenario, target_services: List[str], duration_minutes: int
+        self, scenario: FailureScenario, target_services: list[str], duration_minutes: int
     ):
         """Inject specific failure scenario"""
         current_app.logger.info(
@@ -360,7 +360,7 @@ class ChaosMonkeyService:
         # Simplified - in production, check alerting system
         return random.randint(0, 5)
 
-    def _generate_lessons(self, execution: ChaosExecution) -> List[str]:
+    def _generate_lessons(self, execution: ChaosExecution) -> list[str]:
         """Generate lessons learned from execution"""
         lessons = []
 
@@ -441,7 +441,7 @@ class ChaosMonkeyService:
 
             return score
 
-    def get_chaos_status(self) -> Dict[str, Any]:
+    def get_chaos_status(self) -> dict[str, Any]:
         """Get current Chaos Monkey status"""
         with self.lock:
             resilience = self.calculate_resilience_score()
@@ -470,7 +470,7 @@ class ChaosMonkeyService:
                 "scheduled_experiments": len(self.schedules),
             }
 
-    def get_experiment_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_experiment_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get chaos experiment history"""
         with self.lock:
             recent = list(self.executions)[-limit:]
@@ -495,7 +495,7 @@ class ChaosMonkeyService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_chaos_monkey_instance: Optional[ChaosMonkeyService] = None
+_chaos_monkey_instance: ChaosMonkeyService | None = None
 _service_lock = threading.Lock()
 
 

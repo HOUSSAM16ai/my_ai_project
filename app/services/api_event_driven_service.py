@@ -14,15 +14,15 @@
 #   - Async event handling with backpressure
 
 import hashlib
-import json
 import threading
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 from flask import current_app
 
@@ -70,12 +70,12 @@ class Event:
 
     event_id: str
     event_type: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     timestamp: datetime
     priority: EventPriority = EventPriority.NORMAL
     source: str = "unknown"
-    correlation_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    correlation_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -86,7 +86,7 @@ class EventProcessingResult:
     status: EventStatus
     processed_at: datetime
     processing_time_ms: float
-    error: Optional[str] = None
+    error: str | None = None
     retry_count: int = 0
 
 
@@ -97,7 +97,7 @@ class EventSubscription:
     subscription_id: str
     event_type: str
     handler: Callable[[Event], bool]
-    filter_fn: Optional[Callable[[Event], bool]] = None
+    filter_fn: Callable[[Event], bool] | None = None
     max_retries: int = 3
     retry_delay_seconds: int = 5
 
@@ -109,9 +109,9 @@ class EventStream:
     stream_id: str
     name: str
     description: str
-    event_types: List[str]
+    event_types: list[str]
     retention_days: int = 7
-    partition_key: Optional[str] = None
+    partition_key: str | None = None
 
 
 # ======================================================================================
@@ -142,7 +142,7 @@ class MessageBroker(ABC):
         pass
 
     @abstractmethod
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get broker statistics"""
         pass
 
@@ -155,11 +155,11 @@ class InMemoryBroker(MessageBroker):
     """
 
     def __init__(self):
-        self.topics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=10000))
-        self.subscriptions: Dict[str, EventSubscription] = {}
-        self.stats: Dict[str, Dict[str, int]] = defaultdict(lambda: {"published": 0, "consumed": 0})
+        self.topics: dict[str, deque] = defaultdict(lambda: deque(maxlen=10000))
+        self.subscriptions: dict[str, EventSubscription] = {}
+        self.stats: dict[str, dict[str, int]] = defaultdict(lambda: {"published": 0, "consumed": 0})
         self.lock = threading.RLock()
-        self.processing_threads: List[threading.Thread] = []
+        self.processing_threads: list[threading.Thread] = []
         self._running = True
 
         # Start consumer threads
@@ -226,7 +226,7 @@ class InMemoryBroker(MessageBroker):
     def subscribe(self, topic: str, handler: Callable[[Event], bool]) -> str:
         """Subscribe to topic"""
         subscription_id = hashlib.sha256(
-            f"{topic}{datetime.now(timezone.utc)}".encode()
+            f"{topic}{datetime.now(UTC)}".encode()
         ).hexdigest()[:16]
 
         subscription = EventSubscription(
@@ -246,7 +246,7 @@ class InMemoryBroker(MessageBroker):
                 return True
             return False
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get broker statistics"""
         with self.lock:
             return {
@@ -265,7 +265,7 @@ class KafkaBroker(MessageBroker):
     pip install kafka-python
     """
 
-    def __init__(self, bootstrap_servers: List[str]):
+    def __init__(self, bootstrap_servers: list[str]):
         self.bootstrap_servers = bootstrap_servers
         # In production:
         # from kafka import KafkaProducer, KafkaConsumer
@@ -281,7 +281,7 @@ class KafkaBroker(MessageBroker):
     def unsubscribe(self, subscription_id: str) -> bool:
         raise NotImplementedError("Kafka integration requires kafka-python library")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         raise NotImplementedError("Kafka integration requires kafka-python library")
 
 
@@ -313,7 +313,7 @@ class RabbitMQBroker(MessageBroker):
     def unsubscribe(self, subscription_id: str) -> bool:
         raise NotImplementedError("RabbitMQ integration requires pika library")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         raise NotImplementedError("RabbitMQ integration requires pika library")
 
 
@@ -336,12 +336,12 @@ class EventDrivenService:
     - Event audit trail
     """
 
-    def __init__(self, broker: Optional[MessageBroker] = None):
+    def __init__(self, broker: MessageBroker | None = None):
         self.broker = broker or InMemoryBroker()
         self.event_store: deque = deque(maxlen=100000)  # Event sourcing store
         self.dead_letter_queue: deque = deque(maxlen=10000)
-        self.processing_results: Dict[str, EventProcessingResult] = {}
-        self.streams: Dict[str, EventStream] = {}
+        self.processing_results: dict[str, EventProcessingResult] = {}
+        self.streams: dict[str, EventStream] = {}
         self.lock = threading.RLock()
 
         # Initialize default streams
@@ -380,14 +380,14 @@ class EventDrivenService:
     def publish(
         self,
         event_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         priority: EventPriority = EventPriority.NORMAL,
         source: str = "system",
-        correlation_id: Optional[str] = None,
+        correlation_id: str | None = None,
     ) -> str:
         """Publish an event"""
 
-        event_id = hashlib.sha256(f"{event_type}{datetime.now(timezone.utc)}".encode()).hexdigest()[
+        event_id = hashlib.sha256(f"{event_type}{datetime.now(UTC)}".encode()).hexdigest()[
             :16
         ]
 
@@ -395,7 +395,7 @@ class EventDrivenService:
             event_id=event_id,
             event_type=event_type,
             payload=payload,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             priority=priority,
             source=source,
             correlation_id=correlation_id,
@@ -422,7 +422,7 @@ class EventDrivenService:
         self,
         event_type: str,
         handler: Callable[[Event], bool],
-        filter_fn: Optional[Callable[[Event], bool]] = None,
+        filter_fn: Callable[[Event], bool] | None = None,
     ) -> str:
         """Subscribe to events of a specific type"""
 
@@ -438,10 +438,10 @@ class EventDrivenService:
 
     def replay_events(
         self,
-        event_type: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[Event]:
+        event_type: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[Event]:
         """
         Replay events from event store
 
@@ -462,7 +462,7 @@ class EventDrivenService:
 
         return events
 
-    def get_event(self, event_id: str) -> Optional[Event]:
+    def get_event(self, event_id: str) -> Event | None:
         """Get event by ID from event store"""
         with self.lock:
             for event in self.event_store:
@@ -470,7 +470,7 @@ class EventDrivenService:
                     return event
         return None
 
-    def get_dead_letter_queue(self, limit: int = 100) -> List[Event]:
+    def get_dead_letter_queue(self, limit: int = 100) -> list[Event]:
         """Get events from dead letter queue"""
         with self.lock:
             return list(self.dead_letter_queue)[-limit:]
@@ -497,7 +497,7 @@ class EventDrivenService:
 
         return False
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get event-driven architecture metrics"""
         broker_stats = self.broker.get_stats()
 
@@ -528,11 +528,11 @@ class Command:
 
     command_id: str
     command_type: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     issued_by: str
     issued_at: datetime
     executed: bool = False
-    result: Optional[Any] = None
+    result: Any | None = None
 
 
 @dataclass
@@ -541,7 +541,7 @@ class Query:
 
     query_id: str
     query_type: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     requested_by: str
     requested_at: datetime
 
@@ -555,8 +555,8 @@ class CQRSService:
     """
 
     def __init__(self):
-        self.command_handlers: Dict[str, Callable] = {}
-        self.query_handlers: Dict[str, Callable] = {}
+        self.command_handlers: dict[str, Callable] = {}
+        self.query_handlers: dict[str, Callable] = {}
         self.command_history: deque = deque(maxlen=10000)
         self.lock = threading.RLock()
 
@@ -571,11 +571,11 @@ class CQRSService:
             self.query_handlers[query_type] = handler
 
     def execute_command(
-        self, command_type: str, payload: Dict[str, Any], issued_by: str = "system"
+        self, command_type: str, payload: dict[str, Any], issued_by: str = "system"
     ) -> tuple[bool, Any]:
         """Execute a command"""
         command_id = hashlib.sha256(
-            f"{command_type}{datetime.now(timezone.utc)}".encode()
+            f"{command_type}{datetime.now(UTC)}".encode()
         ).hexdigest()[:16]
 
         command = Command(
@@ -583,7 +583,7 @@ class CQRSService:
             command_type=command_type,
             payload=payload,
             issued_by=issued_by,
-            issued_at=datetime.now(timezone.utc),
+            issued_at=datetime.now(UTC),
         )
 
         with self.lock:
@@ -607,7 +607,7 @@ class CQRSService:
             return False, str(e)
 
     def execute_query(
-        self, query_type: str, parameters: Dict[str, Any], requested_by: str = "system"
+        self, query_type: str, parameters: dict[str, Any], requested_by: str = "system"
     ) -> tuple[bool, Any]:
         """Execute a query"""
         with self.lock:
@@ -618,12 +618,12 @@ class CQRSService:
 
         query = Query(
             query_id=hashlib.sha256(
-                f"{query_type}{datetime.now(timezone.utc)}".encode()
+                f"{query_type}{datetime.now(UTC)}".encode()
             ).hexdigest()[:16],
             query_type=query_type,
             parameters=parameters,
             requested_by=requested_by,
-            requested_at=datetime.now(timezone.utc),
+            requested_at=datetime.now(UTC),
         )
 
         try:
@@ -638,8 +638,8 @@ class CQRSService:
 # SINGLETON INSTANCES
 # ======================================================================================
 
-_event_driven_instance: Optional[EventDrivenService] = None
-_cqrs_instance: Optional[CQRSService] = None
+_event_driven_instance: EventDrivenService | None = None
+_cqrs_instance: CQRSService | None = None
 _service_lock = threading.Lock()
 
 

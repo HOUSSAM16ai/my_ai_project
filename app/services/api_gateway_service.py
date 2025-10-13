@@ -18,16 +18,16 @@
 
 import hashlib
 import json
-import random
 import threading
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 from flask import current_app, g, jsonify, request
 
@@ -89,13 +89,13 @@ class GatewayRoute:
 
     route_id: str
     path_pattern: str
-    methods: List[str]
+    methods: list[str]
     upstream_service: str
     protocol: ProtocolType
     auth_required: bool = True
-    rate_limit: Optional[int] = None
-    cache_ttl: Optional[int] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rate_limit: int | None = None
+    cache_ttl: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -111,7 +111,7 @@ class UpstreamService:
     max_connections: int = 1000
     timeout_ms: int = 30000
     circuit_breaker_threshold: int = 5
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -125,7 +125,7 @@ class RoutingDecision:
     estimated_cost: float
     confidence_score: float
     reasoning: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -137,7 +137,7 @@ class LoadBalancerState:
     total_requests: int = 0
     total_errors: int = 0
     avg_latency_ms: float = 0.0
-    last_health_check: Optional[datetime] = None
+    last_health_check: datetime | None = None
     is_healthy: bool = True
 
 
@@ -151,7 +151,7 @@ class PolicyRule:
     action: str  # allow, deny, rate_limit, transform
     priority: int = 100
     enabled: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ======================================================================================
@@ -163,17 +163,17 @@ class ProtocolAdapter(ABC):
     """Abstract protocol adapter interface"""
 
     @abstractmethod
-    def validate_request(self, request_data: Any) -> tuple[bool, Optional[str]]:
+    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
         """Validate request format"""
         pass
 
     @abstractmethod
-    def transform_request(self, request_data: Any) -> Dict[str, Any]:
+    def transform_request(self, request_data: Any) -> dict[str, Any]:
         """Transform request to internal format"""
         pass
 
     @abstractmethod
-    def transform_response(self, response_data: Dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform internal format to protocol format"""
         pass
 
@@ -181,12 +181,12 @@ class ProtocolAdapter(ABC):
 class RESTAdapter(ProtocolAdapter):
     """REST protocol adapter"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, Optional[str]]:
+    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
         """Validate REST request"""
         # REST requests are already validated by Flask
         return True, None
 
-    def transform_request(self, request_data: Any) -> Dict[str, Any]:
+    def transform_request(self, request_data: Any) -> dict[str, Any]:
         """Transform REST request"""
         return {
             "method": request.method,
@@ -196,7 +196,7 @@ class RESTAdapter(ProtocolAdapter):
             "body": request.get_json(silent=True) or {},
         }
 
-    def transform_response(self, response_data: Dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to REST response"""
         return jsonify(response_data)
 
@@ -204,14 +204,14 @@ class RESTAdapter(ProtocolAdapter):
 class GraphQLAdapter(ProtocolAdapter):
     """GraphQL protocol adapter"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, Optional[str]]:
+    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
         """Validate GraphQL request"""
         data = request.get_json(silent=True)
         if not data or "query" not in data:
             return False, "Missing 'query' field in GraphQL request"
         return True, None
 
-    def transform_request(self, request_data: Any) -> Dict[str, Any]:
+    def transform_request(self, request_data: Any) -> dict[str, Any]:
         """Transform GraphQL request"""
         data = request.get_json()
         return {
@@ -221,7 +221,7 @@ class GraphQLAdapter(ProtocolAdapter):
             "metadata": {"protocol": "graphql"},
         }
 
-    def transform_response(self, response_data: Dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to GraphQL response"""
         return jsonify({"data": response_data, "errors": None})
 
@@ -229,17 +229,17 @@ class GraphQLAdapter(ProtocolAdapter):
 class GRPCAdapter(ProtocolAdapter):
     """gRPC protocol adapter (placeholder for future implementation)"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, Optional[str]]:
+    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
         """Validate gRPC request"""
         # TODO: Implement gRPC validation
         return True, None
 
-    def transform_request(self, request_data: Any) -> Dict[str, Any]:
+    def transform_request(self, request_data: Any) -> dict[str, Any]:
         """Transform gRPC request"""
         # TODO: Implement gRPC transformation
         return {"metadata": {"protocol": "grpc"}}
 
-    def transform_response(self, response_data: Dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to gRPC response"""
         # TODO: Implement gRPC transformation
         return response_data
@@ -254,7 +254,7 @@ class ModelProviderAdapter(ABC):
     """Abstract model provider interface"""
 
     @abstractmethod
-    def call_model(self, model: str, prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
         """Call AI model"""
         pass
 
@@ -272,7 +272,7 @@ class ModelProviderAdapter(ABC):
 class OpenAIAdapter(ModelProviderAdapter):
     """OpenAI model provider adapter"""
 
-    def call_model(self, model: str, prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
         """Call OpenAI model (placeholder)"""
         return {
             "provider": "openai",
@@ -296,7 +296,7 @@ class OpenAIAdapter(ModelProviderAdapter):
 class AnthropicAdapter(ModelProviderAdapter):
     """Anthropic (Claude) model provider adapter"""
 
-    def call_model(self, model: str, prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
         """Call Anthropic model (placeholder)"""
         return {
             "provider": "anthropic",
@@ -333,12 +333,12 @@ class IntelligentRouter:
     """
 
     def __init__(self):
-        self.provider_adapters: Dict[str, ModelProviderAdapter] = {
+        self.provider_adapters: dict[str, ModelProviderAdapter] = {
             "openai": OpenAIAdapter(),
             "anthropic": AnthropicAdapter(),
         }
         self.routing_history: deque = deque(maxlen=10000)
-        self.provider_stats: Dict[str, LoadBalancerState] = defaultdict(
+        self.provider_stats: dict[str, LoadBalancerState] = defaultdict(
             lambda: LoadBalancerState(service_id="")
         )
         self.lock = threading.RLock()
@@ -348,7 +348,7 @@ class IntelligentRouter:
         model_type: str,
         estimated_tokens: int,
         strategy: RoutingStrategy = RoutingStrategy.INTELLIGENT,
-        constraints: Optional[Dict[str, Any]] = None,
+        constraints: dict[str, Any] | None = None,
     ) -> RoutingDecision:
         """
         توجيه ذكي للطلبات - Intelligent request routing
@@ -428,7 +428,7 @@ class IntelligentRouter:
         with self.lock:
             self.routing_history.append(
                 {
-                    "timestamp": datetime.now(timezone.utc),
+                    "timestamp": datetime.now(UTC),
                     "decision": decision,
                     "model_type": model_type,
                     "tokens": estimated_tokens,
@@ -474,21 +474,21 @@ class IntelligentCache:
     """
 
     def __init__(self, max_size_mb: int = 100):
-        self.cache: Dict[str, Dict[str, Any]] = {}
-        self.access_times: Dict[str, datetime] = {}
+        self.cache: dict[str, dict[str, Any]] = {}
+        self.access_times: dict[str, datetime] = {}
         self.hit_count = 0
         self.miss_count = 0
         self.max_size_mb = max_size_mb
         self.current_size_bytes = 0
         self.lock = threading.RLock()
 
-    def _generate_key(self, request_data: Dict[str, Any]) -> str:
+    def _generate_key(self, request_data: dict[str, Any]) -> str:
         """Generate cache key from request data"""
         # Create deterministic hash of request
         key_data = json.dumps(request_data, sort_keys=True)
         return hashlib.sha256(key_data.encode()).hexdigest()
 
-    def get(self, request_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def get(self, request_data: dict[str, Any]) -> dict[str, Any] | None:
         """Get from cache"""
         key = self._generate_key(request_data)
 
@@ -497,14 +497,14 @@ class IntelligentCache:
                 entry = self.cache[key]
 
                 # Check if expired
-                if datetime.now(timezone.utc) > entry["expires_at"]:
+                if datetime.now(UTC) > entry["expires_at"]:
                     del self.cache[key]
                     del self.access_times[key]
                     self.miss_count += 1
                     return None
 
                 # Update access time
-                self.access_times[key] = datetime.now(timezone.utc)
+                self.access_times[key] = datetime.now(UTC)
                 self.hit_count += 1
                 return entry["data"]
 
@@ -512,7 +512,7 @@ class IntelligentCache:
             return None
 
     def put(
-        self, request_data: Dict[str, Any], response_data: Dict[str, Any], ttl_seconds: int = 300
+        self, request_data: dict[str, Any], response_data: dict[str, Any], ttl_seconds: int = 300
     ):
         """Put into cache"""
         key = self._generate_key(request_data)
@@ -528,10 +528,10 @@ class IntelligentCache:
             # Store
             self.cache[key] = {
                 "data": response_data,
-                "expires_at": datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds),
+                "expires_at": datetime.now(UTC) + timedelta(seconds=ttl_seconds),
                 "size_bytes": data_size,
             }
-            self.access_times[key] = datetime.now(timezone.utc)
+            self.access_times[key] = datetime.now(UTC)
             self.current_size_bytes += data_size
 
     def _evict_lru(self):
@@ -548,7 +548,7 @@ class IntelligentCache:
             del self.cache[lru_key]
         del self.access_times[lru_key]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics"""
         total_requests = self.hit_count + self.miss_count
         hit_rate = self.hit_count / total_requests if total_requests > 0 else 0.0
@@ -580,8 +580,8 @@ class PolicyEngine:
     """
 
     def __init__(self):
-        self.policies: Dict[str, PolicyRule] = {}
-        self.violations: List[Dict[str, Any]] = []
+        self.policies: dict[str, PolicyRule] = {}
+        self.violations: list[dict[str, Any]] = []
         self.lock = threading.RLock()
 
     def add_policy(self, policy: PolicyRule):
@@ -589,7 +589,7 @@ class PolicyEngine:
         with self.lock:
             self.policies[policy.rule_id] = policy
 
-    def evaluate(self, request_context: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+    def evaluate(self, request_context: dict[str, Any]) -> tuple[bool, str | None]:
         """
         Evaluate policies against request
 
@@ -619,7 +619,7 @@ class PolicyEngine:
 
             return True, None
 
-    def _evaluate_condition(self, condition: str, context: Dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
         """Evaluate policy condition (simplified)"""
         # In production, use a proper expression engine
         # For now, support basic checks
@@ -627,18 +627,18 @@ class PolicyEngine:
             return True
         return False
 
-    def _record_violation(self, policy: PolicyRule, context: Dict[str, Any]):
+    def _record_violation(self, policy: PolicyRule, context: dict[str, Any]):
         """Record policy violation"""
         self.violations.append(
             {
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "policy_id": policy.rule_id,
                 "policy_name": policy.name,
                 "context": context,
             }
         )
 
-    def get_violations(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_violations(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get recent policy violations"""
         with self.lock:
             return self.violations[-limit:]
@@ -666,7 +666,7 @@ class APIGatewayService:
     """
 
     def __init__(self):
-        self.protocol_adapters: Dict[str, ProtocolAdapter] = {
+        self.protocol_adapters: dict[str, ProtocolAdapter] = {
             ProtocolType.REST.value: RESTAdapter(),
             ProtocolType.GRAPHQL.value: GraphQLAdapter(),
             ProtocolType.GRPC.value: GRPCAdapter(),
@@ -674,8 +674,8 @@ class APIGatewayService:
         self.intelligent_router = IntelligentRouter()
         self.cache = IntelligentCache(max_size_mb=100)
         self.policy_engine = PolicyEngine()
-        self.routes: Dict[str, GatewayRoute] = {}
-        self.upstream_services: Dict[str, UpstreamService] = {}
+        self.routes: dict[str, GatewayRoute] = {}
+        self.upstream_services: dict[str, UpstreamService] = {}
 
         # Initialize default policies
         self._initialize_default_policies()
@@ -707,8 +707,8 @@ class APIGatewayService:
         current_app.logger.info(f"Registered upstream service: {service.service_id}")
 
     def process_request(
-        self, protocol: ProtocolType = ProtocolType.REST, route_id: Optional[str] = None
-    ) -> tuple[Dict[str, Any], int]:
+        self, protocol: ProtocolType = ProtocolType.REST, route_id: str | None = None
+    ) -> tuple[dict[str, Any], int]:
         """
         معالجة الطلب عبر البوابة - Process request through gateway
 
@@ -770,7 +770,7 @@ class APIGatewayService:
             current_app.logger.error(f"Gateway processing error: {e}", exc_info=True)
             return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
 
-    def get_gateway_stats(self) -> Dict[str, Any]:
+    def get_gateway_stats(self) -> dict[str, Any]:
         """Get comprehensive gateway statistics"""
         return {
             "routes_registered": len(self.routes),
@@ -785,7 +785,7 @@ class APIGatewayService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_gateway_service_instance: Optional[APIGatewayService] = None
+_gateway_service_instance: APIGatewayService | None = None
 _gateway_lock = threading.Lock()
 
 

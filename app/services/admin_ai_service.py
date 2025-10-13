@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ADMIN AI SERVICE - SUPER INTELLIGENCE GATEWAY
 Ultra Professional Hyper Edition
@@ -32,19 +31,13 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
-
-from flask import current_app, has_app_context
-from sqlalchemy import desc, select
+from datetime import UTC, datetime
+from typing import Any
 
 from app import db
 from app.models import (
     AdminConversation,
     AdminMessage,
-    MessageRole,
-    Mission,
-    MissionStatus,
     User,
     utc_now,
 )
@@ -94,9 +87,9 @@ class AdminAIService:
     def analyze_project(
         self,
         user: User,
-        conversation_id: Optional[int] = None,
-        focus_areas: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        conversation_id: int | None = None,
+        focus_areas: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         تحليل عميق شامل للمشروع باستخدام Deep Indexer.
 
@@ -164,7 +157,7 @@ class AdminAIService:
             # ============================================================
             analysis = {
                 "status": "success",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "user_id": user.id,
                 "project_stats": {
                     "files_scanned": index.get("files_scanned", 0),
@@ -212,7 +205,7 @@ class AdminAIService:
                 "elapsed_seconds": round(time.time() - start_time, 2),
             }
 
-    def _analyze_architecture(self, index: Dict) -> Dict[str, Any]:
+    def _analyze_architecture(self, index: dict) -> dict[str, Any]:
         """تحليل البنية المعمارية"""
         layers = index.get("layers", {})
         return {
@@ -223,7 +216,7 @@ class AdminAIService:
             "utils_count": len(layers.get("util", [])),
         }
 
-    def _analyze_hotspots(self, index: Dict) -> List[Dict]:
+    def _analyze_hotspots(self, index: dict) -> list[dict]:
         """تحليل نقاط التعقيد"""
         hotspots = index.get("complexity_hotspots_top50", [])[:10]
         return [
@@ -236,7 +229,7 @@ class AdminAIService:
             for h in hotspots
         ]
 
-    def _generate_recommendations(self, index: Dict) -> List[str]:
+    def _generate_recommendations(self, index: dict) -> list[str]:
         """توليد توصيات ذكية"""
         recommendations = []
 
@@ -261,7 +254,7 @@ class AdminAIService:
 
         return recommendations
 
-    def _save_analysis_to_conversation(self, conversation_id: int, analysis: Dict):
+    def _save_analysis_to_conversation(self, conversation_id: int, analysis: dict):
         """
         حفظ التحليل في المحادثة - SUPERHUMAN INTEGRATION
 
@@ -297,9 +290,9 @@ class AdminAIService:
         self,
         question: str,
         user: User,
-        conversation_id: Optional[int] = None,
+        conversation_id: int | None = None,
         use_deep_context: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         الإجابة على سؤال باستخدام السياق الكامل للمشروع.
 
@@ -393,12 +386,12 @@ class AdminAIService:
 
                 if conversation.user_id != user.id:
                     error_msg = (
-                        f"⚠️ ليس لديك صلاحية للوصول إلى هذه المحادثة.\n\n"
-                        f"You don't have permission to access this conversation.\n\n"
-                        f"**Security Notice:**\n"
-                        f"This conversation belongs to another user.\n\n"
-                        f"**Solution:**\n"
-                        f"Please use your own conversations or start a new one."
+                        "⚠️ ليس لديك صلاحية للوصول إلى هذه المحادثة.\n\n"
+                        "You don't have permission to access this conversation.\n\n"
+                        "**Security Notice:**\n"
+                        "This conversation belongs to another user.\n\n"
+                        "**Solution:**\n"
+                        "Please use your own conversations or start a new one."
                     )
                     self.logger.warning(
                         f"User {user.id} attempted unauthorized access to conversation {conversation_id} "
@@ -574,7 +567,7 @@ class AdminAIService:
             }
 
     def _generate_conversation_summary(
-        self, conversation: AdminConversation, conversation_history: List[Dict[str, str]]
+        self, conversation: AdminConversation, conversation_history: list[dict[str, str]]
     ) -> str:
         """
         توليد ملخص ذكي للمحادثة - SUPERHUMAN INTELLIGENCE
@@ -609,14 +602,14 @@ class AdminAIService:
 
             # Build summary
             summary_parts = [
-                f"📊 ملخص المحادثة (Conversation Summary)",
-                f"════════════════════════════════════════",
+                "📊 ملخص المحادثة (Conversation Summary)",
+                "════════════════════════════════════════",
                 f"• العنوان (Title): {conversation.title}",
                 f"• عدد الرسائل (Messages): {total_messages}",
                 f"• الأسئلة (Questions): {len(user_questions)}",
                 f"• النوع (Type): {conversation.conversation_type}",
-                f"",
-                f"🎯 المواضيع الرئيسية (Main Topics):",
+                "",
+                "🎯 المواضيع الرئيسية (Main Topics):",
             ]
 
             # Extract topics from first few questions
@@ -649,7 +642,7 @@ class AdminAIService:
             self.logger.error(f"Failed to generate conversation summary: {e}", exc_info=True)
             return f"📊 Conversation Summary: {conversation.title} ({len(conversation_history)} messages)"
 
-    def _read_key_project_files(self) -> Dict[str, str]:
+    def _read_key_project_files(self) -> dict[str, str]:
         """قراءة ملفات المشروع الرئيسية للسياق"""
         project_files = {}
         key_files = [
@@ -668,7 +661,7 @@ class AdminAIService:
             filepath = os.path.join(project_root, filename)
             if os.path.exists(filepath):
                 try:
-                    with open(filepath, "r", encoding="utf-8") as f:
+                    with open(filepath, encoding="utf-8") as f:
                         content = f.read()
                         if len(content) < 10000:
                             project_files[filename] = content
@@ -681,9 +674,9 @@ class AdminAIService:
 
     def _build_super_system_prompt(
         self,
-        deep_index_summary: Optional[str] = None,
-        related_context: Optional[List[Dict]] = None,
-        conversation_summary: Optional[str] = None,
+        deep_index_summary: str | None = None,
+        related_context: list[dict] | None = None,
+        conversation_summary: str | None = None,
     ) -> str:
         """بناء System Prompt خارق مع كل السياق"""
         parts = [
@@ -730,8 +723,8 @@ class AdminAIService:
         return "\n".join(parts)
 
     def execute_modification(
-        self, objective: str, user: User, conversation_id: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, objective: str, user: User, conversation_id: int | None = None
+    ) -> dict[str, Any]:
         """
         تنفيذ تعديل على المشروع باستخدام Overmind.
 
@@ -829,7 +822,7 @@ class AdminAIService:
             db.session.rollback()
             raise
 
-    def _get_conversation_history(self, conversation_id: int) -> List[Dict[str, str]]:
+    def _get_conversation_history(self, conversation_id: int) -> list[dict[str, str]]:
         """
         جلب تاريخ المحادثة - SUPERHUMAN RETRIEVAL
 
@@ -859,10 +852,10 @@ class AdminAIService:
         conversation_id: int,
         role: str,
         content: str,
-        tokens_used: Optional[int] = None,
-        model_used: Optional[str] = None,
-        latency_ms: Optional[float] = None,
-        metadata_json: Optional[Dict] = None,
+        tokens_used: int | None = None,
+        model_used: str | None = None,
+        latency_ms: float | None = None,
+        metadata_json: dict | None = None,
     ):
         """
         حفظ رسالة في المحادثة - SUPERHUMAN PERSISTENCE
@@ -919,8 +912,8 @@ class AdminAIService:
         user: User,
         limit: int = 20,
         include_archived: bool = False,
-        conversation_type: Optional[str] = None,
-    ) -> List[AdminConversation]:
+        conversation_type: str | None = None,
+    ) -> list[AdminConversation]:
         """
         جلب محادثات المستخدم - SUPERHUMAN QUERY
 
@@ -958,7 +951,7 @@ class AdminAIService:
             return []
 
     def update_conversation_title(
-        self, conversation_id: int, new_title: Optional[str] = None, auto_generate: bool = False
+        self, conversation_id: int, new_title: str | None = None, auto_generate: bool = False
     ) -> bool:
         """
         تحديث عنوان المحادثة - SUPERHUMAN UX
@@ -1040,7 +1033,7 @@ class AdminAIService:
             db.session.rollback()
             return False
 
-    def export_conversation(self, conversation_id: int, format: str = "markdown") -> Dict[str, Any]:
+    def export_conversation(self, conversation_id: int, format: str = "markdown") -> dict[str, Any]:
         """
         تصدير المحادثة - SUPERHUMAN PORTABILITY
 
@@ -1086,7 +1079,7 @@ class AdminAIService:
                 "format": format,
                 "content": content,
                 "message_count": len(messages),
-                "export_timestamp": datetime.now(timezone.utc).isoformat(),
+                "export_timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -1094,19 +1087,19 @@ class AdminAIService:
             return {"status": "error", "error": str(e)}
 
     def _export_as_markdown(
-        self, conversation: AdminConversation, messages: List[AdminMessage]
+        self, conversation: AdminConversation, messages: list[AdminMessage]
     ) -> str:
         """Export conversation as beautiful Markdown"""
         lines = [
             f"# {conversation.title}",
-            f"",
+            "",
             f"**Type:** {conversation.conversation_type}  ",
             f"**Created:** {conversation.created_at.strftime('%Y-%m-%d %H:%M:%S')}  ",
             f"**Messages:** {len(messages)}  ",
             f"**Tokens Used:** {conversation.total_tokens}  ",
-            f"",
+            "",
             "---",
-            f"",
+            "",
         ]
 
         for i, msg in enumerate(messages, 1):
@@ -1136,9 +1129,8 @@ class AdminAIService:
 
         return "\n".join(lines)
 
-    def _export_as_json(self, conversation: AdminConversation, messages: List[AdminMessage]) -> str:
+    def _export_as_json(self, conversation: AdminConversation, messages: list[AdminMessage]) -> str:
         """Export conversation as structured JSON"""
-        import json
 
         data = {
             "conversation": {
@@ -1166,7 +1158,7 @@ class AdminAIService:
                 for msg in messages
             ],
             "export_info": {
-                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "exported_at": datetime.now(UTC).isoformat(),
                 "format": "json",
                 "version": "1.0",
             },
@@ -1174,7 +1166,7 @@ class AdminAIService:
 
         return json.dumps(data, indent=2, ensure_ascii=False)
 
-    def _export_as_html(self, conversation: AdminConversation, messages: List[AdminMessage]) -> str:
+    def _export_as_html(self, conversation: AdminConversation, messages: list[AdminMessage]) -> str:
         """Export conversation as beautiful HTML"""
         html_lines = [
             "<!DOCTYPE html>",
@@ -1228,7 +1220,7 @@ class AdminAIService:
 
         return "\n".join(html_lines)
 
-    def get_conversation_analytics(self, conversation_id: int) -> Dict[str, Any]:
+    def get_conversation_analytics(self, conversation_id: int) -> dict[str, Any]:
         """
         تحليلات المحادثة - SUPERHUMAN ANALYTICS
 

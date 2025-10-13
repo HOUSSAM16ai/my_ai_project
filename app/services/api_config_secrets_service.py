@@ -16,18 +16,15 @@
 
 import base64
 import hashlib
-import json
 import os
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from cryptography.fernet import Fernet
-from flask import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -84,8 +81,8 @@ class Secret:
     updated_at: datetime
     version: int = 1
     rotation_policy: RotationPolicy = RotationPolicy.NEVER
-    next_rotation: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    next_rotation: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -97,8 +94,8 @@ class ConfigEntry:
     environment: Environment
     description: str
     is_sensitive: bool = False
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_by: Optional[str] = None
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_by: str | None = None
 
 
 @dataclass
@@ -110,9 +107,9 @@ class SecretAccessLog:
     accessed_at: datetime
     accessed_by: str
     action: str  # 'read', 'write', 'rotate', 'delete'
-    ip_address: Optional[str] = None
+    ip_address: str | None = None
     success: bool = True
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 @dataclass
@@ -120,11 +117,11 @@ class EnvironmentConfig:
     """Environment-specific configuration"""
 
     environment: Environment
-    config: Dict[str, Any]
-    secrets: Dict[str, str]  # Secret references, not values
-    feature_flags: Dict[str, bool]
-    resource_limits: Dict[str, Any]
-    deployment_metadata: Dict[str, Any]
+    config: dict[str, Any]
+    secrets: dict[str, str]  # Secret references, not values
+    feature_flags: dict[str, bool]
+    resource_limits: dict[str, Any]
+    deployment_metadata: dict[str, Any]
 
 
 # ======================================================================================
@@ -140,7 +137,7 @@ class SecretEncryption:
     HashiCorp Vault or AWS Secrets Manager
     """
 
-    def __init__(self, master_key: Optional[bytes] = None):
+    def __init__(self, master_key: bytes | None = None):
         if master_key is None:
             # Generate a key from environment or create new one
             master_key_str = os.environ.get("MASTER_ENCRYPTION_KEY")
@@ -173,11 +170,11 @@ class VaultBackend:
     should inherit from this class
     """
 
-    def read_secret(self, secret_id: str) -> Optional[str]:
+    def read_secret(self, secret_id: str) -> str | None:
         """Read secret from vault"""
         raise NotImplementedError
 
-    def write_secret(self, secret_id: str, value: str, metadata: Optional[Dict] = None) -> bool:
+    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
         """Write secret to vault"""
         raise NotImplementedError
 
@@ -185,7 +182,7 @@ class VaultBackend:
         """Delete secret from vault"""
         raise NotImplementedError
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List all secrets"""
         raise NotImplementedError
 
@@ -202,18 +199,18 @@ class LocalVaultBackend(VaultBackend):
     """
 
     def __init__(self):
-        self.secrets: Dict[str, str] = {}
+        self.secrets: dict[str, str] = {}
         self.encryption = SecretEncryption()
         self.lock = threading.RLock()
 
-    def read_secret(self, secret_id: str) -> Optional[str]:
+    def read_secret(self, secret_id: str) -> str | None:
         with self.lock:
             encrypted = self.secrets.get(secret_id)
             if encrypted:
                 return self.encryption.decrypt(encrypted)
             return None
 
-    def write_secret(self, secret_id: str, value: str, metadata: Optional[Dict] = None) -> bool:
+    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
         with self.lock:
             encrypted = self.encryption.encrypt(value)
             self.secrets[secret_id] = encrypted
@@ -226,7 +223,7 @@ class LocalVaultBackend(VaultBackend):
                 return True
             return False
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         with self.lock:
             if prefix:
                 return [k for k in self.secrets.keys() if k.startswith(prefix)]
@@ -253,19 +250,19 @@ class HashiCorpVaultBackend(VaultBackend):
         # import hvac
         # self.client = hvac.Client(url=vault_url, token=token)
 
-    def read_secret(self, secret_id: str) -> Optional[str]:
+    def read_secret(self, secret_id: str) -> str | None:
         # Production implementation:
         # response = self.client.secrets.kv.v2.read_secret_version(path=secret_id)
         # return response['data']['data']['value']
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
 
-    def write_secret(self, secret_id: str, value: str, metadata: Optional[Dict] = None) -> bool:
+    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
 
     def delete_secret(self, secret_id: str) -> bool:
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
 
     def rotate_secret(self, secret_id: str) -> bool:
@@ -287,19 +284,19 @@ class AWSSecretsManagerBackend(VaultBackend):
         # import boto3
         # self.client = boto3.client('secretsmanager', region_name=region_name)
 
-    def read_secret(self, secret_id: str) -> Optional[str]:
+    def read_secret(self, secret_id: str) -> str | None:
         # Production implementation:
         # response = self.client.get_secret_value(SecretId=secret_id)
         # return response['SecretString']
         raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
 
-    def write_secret(self, secret_id: str, value: str, metadata: Optional[Dict] = None) -> bool:
+    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
         raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
 
     def delete_secret(self, secret_id: str) -> bool:
         raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
 
     def rotate_secret(self, secret_id: str) -> bool:
@@ -325,10 +322,10 @@ class ConfigSecretsService:
     - Environment-based separation (Dev/Staging/Prod)
     """
 
-    def __init__(self, vault_backend: Optional[VaultBackend] = None):
+    def __init__(self, vault_backend: VaultBackend | None = None):
         self.vault = vault_backend or LocalVaultBackend()
-        self.config_store: Dict[Environment, Dict[str, ConfigEntry]] = defaultdict(dict)
-        self.secrets_registry: Dict[str, Secret] = {}
+        self.config_store: dict[Environment, dict[str, ConfigEntry]] = defaultdict(dict)
+        self.secrets_registry: dict[str, Secret] = {}
         self.access_logs: deque = deque(maxlen=10000)
         self.lock = threading.RLock()
 
@@ -377,7 +374,7 @@ class ConfigSecretsService:
         value: Any,
         description: str,
         is_sensitive: bool = False,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ):
         """Set configuration value for an environment"""
         with self.lock:
@@ -410,7 +407,7 @@ class ConfigSecretsService:
     ) -> str:
         """Create a new secret"""
         secret_id = hashlib.sha256(
-            f"{name}{environment.value}{datetime.now(timezone.utc)}".encode()
+            f"{name}{environment.value}{datetime.now(UTC)}".encode()
         ).hexdigest()[:16]
 
         # Store in vault
@@ -420,7 +417,7 @@ class ConfigSecretsService:
             raise RuntimeError(f"Failed to write secret to vault: {secret_id}")
 
         # Create secret metadata
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         secret = Secret(
             secret_id=secret_id,
             name=name,
@@ -444,7 +441,7 @@ class ConfigSecretsService:
 
         return secret_id
 
-    def get_secret(self, secret_id: str, accessed_by: str = "system") -> Optional[str]:
+    def get_secret(self, secret_id: str, accessed_by: str = "system") -> str | None:
         """Get secret value from vault"""
         with self.lock:
             if secret_id not in self.secrets_registry:
@@ -472,7 +469,7 @@ class ConfigSecretsService:
 
             if success:
                 secret.version += 1
-                secret.updated_at = datetime.now(timezone.utc)
+                secret.updated_at = datetime.now(UTC)
 
                 # Calculate next rotation
                 if secret.rotation_policy != RotationPolicy.NEVER:
@@ -485,9 +482,9 @@ class ConfigSecretsService:
 
             return success
 
-    def check_rotation_needed(self) -> List[str]:
+    def check_rotation_needed(self) -> list[str]:
         """Check which secrets need rotation"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self.lock:
             return [
                 secret_id
@@ -514,15 +511,15 @@ class ConfigSecretsService:
         accessed_by: str,
         action: str,
         success: bool,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ):
         """Log secret access for audit trail"""
         log = SecretAccessLog(
             log_id=hashlib.sha256(
-                f"{secret_id}{accessed_by}{datetime.now(timezone.utc)}".encode()
+                f"{secret_id}{accessed_by}{datetime.now(UTC)}".encode()
             ).hexdigest()[:16],
             secret_id=secret_id,
-            accessed_at=datetime.now(timezone.utc),
+            accessed_at=datetime.now(UTC),
             accessed_by=accessed_by,
             action=action,
             success=success,
@@ -557,8 +554,8 @@ class ConfigSecretsService:
             )
 
     def get_audit_report(
-        self, secret_id: Optional[str] = None, accessed_by: Optional[str] = None, limit: int = 1000
-    ) -> List[Dict[str, Any]]:
+        self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
+    ) -> list[dict[str, Any]]:
         """Get audit logs for secret access"""
         with self.lock:
             logs = list(self.access_logs)
@@ -592,7 +589,7 @@ class ConfigSecretsService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_config_secrets_instance: Optional[ConfigSecretsService] = None
+_config_secrets_instance: ConfigSecretsService | None = None
 _config_lock = threading.Lock()
 
 

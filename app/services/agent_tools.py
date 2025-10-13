@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 MAESTRO / OVERMIND – UNIFIED AGENT TOOL REGISTRY (REWRITTEN SUPER EDITION)
 Ultra Structural-Aware Sovereign Edition ++
@@ -80,8 +79,9 @@ import threading
 import time
 import traceback
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 # ======================================================================================
 # Version
@@ -150,12 +150,12 @@ AUTOFILL_EXT = os.getenv("AGENT_TOOLS_AUTOFILL_EXTENSION", ".txt")
 ACCEPT_DOTTED = _bool_env("AGENT_TOOLS_ACCEPT_DOTTED", True)
 FORCE_INTENT = _bool_env("AGENT_TOOLS_FORCE_INTENT", True)
 
-DISABLED: Set[str] = {t.strip() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
-DISPATCH_ALLOW: Set[str] = {
+DISABLED: set[str] = {t.strip() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
+DISPATCH_ALLOW: set[str] = {
     t.strip() for t in os.getenv("DISPATCH_ALLOWLIST", "").split(",") if t.strip()
 }
 
-_MEMORY_ALLOWLIST: Optional[Set[str]] = None
+_MEMORY_ALLOWLIST: set[str] | None = None
 _mem_list_raw = os.getenv("MEMORY_ALLOWLIST", "").strip()
 if _mem_list_raw:
     _MEMORY_ALLOWLIST = {k.strip() for k in _mem_list_raw.split(",") if k.strip()}
@@ -201,18 +201,18 @@ SEMANTIC_SEARCH_FAKE_LATENCY_MS = _int_env("SEMANTIC_SEARCH_FAKE_LATENCY_MS", 0)
 # ======================================================================================
 # Ephemeral Memory
 # ======================================================================================
-_MEMORY_STORE: Dict[str, Any] = {}
+_MEMORY_STORE: dict[str, Any] = {}
 _MEMORY_LOCK = threading.Lock()
 
 # ======================================================================================
 # Structural Map & Layer Stats
 # ======================================================================================
-_DEEP_STRUCT_MAP: Optional[Dict[str, Any]] = None
-_DEEP_STRUCT_HASH: Optional[str] = None
+_DEEP_STRUCT_MAP: dict[str, Any] | None = None
+_DEEP_STRUCT_HASH: str | None = None
 _DEEP_STRUCT_LOADED_AT: float = 0.0
 _DEEP_LOCK = threading.Lock()
 
-_LAYER_STATS: Dict[str, Dict[str, Any]] = {}
+_LAYER_STATS: dict[str, dict[str, Any]] = {}
 _LAYER_LOCK = threading.Lock()
 
 
@@ -237,7 +237,7 @@ def _load_deep_struct_map(force: bool = False) -> bool:
             if (_now() - _DEEP_STRUCT_LOADED_AT) < DEEP_MAP_TTL and _DEEP_STRUCT_MAP is not None:
                 return False
         try:
-            with open(DEEP_MAP_PATH, "r", encoding="utf-8") as f:
+            with open(DEEP_MAP_PATH, encoding="utf-8") as f:
                 raw = f.read()
             new_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
             if new_hash == _DEEP_STRUCT_HASH and _DEEP_STRUCT_MAP is not None and not force:
@@ -271,7 +271,7 @@ def _maybe_reload_struct_map():
         _load_deep_struct_map(force=False)
 
 
-def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
+def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     _maybe_reload_struct_map()
     if not _DEEP_STRUCT_MAP:
         return
@@ -291,11 +291,11 @@ def _annotate_struct_meta(abs_path: str, meta: Dict[str, Any]):
 class ToolResult:
     ok: bool
     data: Any = None
-    error: Optional[str] = None
-    meta: Dict[str, Any] = None
-    trace_id: Optional[str] = None
+    error: str | None = None
+    meta: dict[str, Any] = None
+    trace_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         return {k: v for k, v in d.items() if v is not None}
 
@@ -303,10 +303,10 @@ class ToolResult:
 # ======================================================================================
 # Registries
 # ======================================================================================
-_TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
-_TOOL_STATS: Dict[str, Dict[str, Any]] = {}
-_ALIAS_INDEX: Dict[str, str] = {}
-_CAPABILITIES: Dict[str, List[str]] = {}
+_TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
+_TOOL_STATS: dict[str, dict[str, Any]] = {}
+_ALIAS_INDEX: dict[str, str] = {}
+_CAPABILITIES: dict[str, list[str]] = {}
 _REGISTRY_LOCK = threading.Lock()
 
 # ======================================================================================
@@ -340,11 +340,11 @@ READ_DOTTED_ALIASES = {f"file_system.{s}" for s in READ_SUFFIXES}
 # ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
-def policy_can_execute(tool_name: str, args: Dict[str, Any]) -> bool:
+def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
     return True
 
 
-def transform_arguments(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     return args
 
 
@@ -356,7 +356,7 @@ def _init_tool_stats(name: str):
         _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0, "last_error": None}
 
 
-def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: Optional[str]):
+def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None):
     st = _TOOL_STATS[name]
     st["invocations"] += 1
     st["total_ms"] += elapsed_ms
@@ -416,7 +416,7 @@ def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
                 return "{}"
 
 
-def _file_hash(path: str) -> Optional[str]:
+def _file_hash(path: str) -> str | None:
     try:
         h = hashlib.sha256()
         with open(path, "rb") as f:
@@ -438,7 +438,7 @@ def _safe_path(
     path: str,
     *,
     must_exist_parent: bool = False,
-    enforce_ext: Optional[List[str]] = None,
+    enforce_ext: list[str] | None = None,
     forbid_overwrite_large: bool = True,
 ) -> str:
     if not isinstance(path, str) or not path.strip():
@@ -483,12 +483,12 @@ def _safe_path(
 def tool(
     name: str,
     description: str,
-    parameters: Optional[Dict[str, Any]] = None,
+    parameters: dict[str, Any] | None = None,
     *,
     category: str = "general",
-    aliases: Optional[List[str]] = None,
+    aliases: list[str] | None = None,
     allow_disable: bool = True,
-    capabilities: Optional[List[str]] = None,
+    capabilities: list[str] | None = None,
 ):
     if parameters is None:
         parameters = {"type": "object", "properties": {}}
@@ -634,12 +634,12 @@ def _validate_type(name: str, value: Any, expected: str):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
 
 
-def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[str, Any]:
+def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(schema, dict) or schema.get("type") != "object":
         return args
     properties = schema.get("properties", {}) or {}
     required = schema.get("required", []) or []
-    cleaned: Dict[str, Any] = {}
+    cleaned: dict[str, Any] = {}
     for field, meta in properties.items():
         if field in args:
             value = args[field]
@@ -661,8 +661,8 @@ def _validate_arguments(schema: Dict[str, Any], args: Dict[str, Any]) -> Dict[st
 # ======================================================================================
 # Canonicalization
 # ======================================================================================
-def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, List[str]]:
-    notes: List[str] = []
+def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
+    notes: list[str] = []
     name = _lower(raw_name)
     if not name:
         notes.append("empty_name")
@@ -712,7 +712,7 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> Tuple[str, L
     return raw_name, notes
 
 
-def resolve_tool_name(name: str) -> Optional[str]:
+def resolve_tool_name(name: str) -> str | None:
     canon, _ = canonicalize_tool_name(name)
     if canon in _TOOL_REGISTRY and not _TOOL_REGISTRY[canon].get("is_alias"):
         return canon
@@ -725,14 +725,14 @@ def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
 
 
-def get_tool(name: str) -> Optional[Dict[str, Any]]:
+def get_tool(name: str) -> dict[str, Any] | None:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
 
 
-def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
+def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
     out = []
     for meta in _TOOL_REGISTRY.values():
         if not include_aliases and meta.get("is_alias"):
@@ -767,8 +767,8 @@ def list_tools(include_aliases: bool = False) -> List[Dict[str, Any]]:
 def introspect_tools(
     include_aliases: bool = True,
     include_disabled: bool = True,
-    category: Optional[str] = None,
-    name_contains: Optional[str] = None,
+    category: str | None = None,
+    name_contains: str | None = None,
     enabled_only: bool = False,
     telemetry_only: bool = False,
     include_layers: bool = False,
@@ -1005,7 +1005,7 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
 # ======================================================================================
 # File System Tools
 # ======================================================================================
-def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
+def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
     if HASH_AFTER_WRITE and os.path.isfile(abs_path):
         try:
             result_data["sha256"] = _file_hash(abs_path)
@@ -1014,7 +1014,7 @@ def _maybe_hash_and_size(abs_path: str, result_data: Dict[str, Any]):
             pass
 
 
-def _apply_struct_limit(meta: Dict[str, Any]):
+def _apply_struct_limit(meta: dict[str, Any]):
     if not DEEP_LIMIT_KEYS or not meta:
         return
     keys = list(meta.keys())
@@ -1076,7 +1076,7 @@ def ensure_directory(path: str, must_be_new: bool = False) -> ToolResult:
     },
 )
 def write_file(
-    path: str, content: str, enforce_ext: Optional[str] = None, compress_json_if_large: bool = True
+    path: str, content: str, enforce_ext: str | None = None, compress_json_if_large: bool = True
 ) -> ToolResult:
     try:
         if not isinstance(content, str):
@@ -1142,7 +1142,7 @@ def write_file(
         "required": ["path", "content"],
     },
 )
-def write_file_if_changed(path: str, content: str, enforce_ext: Optional[str] = None) -> ToolResult:
+def write_file_if_changed(path: str, content: str, enforce_ext: str | None = None) -> ToolResult:
     try:
         abs_path = _safe_path(path, enforce_ext=[enforce_ext] if enforce_ext else None)
         new_hash = _content_hash(content)
@@ -1261,7 +1261,7 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
                 _touch_layer(res["struct_layer"], "reads")
             _apply_struct_limit(res)
             return ToolResult(ok=True, data=res)
-        with open(abs_path, "r", encoding="utf-8") as f:
+        with open(abs_path, encoding="utf-8") as f:
             data_txt = f.read(max_eff + 10)
         truncated = len(data_txt) > max_eff
         res = {
@@ -1398,7 +1398,7 @@ def ensure_file(
     initial_content: str = "",
     force_create: bool = False,
     allow_create: bool = True,
-    enforce_ext: Optional[str] = None,
+    enforce_ext: str | None = None,
 ) -> ToolResult:
     try:
         max_eff = int(min(max_bytes, MAX_READ_BYTES))
@@ -1426,7 +1426,7 @@ def ensure_file(
                 except Exception:
                     preview = ""
             else:
-                with open(abs_path, "r", encoding="utf-8") as f:
+                with open(abs_path, encoding="utf-8") as f:
                     d = f.read(max_eff + 10)
                 truncated = len(d) > max_eff
                 preview = d[:max_eff]
@@ -1492,7 +1492,7 @@ def ensure_file(
     },
 )
 def read_bulk_files(
-    paths: List[str],
+    paths: list[str],
     max_bytes_per_file: int = 60000,
     ignore_missing: bool = True,
     merge_mode: str = "json",
@@ -1514,11 +1514,11 @@ def read_bulk_files(
                 continue
             if os.path.getsize(abs_path) > max_eff:
                 # Partial read
-                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                with open(abs_path, encoding="utf-8", errors="replace") as f:
                     content = f.read(max_eff)
                 truncated = True
             else:
-                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                with open(abs_path, encoding="utf-8", errors="replace") as f:
                     content = f.read()
                 truncated = False
             total_chars += len(content)
@@ -1592,7 +1592,7 @@ def code_index_project(
                     st = os.stat(fpath)
                     if st.st_size > CODE_INDEX_MAX_FILE_BYTES:
                         continue
-                    with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                    with open(fpath, encoding="utf-8", errors="replace") as f:
                         lines = f.readlines()
                     line_count = len(lines)
                     non_empty = sum(1 for l in lines if l.strip())
@@ -1682,7 +1682,7 @@ def code_search_lexical(
                 if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
                     continue
                 try:
-                    with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                    with open(fpath, encoding="utf-8", errors="replace") as f:
                         lines = f.readlines()
                 except Exception:
                     continue
@@ -1834,7 +1834,7 @@ def reload_deep_struct_map() -> ToolResult:
         "required": ["tool_name"],
     },
 )
-def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) -> ToolResult:
+def dispatch_tool(tool_name: str, arguments: dict[str, Any] | None = None) -> ToolResult:
     arguments = arguments or {}
     if DISPATCH_ALLOW and tool_name not in DISPATCH_ALLOW:
         return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")
@@ -1861,8 +1861,8 @@ def dispatch_tool(tool_name: str, arguments: Optional[Dict[str, Any]] = None) ->
 # ======================================================================================
 # Public Schema Access
 # ======================================================================================
-def get_tools_schema(include_disabled: bool = False) -> List[Dict[str, Any]]:
-    schema: List[Dict[str, Any]] = []
+def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
+    schema: list[dict[str, Any]] = []
     for meta in _TOOL_REGISTRY.values():
         if meta.get("is_alias"):
             continue

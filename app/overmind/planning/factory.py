@@ -1,6 +1,4 @@
 # app/overmind/planning/factory.py
-# -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 # ======================================================================================
 # OVERMIND PLANNER FACTORY – HYPER STRUCTURAL / DEEP-CONTEXT AWARE CORE
 # Version 4.0.0  •  Codename: "GUILD OMEGA PRIME / ZERO-DOWNTIME / SELF-HEAL+ / DEEP-BOOST"
@@ -64,18 +62,12 @@ import os
 import pkgutil
 import threading
 import time
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
 )
 
 # Attempt to import BasePlanner; create safe fallbacks if missing.
@@ -110,24 +102,24 @@ except Exception:
 FACTORY_VERSION = "4.0.0"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
-OFFICIAL_MANUAL_MODULES: List[str] = [
+OFFICIAL_MANUAL_MODULES: list[str] = [
     "app.overmind.planning.llm_planner",  # Extend / customize as needed
 ]
 
-DEFAULT_EXCLUDE_MODULES: Set[str] = {
+DEFAULT_EXCLUDE_MODULES: set[str] = {
     "__init__",
     "factory",
     "base_planner",
 }
 
 _env_manual = os.getenv("OVERMIND_PLANNER_MANUAL", "")
-ENV_MANUAL_MODULES: List[str] = [m.strip() for m in _env_manual.split(",") if m.strip()]
+ENV_MANUAL_MODULES: list[str] = [m.strip() for m in _env_manual.split(",") if m.strip()]
 
 _env_exclude = os.getenv("OVERMIND_PLANNER_EXCLUDE", "")
-ENV_EXCLUDE_MODULES: Set[str] = set(m.strip() for m in _env_exclude.split(",") if m.strip())
+ENV_EXCLUDE_MODULES: set[str] = set(m.strip() for m in _env_exclude.split(",") if m.strip())
 
-MANUAL_IMPORT_MODULES: List[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
-EXCLUDE_MODULES: Set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
+MANUAL_IMPORT_MODULES: list[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
+EXCLUDE_MODULES: set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
 
 _FORCE_REDISCOVER = os.getenv("FACTORY_FORCE_REDISCOVER", "0") == "1"
 MIN_RELIABILITY = float(os.getenv("FACTORY_MIN_RELIABILITY", "0.0"))
@@ -148,27 +140,27 @@ HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
 @dataclass
 class PlannerRecord:
     name: str
-    module: Optional[str] = None
-    class_name: Optional[str] = None
-    capabilities: Set[str] = field(default_factory=set)
-    tags: Set[str] = field(default_factory=set)
-    tier: Optional[str] = None
-    version: Optional[str] = None
-    production_ready: Optional[bool] = None
-    quarantined: Optional[bool] = None
-    self_test_passed: Optional[bool] = None
-    reliability_score: Optional[float] = None
-    total_invocations: Optional[int] = None
-    total_failures: Optional[int] = None
-    avg_duration_ms: Optional[float] = None
+    module: str | None = None
+    class_name: str | None = None
+    capabilities: set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set)
+    tier: str | None = None
+    version: str | None = None
+    production_ready: bool | None = None
+    quarantined: bool | None = None
+    self_test_passed: bool | None = None
+    reliability_score: float | None = None
+    total_invocations: int | None = None
+    total_failures: int | None = None
+    avg_duration_ms: float | None = None
     instantiated: bool = False
-    instantiation_ts: Optional[float] = None
-    last_access_ts: Optional[float] = None
-    instantiation_duration_s: Optional[float] = None
-    error: Optional[str] = None
-    last_error: Optional[str] = None
+    instantiation_ts: float | None = None
+    last_access_ts: float | None = None
+    instantiation_duration_s: float | None = None
+    error: str | None = None
+    last_error: str | None = None
 
-    def to_public_dict(self) -> Dict[str, Any]:
+    def to_public_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["capabilities"] = sorted(self.capabilities)
         d["tags"] = sorted(self.tags)
@@ -179,21 +171,21 @@ class PlannerRecord:
 class FactoryState:
     lock: threading.RLock = field(default_factory=threading.RLock)
     discovered: bool = False
-    discovery_signature: Optional[str] = None
+    discovery_signature: str | None = None
     discovery_runs: int = 0
-    planner_records: Dict[str, PlannerRecord] = field(default_factory=dict)
-    import_failures: Dict[str, str] = field(default_factory=dict)
-    archived_import_failures: List[Dict[str, str]] = field(default_factory=list)
-    issued_warnings: Set[str] = field(default_factory=set)
+    planner_records: dict[str, PlannerRecord] = field(default_factory=dict)
+    import_failures: dict[str, str] = field(default_factory=dict)
+    archived_import_failures: list[dict[str, str]] = field(default_factory=list)
+    issued_warnings: set[str] = field(default_factory=set)
     total_instantiations: int = 0
-    last_self_heal_ts: Optional[float] = None
-    selection_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
-    instantiation_profile_samples: List[Dict[str, Any]] = field(default_factory=list)
+    last_self_heal_ts: float | None = None
+    selection_profile_samples: list[dict[str, Any]] = field(default_factory=list)
+    instantiation_profile_samples: list[dict[str, Any]] = field(default_factory=list)
 
 
 _STATE = FactoryState()
-_INSTANCE_CACHE: Dict[str, BasePlanner] = {}
-_DEPRECATION_FLAGS: Set[str] = set()
+_INSTANCE_CACHE: dict[str, BasePlanner] = {}
+_DEPRECATION_FLAGS: set[str] = set()
 
 # ======================================================================================
 # LOGGING / UTIL
@@ -216,7 +208,7 @@ def _now() -> float:
     return time.time()
 
 
-def _safe_lower_set(values: Optional[Iterable[str]]) -> Set[str]:
+def _safe_lower_set(values: Iterable[str] | None) -> set[str]:
     return set(v.lower().strip() for v in values or [] if v is not None)
 
 
@@ -225,8 +217,8 @@ def _safe_lower_set(values: Optional[Iterable[str]]) -> Set[str]:
 # ======================================================================================
 
 
-def _active_planner_names(include_quarantined: bool = False) -> List[str]:
-    names: List[str] = []
+def _active_planner_names(include_quarantined: bool = False) -> list[str]:
+    names: list[str] = []
     for n, r in _STATE.planner_records.items():
         if r.error:
             continue
@@ -249,7 +241,7 @@ def _iter_submodules(package_name: str):
         yield m.name
 
 
-def _import_module(module_name: str) -> Optional[ModuleType]:
+def _import_module(module_name: str) -> ModuleType | None:
     try:
         return importlib.import_module(module_name)
     except Exception as exc:
@@ -276,7 +268,7 @@ def _get_planner_class(name: str):
     raise KeyError(f"Planner class '{name}' not found")
 
 
-def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
+def _extract_attribute_set(obj: Any, attr: str) -> set[str]:
     if not hasattr(obj, attr):
         return set()
     val = getattr(obj, attr)
@@ -285,7 +277,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> Set[str]:
     return set()
 
 
-def _extract_bool(obj: Any, attr: str) -> Optional[bool]:
+def _extract_bool(obj: Any, attr: str) -> bool | None:
     if not hasattr(obj, attr):
         return None
     try:
@@ -294,7 +286,7 @@ def _extract_bool(obj: Any, attr: str) -> Optional[bool]:
         return None
 
 
-def _extract_string(obj: Any, attr: str) -> Optional[str]:
+def _extract_string(obj: Any, attr: str) -> str | None:
     if not hasattr(obj, attr):
         return None
     v = getattr(obj, attr)
@@ -372,7 +364,7 @@ def _sync_registry_into_records():
             rec.version = meta.get("version", rec.version)
 
 
-def _discover_and_register(force: bool = False, package: Optional[str] = None):
+def _discover_and_register(force: bool = False, package: str | None = None):
     with _STATE.lock:
         root = package or DEFAULT_ROOT_PACKAGE
         signature = _compute_discovery_signature(root)
@@ -436,7 +428,7 @@ def _instantiate_planner(name: str) -> BasePlanner:
     return inst
 
 
-def _capabilities_match_ratio(required: Set[str], offered: Set[str]) -> float:
+def _capabilities_match_ratio(required: set[str], offered: set[str]) -> float:
     if not required:
         return 1.0
     if not offered:
@@ -450,7 +442,7 @@ def _rank_hint(
     objective: str,
     capabilities_match_ratio: float,
     reliability_score: float,
-    tier: Optional[str],
+    tier: str | None,
     production_ready: bool,
 ) -> float:
     if hasattr(BasePlanner, "compute_rank_hint"):
@@ -479,7 +471,7 @@ def _rank_hint(
 # ======================================================================================
 
 
-def discover(force: bool = False, package: Optional[str] = None):
+def discover(force: bool = False, package: str | None = None):
     _discover_and_register(force=force, package=package)
     if not _active_planner_names():
         _warn_once("post_discover_empty", "After discover(): no active planners.")
@@ -495,10 +487,10 @@ def refresh_metadata():
 # Backward compatibility: available_planners
 if not hasattr(BasePlanner, "available_planners"):
 
-    def _legacy_available_planners() -> List[str]:  # type: ignore
+    def _legacy_available_planners() -> list[str]:  # type: ignore
         return _active_planner_names()
 
-    setattr(BasePlanner, "available_planners", staticmethod(_legacy_available_planners))  # type: ignore
+    BasePlanner.available_planners = staticmethod(_legacy_available_planners)  # type: ignore
 else:
     try:
         original_available = BasePlanner.available_planners  # type: ignore
@@ -511,7 +503,7 @@ else:
             base_names.update(_active_planner_names())
             return sorted(base_names)
 
-        setattr(BasePlanner, "available_planners", staticmethod(_wrapped_available_planners))  # type: ignore
+        BasePlanner.available_planners = staticmethod(_wrapped_available_planners)  # type: ignore
     except Exception:
         pass
 
@@ -537,11 +529,11 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     return cls()  # type: ignore
 
 
-def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> List[str]:
+def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
-    out: List[str] = []
+    out: list[str] = []
     for n, r in _STATE.planner_records.items():
         if r.quarantined and not include_quarantined:
             continue
@@ -577,8 +569,8 @@ def get_all_planners(
 
 
 def _compute_deep_boosts(
-    rec: PlannerRecord, req_caps: Set[str], deep_context: Optional[Dict[str, Any]]
-) -> Tuple[float, Dict[str, Any]]:
+    rec: PlannerRecord, req_caps: set[str], deep_context: dict[str, Any] | None
+) -> tuple[float, dict[str, Any]]:
     breakdown = {"deep_boost": 0.0, "hotspot_boost": 0.0}
     if not deep_context or not isinstance(deep_context, dict):
         return 0.0, breakdown
@@ -600,12 +592,12 @@ def _compute_deep_boosts(
 
 def select_best_planner(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     prefer_production: bool = True,
     auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None,
-    deep_context: Optional[Dict[str, Any]] = None,
-) -> Union[BasePlanner, str]:
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+) -> BasePlanner | str:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -620,7 +612,7 @@ def select_best_planner(
             active = _active_planner_names()
     if not active:
         raise PlannerError("No active planners after discovery/self-heal.", "factory", objective)
-    candidates: List[Tuple[float, str, Dict[str, Any]]] = []
+    candidates: list[tuple[float, str, dict[str, Any]]] = []
     for name in active:
         rec = _STATE.planner_records.get(name)
         if not rec or rec.quarantined:
@@ -686,12 +678,12 @@ def select_best_planner(
 
 def batch_select_best_planners(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     n: int = 3,
     prefer_production: bool = True,
     auto_instantiate: bool = False,
-    deep_context: Optional[Dict[str, Any]] = None,
-) -> List[Union[str, BasePlanner]]:
+    deep_context: dict[str, Any] | None = None,
+) -> list[str | BasePlanner]:
     if n <= 0:
         return []
     if not _STATE.discovered:
@@ -701,7 +693,7 @@ def batch_select_best_planners(
     active = _active_planner_names()
     if not active:
         return []
-    candidates: List[Tuple[float, str]] = []
+    candidates: list[tuple[float, str]] = []
     for name in active:
         rec = _STATE.planner_records.get(name)
         if not rec or rec.quarantined:
@@ -737,7 +729,7 @@ def batch_select_best_planners(
 
 def self_heal(
     force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 2
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     report = {
         "before_active": len(_active_planner_names()),
         "attempts": 0,
@@ -769,7 +761,7 @@ def self_heal(
 # ======================================================================================
 
 
-def planner_stats() -> Dict[str, Any]:
+def planner_stats() -> dict[str, Any]:
     with _STATE.lock:
         active = _active_planner_names()
         quarantined = [n for n, r in _STATE.planner_records.items() if r.quarantined]
@@ -788,7 +780,7 @@ def planner_stats() -> Dict[str, Any]:
         }
 
 
-def describe_planner(name: str) -> Dict[str, Any]:
+def describe_planner(name: str) -> dict[str, Any]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -807,7 +799,7 @@ def describe_planner(name: str) -> Dict[str, Any]:
     return data
 
 
-def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
+def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
     if not _STATE.discovered:
         discover()
     refresh_metadata()
@@ -839,7 +831,7 @@ def diagnostics_json(verbose: bool = False) -> Dict[str, Any]:
 def diagnostics_report(verbose: bool = False) -> str:
     data = diagnostics_json(verbose=verbose)
     stats = data["stats"]
-    lines: List[str] = []
+    lines: list[str] = []
     lines.append(f"=== Planner Guild Diagnostics (v{FACTORY_VERSION}) ===")
     lines.append(f"Discovered                : {stats['discovered']}")
     lines.append(f"Discovery Runs            : {stats['discovery_runs']}")
@@ -890,7 +882,7 @@ def diagnostics_report(verbose: bool = False) -> str:
 
 
 def export_diagnostics(
-    path: Union[str, Path], fmt: str = "json", verbose: bool = False, ensure_dir: bool = True
+    path: str | Path, fmt: str = "json", verbose: bool = False, ensure_dir: bool = True
 ) -> Path:
     p = Path(path)
     if ensure_dir and p.parent and not p.parent.exists():
@@ -904,7 +896,7 @@ def export_diagnostics(
     return p
 
 
-def health_check(min_required: int = 1) -> Dict[str, Any]:
+def health_check(min_required: int = 1) -> dict[str, Any]:
     active_count = len(_active_planner_names())
     quarantined_count = sum(1 for r in _STATE.planner_records.values() if r.quarantined)
     reliability_vals = [
@@ -915,7 +907,7 @@ def health_check(min_required: int = 1) -> Dict[str, Any]:
     avg_reliability = (
         round(sum(reliability_vals) / len(reliability_vals), 4) if reliability_vals else None
     )
-    suggestions: List[str] = []
+    suggestions: list[str] = []
     if active_count < min_required:
         suggestions.append("Verify manual import modules (OVERMIND_PLANNER_MANUAL).")
         suggestions.append("Check quarantined planners or raise MIN_RELIABILITY threshold.")
@@ -933,7 +925,7 @@ def health_check(min_required: int = 1) -> Dict[str, Any]:
     return result
 
 
-def list_quarantined() -> List[str]:
+def list_quarantined() -> list[str]:
     if not _STATE.discovered:
         discover()
     return sorted([n for n, r in _STATE.planner_records.items() if r.quarantined])
@@ -968,12 +960,12 @@ async def a_get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner
 
 async def a_select_best_planner(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     prefer_production: bool = True,
     auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None,
-    deep_context: Optional[Dict[str, Any]] = None,
-) -> Union[BasePlanner, str]:
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+) -> BasePlanner | str:
     return select_best_planner(
         objective,
         required_capabilities=required_capabilities,
@@ -989,12 +981,12 @@ async def a_select_best_planner(
 # ======================================================================================
 
 
-def selection_profiles(limit: int = 50) -> List[Dict[str, Any]]:
+def selection_profiles(limit: int = 50) -> list[dict[str, Any]]:
     with _STATE.lock:
         return _STATE.selection_profile_samples[-limit:]
 
 
-def instantiation_profiles(limit: int = 50) -> List[Dict[str, Any]]:
+def instantiation_profiles(limit: int = 50) -> list[dict[str, Any]]:
     with _STATE.lock:
         return _STATE.instantiation_profile_samples[-limit:]
 

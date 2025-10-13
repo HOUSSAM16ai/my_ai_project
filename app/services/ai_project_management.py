@@ -14,13 +14,12 @@ This module implements:
 - Continuous feedback loops
 """
 
-import random
 import statistics
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class TaskPriority(Enum):
@@ -66,13 +65,13 @@ class Task:
     priority: TaskPriority
     estimated_hours: float
     actual_hours: float = 0.0
-    assignee: Optional[str] = None
-    dependencies: List[str] = field(default_factory=list)
+    assignee: str | None = None
+    dependencies: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    deadline: Optional[datetime] = None
-    tags: List[str] = field(default_factory=list)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    deadline: datetime | None = None
+    tags: list[str] = field(default_factory=list)
 
     def is_overdue(self) -> bool:
         """هل المهمة متأخرة؟"""
@@ -102,7 +101,7 @@ class Risk:
     probability: float  # 0-1
     impact: float  # 0-10
     mitigation_plan: str
-    owner: Optional[str] = None
+    owner: str | None = None
     identified_at: datetime = field(default_factory=datetime.now)
 
     def risk_score(self) -> float:
@@ -118,7 +117,7 @@ class TeamMember:
     name: str
     role: str
     capacity_hours_per_day: float = 8.0
-    skills: List[str] = field(default_factory=list)
+    skills: list[str] = field(default_factory=list)
     current_workload: float = 0.0  # hours
     performance_score: float = 1.0  # multiplier
 
@@ -134,12 +133,12 @@ class PredictiveTaskAnalyzer:
     """
 
     def __init__(self):
-        self.historical_tasks: List[Task] = []
-        self.prediction_accuracy: Dict[str, float] = defaultdict(lambda: 0.5)
+        self.historical_tasks: list[Task] = []
+        self.prediction_accuracy: dict[str, float] = defaultdict(lambda: 0.5)
 
     def predict_task_duration(
-        self, task: Task, assignee: Optional[TeamMember] = None
-    ) -> Tuple[float, float]:
+        self, task: Task, assignee: TeamMember | None = None
+    ) -> tuple[float, float]:
         """
         التنبؤ بمدة المهمة الفعلية
         Returns: (predicted_hours, confidence)
@@ -175,7 +174,7 @@ class PredictiveTaskAnalyzer:
 
         return predicted_hours, confidence
 
-    def _find_similar_tasks(self, task: Task, limit: int = 10) -> List[Task]:
+    def _find_similar_tasks(self, task: Task, limit: int = 10) -> list[Task]:
         """إيجاد مهام مشابهة من التاريخ"""
         scored_tasks = []
 
@@ -215,8 +214,8 @@ class PredictiveTaskAnalyzer:
         return score
 
     def predict_completion_date(
-        self, task: Task, assignee: Optional[TeamMember] = None
-    ) -> Tuple[datetime, float]:
+        self, task: Task, assignee: TeamMember | None = None
+    ) -> tuple[datetime, float]:
         """
         التنبؤ بتاريخ الإنجاز
         Returns: (predicted_date, confidence)
@@ -238,7 +237,7 @@ class PredictiveTaskAnalyzer:
 
         return predicted_date, confidence
 
-    def identify_bottlenecks(self, tasks: List[Task]) -> List[Dict[str, Any]]:
+    def identify_bottlenecks(self, tasks: list[Task]) -> list[dict[str, Any]]:
         """تحديد الاختناقات في المشروع"""
         bottlenecks = []
 
@@ -287,7 +286,7 @@ class SmartScheduler:
     def __init__(self):
         self.task_analyzer = PredictiveTaskAnalyzer()
 
-    def optimize_schedule(self, tasks: List[Task], team: List[TeamMember]) -> Dict[str, List[Task]]:
+    def optimize_schedule(self, tasks: list[Task], team: list[TeamMember]) -> dict[str, list[Task]]:
         """
         تحسين الجدول الزمني بتوزيع المهام على الفريق
         """
@@ -314,7 +313,7 @@ class SmartScheduler:
 
         return assignments
 
-    def _topological_sort(self, tasks: List[Task]) -> List[Task]:
+    def _topological_sort(self, tasks: list[Task]) -> list[Task]:
         """ترتيب طوبولوجي للمهام بناءً على التبعيات"""
         # Simplified topological sort
         # في تطبيق حقيقي، نستخدم Kahn's algorithm
@@ -332,8 +331,8 @@ class SmartScheduler:
         return sorted_tasks
 
     def _find_best_assignee(
-        self, task: Task, team: List[TeamMember], current_assignments: Dict[str, List[Task]]
-    ) -> Optional[TeamMember]:
+        self, task: Task, team: list[TeamMember], current_assignments: dict[str, list[Task]]
+    ) -> TeamMember | None:
         """إيجاد أفضل عضو فريق للمهمة"""
         scored_members = []
 
@@ -351,7 +350,7 @@ class SmartScheduler:
         return None
 
     def _calculate_assignment_score(
-        self, task: Task, member: TeamMember, current_tasks: List[Task]
+        self, task: Task, member: TeamMember, current_tasks: list[Task]
     ) -> float:
         """حساب درجة ملاءمة العضو للمهمة"""
         score = 0.0
@@ -378,9 +377,9 @@ class RiskAssessor:
     """
 
     def __init__(self):
-        self.risk_history: List[Risk] = []
+        self.risk_history: list[Risk] = []
 
-    def assess_project_risks(self, tasks: List[Task], team: List[TeamMember]) -> List[Risk]:
+    def assess_project_risks(self, tasks: list[Task], team: list[TeamMember]) -> list[Risk]:
         """تقييم مخاطر المشروع"""
         risks = []
 
@@ -464,8 +463,8 @@ class ProjectOrchestrator:
         self.task_analyzer = PredictiveTaskAnalyzer()
         self.scheduler = SmartScheduler()
         self.risk_assessor = RiskAssessor()
-        self.tasks: List[Task] = []
-        self.team: List[TeamMember] = []
+        self.tasks: list[Task] = []
+        self.team: list[TeamMember] = []
 
     def add_task(self, task: Task):
         """إضافة مهمة"""
@@ -475,7 +474,7 @@ class ProjectOrchestrator:
         """إضافة عضو فريق"""
         self.team.append(member)
 
-    def generate_smart_insights(self) -> Dict[str, Any]:
+    def generate_smart_insights(self) -> dict[str, Any]:
         """توليد رؤى ذكية عن المشروع"""
         # Predict completion
         total_remaining_hours = 0
@@ -546,8 +545,8 @@ class ProjectOrchestrator:
         }
 
     def _generate_recommendations(
-        self, risks: List[Risk], bottlenecks: List[Dict], completion_rate: float
-    ) -> List[str]:
+        self, risks: list[Risk], bottlenecks: list[dict], completion_rate: float
+    ) -> list[str]:
         """توليد توصيات ذكية"""
         recommendations = []
 
@@ -628,11 +627,11 @@ if __name__ == "__main__":
     )
     print(f"\n✅ Progress: {insights['progress']['completion_percentage']:.1f}%")
 
-    print(f"\n⚠️ Top Risks:")
+    print("\n⚠️ Top Risks:")
     for risk in insights["risks"][:3]:
         print(f"  - {risk['title']} (Score: {risk['score']:.1f})")
 
-    print(f"\n💡 Recommendations:")
+    print("\n💡 Recommendations:")
     for rec in insights["recommendations"]:
         print(f"  {rec}")
 

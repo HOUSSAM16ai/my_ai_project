@@ -4,7 +4,7 @@
 # PRIME DIRECTIVE:
 #   فئة أساسية للتحقق من صحة البيانات - Base validator with enterprise patterns
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from marshmallow import Schema, ValidationError
 
@@ -19,12 +19,12 @@ class BaseValidator:
     - Schema caching for performance
     """
 
-    _schema_cache: Dict[str, Schema] = {}
+    _schema_cache: dict[str, Schema] = {}
 
     @classmethod
     def validate(
-        cls, schema_class: type, data: Dict[str, Any], partial: bool = False
-    ) -> Tuple[bool, Optional[Dict], Optional[Dict]]:
+        cls, schema_class: type, data: dict[str, Any], partial: bool = False
+    ) -> tuple[bool, dict | None, dict | None]:
         """
         التحقق من صحة البيانات باستخدام schema محدد
 
@@ -57,8 +57,8 @@ class BaseValidator:
 
     @classmethod
     def format_error_response(
-        cls, errors: Dict[str, Any], status_code: int = 400
-    ) -> Tuple[Dict, int]:
+        cls, errors: dict[str, Any], status_code: int = 400
+    ) -> tuple[dict, int]:
         """
         تنسيق استجابة خطأ موحدة
 
@@ -76,8 +76,8 @@ class BaseValidator:
 
     @classmethod
     def format_success_response(
-        cls, data: Any, message: str = "Success", metadata: Optional[Dict] = None
-    ) -> Dict:
+        cls, data: Any, message: str = "Success", metadata: dict | None = None
+    ) -> dict:
         """
         تنسيق استجابة نجاح موحدة
 

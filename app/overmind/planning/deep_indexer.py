@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Ultra Deep Structural / Semantic-Oriented Indexer (Enhanced v2)
 ================================================================
@@ -69,7 +68,7 @@ import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any
 
 # --------------------------------------------------------------------------------------
 # Configuration Helpers
@@ -140,8 +139,8 @@ class FunctionInfo:
     hash: str
     complexity: int
     recursive: bool
-    tags: List[str]
-    calls_out: List[str]  # raw callee names (not resolved fully)
+    tags: list[str]
+    calls_out: list[str]  # raw callee names (not resolved fully)
 
 
 @dataclass
@@ -150,18 +149,18 @@ class ClassInfo:
     lineno: int
     end_lineno: int
     loc: int
-    bases: List[str]
+    bases: list[str]
 
 
 @dataclass
 class FileModule:
     path: str
-    functions: List[FunctionInfo]
-    classes: List[ClassInfo]
-    imports: List[str]
-    call_names: Dict[str, int]
+    functions: list[FunctionInfo]
+    classes: list[ClassInfo]
+    imports: list[str]
+    call_names: dict[str, int]
     file_hash: str
-    error: Optional[str] = None
+    error: str | None = None
     entrypoint: bool = False
     loc: int = 0
 
@@ -173,7 +172,7 @@ class FileModule:
 
 def _read_file(path: str) -> str:
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception:
         return ""
@@ -246,16 +245,14 @@ def _estimate_complexity(node: ast.AST) -> int:
             complexity += 1
         elif isinstance(child, ast.BoolOp):
             complexity += max(1, len(getattr(child, "values", [])) - 1)
-        elif isinstance(child, ast.ExceptHandler):
-            complexity += 1
-        elif isinstance(child, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+        elif isinstance(child, ast.ExceptHandler) or isinstance(child, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
             complexity += 1
     return complexity
 
 
-def _categorize(code: str) -> List[str]:
+def _categorize(code: str) -> list[str]:
     lower = code.lower()
-    tags: Set[str] = set()
+    tags: set[str] = set()
     if "async def " in lower:
         tags.add("async")
     if " for " in lower or " while " in lower:
@@ -277,7 +274,7 @@ def _categorize(code: str) -> List[str]:
     return sorted(list(tags))
 
 
-def _layer_for_path(path: str) -> Optional[str]:
+def _layer_for_path(path: str) -> str | None:
     if not CONFIG["LAYER_HEURISTICS"]:
         return None
     segments = path.replace("\\", "/").split("/")
@@ -318,14 +315,14 @@ def _service_candidate(path: str, code: str) -> bool:
 # --------------------------------------------------------------------------------------
 
 
-def _collect_python_files(root: str) -> Tuple[List[str], List[str]]:
+def _collect_python_files(root: str) -> tuple[list[str], list[str]]:
     """
     Returns: (files, skipped_large_files)
     """
     max_bytes = CONFIG["MAX_FILE_BYTES"]
     exclude_dirs = CONFIG["EXCLUDE_DIRS"]
-    py_files: List[str] = []
-    skipped: List[str] = []
+    py_files: list[str] = []
+    skipped: list[str] = []
     root = os.path.abspath(root)
 
     def _excluded(dp: str) -> bool:
@@ -370,7 +367,7 @@ def _collect_python_files(root: str) -> Tuple[List[str], List[str]]:
 # --------------------------------------------------------------------------------------
 
 
-def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModule:
+def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
     code = _read_file(path)
     file_sha = _file_hash(path)
     if not code:
@@ -399,9 +396,9 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
         )
 
     lines = code.splitlines()
-    functions: List[FunctionInfo] = []
-    classes: List[ClassInfo] = []
-    imports: List[str] = []
+    functions: list[FunctionInfo] = []
+    classes: list[ClassInfo] = []
+    imports: list[str] = []
     call_counter = Counter()
     entrypoint = False
 
@@ -497,7 +494,7 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
 # --------------------------------------------------------------------------------------
 
 
-def _cache_paths(cache_dir: str) -> Tuple[str, str]:
+def _cache_paths(cache_dir: str) -> tuple[str, str]:
     os.makedirs(cache_dir, exist_ok=True)
     return (
         os.path.join(cache_dir, "deep_index_cache.json"),
@@ -505,20 +502,20 @@ def _cache_paths(cache_dir: str) -> Tuple[str, str]:
     )
 
 
-def _load_cache(cache_dir: str) -> Dict[str, Any]:
+def _load_cache(cache_dir: str) -> dict[str, Any]:
     if not CONFIG["CACHE_ENABLE"]:
         return {}
     main_path, meta_path = _cache_paths(cache_dir)
     try:
         if os.path.exists(main_path):
-            with open(main_path, "r", encoding="utf-8") as f:
+            with open(main_path, encoding="utf-8") as f:
                 return json.load(f)
     except Exception:
         return {}
     return {}
 
 
-def _save_cache(cache_dir: str, data: Dict[str, Any]) -> None:
+def _save_cache(cache_dir: str, data: dict[str, Any]) -> None:
     if not CONFIG["CACHE_ENABLE"]:
         return
     main_path, meta_path = _cache_paths(cache_dir)
@@ -543,7 +540,7 @@ def _save_cache(cache_dir: str, data: Dict[str, Any]) -> None:
 # --------------------------------------------------------------------------------------
 
 
-def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, str, str]], Counter]:
+def _build_call_graph(modules: list[FileModule]) -> tuple[list[tuple[str, str, str, str]], Counter]:
     """
     Returns:
       edges: [(file, function, callee_raw, callee_resolved? (maybe empty))]
@@ -558,7 +555,7 @@ def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, s
         for fn in m.functions:
             fn_index[fn.name].append((m.path, fn.name))
 
-    edges: List[Tuple[str, str, str, str]] = []
+    edges: list[tuple[str, str, str, str]] = []
     freq = Counter()
 
     for m in modules:
@@ -580,7 +577,7 @@ def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, s
     return edges, freq
 
 
-def _aggregate_metrics(modules: List[FileModule]) -> Dict[str, Any]:
+def _aggregate_metrics(modules: list[FileModule]) -> dict[str, Any]:
     fn_count = 0
     total_cx = 0
     cx_values = []
@@ -623,8 +620,8 @@ def _aggregate_metrics(modules: List[FileModule]) -> Dict[str, Any]:
 
 
 def _build_dependencies(
-    modules: List[FileModule], internal_prefixes: Tuple[str, ...]
-) -> Dict[str, List[str]]:
+    modules: list[FileModule], internal_prefixes: tuple[str, ...]
+) -> dict[str, list[str]]:
     dep_graph = defaultdict(set)
     for m in modules:
         for imp in m.imports:
@@ -633,7 +630,7 @@ def _build_dependencies(
     return {k: sorted(v) for k, v in dep_graph.items()}
 
 
-def _collect_dup_groups(modules: List[FileModule]) -> Dict[str, List[Dict[str, Any]]]:
+def _collect_dup_groups(modules: list[FileModule]) -> dict[str, list[dict[str, Any]]]:
     dup_map = defaultdict(list)
     for m in modules:
         for fn in m.functions:
@@ -652,7 +649,7 @@ def _collect_dup_groups(modules: List[FileModule]) -> Dict[str, List[Dict[str, A
     return result
 
 
-def _file_metrics_list(modules: List[FileModule]) -> List[Dict[str, Any]]:
+def _file_metrics_list(modules: list[FileModule]) -> list[dict[str, Any]]:
     out = []
     for m in modules:
         cx_values = [fn.complexity for fn in m.functions]
@@ -680,7 +677,7 @@ def _file_metrics_list(modules: List[FileModule]) -> List[Dict[str, Any]]:
     return out
 
 
-def _layer_map(file_metrics: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+def _layer_map(file_metrics: list[dict[str, Any]]) -> dict[str, list[str]]:
     lm = defaultdict(list)
     for fm in file_metrics:
         if fm.get("layer"):
@@ -689,8 +686,8 @@ def _layer_map(file_metrics: List[Dict[str, Any]]) -> Dict[str, List[str]]:
 
 
 def _service_candidates(
-    file_metrics: List[Dict[str, Any]], file_sources: Dict[str, str]
-) -> List[str]:
+    file_metrics: list[dict[str, Any]], file_sources: dict[str, str]
+) -> list[str]:
     cands = []
     for fm in file_metrics:
         path = fm["path"]
@@ -706,8 +703,8 @@ def _service_candidates(
 
 
 def build_index(
-    root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = None
-) -> Dict[str, Any]:
+    root: str = ".", internal_prefixes: tuple[str, ...] | None = None
+) -> dict[str, Any]:
     """
     توليد فهرس هيكلي محسّن.
     متوافق مع واجهة الإصدار السابق ويضيف حقولاً متقدمة.
@@ -718,11 +715,11 @@ def build_index(
 
     # Collect files
     files, skipped_large = _collect_python_files(root)
-    file_sources: Dict[str, str] = {}
+    file_sources: dict[str, str] = {}
 
     cache_data = _load_cache(CONFIG["CACHE_DIR"])
     prior_files_map = cache_data.get("files", {}) if cache_data else {}
-    modules: List[FileModule] = []
+    modules: list[FileModule] = []
     cached_files = 0
     changed_files = 0
 
@@ -917,12 +914,12 @@ def build_index(
 # --------------------------------------------------------------------------------------
 
 
-def summarize_for_prompt(index: Dict[str, Any], max_len: int = 6000) -> str:
+def summarize_for_prompt(index: dict[str, Any], max_len: int = 6000) -> str:
     """
     يبني ملخصاً نصياً مضغوطاً متعدد الأقسام لاستخدامه داخل الـ LLM.
     يحافظ على بساطة التوقيع القديم، ويضيف أقسام عند تفعيل SUMMARY_EXTRA.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     push = lines.append
 
     push(f"FILES_SCANNED={index.get('files_scanned')}")

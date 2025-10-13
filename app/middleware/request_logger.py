@@ -11,7 +11,7 @@
 
 import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import Flask, g, request
 
@@ -28,7 +28,7 @@ def setup_request_logging(app: Flask):
     def log_request_start():
         """تسجيل بداية الطلب - Log request start"""
         g.start_time = time.time()
-        g.request_id = f"{datetime.now(timezone.utc).timestamp()}-{id(request)}"
+        g.request_id = f"{datetime.now(UTC).timestamp()}-{id(request)}"
 
         # Log request details
         app.logger.info(

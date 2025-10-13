@@ -27,7 +27,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import mimetypes
 import os
@@ -37,7 +36,7 @@ import time
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from flask import current_app
 from sqlalchemy import text
@@ -53,8 +52,8 @@ from app import db
 class ToolResult:
     ok: bool
     data: Any = None
-    error: Optional[str] = None
-    meta: Optional[Dict[str, Any]] = None
+    error: str | None = None
+    meta: dict[str, Any] | None = None
 
     def to_dict(self):
         return asdict(self)
@@ -104,7 +103,7 @@ _embedding_model = None
 _embedding_lock = threading.Lock()
 
 # LRU Cache for small files (path -> dict)
-_file_lru: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+_file_lru: OrderedDict[str, dict[str, Any]] = OrderedDict()
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +133,7 @@ def _is_binary_maybe(path: Path) -> bool:
 def _path_within_project(p: Path) -> bool:
     try:
         p = p.resolve()
-        return PROJECT_ROOT == p or PROJECT_ROOT in p.parents
+        return p == PROJECT_ROOT or PROJECT_ROOT in p.parents
     except Exception:
         return False
 
@@ -222,7 +221,7 @@ def _ensure_code_documents():
 # ---------------------------------------------------------------------------
 # CHUNKING
 # ---------------------------------------------------------------------------
-def _chunk_text(content: str) -> List[Tuple[str, int]]:
+def _chunk_text(content: str) -> list[tuple[str, int]]:
     if len(content) <= CHUNK_SIZE:
         return [(content, 0)]
     chunks = []
@@ -240,7 +239,7 @@ def _chunk_text(content: str) -> List[Tuple[str, int]]:
 # ---------------------------------------------------------------------------
 # FILE LRU
 # ---------------------------------------------------------------------------
-def _file_cache_get(key: str) -> Optional[Dict[str, Any]]:
+def _file_cache_get(key: str) -> dict[str, Any] | None:
     if not ENABLE_FILE_LRU:
         return None
     val = _file_lru.get(key)
@@ -249,7 +248,7 @@ def _file_cache_get(key: str) -> Optional[Dict[str, Any]]:
     return val
 
 
-def _file_cache_put(key: str, value: Dict[str, Any]):
+def _file_cache_put(key: str, value: dict[str, Any]):
     if not ENABLE_FILE_LRU:
         return
     _file_lru[key] = value
@@ -483,7 +482,7 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
     try:
         model = get_embedding_model()
         # Stage 1: gather candidate files
-        file_records: List[Tuple[str, str]] = []
+        file_records: list[tuple[str, str]] = []
         for path_obj in PROJECT_ROOT.rglob("*"):
             if any(ignored in path_obj.parts for ignored in IGNORED_DIRS):
                 continue
@@ -550,7 +549,7 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
         # Insert
         with db.session.begin():
             for (doc_id, rel, cidx, chunk_text, file_hash, chunk_hash), emb_vec in zip(
-                to_insert, embeddings
+                to_insert, embeddings, strict=False
             ):
                 db.session.execute(
                     text(
@@ -618,7 +617,7 @@ def find_related_context(prompt_text: str, limit: int = 6) -> ToolResult:
         with db.session.begin():
             _ensure_code_documents()
             sql = text(
-                f"""
+                """
                 WITH candidate AS (
                     SELECT id, file_path, content, source, embedding,
                            CASE WHEN file_path LIKE :prio THEN 0 ELSE 1 END AS priority_tier

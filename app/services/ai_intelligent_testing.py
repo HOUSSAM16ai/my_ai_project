@@ -14,15 +14,12 @@ This module implements:
 """
 
 import ast
-import inspect
-import json
 import random
-import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 
 class TestType(Enum):
@@ -57,14 +54,14 @@ class TestCase:
     function_under_test: str
     test_code: str
     expected_outcome: str
-    input_values: Dict[str, Any]
-    edge_cases_covered: List[str]
+    input_values: dict[str, Any]
+    edge_cases_covered: list[str]
     confidence: float  # 0-1
     priority: int  # 1-10
     estimated_execution_time: float  # seconds
     created_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_id": self.test_id,
             "test_name": self.test_name,
@@ -86,12 +83,12 @@ class CodeAnalysis:
     """تحليل الكود لتوليد الاختبارات"""
 
     file_path: str
-    functions: List[Dict[str, Any]]
-    classes: List[Dict[str, Any]]
+    functions: list[dict[str, Any]]
+    classes: list[dict[str, Any]]
     complexity_score: float
-    dependencies: List[str]
-    edge_cases: List[str]
-    security_risks: List[str]
+    dependencies: list[str]
+    edge_cases: list[str]
+    security_risks: list[str]
 
 
 class AITestGenerator:
@@ -100,8 +97,8 @@ class AITestGenerator:
     """
 
     def __init__(self):
-        self.generated_tests: Dict[str, List[TestCase]] = defaultdict(list)
-        self.coverage_data: Dict[str, Dict[str, float]] = defaultdict(dict)
+        self.generated_tests: dict[str, list[TestCase]] = defaultdict(list)
+        self.coverage_data: dict[str, dict[str, float]] = defaultdict(dict)
 
     def analyze_code(self, code: str, file_path: str) -> CodeAnalysis:
         """
@@ -163,7 +160,7 @@ class AITestGenerator:
             security_risks=security_risks,
         )
 
-    def _analyze_function(self, node: ast.FunctionDef) -> Dict[str, Any]:
+    def _analyze_function(self, node: ast.FunctionDef) -> dict[str, Any]:
         """تحليل function محدد"""
         # Extract parameters
         params = []
@@ -193,7 +190,7 @@ class AITestGenerator:
             "docstring": ast.get_docstring(node),
         }
 
-    def _analyze_class(self, node: ast.ClassDef) -> Dict[str, Any]:
+    def _analyze_class(self, node: ast.ClassDef) -> dict[str, Any]:
         """تحليل class محدد"""
         methods = []
         for item in node.body:
@@ -220,7 +217,7 @@ class AITestGenerator:
         # Normalize to 0-100 scale
         return min(100, decision_points * 5)
 
-    def _identify_edge_cases(self, functions: List[Dict[str, Any]]) -> List[str]:
+    def _identify_edge_cases(self, functions: list[dict[str, Any]]) -> list[str]:
         """تحديد الحالات الحدية المحتملة"""
         edge_cases = []
 
@@ -244,7 +241,7 @@ class AITestGenerator:
 
         return edge_cases
 
-    def _identify_security_risks(self, tree: ast.AST) -> List[str]:
+    def _identify_security_risks(self, tree: ast.AST) -> list[str]:
         """تحديد المخاطر الأمنية المحتملة"""
         risks = []
 
@@ -265,8 +262,8 @@ class AITestGenerator:
         return risks
 
     def generate_tests_for_function(
-        self, func_info: Dict[str, Any], file_path: str, num_tests: int = 5
-    ) -> List[TestCase]:
+        self, func_info: dict[str, Any], file_path: str, num_tests: int = 5
+    ) -> list[TestCase]:
         """
         توليد حالات اختبار لـ function محدد
         """
@@ -299,8 +296,8 @@ class AITestGenerator:
         return tests
 
     def _generate_happy_path_test(
-        self, func_info: Dict[str, Any], file_path: str
-    ) -> Optional[TestCase]:
+        self, func_info: dict[str, Any], file_path: str
+    ) -> TestCase | None:
         """توليد اختبار الحالة السعيدة"""
         func_name = func_info["name"]
         params = func_info["params"]
@@ -319,7 +316,7 @@ class AITestGenerator:
     {self._format_inputs(inputs)}
     
     # Act
-    result = {func_name}({', '.join(f"{k}={k}" for k in inputs.keys())})
+    result = {func_name}({', '.join(f"{k}={k}" for k in inputs)})
     
     # Assert
     assert result is not None
@@ -342,8 +339,8 @@ class AITestGenerator:
         )
 
     def _generate_edge_case_tests(
-        self, func_info: Dict[str, Any], file_path: str
-    ) -> List[TestCase]:
+        self, func_info: dict[str, Any], file_path: str
+    ) -> list[TestCase]:
         """توليد اختبارات الحالات الحدية"""
         tests = []
         func_name = func_info["name"]
@@ -401,8 +398,8 @@ class AITestGenerator:
         return tests
 
     def _generate_error_case_tests(
-        self, func_info: Dict[str, Any], file_path: str
-    ) -> List[TestCase]:
+        self, func_info: dict[str, Any], file_path: str
+    ) -> list[TestCase]:
         """توليد اختبارات حالات الخطأ"""
         tests = []
         func_name = func_info["name"]
@@ -439,13 +436,13 @@ class AITestGenerator:
 
         return tests[:3]  # Limit error tests
 
-    def _generate_boundary_tests(self, func_info: Dict[str, Any], file_path: str) -> List[TestCase]:
+    def _generate_boundary_tests(self, func_info: dict[str, Any], file_path: str) -> list[TestCase]:
         """توليد اختبارات الحدود"""
         tests = []
         # Would implement boundary value analysis here
         return tests
 
-    def _generate_sample_value(self, param: Dict[str, Any]) -> Any:
+    def _generate_sample_value(self, param: dict[str, Any]) -> Any:
         """توليد قيمة عينة لـ parameter"""
         param_type = self._infer_type(param)
 
@@ -460,7 +457,7 @@ class AITestGenerator:
 
         return samples.get(param_type, "default_value")
 
-    def _infer_type(self, param: Dict[str, Any]) -> str:
+    def _infer_type(self, param: dict[str, Any]) -> str:
         """استنتاج نوع parameter"""
         if param["annotation"]:
             annotation = param["annotation"].lower()
@@ -469,7 +466,7 @@ class AITestGenerator:
                     return type_name
         return "any"
 
-    def _format_inputs(self, inputs: Dict[str, Any]) -> str:
+    def _format_inputs(self, inputs: dict[str, Any]) -> str:
         """تنسيق inputs للكود"""
         lines = []
         for key, value in inputs.items():
@@ -483,15 +480,15 @@ class SmartTestSelector:
     """
 
     def __init__(self):
-        self.test_history: Dict[str, List[Dict]] = defaultdict(list)
-        self.failure_patterns: Dict[str, int] = defaultdict(int)
+        self.test_history: dict[str, list[dict]] = defaultdict(list)
+        self.failure_patterns: dict[str, int] = defaultdict(int)
 
     def select_tests(
         self,
-        all_tests: List[TestCase],
-        changed_files: List[str],
+        all_tests: list[TestCase],
+        changed_files: list[str],
         time_budget: float = 300.0,  # 5 minutes
-    ) -> List[TestCase]:
+    ) -> list[TestCase]:
         """
         اختيار الاختبارات الأكثر أهمية بناءً على ML
         """
@@ -517,7 +514,7 @@ class SmartTestSelector:
 
         return selected
 
-    def _calculate_test_priority(self, test: TestCase, changed_files: List[str]) -> float:
+    def _calculate_test_priority(self, test: TestCase, changed_files: list[str]) -> float:
         """حساب أولوية الاختبار"""
         score = 0.0
 
@@ -562,11 +559,11 @@ class CoverageOptimizer:
     """
 
     def __init__(self):
-        self.coverage_map: Dict[str, Set[str]] = defaultdict(set)
+        self.coverage_map: dict[str, set[str]] = defaultdict(set)
 
     def optimize_test_suite(
-        self, tests: List[TestCase], coverage_goal: float = 90.0
-    ) -> List[TestCase]:
+        self, tests: list[TestCase], coverage_goal: float = 90.0
+    ) -> list[TestCase]:
         """
         تحسين مجموعة الاختبارات لتحقيق هدف التغطية
         """
@@ -597,7 +594,7 @@ class CoverageOptimizer:
 
         return selected_tests
 
-    def _simulate_coverage(self, test: TestCase) -> Set[int]:
+    def _simulate_coverage(self, test: TestCase) -> set[int]:
         """محاكاة التغطية (في التطبيق الفعلي، نستخدم بيانات التغطية الحقيقية)"""
         # Simplified simulation
         num_covered = int(test.confidence * 20)
@@ -626,7 +623,7 @@ def divide_numbers(a: float, b: float) -> float:
     generator = AITestGenerator()
     analysis = generator.analyze_code(sample_code, "math_utils.py")
 
-    print(f"\n📊 Code Analysis:")
+    print("\n📊 Code Analysis:")
     print(f"  Functions: {len(analysis.functions)}")
     print(f"  Complexity: {analysis.complexity_score:.1f}")
     print(f"  Edge cases identified: {len(analysis.edge_cases)}")

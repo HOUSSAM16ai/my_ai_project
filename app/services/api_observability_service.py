@@ -13,16 +13,15 @@
 #   - AIOps integration for self-healing capabilities
 
 import hashlib
-import json
 import statistics
 import threading
 import time
-import traceback
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from flask import current_app, g, request
 
@@ -41,11 +40,11 @@ class RequestMetrics:
     timestamp: datetime
     duration_ms: float
     status_code: int
-    user_id: Optional[int] = None
-    error: Optional[str] = None
-    trace_id: Optional[str] = None
-    span_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    user_id: int | None = None
+    error: str | None = None
+    trace_id: str | None = None
+    span_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -72,7 +71,7 @@ class AnomalyAlert:
     severity: str  # critical, high, medium, low
     anomaly_type: str
     description: str
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
     recommended_action: str
 
 
@@ -99,14 +98,14 @@ class APIObservabilityService:
         self.metrics_buffer: deque = deque(maxlen=10000)
         self.latency_buffer: deque = deque(maxlen=1000)
         self.error_buffer: deque = deque(maxlen=500)
-        self.active_requests: Dict[str, float] = {}
-        self.endpoint_stats: Dict[str, List[float]] = defaultdict(list)
-        self.anomaly_alerts: List[AnomalyAlert] = []
+        self.active_requests: dict[str, float] = {}
+        self.endpoint_stats: dict[str, list[float]] = defaultdict(list)
+        self.anomaly_alerts: list[AnomalyAlert] = []
         self.lock = threading.RLock()  # Use RLock to allow recursive locking
 
         # ML-based baseline (simple moving average for now, can be enhanced)
-        self.baseline_latency: Dict[str, float] = {}
-        self.baseline_error_rate: Dict[str, float] = {}
+        self.baseline_latency: dict[str, float] = {}
+        self.baseline_error_rate: dict[str, float] = {}
 
     def generate_trace_id(self) -> str:
         """Generate unique trace ID for distributed tracing"""
@@ -114,7 +113,7 @@ class APIObservabilityService:
         random_component = str(id(threading.current_thread()))
         return hashlib.sha256(f"{timestamp}{random_component}".encode()).hexdigest()[:16]
 
-    def start_request_trace(self, endpoint: str, method: str) -> Dict[str, str]:
+    def start_request_trace(self, endpoint: str, method: str) -> dict[str, str]:
         """Start distributed tracing for a request"""
         trace_id = self.generate_trace_id()
         span_id = hashlib.md5(f"{trace_id}{endpoint}{method}".encode()).hexdigest()[:8]
@@ -131,7 +130,7 @@ class APIObservabilityService:
         return {
             "trace_id": trace_id,
             "span_id": span_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def record_request_metrics(
@@ -140,9 +139,9 @@ class APIObservabilityService:
         method: str,
         status_code: int,
         duration_ms: float,
-        user_id: Optional[int] = None,
-        error: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        user_id: int | None = None,
+        error: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Record comprehensive request metrics"""
         trace_id = getattr(g, "trace_id", None)
@@ -152,7 +151,7 @@ class APIObservabilityService:
             request_id=hashlib.md5(f"{trace_id}{time.time_ns()}".encode()).hexdigest()[:12],
             endpoint=endpoint,
             method=method,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             duration_ms=duration_ms,
             status_code=status_code,
             user_id=user_id,
@@ -190,7 +189,7 @@ class APIObservabilityService:
 
             if not latencies:
                 return PerformanceSnapshot(
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     avg_latency_ms=0.0,
                     p50_latency_ms=0.0,
                     p95_latency_ms=0.0,
@@ -207,7 +206,7 @@ class APIObservabilityService:
             error_count = len(self.error_buffer)
 
             snapshot = PerformanceSnapshot(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 avg_latency_ms=statistics.mean(latencies),
                 p50_latency_ms=self._percentile(sorted_latencies, 50),
                 p95_latency_ms=self._percentile(sorted_latencies, 95),
@@ -220,7 +219,7 @@ class APIObservabilityService:
 
             return snapshot
 
-    def _percentile(self, sorted_data: List[float], percentile: float) -> float:
+    def _percentile(self, sorted_data: list[float], percentile: float) -> float:
         """Calculate percentile from sorted data"""
         if not sorted_data:
             return 0.0
@@ -241,7 +240,7 @@ class APIObservabilityService:
                 return 0.0
 
             # Calculate RPS from last 60 seconds
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             cutoff = now - timedelta(seconds=60)
             recent_requests = [m for m in self.metrics_buffer if m.timestamp >= cutoff]
 
@@ -309,13 +308,13 @@ class APIObservabilityService:
         severity: str,
         anomaly_type: str,
         description: str,
-        metrics: Dict[str, Any],
+        metrics: dict[str, Any],
         recommended_action: str,
     ):
         """Create anomaly alert"""
         alert = AnomalyAlert(
             alert_id=hashlib.md5(f"{time.time_ns()}{anomaly_type}".encode()).hexdigest()[:12],
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             severity=severity,
             anomaly_type=anomaly_type,
             description=description,
@@ -335,7 +334,7 @@ class APIObservabilityService:
         except:
             pass
 
-    def get_endpoint_analytics(self, endpoint: str) -> Dict[str, Any]:
+    def get_endpoint_analytics(self, endpoint: str) -> dict[str, Any]:
         """Get detailed analytics for specific endpoint"""
         with self.lock:
             latencies = self.endpoint_stats.get(endpoint, [])
@@ -364,7 +363,7 @@ class APIObservabilityService:
                 "baseline_latency_ms": self.baseline_latency.get(endpoint, 0.0),
             }
 
-    def get_all_alerts(self, severity: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_all_alerts(self, severity: str | None = None) -> list[dict[str, Any]]:
         """Get anomaly alerts, optionally filtered by severity"""
         with self.lock:
             alerts = self.anomaly_alerts
@@ -374,7 +373,7 @@ class APIObservabilityService:
 
             return [asdict(alert) for alert in alerts]
 
-    def get_sla_compliance(self) -> Dict[str, Any]:
+    def get_sla_compliance(self) -> dict[str, Any]:
         """Calculate SLA compliance metrics"""
         snapshot = self.get_performance_snapshot()
 
@@ -405,7 +404,7 @@ class APIObservabilityService:
 # GLOBAL SERVICE INSTANCE
 # ======================================================================================
 
-_observability_service: Optional[APIObservabilityService] = None
+_observability_service: APIObservabilityService | None = None
 
 
 def get_observability_service() -> APIObservabilityService:

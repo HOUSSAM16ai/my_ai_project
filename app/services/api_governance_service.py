@@ -17,13 +17,14 @@ import hashlib
 import re
 import threading
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
-from flask import current_app, g, jsonify, request
+from flask import current_app, jsonify, request
 
 # ======================================================================================
 # ENUMERATIONS
@@ -74,13 +75,13 @@ class APIVersion:
     version: str
     status: APIVersionStatus
     release_date: datetime
-    deprecation_date: Optional[datetime] = None
-    sunset_date: Optional[datetime] = None
-    retirement_date: Optional[datetime] = None
-    migration_guide_url: Optional[str] = None
-    changelog_url: Optional[str] = None
-    breaking_changes: List[str] = field(default_factory=list)
-    supported_until: Optional[datetime] = None
+    deprecation_date: datetime | None = None
+    sunset_date: datetime | None = None
+    retirement_date: datetime | None = None
+    migration_guide_url: str | None = None
+    changelog_url: str | None = None
+    breaking_changes: list[str] = field(default_factory=list)
+    supported_until: datetime | None = None
 
 
 @dataclass
@@ -93,9 +94,9 @@ class DeprecationPolicy:
     deprecation_level: DeprecationLevel
     deprecation_date: datetime
     sunset_date: datetime
-    replacement_endpoint: Optional[str] = None
-    migration_steps: List[str] = field(default_factory=list)
-    affected_clients: Set[str] = field(default_factory=set)
+    replacement_endpoint: str | None = None
+    migration_steps: list[str] = field(default_factory=list)
+    affected_clients: set[str] = field(default_factory=set)
     notification_sent: bool = False
 
 
@@ -111,7 +112,7 @@ class SecurityAuditResult:
     finding: str
     recommendation: str
     status: str  # 'open', 'in_progress', 'resolved', 'accepted_risk'
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -156,12 +157,12 @@ class OWASPComplianceChecker:
 
     def __init__(self):
         self.audit_history: deque = deque(maxlen=10000)
-        self.active_findings: Dict[str, SecurityAuditResult] = {}
+        self.active_findings: dict[str, SecurityAuditResult] = {}
         self.lock = threading.RLock()
 
     def check_object_level_authorization(
         self, user_id: str, resource_id: str, resource_type: str, action: str
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         API1:2023 - Check broken object level authorization
 
@@ -177,9 +178,9 @@ class OWASPComplianceChecker:
 
         audit = SecurityAuditResult(
             audit_id=hashlib.sha256(
-                f"{user_id}{resource_id}{datetime.now(timezone.utc)}".encode()
+                f"{user_id}{resource_id}{datetime.now(UTC)}".encode()
             ).hexdigest()[:16],
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             owasp_category=OWASPCategory.BROKEN_OBJECT_LEVEL_AUTH,
             severity="high",
             endpoint=request.endpoint or "unknown",
@@ -195,8 +196,8 @@ class OWASPComplianceChecker:
         return True, None
 
     def check_authentication_strength(
-        self, auth_method: str, credentials: Dict[str, Any]
-    ) -> tuple[bool, List[str]]:
+        self, auth_method: str, credentials: dict[str, Any]
+    ) -> tuple[bool, list[str]]:
         """
         API2:2023 - Check authentication mechanisms
 
@@ -226,7 +227,7 @@ class OWASPComplianceChecker:
 
     def check_resource_consumption(
         self, endpoint: str, request_size: int, computation_cost: float
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         API4:2023 - Check unrestricted resource consumption
 
@@ -248,7 +249,7 @@ class OWASPComplianceChecker:
 
     def check_ssrf_vulnerability(
         self, url: str, allow_private: bool = False
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         API7:2023 - Check Server Side Request Forgery
 
@@ -267,7 +268,7 @@ class OWASPComplianceChecker:
         if not allow_private:
             for pattern in private_patterns:
                 if re.match(pattern, url, re.IGNORECASE):
-                    return False, f"SSRF: Private IP or localhost detected in URL"
+                    return False, "SSRF: Private IP or localhost detected in URL"
 
         # Block cloud metadata endpoints
         metadata_patterns = [
@@ -277,11 +278,11 @@ class OWASPComplianceChecker:
 
         for pattern in metadata_patterns:
             if re.search(pattern, url, re.IGNORECASE):
-                return False, f"SSRF: Cloud metadata endpoint detected"
+                return False, "SSRF: Cloud metadata endpoint detected"
 
         return True, None
 
-    def get_compliance_report(self) -> Dict[str, Any]:
+    def get_compliance_report(self) -> dict[str, Any]:
         """Generate OWASP compliance report"""
         with self.lock:
             findings_by_category = defaultdict(list)
@@ -334,11 +335,11 @@ class APIGovernanceService:
     """
 
     def __init__(self):
-        self.versions: Dict[str, APIVersion] = {}
-        self.deprecation_policies: Dict[str, DeprecationPolicy] = {}
-        self.rate_limit_policies: Dict[str, RateLimitPolicy] = {}
+        self.versions: dict[str, APIVersion] = {}
+        self.deprecation_policies: dict[str, DeprecationPolicy] = {}
+        self.rate_limit_policies: dict[str, RateLimitPolicy] = {}
         self.owasp_checker = OWASPComplianceChecker()
-        self.client_quotas: Dict[str, APIQuota] = {}
+        self.client_quotas: dict[str, APIQuota] = {}
         self.lock = threading.RLock()
 
         # Initialize with current API versions
@@ -351,8 +352,8 @@ class APIGovernanceService:
         self.versions["v2"] = APIVersion(
             version="v2",
             status=APIVersionStatus.ACTIVE,
-            release_date=datetime(2025, 10, 12, tzinfo=timezone.utc),
-            supported_until=datetime(2027, 10, 12, tzinfo=timezone.utc),
+            release_date=datetime(2025, 10, 12, tzinfo=UTC),
+            supported_until=datetime(2027, 10, 12, tzinfo=UTC),
             changelog_url="https://github.com/HOUSSAM16ai/my_ai_project/blob/main/CHANGELOG.md",
         )
 
@@ -360,10 +361,10 @@ class APIGovernanceService:
         self.versions["v1"] = APIVersion(
             version="v1",
             status=APIVersionStatus.DEPRECATED,
-            release_date=datetime(2025, 1, 1, tzinfo=timezone.utc),
-            deprecation_date=datetime(2025, 10, 12, tzinfo=timezone.utc),
-            sunset_date=datetime(2026, 4, 12, tzinfo=timezone.utc),
-            supported_until=datetime(2026, 10, 12, tzinfo=timezone.utc),
+            release_date=datetime(2025, 1, 1, tzinfo=UTC),
+            deprecation_date=datetime(2025, 10, 12, tzinfo=UTC),
+            sunset_date=datetime(2026, 4, 12, tzinfo=UTC),
+            supported_until=datetime(2026, 10, 12, tzinfo=UTC),
             migration_guide_url="https://github.com/HOUSSAM16ai/my_ai_project/blob/main/MIGRATION_V1_TO_V2.md",
         )
 
@@ -423,7 +424,7 @@ class APIGovernanceService:
 
             return True
 
-    def check_deprecation(self, endpoint: str, version: str) -> Optional[DeprecationPolicy]:
+    def check_deprecation(self, endpoint: str, version: str) -> DeprecationPolicy | None:
         """Check if endpoint is deprecated"""
         with self.lock:
             for policy in self.deprecation_policies.values():
@@ -431,11 +432,11 @@ class APIGovernanceService:
                     return policy
             return None
 
-    def get_version_info(self, version: str) -> Optional[APIVersion]:
+    def get_version_info(self, version: str) -> APIVersion | None:
         """Get version information"""
         return self.versions.get(version)
 
-    def get_rate_limit_policy(self, client_type: str) -> Optional[RateLimitPolicy]:
+    def get_rate_limit_policy(self, client_type: str) -> RateLimitPolicy | None:
         """Get rate limit policy for client type"""
         return self.rate_limit_policies.get(client_type)
 
@@ -446,7 +447,7 @@ class APIGovernanceService:
         # This would integrate with your observability service
         pass
 
-    def get_governance_dashboard(self) -> Dict[str, Any]:
+    def get_governance_dashboard(self) -> dict[str, Any]:
         """Get governance dashboard data"""
         with self.lock:
             return {
@@ -468,7 +469,7 @@ class APIGovernanceService:
                     [
                         p
                         for p in self.deprecation_policies.values()
-                        if datetime.now(timezone.utc) < p.sunset_date
+                        if datetime.now(UTC) < p.sunset_date
                     ]
                 ),
                 "rate_limit_policies": len(self.rate_limit_policies),
@@ -576,7 +577,7 @@ def enforce_rate_limit_policy(f: Callable) -> Callable:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_governance_service_instance: Optional[APIGovernanceService] = None
+_governance_service_instance: APIGovernanceService | None = None
 _governance_lock = threading.Lock()
 
 

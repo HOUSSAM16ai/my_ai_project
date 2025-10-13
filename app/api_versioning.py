@@ -9,8 +9,8 @@
 #   - Version deprecation warnings
 #   - Automatic version detection
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
 from flask import Blueprint, current_app, jsonify, request
 

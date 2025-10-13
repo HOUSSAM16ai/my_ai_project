@@ -15,13 +15,10 @@ This module implements:
 """
 
 import ast
-import json
 import re
-from collections import defaultdict
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 
 class RefactoringType(Enum):
@@ -61,11 +58,11 @@ class CodeIssue:
     line_number: int
     column: int
     code_snippet: str
-    suggested_fix: Optional[str] = None
+    suggested_fix: str | None = None
     auto_fixable: bool = False
     impact_score: float = 0.0  # 0-100
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "issue_id": self.issue_id,
             "severity": self.severity.value,
@@ -94,13 +91,13 @@ class RefactoringSuggestion:
     line_end: int
     original_code: str
     refactored_code: str
-    benefits: List[str]
-    risks: List[str]
+    benefits: list[str]
+    risks: list[str]
     confidence: float  # 0-1
     estimated_effort: str  # "5 minutes", "30 minutes", etc.
-    impact_metrics: Dict[str, float]
+    impact_metrics: dict[str, float]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "suggestion_id": self.suggestion_id,
             "refactoring_type": self.refactoring_type.value,
@@ -166,10 +163,10 @@ class CodeAnalyzer:
     """
 
     def __init__(self):
-        self.issues_found: List[CodeIssue] = []
-        self.metrics_cache: Dict[str, CodeQualityMetrics] = {}
+        self.issues_found: list[CodeIssue] = []
+        self.metrics_cache: dict[str, CodeQualityMetrics] = {}
 
-    def analyze_file(self, code: str, file_path: str) -> Tuple[List[CodeIssue], CodeQualityMetrics]:
+    def analyze_file(self, code: str, file_path: str) -> tuple[list[CodeIssue], CodeQualityMetrics]:
         """
         تحليل ملف كود شامل
         """
@@ -180,7 +177,7 @@ class CodeAnalyzer:
         except SyntaxError as e:
             self.issues_found.append(
                 CodeIssue(
-                    issue_id=f"syntax_error_001",
+                    issue_id="syntax_error_001",
                     severity=Severity.CRITICAL,
                     issue_type="SyntaxError",
                     description=f"Syntax error: {str(e)}",
@@ -488,11 +485,11 @@ class RefactoringEngine:
 
     def __init__(self):
         self.analyzer = CodeAnalyzer()
-        self.suggestions: List[RefactoringSuggestion] = []
+        self.suggestions: list[RefactoringSuggestion] = []
 
     def generate_refactoring_suggestions(
         self, code: str, file_path: str
-    ) -> List[RefactoringSuggestion]:
+    ) -> list[RefactoringSuggestion]:
         """
         توليد اقتراحات إعادة الهيكلة
         """
@@ -519,7 +516,7 @@ class RefactoringEngine:
 
     def _create_suggestion_from_issue(
         self, issue: CodeIssue, code: str
-    ) -> Optional[RefactoringSuggestion]:
+    ) -> RefactoringSuggestion | None:
         """إنشاء اقتراح من issue"""
         if not issue.suggested_fix:
             return None
@@ -615,7 +612,7 @@ def GetUserName(userID):
     # Analyze code
     issues, metrics = engine.analyzer.analyze_file(sample_code, "utils.py")
 
-    print(f"\n📊 Code Quality Metrics:")
+    print("\n📊 Code Quality Metrics:")
     print(f"  Grade: {metrics.overall_grade}")
     print(f"  Maintainability: {metrics.maintainability_index:.1f}/100")
     print(f"  Security Score: {metrics.security_score:.1f}/100")

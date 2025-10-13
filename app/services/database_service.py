@@ -14,14 +14,10 @@
 #   - نسخ احتياطي واستعادة تلقائية
 #   - تحسين الاستعلامات والفهرسة الذكية
 
-import hashlib
-import json
-from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import func, inspect, text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import class_mapper
 
 from app import db
@@ -63,14 +59,14 @@ CACHE_TTL = 300  # 5 minutes
 # ==================================================================================
 
 
-def get_database_health() -> Dict[str, Any]:
+def get_database_health() -> dict[str, Any]:
     """
     فحص صحة قاعدة البيانات الشامل - Comprehensive database health check
     Returns detailed health metrics and diagnostics
     """
     health = {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "checks": {},
         "metrics": {},
         "warnings": [],
@@ -79,9 +75,9 @@ def get_database_health() -> Dict[str, Any]:
 
     try:
         # 1. Connection test
-        start = datetime.now(timezone.utc)
+        start = datetime.now(UTC)
         db.session.execute(text("SELECT 1"))
-        connection_time = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+        connection_time = (datetime.now(UTC) - start).total_seconds() * 1000
 
         health["checks"]["connection"] = {"status": "ok", "latency_ms": round(connection_time, 2)}
 
@@ -131,7 +127,7 @@ def get_database_health() -> Dict[str, Any]:
 
         # 5. Recent activity check (last 24 hours)
         try:
-            yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+            yesterday = datetime.now(UTC) - timedelta(days=1)
             recent_missions = (
                 db.session.query(Mission).filter(Mission.created_at >= yesterday).count()
             )
@@ -172,7 +168,7 @@ def get_database_health() -> Dict[str, Any]:
     return health
 
 
-def optimize_database() -> Dict[str, Any]:
+def optimize_database() -> dict[str, Any]:
     """
     تحسين قاعدة البيانات - Database optimization
     Performs maintenance tasks like VACUUM, ANALYZE (PostgreSQL)
@@ -204,7 +200,7 @@ def optimize_database() -> Dict[str, Any]:
     return results
 
 
-def get_table_schema(table_name: str) -> Dict[str, Any]:
+def get_table_schema(table_name: str) -> dict[str, Any]:
     """
     الحصول على مخطط الجدول - Get detailed table schema
     Returns column information, constraints, indexes, etc.
@@ -274,7 +270,7 @@ def get_table_schema(table_name: str) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def get_all_tables() -> List[Dict[str, Any]]:
+def get_all_tables() -> list[dict[str, Any]]:
     """
     احصل على قائمة بجميع الجداول وإحصائياتها - Get all tables with enhanced metadata
     Includes caching, categorization, and rich metadata
@@ -285,7 +281,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
     cache_key = "all_tables"
     if cache_key in _table_stats_cache:
         cache_time = _cache_timestamp.get(cache_key, datetime.min)
-        if (datetime.now(timezone.utc) - cache_time).total_seconds() < CACHE_TTL:
+        if (datetime.now(UTC) - cache_time).total_seconds() < CACHE_TTL:
             return _table_stats_cache[cache_key]
 
     for table_name, model in ALL_MODELS.items():
@@ -298,7 +294,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
             recent_count = 0
             try:
                 if hasattr(model, "created_at"):
-                    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+                    yesterday = datetime.now(UTC) - timedelta(days=1)
                     recent_count = (
                         db.session.query(model).filter(model.created_at >= yesterday).count()
                     )
@@ -339,7 +335,7 @@ def get_all_tables() -> List[Dict[str, Any]]:
 
     # Update cache
     _table_stats_cache[cache_key] = tables
-    _cache_timestamp[cache_key] = datetime.now(timezone.utc)
+    _cache_timestamp[cache_key] = datetime.now(UTC)
 
     return tables
 
@@ -348,10 +344,10 @@ def get_table_data(
     table_name: str,
     page: int = 1,
     per_page: int = 50,
-    search: Optional[str] = None,
-    order_by: Optional[str] = None,
+    search: str | None = None,
+    order_by: str | None = None,
     order_dir: str = "asc",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     احصل على بيانات جدول معين مع الترقيم والبحث والترتيب
     """
@@ -425,7 +421,7 @@ def get_table_data(
         return {"status": "error", "message": str(e)}
 
 
-def get_record(table_name: str, record_id: int) -> Dict[str, Any]:
+def get_record(table_name: str, record_id: int) -> dict[str, Any]:
     """
     احصل على سجل واحد
     """
@@ -459,7 +455,7 @@ def get_record(table_name: str, record_id: int) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def create_record(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
+def create_record(table_name: str, data: dict[str, Any]) -> dict[str, Any]:
     """
     إنشاء سجل جديد - Create new record with validation
     """
@@ -511,7 +507,7 @@ def create_record(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def update_record(table_name: str, record_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+def update_record(table_name: str, record_id: int, data: dict[str, Any]) -> dict[str, Any]:
     """
     تحديث سجل موجود - Update existing record with validation
     """
@@ -567,7 +563,7 @@ def update_record(table_name: str, record_id: int, data: Dict[str, Any]) -> Dict
         return {"status": "error", "message": str(e)}
 
 
-def delete_record(table_name: str, record_id: int) -> Dict[str, Any]:
+def delete_record(table_name: str, record_id: int) -> dict[str, Any]:
     """
     حذف سجل
     """
@@ -590,7 +586,7 @@ def delete_record(table_name: str, record_id: int) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def execute_query(sql: str) -> Dict[str, Any]:
+def execute_query(sql: str) -> dict[str, Any]:
     """
     تنفيذ استعلام SQL مخصص (للقراءة فقط)
     """
@@ -620,7 +616,7 @@ def execute_query(sql: str) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def get_database_stats() -> Dict[str, Any]:
+def get_database_stats() -> dict[str, Any]:
     """
     احصل على إحصائيات شاملة لقاعدة البيانات
     """
@@ -637,7 +633,7 @@ def get_database_stats() -> Dict[str, Any]:
     return stats
 
 
-def export_table_data(table_name: str) -> Dict[str, Any]:
+def export_table_data(table_name: str) -> dict[str, Any]:
     """
     تصدير بيانات جدول بصيغة JSON
     """

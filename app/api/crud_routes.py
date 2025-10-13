@@ -17,15 +17,15 @@
 #   ✅ Performance monitoring
 #   ✅ Caching and optimization
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app, jsonify, request
 from marshmallow import ValidationError
 from sqlalchemy import asc, desc, text
 
 from app import db
-from app.api import api_v1_bp, api_v2_bp
-from app.models import Mission, MissionEvent, MissionPlan, Task, User
+from app.api import api_v1_bp
+from app.models import Mission, Task, User
 from app.services.api_contract_service import validate_contract
 from app.services.api_observability_service import monitor_performance
 from app.services.api_security_service import rate_limit, require_jwt_auth
@@ -46,7 +46,7 @@ def get_pagination_params():
                 "per_page": request.args.get("per_page", 20, type=int),
             }
         )
-    except ValidationError as e:
+    except ValidationError:
         return {"page": 1, "per_page": 20}
 
 
@@ -90,7 +90,7 @@ def success_response(data, message="Success", status_code=200):
                 "status": "success",
                 "message": message,
                 "data": data,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         ),
         status_code,
@@ -102,7 +102,7 @@ def error_response(message, status_code=400, errors=None):
     response = {
         "status": "error",
         "message": message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     if errors:
         response["errors"] = errors

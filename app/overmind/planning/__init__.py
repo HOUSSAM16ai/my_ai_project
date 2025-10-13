@@ -1,5 +1,4 @@
 # app/overmind/planning/__init__.py
-# # -*- coding: utf-8 -*-
 """
 ======================================================================================
   THE PLANNERS' GUILD HALL  (Ultimate API Gateway v3.5)
@@ -60,8 +59,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, Callable, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 __version__ = "3.5.0"
 
@@ -69,7 +69,7 @@ __version__ = "3.5.0"
 # INTERNAL REGISTRY (Symbol -> (module_path, attr_name))
 # --------------------------------------------------------------------------------------
 # كل عنصر نريد تصديره مع مصدره الأصلي (الوحدة + الاسم)
-__planning_api_map__: Dict[str, tuple[str, str]] = {
+__planning_api_map__: dict[str, tuple[str, str]] = {
     # Schemas / Data Contracts
     "MissionPlanSchema": ("app.overmind.planning.schemas", "MissionPlanSchema"),
     "PlannedTask": ("app.overmind.planning.schemas", "PlannedTask"),
@@ -99,8 +99,8 @@ __planning_api_map__: Dict[str, tuple[str, str]] = {
 # --------------------------------------------------------------------------------------
 # LAZY CACHE
 # --------------------------------------------------------------------------------------
-_cached_symbols: Dict[str, Any] = {}
-_failed_symbols: Dict[str, str] = {}  # symbol -> error string (for diagnostics)
+_cached_symbols: dict[str, Any] = {}
+_failed_symbols: dict[str, str] = {}  # symbol -> error string (for diagnostics)
 
 
 # --------------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ def __getattr__(name: str) -> Any:  # pragma: no cover (dynamic path)
     raise AttributeError(f"module 'app.overmind.planning' has no attribute '{name}'")
 
 
-def __dir__() -> List[str]:  # pragma: no cover
+def __dir__() -> list[str]:  # pragma: no cover
     base = set(globals().keys())
     base.update(__planning_api_map__.keys())
     return sorted(base)

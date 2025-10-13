@@ -15,13 +15,11 @@
 
 import statistics
 import threading
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
-from flask import current_app
+from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
@@ -72,7 +70,7 @@ class SLI:
     target_value: float
     current_value: float = 0.0
     measurements: deque = field(default_factory=lambda: deque(maxlen=10000))
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
 
 @dataclass
@@ -118,7 +116,7 @@ class ErrorBudgetBurn:
     burn_rate_24h: float  # Daily burn rate
     burn_rate_7d: float  # Weekly burn rate
     level: BurnRateLevel
-    projected_depletion: Optional[datetime] = None
+    projected_depletion: datetime | None = None
 
 
 @dataclass
@@ -127,9 +125,9 @@ class IncidentImpact:
 
     incident_id: str
     started_at: datetime
-    ended_at: Optional[datetime]
-    affected_slos: List[str]
-    error_budget_consumed: Dict[str, float]
+    ended_at: datetime | None
+    affected_slos: list[str]
+    error_budget_consumed: dict[str, float]
     severity: str
 
 
@@ -146,7 +144,7 @@ class SLITracker:
     """
 
     def __init__(self):
-        self.slis: Dict[str, SLI] = {}
+        self.slis: dict[str, SLI] = {}
         self.lock = threading.RLock()
 
     def register_sli(self, sli: SLI):
@@ -154,10 +152,10 @@ class SLITracker:
         with self.lock:
             self.slis[sli.name] = sli
 
-    def record_measurement(self, sli_name: str, value: float, timestamp: Optional[datetime] = None):
+    def record_measurement(self, sli_name: str, value: float, timestamp: datetime | None = None):
         """Record a measurement for an SLI"""
         if timestamp is None:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         with self.lock:
             if sli_name not in self.slis:
@@ -174,7 +172,7 @@ class SLITracker:
 
             return True
 
-    def get_sli_value(self, sli_name: str, window_seconds: Optional[int] = None) -> Optional[float]:
+    def get_sli_value(self, sli_name: str, window_seconds: int | None = None) -> float | None:
         """Get SLI value for a time window"""
         with self.lock:
             if sli_name not in self.slis:
@@ -186,7 +184,7 @@ class SLITracker:
                 return sli.current_value
 
             # Calculate value for specific window
-            cutoff = datetime.now(timezone.utc) - timedelta(seconds=window_seconds)
+            cutoff = datetime.now(UTC) - timedelta(seconds=window_seconds)
             recent_measurements = [v for t, v in sli.measurements if t >= cutoff]
 
             if not recent_measurements:
@@ -207,7 +205,7 @@ class SLITracker:
             else:
                 return statistics.mean(recent_measurements)
 
-    def get_all_slis(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_slis(self) -> dict[str, dict[str, Any]]:
         """Get all SLIs with current values"""
         with self.lock:
             return {
@@ -242,11 +240,11 @@ class SLOService:
     """
 
     def __init__(self):
-        self.slos: Dict[str, SLO] = {}
+        self.slos: dict[str, SLO] = {}
         self.sli_tracker = SLITracker()
         self.measurements: deque = deque(maxlen=100000)
         self.burn_rate_history: deque = deque(maxlen=10000)
-        self.incidents: Dict[str, IncidentImpact] = {}
+        self.incidents: dict[str, IncidentImpact] = {}
         self.lock = threading.RLock()
 
         # Initialize default SLOs
@@ -318,11 +316,11 @@ class SLOService:
         method: str,
         status_code: int,
         response_time_ms: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ):
         """Record an API request for SLI/SLO tracking"""
         if timestamp is None:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         # Track availability
         is_success = 200 <= status_code < 500  # 5xx are failures
@@ -378,7 +376,7 @@ class SLOService:
 
                 # Record measurement
                 measurement = SLOMeasurement(
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     slo_id=slo_id,
                     actual_value=actual_value,
                     target_value=slo.target,
@@ -394,7 +392,7 @@ class SLOService:
                 return None
 
             slo = self.slos[slo_id]
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Get measurements for different windows
             measurements_1h = [
@@ -461,7 +459,7 @@ class SLOService:
 
             return burn
 
-    def start_incident(self, incident_id: str, affected_slos: List[str], severity: str) -> bool:
+    def start_incident(self, incident_id: str, affected_slos: list[str], severity: str) -> bool:
         """Start tracking an incident"""
         with self.lock:
             if incident_id in self.incidents:
@@ -469,7 +467,7 @@ class SLOService:
 
             self.incidents[incident_id] = IncidentImpact(
                 incident_id=incident_id,
-                started_at=datetime.now(timezone.utc),
+                started_at=datetime.now(UTC),
                 ended_at=None,
                 affected_slos=affected_slos,
                 error_budget_consumed={},
@@ -485,7 +483,7 @@ class SLOService:
                 return False
 
             incident = self.incidents[incident_id]
-            incident.ended_at = datetime.now(timezone.utc)
+            incident.ended_at = datetime.now(UTC)
 
             # Calculate error budget consumed during incident
             for slo_id in incident.affected_slos:
@@ -500,7 +498,7 @@ class SLOService:
 
             return True
 
-    def get_slo_status(self, slo_id: str) -> Optional[Dict[str, Any]]:
+    def get_slo_status(self, slo_id: str) -> dict[str, Any] | None:
         """Get detailed SLO status"""
         with self.lock:
             if slo_id not in self.slos:
@@ -536,11 +534,11 @@ class SLOService:
                 ),
             }
 
-    def get_dashboard(self) -> Dict[str, Any]:
+    def get_dashboard(self) -> dict[str, Any]:
         """Get SLO/SLI dashboard data"""
         with self.lock:
             return {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "slis": self.sli_tracker.get_all_slis(),
                 "slos": {slo_id: self.get_slo_status(slo_id) for slo_id in self.slos.keys()},
                 "active_incidents": len([i for i in self.incidents.values() if i.ended_at is None]),
@@ -554,9 +552,7 @@ class SLOService:
 
         statuses = [slo.status for slo in self.slos.values()]
 
-        if any(s == SLOStatus.BREACHED for s in statuses):
-            return "critical"
-        elif any(s == SLOStatus.CRITICAL for s in statuses):
+        if any(s == SLOStatus.BREACHED for s in statuses) or any(s == SLOStatus.CRITICAL for s in statuses):
             return "critical"
         elif any(s == SLOStatus.WARNING for s in statuses):
             return "warning"
@@ -568,7 +564,7 @@ class SLOService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_slo_service_instance: Optional[SLOService] = None
+_slo_service_instance: SLOService | None = None
 _slo_lock = threading.Lock()
 
 

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 # app/overmind/planning/llm_planner.py
-# -*- coding: utf-8 -*-
 """
 Ultra Hyper Semantic Planner + Deep Structural Index
 Version: 7.3.0-ultra-l4++ (FINAL CONTEXT PIPELINE)
@@ -138,7 +136,7 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -185,14 +183,14 @@ except Exception:
         task_id: str
         description: str
         tool_name: str
-        tool_args: Dict[str, Any]
-        dependencies: List[str]
+        tool_args: dict[str, Any]
+        dependencies: list[str]
 
     @dataclass
     class MissionPlanSchema:
         objective: str
-        tasks: List[PlannedTask]
-        meta: Dict[str, Any] = None
+        tasks: list[PlannedTask]
+        meta: dict[str, Any] = None
 
     class PlanningContext: ...
 
@@ -432,7 +430,7 @@ def _ensure_ext(fn: str) -> str:
     return fn if "." in fn else fn + DEFAULT_EXT
 
 
-def extract_filenames(obj: str) -> List[str]:
+def extract_filenames(obj: str) -> list[str]:
     norm = " ".join(obj.split())
     out = []
     for pat in FILENAME_PATTERNS:
@@ -465,7 +463,7 @@ def extract_filenames(obj: str) -> List[str]:
     return out[:MAX_FILES]
 
 
-def extract_requested_lines(obj: str) -> Optional[int]:
+def extract_requested_lines(obj: str) -> int | None:
     mx = None
     for m in LINE_REQ.finditer(obj):
         try:
@@ -481,7 +479,7 @@ def extract_requested_lines(obj: str) -> Optional[int]:
     return mx
 
 
-def compute_chunk_plan(requested: Optional[int]) -> Tuple[int, int]:
+def compute_chunk_plan(requested: int | None) -> tuple[int, int]:
     if not requested:
         requested = CHUNK_SIZE_HINT * 2
     if requested <= FAST_SINGLE_THRESH:
@@ -493,7 +491,7 @@ def compute_chunk_plan(requested: Optional[int]) -> Tuple[int, int]:
     return chunk_count, per_chunk
 
 
-def infer_sections(obj: str, lang: str) -> List[str]:
+def infer_sections(obj: str, lang: str) -> list[str]:
     if not SECTION_INFER:
         return []
     pat = re.compile(
@@ -549,7 +547,7 @@ def _tid(i: int) -> str:
 # Prompt Builders
 # --------------------------------------------------------------------------------------
 def build_role_prompt(
-    files: List[str], objective: str, lang: str, struct_ref: Optional[str] = None
+    files: list[str], objective: str, lang: str, struct_ref: str | None = None
 ) -> str:
     listing = ", ".join(files)
     struct_block = f"\nSTRUCT_CONTEXT:\n{struct_ref}\n" if struct_ref else ""
@@ -567,7 +565,7 @@ def build_role_prompt(
 
 
 def build_section_prompt(
-    objective: str, draft_sections: List[str], lang: str, struct_ref: Optional[str] = None
+    objective: str, draft_sections: list[str], lang: str, struct_ref: str | None = None
 ) -> str:
     listing = "\n".join(f"- {s}" for s in draft_sections)
     struct_block = f"\nSTRUCT_CONTEXT:\n{struct_ref}\n" if struct_ref else ""
@@ -585,14 +583,14 @@ def build_section_prompt(
 def build_chunk_prompt(
     objective: str,
     fname: str,
-    role_id: Optional[str],
-    section_id: Optional[str],
+    role_id: str | None,
+    section_id: str | None,
     cidx: int,
     ctotal: int,
     target_lines: int,
     lang: str,
     ftype: str,
-    struct_placeholder: Optional[str] = None,
+    struct_placeholder: str | None = None,
     inline_struct: str = "",
 ) -> str:
     role_ref = f"{{{{{role_id}.answer}}}}" if role_id else "(no-role)"
@@ -627,9 +625,9 @@ def build_chunk_prompt(
 def build_final_wrap_prompt(
     objective: str,
     fname: str,
-    role_id: Optional[str],
+    role_id: str | None,
     lang: str,
-    struct_placeholder: Optional[str] = None,
+    struct_placeholder: str | None = None,
     inline_struct: str = "",
 ) -> str:
     role_ref = f"{{{{{role_id}.answer}}}}" if role_id else "(no-role)"
@@ -653,8 +651,8 @@ def build_final_wrap_prompt(
 # --------------------------------------------------------------------------------------
 # Extra Source Scan
 # --------------------------------------------------------------------------------------
-def _collect_extra_files() -> List[str]:
-    collected: Set[str] = set()
+def _collect_extra_files() -> list[str]:
+    collected: set[str] = set()
     # Globs
     for pattern in EXTRA_READ_GLOBS:
         for p in glob.glob(pattern, recursive=True):
@@ -692,7 +690,7 @@ def _collect_extra_files() -> List[str]:
     return sorted(collected)[:SCAN_MAX_FILES]
 
 
-def _container_files_present() -> List[str]:
+def _container_files_present() -> list[str]:
     return [f for f in ("docker-compose.yml", ".env") if os.path.exists(f)]
 
 
@@ -720,8 +718,8 @@ class UltraHyperPlanner(BasePlanner):
     def generate_plan(
         self,
         objective: str,
-        context: Optional[PlanningContext] = None,
-        max_tasks: Optional[int] = None,
+        context: PlanningContext | None = None,
+        max_tasks: int | None = None,
     ) -> MissionPlanSchema:
         start = time.perf_counter()
         if not self._valid_objective(objective):
@@ -753,7 +751,7 @@ class UltraHyperPlanner(BasePlanner):
         streaming_possible = self._can_stream()
         use_stream = streaming_possible and STREAM_ENABLE and total_chunks >= STREAM_MIN_CHUNKS
 
-        tasks: List[PlannedTask] = []
+        tasks: list[PlannedTask] = []
         idx = 1
         base_deps = []
         analysis_dependency_ids = []
@@ -1022,7 +1020,7 @@ class UltraHyperPlanner(BasePlanner):
     # Internal Steps
     # ----------------------------------------------------------------------------------
     def _add_repo_scan_tasks(
-        self, tasks: List[PlannedTask], idx: int, deps_accum: List[str]
+        self, tasks: list[PlannedTask], idx: int, deps_accum: list[str]
     ) -> int:
         for root in (".", "app"):
             tid = _tid(idx)
@@ -1053,8 +1051,8 @@ class UltraHyperPlanner(BasePlanner):
         return idx
 
     def _attempt_deep_index(
-        self, tasks: List[PlannedTask], idx: int, base_deps: List[str], lang: str
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        self, tasks: list[PlannedTask], idx: int, base_deps: list[str], lang: str
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         struct_meta = {"attached": False}
         deps_out = []
         if not (_DEEP_INDEX_ENABLED and _HAS_INDEXER):
@@ -1124,7 +1122,7 @@ class UltraHyperPlanner(BasePlanner):
             _LOG.warning("Deep index failed: %s", e)
         return struct_meta, {"next_idx": idx, "deps": deps_out}
 
-    def _truncate_json(self, data: Dict[str, Any], max_bytes: int) -> str:
+    def _truncate_json(self, data: dict[str, Any], max_bytes: int) -> str:
         raw = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
         if len(raw.encode("utf-8")) <= max_bytes:
             return raw
@@ -1145,19 +1143,19 @@ class UltraHyperPlanner(BasePlanner):
 
     def _add_file_generation_blocks(
         self,
-        tasks: List[PlannedTask],
+        tasks: list[PlannedTask],
         idx: int,
-        files: List[str],
+        files: list[str],
         objective: str,
         lang: str,
-        role_task_id: Optional[str],
-        section_task_id: Optional[str],
-        analysis_deps: List[str],
+        role_task_id: str | None,
+        section_task_id: str | None,
+        analysis_deps: list[str],
         total_chunks: int,
         per_chunk: int,
         use_stream: bool,
-        final_writes: List[str],
-        struct_placeholder: Optional[str],
+        final_writes: list[str],
+        struct_placeholder: str | None,
         inline_struct: str,
     ) -> int:
         for fname in files:
@@ -1334,7 +1332,7 @@ class UltraHyperPlanner(BasePlanner):
         return idx
 
     def _maybe_add_artifact_index(
-        self, tasks: List[PlannedTask], idx: int, lang: str, deps: List[str], files: List[str]
+        self, tasks: list[PlannedTask], idx: int, lang: str, deps: list[str], files: list[str]
     ) -> int:
         if not (INDEX_FILE_EN and len(files) > 1):
             return idx
@@ -1366,12 +1364,12 @@ class UltraHyperPlanner(BasePlanner):
 
     def _maybe_add_deep_arch_report(
         self,
-        tasks: List[PlannedTask],
+        tasks: list[PlannedTask],
         idx: int,
         lang: str,
-        deps: List[str],
-        struct_meta: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+        deps: list[str],
+        struct_meta: dict[str, Any],
+    ) -> dict[str, Any] | None:
         if not struct_meta.get("attached"):
             return None
         prompt_ar = (
@@ -1411,12 +1409,12 @@ class UltraHyperPlanner(BasePlanner):
 
     def _add_comprehensive_analysis(
         self,
-        tasks: List[PlannedTask],
+        tasks: list[PlannedTask],
         idx: int,
         lang: str,
-        deps: List[str],
-        files: List[str],
-        struct_meta: Dict[str, Any],
+        deps: list[str],
+        files: list[str],
+        struct_meta: dict[str, Any],
     ) -> int:
         """Create one comprehensive analysis file instead of multiple fragmented files."""
         prompt_ar = """حلل المشروع بشكل شامل وقدم تقرير واحد متكامل يتضمن:
@@ -1489,8 +1487,8 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
         return idx
 
     def _prune_if_needed(
-        self, tasks: List[PlannedTask], idx: int, final_writes: List[str]
-    ) -> Tuple[int, List[str]]:
+        self, tasks: list[PlannedTask], idx: int, final_writes: list[str]
+    ) -> tuple[int, list[str]]:
         if len(tasks) <= GLOBAL_TASK_CAP:
             return idx, []
         pruned = []
@@ -1524,7 +1522,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
     # ----------------------------------------------------------------------------------
     # Utilities
     # ----------------------------------------------------------------------------------
-    def _resolve_target_files(self, objective: str) -> List[str]:
+    def _resolve_target_files(self, objective: str) -> list[str]:
         raw = extract_filenames(objective)
         normalized = []
         for f in raw:
@@ -1581,7 +1579,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
             return f"# Data artifact scaffold: {objective[:150]}\n"
         return ""
 
-    def _validate(self, plan: MissionPlanSchema, files: List[str]):
+    def _validate(self, plan: MissionPlanSchema, files: list[str]):
         if len(plan.tasks) > GLOBAL_TASK_CAP:
             raise PlanValidationError("excessive_tasks", self.name, plan.objective)
         ids = {t.task_id for t in plan.tasks}

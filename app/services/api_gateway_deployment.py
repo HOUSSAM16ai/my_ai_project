@@ -15,13 +15,13 @@
 import hashlib
 import random
 import threading
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-from flask import current_app, request
+from flask import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -62,8 +62,8 @@ class ModelVersion:
     created_at: datetime
     status: str  # 'active', 'canary', 'deprecated', 'sunset'
     traffic_weight: float = 0.0  # 0.0 to 1.0
-    performance_metrics: Dict[str, float] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, float] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -76,10 +76,10 @@ class ABTestExperiment:
     variant_a: str  # Version A identifier
     variant_b: str  # Version B identifier
     traffic_split: float = 0.5  # 0.0 to 1.0 for variant B
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    winning_variant: Optional[str] = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    metrics: dict[str, Any] = field(default_factory=dict)
+    winning_variant: str | None = None
 
 
 @dataclass
@@ -94,9 +94,9 @@ class CanaryDeployment:
     increment_percent: float = 10.0
     increment_interval_minutes: int = 15
     success_threshold: float = 0.95  # 95% success rate required
-    started_at: Optional[datetime] = None
+    started_at: datetime | None = None
     current_stage: str = "initial"
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -108,9 +108,9 @@ class FeatureFlag:
     description: str
     status: FeatureFlagStatus
     enabled_percentage: float = 0.0  # For percentage rollout
-    enabled_users: List[str] = field(default_factory=list)  # Specific users
-    enabled_groups: List[str] = field(default_factory=list)  # Specific groups
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    enabled_users: list[str] = field(default_factory=list)  # Specific users
+    enabled_groups: list[str] = field(default_factory=list)  # Specific groups
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ======================================================================================
@@ -130,8 +130,8 @@ class ABTestingService:
     """
 
     def __init__(self):
-        self.experiments: Dict[str, ABTestExperiment] = {}
-        self.user_assignments: Dict[str, Dict[str, str]] = defaultdict(
+        self.experiments: dict[str, ABTestExperiment] = {}
+        self.user_assignments: dict[str, dict[str, str]] = defaultdict(
             dict
         )  # user_id -> {exp_id: variant}
         self.lock = threading.RLock()
@@ -142,13 +142,13 @@ class ABTestingService:
             if experiment.experiment_id in self.experiments:
                 return False
 
-            experiment.started_at = datetime.now(timezone.utc)
+            experiment.started_at = datetime.now(UTC)
             self.experiments[experiment.experiment_id] = experiment
 
             current_app.logger.info(f"Created A/B test: {experiment.name}")
             return True
 
-    def assign_variant(self, experiment_id: str, user_id: str) -> Optional[str]:
+    def assign_variant(self, experiment_id: str, user_id: str) -> str | None:
         """
         Assign user to a variant
 
@@ -205,7 +205,7 @@ class ABTestingService:
 
             experiment.metrics[metric_key].append(value)
 
-    def get_experiment_results(self, experiment_id: str) -> Optional[Dict[str, Any]]:
+    def get_experiment_results(self, experiment_id: str) -> dict[str, Any] | None:
         """Get experiment results with statistical analysis"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
@@ -222,14 +222,14 @@ class ABTestingService:
                 "winning_variant": experiment.winning_variant,
             }
 
-    def end_experiment(self, experiment_id: str, winning_variant: Optional[str] = None) -> bool:
+    def end_experiment(self, experiment_id: str, winning_variant: str | None = None) -> bool:
         """End experiment and optionally declare winner"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
                 return False
 
-            experiment.ended_at = datetime.now(timezone.utc)
+            experiment.ended_at = datetime.now(UTC)
             if winning_variant:
                 experiment.winning_variant = winning_variant
 
@@ -256,7 +256,7 @@ class CanaryDeploymentService:
     """
 
     def __init__(self):
-        self.deployments: Dict[str, CanaryDeployment] = {}
+        self.deployments: dict[str, CanaryDeployment] = {}
         self.lock = threading.RLock()
 
     def start_deployment(self, deployment: CanaryDeployment) -> bool:
@@ -265,7 +265,7 @@ class CanaryDeploymentService:
             if deployment.deployment_id in self.deployments:
                 return False
 
-            deployment.started_at = datetime.now(timezone.utc)
+            deployment.started_at = datetime.now(UTC)
             deployment.current_stage = "initial"
             self.deployments[deployment.deployment_id] = deployment
 
@@ -275,8 +275,8 @@ class CanaryDeploymentService:
             return True
 
     def get_version_for_request(
-        self, deployment_id: str, user_id: Optional[str] = None
-    ) -> Optional[str]:
+        self, deployment_id: str, user_id: str | None = None
+    ) -> str | None:
         """
         Get version to use for request
 
@@ -329,7 +329,7 @@ class CanaryDeploymentService:
                 return False
 
             # Check time since last increment
-            elapsed = (datetime.now(timezone.utc) - deployment.started_at).total_seconds()
+            elapsed = (datetime.now(UTC) - deployment.started_at).total_seconds()
             expected_increments = int(elapsed / (deployment.increment_interval_minutes * 60))
             current_percent = deployment.canary_traffic_percent
             expected_percent = min(
@@ -401,7 +401,7 @@ class FeatureFlagService:
     """
 
     def __init__(self):
-        self.flags: Dict[str, FeatureFlag] = {}
+        self.flags: dict[str, FeatureFlag] = {}
         self.lock = threading.RLock()
 
     def create_flag(self, flag: FeatureFlag) -> bool:
@@ -415,7 +415,7 @@ class FeatureFlagService:
             return True
 
     def is_enabled(
-        self, flag_id: str, user_id: Optional[str] = None, user_groups: Optional[List[str]] = None
+        self, flag_id: str, user_id: str | None = None, user_groups: list[str] | None = None
     ) -> bool:
         """Check if feature is enabled for user"""
         with self.lock:
@@ -450,8 +450,8 @@ class FeatureFlagService:
     def update_flag(
         self,
         flag_id: str,
-        status: Optional[FeatureFlagStatus] = None,
-        percentage: Optional[float] = None,
+        status: FeatureFlagStatus | None = None,
+        percentage: float | None = None,
     ) -> bool:
         """Update feature flag"""
         with self.lock:
@@ -466,7 +466,7 @@ class FeatureFlagService:
 
             return True
 
-    def get_all_flags(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_flags(self) -> dict[str, dict[str, Any]]:
         """Get all feature flags"""
         with self.lock:
             return {
@@ -483,9 +483,9 @@ class FeatureFlagService:
 # SINGLETON INSTANCES
 # ======================================================================================
 
-_ab_testing_instance: Optional[ABTestingService] = None
-_canary_deployment_instance: Optional[CanaryDeploymentService] = None
-_feature_flag_instance: Optional[FeatureFlagService] = None
+_ab_testing_instance: ABTestingService | None = None
+_canary_deployment_instance: CanaryDeploymentService | None = None
+_feature_flag_instance: FeatureFlagService | None = None
 _service_lock = threading.Lock()
 
 

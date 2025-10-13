@@ -1,6 +1,4 @@
 # app/services/master_agent_service.py
-# -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 # =================================================================================================
 # OVERMIND MASTER ORCHESTRATOR – LEVEL‑4 DEEP SCAN / HYPER EXECUTION CORE
 # Version : 10.3.0-l4-pro
@@ -68,7 +66,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from flask import current_app, has_app_context
 from sqlalchemy import exists, func, select
@@ -161,17 +159,17 @@ verification_service = VerificationService()
 # =================================================================================================
 # Metrics Stubs (integrate externally later)
 # =================================================================================================
-def increment_counter(name: str, labels: Dict[str, str] | None = None):  # pragma: no cover
+def increment_counter(name: str, labels: dict[str, str] | None = None):  # pragma: no cover
     pass
 
 
 def observe_histogram(
-    name: str, value: float, labels: Dict[str, str] | None = None
+    name: str, value: float, labels: dict[str, str] | None = None
 ):  # pragma: no cover
     pass
 
 
-def set_gauge(name: str, value: float, labels: Dict[str, str] | None = None):  # pragma: no cover
+def set_gauge(name: str, value: float, labels: dict[str, str] | None = None):  # pragma: no cover
     pass
 
 
@@ -356,7 +354,7 @@ class CandidatePlan:
     planner_name: str
     score: float
     rationale: str
-    telemetry: Dict[str, Any]
+    telemetry: dict[str, Any]
 
 
 # =================================================================================================
@@ -380,17 +378,17 @@ def _sha256_text(txt: str) -> str:
     return hashlib.sha256(txt.encode("utf-8", errors="ignore")).hexdigest()
 
 
-def _read_file_safe(path: str) -> Tuple[bool, str]:
+def _read_file_safe(path: str) -> tuple[bool, str]:
     try:
         if not os.path.isfile(path):
             return False, ""
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return True, f.read()
     except Exception:
         return False, ""
 
 
-def _compute_diff(old: str, new: str, max_lines: int) -> Dict[str, Any]:
+def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
     diff_lines = list(
         difflib.unified_diff(
             old.splitlines(), new.splitlines(), fromfile="original", tofile="modified", lineterm=""
@@ -436,7 +434,7 @@ def _compute_diff(old: str, new: str, max_lines: int) -> Dict[str, Any]:
     }
 
 
-def _extract_answer_from_data(data: Any) -> Optional[str]:
+def _extract_answer_from_data(data: Any) -> str | None:
     if isinstance(data, dict):
         for k in ("answer", "output", "result", "text", "content"):
             v = data.get(k)
@@ -447,7 +445,7 @@ def _extract_answer_from_data(data: Any) -> Optional[str]:
     return None
 
 
-def _ensure_dict(v: Any) -> Dict[str, Any]:
+def _ensure_dict(v: Any) -> dict[str, Any]:
     if isinstance(v, dict):
         return v
     if isinstance(v, str):
@@ -468,8 +466,8 @@ def _tool_exists(name: str) -> bool:
 
 
 # Canonicalization -----------------------------------------------------------
-def _canonicalize_tool_name(raw_name: str, description: str) -> Tuple[str, List[str]]:
-    notes: List[str] = []
+def _canonicalize_tool_name(raw_name: str, description: str) -> tuple[str, list[str]]:
+    notes: list[str] = []
     name = _l(raw_name)
     base = name
     suffix = None
@@ -512,7 +510,7 @@ def _canonicalize_tool_name(raw_name: str, description: str) -> Tuple[str, List[
 
 
 def _autofill_file_args(
-    tool: str, tool_args: Dict[str, Any], mission: Mission, task: Task, notes: List[str]
+    tool: str, tool_args: dict[str, Any], mission: Mission, task: Task, notes: list[str]
 ):
     if tool not in FILE_REQUIRED:
         return
@@ -534,16 +532,16 @@ def _autofill_file_args(
 
 
 # Interpolation --------------------------------------------------------------
-def _collect_prior_outputs(mission_id: int) -> Dict[str, Dict[str, str]]:
-    rows: List[Task] = (
+def _collect_prior_outputs(mission_id: int) -> dict[str, dict[str, str]]:
+    rows: list[Task] = (
         db.session.query(Task)
         .filter(Task.mission_id == mission_id, Task.status == TaskStatus.SUCCESS)
         .options(joinedload(Task.mission))
         .all()
     )
-    out: Dict[str, Dict[str, str]] = {}
+    out: dict[str, dict[str, str]] = {}
     for t in rows:
-        bucket: Dict[str, str] = {}
+        bucket: dict[str, str] = {}
         if isinstance(t.result_text, str) and t.result_text.strip():
             bucket["content"] = t.result_text
         meta = getattr(t, "result_meta_json", None) or {}
@@ -557,11 +555,11 @@ def _collect_prior_outputs(mission_id: int) -> Dict[str, Dict[str, str]]:
 
 
 def _render_template_in_args(
-    args: Dict[str, Any], mission_id: int
-) -> Tuple[Dict[str, Any], List[str]]:
+    args: dict[str, Any], mission_id: int
+) -> tuple[dict[str, Any], list[str]]:
     if not INTERPOLATION_ENABLED:
         return args, []
-    notes: List[str] = []
+    notes: list[str] = []
     prior = _collect_prior_outputs(mission_id)
 
     def repl(match: re.Match) -> str:
@@ -605,12 +603,12 @@ class OvermindService:
 
     def __init__(self):
         self._app_ref = None
-        self._deep_index_cache: Optional[Dict[str, Any]] = None  # {sig, ts, context}
-        self._planner_failure_samples: List[Dict[str, Any]] = []
-        self._last_plan_hash: Optional[str] = None
-        self._tool_success_map: Dict[str, int] = {}
-        self._tool_fail_map: Dict[str, int] = {}
-        self._task_exec_metrics: Dict[str, Any] = {
+        self._deep_index_cache: dict[str, Any] | None = None  # {sig, ts, context}
+        self._planner_failure_samples: list[dict[str, Any]] = []
+        self._last_plan_hash: str | None = None
+        self._tool_success_map: dict[str, int] = {}
+        self._tool_fail_map: dict[str, int] = {}
+        self._task_exec_metrics: dict[str, Any] = {
             "start_ts": time.time(),
             "total_tasks": 0,
             "success": 0,
@@ -777,7 +775,7 @@ class OvermindService:
         if len(planners) > MAX_PLANNER_CANDIDATES:
             planners = planners[:MAX_PLANNER_CANDIDATES]
 
-        candidates: List[CandidatePlan] = []
+        candidates: list[CandidatePlan] = []
         for planner in planners:
             pname = getattr(planner, "name", "unknown")
             try:
@@ -794,7 +792,7 @@ class OvermindService:
                     )  # type: ignore
 
                 plan_obj: MissionPlanSchema = result_dict["plan"]
-                meta: Dict[str, Any] = result_dict["meta"]
+                meta: dict[str, Any] = result_dict["meta"]
                 planner_name = meta.get("planner") or pname
                 score = self._score_plan(plan_obj, meta)
                 rationale = self._build_plan_rationale(plan_obj, score, meta)
@@ -875,7 +873,7 @@ class OvermindService:
         )
 
     # ------------------------------ Deep Index Builder -----------------------
-    def _build_deep_index_context(self) -> Optional[Dict[str, Any]]:
+    def _build_deep_index_context(self) -> dict[str, Any] | None:
         if not ENABLE_DEEP_INDEX or not (build_index and summarize_for_prompt):
             return None
 
@@ -932,7 +930,7 @@ class OvermindService:
             return None
 
     # ------------------------------ Plan Scoring / Hash ----------------------
-    def _score_plan(self, plan: MissionPlanSchema, metadata: Dict[str, Any]) -> float:
+    def _score_plan(self, plan: MissionPlanSchema, metadata: dict[str, Any]) -> float:
         tasks_list = getattr(plan, "tasks", []) or []
         count = len(tasks_list)
         if count == 0:
@@ -941,7 +939,7 @@ class OvermindService:
         return round(base, 2)
 
     def _build_plan_rationale(
-        self, plan: MissionPlanSchema, score: float, metadata: Dict[str, Any]
+        self, plan: MissionPlanSchema, score: float, metadata: dict[str, Any]
     ) -> str:
         return f"score={score}; tasks={len(getattr(plan, 'tasks', []))}"
 
@@ -1052,7 +1050,7 @@ class OvermindService:
             self._emit_terminal_events(mission, success=False, reason="missing_plan")
             return
 
-        task_index: Dict[str, Task] = {t.task_key: t for t in mission.tasks}
+        task_index: dict[str, Task] = {t.task_key: t for t in mission.tasks}
         ordered_keys = sorted(task_index.keys())
         layers = [ordered_keys]
 
@@ -1068,7 +1066,7 @@ class OvermindService:
             ]
             if not pending_or_retry:
                 continue
-            ready: List[Task] = []
+            ready: list[Task] = []
             for t in pending_or_retry:
                 deps = t.depends_on_json or []
                 if all(task_index[d].status == TaskStatus.SUCCESS for d in deps):
@@ -1087,7 +1085,7 @@ class OvermindService:
             progress_attempted = True
             if EXECUTION_PARALLELISM_MODE == "MULTI":
                 app_obj = self._app_ref
-                threads: List[threading.Thread] = []
+                threads: list[threading.Thread] = []
                 for tk in ready:
                     th = threading.Thread(
                         target=self._thread_task_wrapper,
@@ -1157,8 +1155,8 @@ class OvermindService:
             )
 
     # ------------------------------ Ready Task Discovery ---------------------
-    def _find_ready_tasks(self, mission: Mission) -> List[Task]:
-        candidates: List[Task] = (
+    def _find_ready_tasks(self, mission: Mission) -> list[Task]:
+        candidates: list[Task] = (
             db.session.query(Task)
             .filter(
                 Task.mission_id == mission.id,
@@ -1183,7 +1181,7 @@ class OvermindService:
         else:
             dep_rows_dict = {}
 
-        ready: List[Task] = []
+        ready: list[Task] = []
         for t in candidates:
             deps = t.depends_on_json or []
             if not deps:
@@ -1213,7 +1211,7 @@ class OvermindService:
             print(f"[Overmind][thread][ERROR] mission={mission_id} task={task_id} {e}")
 
     # ------------------------------ Guard + Execution ------------------------
-    def _precheck_and_autofix_task(self, mission: Mission, task: Task) -> Dict[str, Any]:
+    def _precheck_and_autofix_task(self, mission: Mission, task: Task) -> dict[str, Any]:
         outcome = {"ok": True, "action": "pass", "notes": [], "error": None, "category": "ok"}
         if not GUARD_ENABLED:
             return outcome
@@ -1389,7 +1387,7 @@ class OvermindService:
             if answer and not task.result_text:
                 task.result_text = answer[:16000]
             if hasattr(task, "result_meta_json"):
-                cur = getattr(task, "result_meta_json") or {}
+                cur = task.result_meta_json or {}
                 if not isinstance(cur, dict):
                     cur = {}
                 cur.update(meta_update)
@@ -1538,7 +1536,7 @@ class OvermindService:
         }
 
     # ------------------------------ Diff Augmentation ------------------------
-    def _augment_with_diff(self, task: Task, path: str, meta_update: Dict[str, Any]):
+    def _augment_with_diff(self, task: Task, path: str, meta_update: dict[str, Any]):
         try:
             if BACKUP_ON_WRITE:
                 old_exists, old_content = _read_file_safe(path + ".bak")
@@ -1594,7 +1592,7 @@ class OvermindService:
             meta_update.setdefault("diff_error", str(e)[:120])
 
     # ------------------------------ Tool Execution ---------------------------
-    def _execute_tool(self, task: Task) -> Dict[str, Any]:
+    def _execute_tool(self, task: Task) -> dict[str, Any]:
         if agent_tools is None:
             raise TaskExecutionError("Agent tools module not available.")
         tool_name_raw = task.tool_name or ""
@@ -1657,7 +1655,7 @@ class OvermindService:
                     raise TaskExecutionError(f"ToolFailed: {err_attr}")
             if hasattr(result_obj, "meta"):
                 try:
-                    mf = getattr(result_obj, "meta")
+                    mf = result_obj.meta
                     if isinstance(mf, dict):
                         meta_payload.update(mf)
                 except Exception:
@@ -1912,7 +1910,7 @@ class OvermindService:
 
     # ------------------------------ Terminal Events --------------------------
     def _emit_terminal_events(
-        self, mission: Mission, success: bool, reason: str, error: Optional[str] = None
+        self, mission: Mission, success: bool, reason: str, error: str | None = None
     ):
         if mission.status not in (
             MissionStatus.SUCCESS,

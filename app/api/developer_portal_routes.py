@@ -9,7 +9,6 @@ from app.middleware.decorators import monitor_performance, rate_limit, require_j
 from app.services.api_developer_portal_service import (
     SDKLanguage,
     TicketPriority,
-    TicketStatus,
     get_developer_portal_service,
 )
 

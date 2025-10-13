@@ -13,16 +13,13 @@ This module implements:
 - Multi-objective optimization
 """
 
-import asyncio
-import json
 import statistics
 import threading
-import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class ServiceHealth(Enum):
@@ -59,7 +56,7 @@ class ServiceMetrics:
     active_connections: int
     queue_depth: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "service_name": self.service_name,
             "timestamp": self.timestamp.isoformat(),
@@ -85,7 +82,7 @@ class ScalingDecision:
     target_instances: int
     confidence: float  # 0-1
     reason: str
-    predicted_impact: Dict[str, float]
+    predicted_impact: dict[str, float]
     timestamp: datetime
 
 
@@ -99,7 +96,7 @@ class ServiceInstance:
     cpu_limit: float = 80.0
     memory_limit: float = 80.0
     created_at: datetime = field(default_factory=datetime.now)
-    last_health_check: Optional[datetime] = None
+    last_health_check: datetime | None = None
     metrics_history: deque = field(default_factory=lambda: deque(maxlen=100))
 
     def is_healthy(self) -> bool:
@@ -119,7 +116,7 @@ class AIScalingEngine:
 
     def predict_load(
         self, service_name: str, current_metrics: ServiceMetrics, time_window_minutes: int = 15
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         التنبؤ بالحمل المستقبلي باستخدام time series analysis
         Returns: (predicted_load, confidence)
@@ -218,7 +215,7 @@ class AIScalingEngine:
             timestamp=datetime.now(),
         )
 
-    def learn_from_decision(self, decision: ScalingDecision, actual_impact: Dict[str, float]):
+    def learn_from_decision(self, decision: ScalingDecision, actual_impact: dict[str, float]):
         """
         التعلم من قرارات التوسع السابقة لتحسين القرارات المستقبلية
         """
@@ -242,9 +239,9 @@ class IntelligentRouter:
     def select_instance(
         self,
         service_name: str,
-        instances: List[ServiceInstance],
-        request_metadata: Optional[Dict] = None,
-    ) -> Optional[ServiceInstance]:
+        instances: list[ServiceInstance],
+        request_metadata: dict | None = None,
+    ) -> ServiceInstance | None:
         """
         اختيار أفضل instance بناءً على ML scoring
         """
@@ -285,7 +282,7 @@ class IntelligentRouter:
         return best_instance
 
     def _calculate_instance_score(
-        self, instance: ServiceInstance, request_metadata: Optional[Dict] = None
+        self, instance: ServiceInstance, request_metadata: dict | None = None
     ) -> float:
         """
         حساب score للـ instance بناءً على عدة عوامل
@@ -355,7 +352,7 @@ class PredictiveHealthMonitor:
 
     def analyze_health(
         self, service_name: str, current_metrics: ServiceMetrics
-    ) -> Tuple[ServiceHealth, List[str]]:
+    ) -> tuple[ServiceHealth, list[str]]:
         """
         تحليل صحة الخدمة والتنبؤ بالمشاكل
         """
@@ -400,7 +397,7 @@ class PredictiveHealthMonitor:
 
         return ServiceHealth.HEALTHY, []
 
-    def _detect_anomalies(self, service_name: str, current_metrics: ServiceMetrics) -> List[str]:
+    def _detect_anomalies(self, service_name: str, current_metrics: ServiceMetrics) -> list[str]:
         """
         كشف الشذوذ باستخدام statistical analysis
         """
@@ -441,7 +438,7 @@ class PredictiveHealthMonitor:
 
     def predict_failure(
         self, service_name: str, lookahead_minutes: int = 15
-    ) -> Tuple[float, List[str]]:
+    ) -> tuple[float, list[str]]:
         """
         التنبؤ باحتمالية الفشل في المستقبل القريب
         Returns: (failure_probability, risk_factors)
@@ -491,7 +488,7 @@ class SelfAdaptiveMicroservices:
     """
 
     def __init__(self):
-        self.services: Dict[str, List[ServiceInstance]] = defaultdict(list)
+        self.services: dict[str, list[ServiceInstance]] = defaultdict(list)
         self.scaling_engine = AIScalingEngine()
         self.router = IntelligentRouter()
         self.health_monitor = PredictiveHealthMonitor()
@@ -499,7 +496,7 @@ class SelfAdaptiveMicroservices:
 
     def register_service(
         self, service_name: str, initial_instances: int = 1
-    ) -> List[ServiceInstance]:
+    ) -> list[ServiceInstance]:
         """
         تسجيل خدمة جديدة مع المثيلات الأولية
         """
@@ -537,7 +534,7 @@ class SelfAdaptiveMicroservices:
 
                     break
 
-    def auto_scale(self, service_name: str) -> Optional[ScalingDecision]:
+    def auto_scale(self, service_name: str) -> ScalingDecision | None:
         """
         التوسع التلقائي بناءً على AI analysis
         """
@@ -569,7 +566,7 @@ class SelfAdaptiveMicroservices:
             return decision
 
     def _aggregate_metrics(
-        self, service_name: str, metrics_list: List[ServiceMetrics]
+        self, service_name: str, metrics_list: list[ServiceMetrics]
     ) -> ServiceMetrics:
         """
         دمج مقاييس من instances متعددة
@@ -632,15 +629,15 @@ class SelfAdaptiveMicroservices:
                 print(f"✅ Scaled DOWN {service_name}: removed {removed.instance_id}")
 
     def route_request(
-        self, service_name: str, request_metadata: Optional[Dict] = None
-    ) -> Optional[ServiceInstance]:
+        self, service_name: str, request_metadata: dict | None = None
+    ) -> ServiceInstance | None:
         """
         توجيه طلب إلى أفضل instance
         """
         instances = self.services.get(service_name, [])
         return self.router.select_instance(service_name, instances, request_metadata)
 
-    def get_service_status(self, service_name: str) -> Dict[str, Any]:
+    def get_service_status(self, service_name: str) -> dict[str, Any]:
         """
         الحصول على حالة الخدمة الكاملة
         """

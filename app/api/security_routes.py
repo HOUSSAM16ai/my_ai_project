@@ -6,7 +6,7 @@
 #   مسارات الأمان الخارقة مع Zero-Trust Architecture
 #   Superhuman security routes with Zero-Trust Architecture
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app, g, jsonify, request
 
@@ -445,7 +445,7 @@ def security_health():
                             "audit_logging": "active",
                             "ip_filtering": "active",
                         },
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     },
                 }
             ),

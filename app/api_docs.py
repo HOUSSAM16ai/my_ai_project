@@ -9,10 +9,10 @@
 #   - Request/response examples
 #   - Authentication documentation
 
-from typing import Any, Dict
+from typing import Any
 
 
-def get_openapi_config() -> Dict[str, Any]:
+def get_openapi_config() -> dict[str, Any]:
     """
     تكوين OpenAPI/Swagger - OpenAPI configuration
 
@@ -132,7 +132,7 @@ CORS is enabled for the following origins:
     }
 
 
-def get_api_endpoints_documentation() -> Dict[str, Any]:
+def get_api_endpoints_documentation() -> dict[str, Any]:
     """
     وثائق نقاط النهاية - API endpoints documentation
 

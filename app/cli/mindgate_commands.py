@@ -36,7 +36,7 @@ import time
 import traceback
 import uuid
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import click
 from flask import Blueprint
@@ -92,9 +92,9 @@ class ImportRecord:
     def __init__(self, name: str):
         self.name = name
         self.ok = False
-        self.error: Optional[BaseException] = None
-        self.trace: Optional[str] = None
-        self.module: Optional[ModuleType] = None
+        self.error: BaseException | None = None
+        self.trace: str | None = None
+        self.module: ModuleType | None = None
 
     def to_dict(self):
         return {
@@ -105,7 +105,7 @@ class ImportRecord:
         }
 
 
-IMPORTS: Dict[str, ImportRecord] = {}
+IMPORTS: dict[str, ImportRecord] = {}
 SERVICES_READY = False
 DB_READY = False
 
@@ -159,7 +159,7 @@ def _import_module(path: str) -> ImportRecord:
     return rec
 
 
-def _root_cause_summary() -> List[str]:
+def _root_cause_summary() -> list[str]:
     msgs = []
     for rec in IMPORTS.values():
         if not rec.ok and rec.error:
@@ -178,7 +178,7 @@ def _debug_print_imports():
                 C_DIM(rec.trace or "")
 
 
-def _maybe_suggest_planner(name: str, available: List[str]) -> Optional[str]:
+def _maybe_suggest_planner(name: str, available: list[str]) -> str | None:
     if not available:
         return None
     matches = difflib.get_close_matches(name, available, n=1, cutoff=0.45)
@@ -315,7 +315,7 @@ def _get_initiator_user() -> Any:
     return user
 
 
-def _format_warnings(warnings) -> List[str]:
+def _format_warnings(warnings) -> list[str]:
     result = []
     if not warnings:
         return result
@@ -330,7 +330,7 @@ def _format_warnings(warnings) -> List[str]:
     return result
 
 
-def print_kv(title: str, data: Dict[str, Any]):
+def print_kv(title: str, data: dict[str, Any]):
     C_YELLOW(f"\n-- {title} --")
     for k, v in data.items():
         click.echo(f"{k}: {v}")
@@ -340,13 +340,13 @@ def _planner_default() -> str:
     return DEFAULT_PLANNER_NAME
 
 
-def _list_available_planners() -> List[str]:
-    names: List[str] = []
+def _list_available_planners() -> list[str]:
+    names: list[str] = []
     try:
         if hasattr(planning, "discover"):
             planning.discover()
         if hasattr(planning, "BasePlanner"):
-            bp = getattr(planning, "BasePlanner")
+            bp = planning.BasePlanner
             names = list(bp.available_planners())
         elif hasattr(planning, "get_all_planners"):
             plist = planning.get_all_planners(auto_instantiate=False)
@@ -426,7 +426,7 @@ def planners_command(json_out: bool, stats: bool):
     try:
         ensure_services()
         names = _list_available_planners()
-        payload: Dict[str, Any] = {"count": len(names), "planners": names}
+        payload: dict[str, Any] = {"count": len(names), "planners": names}
         if stats and hasattr(planning, "planner_stats"):
             try:
                 payload["stats"] = planning.planner_stats()
@@ -455,7 +455,7 @@ def planners_command(json_out: bool, stats: bool):
 @click.argument("objective", nargs=-1, required=True)
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
-def mission_command(objective: Tuple[str], json_out: bool, debug: bool):
+def mission_command(objective: tuple[str], json_out: bool, debug: bool):
     try:
         ensure_services(debug)
         ensure_db()
@@ -498,7 +498,7 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
         if not mission:
             raise ValueError("Mission not found.")
         tasks = Task.query.filter_by(mission_id=mission.id).all()
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for t in tasks:
             st = getattr(t.status, "name", str(t.status))
             counts[st] = counts.get(st, 0) + 1
@@ -612,7 +612,7 @@ def mission_follow_command(mission_id: int, interval: float, timeout: int, debug
 @click.option("--planner", "-p", default=lambda: _planner_default(), help="Planner name.")
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
-def plan_command(objective: Tuple[str], planner: str, json_out: bool, debug: bool):
+def plan_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
     try:
         ensure_services(debug)
         objective_text = " ".join(objective).strip()
@@ -666,7 +666,7 @@ def plan_command(objective: Tuple[str], planner: str, json_out: bool, debug: boo
 @click.option("--planner", "-p", default=lambda: _planner_default())
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
-def plan_mermaid_command(objective: Tuple[str], planner: str, json_out: bool, debug: bool):
+def plan_mermaid_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
     try:
         ensure_services(debug)
         obj = " ".join(objective).strip()
@@ -698,7 +698,7 @@ def plan_mermaid_command(objective: Tuple[str], planner: str, json_out: bool, de
 @click.option("--planner", "-p", default=lambda: _planner_default())
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
-def plan_dry_command(objective: Tuple[str], planner: str, json_out: bool, debug: bool):
+def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
     try:
         ensure_services(debug)
         obj = " ".join(objective).strip()
@@ -842,7 +842,7 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
 )
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
-def ask_command(prompt: Tuple[str], mode: str, json_out: bool, debug: bool):
+def ask_command(prompt: tuple[str], mode: str, json_out: bool, debug: bool):
     """
     Direct prompt to Maestro LLM gateway (no orchestration).
     Modes:

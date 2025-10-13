@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Adaptive Multi-Pass Architecture Planner (Epic Final Edition)
 =============================================================
@@ -122,9 +121,8 @@ To extend, bump version to avoid plan hash reuse.
 from __future__ import annotations
 
 import os
-import textwrap
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base_planner import BasePlanner
 
@@ -223,7 +221,7 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
         return {"plan": plan, "meta": meta}
 
     # ------------------------------------------------------------------ CORE BUILD
-    def _build_plan(self, objective: str, deep_context: Optional[Dict[str, Any]]):
+    def _build_plan(self, objective: str, deep_context: dict[str, Any] | None):
         from app.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
 
         safe_objective = self._escape_braces(objective)
@@ -235,7 +233,7 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
         min_cov_threshold = float(os.getenv("ARCH_PLANNER_MIN_COVERAGE", "0.55"))
         min_bi_threshold = float(os.getenv("ARCH_PLANNER_MIN_BILINGUAL", "0.80"))
 
-        tasks: List[MissionTaskSchema] = []
+        tasks: list[MissionTaskSchema] = []
 
         # ------------------- t01: Repo listing
         tasks.append(
