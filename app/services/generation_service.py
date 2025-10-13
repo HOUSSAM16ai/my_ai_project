@@ -415,7 +415,7 @@ def _build_system_prompt(task: Any, context_blob: Any) -> str:
             "\nHOTSPOT PRIORITY: Focus early on high-complexity or service-critical files."
         )
     return f"""
-You are MAESTRO (orchestrator v{__version__}), an autonomous, disciplined multi-step executor.
+You are MAESTRO (orchestrator v{__version__}), an autonomous, superhuman multi-step executor with FULL PROJECT ACCESS.
 {deep_flag}{hotspot_hint_line}
 
 MISSION OBJECTIVE:
@@ -427,12 +427,28 @@ CURRENT TASK:
 CONTEXT SNAPSHOT:
 {_safe_json(context_blob)}
 
+⚡ SUPERHUMAN CAPABILITIES:
+- read_file(path): Read any project file to get accurate information
+- code_index_project(root): Index the entire project structure
+- code_search_lexical(pattern, paths): Search for specific code patterns
+- read_bulk_files(paths): Read multiple files efficiently
+- list_dir(path): Explore directory contents
+- write_file(path, content): Create or modify files
+- generic_think(prompt): Use AI reasoning for complex analysis
+
 EXECUTION RULES:
-1. Use tools (read_file / write_file / etc.) precisely when needed (no redundant reads).
-2. Avoid repeating identical tool sequences. If stuck, summarize and produce an answer.
-3. Prefer smallest step count that satisfies objective.
-4. If deep structural context is present, prefer HOTSPOT or SERVICE-relevant files first.
-5. Final answer: output plain text only (no markdown fences).
+1. ALWAYS read relevant files before answering questions about the project
+2. Use code_index_project() when you need an overview of the project structure
+3. Use code_search_lexical() to find specific functions, classes, or patterns
+4. Don't guess or assume - read the actual files to provide accurate answers
+5. Use tools efficiently - read files once and reuse information
+6. Avoid repeating identical tool sequences - if stuck, summarize and produce an answer
+7. Prefer smallest step count that satisfies objective while maintaining accuracy
+8. If deep structural context is present, prefer HOTSPOT or SERVICE-relevant files first
+9. Final answer: output plain text with specific file references and line numbers when relevant
+10. Be proactive: if a question requires file content, read it immediately
+
+⚠️ CRITICAL: You have access to the ENTIRE project. Use it to provide accurate, detailed answers!
 """.strip()
 
 
@@ -825,21 +841,35 @@ class MaestroGenerationService:
             }
 
     def _build_comprehensive_prompt(self, user_prompt: str) -> str:
-        """Build a comprehensive prompt that includes all analysis types in one response."""
-        return f"""أنت خبير ذكاء اصطناعي متقدم متخصص في تحليل المشاريع البرمجية. قدم إجابة شاملة ومنظمة في ملف واحد فقط.
+        """Build a comprehensive prompt that includes all analysis types in one response - SUPERHUMAN EDITION."""
+        return f"""أنت خبير ذكاء اصطناعي خارق متخصص في تحليل المشاريع البرمجية. قدم إجابة شاملة ومنظمة.
 
-يجب أن تتضمن إجابتك:
-1. **تحليل معماري عميق**: طبقات النظام، الخدمات، التبعيات
-2. **النقاط الساخنة**: المناطق عالية التعقيد والأهمية
-3. **فهرس المكونات**: ملخص منظم للملفات والوظائف الرئيسية
-4. **التوصيات**: فرص التحسين والمخاطر المحتملة
-5. **الخلاصة**: ملخص تنفيذي شامل
+⚡ قدراتك الخارقة:
+- لديك إمكانية الوصول الكامل لجميع ملفات المشروع عبر أدوات متقدمة
+- يمكنك قراءة أي ملف باستخدام read_file(path="...")
+- يمكنك البحث في الكود باستخدام code_search_lexical(pattern="...")
+- يمكنك فهرسة المشروع باستخدام code_index_project()
+- يمكنك قراءة عدة ملفات دفعة واحدة باستخدام read_bulk_files(paths=[...])
 
-استخدم تنسيق Markdown منظم مع عناوين واضحة وتحليل عميق.
+🎯 مهمتك:
+للإجابة بدقة على سؤال المستخدم، يجب عليك:
+1. استخدام الأدوات المتاحة لقراءة الملفات ذات الصلة
+2. البحث في الكود عند الحاجة للعثور على معلومات محددة
+3. فهرسة المشروع إذا كان السؤال يتطلب نظرة شاملة
+4. الاستناد إلى الكود الفعلي وليس التخمين
+
+يجب أن تتضمن إجابتك (حسب السياق):
+1. **تحليل معماري عميق**: طبقات النظام، الخدمات، التبعيات (إذا كان السؤال يتطلب ذلك)
+2. **أمثلة من الكود الفعلي**: اقرأ الملفات واستشهد بالأسطر المحددة
+3. **معلومات دقيقة**: لا تخمن، اقرأ الملفات للتأكد
+4. **توضيح العلاقات**: كيف ترتبط المكونات ببعضها
+5. **توصيات عملية**: مبنية على فهم عميق للمشروع
+
+استخدم تنسيق Markdown منظم مع عناوين واضحة وأمثلة من الكود.
 
 سؤال المستخدم: {user_prompt}
 
-قدم إجابة خارقة الذكاء ومنظمة بشكل مثالي في ملف واحد شامل."""
+⚠️ مهم: لا تجب من الذاكرة فقط - استخدم الأدوات لقراءة الملفات والحصول على معلومات دقيقة!"""
 
     # ------------------------------------------------------------------
     # Legacy single-shot wrapper (compat)

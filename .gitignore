@@ -101,3 +101,4 @@ site/
 *.sqlite
 *.db
 *.sql
+test_ai_enhancements.py
