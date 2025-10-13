@@ -16,9 +16,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import threading
-import time
 import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -77,17 +75,17 @@ class Span:
     end_time: datetime | None = None
     duration_ms: float | None = None
     parent_span_id: str | None = None
-    
+
     # Tags (metadata)
     tags: dict[str, Any] = field(default_factory=dict)
-    
+
     # Logs (events within span)
     logs: list[dict[str, Any]] = field(default_factory=list)
-    
+
     # Status
     status_code: str = "OK"  # OK, ERROR, UNSET
     status_message: str | None = None
-    
+
     # Baggage (context propagation)
     baggage: dict[str, str] = field(default_factory=dict)
 
@@ -113,7 +111,7 @@ class Trace:
 class TraceContextPropagator:
     """
     Propagates trace context across services
-    
+
     Implements W3C Trace Context specification
     """
 
@@ -125,7 +123,7 @@ class TraceContextPropagator:
     def inject(span_context: SpanContext, headers: dict[str, str]):
         """
         Inject trace context into HTTP headers
-        
+
         Format: 00-{trace_id}-{span_id}-{flags}
         """
         traceparent = f"00-{span_context.trace_id}-{span_context.span_id}-01"
@@ -178,7 +176,7 @@ class TraceContextPropagator:
 class DistributedTracer:
     """
     Distributed tracing service
-    
+
     Creates and manages spans across distributed services
     """
 
@@ -191,19 +189,19 @@ class DistributedTracer:
         self.service_name = service_name
         self.sampling_strategy = sampling_strategy
         self.sampling_rate = sampling_rate
-        
+
         # Active spans (in-flight)
         self.active_spans: dict[str, Span] = {}
-        
+
         # Completed traces
         self.traces: dict[str, Trace] = {}
         self.trace_history: deque = deque(maxlen=1000)
-        
+
         # Spans waiting for aggregation
         self.pending_spans: dict[str, list[Span]] = defaultdict(list)
-        
+
         self.lock = threading.RLock()
-        
+
         # Performance metrics
         self.metrics = {
             "total_traces": 0,
@@ -220,7 +218,7 @@ class DistributedTracer:
     ) -> SpanContext:
         """
         Start a new trace or continue existing one
-        
+
         Returns span context for propagation
         """
         # Check if we should sample this trace
@@ -305,7 +303,9 @@ class DistributedTracer:
             if span:
                 span.tags[key] = value
 
-    def add_span_log(self, span_context: SpanContext, message: str, fields: dict[str, Any] | None = None):
+    def add_span_log(
+        self, span_context: SpanContext, message: str, fields: dict[str, Any] | None = None
+    ):
         """Add log event to span"""
         with self.lock:
             span = self.active_spans.get(span_context.span_id)
@@ -335,9 +335,7 @@ class DistributedTracer:
                 return
 
             # Check if there are any active spans for this trace
-            active_for_trace = [
-                s for s in self.active_spans.values() if s.trace_id == trace_id
-            ]
+            active_for_trace = [s for s in self.active_spans.values() if s.trace_id == trace_id]
 
             if active_for_trace:
                 # Still waiting for spans to complete
@@ -389,9 +387,7 @@ class DistributedTracer:
         """Find traces exceeding duration threshold"""
         with self.lock:
             return [
-                t
-                for t in self.traces.values()
-                if t.duration_ms and t.duration_ms > threshold_ms
+                t for t in self.traces.values() if t.duration_ms and t.duration_ms > threshold_ms
             ]
 
     def find_error_traces(self) -> list[Trace]:
@@ -402,7 +398,7 @@ class DistributedTracer:
     def get_service_dependencies(self) -> dict[str, set[str]]:
         """
         Analyze service dependencies from traces
-        
+
         Returns mapping of service -> called services
         """
         dependencies = defaultdict(set)
@@ -422,9 +418,7 @@ class DistributedTracer:
                             if parent_span.span_id == span.parent_span_id:
                                 # Parent service -> child service dependency
                                 if parent_span.service_name != span.service_name:
-                                    dependencies[parent_span.service_name].add(
-                                        span.service_name
-                                    )
+                                    dependencies[parent_span.service_name].add(span.service_name)
 
         return {k: list(v) for k, v in dependencies.items()}
 
@@ -436,9 +430,7 @@ class DistributedTracer:
             completed_traces = len(self.traces)
 
             # Calculate average trace duration
-            completed_with_duration = [
-                t for t in self.traces.values() if t.duration_ms is not None
-            ]
+            completed_with_duration = [t for t in self.traces.values() if t.duration_ms is not None]
             avg_duration = (
                 sum(t.duration_ms for t in completed_with_duration) / len(completed_with_duration)
                 if completed_with_duration
@@ -468,6 +460,7 @@ class DistributedTracer:
             return False
         elif self.sampling_strategy == SamplingStrategy.PROBABILISTIC:
             import random
+
             return random.random() < self.sampling_rate
         return True
 
@@ -483,6 +476,7 @@ class DistributedTracer:
         """Check if running in Flask request context"""
         try:
             from flask import has_request_context
+
             return has_request_context()
         except:
             return False

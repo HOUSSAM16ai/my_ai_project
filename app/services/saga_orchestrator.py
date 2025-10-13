@@ -15,15 +15,15 @@
 
 from __future__ import annotations
 
-import hashlib
 import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
 
@@ -117,10 +117,10 @@ class SagaEvent:
 class SagaOrchestrator:
     """
     Saga Orchestrator for distributed transactions
-    
+
     Manages complex workflows across microservices with automatic
     compensation on failures.
-    
+
     Features:
     - Sequential and parallel step execution
     - Automatic rollback on failures
@@ -147,14 +147,14 @@ class SagaOrchestrator:
     ) -> str:
         """
         Create a new saga
-        
+
         Args:
             saga_name: Name of the saga
             steps: List of step definitions with 'name', 'action', 'compensation'
             saga_type: Type of saga (orchestrated or choreographed)
             correlation_id: Optional correlation ID for tracking
             metadata: Additional metadata
-        
+
         Returns:
             Saga ID
         """
@@ -205,13 +205,13 @@ class SagaOrchestrator:
     def execute_saga(self, saga_id: str) -> bool:
         """
         Execute a saga
-        
+
         Executes all steps sequentially. If any step fails, automatically
         compensates (rolls back) all completed steps in reverse order.
-        
+
         Args:
             saga_id: ID of the saga to execute
-        
+
         Returns:
             True if saga completed successfully, False otherwise
         """
@@ -312,9 +312,7 @@ class SagaOrchestrator:
                     },
                 )
 
-                current_app.logger.info(
-                    f"Saga step completed: {step.step_name} ({step.step_id})"
-                )
+                current_app.logger.info(f"Saga step completed: {step.step_name} ({step.step_id})")
 
                 return True
 
@@ -328,7 +326,7 @@ class SagaOrchestrator:
 
                 if step.retry_count <= step.max_retries:
                     # Exponential backoff
-                    wait_time = 2 ** step.retry_count
+                    wait_time = 2**step.retry_count
                     time.sleep(wait_time)
                 else:
                     # Max retries exceeded
@@ -352,7 +350,7 @@ class SagaOrchestrator:
     def _compensate_saga(self, saga_id: str):
         """
         Compensate (rollback) a saga
-        
+
         Executes compensation actions for all completed steps in reverse order
         """
         with self.lock:

@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -67,24 +66,24 @@ class DomainEvent:
 
     # Temporal
     occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    
+
     # Causality
     correlation_id: str | None = None  # Links related events across services
     causation_id: str | None = None  # ID of the event that caused this event
-    
+
     # Context
     bounded_context: BoundedContext | None = None
     category: EventCategory = EventCategory.DOMAIN
     aggregate_id: str | None = None  # ID of the aggregate root
     aggregate_type: str | None = None  # Type of aggregate (User, Mission, Task, etc.)
-    
+
     # Metadata
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     # Actor
     actor_id: str | None = None  # Who/what triggered this event
     actor_type: str = "system"  # user, system, service, etc.
-    
+
     # Payload
     payload: dict[str, Any] = field(default_factory=dict)
 
@@ -100,14 +99,7 @@ class DomainEvent:
 class UserCreated(DomainEvent):
     """User account created"""
 
-    def __init__(
-        self,
-        user_id: str,
-        email: str,
-        name: str,
-        role: str = "user",
-        **kwargs
-    ):
+    def __init__(self, user_id: str, email: str, name: str, role: str = "user", **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.USER_MANAGEMENT
         self.aggregate_type = "User"
@@ -124,12 +116,7 @@ class UserCreated(DomainEvent):
 class UserUpdated(DomainEvent):
     """User account updated"""
 
-    def __init__(
-        self,
-        user_id: str,
-        changes: dict[str, Any],
-        **kwargs
-    ):
+    def __init__(self, user_id: str, changes: dict[str, Any], **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.USER_MANAGEMENT
         self.aggregate_type = "User"
@@ -144,13 +131,7 @@ class UserUpdated(DomainEvent):
 class UserDeleted(DomainEvent):
     """User account deleted"""
 
-
-    def __init__(
-        self,
-        user_id: str,
-        reason: str | None = None,
-        **kwargs
-    ):
+    def __init__(self, user_id: str, reason: str | None = None, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.USER_MANAGEMENT
         self.aggregate_type = "User"
@@ -168,14 +149,7 @@ class UserDeleted(DomainEvent):
 class MissionCreated(DomainEvent):
     """Mission created"""
 
-
-    def __init__(
-        self,
-        mission_id: str,
-        objective: str,
-        priority: str = "normal",
-        **kwargs
-    ):
+    def __init__(self, mission_id: str, objective: str, priority: str = "normal", **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.MISSION_ORCHESTRATION
         self.aggregate_type = "Mission"
@@ -191,13 +165,7 @@ class MissionCreated(DomainEvent):
 class MissionStarted(DomainEvent):
     """Mission execution started"""
 
-
-    def __init__(
-        self,
-        mission_id: str,
-        started_by: str,
-        **kwargs
-    ):
+    def __init__(self, mission_id: str, started_by: str, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.MISSION_ORCHESTRATION
         self.aggregate_type = "Mission"
@@ -212,14 +180,7 @@ class MissionStarted(DomainEvent):
 class MissionCompleted(DomainEvent):
     """Mission completed successfully"""
 
-
-    def __init__(
-        self,
-        mission_id: str,
-        result_summary: str,
-        duration_seconds: float,
-        **kwargs
-    ):
+    def __init__(self, mission_id: str, result_summary: str, duration_seconds: float, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.MISSION_ORCHESTRATION
         self.aggregate_type = "Mission"
@@ -235,14 +196,7 @@ class MissionCompleted(DomainEvent):
 class MissionFailed(DomainEvent):
     """Mission failed"""
 
-
-    def __init__(
-        self,
-        mission_id: str,
-        error: str,
-        failed_task: str | None = None,
-        **kwargs
-    ):
+    def __init__(self, mission_id: str, error: str, failed_task: str | None = None, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.MISSION_ORCHESTRATION
         self.aggregate_type = "Mission"
@@ -261,14 +215,7 @@ class MissionFailed(DomainEvent):
 class TaskCreated(DomainEvent):
     """Task created"""
 
-
-    def __init__(
-        self,
-        task_id: str,
-        mission_id: str,
-        description: str,
-        **kwargs
-    ):
+    def __init__(self, task_id: str, mission_id: str, description: str, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.TASK_EXECUTION
         self.aggregate_type = "Task"
@@ -284,14 +231,7 @@ class TaskCreated(DomainEvent):
 class TaskAssigned(DomainEvent):
     """Task assigned to executor"""
 
-
-    def __init__(
-        self,
-        task_id: str,
-        assigned_to: str,
-        assigned_by: str,
-        **kwargs
-    ):
+    def __init__(self, task_id: str, assigned_to: str, assigned_by: str, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.TASK_EXECUTION
         self.aggregate_type = "Task"
@@ -307,13 +247,7 @@ class TaskAssigned(DomainEvent):
 class TaskStarted(DomainEvent):
     """Task execution started"""
 
-
-    def __init__(
-        self,
-        task_id: str,
-        executor: str,
-        **kwargs
-    ):
+    def __init__(self, task_id: str, executor: str, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.TASK_EXECUTION
         self.aggregate_type = "Task"
@@ -328,14 +262,7 @@ class TaskStarted(DomainEvent):
 class TaskCompleted(DomainEvent):
     """Task completed successfully"""
 
-
-    def __init__(
-        self,
-        task_id: str,
-        result: str,
-        duration_seconds: float,
-        **kwargs
-    ):
+    def __init__(self, task_id: str, result: str, duration_seconds: float, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.TASK_EXECUTION
         self.aggregate_type = "Task"
@@ -351,14 +278,7 @@ class TaskCompleted(DomainEvent):
 class TaskFailed(DomainEvent):
     """Task failed"""
 
-
-    def __init__(
-        self,
-        task_id: str,
-        error: str,
-        retry_count: int = 0,
-        **kwargs
-    ):
+    def __init__(self, task_id: str, error: str, retry_count: int = 0, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.TASK_EXECUTION
         self.aggregate_type = "Task"
@@ -380,12 +300,7 @@ class SecurityThreatDetected(DomainEvent):
     category: EventCategory = EventCategory.SYSTEM
 
     def __init__(
-        self,
-        threat_type: str,
-        severity: str,
-        source_ip: str,
-        details: dict[str, Any],
-        **kwargs
+        self, threat_type: str, severity: str, source_ip: str, details: dict[str, Any], **kwargs
     ):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.SECURITY_COMPLIANCE
@@ -403,13 +318,7 @@ class AccessDenied(DomainEvent):
 
     category: EventCategory = EventCategory.SYSTEM
 
-    def __init__(
-        self,
-        user_id: str,
-        resource: str,
-        reason: str,
-        **kwargs
-    ):
+    def __init__(self, user_id: str, resource: str, reason: str, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.SECURITY_COMPLIANCE
         self.payload = {
@@ -429,12 +338,7 @@ class ApiRequestReceived(DomainEvent):
     category: EventCategory = EventCategory.SYSTEM
 
     def __init__(
-        self,
-        request_id: str,
-        method: str,
-        endpoint: str,
-        client_id: str | None = None,
-        **kwargs
+        self, request_id: str, method: str, endpoint: str, client_id: str | None = None, **kwargs
     ):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
@@ -452,13 +356,7 @@ class ApiResponseSent(DomainEvent):
 
     category: EventCategory = EventCategory.SYSTEM
 
-    def __init__(
-        self,
-        request_id: str,
-        status_code: int,
-        duration_ms: float,
-        **kwargs
-    ):
+    def __init__(self, request_id: str, status_code: int, duration_ms: float, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
         self.payload = {
@@ -474,13 +372,7 @@ class RateLimitExceeded(DomainEvent):
 
     category: EventCategory = EventCategory.SYSTEM
 
-    def __init__(
-        self,
-        client_id: str,
-        endpoint: str,
-        limit: int,
-        **kwargs
-    ):
+    def __init__(self, client_id: str, endpoint: str, limit: int, **kwargs):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
         self.payload = {
@@ -506,7 +398,7 @@ class NotificationRequested(DomainEvent):
         subject: str,
         message: str,
         channel: str = "email",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.NOTIFICATION_DELIVERY
@@ -531,7 +423,7 @@ class DataExportRequested(DomainEvent):
         data_type: str,
         filters: dict[str, Any],
         format: str = "json",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.ANALYTICS_REPORTING

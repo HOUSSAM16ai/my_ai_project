@@ -12,35 +12,34 @@ Tests:
 - Event sourcing
 """
 
-import pytest
 import time
-from datetime import datetime, UTC
 
-from app.services.domain_events import (
-    UserCreated,
-    MissionCreated,
-    TaskAssigned,
-    DomainEventRegistry,
-    BoundedContext,
-)
-from app.services.saga_orchestrator import (
-    SagaOrchestrator,
-    SagaType,
-    SagaStatus,
-)
-from app.services.service_mesh_integration import (
-    ServiceMeshManager,
-    CircuitBreakerConfig,
-    RetryPolicy,
-    TrafficSplitStrategy,
-)
+import pytest
+
 from app.services.distributed_tracing import (
     DistributedTracer,
     SpanKind,
     TraceContextPropagator,
-    SpanContext,
+)
+from app.services.domain_events import (
+    BoundedContext,
+    DomainEventRegistry,
+    MissionCreated,
+    TaskAssigned,
+    UserCreated,
 )
 from app.services.graphql_federation import GraphQLFederationManager
+from app.services.saga_orchestrator import (
+    SagaOrchestrator,
+    SagaStatus,
+    SagaType,
+)
+from app.services.service_mesh_integration import (
+    CircuitBreakerConfig,
+    RetryPolicy,
+    ServiceMeshManager,
+    TrafficSplitStrategy,
+)
 
 
 # ======================================================================================
@@ -227,7 +226,7 @@ class TestSagaOrchestrator:
         orchestrator.execute_saga(saga_id)
 
         events = orchestrator.get_saga_events(saga_id)
-        
+
         assert len(events) > 0
         event_types = [e["event_type"] for e in events]
         assert "saga_created" in event_types
@@ -336,7 +335,7 @@ class TestServiceMesh:
             return "success"
 
         result = mesh.call_with_resilience("retry_service", eventually_succeeds)
-        
+
         assert result == "success"
         assert call_count["value"] == 2  # Failed once, succeeded on retry
 
