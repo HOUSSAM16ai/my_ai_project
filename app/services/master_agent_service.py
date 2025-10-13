@@ -901,7 +901,7 @@ class OvermindService:
 
     # ------------------------------ Execution (Topological) ------------------
     def _execution_phase(self, mission: Mission):
-        plan = MissionPlan.query.get(mission.active_plan_id)
+        plan = db.session.get(MissionPlan, mission.active_plan_id)
         if not plan:
             log_error(mission, "Active plan not found.")
             update_mission_status(mission, MissionStatus.FAILED, note="No plan.")
@@ -1042,7 +1042,7 @@ class OvermindService:
     def _thread_task_wrapper(self, app_obj, mission_id: int, task_id: int, layer_index: int):
         try:
             with app_obj.app_context():
-                mission = Mission.query.get(mission_id)
+                mission = db.session.get(Mission, mission_id)
                 if not mission:
                     log_warn(None, "Mission disappeared in thread", mission_id=mission_id)
                     return
@@ -1110,10 +1110,10 @@ class OvermindService:
         return outcome
 
     def _execute_task_with_retry_topological(self, mission_id: int, task_id: int, layer_index: int):
-        mission = Mission.query.get(mission_id)
+        mission = db.session.get(Mission, mission_id)
         if not mission:
             return
-        task = Task.query.get(task_id)
+        task = db.session.get(Task, task_id)
         if not task or task.status not in (TaskStatus.PENDING, TaskStatus.RETRY):
             return
         nxt = getattr(task, "next_retry_at", None)
@@ -1646,7 +1646,7 @@ class OvermindService:
                  success=success, reason=reason, status=mission.status.value)
 
     def _safe_terminal_event(self, mission_id: int):
-        mission = Mission.query.get(mission_id)
+        mission = db.session.get(Mission, mission_id)
         if not mission:
             return
         try:

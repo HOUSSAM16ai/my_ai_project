@@ -72,7 +72,7 @@ def admin_dashboard():
 @admin_required
 def mission_detail(mission_id):
     """Renders the detailed view for a single mission."""
-    mission = Mission.query.get_or_404(mission_id)
+    mission = db.get_or_404(Mission, mission_id)
     # --- [THE CRITICAL FIX] ---
     # Also corrected here for consistency.
     return render_template("mission_detail.html", title=f"Mission #{mission.id}", mission=mission)
