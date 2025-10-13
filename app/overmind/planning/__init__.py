@@ -61,7 +61,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 __version__ = "3.5.0"
 

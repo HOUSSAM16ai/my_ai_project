@@ -247,12 +247,11 @@ class AITestGenerator:
 
         for node in ast.walk(tree):
             # Check for eval/exec usage
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name):
-                    if node.func.id in ["eval", "exec"]:
-                        risks.append("Dangerous: Use of eval/exec detected")
-                    elif node.func.id == "open":
-                        risks.append("File I/O: Verify file path validation")
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in ["eval", "exec"]:
+                    risks.append("Dangerous: Use of eval/exec detected")
+                elif node.func.id == "open":
+                    risks.append("File I/O: Verify file path validation")
 
             # Check for SQL-like strings
             if isinstance(node, ast.Str):
@@ -314,10 +313,10 @@ class AITestGenerator:
     \"\"\"Test {func_name} with valid inputs\"\"\"
     # Arrange
     {self._format_inputs(inputs)}
-    
+
     # Act
     result = {func_name}({', '.join(f"{k}={k}" for k in inputs)})
-    
+
     # Assert
     assert result is not None
     # Add more specific assertions based on expected behavior
@@ -368,7 +367,7 @@ class AITestGenerator:
     \"\"\"Test {func_name} with edge case: {param['name']}={edge_val}\"\"\"
     # Arrange
     {param['name']} = {repr(edge_val)}
-    
+
     # Act & Assert
     try:
         result = {func_name}({param['name']}={param['name']})
@@ -505,7 +504,7 @@ class SmartTestSelector:
         selected = []
         total_time = 0.0
 
-        for score, test in scored_tests:
+        for _score, test in scored_tests:
             if total_time + test.estimated_execution_time <= time_budget:
                 selected.append(test)
                 total_time += test.estimated_execution_time

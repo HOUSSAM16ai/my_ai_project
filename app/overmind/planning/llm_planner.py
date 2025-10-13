@@ -753,7 +753,6 @@ class UltraHyperPlanner(BasePlanner):
 
         tasks: list[PlannedTask] = []
         idx = 1
-        base_deps = []
         analysis_dependency_ids = []
 
         # ---------- Repo scan ----------
@@ -1498,7 +1497,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
             "global_summary": lambda t: "Global code semantic summary" in t.description,
             "deep_arch_report": lambda t: "deep architecture report" in t.description.lower(),
         }
-        id_to_task = {t.task_id: t for t in tasks}
+        {t.task_id: t for t in tasks}
         # Remove groups until under cap
         for group in OPTIONAL_GROUPS:
             if len(tasks) <= GLOBAL_TASK_CAP:
@@ -1601,9 +1600,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
     def _valid_objective(self, objective: str) -> bool:
         if not objective or len(objective.strip()) < 5:
             return False
-        if objective.strip().isdigit():
-            return False
-        return True
+        return not objective.strip().isdigit()
 
 
 # Backward alias

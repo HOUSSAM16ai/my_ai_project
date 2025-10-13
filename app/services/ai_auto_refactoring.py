@@ -315,27 +315,25 @@ class CodeAnalyzer:
                         )
 
             # Check for hardcoded secrets
-            if isinstance(node, ast.Str):
-                if any(
-                    keyword in node.s.lower()
-                    for keyword in ["password", "api_key", "secret", "token"]
-                ):
-                    if len(node.s) > 10 and not node.s.startswith("your_"):
-                        self.issues_found.append(
-                            CodeIssue(
-                                issue_id=f"secret_{file_path}_{node.lineno}",
-                                severity=Severity.HIGH,
-                                issue_type="HardcodedSecret",
-                                description="Possible hardcoded secret detected",
-                                file_path=file_path,
-                                line_number=node.lineno,
-                                column=node.col_offset,
-                                code_snippet=f'"{node.s[:20]}..."',
-                                suggested_fix="Move secrets to environment variables",
-                                auto_fixable=False,
-                                impact_score=80,
-                            )
-                        )
+            if isinstance(node, ast.Str) and any(
+                keyword in node.s.lower()
+                for keyword in ["password", "api_key", "secret", "token"]
+            ) and len(node.s) > 10 and not node.s.startswith("your_"):
+                self.issues_found.append(
+                    CodeIssue(
+                        issue_id=f"secret_{file_path}_{node.lineno}",
+                        severity=Severity.HIGH,
+                        issue_type="HardcodedSecret",
+                        description="Possible hardcoded secret detected",
+                        file_path=file_path,
+                        line_number=node.lineno,
+                        column=node.col_offset,
+                        code_snippet=f'"{node.s[:20]}..."',
+                        suggested_fix="Move secrets to environment variables",
+                        auto_fixable=False,
+                        impact_score=80,
+                    )
+                )
 
     def _check_performance_issues(self, tree: ast.AST, file_path: str):
         """فحص مشاكل الأداء"""

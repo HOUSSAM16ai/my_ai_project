@@ -12,7 +12,7 @@ users_cli = Blueprint("users", __name__, cli_group="users")
 def list_users():
     """Lists all registered users by calling the user service."""
     click.secho("--- Calling User Service to Fetch Users ---", fg="cyan")
-    all_users = user_service.get_all_users()
+    user_service.get_all_users()
     # ... (الكود الحالي لطباعة الجدول يبقى كما هو، لأنه خاص بالعرض)
 
 

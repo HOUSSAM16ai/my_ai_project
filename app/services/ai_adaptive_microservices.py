@@ -659,7 +659,7 @@ class SelfAdaptiveMicroservices:
             failure_prob = 0.0
             risk_factors = []
             if latest_metrics:
-                avg_metrics = self._aggregate_metrics(service_name, latest_metrics)
+                self._aggregate_metrics(service_name, latest_metrics)
                 failure_prob, risk_factors = self.health_monitor.predict_failure(service_name)
 
             return {

@@ -184,7 +184,7 @@ class InMemoryBroker(MessageBroker):
 
     def _notify_subscribers(self, topic: str, message: Event):
         """Notify all subscribers of a topic"""
-        for sub_id, subscription in self.subscriptions.items():
+        for _sub_id, subscription in self.subscriptions.items():
             if subscription.event_type == topic or subscription.event_type == "*":
                 # Check filter
                 if subscription.filter_fn and not subscription.filter_fn(message):

@@ -623,9 +623,7 @@ class PolicyEngine:
         """Evaluate policy condition (simplified)"""
         # In production, use a proper expression engine
         # For now, support basic checks
-        if "user_id" in condition and "user_id" not in context:
-            return True
-        return False
+        return bool("user_id" in condition and "user_id" not in context)
 
     def _record_violation(self, policy: PolicyRule, context: dict[str, Any]):
         """Record policy violation"""

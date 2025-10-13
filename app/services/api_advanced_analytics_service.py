@@ -446,7 +446,7 @@ class AdvancedAnalyticsService:
 
             # Calculate aggregate metrics
             total_requests = len([m for m in filtered_metrics if m.name == "api_request"])
-            unique_users = len(set(m.user_id for m in filtered_metrics if m.user_id))
+            unique_users = len({m.user_id for m in filtered_metrics if m.user_id})
 
             successful_requests = len(
                 [
@@ -546,7 +546,7 @@ class AdvancedAnalyticsService:
                         )
 
             # Detect unusual error rates
-            for hour, count in hourly_counts.items():
+            for hour, _count in hourly_counts.items():
                 hour_metrics = [
                     m
                     for m in recent_metrics

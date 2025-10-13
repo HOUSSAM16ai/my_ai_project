@@ -63,7 +63,7 @@ import random
 import re
 import threading
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -395,10 +395,7 @@ def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
         )
     )
     truncated = len(diff_lines) > max_lines
-    if truncated:
-        diff_display = diff_lines[:max_lines] + ["... (diff truncated)"]
-    else:
-        diff_display = diff_lines
+    diff_display = diff_lines[:max_lines] + ["... (diff truncated)"] if truncated else diff_lines
     added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
     removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
     first_changed = 0
@@ -1463,10 +1460,8 @@ class OvermindService:
         perf_start: float,
         tool_key: str,
     ):
-        try:
+        with suppress(Exception):
             db.session.refresh(task)
-        except Exception:
-            pass
         task.attempt_count = attempt_index
         task.error_text = str(exc)[:500]
         task.finished_at = utc_now()
@@ -1600,10 +1595,8 @@ class OvermindService:
             raise TaskExecutionError("Empty tool_name.")
         canonical = tool_name_raw
         if hasattr(agent_tools, "resolve_tool_name"):
-            try:
+            with suppress(Exception):
                 canonical = agent_tools.resolve_tool_name(tool_name_raw) or tool_name_raw
-            except Exception:
-                pass
         registry = getattr(agent_tools, "_TOOL_REGISTRY", {})
         meta = registry.get(tool_name_raw) or registry.get(canonical)
         if not meta:

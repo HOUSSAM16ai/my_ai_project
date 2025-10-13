@@ -116,7 +116,7 @@ _env_manual = os.getenv("OVERMIND_PLANNER_MANUAL", "")
 ENV_MANUAL_MODULES: list[str] = [m.strip() for m in _env_manual.split(",") if m.strip()]
 
 _env_exclude = os.getenv("OVERMIND_PLANNER_EXCLUDE", "")
-ENV_EXCLUDE_MODULES: set[str] = set(m.strip() for m in _env_exclude.split(",") if m.strip())
+ENV_EXCLUDE_MODULES: set[str] = {m.strip() for m in _env_exclude.split(",") if m.strip()}
 
 MANUAL_IMPORT_MODULES: list[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
 EXCLUDE_MODULES: set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
@@ -209,7 +209,7 @@ def _now() -> float:
 
 
 def _safe_lower_set(values: Iterable[str] | None) -> set[str]:
-    return set(v.lower().strip() for v in values or [] if v is not None)
+    return {v.lower().strip() for v in values or [] if v is not None}
 
 
 # ======================================================================================
@@ -273,7 +273,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> set[str]:
         return set()
     val = getattr(obj, attr)
     if isinstance(val, (list, tuple, set)):
-        return set(str(v).strip() for v in val if v is not None)
+        return {str(v).strip() for v in val if v is not None}
     return set()
 
 
@@ -806,7 +806,7 @@ def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
     stats = planner_stats()
     active_names = _active_planner_names()
     records = []
-    for n, r in _STATE.planner_records.items():
+    for _n, r in _STATE.planner_records.items():
         if not verbose and r.quarantined:
             continue
         records.append(r.to_public_dict())

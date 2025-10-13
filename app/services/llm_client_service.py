@@ -141,6 +141,7 @@ except Exception:  # pragma: no cover
         return False
 
 
+import contextlib
 import logging
 
 # --------------------------------------------------------------------------------------
@@ -746,10 +747,8 @@ def _sanitize(text: str) -> str:
             sanitized = sanitized.replace(marker, f"[REDACTED:{marker}]")
     # Regex patterns
     for pattern in _SANITIZE_REGEXES:
-        try:
+        with contextlib.suppress(Exception):
             sanitized = re.sub(pattern, "[REDACTED_PATTERN]", sanitized)
-        except Exception:
-            pass
     return sanitized
 
 
@@ -765,9 +764,7 @@ def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[
 
 def _circuit_allowed() -> bool:
     now = time.time()
-    if _BREAKER_STATE["open_until"] > now:
-        return False
-    return True
+    return not _BREAKER_STATE["open_until"] > now
 
 
 def _note_error_for_breaker():

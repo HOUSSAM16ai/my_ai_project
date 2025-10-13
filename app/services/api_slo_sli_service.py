@@ -540,7 +540,7 @@ class SLOService:
             return {
                 "timestamp": datetime.now(UTC).isoformat(),
                 "slis": self.sli_tracker.get_all_slis(),
-                "slos": {slo_id: self.get_slo_status(slo_id) for slo_id in self.slos.keys()},
+                "slos": {slo_id: self.get_slo_status(slo_id) for slo_id in self.slos},
                 "active_incidents": len([i for i in self.incidents.values() if i.ended_at is None]),
                 "overall_health": self._calculate_overall_health(),
             }

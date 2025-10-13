@@ -245,9 +245,7 @@ def _estimate_complexity(node: ast.AST) -> int:
             complexity += 1
         elif isinstance(child, ast.BoolOp):
             complexity += max(1, len(getattr(child, "values", [])) - 1)
-        elif isinstance(child, ast.ExceptHandler) or isinstance(
-            child, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
-        ):
+        elif isinstance(child, (ast.ExceptHandler, ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
             complexity += 1
     return complexity
 
@@ -273,7 +271,7 @@ def _categorize(code: str) -> list[str]:
         tags.add("ml")
     if any(x in lower for x in ("openai", "anthropic", "gemini", "langchain", "llama")):
         tags.add("llm")
-    return sorted(list(tags))
+    return sorted(tags)
 
 
 def _layer_for_path(path: str) -> str | None:
@@ -307,9 +305,7 @@ def _service_candidate(path: str, code: str) -> bool:
     # معيار مبسط: ملف في services/ أو يحتوي بناء FastAPI/Blueprint/Router
     if "services" in path or "service" in path:
         return True
-    if any(x in lower for x in ("fastapi(", "flask(", "blueprint(", "apirouter(")):
-        return True
-    return False
+    return bool(any(x in lower for x in ("fastapi(", "flask(", "blueprint(", "apirouter(")))
 
 
 # --------------------------------------------------------------------------------------
@@ -328,12 +324,9 @@ def _collect_python_files(root: str) -> tuple[list[str], list[str]]:
     root = os.path.abspath(root)
 
     def _excluded(dp: str) -> bool:
-        for part in dp.replace("\\", "/").split("/"):
-            if part in exclude_dirs:
-                return True
-        return False
+        return any(part in exclude_dirs for part in dp.replace("\\", "/").split("/"))
 
-    for dirpath, dirnames, filenames in os.walk(root):
+    for dirpath, _dirnames, filenames in os.walk(root):
         if _excluded(dirpath):
             continue
         for fn in filenames:
@@ -696,7 +689,7 @@ def _service_candidates(
         code = file_sources.get(path, "")
         if _service_candidate(path, code):
             cands.append(path)
-    return sorted(list(set(cands)))
+    return sorted(set(cands))
 
 
 # --------------------------------------------------------------------------------------
@@ -942,11 +935,9 @@ def summarize_for_prompt(index: dict[str, Any], max_len: int = 6000) -> str:
     dupes = index.get("duplicate_function_bodies", {})
     if dupes:
         push("DUPLICATES:")
-        c = 0
-        for h, items in dupes.items():
+        for c, (h, items) in enumerate(dupes.items()):
             push(f"- hash {h} -> {len(items)} funcs")
-            c += 1
-            if c >= 10:
+            if c >= 9:  # Stop after 10 items (0-9)
                 break
 
     # Top calls

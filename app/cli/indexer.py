@@ -11,7 +11,6 @@ from pathlib import Path
 import numpy as np
 
 try:
-    import torch
     from sentence_transformers import SentenceTransformer
 except ImportError:
     SentenceTransformer = None
@@ -58,9 +57,7 @@ def is_text_file(p: Path) -> bool:
     ext = p.suffix.lower()
     if ext in TEXT_EXTS:
         return True
-    if ext == "" and p.stat().st_size < 2_000_000:
-        return True
-    return False
+    return bool(ext == "" and p.stat().st_size < 2000000)
 
 
 def iter_files(root: Path) -> Iterable[Path]:
@@ -169,7 +166,7 @@ def build_index(
     all_texts = [c["text"] for c in all_chunks]
     embeddings = model.encode(all_texts, normalize_embeddings=True, show_progress_bar=True)
 
-    for i, chunk_meta in enumerate(all_chunks):
+    for _i, chunk_meta in enumerate(all_chunks):
         chunk_meta["preview"] = chunk_meta["text"][:200].strip()
         del chunk_meta["text"]
 

@@ -226,7 +226,7 @@ class LocalVaultBackend(VaultBackend):
     def list_secrets(self, prefix: str | None = None) -> list[str]:
         with self.lock:
             if prefix:
-                return [k for k in self.secrets.keys() if k.startswith(prefix)]
+                return [k for k in self.secrets if k.startswith(prefix)]
             return list(self.secrets.keys())
 
     def rotate_secret(self, secret_id: str) -> bool:

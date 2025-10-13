@@ -324,49 +324,47 @@ class BehavioralAnalyzer:
         anomalies = []
 
         # Check if user is accessing unusual endpoint
-        if profile.typical_endpoints:
-            if event.endpoint not in profile.typical_endpoints:
-                # New endpoint - check if it's sensitive
-                if any(
-                    sensitive in event.endpoint.lower()
-                    for sensitive in ["admin", "config", "secret", "key"]
-                ):
-                    anomalies.append(
-                        ThreatDetection(
-                            detection_id=f"unusual_endpoint_{event.event_id}",
-                            threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
-                            threat_level=ThreatLevel.HIGH,
-                            description=f"User accessing unusual sensitive endpoint: {event.endpoint}",
-                            source_ip=event.source_ip,
-                            user_id=event.user_id,
-                            confidence=0.75,
-                            evidence=[f"Never accessed {event.endpoint} before"],
-                            recommended_action="Require additional authentication",
-                            auto_blocked=False,
-                        )
-                    )
-
-        # Check for unusual time access
-        current_hour = event.timestamp.hour
-        if profile.typical_hours:
-            if current_hour not in profile.typical_hours:
-                # Accessing at unusual time
+        if profile.typical_endpoints and event.endpoint not in profile.typical_endpoints:
+            # New endpoint - check if it's sensitive
+            if any(
+                sensitive in event.endpoint.lower()
+                for sensitive in ["admin", "config", "secret", "key"]
+            ):
                 anomalies.append(
                     ThreatDetection(
-                        detection_id=f"unusual_time_{event.event_id}",
+                        detection_id=f"unusual_endpoint_{event.event_id}",
                         threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
-                        threat_level=ThreatLevel.MEDIUM,
-                        description=f"User accessing at unusual time: {current_hour}:00",
+                        threat_level=ThreatLevel.HIGH,
+                        description=f"User accessing unusual sensitive endpoint: {event.endpoint}",
                         source_ip=event.source_ip,
                         user_id=event.user_id,
-                        confidence=0.6,
-                        evidence=[
-                            f"Typical hours: {profile.typical_hours}, Current: {current_hour}"
-                        ],
-                        recommended_action="Monitor closely",
+                        confidence=0.75,
+                        evidence=[f"Never accessed {event.endpoint} before"],
+                        recommended_action="Require additional authentication",
                         auto_blocked=False,
                     )
                 )
+
+        # Check for unusual time access
+        current_hour = event.timestamp.hour
+        if profile.typical_hours and current_hour not in profile.typical_hours:
+            # Accessing at unusual time
+            anomalies.append(
+                ThreatDetection(
+                    detection_id=f"unusual_time_{event.event_id}",
+                    threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
+                    threat_level=ThreatLevel.MEDIUM,
+                    description=f"User accessing at unusual time: {current_hour}:00",
+                    source_ip=event.source_ip,
+                    user_id=event.user_id,
+                    confidence=0.6,
+                    evidence=[
+                        f"Typical hours: {profile.typical_hours}, Current: {current_hour}"
+                    ],
+                    recommended_action="Monitor closely",
+                    auto_blocked=False,
+                )
+            )
 
         # Check for rapid requests (possible brute force)
         recent_events = [

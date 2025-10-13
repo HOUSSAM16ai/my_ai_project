@@ -12,6 +12,8 @@
 #   - Comprehensive metrics collection (Tracing+Metrics+Logs)
 #   - AIOps integration for self-healing capabilities
 
+import builtins
+import contextlib
 import hashlib
 import statistics
 import threading
@@ -329,10 +331,8 @@ class APIObservabilityService:
                 self.anomaly_alerts = self.anomaly_alerts[-100:]
 
         # Log to application logger
-        try:
+        with contextlib.suppress(builtins.BaseException):
             current_app.logger.warning(f"🚨 ANOMALY DETECTED [{severity.upper()}]: {description}")
-        except:
-            pass
 
     def get_endpoint_analytics(self, endpoint: str) -> dict[str, Any]:
         """Get detailed analytics for specific endpoint"""
