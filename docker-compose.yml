@@ -127,6 +127,9 @@ services:
   # Token Support (Dual Mode for Compatibility):
   #   - AI_AGENT_TOKEN (Primary) - New superhuman standard
   #   - GITHUB_PERSONAL_ACCESS_TOKEN (Legacy) - Backward compatibility
+  # 
+  # IMPORTANT: The MCP Server runs in stdio (stdin/stdout) mode for interactive use.
+  # It's not a traditional HTTP daemon, but provides a communication interface for AI tools.
   # ----------------------------------------------------------------------------------
   github_mcp:
     image: ghcr.io/github/github-mcp-server:latest
