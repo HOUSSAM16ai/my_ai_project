@@ -27,7 +27,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import mimetypes
 import os
@@ -35,15 +34,16 @@ import subprocess
 import threading
 import time
 from collections import OrderedDict
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
+from flask import current_app
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError, OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app import db
-from flask import current_app
+
 
 # ---------------------------------------------------------------------------
 # ToolResult (يفضل نقله لاحقاً إلى shared/contracts.py لتفادي التبعيات الدائرية)
@@ -52,10 +52,12 @@ from flask import current_app
 class ToolResult:
     ok: bool
     data: Any = None
-    error: Optional[str] = None
-    meta: Optional[Dict[str, Any]] = None
+    error: str | None = None
+    meta: dict[str, Any] | None = None
+
     def to_dict(self):
         return asdict(self)
+
 
 __version__ = "11.0.0"
 
@@ -66,14 +68,23 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", Path.cwd())).resolve()
 ALLOWED_EXTENSIONS = set(
-    filter(None, os.getenv(
-        "SYSTEM_SERVICE_ALLOWED_EXT",
-        ".py,.md,.txt,.json,.yml,.yaml,.js,.ts,.html,.css,.sh"
-    ).split(","))
+    filter(
+        None,
+        os.getenv(
+            "SYSTEM_SERVICE_ALLOWED_EXT", ".py,.md,.txt,.json,.yml,.yaml,.js,.ts,.html,.css,.sh"
+        ).split(","),
+    )
 )
 IGNORED_DIRS = {
-    "__pycache__", ".git", ".idea", "venv", ".vscode",
-    "migrations", "instance", "tmp", "node_modules"
+    "__pycache__",
+    ".git",
+    ".idea",
+    "venv",
+    ".vscode",
+    "migrations",
+    "instance",
+    "tmp",
+    "node_modules",
 }
 MAX_FILE_BYTES = int(os.getenv("SYSTEM_SERVICE_MAX_FILE_BYTES", "1500000"))  # 1.5MB
 CHUNK_SIZE = int(os.getenv("SYSTEM_SERVICE_CHUNK_SIZE", "6000"))
@@ -92,7 +103,8 @@ _embedding_model = None
 _embedding_lock = threading.Lock()
 
 # LRU Cache for small files (path -> dict)
-_file_lru: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+_file_lru: OrderedDict[str, dict[str, Any]] = OrderedDict()
+
 
 # ---------------------------------------------------------------------------
 # UTILITIES
@@ -100,8 +112,10 @@ _file_lru: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
 def _now_ms() -> float:
     return time.perf_counter() * 1000.0
 
+
 def _hash_text(txt: str) -> str:
     return hashlib.sha256(txt.encode("utf-8", errors="ignore")).hexdigest()
+
 
 def _is_binary_maybe(path: Path) -> bool:
     # Heuristic: use mimetype or raw sniff
@@ -115,12 +129,14 @@ def _is_binary_maybe(path: Path) -> bool:
     except:
         return True
 
+
 def _path_within_project(p: Path) -> bool:
     try:
         p = p.resolve()
-        return PROJECT_ROOT == p or PROJECT_ROOT in p.parents
+        return p == PROJECT_ROOT or PROJECT_ROOT in p.parents
     except Exception:
         return False
+
 
 def _normalize_rel_path(rel_path: str) -> Path:
     if not rel_path or ".." in rel_path or rel_path.startswith("~"):
@@ -130,8 +146,10 @@ def _normalize_rel_path(rel_path: str) -> Path:
         raise ValueError("OUT_OF_PROJECT_BOUNDARY")
     return p
 
+
 def _format_vector_literal(vec) -> str:
     return "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
+
 
 # ---------------------------------------------------------------------------
 # EMBEDDING MODEL (Lazy load)
@@ -142,11 +160,13 @@ def get_embedding_model():
         with _embedding_lock:
             if _embedding_model is None:
                 from sentence_transformers import SentenceTransformer
+
                 current_app.logger.info(
                     f"[embeddings] Loading model '{EMBED_MODEL_NAME}' (one-time)..."
                 )
                 _embedding_model = SentenceTransformer(EMBED_MODEL_NAME)
     return _embedding_model
+
 
 # ---------------------------------------------------------------------------
 # DB STRUCTURE
@@ -162,7 +182,9 @@ def get_embedding_model():
 #   updated_at (TIMESTAMP)
 # ---------------------------------------------------------------------------
 def _ensure_code_documents():
-    db.session.execute(text(f"""
+    db.session.execute(
+        text(
+            f"""
         CREATE TABLE IF NOT EXISTS code_documents (
             id TEXT PRIMARY KEY,
             file_path TEXT,
@@ -174,21 +196,32 @@ def _ensure_code_documents():
             embedding vector({VECTOR_DIM}),
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-    """))
-    db.session.execute(text("""
+    """
+        )
+    )
+    db.session.execute(
+        text(
+            """
         CREATE INDEX IF NOT EXISTS idx_code_documents_file_path
             ON code_documents(file_path);
-    """))
-    db.session.execute(text("""
+    """
+        )
+    )
+    db.session.execute(
+        text(
+            """
         CREATE INDEX IF NOT EXISTS idx_code_documents_embedding
             ON code_documents USING ivfflat (embedding vector_cosine_ops)
             WITH (lists = 100);
-    """))
+    """
+        )
+    )
+
 
 # ---------------------------------------------------------------------------
 # CHUNKING
 # ---------------------------------------------------------------------------
-def _chunk_text(content: str) -> List[Tuple[str, int]]:
+def _chunk_text(content: str) -> list[tuple[str, int]]:
     if len(content) <= CHUNK_SIZE:
         return [(content, 0)]
     chunks = []
@@ -202,10 +235,11 @@ def _chunk_text(content: str) -> List[Tuple[str, int]]:
         start = max(end - CHUNK_OVERLAP, end)
     return chunks
 
+
 # ---------------------------------------------------------------------------
 # FILE LRU
 # ---------------------------------------------------------------------------
-def _file_cache_get(key: str) -> Optional[Dict[str, Any]]:
+def _file_cache_get(key: str) -> dict[str, Any] | None:
     if not ENABLE_FILE_LRU:
         return None
     val = _file_lru.get(key)
@@ -213,13 +247,15 @@ def _file_cache_get(key: str) -> Optional[Dict[str, Any]]:
         _file_lru.move_to_end(key)
     return val
 
-def _file_cache_put(key: str, value: Dict[str, Any]):
+
+def _file_cache_put(key: str, value: dict[str, Any]):
     if not ENABLE_FILE_LRU:
         return
     _file_lru[key] = value
     _file_lru.move_to_end(key)
     if len(_file_lru) > FILE_LRU_CAPACITY:
         _file_lru.popitem(last=False)
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: get_project_tree
@@ -258,15 +294,20 @@ def get_project_tree() -> ToolResult:
             meta={
                 "source": meta_src,
                 "elapsed_ms": round(_now_ms() - start, 2),
-                "error_code": None
-            }
+                "error_code": None,
+            },
         )
     except Exception as e:
         return ToolResult(
             ok=False,
             error="PROJECT_TREE_FAILED",
-            meta={"exception": str(e), "elapsed_ms": round(_now_ms() - start, 2), "error_code": "PROJECT_TREE_FAILED"}
+            meta={
+                "exception": str(e),
+                "elapsed_ms": round(_now_ms() - start, 2),
+                "error_code": "PROJECT_TREE_FAILED",
+            },
         )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: get_git_status
@@ -278,12 +319,7 @@ def get_git_status(porcelain: bool = True) -> ToolResult:
         cmd = ["git", "status", "--porcelain=v1"]
     try:
         proc = subprocess.run(
-            cmd,
-            cwd=str(PROJECT_ROOT),
-            capture_output=True,
-            text=True,
-            timeout=8,
-            check=True
+            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, timeout=8, check=True
         )
         raw = proc.stdout.strip()
         parsed = []
@@ -297,21 +333,28 @@ def get_git_status(porcelain: bool = True) -> ToolResult:
                     parsed.append({"index_status": x, "worktree_status": y, "path": path})
         return ToolResult(
             ok=True,
-            data={
-                "raw": raw,
-                "parsed": parsed,
-                "clean": len(parsed) == 0
-            },
-            meta={"source": "git", "elapsed_ms": round(_now_ms() - start, 2)}
+            data={"raw": raw, "parsed": parsed, "clean": len(parsed) == 0},
+            meta={"source": "git", "elapsed_ms": round(_now_ms() - start, 2)},
         )
     except subprocess.TimeoutExpired as e:
-        return ToolResult(ok=False, error="GIT_TIMEOUT", meta={"exception": str(e), "error_code": "GIT_TIMEOUT"})
+        return ToolResult(
+            ok=False, error="GIT_TIMEOUT", meta={"exception": str(e), "error_code": "GIT_TIMEOUT"}
+        )
     except subprocess.CalledProcessError as e:
-        return ToolResult(ok=False, error="GIT_FAILED", meta={"exception": str(e), "error_code": "GIT_FAILED"})
+        return ToolResult(
+            ok=False, error="GIT_FAILED", meta={"exception": str(e), "error_code": "GIT_FAILED"}
+        )
     except FileNotFoundError:
-        return ToolResult(ok=False, error="GIT_NOT_INSTALLED", meta={"error_code": "GIT_NOT_INSTALLED"})
+        return ToolResult(
+            ok=False, error="GIT_NOT_INSTALLED", meta={"error_code": "GIT_NOT_INSTALLED"}
+        )
     except Exception as e:
-        return ToolResult(ok=False, error="GIT_UNKNOWN_ERROR", meta={"exception": str(e), "error_code": "GIT_UNKNOWN_ERROR"})
+        return ToolResult(
+            ok=False,
+            error="GIT_UNKNOWN_ERROR",
+            meta={"exception": str(e), "error_code": "GIT_UNKNOWN_ERROR"},
+        )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: query_file
@@ -324,20 +367,36 @@ def query_file(rel_path: str) -> ToolResult:
     try:
         file_path = _normalize_rel_path(rel_path)
     except Exception as e:
-        return ToolResult(ok=False, error="PATH_INVALID", meta={"detail": str(e), "error_code": "PATH_INVALID"})
+        return ToolResult(
+            ok=False, error="PATH_INVALID", meta={"detail": str(e), "error_code": "PATH_INVALID"}
+        )
 
     if not file_path.exists():
-        return ToolResult(ok=False, error="FILE_NOT_FOUND", meta={"path": rel_path, "error_code": "FILE_NOT_FOUND"})
+        return ToolResult(
+            ok=False,
+            error="FILE_NOT_FOUND",
+            meta={"path": rel_path, "error_code": "FILE_NOT_FOUND"},
+        )
     if not file_path.is_file():
-        return ToolResult(ok=False, error="NOT_A_FILE", meta={"path": rel_path, "error_code": "NOT_A_FILE"})
+        return ToolResult(
+            ok=False, error="NOT_A_FILE", meta={"path": rel_path, "error_code": "NOT_A_FILE"}
+        )
 
     ext = file_path.suffix.lower()
     if ext and ALLOWED_EXTENSIONS and ext not in ALLOWED_EXTENSIONS:
         # Optionally raise or just mark unsupported
-        return ToolResult(ok=False, error="EXTENSION_NOT_ALLOWED", meta={"ext": ext, "error_code": "EXTENSION_NOT_ALLOWED"})
+        return ToolResult(
+            ok=False,
+            error="EXTENSION_NOT_ALLOWED",
+            meta={"ext": ext, "error_code": "EXTENSION_NOT_ALLOWED"},
+        )
 
     if _is_binary_maybe(file_path):
-        return ToolResult(ok=False, error="BINARY_FILE_REJECTED", meta={"path": rel_path, "error_code": "BINARY_FILE_REJECTED"})
+        return ToolResult(
+            ok=False,
+            error="BINARY_FILE_REJECTED",
+            meta={"path": rel_path, "error_code": "BINARY_FILE_REJECTED"},
+        )
 
     # LRU check
     cache_hit = False
@@ -367,18 +426,19 @@ def query_file(rel_path: str) -> ToolResult:
             _ensure_code_documents()
             doc_id = f"{rel_path}::0"
             existed = db.session.execute(
-                text("SELECT file_hash FROM code_documents WHERE id = :id"),
-                {"id": doc_id}
+                text("SELECT file_hash FROM code_documents WHERE id = :id"), {"id": doc_id}
             ).scalar_one_or_none()
             if existed != file_hash:
                 db.session.execute(
-                    text("""
+                    text(
+                        """
                         INSERT INTO code_documents
                         (id, file_path, chunk_index, content, file_hash, chunk_hash, source, embedding)
                         VALUES (:id, :fp, :ci, :ct, :fh, :ch, :src, NULL)
                         ON CONFLICT (id) DO UPDATE
                         SET content=:ct, file_hash=:fh, chunk_hash=:ch, updated_at=CURRENT_TIMESTAMP;
-                    """),
+                    """
+                    ),
                     {
                         "id": doc_id,
                         "fp": rel_path,
@@ -387,7 +447,7 @@ def query_file(rel_path: str) -> ToolResult:
                         "fh": file_hash,
                         "ch": file_hash,
                         "src": rel_path,
-                    }
+                    },
                 )
     except Exception as e:
         current_app.logger.warning("DB bootstrap for %s failed: %s", rel_path, e)
@@ -404,9 +464,10 @@ def query_file(rel_path: str) -> ToolResult:
         meta={
             "cache_hit": cache_hit,
             "elapsed_ms": round(_now_ms() - start, 2),
-            "error_code": None
-        }
+            "error_code": None,
+        },
     )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: index_project
@@ -421,7 +482,7 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
     try:
         model = get_embedding_model()
         # Stage 1: gather candidate files
-        file_records: List[Tuple[str, str]] = []
+        file_records: list[tuple[str, str]] = []
         for path_obj in PROJECT_ROOT.rglob("*"):
             if any(ignored in path_obj.parts for ignored in IGNORED_DIRS):
                 continue
@@ -472,30 +533,34 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
                 data={
                     "indexed_new": 0,
                     "message": "No new or changed content.",
-                    "total_chunks_seen": total_chunks
+                    "total_chunks_seen": total_chunks,
                 },
-                meta={"elapsed_ms": round(_now_ms() - start, 2)}
+                meta={"elapsed_ms": round(_now_ms() - start, 2)},
             )
 
         # Embed in batches
         texts = [r[3] for r in to_insert]
         embeddings = []
         for i in range(0, len(texts), EMBED_BATCH):
-            batch = texts[i:i + EMBED_BATCH]
+            batch = texts[i : i + EMBED_BATCH]
             emb = model.encode(batch, show_progress_bar=False)
             embeddings.extend(emb)
 
         # Insert
         with db.session.begin():
-            for (doc_id, rel, cidx, chunk_text, file_hash, chunk_hash), emb_vec in zip(to_insert, embeddings):
+            for (doc_id, rel, cidx, chunk_text, file_hash, chunk_hash), emb_vec in zip(
+                to_insert, embeddings, strict=False
+            ):
                 db.session.execute(
-                    text("""
+                    text(
+                        """
                         INSERT INTO code_documents
                         (id, file_path, chunk_index, content, file_hash, chunk_hash, source, embedding)
                         VALUES (:id, :fp, :ci, :ct, :fh, :ch, :src, :emb)
                         ON CONFLICT (id) DO UPDATE
                         SET content=:ct, file_hash=:fh, chunk_hash=:ch, embedding=:emb, updated_at=CURRENT_TIMESTAMP;
-                    """),
+                    """
+                    ),
                     {
                         "id": doc_id,
                         "fp": rel,
@@ -505,7 +570,7 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
                         "ch": chunk_hash,
                         "src": rel,
                         "emb": _format_vector_literal(emb_vec),
-                    }
+                    },
                 )
             total_count = db.session.execute(text("SELECT COUNT(*) FROM code_documents;")).scalar()
 
@@ -515,16 +580,29 @@ def index_project(force: bool = False, chunking: bool = True) -> ToolResult:
                 "indexed_new": len(to_insert),
                 "total_in_store": total_count,
                 "force": force,
-                "chunking": chunking
+                "chunking": chunking,
             },
-            meta={"elapsed_ms": round(_now_ms() - start, 2)}
+            meta={"elapsed_ms": round(_now_ms() - start, 2)},
         )
     except OperationalError as e:
-        return ToolResult(ok=False, error="DB_OPERATIONAL_ERROR", meta={"exception": str(e), "error_code": "DB_OPERATIONAL_ERROR"})
+        return ToolResult(
+            ok=False,
+            error="DB_OPERATIONAL_ERROR",
+            meta={"exception": str(e), "error_code": "DB_OPERATIONAL_ERROR"},
+        )
     except SQLAlchemyError as e:
-        return ToolResult(ok=False, error="DB_EXECUTION_ERROR", meta={"exception": str(e), "error_code": "DB_EXECUTION_ERROR"})
+        return ToolResult(
+            ok=False,
+            error="DB_EXECUTION_ERROR",
+            meta={"exception": str(e), "error_code": "DB_EXECUTION_ERROR"},
+        )
     except Exception as e:
-        return ToolResult(ok=False, error="INDEXING_UNKNOWN_ERROR", meta={"exception": str(e), "error_code": "INDEXING_UNKNOWN_ERROR"})
+        return ToolResult(
+            ok=False,
+            error="INDEXING_UNKNOWN_ERROR",
+            meta={"exception": str(e), "error_code": "INDEXING_UNKNOWN_ERROR"},
+        )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: find_related_context
@@ -538,7 +616,8 @@ def find_related_context(prompt_text: str, limit: int = 6) -> ToolResult:
 
         with db.session.begin():
             _ensure_code_documents()
-            sql = text(f"""
+            sql = text(
+                """
                 WITH candidate AS (
                     SELECT id, file_path, content, source, embedding,
                            CASE WHEN file_path LIKE :prio THEN 0 ELSE 1 END AS priority_tier
@@ -549,33 +628,45 @@ def find_related_context(prompt_text: str, limit: int = 6) -> ToolResult:
                 FROM candidate
                 ORDER BY priority_tier ASC, distance ASC
                 LIMIT :lim;
-            """)
-            rows = db.session.execute(sql, {"q": qlit, "lim": limit * 2, "prio": f"{PRIORITY_PATH_PREFIX}%" }).fetchall()
+            """
+            )
+            rows = db.session.execute(
+                sql, {"q": qlit, "lim": limit * 2, "prio": f"{PRIORITY_PATH_PREFIX}%"}
+            ).fetchall()
 
         # Optional re-ranking (distance + small boost if short content)
         scored = []
         for r in rows:
             snippet = r.content[:600] + ("..." if len(r.content) > 600 else "")
             len_penalty = min(len(r.content) / 20000.0, 1.0)  # penalize extremely large
-            hybrid_score = float(r.distance) + 0.05 * len_penalty + (0 if r.priority_tier == 0 else 0.1)
-            scored.append({
-                "id": r.id,
-                "file_path": r.file_path,
-                "priority_tier": r.priority_tier,
-                "raw_distance": float(r.distance),
-                "hybrid_score": hybrid_score,
-                "preview": snippet
-            })
+            hybrid_score = (
+                float(r.distance) + 0.05 * len_penalty + (0 if r.priority_tier == 0 else 0.1)
+            )
+            scored.append(
+                {
+                    "id": r.id,
+                    "file_path": r.file_path,
+                    "priority_tier": r.priority_tier,
+                    "raw_distance": float(r.distance),
+                    "hybrid_score": hybrid_score,
+                    "preview": snippet,
+                }
+            )
         scored.sort(key=lambda x: x["hybrid_score"])
         final = scored[:limit]
 
         return ToolResult(
             ok=True,
             data={"results": final, "count": len(final)},
-            meta={"elapsed_ms": round(_now_ms() - start, 2)}
+            meta={"elapsed_ms": round(_now_ms() - start, 2)},
         )
     except Exception as e:
-        return ToolResult(ok=False, error="CONTEXT_RETRIEVAL_FAILED", meta={"exception": str(e), "error_code": "CONTEXT_RETRIEVAL_FAILED"})
+        return ToolResult(
+            ok=False,
+            error="CONTEXT_RETRIEVAL_FAILED",
+            meta={"exception": str(e), "error_code": "CONTEXT_RETRIEVAL_FAILED"},
+        )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: find_similar_conversations
@@ -584,7 +675,8 @@ def find_similar_conversations(limit: int = 5) -> ToolResult:
     start = _now_ms()
     try:
         with db.session.begin():
-            sql = text("""
+            sql = text(
+                """
                 WITH convo_rating AS (
                     SELECT conversation_id,
                            MAX(CASE WHEN rating = 'good' THEN 1 ELSE 0 END) AS has_good
@@ -596,25 +688,29 @@ def find_similar_conversations(limit: int = 5) -> ToolResult:
                 WHERE m.role IN ('user','assistant')
                 ORDER BY cr.has_good DESC, m.timestamp DESC
                 LIMIT :lim;
-            """)
+            """
+            )
             rows = db.session.execute(sql, {"lim": limit * 2}).fetchall()
         examples = []
         for r in rows:
             preview = r.content[:200] + ("..." if len(r.content) > 200 else "")
-            examples.append({
-                "role": r.role,
-                "rating": r.rating,
-                "preview": preview
-            })
+            examples.append({"role": r.role, "rating": r.rating, "preview": preview})
         return ToolResult(
             ok=True,
             data={"examples": examples[:limit], "total_collected": len(examples)},
-            meta={"elapsed_ms": round(_now_ms() - start, 2)}
+            meta={"elapsed_ms": round(_now_ms() - start, 2)},
         )
     except OperationalError:
-        return ToolResult(ok=True, data={"examples": []}, meta={"warning": "conversation table missing"})
+        return ToolResult(
+            ok=True, data={"examples": []}, meta={"warning": "conversation table missing"}
+        )
     except Exception as e:
-        return ToolResult(ok=False, error="CONVERSATION_RETRIEVAL_FAILED", meta={"exception": str(e), "error_code": "CONVERSATION_RETRIEVAL_FAILED"})
+        return ToolResult(
+            ok=False,
+            error="CONVERSATION_RETRIEVAL_FAILED",
+            meta={"exception": str(e), "error_code": "CONVERSATION_RETRIEVAL_FAILED"},
+        )
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC: diagnostics / health
@@ -631,7 +727,11 @@ def diagnostics() -> ToolResult:
                 "cache_enabled": ENABLE_FILE_LRU,
                 "cache_size": len(_file_lru),
                 "allowed_ext_count": len(ALLOWED_EXTENSIONS),
-            }
+            },
         )
     except Exception as e:
-        return ToolResult(ok=False, error="DIAGNOSTICS_FAILED", meta={"exception": str(e), "error_code": "DIAGNOSTICS_FAILED"})
+        return ToolResult(
+            ok=False,
+            error="DIAGNOSTICS_FAILED",
+            meta={"exception": str(e), "error_code": "DIAGNOSTICS_FAILED"},
+        )

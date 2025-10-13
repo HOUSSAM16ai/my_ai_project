@@ -48,3 +48,30 @@ pytest
 pytest-flask
 pytest-cov
 requests
+
+# --- Code Quality & Linting (Superhuman Edition) ---
+# Formatters
+black>=24.1.1
+isort>=5.13.2
+
+# Linters
+ruff>=0.2.0
+pylint>=3.0.0
+flake8>=7.0.0
+pydocstyle>=6.3.0
+
+# Type Checking
+mypy>=1.8.0
+types-requests>=2.31.0
+
+# Security
+bandit[toml]>=1.7.6
+safety>=3.0.0
+
+# Complexity Analysis
+radon>=6.0.1
+xenon>=0.9.1
+mccabe>=0.7.0
+
+# Pre-commit Hooks
+pre-commit>=3.6.0

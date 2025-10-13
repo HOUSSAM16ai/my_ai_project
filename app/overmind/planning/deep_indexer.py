@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Ultra Deep Structural / Semantic-Oriented Indexer (Enhanced v2)
 ================================================================
@@ -58,24 +57,27 @@ DEEP_INDEX_TIME_PROFILE=1             إدراج أزمنة مراحل البن�
 """
 
 from __future__ import annotations
-import os
+
 import ast
-import json
-import time
-import math
 import glob
 import hashlib
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Set, Tuple, Optional, Iterable
-from collections import defaultdict, Counter
+import json
+import math
+import os
+import time
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass
+from typing import Any
 
 # --------------------------------------------------------------------------------------
 # Configuration Helpers
 # --------------------------------------------------------------------------------------
 
+
 def _env(name: str, default: str) -> str:
     return os.getenv(name, default).strip()
+
 
 def _env_int(name: str, default: int) -> int:
     try:
@@ -83,9 +85,11 @@ def _env_int(name: str, default: int) -> int:
     except Exception:
         return default
 
+
 def _env_flag(name: str, default: bool = False) -> bool:
     raw = _env(name, "1" if default else "0").lower()
     return raw in ("1", "true", "yes", "on")
+
 
 # Snapshot configuration for introspection
 CONFIG = {
@@ -94,10 +98,20 @@ CONFIG = {
     "MAX_FILE_BYTES": _env_int("DEEP_INDEX_MAX_FILE_BYTES", 300_000),
     "MAX_FILES": _env_int("DEEP_INDEX_MAX_FILES", 4000),
     "THREADS": _env_int("DEEP_INDEX_THREADS", 4),
-    "EXCLUDE_DIRS": [d.strip() for d in _env("DEEP_INDEX_EXCLUDE_DIRS",
-                    ".git,__pycache__,venv,env,.venv,node_modules,dist,build,migrations").split(",") if d.strip()],
-    "INCLUDE_GLOBS": [g.strip() for g in _env("DEEP_INDEX_INCLUDE_GLOBS", "").split(",") if g.strip()],
-    "INTERNAL_PREFIXES": tuple(p.strip() for p in _env("DEEP_INDEX_INTERNAL_PREFIXES", "app,src").split(",") if p.strip()),
+    "EXCLUDE_DIRS": [
+        d.strip()
+        for d in _env(
+            "DEEP_INDEX_EXCLUDE_DIRS",
+            ".git,__pycache__,venv,env,.venv,node_modules,dist,build,migrations",
+        ).split(",")
+        if d.strip()
+    ],
+    "INCLUDE_GLOBS": [
+        g.strip() for g in _env("DEEP_INDEX_INCLUDE_GLOBS", "").split(",") if g.strip()
+    ],
+    "INTERNAL_PREFIXES": tuple(
+        p.strip() for p in _env("DEEP_INDEX_INTERNAL_PREFIXES", "app,src").split(",") if p.strip()
+    ),
     "DUP_HASH_PREFIX": _env_int("DEEP_INDEX_DUP_HASH_PREFIX", 16),
     "HOTSPOT_COMPLEXITY": _env_int("DEEP_INDEX_COMPLEXITY_HOTSPOT_CX", 12),
     "HOTSPOT_LOC": _env_int("DEEP_INDEX_COMPLEXITY_HOTSPOT_LOC", 120),
@@ -115,6 +129,7 @@ CONFIG = {
 # Data Classes
 # --------------------------------------------------------------------------------------
 
+
 @dataclass
 class FunctionInfo:
     name: str
@@ -124,8 +139,9 @@ class FunctionInfo:
     hash: str
     complexity: int
     recursive: bool
-    tags: List[str]
-    calls_out: List[str]  # raw callee names (not resolved fully)
+    tags: list[str]
+    calls_out: list[str]  # raw callee names (not resolved fully)
+
 
 @dataclass
 class ClassInfo:
@@ -133,33 +149,38 @@ class ClassInfo:
     lineno: int
     end_lineno: int
     loc: int
-    bases: List[str]
+    bases: list[str]
+
 
 @dataclass
 class FileModule:
     path: str
-    functions: List[FunctionInfo]
-    classes: List[ClassInfo]
-    imports: List[str]
-    call_names: Dict[str, int]
+    functions: list[FunctionInfo]
+    classes: list[ClassInfo]
+    imports: list[str]
+    call_names: dict[str, int]
     file_hash: str
-    error: Optional[str] = None
+    error: str | None = None
     entrypoint: bool = False
     loc: int = 0
+
 
 # --------------------------------------------------------------------------------------
 # Utility Functions
 # --------------------------------------------------------------------------------------
 
+
 def _read_file(path: str) -> str:
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception:
         return ""
 
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
 
 def _file_hash(path: str) -> str:
     try:
@@ -171,6 +192,7 @@ def _file_hash(path: str) -> str:
         return hashlib.sha256(composite.encode("utf-8")).hexdigest()
     except Exception:
         return "deadbeef"
+
 
 def _hash_norm_function(code: str, prefix: int) -> str:
     """
@@ -209,26 +231,28 @@ def _hash_norm_function(code: str, prefix: int) -> str:
     norm = " ".join(lines)
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:prefix]
 
+
 def _estimate_complexity(node: ast.AST) -> int:
     """
     بسيط / محسّن قليلاً: حساب فروع التحكم + وزن بسيط للمركبات المنطقية.
     """
     complexity = 1
     for child in ast.walk(node):
-        if isinstance(child, (ast.If, ast.For, ast.While, ast.Try, ast.With,
-                              ast.AsyncFor, ast.AsyncWith, ast.Match)):
+        if isinstance(
+            child,
+            (ast.If, ast.For, ast.While, ast.Try, ast.With, ast.AsyncFor, ast.AsyncWith, ast.Match),
+        ):
             complexity += 1
         elif isinstance(child, ast.BoolOp):
             complexity += max(1, len(getattr(child, "values", [])) - 1)
-        elif isinstance(child, ast.ExceptHandler):
-            complexity += 1
-        elif isinstance(child, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+        elif isinstance(child, ast.ExceptHandler) or isinstance(child, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
             complexity += 1
     return complexity
 
-def _categorize(code: str) -> List[str]:
+
+def _categorize(code: str) -> list[str]:
     lower = code.lower()
-    tags: Set[str] = set()
+    tags: set[str] = set()
     if "async def " in lower:
         tags.add("async")
     if " for " in lower or " while " in lower:
@@ -249,7 +273,8 @@ def _categorize(code: str) -> List[str]:
         tags.add("llm")
     return sorted(list(tags))
 
-def _layer_for_path(path: str) -> Optional[str]:
+
+def _layer_for_path(path: str) -> str | None:
     if not CONFIG["LAYER_HEURISTICS"]:
         return None
     segments = path.replace("\\", "/").split("/")
@@ -272,6 +297,7 @@ def _layer_for_path(path: str) -> Optional[str]:
         return "config"
     return None
 
+
 def _service_candidate(path: str, code: str) -> bool:
     if not CONFIG["DETECT_SERVICES"]:
         return False
@@ -283,18 +309,20 @@ def _service_candidate(path: str, code: str) -> bool:
         return True
     return False
 
+
 # --------------------------------------------------------------------------------------
 # File Collection
 # --------------------------------------------------------------------------------------
 
-def _collect_python_files(root: str) -> Tuple[List[str], List[str]]:
+
+def _collect_python_files(root: str) -> tuple[list[str], list[str]]:
     """
     Returns: (files, skipped_large_files)
     """
     max_bytes = CONFIG["MAX_FILE_BYTES"]
     exclude_dirs = CONFIG["EXCLUDE_DIRS"]
-    py_files: List[str] = []
-    skipped: List[str] = []
+    py_files: list[str] = []
+    skipped: list[str] = []
     root = os.path.abspath(root)
 
     def _excluded(dp: str) -> bool:
@@ -331,28 +359,46 @@ def _collect_python_files(root: str) -> Tuple[List[str], List[str]]:
                 except Exception:
                     pass
 
-    return sorted(py_files)[:CONFIG["MAX_FILES"]], skipped
+    return sorted(py_files)[: CONFIG["MAX_FILES"]], skipped
+
 
 # --------------------------------------------------------------------------------------
 # Parsing / Extraction
 # --------------------------------------------------------------------------------------
 
-def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModule:
+
+def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
     code = _read_file(path)
     file_sha = _file_hash(path)
     if not code:
-        return FileModule(path=path, functions=[], classes=[], imports=[], call_names={}, file_hash=file_sha, error="empty_or_unreadable")
+        return FileModule(
+            path=path,
+            functions=[],
+            classes=[],
+            imports=[],
+            call_names={},
+            file_hash=file_sha,
+            error="empty_or_unreadable",
+        )
 
     # If prior hash matches and caching could reuse parse (we still parse again if not using incremental storage)
     try:
         tree = ast.parse(code)
     except Exception as e:
-        return FileModule(path=path, functions=[], classes=[], imports=[], call_names={}, file_hash=file_sha, error=f"parse_error:{e}")
+        return FileModule(
+            path=path,
+            functions=[],
+            classes=[],
+            imports=[],
+            call_names={},
+            file_hash=file_sha,
+            error=f"parse_error:{e}",
+        )
 
     lines = code.splitlines()
-    functions: List[FunctionInfo] = []
-    classes: List[ClassInfo] = []
-    imports: List[str] = []
+    functions: list[FunctionInfo] = []
+    classes: list[ClassInfo] = []
+    imports: list[str] = []
     call_counter = Counter()
     entrypoint = False
 
@@ -368,11 +414,13 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
         if isinstance(node, ast.FunctionDef):
             start = node.lineno
             end = getattr(node, "end_lineno", start)
-            slice_src = "\n".join(lines[start - 1:end])
+            slice_src = "\n".join(lines[start - 1 : end])
             h = _hash_norm_function(slice_src, CONFIG["DUP_HASH_PREFIX"])
             cx = _estimate_complexity(node)
             recursive = any(
-                isinstance(ch, ast.Call) and isinstance(ch.func, ast.Name) and ch.func.id == node.name
+                isinstance(ch, ast.Call)
+                and isinstance(ch.func, ast.Name)
+                and ch.func.id == node.name
                 for ch in ast.walk(node)
             )
             tags = _categorize(slice_src)
@@ -384,17 +432,19 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
                         calls_out.append(ch.func.id)
                     elif isinstance(ch.func, ast.Attribute):
                         calls_out.append(ch.func.attr)
-            functions.append(FunctionInfo(
-                name=node.name,
-                lineno=start,
-                end_lineno=end,
-                loc=(end - start + 1),
-                hash=h,
-                complexity=cx,
-                recursive=recursive,
-                tags=tags,
-                calls_out=calls_out
-            ))
+            functions.append(
+                FunctionInfo(
+                    name=node.name,
+                    lineno=start,
+                    end_lineno=end,
+                    loc=(end - start + 1),
+                    hash=h,
+                    complexity=cx,
+                    recursive=recursive,
+                    tags=tags,
+                    calls_out=calls_out,
+                )
+            )
         elif isinstance(node, ast.ClassDef):
             start = node.lineno
             end = getattr(node, "end_lineno", start)
@@ -406,13 +456,11 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
                     bases.append(b.attr)
                 else:
                     bases.append(type(b).__name__)
-            classes.append(ClassInfo(
-                name=node.name,
-                lineno=start,
-                end_lineno=end,
-                loc=(end - start + 1),
-                bases=bases
-            ))
+            classes.append(
+                ClassInfo(
+                    name=node.name, lineno=start, end_lineno=end, loc=(end - start + 1), bases=bases
+                )
+            )
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -437,31 +485,37 @@ def _parse_single_file(path: str, prior_hash: Optional[str] = None) -> FileModul
         call_names=dict(call_counter),
         file_hash=file_sha,
         entrypoint=entrypoint,
-        loc=len(lines)
+        loc=len(lines),
     )
+
 
 # --------------------------------------------------------------------------------------
 # Caching Layer
 # --------------------------------------------------------------------------------------
 
-def _cache_paths(cache_dir: str) -> Tuple[str, str]:
-    os.makedirs(cache_dir, exist_ok=True)
-    return (os.path.join(cache_dir, "deep_index_cache.json"),
-            os.path.join(cache_dir, "deep_index_meta.json"))
 
-def _load_cache(cache_dir: str) -> Dict[str, Any]:
+def _cache_paths(cache_dir: str) -> tuple[str, str]:
+    os.makedirs(cache_dir, exist_ok=True)
+    return (
+        os.path.join(cache_dir, "deep_index_cache.json"),
+        os.path.join(cache_dir, "deep_index_meta.json"),
+    )
+
+
+def _load_cache(cache_dir: str) -> dict[str, Any]:
     if not CONFIG["CACHE_ENABLE"]:
         return {}
     main_path, meta_path = _cache_paths(cache_dir)
     try:
         if os.path.exists(main_path):
-            with open(main_path, "r", encoding="utf-8") as f:
+            with open(main_path, encoding="utf-8") as f:
                 return json.load(f)
     except Exception:
         return {}
     return {}
 
-def _save_cache(cache_dir: str, data: Dict[str, Any]) -> None:
+
+def _save_cache(cache_dir: str, data: dict[str, Any]) -> None:
     if not CONFIG["CACHE_ENABLE"]:
         return
     main_path, meta_path = _cache_paths(cache_dir)
@@ -480,11 +534,13 @@ def _save_cache(cache_dir: str, data: Dict[str, Any]) -> None:
     except Exception:
         pass
 
+
 # --------------------------------------------------------------------------------------
 # Call Graph & Aggregation
 # --------------------------------------------------------------------------------------
 
-def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, str, str]], Counter]:
+
+def _build_call_graph(modules: list[FileModule]) -> tuple[list[tuple[str, str, str, str]], Counter]:
     """
     Returns:
       edges: [(file, function, callee_raw, callee_resolved? (maybe empty))]
@@ -499,7 +555,7 @@ def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, s
         for fn in m.functions:
             fn_index[fn.name].append((m.path, fn.name))
 
-    edges: List[Tuple[str, str, str, str]] = []
+    edges: list[tuple[str, str, str, str]] = []
     freq = Counter()
 
     for m in modules:
@@ -520,7 +576,8 @@ def _build_call_graph(modules: List[FileModule]) -> Tuple[List[Tuple[str, str, s
             break
     return edges, freq
 
-def _aggregate_metrics(modules: List[FileModule]) -> Dict[str, Any]:
+
+def _aggregate_metrics(modules: list[FileModule]) -> dict[str, Any]:
     fn_count = 0
     total_cx = 0
     cx_values = []
@@ -539,18 +596,15 @@ def _aggregate_metrics(modules: List[FileModule]) -> Dict[str, Any]:
                 max_cx = fn.complexity
                 max_fn = f"{m.path}::{fn.name}"
             if fn.complexity >= CONFIG["HOTSPOT_COMPLEXITY"] or fn.loc >= CONFIG["HOTSPOT_LOC"]:
-                hotspots.append({
-                    "file": m.path,
-                    "name": fn.name,
-                    "loc": fn.loc,
-                    "complexity": fn.complexity
-                })
+                hotspots.append(
+                    {"file": m.path, "name": fn.name, "loc": fn.loc, "complexity": fn.complexity}
+                )
 
     avg_cx = (total_cx / fn_count) if fn_count else 0.0
     std_cx = 0.0
     if cx_values:
         mean = avg_cx
-        variance = sum((c - mean)**2 for c in cx_values) / len(cx_values)
+        variance = sum((c - mean) ** 2 for c in cx_values) / len(cx_values)
         std_cx = math.sqrt(variance)
 
     return {
@@ -564,7 +618,10 @@ def _aggregate_metrics(modules: List[FileModule]) -> Dict[str, Any]:
         "hotspots": hotspots[:50],
     }
 
-def _build_dependencies(modules: List[FileModule], internal_prefixes: Tuple[str, ...]) -> Dict[str, List[str]]:
+
+def _build_dependencies(
+    modules: list[FileModule], internal_prefixes: tuple[str, ...]
+) -> dict[str, list[str]]:
     dep_graph = defaultdict(set)
     for m in modules:
         for imp in m.imports:
@@ -572,16 +629,14 @@ def _build_dependencies(modules: List[FileModule], internal_prefixes: Tuple[str,
                 dep_graph[m.path].add(imp)
     return {k: sorted(v) for k, v in dep_graph.items()}
 
-def _collect_dup_groups(modules: List[FileModule]) -> Dict[str, List[Dict[str, Any]]]:
+
+def _collect_dup_groups(modules: list[FileModule]) -> dict[str, list[dict[str, Any]]]:
     dup_map = defaultdict(list)
     for m in modules:
         for fn in m.functions:
-            dup_map[fn.hash].append({
-                "file": m.path,
-                "name": fn.name,
-                "loc": fn.loc,
-                "complexity": fn.complexity
-            })
+            dup_map[fn.hash].append(
+                {"file": m.path, "name": fn.name, "loc": fn.loc, "complexity": fn.complexity}
+            )
     result = {h: v for h, v in dup_map.items() if len(v) > 1}
     # Trim to MAX_DUP_GROUPS to prevent explosion
     if len(result) > CONFIG["MAX_DUP_GROUPS"]:
@@ -593,39 +648,46 @@ def _collect_dup_groups(modules: List[FileModule]) -> Dict[str, List[Dict[str, A
         result = trimmed
     return result
 
-def _file_metrics_list(modules: List[FileModule]) -> List[Dict[str, Any]]:
+
+def _file_metrics_list(modules: list[FileModule]) -> list[dict[str, Any]]:
     out = []
     for m in modules:
         cx_values = [fn.complexity for fn in m.functions]
-        avg_cx = round(sum(cx_values)/len(cx_values), 2) if cx_values else 0.0
+        avg_cx = round(sum(cx_values) / len(cx_values), 2) if cx_values else 0.0
         max_cx = max(cx_values) if cx_values else 0
         tag_counter = Counter()
         for fn in m.functions:
             for t in fn.tags:
                 tag_counter[t] += 1
         layer = _layer_for_path(m.path)
-        out.append({
-            "path": m.path,
-            "file_hash": m.file_hash,
-            "loc": m.loc,
-            "function_count": len(m.functions),
-            "class_count": len(m.classes),
-            "avg_function_complexity": avg_cx,
-            "max_function_complexity": max_cx,
-            "tags": sorted(tag_counter.keys()),
-            "layer": layer,
-            "entrypoint": m.entrypoint
-        })
+        out.append(
+            {
+                "path": m.path,
+                "file_hash": m.file_hash,
+                "loc": m.loc,
+                "function_count": len(m.functions),
+                "class_count": len(m.classes),
+                "avg_function_complexity": avg_cx,
+                "max_function_complexity": max_cx,
+                "tags": sorted(tag_counter.keys()),
+                "layer": layer,
+                "entrypoint": m.entrypoint,
+            }
+        )
     return out
 
-def _layer_map(file_metrics: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+
+def _layer_map(file_metrics: list[dict[str, Any]]) -> dict[str, list[str]]:
     lm = defaultdict(list)
     for fm in file_metrics:
         if fm.get("layer"):
             lm[fm["layer"]].append(fm["path"])
     return {k: sorted(v) for k, v in lm.items()}
 
-def _service_candidates(file_metrics: List[Dict[str, Any]], file_sources: Dict[str, str]) -> List[str]:
+
+def _service_candidates(
+    file_metrics: list[dict[str, Any]], file_sources: dict[str, str]
+) -> list[str]:
     cands = []
     for fm in file_metrics:
         path = fm["path"]
@@ -634,11 +696,15 @@ def _service_candidates(file_metrics: List[Dict[str, Any]], file_sources: Dict[s
             cands.append(path)
     return sorted(list(set(cands)))
 
+
 # --------------------------------------------------------------------------------------
 # Public API: build_index
 # --------------------------------------------------------------------------------------
 
-def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = None) -> Dict[str, Any]:
+
+def build_index(
+    root: str = ".", internal_prefixes: tuple[str, ...] | None = None
+) -> dict[str, Any]:
     """
     توليد فهرس هيكلي محسّن.
     متوافق مع واجهة الإصدار السابق ويضيف حقولاً متقدمة.
@@ -649,11 +715,11 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
 
     # Collect files
     files, skipped_large = _collect_python_files(root)
-    file_sources: Dict[str, str] = {}
+    file_sources: dict[str, str] = {}
 
     cache_data = _load_cache(CONFIG["CACHE_DIR"])
     prior_files_map = cache_data.get("files", {}) if cache_data else {}
-    modules: List[FileModule] = []
+    modules: list[FileModule] = []
     cached_files = 0
     changed_files = 0
 
@@ -677,7 +743,7 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
                 file_hash=current_file_hash,
                 error=prev.get("error"),
                 entrypoint=prev.get("entrypoint", False),
-                loc=prev.get("loc", 0)
+                loc=prev.get("loc", 0),
             )
             code = _read_file(path) if not CONFIG["CACHE_ENABLE"] else ""
             if CONFIG["CACHE_ENABLE"]:
@@ -722,17 +788,19 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
     # Build modules (convert dataclasses to plain dict)
     module_entries = []
     for m in modules:
-        module_entries.append({
-            "path": m.path,
-            "functions": [asdict(fn) for fn in m.functions],
-            "classes": [asdict(c) for c in m.classes],
-            "imports": m.imports,
-            "call_names": m.call_names,
-            "error": m.error,
-            "file_hash": m.file_hash,
-            "entrypoint": m.entrypoint,
-            "loc": m.loc
-        })
+        module_entries.append(
+            {
+                "path": m.path,
+                "functions": [asdict(fn) for fn in m.functions],
+                "classes": [asdict(c) for c in m.classes],
+                "imports": m.imports,
+                "call_names": m.call_names,
+                "error": m.error,
+                "file_hash": m.file_hash,
+                "entrypoint": m.entrypoint,
+                "loc": m.loc,
+            }
+        )
 
     agg_end = time.time()
 
@@ -744,11 +812,16 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
         "functions": [
             {
                 "file": m.path,
-                **{k: v for k, v in asdict(fn).items() if k != "calls_out"}  # keep backward compatibility
+                **{
+                    k: v for k, v in asdict(fn).items() if k != "calls_out"
+                },  # keep backward compatibility
             }
-            for m in modules for fn in m.functions
+            for m in modules
+            for fn in m.functions
         ],
-        "function_call_frequency_top50": call_freq.most_common(50) if call_freq else call_freq.most_common(0),
+        "function_call_frequency_top50": (
+            call_freq.most_common(50) if call_freq else call_freq.most_common(0)
+        ),
         "complexity_hotspots_top50": gmetrics["hotspots"],
         "duplicate_function_bodies": dup_groups,
         "index_version": "ast-deep-v2",
@@ -778,7 +851,7 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
         "version_details": {
             "impl": "ultra_deep_indexer_v2",
             "python": f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
-        }
+        },
     }
 
     # Optional time profile
@@ -795,12 +868,29 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
             "files": {
                 m["path"]: {
                     "functions": [
-                        {k: v for k, v in fn.items() if k in
-                         ("name", "lineno", "end_lineno", "loc", "hash", "complexity", "recursive", "tags")}
+                        {
+                            k: v
+                            for k, v in fn.items()
+                            if k
+                            in (
+                                "name",
+                                "lineno",
+                                "end_lineno",
+                                "loc",
+                                "hash",
+                                "complexity",
+                                "recursive",
+                                "tags",
+                            )
+                        }
                         for fn in m["functions"]
                     ],
                     "classes": [
-                        {k: v for k, v in c.items() if k in ("name", "lineno", "end_lineno", "loc", "bases")}
+                        {
+                            k: v
+                            for k, v in c.items()
+                            if k in ("name", "lineno", "end_lineno", "loc", "bases")
+                        }
                         for c in m["classes"]
                     ],
                     "imports": m["imports"],
@@ -812,29 +902,33 @@ def build_index(root: str = ".", internal_prefixes: Optional[Tuple[str, ...]] = 
                 }
                 for m in module_entries
             },
-            "version_details": index["version_details"]
+            "version_details": index["version_details"],
         }
         _save_cache(CONFIG["CACHE_DIR"], cache_repr)
 
     return index
 
+
 # --------------------------------------------------------------------------------------
 # Summary Builder
 # --------------------------------------------------------------------------------------
 
-def summarize_for_prompt(index: Dict[str, Any], max_len: int = 6000) -> str:
+
+def summarize_for_prompt(index: dict[str, Any], max_len: int = 6000) -> str:
     """
     يبني ملخصاً نصياً مضغوطاً متعدد الأقسام لاستخدامه داخل الـ LLM.
     يحافظ على بساطة التوقيع القديم، ويضيف أقسام عند تفعيل SUMMARY_EXTRA.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     push = lines.append
 
     push(f"FILES_SCANNED={index.get('files_scanned')}")
     gm = index.get("global_metrics", {})
     if gm:
-        push(f"GLOBAL: funcs={gm.get('total_functions')} avg_cx={gm.get('avg_function_complexity')} "
-             f"std={gm.get('std_function_complexity')} max_cx={gm.get('max_function_complexity')}")
+        push(
+            f"GLOBAL: funcs={gm.get('total_functions')} avg_cx={gm.get('avg_function_complexity')} "
+            f"std={gm.get('std_function_complexity')} max_cx={gm.get('max_function_complexity')}"
+        )
     # Hotspots
     hotspots = index.get("complexity_hotspots_top50", []) or index.get("complexity_hotspots", [])
     if hotspots:
@@ -885,7 +979,7 @@ def summarize_for_prompt(index: Dict[str, Any], max_len: int = 6000) -> str:
             for s in svc[:10]:
                 push(f"- {s}")
         # Entrypoints
-            # (keep same block)
+        # (keep same block)
         entry = index.get("entrypoints", [])
         if entry:
             push("ENTRYPOINTS:")
@@ -914,6 +1008,7 @@ def summarize_for_prompt(index: Dict[str, Any], max_len: int = 6000) -> str:
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser(description="Ultra Deep Indexer v2")
     ap.add_argument("--root", default=".", help="Root directory")
     ap.add_argument("--summary", action="store_true", help="Print summary only")
@@ -931,5 +1026,7 @@ if __name__ == "__main__":
         print(raw[:12000])
     if not args.summary and not args.json:
         # default behavior: both short stats + summary
-        print(f"Scanned: {idx['files_scanned']} files | Functions: {idx['global_metrics']['total_functions']}")
+        print(
+            f"Scanned: {idx['files_scanned']} files | Functions: {idx['global_metrics']['total_functions']}"
+        )
         print(summarize_for_prompt(idx, max_len=2000))

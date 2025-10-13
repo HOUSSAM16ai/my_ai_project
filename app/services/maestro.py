@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ======================================================================================
 #  MAESTRO ADAPTER (v2.5.0 • "BRIDGE-FUSION-OMNI")
 #  File: app/services/maestro.py
@@ -51,10 +50,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
-import logging
-from typing import Any, Optional, Tuple, Dict
+from typing import Any
 
 __version__ = "2.5.0"
 
@@ -93,10 +92,11 @@ except Exception:
 # --------------------------------------------------------------------------------------
 # State for diagnostics
 # --------------------------------------------------------------------------------------
-_LAST_ERRORS: Dict[str, str] = {}
-_ADAPTER_MODE: str = "unknown"   # "pass_through" | "wrapped" | "pure"
+_LAST_ERRORS: dict[str, str] = {}
+_ADAPTER_MODE: str = "unknown"  # "pass_through" | "wrapped" | "pure"
 _BASE_OBJ_TYPE: str = "none"
 _CREATION_TS = time.time()
+
 
 # ======================================================================================
 # Utility Functions
@@ -113,7 +113,8 @@ def _strip_markdown_fences(text: str) -> str:
             t = t[:-3].strip()
     return t
 
-def _extract_first_json_object(text: str) -> Optional[str]:
+
+def _extract_first_json_object(text: str) -> str | None:
     if not text:
         return None
     t = _strip_markdown_fences(text)
@@ -130,13 +131,15 @@ def _extract_first_json_object(text: str) -> Optional[str]:
                 return t[start : i + 1]
     return None
 
-def _safe_json_load(payload: str) -> Tuple[Optional[Any], Optional[str]]:
+
+def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
     try:
         return json.loads(payload), None
     except Exception as e:
         return None, str(e)
 
-def _select_model(explicit: Optional[str] = None) -> str:
+
+def _select_model(explicit: str | None = None) -> str:
     """
     Priority: explicit > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > DEFAULT_AI_MODEL > fallback
     """
@@ -153,6 +156,7 @@ def _select_model(explicit: Optional[str] = None) -> str:
         return default_m
     return "openai/gpt-4o"
 
+
 def _int_env(name: str, default: int) -> int:
     try:
         raw = os.getenv(name)
@@ -162,12 +166,14 @@ def _int_env(name: str, default: int) -> int:
     except Exception:
         return default
 
+
 # ======================================================================================
 # Attempt to fetch existing generation_service object
 # ======================================================================================
 _existing = getattr(_gen_mod, "generation_service", None)
 if _existing is not None:
     _BASE_OBJ_TYPE = f"{type(_existing).__name__}"
+
 
 # ======================================================================================
 # Adapter Class
@@ -198,7 +204,7 @@ class _GenerationServiceAdapter:
         max_tokens: int = 800,
         max_retries: int = None,
         fail_hard: bool = False,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> str:
         """
         Returns plain string. If fail_hard=False returns "" on failure.
@@ -251,8 +257,7 @@ class _GenerationServiceAdapter:
                 last_err = e
                 _LAST_ERRORS["text_completion"] = str(e)
                 _LOG.warning(
-                    "text_completion attempt=%d (limit=%d) failed: %s",
-                    attempt, attempts + 1, e
+                    "text_completion attempt=%d (limit=%d) failed: %s", attempt, attempts + 1, e
                 )
                 if attempt <= attempts:
                     time.sleep(0.15)
@@ -270,8 +275,8 @@ class _GenerationServiceAdapter:
         temperature: float = 0.2,
         max_retries: int = None,
         fail_hard: bool = False,
-        model: Optional[str] = None,
-    ) -> Optional[dict]:
+        model: str | None = None,
+    ) -> dict | None:
         """
         Returns dict or None (unless fail_hard=True).
         """
@@ -343,8 +348,7 @@ class _GenerationServiceAdapter:
             except Exception as e:
                 _LAST_ERRORS["structured_json"] = str(e)
                 _LOG.warning(
-                    "structured_json attempt=%d (limit=%d) failed: %s",
-                    attempt, attempts + 1, e
+                    "structured_json attempt=%d (limit=%d) failed: %s", attempt, attempts + 1, e
                 )
                 if attempt <= attempts:
                     time.sleep(0.18)
@@ -352,6 +356,7 @@ class _GenerationServiceAdapter:
         if fail_hard:
             raise RuntimeError(f"structured_json_failed:{last_err}")
         return None
+
 
 # ======================================================================================
 # Choose export strategy
@@ -368,6 +373,7 @@ else:
     generation_service = _GenerationServiceAdapter(None)
     _ADAPTER_MODE = "pure"
     _LOG.warning("Created pure adapter (no original generation_service object present).")
+
 
 # ======================================================================================
 # Diagnostics / API
@@ -390,6 +396,7 @@ def diagnostics() -> dict:
         "last_errors": dict(_LAST_ERRORS),
     }
 
+
 def ensure_adapter_ready(raise_on_fail: bool = False) -> bool:
     """
     Quick readiness probe: returns True if generation_service exposes the required interface.
@@ -398,6 +405,7 @@ def ensure_adapter_ready(raise_on_fail: bool = False) -> bool:
     if not ok and raise_on_fail:
         raise RuntimeError("Maestro adapter is not ready: missing required methods.")
     return ok
+
 
 __all__ = [
     "generation_service",
@@ -423,7 +431,11 @@ if __name__ == "__main__":  # pragma: no cover
             js = generation_service.structured_json(
                 "System",
                 'Return {"answer":"OK"}',
-                {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]},
+                {
+                    "type": "object",
+                    "properties": {"answer": {"type": "string"}},
+                    "required": ["answer"],
+                },
                 temperature=0.0,
                 max_retries=0,
             )

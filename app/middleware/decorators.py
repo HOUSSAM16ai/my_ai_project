@@ -28,20 +28,20 @@
 #   ✅ Future-proof architecture
 # ======================================================================================
 
-# Security decorators from api_security_service
-from app.services.api_security_service import (
-    require_jwt_auth,
-    rate_limit,
-)
-
 # Observability decorators from api_observability_service
 from app.services.api_observability_service import (
     monitor_performance,
 )
 
+# Security decorators from api_security_service
+from app.services.api_security_service import (
+    rate_limit,
+    require_jwt_auth,
+)
+
 # Export all decorators for clean imports
 __all__ = [
-    'require_jwt_auth',
-    'rate_limit',
-    'monitor_performance',
+    "require_jwt_auth",
+    "rate_limit",
+    "monitor_performance",
 ]

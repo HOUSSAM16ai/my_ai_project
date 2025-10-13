@@ -1,11 +1,10 @@
 # app/overmind/planning/__init__.py
-# # -*- coding: utf-8 -*-
 """
 ======================================================================================
   THE PLANNERS' GUILD HALL  (Ultimate API Gateway v3.5)
 ======================================================================================
 الغرض PURPOSE:
-    هذا الملف هو الواجهة (Public Facade) الرسمية لحزمة التخطيط planning.  
+    هذا الملف هو الواجهة (Public Facade) الرسمية لحزمة التخطيط planning.
     يوفّر:
       - تصدير (Re-export) موحّد للأنواع (Schemas) والهياكل المجرّدة (Abstract Planners)
       - اكتشاف المخطِّطين (Factory Discovery) عبر دوال وسيطة عالية الوضوح
@@ -60,8 +59,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, Dict, Callable, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 __version__ = "3.5.0"
 
@@ -69,7 +69,7 @@ __version__ = "3.5.0"
 # INTERNAL REGISTRY (Symbol -> (module_path, attr_name))
 # --------------------------------------------------------------------------------------
 # كل عنصر نريد تصديره مع مصدره الأصلي (الوحدة + الاسم)
-__planning_api_map__: Dict[str, tuple[str, str]] = {
+__planning_api_map__: dict[str, tuple[str, str]] = {
     # Schemas / Data Contracts
     "MissionPlanSchema": ("app.overmind.planning.schemas", "MissionPlanSchema"),
     "PlannedTask": ("app.overmind.planning.schemas", "PlannedTask"),
@@ -77,20 +77,17 @@ __planning_api_map__: Dict[str, tuple[str, str]] = {
     "PlanGenerationResult": ("app.overmind.planning.schemas", "PlanGenerationResult"),
     "PlanWarning": ("app.overmind.planning.schemas", "PlanWarning"),
     "PlanValidationIssue": ("app.overmind.planning.schemas", "PlanValidationIssue"),
-
     # Core Abstractions / Errors
     "BasePlanner": ("app.overmind.planning.base_planner", "BasePlanner"),
     "PlannerError": ("app.overmind.planning.base_planner", "PlannerError"),
     "PlanValidationError": ("app.overmind.planning.base_planner", "PlanValidationError"),
     "PlannerTimeoutError": ("app.overmind.planning.base_planner", "PlannerTimeoutError"),
     "PlannerAdmissionError": ("app.overmind.planning.base_planner", "PlannerAdmissionError"),
-
     # Factory Functions
     "get_planner": ("app.overmind.planning.factory", "get_planner"),
     "get_all_planners": ("app.overmind.planning.factory", "get_all_planners"),
     "discover": ("app.overmind.planning.factory", "discover"),
     "list_planner_metadata": ("app.overmind.planning.factory", "list_planner_metadata"),
-
     # Optional heavy module (side-effects / LLM registration)
     # NOTE: We expose the module object itself for advanced introspection.
     "llm_planner": ("app.overmind.planning", "_lazy_load_llm_planner_module"),
@@ -102,8 +99,8 @@ __planning_api_map__: Dict[str, tuple[str, str]] = {
 # --------------------------------------------------------------------------------------
 # LAZY CACHE
 # --------------------------------------------------------------------------------------
-_cached_symbols: Dict[str, Any] = {}
-_failed_symbols: Dict[str, str] = {}  # symbol -> error string (for diagnostics)
+_cached_symbols: dict[str, Any] = {}
+_failed_symbols: dict[str, str] = {}  # symbol -> error string (for diagnostics)
 
 
 # --------------------------------------------------------------------------------------
@@ -125,7 +122,7 @@ def _safe_import(module_path: str):
 # --------------------------------------------------------------------------------------
 def _lazy_load_llm_planner_module():
     """
-    تحميل كسول لوحدة llm_planner.  
+    تحميل كسول لوحدة llm_planner.
     يعاد الكائن module أو None إن فشل، مع تسجيل السبب في _failed_symbols.
     """
     mod_path = "app.overmind.planning.llm_planner"
@@ -161,11 +158,15 @@ def _resolve_symbol(name: str) -> Any:
             value = factory_callable()
             _cached_symbols[name] = value
             return value
-        raise AttributeError(f"planning: internal lazy factory '{attr_name}' not found for '{name}'")
+        raise AttributeError(
+            f"planning: internal lazy factory '{attr_name}' not found for '{name}'"
+        )
 
     module = _safe_import(module_path)
     if module is None:
-        raise AttributeError(f"planning: failed to import module '{module_path}' for symbol '{name}': {_failed_symbols.get(module_path)}")
+        raise AttributeError(
+            f"planning: failed to import module '{module_path}' for symbol '{name}': {_failed_symbols.get(module_path)}"
+        )
 
     if attr_name is None:
         value = module
@@ -173,7 +174,9 @@ def _resolve_symbol(name: str) -> Any:
         try:
             value = getattr(module, attr_name)
         except AttributeError as e:
-            raise AttributeError(f"planning: module '{module_path}' has no attribute '{attr_name}' for symbol '{name}'") from e
+            raise AttributeError(
+                f"planning: module '{module_path}' has no attribute '{attr_name}' for symbol '{name}'"
+            ) from e
 
     _cached_symbols[name] = value
     return value
@@ -190,7 +193,7 @@ def __getattr__(name: str) -> Any:  # pragma: no cover (dynamic path)
     raise AttributeError(f"module 'app.overmind.planning' has no attribute '{name}'")
 
 
-def __dir__() -> List[str]:  # pragma: no cover
+def __dir__() -> list[str]:  # pragma: no cover
     base = set(globals().keys())
     base.update(__planning_api_map__.keys())
     return sorted(base)
@@ -200,29 +203,29 @@ def __dir__() -> List[str]:  # pragma: no cover
 # EAGER TYPES FOR TYPE CHECKERS ONLY
 # --------------------------------------------------------------------------------------
 if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only)
-    from app.overmind.planning.schemas import (  # noqa: F401
-        MissionPlanSchema,
-        PlannedTask,
-        PlanningContext,
-        PlanGenerationResult,
-        PlanWarning,
-        PlanValidationIssue
-    )
-    from app.overmind.planning.base_planner import (  # noqa: F401
-        BasePlanner,
-        PlannerError,
-        PlanValidationError,
-        PlannerTimeoutError,
-        PlannerAdmissionError
-    )
-    from app.overmind.planning.factory import (  # noqa: F401
-        get_planner,
-        get_all_planners,
-        discover,
-        list_planner_metadata
-    )
     # Optional module (may not always be present)
     from app.overmind.planning import llm_planner  # type: ignore  # noqa: F401
+    from app.overmind.planning.base_planner import (  # noqa: F401
+        BasePlanner,
+        PlannerAdmissionError,
+        PlannerError,
+        PlannerTimeoutError,
+        PlanValidationError,
+    )
+    from app.overmind.planning.factory import (  # noqa: F401
+        discover,
+        get_all_planners,
+        get_planner,
+        list_planner_metadata,
+    )
+    from app.overmind.planning.schemas import (  # noqa: F401
+        MissionPlanSchema,
+        PlanGenerationResult,
+        PlannedTask,
+        PlanningContext,
+        PlanValidationIssue,
+        PlanWarning,
+    )
 
 
 # --------------------------------------------------------------------------------------
@@ -231,13 +234,11 @@ if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only
 __all__ = [
     # Version / Metadata
     "__version__",
-
     # Core Modules (advanced direct use)
     "factory",
     "schemas",
     "base_planner",
     "llm_planner",
-
     # Schemas & Data Contracts
     "MissionPlanSchema",
     "PlannedTask",
@@ -245,14 +246,12 @@ __all__ = [
     "PlanGenerationResult",
     "PlanWarning",
     "PlanValidationIssue",
-
     # Abstractions & Errors
     "BasePlanner",
     "PlannerError",
     "PlanValidationError",
     "PlannerTimeoutError",
     "PlannerAdmissionError",
-
     # Factory Functions
     "get_planner",
     "get_all_planners",

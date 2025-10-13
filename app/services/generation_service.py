@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 MAESTRO COGNITIVE ORCHESTRATOR & LLM GATEWAY
 Ultra Re‑Engineered Sovereign Edition
@@ -89,15 +88,16 @@ context (if orchestrator supplies it). Absence of deep context is fully safe.
 """
 from __future__ import annotations
 
-import json
-import os
-import traceback
-import time
-import uuid
-import math
 import hashlib
-from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional, Tuple, Callable
+import json
+import math
+import os
+import time
+import traceback
+import uuid
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 # -----------------------------------------------------------------------------
 # Flask (optional)
@@ -106,8 +106,10 @@ try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
     current_app = None  # type: ignore
+
     def has_app_context() -> bool:  # type: ignore
         return False
+
 
 # -----------------------------------------------------------------------------
 # Optional automatic Flask context bootstrap
@@ -116,9 +118,11 @@ def _attempt_auto_context():
     if not has_app_context() and os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1":
         try:
             from app import ensure_app_context  # type: ignore
+
             ensure_app_context()
         except Exception:
             pass
+
 
 # -----------------------------------------------------------------------------
 # Database / Models (best-effort)
@@ -131,23 +135,30 @@ except Exception:  # pragma: no cover
 try:
     from app.models import (  # type: ignore
         Mission,
-        Task,
-        log_mission_event,
-        finalize_task,
         MissionEventType,
+        Task,
         TaskStatus,
+        finalize_task,
+        log_mission_event,
     )
 except Exception:  # pragma: no cover
     Mission = Task = object  # type: ignore
-    def log_mission_event(*_a, **_k): pass  # type: ignore
-    def finalize_task(*_a, **_k): pass      # type: ignore
-    class MissionEventType:                 # type: ignore
+
+    def log_mission_event(*_a, **_k):
+        pass  # type: ignore
+
+    def finalize_task(*_a, **_k):
+        pass  # type: ignore
+
+    class MissionEventType:  # type: ignore
         TASK_STATUS_CHANGE = "TASK_STATUS_CHANGE"
         TASK_UPDATED = "TASK_UPDATED"
-    class TaskStatus:                       # type: ignore
+
+    class TaskStatus:  # type: ignore
         RUNNING = "RUNNING"
         SUCCESS = "SUCCESS"
         FAILED = "FAILED"
+
 
 # -----------------------------------------------------------------------------
 # LLM Client
@@ -155,8 +166,10 @@ except Exception:  # pragma: no cover
 try:
     from .llm_client_service import get_llm_client
 except Exception:  # pragma: no cover
+
     def get_llm_client():
         raise RuntimeError("LLM client service not available (import failure).")
+
 
 # -----------------------------------------------------------------------------
 # Tools
@@ -164,26 +177,32 @@ except Exception:  # pragma: no cover
 try:
     from . import agent_tools  # type: ignore
 except Exception:  # pragma: no cover
+
     class _DummyToolResult:
         def __init__(self, ok: bool, result=None, error: str = ""):
             self.ok = ok
             self.result = result
             self.error = error
             self.meta = {}
+
         def to_dict(self):
             return {"ok": self.ok, "result": self.result, "error": self.error}
 
     class agent_tools:  # type: ignore
-        _TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {}
+        _TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
+
         @staticmethod
         def ToolResult(ok: bool, result=None, error=""):
             return _DummyToolResult(ok=ok, result=result, error=error)
+
         @staticmethod
         def get_tools_schema():
             return []
+
         @staticmethod
         def resolve_tool_name(name: str):
             return name
+
 
 # -----------------------------------------------------------------------------
 # Optional system context (domain augmentation)
@@ -191,13 +210,18 @@ except Exception:  # pragma: no cover
 try:
     from . import system_service  # type: ignore
 except Exception:  # pragma: no cover
+
     class system_service:  # type: ignore
         @staticmethod
         def find_related_context(_desc: str):
-            class R: data = {"context": "system-context-unavailable"}
+            class R:
+                data = {"context": "system-context-unavailable"}
+
             return R()
 
+
 __version__ = "18.0.0"
+
 
 # ======================================================================================
 # Data Contracts
@@ -206,31 +230,36 @@ __version__ = "18.0.0"
 class StepState:
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
-    decision: str = ""           # "tool" | "final"
-    tool_calls: List[Dict[str, Any]] = field(default_factory=list)
-    duration_ms: Optional[float] = None
+    decision: str = ""  # "tool" | "final"
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    duration_ms: float | None = None
+
     def finish(self):
         if self.duration_ms is None:
             self.duration_ms = round(time.perf_counter() * 1000 - self.started_ms, 2)
+
 
 @dataclass
 class OrchestratorConfig:
     model_name: str
     max_steps: int
 
+
 @dataclass
 class OrchestratorTelemetry:
     steps_taken: int = 0
     tools_invoked: int = 0
     distinct_tools: int = 0
-    finalization_reason: Optional[str] = None
-    error: Optional[str] = None
+    finalization_reason: str | None = None
+    error: str | None = None
     stagnation: bool = False
     tool_call_limit_hit: bool = False
     repeat_pattern_triggered: bool = False
     hotspot_hint_used: bool = False
+
     def to_dict(self):
         return asdict(self)
+
 
 # ======================================================================================
 # Logging & Config Helpers
@@ -242,17 +271,21 @@ def _logger():
         except Exception:
             pass
     import logging
+
     log = logging.getLogger("maestro.generation_service")
     if not log.handlers:
         h = logging.StreamHandler()
         h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][gen.service] %(message)s"))
         log.addHandler(h)
-    level_env = os.getenv("GEN_SERVICE_LOG_LEVEL") or os.getenv("MAESTRO_ADAPTER_LOG_LEVEL") or "INFO"
+    level_env = (
+        os.getenv("GEN_SERVICE_LOG_LEVEL") or os.getenv("MAESTRO_ADAPTER_LOG_LEVEL") or "INFO"
+    )
     try:
         log.setLevel(level_env.upper())
     except Exception:
         log.setLevel("INFO")
     return log
+
 
 def _cfg(key: str, default: Any = None) -> Any:
     if has_app_context() and current_app:
@@ -265,6 +298,7 @@ def _cfg(key: str, default: Any = None) -> Any:
     env_val = os.getenv(key)
     return env_val if env_val is not None else default
 
+
 def _safe_json(obj: Any) -> str:
     if isinstance(obj, str):
         return obj
@@ -272,6 +306,7 @@ def _safe_json(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False, indent=2)
     except Exception:
         return repr(obj)
+
 
 # ======================================================================================
 # Text Utilities & JSON Extraction
@@ -285,10 +320,11 @@ def _strip_markdown_fences(text: str) -> str:
         if nl != -1:
             t = t[nl + 1 :]
         if t.endswith("```"):
-            t = t[: -3].strip()
+            t = t[:-3].strip()
     return t
 
-def _extract_first_json_object(raw: str) -> Optional[str]:
+
+def _extract_first_json_object(raw: str) -> str | None:
     """
     Naive balanced brace extraction. Returns first top-level object or None.
     """
@@ -308,7 +344,8 @@ def _extract_first_json_object(raw: str) -> Optional[str]:
                 return t[start : i + 1]
     return None
 
-def _soft_recover_json(raw: str) -> Optional[str]:
+
+def _soft_recover_json(raw: str) -> str | None:
     """
     Attempt to recover JSON if MAESTRO_JSON_SOFT_RECOVER=1 and parsing failed.
     Strategy:
@@ -338,13 +375,15 @@ def _soft_recover_json(raw: str) -> Optional[str]:
                         continue
     return None
 
-def _safe_json_load(payload: str) -> Tuple[Optional[Any], Optional[str]]:
+
+def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
     try:
         return json.loads(payload), None
     except Exception as e:
         return None, str(e)
 
-def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]):
+
+def _invoke_tool(tool_name: str, tool_args: dict[str, Any]):
     reg = getattr(agent_tools, "_TOOL_REGISTRY", {})
     meta = reg.get(tool_name)
     if not meta or not callable(meta.get("handler")):
@@ -354,8 +393,10 @@ def _invoke_tool(tool_name: str, tool_args: Dict[str, Any]):
     except Exception as exc:
         return agent_tools.ToolResult(ok=False, result=None, error=f"TOOL_EXEC_ERROR:{exc}")
 
-def _is_stagnation(prev_list: List[str], current_list: List[str]) -> bool:
+
+def _is_stagnation(prev_list: list[str], current_list: list[str]) -> bool:
     return bool(prev_list) and prev_list == current_list and len(current_list) > 0
+
 
 # ======================================================================================
 # System Prompt
@@ -369,7 +410,9 @@ def _build_system_prompt(task: Any, context_blob: Any) -> str:
         deep_flag = "(DEEP STRUCTURAL CONTEXT ATTACHED)"
     hotspot_hint_line = ""
     if isinstance(context_blob, dict) and context_blob.get("_hotspot_hint_used"):
-        hotspot_hint_line = "\nHOTSPOT PRIORITY: Focus early on high-complexity or service-critical files."
+        hotspot_hint_line = (
+            "\nHOTSPOT PRIORITY: Focus early on high-complexity or service-critical files."
+        )
     return f"""
 You are MAESTRO (orchestrator v{__version__}), an autonomous, disciplined multi-step executor.
 {deep_flag}{hotspot_hint_line}
@@ -391,29 +434,29 @@ EXECUTION RULES:
 5. Final answer: output plain text only (no markdown fences).
 """.strip()
 
+
 # ======================================================================================
 # Usage extraction
 # ======================================================================================
-def _normalize_assistant_message(raw_msg) -> Dict[str, Any]:
+def _normalize_assistant_message(raw_msg) -> dict[str, Any]:
     content = getattr(raw_msg, "content", "") or ""
-    base = {
-        "role": getattr(raw_msg, "role", "assistant"),
-        "content": content
-    }
+    base = {"role": getattr(raw_msg, "role", "assistant"), "content": content}
     tool_calls = getattr(raw_msg, "tool_calls", None) or []
     if tool_calls:
         packed = []
         for tc in tool_calls:
             if hasattr(tc, "model_dump"):
                 try:
-                    packed.append(tc.model_dump()); continue
+                    packed.append(tc.model_dump())
+                    continue
                 except Exception:
                     pass
             packed.append(getattr(tc, "__dict__", str(tc)))
         base["tool_calls"] = packed
     return base
 
-def _extract_usage(resp) -> Dict[str, Any]:
+
+def _extract_usage(resp) -> dict[str, Any]:
     try:
         usage = getattr(resp, "usage", None)
         if not usage:
@@ -424,11 +467,13 @@ def _extract_usage(resp) -> Dict[str, Any]:
                 "completion_tokens": usage.get("completion_tokens") or usage.get("output_tokens"),
                 "total_tokens": usage.get("total_tokens") or usage.get("total"),
             }
+
         def _g(obj, *names):
             for n in names:
                 if hasattr(obj, n):
                     return getattr(obj, n)
             return None
+
         return {
             "prompt_tokens": _g(usage, "prompt_tokens", "input_tokens"),
             "completion_tokens": _g(usage, "completion_tokens", "output_tokens"),
@@ -436,6 +481,7 @@ def _extract_usage(resp) -> Dict[str, Any]:
         }
     except Exception:
         return {}
+
 
 # ======================================================================================
 # Auto File Tools (Optional)
@@ -448,6 +494,7 @@ def _ensure_file_tools():
         return
 
     if "write_file" not in reg:
+
         def _write_file(path: str, content: str):
             base_root = "/app"
             path = path.strip()
@@ -455,11 +502,14 @@ def _ensure_file_tools():
             base_abs = os.path.abspath(base_root)
             norm = os.path.abspath(abs_path)
             if not norm.startswith(base_abs):
-                return agent_tools.ToolResult(ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP")
+                return agent_tools.ToolResult(
+                    ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP"
+                )
             os.makedirs(os.path.dirname(norm), exist_ok=True)
             with open(norm, "w", encoding="utf-8") as f:
                 f.write(content)
             return agent_tools.ToolResult(ok=True, result={"written": norm})
+
         reg["write_file"] = {
             "name": "write_file",
             "handler": _write_file,
@@ -475,20 +525,26 @@ def _ensure_file_tools():
         }
 
     if "read_file" not in reg:
+
         def _read_file(path: str, max_bytes: int = 20000):
             base_root = "/app"
             abs_path = path if path.startswith("/") else os.path.join(base_root, path)
             base_abs = os.path.abspath(base_root)
             norm = os.path.abspath(abs_path)
             if not norm.startswith(base_abs):
-                return agent_tools.ToolResult(ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP")
+                return agent_tools.ToolResult(
+                    ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP"
+                )
             if not os.path.exists(norm):
                 return agent_tools.ToolResult(ok=False, result=None, error="FILE_NOT_FOUND")
-            with open(norm, "r", encoding="utf-8", errors="replace") as f:
+            with open(norm, encoding="utf-8", errors="replace") as f:
                 data = f.read(max_bytes + 10)
             snippet = data[:max_bytes]
             truncated = len(data) > max_bytes
-            return agent_tools.ToolResult(ok=True, result={"path": norm, "content": snippet, "truncated": truncated})
+            return agent_tools.ToolResult(
+                ok=True, result={"path": norm, "content": snippet, "truncated": truncated}
+            )
+
         reg["read_file"] = {
             "name": "read_file",
             "handler": _read_file,
@@ -506,6 +562,7 @@ def _ensure_file_tools():
     # Patch get_tools_schema: append read/write if absent
     if not hasattr(agent_tools, "_original_get_tools_schema"):
         agent_tools._original_get_tools_schema = agent_tools.get_tools_schema  # type: ignore
+
         def _patched_schema():
             base = []
             try:
@@ -517,28 +574,33 @@ def _ensure_file_tools():
                 if not meta:
                     continue
                 exists = any(
-                    isinstance(x, dict)
-                    and x.get("function", {}).get("name") == tname
-                    for x in base
+                    isinstance(x, dict) and x.get("function", {}).get("name") == tname for x in base
                 )
                 if not exists:
-                    base.append({
-                        "type": "function",
-                        "function": {
-                            "name": tname,
-                            "description": meta.get("description", ""),
-                            "parameters": meta.get("schema", {"type": "object", "properties": {}}),
-                        },
-                    })
+                    base.append(
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": tname,
+                                "description": meta.get("description", ""),
+                                "parameters": meta.get(
+                                    "schema", {"type": "object", "properties": {}}
+                                ),
+                            },
+                        }
+                    )
             return base
+
         agent_tools.get_tools_schema = _patched_schema  # type: ignore
 
+
 _ensure_file_tools()
+
 
 # ======================================================================================
 # Model Selection
 # ======================================================================================
-def _select_model(explicit: Optional[str] = None, task: Optional[Task] = None) -> str:
+def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     forced = os.getenv("MAESTRO_FORCE_MODEL")
     if forced and forced.strip():
         return forced.strip()
@@ -556,6 +618,7 @@ def _select_model(explicit: Optional[str] = None, task: Optional[Task] = None) -
         return str(default_cfg).strip()
     return "openai/gpt-4o"
 
+
 # ======================================================================================
 # Core Generation Service
 # ======================================================================================
@@ -563,7 +626,7 @@ class MaestroGenerationService:
     def __init__(self):
         self.version = __version__
         self.log = _logger()
-        self.post_finalize_hook: Optional[Callable[[Any], None]] = None
+        self.post_finalize_hook: Callable[[Any], None] | None = None
 
     # ------------------------------------------------------------------
     # Plain Text Completion
@@ -576,7 +639,7 @@ class MaestroGenerationService:
         max_tokens: int = 800,
         max_retries: int = 1,
         fail_hard: bool = False,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> str:
         _attempt_auto_context()
         model_name = _select_model(explicit=model)
@@ -598,7 +661,9 @@ class MaestroGenerationService:
                 return content.strip()
             except Exception as e:
                 last_err = e
-                self._safe_log(f"[text_completion] attempt={attempt+1} failed: {e}", level="warning")
+                self._safe_log(
+                    f"[text_completion] attempt={attempt+1} failed: {e}", level="warning"
+                )
                 if attempt < max_retries:
                     time.sleep(backoff_base * math.pow(1.45, attempt))
         if fail_hard:
@@ -616,8 +681,8 @@ class MaestroGenerationService:
         temperature: float = 0.2,
         max_retries: int = 1,
         fail_hard: bool = False,
-        model: Optional[str] = None,
-    ) -> Optional[dict]:
+        model: str | None = None,
+    ) -> dict | None:
         required = []
         if isinstance(format_schema, dict):
             req = format_schema.get("required")
@@ -661,7 +726,9 @@ class MaestroGenerationService:
                             last_err = f"missing_required:{missing}"
                         else:
                             return obj
-            self._safe_log(f"[structured_json] attempt={attempt+1} failed: {last_err}", level="warning")
+            self._safe_log(
+                f"[structured_json] attempt={attempt+1} failed: {last_err}", level="warning"
+            )
             if attempt < max_retries:
                 time.sleep(0.28 * (attempt + 1))
 
@@ -675,9 +742,9 @@ class MaestroGenerationService:
     def forge_new_code(
         self,
         prompt: str,
-        conversation_id: Optional[str] = None,
-        model: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        conversation_id: str | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
@@ -717,30 +784,24 @@ class MaestroGenerationService:
     # Convenience strict JSON wrapper
     # ------------------------------------------------------------------
     def generate_json(
-        self,
-        prompt: str,
-        conversation_id: Optional[str] = None,
-        model: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, prompt: str, conversation_id: str | None = None, model: str | None = None
+    ) -> dict[str, Any]:
         strict_prompt = f"You must output ONLY valid JSON (no fences). User request:\n{prompt}"
         return self.forge_new_code(strict_prompt, conversation_id=conversation_id, model=model)
 
     def generate_comprehensive_response(
-        self,
-        prompt: str,
-        conversation_id: Optional[str] = None,
-        model: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, prompt: str, conversation_id: str | None = None, model: str | None = None
+    ) -> dict[str, Any]:
         """Generate a comprehensive single-file response with deep analysis."""
         try:
             comprehensive_prompt = self._build_comprehensive_prompt(prompt)
-            
+
             result = self.forge_new_code(
                 prompt=comprehensive_prompt,
                 conversation_id=conversation_id or f"comprehensive-{uuid.uuid4()}",
-                model=model
+                model=model,
             )
-            
+
             if result.get("status") == "success":
                 return {
                     "status": "success",
@@ -748,16 +809,18 @@ class MaestroGenerationService:
                     "meta": {
                         **result.get("meta", {}),
                         "response_type": "comprehensive",
-                        "consolidated": True
-                    }
+                        "consolidated": True,
+                    },
                 }
             return result
         except Exception as exc:
-            self._safe_log("[generate_comprehensive_response] Failure", level="error", exc_info=True)
+            self._safe_log(
+                "[generate_comprehensive_response] Failure", level="error", exc_info=True
+            )
             return {
                 "status": "error",
                 "error": str(exc),
-                "meta": {"response_type": "comprehensive"}
+                "meta": {"response_type": "comprehensive"},
             }
 
     def _build_comprehensive_prompt(self, user_prompt: str) -> str:
@@ -780,7 +843,7 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     # Legacy single-shot wrapper (compat)
     # ------------------------------------------------------------------
-    def execute_task_legacy_wrapper(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_task_legacy_wrapper(self, payload: dict[str, Any]) -> dict[str, Any]:
         started = time.perf_counter()
         desc = ""
         if isinstance(payload, dict):
@@ -789,7 +852,7 @@ class MaestroGenerationService:
             return {
                 "status": "error",
                 "error": "Missing 'description' in payload.",
-                "meta": {"elapsed_s": round(time.perf_counter() - started, 4)}
+                "meta": {"elapsed_s": round(time.perf_counter() - started, 4)},
             }
         res = self.forge_new_code(prompt=desc, conversation_id=f"legacy-{uuid.uuid4()}")
         if res.get("status") == "success":
@@ -799,19 +862,19 @@ class MaestroGenerationService:
                 "meta": {
                     "elapsed_s": res["meta"]["elapsed_s"],
                     "model": res["meta"].get("model"),
-                    "adapter": "forge_new_code"
-                }
+                    "adapter": "forge_new_code",
+                },
             }
         return {
             "status": "error",
             "error": res.get("error", "unknown failure"),
-            "meta": res.get("meta", {})
+            "meta": res.get("meta", {}),
         }
 
     # ------------------------------------------------------------------
     # Multi-step Task Execution
     # ------------------------------------------------------------------
-    def execute_task(self, task: Task, model: Optional[str] = None) -> None:
+    def execute_task(self, task: Task, model: str | None = None) -> None:
         _attempt_auto_context()
         if not hasattr(task, "mission"):
             self._safe_log("Task missing 'mission' relation; aborting.", level="warning")
@@ -829,17 +892,17 @@ class MaestroGenerationService:
         repeat_abort = os.getenv("MAESTRO_TOOL_REPEAT_ABORT", "0") == "1"
 
         telemetry = OrchestratorTelemetry()
-        steps: List[StepState] = []
-        cumulative_usage: Dict[str, int] = {}
-        tools_used: List[str] = []
-        tool_repeat_warnings: List[str] = []
-        previous_tools: List[str] = []
+        steps: list[StepState] = []
+        cumulative_usage: dict[str, int] = {}
+        tools_used: list[str] = []
+        tool_repeat_warnings: list[str] = []
+        previous_tools: list[str] = []
         final_answer = "(no answer produced)"
-        tool_call_limit: Optional[int] = None
+        tool_call_limit: int | None = None
         start_wall = time.perf_counter()
 
         # Tool invocation signature counts (name+args hash)
-        repeat_counter: Dict[str, int] = {}
+        repeat_counter: dict[str, int] = {}
 
         try:
             raw_limit = os.getenv("MAESTRO_TOOL_CALL_LIMIT")
@@ -855,7 +918,7 @@ class MaestroGenerationService:
                 log_mission_event(
                     mission,
                     MissionEventType.TASK_STATUS_CHANGE,
-                    payload={"task_id": getattr(task, "id", None), "status": "RUNNING"}
+                    payload={"task_id": getattr(task, "id", None), "status": "RUNNING"},
                 )
             self._commit()
         except Exception:
@@ -872,7 +935,7 @@ class MaestroGenerationService:
                 "tools_used": [],
                 "usage": {},
                 "final_reason": "client_init_failed",
-                "error": telemetry.error
+                "error": telemetry.error,
             }
             self._finalize_task_safe(task, TaskStatus.FAILED, "LLM client initialization failed.")
             return
@@ -881,7 +944,7 @@ class MaestroGenerationService:
         context_blob = self._build_context_blob(task, hotspot_hint_enabled, telemetry)
 
         system_prompt = _build_system_prompt(task, context_blob)
-        messages: List[Dict[str, Any]] = [
+        messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": getattr(task, "description", "")},
         ]
@@ -912,14 +975,18 @@ class MaestroGenerationService:
                     log_mission_event(
                         mission,
                         MissionEventType.TASK_UPDATED,
-                        payload={"task_id": getattr(task, "id", None), "step": idx, "decision": assistant_msg},
-                        note="Reasoning step"
+                        payload={
+                            "task_id": getattr(task, "id", None),
+                            "step": idx,
+                            "decision": assistant_msg,
+                        },
+                        note="Reasoning step",
                     )
 
                 tool_calls = assistant_msg.get("tool_calls") or []
                 if tool_calls:
                     state.decision = "tool"
-                    current_list: List[str] = []
+                    current_list: list[str] = []
 
                     for call in tool_calls:
                         fn_name = None
@@ -929,7 +996,11 @@ class MaestroGenerationService:
                             fn_meta = call.get("function") or {}
                             fn_name = fn_meta.get("name")
                             raw_args = fn_meta.get("arguments", "{}")
-                            fn_args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
+                            fn_args = (
+                                json.loads(raw_args)
+                                if isinstance(raw_args, str)
+                                else (raw_args or {})
+                            )
                         except Exception:
                             pass
 
@@ -944,7 +1015,10 @@ class MaestroGenerationService:
                         tools_used.append(canonical)
                         telemetry.tools_invoked += 1
 
-                        if tool_call_limit is not None and telemetry.tools_invoked > tool_call_limit:
+                        if (
+                            tool_call_limit is not None
+                            and telemetry.tools_invoked > tool_call_limit
+                        ):
                             telemetry.tool_call_limit_hit = True
                             telemetry.finalization_reason = "tool_limit_reached"
                             state.finish()
@@ -963,14 +1037,18 @@ class MaestroGenerationService:
                                 break
 
                         tool_res = _invoke_tool(canonical, fn_args)
-                        payload_dict = getattr(tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"})()
+                        payload_dict = getattr(
+                            tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"}
+                        )()
 
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": call_id,
-                            "name": canonical,
-                            "content": _safe_json(payload_dict)
-                        })
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": call_id,
+                                "name": canonical,
+                                "content": _safe_json(payload_dict),
+                            }
+                        )
 
                         if emit_events:
                             log_mission_event(
@@ -979,12 +1057,14 @@ class MaestroGenerationService:
                                 payload={
                                     "task_id": getattr(task, "id", None),
                                     "tool_result": payload_dict,
-                                    "tool": canonical
+                                    "tool": canonical,
                                 },
-                                note=f"Tool '{canonical}' executed."
+                                note=f"Tool '{canonical}' executed.",
                             )
 
-                    if telemetry.tool_call_limit_hit or (telemetry.repeat_pattern_triggered and repeat_abort):
+                    if telemetry.tool_call_limit_hit or (
+                        telemetry.repeat_pattern_triggered and repeat_abort
+                    ):
                         break
 
                     if _is_stagnation(previous_tools, current_list):
@@ -1051,14 +1131,14 @@ class MaestroGenerationService:
                 "usage": cumulative_usage,
                 "final_reason": telemetry.finalization_reason or "exception",
                 "error": telemetry.error,
-                "tool_repeat_warnings": tool_repeat_warnings
+                "tool_repeat_warnings": tool_repeat_warnings,
             }
             self._finalize_task_safe(task, TaskStatus.FAILED, f"Catastrophic failure: {exc}")
 
     # ------------------------------------------------------------------
     # Diagnostics
     # ------------------------------------------------------------------
-    def diagnostics(self) -> Dict[str, Any]:
+    def diagnostics(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "has_app_context": has_app_context(),
@@ -1083,7 +1163,9 @@ class MaestroGenerationService:
     # ------------------------------------------------------------------
     # INTERNAL HELPERS
     # ------------------------------------------------------------------
-    def _build_context_blob(self, task: Task, hotspot_hint_enabled: bool, telemetry: OrchestratorTelemetry) -> Dict[str, Any]:
+    def _build_context_blob(
+        self, task: Task, hotspot_hint_enabled: bool, telemetry: OrchestratorTelemetry
+    ) -> dict[str, Any]:
         """
         Combine system_service context + deep index excerpt (optional).
         """
@@ -1121,7 +1203,7 @@ class MaestroGenerationService:
 
         return base_ctx
 
-    def _tool_signature(self, name: str, args: Dict[str, Any]) -> str:
+    def _tool_signature(self, name: str, args: dict[str, Any]) -> str:
         try:
             filtered = {k: v for k, v in sorted(args.items()) if k not in {"content"}}
             ser = json.dumps(filtered, sort_keys=True, ensure_ascii=False)
@@ -1169,10 +1251,12 @@ class MaestroGenerationService:
         except Exception:
             pass
 
+
 # ======================================================================================
 # Singleton & Facade
 # ======================================================================================
-_generation_service_singleton: Optional[MaestroGenerationService] = None
+_generation_service_singleton: MaestroGenerationService | None = None
+
 
 def get_generation_service() -> MaestroGenerationService:
     global _generation_service_singleton
@@ -1180,31 +1264,39 @@ def get_generation_service() -> MaestroGenerationService:
         _generation_service_singleton = MaestroGenerationService()
     return _generation_service_singleton
 
+
 # Public Facade (legacy convenience)
 def forge_new_code(*a, **k):
     return get_generation_service().forge_new_code(*a, **k)
 
+
 def generate_json(*a, **k):
     return get_generation_service().generate_json(*a, **k)
 
+
 def generate_comprehensive_response(*a, **k):
     return get_generation_service().generate_comprehensive_response(*a, **k)
+
 
 def execute_task_legacy_wrapper(*a, **k):
     if len(a) == 1 and isinstance(a[0], str) and not k:
         return get_generation_service().execute_task_legacy_wrapper({"description": a[0]})
     return get_generation_service().execute_task_legacy_wrapper(*a, **k)
 
-def execute_task(task: Task, model: Optional[str] = None):
+
+def execute_task(task: Task, model: str | None = None):
     return get_generation_service().execute_task(task, model=model)
+
 
 def diagnostics():
     return get_generation_service().diagnostics()
+
 
 def register_post_finalize_hook(func: Callable[[Any], None]):
     svc = get_generation_service()
     svc.post_finalize_hook = func
     return True
+
 
 # Export instance
 generation_service = get_generation_service()
@@ -1234,7 +1326,15 @@ if __name__ == "__main__":  # pragma: no cover
     except Exception as e:
         print("text_completion error:", e)
     print("--- structured_json smoke ---")
-    schema = {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]}
-    print(svc.structured_json("System", 'Return {"answer":"OK"}', schema, temperature=0.0, max_retries=0))
+    schema = {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+        "required": ["answer"],
+    }
+    print(
+        svc.structured_json(
+            "System", 'Return {"answer":"OK"}', schema, temperature=0.0, max_retries=0
+        )
+    )
     print("--- forge_new_code smoke ---")
     print(json.dumps(svc.forge_new_code("Give me a 5-word motto."), ensure_ascii=False, indent=2))

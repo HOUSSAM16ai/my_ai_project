@@ -17,32 +17,37 @@
 #   ✅ Performance monitoring
 #   ✅ Caching and optimization
 
-from flask import request, jsonify, current_app
-from app.api import api_v1_bp, api_v2_bp
-from app import db
-from app.models import User, Mission, Task, MissionPlan, MissionEvent
-from app.validators.schemas import UserSchema, TaskSchema, PaginationSchema
-from app.services.api_security_service import require_jwt_auth, rate_limit
-from app.services.api_observability_service import monitor_performance
-from app.services.api_contract_service import validate_contract
+from datetime import UTC, datetime
+
+from flask import current_app, jsonify, request
 from marshmallow import ValidationError
-from sqlalchemy import desc, asc, text
-from datetime import datetime, timezone
+from sqlalchemy import asc, desc, text
+
+from app import db
+from app.api import api_v1_bp
+from app.models import Mission, Task, User
+from app.services.api_contract_service import validate_contract
+from app.services.api_observability_service import monitor_performance
+from app.services.api_security_service import rate_limit, require_jwt_auth
+from app.validators.schemas import PaginationSchema, TaskSchema, UserSchema
 
 # ======================================================================================
 # HELPER FUNCTIONS
 # ======================================================================================
 
+
 def get_pagination_params():
     """Extract and validate pagination parameters"""
     schema = PaginationSchema()
     try:
-        return schema.load({
-            'page': request.args.get('page', 1, type=int),
-            'per_page': request.args.get('per_page', 20, type=int)
-        })
-    except ValidationError as e:
-        return {'page': 1, 'per_page': 20}
+        return schema.load(
+            {
+                "page": request.args.get("page", 1, type=int),
+                "per_page": request.args.get("per_page", 20, type=int),
+            }
+        )
+    except ValidationError:
+        return {"page": 1, "per_page": 20}
 
 
 def apply_filters(query, model, filters):
@@ -53,10 +58,10 @@ def apply_filters(query, model, filters):
     return query
 
 
-def apply_sorting(query, model, sort_by, sort_order='asc'):
+def apply_sorting(query, model, sort_by, sort_order="asc"):
     """Apply sorting to query"""
     if sort_by and hasattr(model, sort_by):
-        order_func = asc if sort_order == 'asc' else desc
+        order_func = asc if sort_order == "asc" else desc
         query = query.order_by(order_func(getattr(model, sort_by)))
     return query
 
@@ -65,37 +70,42 @@ def paginate_response(query, page, per_page):
     """Paginate query and return formatted response"""
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     return {
-        'items': pagination.items,
-        'pagination': {
-            'page': pagination.page,
-            'per_page': pagination.per_page,
-            'total_pages': pagination.pages,
-            'total_items': pagination.total,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
-        }
+        "items": pagination.items,
+        "pagination": {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total_pages": pagination.pages,
+            "total_items": pagination.total,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev,
+        },
     }
 
 
 def success_response(data, message="Success", status_code=200):
     """Standard success response"""
-    return jsonify({
-        'status': 'success',
-        'message': message,
-        'data': data,
-        'timestamp': datetime.now(timezone.utc).isoformat()
-    }), status_code
+    return (
+        jsonify(
+            {
+                "status": "success",
+                "message": message,
+                "data": data,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        ),
+        status_code,
+    )
 
 
 def error_response(message, status_code=400, errors=None):
     """Standard error response"""
     response = {
-        'status': 'error',
-        'message': message,
-        'timestamp': datetime.now(timezone.utc).isoformat()
+        "status": "error",
+        "message": message,
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     if errors:
-        response['errors'] = errors
+        response["errors"] = errors
     return jsonify(response), status_code
 
 
@@ -103,13 +113,14 @@ def error_response(message, status_code=400, errors=None):
 # USERS CRUD API - خارق احترافي
 # ======================================================================================
 
-@api_v1_bp.route('/users', methods=['GET'])
+
+@api_v1_bp.route("/users", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_users():
     """
     Get all users with pagination, filtering, and sorting
-    
+
     Query Parameters:
     - page: Page number (default: 1)
     - per_page: Items per page (default: 20)
@@ -121,39 +132,39 @@ def get_users():
     try:
         # Get pagination
         pagination = get_pagination_params()
-        
+
         # Build query
         query = User.query
-        
+
         # Apply filters
         filters = {}
-        if request.args.get('email'):
-            filters['email'] = request.args.get('email')
-        if request.args.get('is_admin'):
-            filters['is_admin'] = request.args.get('is_admin').lower() == 'true'
-        
+        if request.args.get("email"):
+            filters["email"] = request.args.get("email")
+        if request.args.get("is_admin"):
+            filters["is_admin"] = request.args.get("is_admin").lower() == "true"
+
         query = apply_filters(query, User, filters)
-        
+
         # Apply sorting
-        sort_by = request.args.get('sort_by', 'created_at')
-        sort_order = request.args.get('sort_order', 'desc')
+        sort_by = request.args.get("sort_by", "created_at")
+        sort_order = request.args.get("sort_order", "desc")
         query = apply_sorting(query, User, sort_by, sort_order)
-        
+
         # Paginate
-        result = paginate_response(query, pagination['page'], pagination['per_page'])
-        
+        result = paginate_response(query, pagination["page"], pagination["per_page"])
+
         # Serialize
         schema = UserSchema(many=True)
-        result['items'] = schema.dump(result['items'])
-        
+        result["items"] = schema.dump(result["items"])
+
         return success_response(result, "Users retrieved successfully")
-        
+
     except Exception as e:
         current_app.logger.error(f"Error getting users: {str(e)}")
         return error_response("Failed to retrieve users", 500)
 
 
-@api_v1_bp.route('/users/<int:user_id>', methods=['GET'])
+@api_v1_bp.route("/users/<int:user_id>", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_user(user_id):
@@ -167,7 +178,7 @@ def get_user(user_id):
         return error_response("User not found", 404)
 
 
-@api_v1_bp.route('/users', methods=['POST'])
+@api_v1_bp.route("/users", methods=["POST"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -175,7 +186,7 @@ def get_user(user_id):
 def create_user():
     """
     Create a new user
-    
+
     Request Body:
     {
         "username": "string",
@@ -187,29 +198,25 @@ def create_user():
     try:
         schema = UserSchema()
         data = schema.load(request.get_json())
-        
+
         # Check if user exists
-        if User.query.filter_by(email=data.get('email')).first():
+        if User.query.filter_by(email=data.get("email")).first():
             return error_response("User with this email already exists", 409)
-        
+
         # Create user
         user = User(
-            full_name=data.get('username'),
-            email=data.get('email'),
-            is_admin=data.get('is_admin', False)
+            full_name=data.get("username"),
+            email=data.get("email"),
+            is_admin=data.get("is_admin", False),
         )
-        if data.get('password'):
-            user.set_password(data.get('password'))
-        
+        if data.get("password"):
+            user.set_password(data.get("password"))
+
         db.session.add(user)
         db.session.commit()
-        
-        return success_response(
-            schema.dump(user),
-            "User created successfully",
-            201
-        )
-        
+
+        return success_response(schema.dump(user), "User created successfully", 201)
+
     except ValidationError as e:
         return error_response("Validation error", 400, e.messages)
     except Exception as e:
@@ -218,7 +225,7 @@ def create_user():
         return error_response("Failed to create user", 500)
 
 
-@api_v1_bp.route('/users/<int:user_id>', methods=['PUT'])
+@api_v1_bp.route("/users/<int:user_id>", methods=["PUT"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -226,32 +233,29 @@ def create_user():
 def update_user(user_id):
     """
     Update a user
-    
+
     Request Body: Same as create, all fields optional
     """
     try:
         user = db.get_or_404(User, user_id)
         schema = UserSchema(partial=True)
         data = schema.load(request.get_json())
-        
+
         # Update fields
-        if 'username' in data:
-            user.full_name = data['username']
-        if 'email' in data:
-            user.email = data['email']
-        if 'password' in data:
-            user.set_password(data['password'])
-        if 'is_admin' in data:
-            user.is_admin = data['is_admin']
-        
+        if "username" in data:
+            user.full_name = data["username"]
+        if "email" in data:
+            user.email = data["email"]
+        if "password" in data:
+            user.set_password(data["password"])
+        if "is_admin" in data:
+            user.is_admin = data["is_admin"]
+
         user.updated_at = datetime.utcnow()
         db.session.commit()
-        
-        return success_response(
-            schema.dump(user),
-            "User updated successfully"
-        )
-        
+
+        return success_response(schema.dump(user), "User updated successfully")
+
     except ValidationError as e:
         return error_response("Validation error", 400, e.messages)
     except Exception as e:
@@ -260,7 +264,7 @@ def update_user(user_id):
         return error_response("Failed to update user", 500)
 
 
-@api_v1_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@api_v1_bp.route("/users/<int:user_id>", methods=["DELETE"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -270,12 +274,9 @@ def delete_user(user_id):
         user = db.get_or_404(User, user_id)
         db.session.delete(user)
         db.session.commit()
-        
-        return success_response(
-            {'id': user_id},
-            "User deleted successfully"
-        )
-        
+
+        return success_response({"id": user_id}, "User deleted successfully")
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting user {user_id}: {str(e)}")
@@ -286,7 +287,8 @@ def delete_user(user_id):
 # MISSIONS CRUD API - خارق احترافي
 # ======================================================================================
 
-@api_v1_bp.route('/missions', methods=['GET'])
+
+@api_v1_bp.route("/missions", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_missions():
@@ -294,43 +296,43 @@ def get_missions():
     try:
         pagination = get_pagination_params()
         query = Mission.query
-        
+
         # Apply filters
-        if request.args.get('status'):
-            query = query.filter_by(status=request.args.get('status'))
-        if request.args.get('user_id'):
-            query = query.filter_by(user_id=request.args.get('user_id', type=int))
-        
+        if request.args.get("status"):
+            query = query.filter_by(status=request.args.get("status"))
+        if request.args.get("user_id"):
+            query = query.filter_by(user_id=request.args.get("user_id", type=int))
+
         # Apply sorting
-        sort_by = request.args.get('sort_by', 'created_at')
-        sort_order = request.args.get('sort_order', 'desc')
+        sort_by = request.args.get("sort_by", "created_at")
+        sort_order = request.args.get("sort_order", "desc")
         query = apply_sorting(query, Mission, sort_by, sort_order)
-        
+
         # Paginate
-        result = paginate_response(query, pagination['page'], pagination['per_page'])
-        
+        result = paginate_response(query, pagination["page"], pagination["per_page"])
+
         # Serialize (simplified for now)
-        result['items'] = [
+        result["items"] = [
             {
-                'id': m.id,
-                'objective': m.objective,
-                'status': m.status.value if hasattr(m.status, 'value') else m.status,
-                'initiator_id': m.initiator_id,
-                'result_summary': m.result_summary,
-                'created_at': m.created_at.isoformat() if m.created_at else None,
-                'updated_at': m.updated_at.isoformat() if m.updated_at else None
+                "id": m.id,
+                "objective": m.objective,
+                "status": m.status.value if hasattr(m.status, "value") else m.status,
+                "initiator_id": m.initiator_id,
+                "result_summary": m.result_summary,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
             }
-            for m in result['items']
+            for m in result["items"]
         ]
-        
+
         return success_response(result, "Missions retrieved successfully")
-        
+
     except Exception as e:
         current_app.logger.error(f"Error getting missions: {str(e)}")
         return error_response("Failed to retrieve missions", 500)
 
 
-@api_v1_bp.route('/missions/<int:mission_id>', methods=['GET'])
+@api_v1_bp.route("/missions/<int:mission_id>", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_mission(mission_id):
@@ -338,13 +340,13 @@ def get_mission(mission_id):
     try:
         mission = db.get_or_404(Mission, mission_id)
         data = {
-            'id': mission.id,
-            'objective': mission.objective,
-            'status': mission.status.value if hasattr(mission.status, 'value') else mission.status,
-            'initiator_id': mission.initiator_id,
-            'result_summary': mission.result_summary,
-            'created_at': mission.created_at.isoformat() if mission.created_at else None,
-            'updated_at': mission.updated_at.isoformat() if mission.updated_at else None
+            "id": mission.id,
+            "objective": mission.objective,
+            "status": mission.status.value if hasattr(mission.status, "value") else mission.status,
+            "initiator_id": mission.initiator_id,
+            "result_summary": mission.result_summary,
+            "created_at": mission.created_at.isoformat() if mission.created_at else None,
+            "updated_at": mission.updated_at.isoformat() if mission.updated_at else None,
         }
         return success_response(data, "Mission retrieved successfully")
     except Exception as e:
@@ -352,7 +354,7 @@ def get_mission(mission_id):
         return error_response("Mission not found", 404)
 
 
-@api_v1_bp.route('/missions', methods=['POST'])
+@api_v1_bp.route("/missions", methods=["POST"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -360,35 +362,35 @@ def create_mission():
     """Create a new mission"""
     try:
         data = request.get_json()
-        
+
         mission = Mission(
-            title=data.get('title'),
-            description=data.get('description'),
-            status=data.get('status', 'PENDING'),
-            user_id=data.get('user_id')
+            title=data.get("title"),
+            description=data.get("description"),
+            status=data.get("status", "PENDING"),
+            user_id=data.get("user_id"),
         )
-        
+
         db.session.add(mission)
         db.session.commit()
-        
+
         result = {
-            'id': mission.id,
-            'title': mission.title,
-            'description': mission.description,
-            'status': mission.status,
-            'user_id': mission.user_id,
-            'created_at': mission.created_at.isoformat() if mission.created_at else None
+            "id": mission.id,
+            "title": mission.title,
+            "description": mission.description,
+            "status": mission.status,
+            "user_id": mission.user_id,
+            "created_at": mission.created_at.isoformat() if mission.created_at else None,
         }
-        
+
         return success_response(result, "Mission created successfully", 201)
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error creating mission: {str(e)}")
         return error_response("Failed to create mission", 500)
 
 
-@api_v1_bp.route('/missions/<int:mission_id>', methods=['PUT'])
+@api_v1_bp.route("/missions/<int:mission_id>", methods=["PUT"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -397,34 +399,34 @@ def update_mission(mission_id):
     try:
         mission = db.get_or_404(Mission, mission_id)
         data = request.get_json()
-        
-        if 'title' in data:
-            mission.title = data['title']
-        if 'description' in data:
-            mission.description = data['description']
-        if 'status' in data:
-            mission.status = data['status']
-        
+
+        if "title" in data:
+            mission.title = data["title"]
+        if "description" in data:
+            mission.description = data["description"]
+        if "status" in data:
+            mission.status = data["status"]
+
         mission.updated_at = datetime.utcnow()
         db.session.commit()
-        
+
         result = {
-            'id': mission.id,
-            'title': mission.title,
-            'description': mission.description,
-            'status': mission.status,
-            'updated_at': mission.updated_at.isoformat()
+            "id": mission.id,
+            "title": mission.title,
+            "description": mission.description,
+            "status": mission.status,
+            "updated_at": mission.updated_at.isoformat(),
         }
-        
+
         return success_response(result, "Mission updated successfully")
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error updating mission {mission_id}: {str(e)}")
         return error_response("Failed to update mission", 500)
 
 
-@api_v1_bp.route('/missions/<int:mission_id>', methods=['DELETE'])
+@api_v1_bp.route("/missions/<int:mission_id>", methods=["DELETE"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -434,9 +436,9 @@ def delete_mission(mission_id):
         mission = db.get_or_404(Mission, mission_id)
         db.session.delete(mission)
         db.session.commit()
-        
-        return success_response({'id': mission_id}, "Mission deleted successfully")
-        
+
+        return success_response({"id": mission_id}, "Mission deleted successfully")
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting mission {mission_id}: {str(e)}")
@@ -447,7 +449,8 @@ def delete_mission(mission_id):
 # TASKS CRUD API - خارق احترافي
 # ======================================================================================
 
-@api_v1_bp.route('/tasks', methods=['GET'])
+
+@api_v1_bp.route("/tasks", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_tasks():
@@ -455,33 +458,33 @@ def get_tasks():
     try:
         pagination = get_pagination_params()
         query = Task.query
-        
+
         # Apply filters
-        if request.args.get('status'):
-            query = query.filter_by(status=request.args.get('status'))
-        if request.args.get('mission_id'):
-            query = query.filter_by(mission_id=request.args.get('mission_id', type=int))
-        
+        if request.args.get("status"):
+            query = query.filter_by(status=request.args.get("status"))
+        if request.args.get("mission_id"):
+            query = query.filter_by(mission_id=request.args.get("mission_id", type=int))
+
         # Apply sorting
-        sort_by = request.args.get('sort_by', 'created_at')
-        sort_order = request.args.get('sort_order', 'desc')
+        sort_by = request.args.get("sort_by", "created_at")
+        sort_order = request.args.get("sort_order", "desc")
         query = apply_sorting(query, Task, sort_by, sort_order)
-        
+
         # Paginate
-        result = paginate_response(query, pagination['page'], pagination['per_page'])
-        
+        result = paginate_response(query, pagination["page"], pagination["per_page"])
+
         # Serialize
         schema = TaskSchema(many=True)
-        result['items'] = schema.dump(result['items'])
-        
+        result["items"] = schema.dump(result["items"])
+
         return success_response(result, "Tasks retrieved successfully")
-        
+
     except Exception as e:
         current_app.logger.error(f"Error getting tasks: {str(e)}")
         return error_response("Failed to retrieve tasks", 500)
 
 
-@api_v1_bp.route('/tasks/<int:task_id>', methods=['GET'])
+@api_v1_bp.route("/tasks/<int:task_id>", methods=["GET"])
 @rate_limit
 @monitor_performance
 def get_task(task_id):
@@ -495,7 +498,7 @@ def get_task(task_id):
         return error_response("Task not found", 404)
 
 
-@api_v1_bp.route('/tasks', methods=['POST'])
+@api_v1_bp.route("/tasks", methods=["POST"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -505,24 +508,20 @@ def create_task():
     try:
         schema = TaskSchema()
         data = schema.load(request.get_json())
-        
+
         task = Task(
-            mission_id=data.get('mission_id'),
-            task_key=data.get('task_key'),
-            description=data.get('description'),
-            status=data.get('status', 'PENDING'),
-            depends_on_json=data.get('depends_on_json', [])
+            mission_id=data.get("mission_id"),
+            task_key=data.get("task_key"),
+            description=data.get("description"),
+            status=data.get("status", "PENDING"),
+            depends_on_json=data.get("depends_on_json", []),
         )
-        
+
         db.session.add(task)
         db.session.commit()
-        
-        return success_response(
-            schema.dump(task),
-            "Task created successfully",
-            201
-        )
-        
+
+        return success_response(schema.dump(task), "Task created successfully", 201)
+
     except ValidationError as e:
         return error_response("Validation error", 400, e.messages)
     except Exception as e:
@@ -531,7 +530,7 @@ def create_task():
         return error_response("Failed to create task", 500)
 
 
-@api_v1_bp.route('/tasks/<int:task_id>', methods=['PUT'])
+@api_v1_bp.route("/tasks/<int:task_id>", methods=["PUT"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -542,19 +541,16 @@ def update_task(task_id):
         task = db.get_or_404(Task, task_id)
         schema = TaskSchema(partial=True)
         data = schema.load(request.get_json())
-        
-        for field in ['task_key', 'description', 'status', 'depends_on_json']:
+
+        for field in ["task_key", "description", "status", "depends_on_json"]:
             if field in data:
                 setattr(task, field, data[field])
-        
+
         task.updated_at = datetime.utcnow()
         db.session.commit()
-        
-        return success_response(
-            schema.dump(task),
-            "Task updated successfully"
-        )
-        
+
+        return success_response(schema.dump(task), "Task updated successfully")
+
     except ValidationError as e:
         return error_response("Validation error", 400, e.messages)
     except Exception as e:
@@ -563,7 +559,7 @@ def update_task(task_id):
         return error_response("Failed to update task", 500)
 
 
-@api_v1_bp.route('/tasks/<int:task_id>', methods=['DELETE'])
+@api_v1_bp.route("/tasks/<int:task_id>", methods=["DELETE"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -573,9 +569,9 @@ def delete_task(task_id):
         task = db.get_or_404(Task, task_id)
         db.session.delete(task)
         db.session.commit()
-        
-        return success_response({'id': task_id}, "Task deleted successfully")
-        
+
+        return success_response({"id": task_id}, "Task deleted successfully")
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting task {task_id}: {str(e)}")
@@ -586,7 +582,8 @@ def delete_task(task_id):
 # BATCH OPERATIONS - خارق احترافي
 # ======================================================================================
 
-@api_v1_bp.route('/users/batch', methods=['POST'])
+
+@api_v1_bp.route("/users/batch", methods=["POST"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -594,34 +591,34 @@ def batch_create_users():
     """Create multiple users in a single request"""
     try:
         data = request.get_json()
-        users_data = data.get('users', [])
-        
+        users_data = data.get("users", [])
+
         if not users_data:
             return error_response("No users provided", 400)
-        
+
         schema = UserSchema(many=True)
         validated_data = schema.load(users_data)
-        
+
         users = []
         for user_data in validated_data:
             user = User(
-                full_name=user_data.get('username'),
-                email=user_data.get('email'),
-                is_admin=user_data.get('is_admin', False)
+                full_name=user_data.get("username"),
+                email=user_data.get("email"),
+                is_admin=user_data.get("is_admin", False),
             )
-            if user_data.get('password'):
-                user.set_password(user_data.get('password'))
+            if user_data.get("password"):
+                user.set_password(user_data.get("password"))
             users.append(user)
-        
+
         db.session.add_all(users)
         db.session.commit()
-        
+
         return success_response(
-            {'count': len(users), 'users': schema.dump(users)},
+            {"count": len(users), "users": schema.dump(users)},
             f"{len(users)} users created successfully",
-            201
+            201,
         )
-        
+
     except ValidationError as e:
         return error_response("Validation error", 400, e.messages)
     except Exception as e:
@@ -630,7 +627,7 @@ def batch_create_users():
         return error_response("Failed to create users", 500)
 
 
-@api_v1_bp.route('/users/batch', methods=['DELETE'])
+@api_v1_bp.route("/users/batch", methods=["DELETE"])
 @require_jwt_auth
 @rate_limit
 @monitor_performance
@@ -638,19 +635,19 @@ def batch_delete_users():
     """Delete multiple users in a single request"""
     try:
         data = request.get_json()
-        user_ids = data.get('user_ids', [])
-        
+        user_ids = data.get("user_ids", [])
+
         if not user_ids:
             return error_response("No user IDs provided", 400)
-        
+
         deleted_count = User.query.filter(User.id.in_(user_ids)).delete(synchronize_session=False)
         db.session.commit()
-        
+
         return success_response(
-            {'count': deleted_count, 'user_ids': user_ids},
-            f"{deleted_count} users deleted successfully"
+            {"count": deleted_count, "user_ids": user_ids},
+            f"{deleted_count} users deleted successfully",
         )
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error batch deleting users: {str(e)}")
@@ -661,24 +658,28 @@ def batch_delete_users():
 # HEALTH CHECK & STATUS
 # ======================================================================================
 
-@api_v1_bp.route('/health', methods=['GET'])
+
+@api_v1_bp.route("/health", methods=["GET"])
 def health_check():
     """API health check endpoint"""
     try:
         # Check database connection
-        db.session.execute(text('SELECT 1'))
-        
-        return success_response({
-            'status': 'healthy',
-            'database': 'connected',
-            'version': 'v1.0',
-            'services': {
-                'security': 'active',
-                'observability': 'active',
-                'contract_validation': 'active'
-            }
-        }, "API is healthy")
-        
+        db.session.execute(text("SELECT 1"))
+
+        return success_response(
+            {
+                "status": "healthy",
+                "database": "connected",
+                "version": "v1.0",
+                "services": {
+                    "security": "active",
+                    "observability": "active",
+                    "contract_validation": "active",
+                },
+            },
+            "API is healthy",
+        )
+
     except Exception as e:
         current_app.logger.error(f"Health check failed: {str(e)}")
         return error_response("API is unhealthy", 503)

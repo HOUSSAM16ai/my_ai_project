@@ -14,24 +14,25 @@
 #   - Webhook management
 #   - Developer analytics
 
-from typing import Dict, Any, Optional, List, Callable
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
-from enum import Enum
-import threading
-from collections import defaultdict, deque
-from flask import current_app
 import hashlib
 import secrets
-import json
+import threading
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
+from flask import current_app
 
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
 
+
 class SDKLanguage(Enum):
     """Supported SDK languages"""
+
     PYTHON = "python"
     JAVASCRIPT = "javascript"
     TYPESCRIPT = "typescript"
@@ -44,6 +45,7 @@ class SDKLanguage(Enum):
 
 class TicketStatus(Enum):
     """Support ticket status"""
+
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     WAITING_FOR_CUSTOMER = "waiting_for_customer"
@@ -53,6 +55,7 @@ class TicketStatus(Enum):
 
 class TicketPriority(Enum):
     """Support ticket priority"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -61,6 +64,7 @@ class TicketPriority(Enum):
 
 class APIKeyStatus(Enum):
     """API key status"""
+
     ACTIVE = "active"
     SUSPENDED = "suspended"
     REVOKED = "revoked"
@@ -70,113 +74,119 @@ class APIKeyStatus(Enum):
 # DATA STRUCTURES
 # ======================================================================================
 
+
 @dataclass
 class APIKey:
     """API key for developers"""
+
     key_id: str
     key_value: str
     name: str
     developer_id: str
-    
+
     status: APIKeyStatus
     created_at: datetime
-    
+
     # Permissions
-    scopes: List[str] = field(default_factory=list)
-    allowed_ips: List[str] = field(default_factory=list)
-    
+    scopes: list[str] = field(default_factory=list)
+    allowed_ips: list[str] = field(default_factory=list)
+
     # Usage tracking
     total_requests: int = 0
-    last_used_at: Optional[datetime] = None
-    
+    last_used_at: datetime | None = None
+
     # Lifecycle
-    expires_at: Optional[datetime] = None
-    revoked_at: Optional[datetime] = None
-    revocation_reason: Optional[str] = None
-    
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    revocation_reason: str | None = None
+
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class SupportTicket:
     """Developer support ticket"""
+
     ticket_id: str
     developer_id: str
-    
+
     title: str
     description: str
     category: str  # technical, billing, feature_request, bug_report
-    
+
     status: TicketStatus
     priority: TicketPriority
-    
+
     created_at: datetime
     updated_at: datetime
-    
+
     # Assignment
-    assigned_to: Optional[str] = None
-    
+    assigned_to: str | None = None
+
     # Timeline
-    messages: List[Dict[str, Any]] = field(default_factory=list)
-    
+    messages: list[dict[str, Any]] = field(default_factory=list)
+
     # Resolution
-    resolved_at: Optional[datetime] = None
-    resolution: Optional[str] = None
-    
+    resolved_at: datetime | None = None
+    resolution: str | None = None
+
     # Metadata
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class SDKPackage:
     """Generated SDK package"""
+
     sdk_id: str
     language: SDKLanguage
     version: str
-    
+
     # Generation
     generated_at: datetime
     api_version: str
-    
+
     # Distribution
     package_url: str
     documentation_url: str
-    
+
     # Stats
     download_count: int = 0
-    
+
     # Code
     source_code: str = ""
-    examples: List[Dict[str, str]] = field(default_factory=list)
+    examples: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass
 class CodeExample:
     """Code example for developers"""
+
     example_id: str
     title: str
     description: str
     language: SDKLanguage
-    
+
     code: str
     endpoint: str
-    
+
     # Metadata
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     difficulty: str = "beginner"  # beginner, intermediate, advanced
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ======================================================================================
 # DEVELOPER PORTAL SERVICE
 # ======================================================================================
 
+
 class DeveloperPortalService:
     """
     خدمة بوابة المطورين الخارقة - Superhuman Developer Portal Service
-    
+
     Features:
     - API key management with fine-grained permissions
     - Automatic SDK generation for multiple languages
@@ -185,37 +195,39 @@ class DeveloperPortalService:
     - Sandbox environment for testing
     - Developer analytics and insights
     """
-    
+
     def __init__(self):
-        self.api_keys: Dict[str, APIKey] = {}
-        self.tickets: Dict[str, SupportTicket] = {}
-        self.sdks: Dict[str, SDKPackage] = {}
-        self.code_examples: Dict[str, CodeExample] = {}
-        
+        self.api_keys: dict[str, APIKey] = {}
+        self.tickets: dict[str, SupportTicket] = {}
+        self.sdks: dict[str, SDKPackage] = {}
+        self.code_examples: dict[str, CodeExample] = {}
+
         self.lock = threading.RLock()
-        
+
         # Analytics
-        self.developer_metrics: Dict[str, Any] = defaultdict(lambda: {
-            'total_developers': 0,
-            'active_developers_30d': 0,
-            'total_api_keys': 0,
-            'total_requests': 0,
-            'sdk_downloads': 0,
-            'open_tickets': 0
-        })
-        
+        self.developer_metrics: dict[str, Any] = defaultdict(
+            lambda: {
+                "total_developers": 0,
+                "active_developers_30d": 0,
+                "total_api_keys": 0,
+                "total_requests": 0,
+                "sdk_downloads": 0,
+                "open_tickets": 0,
+            }
+        )
+
         self._initialize_code_examples()
-    
+
     def _initialize_code_examples(self):
         """Initialize default code examples"""
-        
+
         # Python example
-        self.code_examples['py_basic'] = CodeExample(
-            example_id='py_basic',
-            title='Basic API Request (Python)',
-            description='Make a simple API request using Python',
+        self.code_examples["py_basic"] = CodeExample(
+            example_id="py_basic",
+            title="Basic API Request (Python)",
+            description="Make a simple API request using Python",
             language=SDKLanguage.PYTHON,
-            code='''import requests
+            code="""import requests
 
 # Set your API key
 api_key = "your_api_key_here"
@@ -229,19 +241,19 @@ response = requests.get(
 
 # Parse response
 data = response.json()
-print(data)''',
-            endpoint='/v1/users',
-            tags=['getting-started', 'authentication'],
-            difficulty='beginner'
+print(data)""",
+            endpoint="/v1/users",
+            tags=["getting-started", "authentication"],
+            difficulty="beginner",
         )
-        
+
         # JavaScript example
-        self.code_examples['js_basic'] = CodeExample(
-            example_id='js_basic',
-            title='Basic API Request (JavaScript)',
-            description='Make a simple API request using JavaScript/Node.js',
+        self.code_examples["js_basic"] = CodeExample(
+            example_id="js_basic",
+            title="Basic API Request (JavaScript)",
+            description="Make a simple API request using JavaScript/Node.js",
             language=SDKLanguage.JAVASCRIPT,
-            code='''const axios = require('axios');
+            code="""const axios = require('axios');
 
 // Set your API key
 const apiKey = 'your_api_key_here';
@@ -257,29 +269,29 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 })
 .catch(error => {
   console.error('Error:', error);
-});''',
-            endpoint='/v1/users',
-            tags=['getting-started', 'authentication'],
-            difficulty='beginner'
+});""",
+            endpoint="/v1/users",
+            tags=["getting-started", "authentication"],
+            difficulty="beginner",
         )
-    
+
     def create_api_key(
         self,
         developer_id: str,
         name: str,
-        scopes: Optional[List[str]] = None,
-        expires_in_days: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        scopes: list[str] | None = None,
+        expires_in_days: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> APIKey:
         """Create a new API key"""
         with self.lock:
             # Generate secure key
             key_value = f"sk_live_{secrets.token_urlsafe(32)}"
             key_id = f"key_{hashlib.md5(key_value.encode()).hexdigest()[:16]}"
-            
-            now = datetime.now(timezone.utc)
+
+            now = datetime.now(UTC)
             expires_at = now + timedelta(days=expires_in_days) if expires_in_days else None
-            
+
             api_key = APIKey(
                 key_id=key_id,
                 key_value=key_value,
@@ -287,68 +299,66 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 developer_id=developer_id,
                 status=APIKeyStatus.ACTIVE,
                 created_at=now,
-                scopes=scopes or ['read', 'write'],
+                scopes=scopes or ["read", "write"],
                 expires_at=expires_at,
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
-            
+
             self.api_keys[key_id] = api_key
-            
-            current_app.logger.info(
-                f"Created API key {key_id} for developer {developer_id}"
-            )
-            
+
+            current_app.logger.info(f"Created API key {key_id} for developer {developer_id}")
+
             return api_key
-    
-    def validate_api_key(self, key_value: str) -> Optional[APIKey]:
+
+    def validate_api_key(self, key_value: str) -> APIKey | None:
         """Validate an API key"""
         for api_key in self.api_keys.values():
             if api_key.key_value == key_value:
                 # Check if expired
-                if api_key.expires_at and datetime.now(timezone.utc) > api_key.expires_at:
+                if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
                     return None
-                
+
                 # Check if active
                 if api_key.status != APIKeyStatus.ACTIVE:
                     return None
-                
+
                 # Update usage
                 api_key.total_requests += 1
-                api_key.last_used_at = datetime.now(timezone.utc)
-                
+                api_key.last_used_at = datetime.now(UTC)
+
                 return api_key
-        
+
         return None
-    
+
     def revoke_api_key(self, key_id: str, reason: str) -> bool:
         """Revoke an API key"""
         with self.lock:
             api_key = self.api_keys.get(key_id)
             if not api_key:
                 return False
-            
+
             api_key.status = APIKeyStatus.REVOKED
-            api_key.revoked_at = datetime.now(timezone.utc)
+            api_key.revoked_at = datetime.now(UTC)
             api_key.revocation_reason = reason
-            
+
             current_app.logger.info(f"Revoked API key {key_id}: {reason}")
-            
+
             return True
-    
+
     def create_ticket(
         self,
         developer_id: str,
         title: str,
         description: str,
         category: str,
-        priority: TicketPriority = TicketPriority.MEDIUM
+        priority: TicketPriority = TicketPriority.MEDIUM,
     ) -> SupportTicket:
         """Create a support ticket"""
         with self.lock:
             ticket_id = f"ticket_{secrets.token_hex(8)}"
-            
-            now = datetime.now(timezone.utc)
-            
+
+            now = datetime.now(UTC)
+
             ticket = SupportTicket(
                 ticket_id=ticket_id,
                 developer_id=developer_id,
@@ -358,104 +368,94 @@ axios.get('https://api.cogniforge.ai/v1/users', {
                 status=TicketStatus.OPEN,
                 priority=priority,
                 created_at=now,
-                updated_at=now
+                updated_at=now,
             )
-            
+
             # Add initial message
-            ticket.messages.append({
-                'id': f"msg_{secrets.token_hex(6)}",
-                'author_id': developer_id,
-                'content': description,
-                'timestamp': now.isoformat(),
-                'is_staff': False
-            })
-            
-            self.tickets[ticket_id] = ticket
-            
-            current_app.logger.info(
-                f"Created ticket {ticket_id} for developer {developer_id}"
+            ticket.messages.append(
+                {
+                    "id": f"msg_{secrets.token_hex(6)}",
+                    "author_id": developer_id,
+                    "content": description,
+                    "timestamp": now.isoformat(),
+                    "is_staff": False,
+                }
             )
-            
+
+            self.tickets[ticket_id] = ticket
+
+            current_app.logger.info(f"Created ticket {ticket_id} for developer {developer_id}")
+
             return ticket
-    
+
     def add_ticket_message(
-        self,
-        ticket_id: str,
-        author_id: str,
-        content: str,
-        is_staff: bool = False
+        self, ticket_id: str, author_id: str, content: str, is_staff: bool = False
     ) -> bool:
         """Add a message to a ticket"""
         with self.lock:
             ticket = self.tickets.get(ticket_id)
             if not ticket:
                 return False
-            
+
             message = {
-                'id': f"msg_{secrets.token_hex(6)}",
-                'author_id': author_id,
-                'content': content,
-                'timestamp': datetime.now(timezone.utc).isoformat(),
-                'is_staff': is_staff
+                "id": f"msg_{secrets.token_hex(6)}",
+                "author_id": author_id,
+                "content": content,
+                "timestamp": datetime.now(UTC).isoformat(),
+                "is_staff": is_staff,
             }
-            
+
             ticket.messages.append(message)
-            ticket.updated_at = datetime.now(timezone.utc)
-            
+            ticket.updated_at = datetime.now(UTC)
+
             # Update status if customer responded
             if not is_staff and ticket.status == TicketStatus.WAITING_FOR_CUSTOMER:
                 ticket.status = TicketStatus.IN_PROGRESS
-            
+
             return True
-    
+
     def resolve_ticket(self, ticket_id: str, resolution: str) -> bool:
         """Resolve a support ticket"""
         with self.lock:
             ticket = self.tickets.get(ticket_id)
             if not ticket:
                 return False
-            
+
             ticket.status = TicketStatus.RESOLVED
-            ticket.resolved_at = datetime.now(timezone.utc)
+            ticket.resolved_at = datetime.now(UTC)
             ticket.resolution = resolution
-            ticket.updated_at = datetime.now(timezone.utc)
-            
+            ticket.updated_at = datetime.now(UTC)
+
             return True
-    
-    def generate_sdk(
-        self,
-        language: SDKLanguage,
-        api_version: str = "v1"
-    ) -> SDKPackage:
+
+    def generate_sdk(self, language: SDKLanguage, api_version: str = "v1") -> SDKPackage:
         """Generate SDK for a specific language"""
         with self.lock:
             sdk_id = f"sdk_{language.value}_{api_version}_{secrets.token_hex(4)}"
             version = "1.0.0"
-            
+
             # Generate SDK code based on language
             source_code = self._generate_sdk_code(language, api_version)
             examples = self._generate_sdk_examples(language)
-            
+
             sdk = SDKPackage(
                 sdk_id=sdk_id,
                 language=language,
                 version=version,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
                 api_version=api_version,
                 package_url=f"https://sdk.cogniforge.ai/{language.value}/{version}",
                 documentation_url=f"https://docs.cogniforge.ai/sdk/{language.value}",
                 source_code=source_code,
-                examples=examples
+                examples=examples,
             )
-            
+
             self.sdks[sdk_id] = sdk
-            
-            current_app.logger.info(
-                f"Generated {language.value} SDK version {version}"
-            )
-            
+
+            current_app.logger.info(f"Generated {language.value} SDK version {version}")
+
             return sdk
-    
+
     def _generate_sdk_code(self, language: SDKLanguage, api_version: str) -> str:
         """Generate SDK source code"""
         if language == SDKLanguage.PYTHON:
@@ -466,7 +466,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
             return self._generate_go_sdk()
         else:
             return "# SDK generation not implemented for this language yet"
-    
+
     def _generate_python_sdk(self) -> str:
         """Generate Python SDK"""
         return '''"""CogniForge API Python SDK"""
@@ -516,10 +516,10 @@ class CogniForgeClient:
         """Get mission by ID"""
         return self._request("GET", f"/missions/{mission_id}")
 '''
-    
+
     def _generate_javascript_sdk(self) -> str:
         """Generate JavaScript SDK"""
-        return '''/**
+        return """/**
  * CogniForge API JavaScript SDK
  */
 
@@ -578,11 +578,11 @@ class CogniForgeClient {
 }
 
 module.exports = CogniForgeClient;
-'''
-    
+"""
+
     def _generate_go_sdk(self) -> str:
         """Generate Go SDK"""
-        return '''package cogniforge
+        return """package cogniforge
 
 import (
     "bytes"
@@ -655,98 +655,96 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
     endpoint := fmt.Sprintf("/users/%d", userID)
     return c.request("GET", endpoint, nil)
 }
-'''
-    
-    def _generate_sdk_examples(self, language: SDKLanguage) -> List[Dict[str, str]]:
+"""
+
+    def _generate_sdk_examples(self, language: SDKLanguage) -> list[dict[str, str]]:
         """Generate SDK usage examples"""
         if language == SDKLanguage.PYTHON:
             return [
                 {
-                    'title': 'Initialize Client',
-                    'code': 'client = CogniForgeClient(api_key="your_api_key")'
+                    "title": "Initialize Client",
+                    "code": 'client = CogniForgeClient(api_key="your_api_key")',
                 },
+                {"title": "List Users", "code": "users = client.list_users(page=1, per_page=20)"},
                 {
-                    'title': 'List Users',
-                    'code': 'users = client.list_users(page=1, per_page=20)'
+                    "title": "Create User",
+                    "code": 'user = client.create_user(email="user@example.com", name="John Doe")',
                 },
-                {
-                    'title': 'Create User',
-                    'code': 'user = client.create_user(email="user@example.com", name="John Doe")'
-                }
             ]
         elif language == SDKLanguage.JAVASCRIPT:
             return [
                 {
-                    'title': 'Initialize Client',
-                    'code': 'const client = new CogniForgeClient("your_api_key");'
+                    "title": "Initialize Client",
+                    "code": 'const client = new CogniForgeClient("your_api_key");',
                 },
+                {"title": "List Users", "code": "const users = await client.listUsers(1, 20);"},
                 {
-                    'title': 'List Users',
-                    'code': 'const users = await client.listUsers(1, 20);'
+                    "title": "Create User",
+                    "code": 'const user = await client.createUser("user@example.com", "John Doe");',
                 },
-                {
-                    'title': 'Create User',
-                    'code': 'const user = await client.createUser("user@example.com", "John Doe");'
-                }
             ]
         return []
-    
-    def get_developer_dashboard(self, developer_id: str) -> Dict[str, Any]:
+
+    def get_developer_dashboard(self, developer_id: str) -> dict[str, Any]:
         """Get developer dashboard data"""
         # Get developer's API keys
         api_keys = [
             {
-                'key_id': key.key_id,
-                'name': key.name,
-                'status': key.status.value,
-                'total_requests': key.total_requests,
-                'last_used_at': key.last_used_at.isoformat() if key.last_used_at else None,
-                'created_at': key.created_at.isoformat()
+                "key_id": key.key_id,
+                "name": key.name,
+                "status": key.status.value,
+                "total_requests": key.total_requests,
+                "last_used_at": key.last_used_at.isoformat() if key.last_used_at else None,
+                "created_at": key.created_at.isoformat(),
             }
             for key in self.api_keys.values()
             if key.developer_id == developer_id
         ]
-        
+
         # Get developer's tickets
         tickets = [
             {
-                'ticket_id': ticket.ticket_id,
-                'title': ticket.title,
-                'status': ticket.status.value,
-                'priority': ticket.priority.value,
-                'created_at': ticket.created_at.isoformat(),
-                'updated_at': ticket.updated_at.isoformat()
+                "ticket_id": ticket.ticket_id,
+                "title": ticket.title,
+                "status": ticket.status.value,
+                "priority": ticket.priority.value,
+                "created_at": ticket.created_at.isoformat(),
+                "updated_at": ticket.updated_at.isoformat(),
             }
             for ticket in self.tickets.values()
             if ticket.developer_id == developer_id
         ]
-        
+
         # Calculate stats
-        total_requests = sum(key.total_requests for key in self.api_keys.values() if key.developer_id == developer_id)
-        
+        total_requests = sum(
+            key.total_requests for key in self.api_keys.values() if key.developer_id == developer_id
+        )
+
         return {
-            'developer_id': developer_id,
-            'api_keys': api_keys,
-            'tickets': tickets,
-            'stats': {
-                'total_api_keys': len(api_keys),
-                'total_requests': total_requests,
-                'open_tickets': sum(1 for t in tickets if t['status'] == 'open')
-            }
+            "developer_id": developer_id,
+            "api_keys": api_keys,
+            "tickets": tickets,
+            "stats": {
+                "total_api_keys": len(api_keys),
+                "total_requests": total_requests,
+                "open_tickets": sum(1 for t in tickets if t["status"] == "open"),
+            },
         }
-    
-    def get_available_sdks(self) -> List[Dict[str, Any]]:
+
+    def get_available_sdks(self) -> list[dict[str, Any]]:
         """Get list of available SDKs"""
         sdks = []
         for language in SDKLanguage:
-            sdks.append({
-                'language': language.value,
-                'name': f"CogniForge {language.value.capitalize()} SDK",
-                'documentation_url': f"https://docs.cogniforge.ai/sdk/{language.value}",
-                'installation': self._get_installation_command(language)
-            })
+            sdks.append(
+                {
+                    "language": language.value,
+                    "name": f"CogniForge {language.value.capitalize()} SDK",
+                    "documentation_url": f"https://docs.cogniforge.ai/sdk/{language.value}",
+                    "installation": self._get_installation_command(language),
+                }
+            )
         return sdks
-    
+
     def _get_installation_command(self, language: SDKLanguage) -> str:
         """Get installation command for SDK"""
         commands = {
@@ -755,7 +753,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             SDKLanguage.GO: "go get github.com/cogniforge/cogniforge-go",
             SDKLanguage.RUBY: "gem install cogniforge",
             SDKLanguage.JAVA: "maven dependency or gradle",
-            SDKLanguage.PHP: "composer require cogniforge/cogniforge-php"
+            SDKLanguage.PHP: "composer require cogniforge/cogniforge-php",
         }
         return commands.get(language, "See documentation")
 
@@ -764,17 +762,17 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_developer_portal_instance: Optional[DeveloperPortalService] = None
+_developer_portal_instance: DeveloperPortalService | None = None
 _service_lock = threading.Lock()
 
 
 def get_developer_portal_service() -> DeveloperPortalService:
     """Get singleton developer portal service"""
     global _developer_portal_instance
-    
+
     if _developer_portal_instance is None:
         with _service_lock:
             if _developer_portal_instance is None:
                 _developer_portal_instance = DeveloperPortalService()
-    
+
     return _developer_portal_instance

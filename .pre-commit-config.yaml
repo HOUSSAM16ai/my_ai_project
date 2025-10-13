@@ -1,0 +1,179 @@
+# ======================================================================================
+# PRE-COMMIT HOOKS - Automated Code Quality (Superhuman Edition)
+# ======================================================================================
+# This configuration ensures code quality before commits
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+# Standards: Google, Microsoft, Meta (Facebook), OpenAI level
+
+repos:
+  # =============================================================================
+  # BUILT-IN HOOKS - Basic File Hygiene
+  # =============================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: 🧹 Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+        name: 📝 Fix end of files
+      - id: check-yaml
+        name: ✅ Check YAML syntax
+        args: [--safe]
+      - id: check-json
+        name: ✅ Check JSON syntax
+      - id: check-toml
+        name: ✅ Check TOML syntax
+      - id: check-added-large-files
+        name: 🚫 Block large files (>500KB)
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+        name: 🚫 Block merge conflict markers
+      - id: check-case-conflict
+        name: 🚫 Block case conflicts
+      - id: mixed-line-ending
+        name: 🔧 Fix mixed line endings
+        args: [--fix=lf]
+      - id: detect-private-key
+        name: 🔒 Detect private keys
+      - id: debug-statements
+        name: 🐛 Detect debug statements
+
+  # =============================================================================
+  # BLACK - Code Formatter (Industry Standard)
+  # =============================================================================
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        name: ⚫ Format with Black
+        language_version: python3.12
+        args: [--line-length=100]
+
+  # =============================================================================
+  # ISORT - Import Sorter (Google/Meta Standard)
+  # =============================================================================
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: 📦 Sort imports with isort
+        args: [--profile=black, --line-length=100]
+
+  # =============================================================================
+  # RUFF - Ultra-Fast Linter (Rust-based, Replaces Flake8)
+  # =============================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.2.0
+    hooks:
+      - id: ruff
+        name: ⚡ Lint with Ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: ⚡ Format with Ruff
+
+  # =============================================================================
+  # MYPY - Static Type Checker (Microsoft/Google Standard)
+  # =============================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: 🔍 Type check with mypy
+        additional_dependencies: 
+          - types-requests
+          - types-PyYAML
+          - sqlalchemy-stubs
+        args: [--ignore-missing-imports, --show-error-codes]
+        exclude: ^(tests/|migrations/)
+
+  # =============================================================================
+  # BANDIT - Security Linter (CIA/NSA Level)
+  # =============================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        name: 🔒 Security scan with Bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: [bandit[toml]]
+        exclude: ^tests/
+
+  # =============================================================================
+  # PYDOCSTYLE - Docstring Checker (Google/NumPy Standard)
+  # =============================================================================
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        name: 📚 Check docstrings
+        args: [--convention=google]
+        exclude: ^(tests/|migrations/)
+
+  # =============================================================================
+  # SHELLCHECK - Shell Script Linter
+  # =============================================================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: 🐚 Lint shell scripts
+
+  # =============================================================================
+  # YAML LINT - YAML File Linter
+  # =============================================================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        name: 📋 Lint YAML files
+        args: [-d, '{extends: default, rules: {line-length: {max: 120}}}']
+
+  # =============================================================================
+  # MARKDOWN LINT - Documentation Quality
+  # =============================================================================
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.12.0
+    hooks:
+      - id: markdownlint
+        name: 📝 Lint Markdown files
+        args: [--git-recurse]
+
+  # =============================================================================
+  # PRETTIER - Multi-format Formatter (JSON, YAML, Markdown)
+  # =============================================================================
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: 💅 Format with Prettier
+        types_or: [yaml, markdown, json]
+        exclude: ^(migrations/|htmlcov/)
+
+  # =============================================================================
+  # SAFETY - Dependency Security Checker
+  # =============================================================================
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.3
+    hooks:
+      - id: python-safety-dependencies-check
+        name: 🛡️ Check dependencies security
+        files: requirements.txt
+
+# =============================================================================
+# CI CONFIGURATION - Run on GitHub Actions
+# =============================================================================
+ci:
+  autofix_commit_msg: |
+    🤖 [pre-commit.ci] Auto-fix code quality issues
+    
+    - Applied automatic formatting
+    - Fixed linting issues
+    - Updated imports
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '🤖 [pre-commit.ci] Auto-update pre-commit hooks'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
