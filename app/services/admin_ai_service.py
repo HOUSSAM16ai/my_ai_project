@@ -643,7 +643,7 @@ class AdminAIService:
     def _build_lightweight_project_index(self) -> str:
         """
         بناء فهرس خفيف للمشروع - SUPERHUMAN PROJECT AWARENESS
-        
+
         Builds a lightweight overview of project structure to give AI immediate
         awareness of all available files and modules.
         """
@@ -651,7 +651,7 @@ class AdminAIService:
             # Try to use agent_tools code_index_project if available
             try:
                 from app.services.agent_tools import code_index_project
-                
+
                 result = code_index_project(root=".", max_files=500)
                 if result.ok and result.data:
                     files_data = result.data.get("files", [])
@@ -661,55 +661,65 @@ class AdminAIService:
                             f"📁 المشروع يحتوي على {len(files_data)} ملف مفهرس:",
                             f"📁 Project contains {len(files_data)} indexed files:",
                         ]
-                        
+
                         # Group by directory
                         dir_groups = {}
                         for file_info in files_data[:200]:  # Limit to avoid overwhelming
                             path = file_info.get("path", "")
-                            if "/" in path:
-                                dir_name = path.split("/")[0]
-                            else:
-                                dir_name = "(root)"
-                            
+                            dir_name = path.split("/")[0] if "/" in path else "(root)"
+
                             if dir_name not in dir_groups:
                                 dir_groups[dir_name] = []
                             dir_groups[dir_name].append(path)
-                        
+
                         # Add structured overview
                         summary_parts.append("\n### المجلدات الرئيسية (Main Directories):")
                         for dir_name in sorted(dir_groups.keys())[:15]:  # Top 15 dirs
                             files = dir_groups[dir_name]
                             summary_parts.append(f"- `{dir_name}/` ({len(files)} files)")
-                        
+
                         # Add key file list
                         summary_parts.append("\n### ملفات Python الرئيسية (Key Python Files):")
-                        py_files = [f.get("path") for f in files_data if f.get("path", "").endswith(".py")][:30]
+                        py_files = [
+                            f.get("path") for f in files_data if f.get("path", "").endswith(".py")
+                        ][:30]
                         for pf in py_files:
                             summary_parts.append(f"- `{pf}`")
-                        
+
                         return "\n".join(summary_parts)
             except Exception as e:
                 self.logger.debug(f"Could not use code_index_project: {e}")
-            
+
             # Fallback: Manual lightweight scanning
             project_root = os.path.abspath(".")
             important_dirs = ["app", "tests", "migrations", "scripts", "docs"]
             file_list = []
-            
+
             for dir_name in important_dirs:
                 dir_path = os.path.join(project_root, dir_name)
                 if os.path.isdir(dir_path):
                     for root, dirs, files in os.walk(dir_path):
                         # Skip common ignore patterns
-                        dirs[:] = [d for d in dirs if d not in {
-                            "__pycache__", ".git", "node_modules", "venv", ".venv", "dist", "build"
-                        }]
-                        
+                        dirs[:] = [
+                            d
+                            for d in dirs
+                            if d
+                            not in {
+                                "__pycache__",
+                                ".git",
+                                "node_modules",
+                                "venv",
+                                ".venv",
+                                "dist",
+                                "build",
+                            }
+                        ]
+
                         for file in files:
                             if file.endswith((".py", ".md", ".txt", ".yml", ".yaml", ".json")):
                                 rel_path = os.path.relpath(os.path.join(root, file), project_root)
                                 file_list.append(rel_path)
-            
+
             if file_list:
                 summary = [
                     f"📁 المشروع يحتوي على {len(file_list)} ملف رئيسي:",
@@ -718,14 +728,14 @@ class AdminAIService:
                 ]
                 for f in sorted(file_list)[:100]:  # Show first 100
                     summary.append(f"- `{f}`")
-                
+
                 if len(file_list) > 100:
                     summary.append(f"\n... و {len(file_list) - 100} ملف إضافي")
-                
+
                 return "\n".join(summary)
-            
+
             return ""
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to build project index: {e}")
             return ""
