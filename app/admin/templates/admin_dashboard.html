@@ -703,6 +703,11 @@ body {
         
         loadConversations();
       } else {
+        // Update conversation ID if provided (even on error)
+        if (result.conversation_id) {
+          STATE.currentConversationId = result.conversation_id;
+        }
+        
         // Handle error - check if we have a user-friendly answer message
         if (result.answer) {
           // Display the formatted error answer (contains helpful troubleshooting info)
@@ -713,6 +718,11 @@ body {
         } else {
           // Fallback to simple error message
           addMessage('system', `❌ Error: ${result.message || result.error}`);
+        }
+        
+        // Reload conversations to show the new one (if created)
+        if (result.conversation_id) {
+          loadConversations();
         }
       }
     } catch (error) {
@@ -794,13 +804,19 @@ body {
         
         addMessage('assistant', analysisHtml);
       } else {
-        // Handle error - check if we have a user-friendly message
-        if (result.message) {
-          // Display the formatted error message (contains helpful troubleshooting info)
-          addMessage('assistant', formatContent(result.message));
+        // Handle error - check if we have a user-friendly answer message
+        if (result.answer) {
+          // Display the formatted error answer (contains helpful troubleshooting info)
+          addMessage('assistant', formatContent(result.answer), {
+            model_used: result.model_used || 'Error',
+            elapsed_seconds: result.elapsed_seconds
+          });
+        } else if (result.message) {
+          // Fallback to simple message
+          addMessage('system', `❌ Analysis failed: ${result.message}`);
         } else {
-          // Fallback to simple error message
-          addMessage('system', `❌ Analysis failed: ${result.error}`);
+          // Final fallback to error field
+          addMessage('system', `❌ Analysis failed: ${result.error || 'Unknown error'}`);
         }
       }
     } catch (error) {
