@@ -77,9 +77,13 @@ DEFAULT_MODEL = os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
 
 # SUPERHUMAN CONFIGURATION - Long question handling
 MAX_QUESTION_LENGTH = int(os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "50000"))  # characters
-MAX_RESPONSE_TOKENS = int(os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "16000"))  # tokens for very long responses
+MAX_RESPONSE_TOKENS = int(
+    os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "16000")
+)  # tokens for very long responses
 LONG_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_LONG_QUESTION_THRESHOLD", "5000"))  # characters
-ENABLE_STREAMING = os.getenv("ADMIN_AI_ENABLE_STREAMING", "1") == "1"  # Enable streaming for long responses
+ENABLE_STREAMING = (
+    os.getenv("ADMIN_AI_ENABLE_STREAMING", "1") == "1"
+)  # Enable streaming for long responses
 
 
 class AdminAIService:
@@ -453,7 +457,7 @@ class AdminAIService:
             # ============================================================
             question_length = len(question)
             is_long_question = question_length > LONG_QUESTION_THRESHOLD
-            
+
             if question_length > MAX_QUESTION_LENGTH:
                 error_msg = (
                     f"⚠️ السؤال طويل جداً ({question_length:,} حرف).\n\n"
@@ -475,7 +479,7 @@ class AdminAIService:
                     "answer": error_msg,
                     "elapsed_seconds": round(time.time() - start_time, 2),
                 }
-            
+
             if is_long_question:
                 self.logger.info(
                     f"Processing long question for user {user.id}: {question_length} characters (threshold: {LONG_QUESTION_THRESHOLD})"
@@ -516,7 +520,7 @@ class AdminAIService:
                 # SUPERHUMAN FEATURE: Adjust max_tokens based on question length
                 # For long questions, allow more tokens in response
                 max_tokens = MAX_RESPONSE_TOKENS if is_long_question else 4000
-                
+
                 self.logger.info(
                     f"Invoking AI with model={DEFAULT_MODEL}, max_tokens={max_tokens}, "
                     f"question_length={question_length}, is_long={is_long_question}"
@@ -555,12 +559,16 @@ class AdminAIService:
             except Exception as e:
                 # SUPERHUMAN ERROR HANDLING - Specific error types
                 self.logger.error(f"AI invocation failed: {e}", exc_info=True)
-                
+
                 error_type = str(type(e).__name__)
                 error_message = str(e).lower()
-                
+
                 # Check for timeout errors
-                if "timeout" in error_message or "timed out" in error_message or error_type in ("TimeoutError", "ReadTimeout", "ConnectTimeout"):
+                if (
+                    "timeout" in error_message
+                    or "timed out" in error_message
+                    or error_type in ("TimeoutError", "ReadTimeout", "ConnectTimeout")
+                ):
                     error_msg = (
                         f"⚠️ انتهت مهلة الانتظار للإجابة على السؤال.\n\n"
                         f"Timeout occurred while waiting for AI response.\n\n"
@@ -589,7 +597,7 @@ class AdminAIService:
                         "question_length": question_length,
                         "is_timeout": True,
                     }
-                
+
                 # Check for rate limit errors
                 elif "rate limit" in error_message or "429" in error_message:
                     error_msg = (
@@ -606,9 +614,11 @@ class AdminAIService:
                         "answer": error_msg,
                         "elapsed_seconds": round(time.time() - start_time, 2),
                     }
-                
+
                 # Check for context length errors
-                elif "context" in error_message and ("length" in error_message or "token" in error_message):
+                elif "context" in error_message and (
+                    "length" in error_message or "token" in error_message
+                ):
                     error_msg = (
                         f"⚠️ المحتوى المُدخل طويل جداً للمعالجة.\n\n"
                         f"Input content exceeds AI model's capacity.\n\n"
@@ -628,7 +638,7 @@ class AdminAIService:
                         "elapsed_seconds": round(time.time() - start_time, 2),
                         "question_length": question_length,
                     }
-                
+
                 # Generic error with helpful troubleshooting
                 error_msg = (
                     f"⚠️ حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.\n\n"

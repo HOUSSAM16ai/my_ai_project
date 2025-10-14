@@ -537,7 +537,9 @@ def _build_client() -> Any:
     build_id = _CLIENT_BUILD_SEQ
 
     creds = _resolve_api_credentials()
-    timeout_s = float(_read_config_key("LLM_TIMEOUT_SECONDS") or 180.0)  # Increased from 90 to 180 for long questions
+    timeout_s = float(
+        _read_config_key("LLM_TIMEOUT_SECONDS") or 180.0
+    )  # Increased from 90 to 180 for long questions
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
     forced_mock = _should_force_mock()
 
