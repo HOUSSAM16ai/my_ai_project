@@ -75,6 +75,12 @@ MAX_RELATED_CONTEXT_CHUNKS = int(os.getenv("ADMIN_AI_MAX_CONTEXT_CHUNKS", "5"))
 ENABLE_DEEP_INDEX = os.getenv("ADMIN_AI_ENABLE_DEEP_INDEX", "1") == "1"
 DEFAULT_MODEL = os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
 
+# SUPERHUMAN CONFIGURATION - Long question handling
+MAX_QUESTION_LENGTH = int(os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "50000"))  # characters
+MAX_RESPONSE_TOKENS = int(os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "16000"))  # tokens for very long responses
+LONG_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_LONG_QUESTION_THRESHOLD", "5000"))  # characters
+ENABLE_STREAMING = os.getenv("ADMIN_AI_ENABLE_STREAMING", "1") == "1"  # Enable streaming for long responses
+
 
 class AdminAIService:
     """
@@ -442,6 +448,39 @@ class AdminAIService:
                 conversation_summary=context_summary if conversation_id else None,
             )
 
+            # ============================================================
+            # SUPERHUMAN VALIDATION - Check question length
+            # ============================================================
+            question_length = len(question)
+            is_long_question = question_length > LONG_QUESTION_THRESHOLD
+            
+            if question_length > MAX_QUESTION_LENGTH:
+                error_msg = (
+                    f"⚠️ السؤال طويل جداً ({question_length:,} حرف).\n\n"
+                    f"Question is too long ({question_length:,} characters).\n\n"
+                    f"**Maximum allowed:** {MAX_QUESTION_LENGTH:,} characters\n"
+                    f"**Your question:** {question_length:,} characters\n\n"
+                    f"**Possible solutions:**\n"
+                    f"1. Break your question into smaller parts\n"
+                    f"2. Summarize your question while keeping key details\n"
+                    f"3. Focus on the most important aspects first\n\n"
+                    f"**Tip:** You can ask follow-up questions to explore specific details after getting an initial answer."
+                )
+                self.logger.warning(
+                    f"User {user.id} submitted question exceeding max length: {question_length} > {MAX_QUESTION_LENGTH}"
+                )
+                return {
+                    "status": "error",
+                    "error": "Question too long",
+                    "answer": error_msg,
+                    "elapsed_seconds": round(time.time() - start_time, 2),
+                }
+            
+            if is_long_question:
+                self.logger.info(
+                    f"Processing long question for user {user.id}: {question_length} characters (threshold: {LONG_QUESTION_THRESHOLD})"
+                )
+
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
             messages.append({"role": "user", "content": question})
@@ -474,11 +513,20 @@ class AdminAIService:
                 except ImportError:
                     pass  # is_mock_client not available, continue
 
+                # SUPERHUMAN FEATURE: Adjust max_tokens based on question length
+                # For long questions, allow more tokens in response
+                max_tokens = MAX_RESPONSE_TOKENS if is_long_question else 4000
+                
+                self.logger.info(
+                    f"Invoking AI with model={DEFAULT_MODEL}, max_tokens={max_tokens}, "
+                    f"question_length={question_length}, is_long={is_long_question}"
+                )
+
                 response = client.chat.completions.create(
                     model=DEFAULT_MODEL or "openai/gpt-4o",
                     messages=messages,
                     temperature=0.7,
-                    max_tokens=2000,
+                    max_tokens=max_tokens,
                 )
 
                 answer = response.choices[0].message.content
@@ -505,25 +553,106 @@ class AdminAIService:
                     "elapsed_seconds": round(time.time() - start_time, 2),
                 }
             except Exception as e:
-                # Other AI-related errors (rate limits, network, etc.)
+                # SUPERHUMAN ERROR HANDLING - Specific error types
                 self.logger.error(f"AI invocation failed: {e}", exc_info=True)
+                
+                error_type = str(type(e).__name__)
+                error_message = str(e).lower()
+                
+                # Check for timeout errors
+                if "timeout" in error_message or "timed out" in error_message or error_type in ("TimeoutError", "ReadTimeout", "ConnectTimeout"):
+                    error_msg = (
+                        f"⚠️ انتهت مهلة الانتظار للإجابة على السؤال.\n\n"
+                        f"Timeout occurred while waiting for AI response.\n\n"
+                        f"**Question length:** {question_length:,} characters\n"
+                        f"**Processing time:** {round(time.time() - start_time, 1)}s\n\n"
+                        f"**This can happen when:**\n"
+                        f"- Question is very long or complex\n"
+                        f"- AI service is experiencing high load\n"
+                        f"- Network connection is slow\n\n"
+                        f"**Solutions:**\n"
+                        f"1. **Break down your question:** Split it into smaller, focused questions\n"
+                        f"2. **Simplify complexity:** Remove unnecessary details while keeping core points\n"
+                        f"3. **Try again:** The service might be less busy now\n"
+                        f"4. **Use incremental approach:** Ask follow-up questions to explore details\n\n"
+                        f"**Example approach:**\n"
+                        f"Instead of one long question, try:\n"
+                        f"  - First: Ask about the main concept\n"
+                        f"  - Then: Follow up with specific details\n"
+                        f"  - Finally: Request examples or clarifications"
+                    )
+                    return {
+                        "status": "error",
+                        "error": "Timeout - question too complex",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2),
+                        "question_length": question_length,
+                        "is_timeout": True,
+                    }
+                
+                # Check for rate limit errors
+                elif "rate limit" in error_message or "429" in error_message:
+                    error_msg = (
+                        f"⚠️ تم تجاوز حد الطلبات المسموح به.\n\n"
+                        f"Rate limit exceeded.\n\n"
+                        f"**Cause:** Too many requests in a short period\n\n"
+                        f"**Solution:**\n"
+                        f"Please wait a few moments before trying again.\n"
+                        f"Rate limits help ensure fair access for all users."
+                    )
+                    return {
+                        "status": "error",
+                        "error": "Rate limit exceeded",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2),
+                    }
+                
+                # Check for context length errors
+                elif "context" in error_message and ("length" in error_message or "token" in error_message):
+                    error_msg = (
+                        f"⚠️ المحتوى المُدخل طويل جداً للمعالجة.\n\n"
+                        f"Input content exceeds AI model's capacity.\n\n"
+                        f"**Question length:** {question_length:,} characters\n\n"
+                        f"**Cause:** Combined question and conversation history is too long\n\n"
+                        f"**Solutions:**\n"
+                        f"1. **Start new conversation:** Click 'New Chat' to reset context\n"
+                        f"2. **Shorten question:** Focus on essential points only\n"
+                        f"3. **Remove details:** Ask about specific aspects separately\n\n"
+                        f"**Technical note:** AI models have a maximum context window.\n"
+                        f"Long conversations + long questions can exceed this limit."
+                    )
+                    return {
+                        "status": "error",
+                        "error": "Context length exceeded",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2),
+                        "question_length": question_length,
+                    }
+                
+                # Generic error with helpful troubleshooting
                 error_msg = (
                     f"⚠️ حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.\n\n"
                     f"An error occurred while contacting the AI service.\n\n"
-                    f"**Error details:** {str(e)}\n\n"
+                    f"**Error type:** {error_type}\n"
+                    f"**Question length:** {question_length:,} characters\n\n"
                     f"**Possible causes:**\n"
-                    f"- Rate limit exceeded\n"
                     f"- Network connectivity issues\n"
-                    f"- Invalid API key\n"
-                    f"- Service temporarily unavailable\n\n"
-                    f"**Solution:**\n"
-                    f"Please try again in a few moments. If the problem persists, contact support."
+                    f"- Invalid or expired API key\n"
+                    f"- Service temporarily unavailable\n"
+                    f"- Question complexity exceeds limits\n\n"
+                    f"**Solutions:**\n"
+                    f"1. **Retry:** Try your question again\n"
+                    f"2. **Simplify:** Break down complex questions\n"
+                    f"3. **Check connection:** Ensure stable internet\n"
+                    f"4. **Contact support:** If problem persists\n\n"
+                    f"**Error details:** {str(e)[:200]}"
                 )
                 return {
                     "status": "error",
                     "error": str(e),
                     "answer": error_msg,
                     "elapsed_seconds": round(time.time() - start_time, 2),
+                    "question_length": question_length,
                 }
 
             elapsed = round(time.time() - start_time, 2)

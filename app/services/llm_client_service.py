@@ -38,7 +38,7 @@
 #    OPENROUTER_API_KEY                Primary key (priority #1)
 #    OPENAI_API_KEY                    Secondary key
 #    LLM_BASE_URL                      Override base URL
-#    LLM_TIMEOUT_SECONDS=90
+#    LLM_TIMEOUT_SECONDS=180            # Increased from 90 to handle long/complex questions
 #    LLM_FORCE_MOCK=0|1
 #    LLM_MOCK_MODE=0|1                 (alias)
 #    LLM_DISABLE_CACHE=0|1
@@ -537,7 +537,7 @@ def _build_client() -> Any:
     build_id = _CLIENT_BUILD_SEQ
 
     creds = _resolve_api_credentials()
-    timeout_s = float(_read_config_key("LLM_TIMEOUT_SECONDS") or 90.0)
+    timeout_s = float(_read_config_key("LLM_TIMEOUT_SECONDS") or 180.0)  # Increased from 90 to 180 for long questions
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
     forced_mock = _should_force_mock()
 
