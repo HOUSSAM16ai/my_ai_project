@@ -227,9 +227,9 @@ class GraphQLFederationManager:
                     else:
                         # Merge fields from same type across services
                         existing_type = federated.types[type_name]
-                        for field_name, field in gql_type.fields.items():
+                        for field_name, field_obj in gql_type.fields.items():
                             if field_name not in existing_type.fields:
-                                existing_type.fields[field_name] = field
+                                existing_type.fields[field_name] = field_obj
 
             # Merge queries
             for service_schema in self.schemas.values():
