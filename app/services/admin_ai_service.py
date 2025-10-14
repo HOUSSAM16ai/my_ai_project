@@ -601,12 +601,12 @@ class AdminAIService:
                 # Check for rate limit errors
                 elif "rate limit" in error_message or "429" in error_message:
                     error_msg = (
-                        f"⚠️ تم تجاوز حد الطلبات المسموح به.\n\n"
-                        f"Rate limit exceeded.\n\n"
-                        f"**Cause:** Too many requests in a short period\n\n"
-                        f"**Solution:**\n"
-                        f"Please wait a few moments before trying again.\n"
-                        f"Rate limits help ensure fair access for all users."
+                        "⚠️ تم تجاوز حد الطلبات المسموح به.\n\n"
+                        "Rate limit exceeded.\n\n"
+                        "**Cause:** Too many requests in a short period\n\n"
+                        "**Solution:**\n"
+                        "Please wait a few moments before trying again.\n"
+                        "Rate limits help ensure fair access for all users."
                     )
                     return {
                         "status": "error",
