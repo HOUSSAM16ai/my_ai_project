@@ -32,12 +32,25 @@ jobs:
         SECRET_KEY: test-secret-key-for-ci
       run: |
         echo "🧪 Running test suite..."
-        pytest --verbose --cov=app --cov-report=xml --cov-report=html
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
-        # Save coverage for AI analysis
-        if [ -f coverage.xml ]; then
-          echo "✅ Tests completed with coverage report"
+        # Run pytest with explicit error handling
+        if pytest --verbose --cov=app --cov-report=xml --cov-report=html; then
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ All tests passed successfully!"
+          
+          # Save coverage for AI analysis
+          if [ -f coverage.xml ]; then
+            echo "📊 Coverage report generated"
+          fi
+          
+          echo "🎯 Test Status: SUCCESS"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          exit 0
+        else
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "❌ Tests failed!"
+          echo "📋 Please review the test output above"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          exit 1
         fi
-        
-        # Explicit success exit
-        exit 0

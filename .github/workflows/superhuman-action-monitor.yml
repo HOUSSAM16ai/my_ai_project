@@ -17,6 +17,7 @@ name: 🚀 Superhuman Action Monitor
 
 on:
   workflow_run:
+    # Monitor only the main workflows, NOT this monitor itself (prevent loop)
     workflows: ["Python Application CI", "🏆 Code Quality & Security (Superhuman)", "🚀 Superhuman MCP Server Integration"]
     types:
       - completed
@@ -79,6 +80,19 @@ jobs:
           
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            
+            # CRITICAL: Prevent self-monitoring loop
+            if [ "$WORKFLOW_NAME" = "🚀 Superhuman Action Monitor" ]; then
+              echo "⚠️  Skipping self-monitoring to prevent infinite loop"
+              echo "📋 This is the Superhuman Action Monitor workflow itself"
+              echo "✅ Auto-skipping to maintain system stability"
+              MONITOR_STATUS="self_skip"
+              echo "needs_fix=false" >> $GITHUB_OUTPUT
+              echo "failure_type=self_monitor" >> $GITHUB_OUTPUT
+              echo "monitor_status=$MONITOR_STATUS" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            
             CONCLUSION="${{ github.event.workflow_run.conclusion }}"
             
             echo "📋 Workflow: $WORKFLOW_NAME"
@@ -388,7 +402,9 @@ jobs:
           echo "  Built with ❤️ by Houssam Benmerah"
           echo "════════════════════════════════════════════════════════════════════"
           
-          # Explicit success exit
+          # Explicit success - dashboard generation completed
+          echo ""
+          echo "✅ Health dashboard job completed successfully"
           exit 0
 
   # =============================================================================
@@ -453,26 +469,54 @@ jobs:
       - name: ✅ Verify Workflow Success
         run: |
           echo "🔍 Verifying workflow completion status..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          # Check if critical jobs failed
+          # Get job results
           MONITOR_RESULT="${{ needs.monitor-and-analyze.result }}"
           DASHBOARD_RESULT="${{ needs.health-dashboard.result }}"
+          AUTO_FIX_RESULT="${{ needs.auto-fix.result }}"
           
-          echo "Monitor job: $MONITOR_RESULT"
-          echo "Dashboard job: $DASHBOARD_RESULT"
+          echo "📊 Job Status Summary:"
+          echo "  • Monitor job: $MONITOR_RESULT"
+          echo "  • Dashboard job: $DASHBOARD_RESULT"
+          echo "  • Auto-fix job: $AUTO_FIX_RESULT"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          # Fail only if critical jobs actually failed (not skipped)
+          # Check for actual failures (not skipped)
+          FAILED=false
+          
           if [ "$MONITOR_RESULT" = "failure" ]; then
-            echo "❌ Monitor job failed!"
-            exit 1
+            echo "❌ Critical: Monitor job failed!"
+            FAILED=true
           fi
           
           if [ "$DASHBOARD_RESULT" = "failure" ]; then
-            echo "❌ Dashboard job failed!"
+            echo "❌ Critical: Dashboard job failed!"
+            FAILED=true
+          fi
+          
+          # Auto-fix failure is NOT critical (it's optional)
+          if [ "$AUTO_FIX_RESULT" = "failure" ]; then
+            echo "⚠️  Warning: Auto-fix encountered issues (non-critical)"
+          fi
+          
+          # Handle cancellations
+          if [ "$MONITOR_RESULT" = "cancelled" ] || [ "$DASHBOARD_RESULT" = "cancelled" ]; then
+            echo "⚠️  Workflow was cancelled by user"
+            echo "📋 Status: CANCELLED"
+            exit 0  # Don't fail on user cancellation
+          fi
+          
+          # Final decision
+          if [ "$FAILED" = "true" ]; then
+            echo "❌ Workflow failed due to critical job failures"
+            echo "📋 Please review the logs above"
             exit 1
           fi
           
-          # Success: all critical jobs completed (success or skipped is OK)
+          # Success cases: all critical jobs completed (success or skipped is OK)
           echo "✅ All critical jobs completed successfully!"
           echo "🎯 Workflow Status: SUCCESS"
+          echo "🏆 Quality Level: SUPERHUMAN"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           exit 0
