@@ -54,6 +54,7 @@ jobs:
   setup-and-validate:
     name: 🔧 Setup & Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       ai_review_enabled: ${{ steps.config.outputs.ai_review_enabled }}
       mcp_status: ${{ steps.mcp.outputs.status }}
@@ -151,6 +152,7 @@ jobs:
   build-and-test:
     name: 🏗️  Build & Test (AI-Enhanced)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: setup-and-validate
     
     steps:
@@ -227,6 +229,7 @@ jobs:
   ai-code-review:
     name: 🧠 AI-Powered Code Review
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: setup-and-validate
     if: |
       (github.event_name == 'pull_request' && needs.setup-and-validate.outputs.ai_review_enabled == 'true') ||
@@ -306,6 +309,7 @@ jobs:
   security-analysis:
     name: 🔒 Security & Dependency Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: setup-and-validate
     
     steps:
@@ -347,6 +351,7 @@ jobs:
   deployment-preview:
     name: 🚀 Deployment Preview
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [build-and-test, setup-and-validate]
     if: |
       github.event_name == 'pull_request' ||
@@ -399,6 +404,7 @@ jobs:
   cleanup:
     name: 🧹 Cleanup & Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [build-and-test, ai-code-review, security-analysis, deployment-preview]
     if: always() && needs.build-and-test.result != 'cancelled'
 

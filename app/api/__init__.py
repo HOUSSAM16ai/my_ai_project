@@ -58,4 +58,6 @@ def init_api(app):
     app.logger.info("🚀 World-Class API Gateway initialized successfully")
     app.logger.info("📡 API endpoints available at /api, /api/v1, /api/v2")
     app.logger.info("📚 API Documentation available at /api/docs")
-    app.logger.info("🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform")
+    app.logger.info(
+        "🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform"
+    )

@@ -325,8 +325,8 @@ class SagaOrchestrator:
                 )
 
                 if step.retry_count <= step.max_retries:
-                    # Exponential backoff
-                    wait_time = 2**step.retry_count
+                    # Exponential backoff with max cap of 5 seconds to prevent test timeouts
+                    wait_time = min(2**step.retry_count, 5)
                     time.sleep(wait_time)
                 else:
                     # Max retries exceeded

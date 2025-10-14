@@ -15,18 +15,16 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import threading
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -205,7 +203,7 @@ class DataMeshService:
         self.event_streams: dict[str, deque[dict[str, Any]]] = defaultdict(
             lambda: deque(maxlen=10000)
         )
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # Initialize default governance policies
         self._initialize_governance()
@@ -255,9 +253,7 @@ class DataMeshService:
         """Register a new bounded context"""
         with self.lock:
             if context.context_id in self.bounded_contexts:
-                current_app.logger.warning(
-                    f"Bounded context already exists: {context.context_id}"
-                )
+                current_app.logger.warning(f"Bounded context already exists: {context.context_id}")
                 return False
 
             self.bounded_contexts[context.context_id] = context
@@ -277,16 +273,12 @@ class DataMeshService:
         with self.lock:
             # Validate schema compatibility
             if not self._validate_schema_compatibility(contract):
-                current_app.logger.error(
-                    f"Schema compatibility validation failed: {contract.name}"
-                )
+                current_app.logger.error(f"Schema compatibility validation failed: {contract.name}")
                 return False
 
             # Check governance policies
             if not self._check_governance_compliance(contract):
-                current_app.logger.error(
-                    f"Governance compliance check failed: {contract.name}"
-                )
+                current_app.logger.error(f"Governance compliance check failed: {contract.name}")
                 return False
 
             self.data_contracts[contract.contract_id] = contract
@@ -360,10 +352,7 @@ class DataMeshService:
         required_fields = ["type", "properties"]
         schema = contract.schema_definition
 
-        if not all(field in schema for field in required_fields):
-            return False
-
-        return True
+        return all(field in schema for field in required_fields)
 
     def _detect_schema_compatibility(
         self, old_schema: dict[str, Any], new_schema: dict[str, Any], changes: list[dict[str, Any]]
@@ -403,7 +392,11 @@ class DataMeshService:
             # Publish event
             self._publish_event(
                 "data.product.registered",
-                {"product_id": product.product_id, "name": product.name, "domain": product.domain.value},
+                {
+                    "product_id": product.product_id,
+                    "name": product.name,
+                    "domain": product.domain.value,
+                },
             )
 
             return True
@@ -435,9 +428,7 @@ class DataMeshService:
             if policy.level == GovernanceLevel.MANDATORY:
                 for rule in policy.rules:
                     if not self._evaluate_governance_rule(contract, rule):
-                        current_app.logger.error(
-                            f"Governance violation: {policy.name} - {rule}"
-                        )
+                        current_app.logger.error(f"Governance violation: {policy.name} - {rule}")
                         return False
 
         return True
@@ -545,9 +536,7 @@ class DataMeshService:
         current_app.logger.info(f"Subscribed to {event_type}: {subscription_id}")
         return subscription_id
 
-    def get_event_stream(
-        self, event_type: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def get_event_stream(self, event_type: str, limit: int = 100) -> list[dict[str, Any]]:
         """Get recent events from stream"""
         events = list(self.event_streams.get(event_type, []))
         return events[-limit:]

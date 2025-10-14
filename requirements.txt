@@ -47,6 +47,7 @@ python-dotenv
 pytest
 pytest-flask
 pytest-cov
+pytest-timeout
 requests
 
 # --- Code Quality & Linting (Superhuman Edition) ---

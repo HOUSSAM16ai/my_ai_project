@@ -26,7 +26,6 @@ from typing import Any
 
 from flask import current_app
 
-
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
@@ -183,7 +182,7 @@ class AIOpsService:
         self.healing_decisions: dict[str, HealingDecision] = {}
         self.capacity_plans: dict[str, CapacityPlan] = {}
         self.baseline_metrics: dict[str, dict[str, float]] = defaultdict(dict)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # ML models (in production, load pre-trained models)
         self.anomaly_thresholds = {
@@ -515,9 +514,7 @@ class AIOpsService:
 
         return root_causes
 
-    def _get_service_metrics(
-        self, service_name: str, minutes: int = 30
-    ) -> list[TelemetryData]:
+    def _get_service_metrics(self, service_name: str, minutes: int = 30) -> list[TelemetryData]:
         """Get service metrics for time window"""
         cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         metrics = []
@@ -550,15 +547,13 @@ class AIOpsService:
             ),
             "active_forecasts": sum(len(f) for f in self.forecasts.values()),
             "capacity_plans": len(self.capacity_plans),
-            "services_monitored": len(set(a.service_name for a in self.anomalies.values())),
+            "services_monitored": len({a.service_name for a in self.anomalies.values()}),
         }
 
     def get_service_health(self, service_name: str) -> dict[str, Any]:
         """Get service health status"""
         recent_anomalies = [
-            a
-            for a in self.anomalies.values()
-            if a.service_name == service_name and not a.resolved
+            a for a in self.anomalies.values() if a.service_name == service_name and not a.resolved
         ]
 
         latest_forecast = None
@@ -569,15 +564,19 @@ class AIOpsService:
             "service_name": service_name,
             "active_anomalies": len(recent_anomalies),
             "health_status": "degraded" if recent_anomalies else "healthy",
-            "latest_forecast": {
-                "predicted_load": latest_forecast.predicted_load,
-                "forecast_time": latest_forecast.forecast_timestamp.isoformat(),
-            }
-            if latest_forecast
-            else None,
-            "capacity_plan": self.capacity_plans.get(service_name).__dict__
-            if service_name in self.capacity_plans
-            else None,
+            "latest_forecast": (
+                {
+                    "predicted_load": latest_forecast.predicted_load,
+                    "forecast_time": latest_forecast.forecast_timestamp.isoformat(),
+                }
+                if latest_forecast
+                else None
+            ),
+            "capacity_plan": (
+                self.capacity_plans.get(service_name).__dict__
+                if service_name in self.capacity_plans
+                else None
+            ),
         }
 
 

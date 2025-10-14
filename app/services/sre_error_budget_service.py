@@ -23,7 +23,6 @@ from typing import Any
 
 from flask import current_app
 
-
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
@@ -144,13 +143,11 @@ class SREErrorBudgetService:
 
     def __init__(self):
         self.slos: dict[str, SLO] = {}
-        self.sli_measurements: dict[str, deque[SLI]] = defaultdict(
-            lambda: deque(maxlen=10000)
-        )
+        self.sli_measurements: dict[str, deque[SLI]] = defaultdict(lambda: deque(maxlen=10000))
         self.error_budgets: dict[str, ErrorBudget] = {}
         self.deployment_risks: dict[str, DeploymentRisk] = {}
         self.canary_deployments: dict[str, CanaryDeployment] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         current_app.logger.info("SRE & Error Budget Service initialized")
 
@@ -215,9 +212,7 @@ class SREErrorBudgetService:
 
         # Get measurements in window
         measurements = list(self.sli_measurements.get(slo_id, []))
-        window_measurements = [
-            m for m in measurements if m.timestamp >= budget.window_start
-        ]
+        window_measurements = [m for m in measurements if m.timestamp >= budget.window_start]
 
         if not window_measurements:
             return
@@ -288,7 +283,9 @@ class SREErrorBudgetService:
 
         # Generate recommendation
         if risk_score > 0.7:
-            recommendation = "BLOCK: Error budget exhausted. Delay deployment until budget recovers."
+            recommendation = (
+                "BLOCK: Error budget exhausted. Delay deployment until budget recovers."
+            )
         elif risk_score > 0.5:
             recommendation = "CAUTION: Use canary deployment with increased monitoring."
         else:
@@ -338,9 +335,7 @@ class SREErrorBudgetService:
         with self.lock:
             self.canary_deployments[deployment.deployment_id] = deployment
 
-        current_app.logger.info(
-            f"Started canary deployment: {service_name} ({canary_percentage}%)"
-        )
+        current_app.logger.info(f"Started canary deployment: {service_name} ({canary_percentage}%)")
 
         return deployment
 
@@ -381,10 +376,18 @@ class SREErrorBudgetService:
             "total_slos": len(self.slos),
             "error_budgets": {
                 "healthy": len(
-                    [b for b in self.error_budgets.values() if b.status == ErrorBudgetStatus.HEALTHY]
+                    [
+                        b
+                        for b in self.error_budgets.values()
+                        if b.status == ErrorBudgetStatus.HEALTHY
+                    ]
                 ),
                 "warning": len(
-                    [b for b in self.error_budgets.values() if b.status == ErrorBudgetStatus.WARNING]
+                    [
+                        b
+                        for b in self.error_budgets.values()
+                        if b.status == ErrorBudgetStatus.WARNING
+                    ]
                 ),
                 "critical": len(
                     [

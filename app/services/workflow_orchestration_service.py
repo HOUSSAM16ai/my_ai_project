@@ -18,13 +18,13 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -126,7 +126,7 @@ class WorkflowOrchestrationService:
         self.workflow_events: deque[WorkflowEvent] = deque(maxlen=10000)
         self.activity_handlers: dict[str, Callable] = {}
         self.event_subscriptions: dict[str, list[str]] = defaultdict(list)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         current_app.logger.info("Workflow Orchestration Service initialized")
 

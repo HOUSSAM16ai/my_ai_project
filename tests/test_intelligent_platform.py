@@ -3,43 +3,39 @@
 Tests for Intelligent Service Platform
 """
 
-import pytest
-from datetime import datetime, UTC
-from app.services.data_mesh_service import (
-    get_data_mesh_service,
-    DataContract,
-    DataProduct,
-    BoundedContext,
-    DataDomainType,
-    SchemaCompatibility,
-    DataQualityMetrics,
-)
+from datetime import UTC, datetime
+
 from app.services.aiops_self_healing_service import (
-    get_aiops_service,
-    TelemetryData,
     MetricType,
+    TelemetryData,
+    get_aiops_service,
 )
-from app.services.gitops_policy_service import (
-    get_gitops_service,
-    GitOpsApp,
-    PolicyRule,
-    PolicyEnforcementMode,
-    ResourceType,
-)
-from app.services.workflow_orchestration_service import (
-    get_workflow_orchestration_service,
-    WorkflowDefinition,
-    WorkflowActivity,
+from app.services.data_mesh_service import (
+    BoundedContext,
+    DataContract,
+    DataDomainType,
+    DataProduct,
+    DataQualityMetrics,
+    SchemaCompatibility,
+    get_data_mesh_service,
 )
 from app.services.edge_multicloud_service import (
-    get_edge_multicloud_service,
     PlacementStrategy,
+    get_edge_multicloud_service,
+)
+from app.services.gitops_policy_service import (
+    GitOpsApp,
+    get_gitops_service,
 )
 from app.services.sre_error_budget_service import (
-    get_sre_service,
     SLO,
-    SLI,
     DeploymentStrategy,
+    get_sre_service,
+)
+from app.services.workflow_orchestration_service import (
+    WorkflowActivity,
+    WorkflowDefinition,
+    get_workflow_orchestration_service,
 )
 
 
@@ -200,9 +196,7 @@ class TestGitOpsService:
             "spec": {
                 "template": {
                     "spec": {
-                        "containers": [
-                            {"name": "test", "securityContext": {"privileged": True}}
-                        ]
+                        "containers": [{"name": "test", "securityContext": {"privileged": True}}]
                     }
                 }
             },

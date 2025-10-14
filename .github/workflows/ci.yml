@@ -10,6 +10,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
     - name: Check out repository code
@@ -30,12 +31,16 @@ jobs:
         FLASK_ENV: testing
         TESTING: "1"
         SECRET_KEY: test-secret-key-for-ci
+      timeout-minutes: 10
       run: |
         echo "🧪 Running test suite..."
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        # Run pytest with explicit error handling
-        if pytest --verbose --cov=app --cov-report=xml --cov-report=html; then
+        # Run pytest with timeout and optimized settings
+        if timeout 600 pytest --verbose --tb=short --timeout=60 --timeout-method=thread \
+                  -x --maxfail=5 \
+                  --cov=app --cov-report=xml --cov-report=html \
+                  --durations=10; then
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ All tests passed successfully!"
 
@@ -49,8 +54,9 @@ jobs:
           exit 0
         else
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "❌ Tests failed!"
+          echo "❌ Tests failed or timed out!"
           echo "📋 Please review the test output above"
+          echo "💡 Tip: Use --durations=10 to see slowest tests"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           exit 1
         fi

@@ -40,6 +40,7 @@ jobs:
   lint-and-format:
     name: 🎨 Lint & Format Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: 📥 Checkout code
@@ -136,6 +137,7 @@ jobs:
   security-scan:
     name: 🔒 Security & Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: 📥 Checkout code
@@ -238,6 +240,7 @@ jobs:
   type-check:
     name: 🔍 Type Check (MyPy - Progressive)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: 📥 Checkout code
@@ -299,6 +302,7 @@ jobs:
   complexity-analysis:
     name: 📊 Code Complexity & Maintainability
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: 📥 Checkout code
@@ -355,6 +359,7 @@ jobs:
   test-suite:
     name: 🧪 Test Suite & Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     steps:
       - name: 📥 Checkout code
@@ -376,15 +381,26 @@ jobs:
           FLASK_ENV: testing
           TESTING: "1"
           SECRET_KEY: test-secret-key-for-ci
+        timeout-minutes: 15
         run: |
           echo "🧪 Running comprehensive test suite..."
-          pytest --verbose \
+          timeout 900 pytest --verbose \
+                 --tb=short \
+                 --timeout=60 \
+                 --timeout-method=thread \
+                 -x --maxfail=5 \
                  --cov=app \
                  --cov-report=term-missing:skip-covered \
                  --cov-report=html:htmlcov \
                  --cov-report=xml:coverage.xml \
                  --cov-fail-under=30 \
-                 --junitxml=junit.xml
+                 --junitxml=junit.xml \
+                 --durations=10 || {
+            echo "❌ Tests failed or timed out!"
+            echo "📋 Check the output above for details"
+            exit 1
+          }
+          echo "✅ Test suite completed successfully"
           echo "⚠️ Current coverage: 33.87% | Target: 80% | Progressive improvement in progress"
           
       - name: 📊 Upload coverage reports
@@ -408,9 +424,49 @@ jobs:
   quality-gate:
     name: ✅ Quality Gate - Superhuman Level
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [lint-and-format, security-scan, type-check, complexity-analysis, test-suite]
+    if: always()
     
     steps:
+      - name: 🔍 Check job results
+        run: |
+          echo "Checking all job results..."
+          
+          # Check critical jobs (must pass)
+          LINT_RESULT="${{ needs.lint-and-format.result }}"
+          SECURITY_RESULT="${{ needs.security-scan.result }}"
+          TEST_RESULT="${{ needs.test-suite.result }}"
+          
+          # Check optional jobs (can be skipped/failure)
+          TYPE_CHECK_RESULT="${{ needs.type-check.result }}"
+          COMPLEXITY_RESULT="${{ needs.complexity-analysis.result }}"
+          
+          echo "📊 Job Results:"
+          echo "  🎨 Lint & Format: $LINT_RESULT"
+          echo "  🔒 Security Scan: $SECURITY_RESULT"
+          echo "  🧪 Test Suite: $TEST_RESULT"
+          echo "  🔍 Type Check: $TYPE_CHECK_RESULT (informational)"
+          echo "  📊 Complexity: $COMPLEXITY_RESULT (informational)"
+          
+          # Fail if critical jobs failed
+          if [ "$LINT_RESULT" != "success" ]; then
+            echo "❌ Lint & Format check failed!"
+            exit 1
+          fi
+          
+          if [ "$SECURITY_RESULT" != "success" ]; then
+            echo "❌ Security scan failed!"
+            exit 1
+          fi
+          
+          if [ "$TEST_RESULT" != "success" ]; then
+            echo "❌ Test suite failed!"
+            exit 1
+          fi
+          
+          echo "✅ All critical jobs passed!"
+          
       - name: 🎉 Quality gate PASSED - Superhuman level achieved!
         run: |
           echo "════════════════════════════════════════════════════════════════════════════════"
