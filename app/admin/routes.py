@@ -216,12 +216,17 @@ def handle_chat():
             f"**Solution:**\n"
             f"Please try again. If the problem persists, check the application logs or contact support."
         )
-        return jsonify({
-            "status": "error",
-            "error": str(e),
-            "answer": error_msg,
-            "conversation_id": conversation_id
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": str(e),
+                    "answer": error_msg,
+                    "conversation_id": conversation_id,
+                }
+            ),
+            200,
+        )
 
 
 @bp.route("/api/analyze-project", methods=["POST"])
@@ -277,12 +282,17 @@ def handle_analyze_project():
             f"**Solution:**\n"
             f"Please try again. You can also use the regular chat to ask questions about the project."
         )
-        return jsonify({
-            "status": "error",
-            "error": str(e),
-            "answer": error_msg,
-            "conversation_id": conversation_id if 'conversation_id' in locals() else None
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": str(e),
+                    "answer": error_msg,
+                    "conversation_id": conversation_id if "conversation_id" in locals() else None,
+                }
+            ),
+            200,
+        )
 
 
 @bp.route("/api/execute-modification", methods=["POST"])
@@ -352,12 +362,17 @@ def handle_execute_modification():
             f"**Solution:**\n"
             f"Please try again with a clearer objective or contact support."
         )
-        return jsonify({
-            "status": "error",
-            "error": str(e),
-            "answer": error_msg,
-            "conversation_id": conversation_id if 'conversation_id' in locals() else None
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": str(e),
+                    "answer": error_msg,
+                    "conversation_id": conversation_id if "conversation_id" in locals() else None,
+                }
+            ),
+            200,
+        )
 
 
 @bp.route("/api/conversations", methods=["GET"])
@@ -402,12 +417,17 @@ def handle_get_conversations():
     except Exception as e:
         current_app.logger.error(f"Failed to get conversations: {e}", exc_info=True)
         # Return 200 with error details
-        return jsonify({
-            "status": "error",
-            "message": f"Failed to load conversations: {str(e)}",
-            "conversations": [],
-            "count": 0
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Failed to load conversations: {str(e)}",
+                    "conversations": [],
+                    "count": 0,
+                }
+            ),
+            200,
+        )
 
 
 @bp.route("/api/conversation/<int:conversation_id>", methods=["GET"])

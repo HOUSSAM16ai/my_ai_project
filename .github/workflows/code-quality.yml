@@ -60,8 +60,26 @@ jobs:
         run: |
           echo "🔍 Checking code formatting with Black..."
           black --check --diff --color --line-length=100 app/ tests/ || {
+            echo ""
             echo "❌ Black formatting check failed!"
-            echo "💡 Run: black --line-length=100 app/ tests/"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔧 QUICK FIX - Run one of these commands locally:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "  Option 1 (Recommended): Auto-format all code"
+            echo "    $ ./scripts/format_code.sh"
+            echo ""
+            echo "  Option 2: Format with Black only"
+            echo "    $ black --line-length=100 app/ tests/"
+            echo ""
+            echo "  Option 3: Setup pre-commit hooks (prevents future issues)"
+            echo "    $ ./scripts/setup_pre_commit.sh"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📚 See CODE_FORMATTING_GUIDE.md for complete documentation"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
             exit 1
           }
           
@@ -69,8 +87,26 @@ jobs:
         run: |
           echo "🔍 Checking import order with isort..."
           isort --check-only --diff --profile=black --line-length=100 app/ tests/ || {
+            echo ""
             echo "❌ Import sorting check failed!"
-            echo "💡 Run: isort --profile=black --line-length=100 app/ tests/"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔧 QUICK FIX - Run one of these commands locally:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "  Option 1 (Recommended): Auto-format all code"
+            echo "    $ ./scripts/format_code.sh"
+            echo ""
+            echo "  Option 2: Sort imports with isort only"
+            echo "    $ isort --profile=black --line-length=100 app/ tests/"
+            echo ""
+            echo "  Option 3: Setup pre-commit hooks (prevents future issues)"
+            echo "    $ ./scripts/setup_pre_commit.sh"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📚 See CODE_FORMATTING_GUIDE.md for complete documentation"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
             exit 1
           }
           
@@ -429,6 +465,12 @@ jobs:
           echo "     • Actionable feedback, not just errors"
           echo "     • Zero tolerance for critical security issues"
           echo "     • Continuous monitoring and enhancement"
+          echo ""
+          echo "  🛠️ Developer Tools (New!):"
+          echo "     • Auto-formatting: ./scripts/format_code.sh"
+          echo "     • Format check: ./scripts/check_formatting.sh"
+          echo "     • Pre-commit setup: ./scripts/setup_pre_commit.sh"
+          echo "     • Documentation: CODE_FORMATTING_GUIDE.md"
           echo ""
           echo "════════════════════════════════════════════════════════════════════════════════"
           echo "  Built with ❤️ by Houssam Benmerah"
