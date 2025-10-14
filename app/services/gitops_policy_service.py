@@ -15,18 +15,15 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import re
 import threading
 import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -185,9 +182,7 @@ class GitOpsService:
     def __init__(self):
         self.applications: dict[str, GitOpsApp] = {}
         self.policies: dict[str, PolicyRule] = {}
-        self.violations: dict[str, deque[PolicyViolation]] = defaultdict(
-            lambda: deque(maxlen=1000)
-        )
+        self.violations: dict[str, deque[PolicyViolation]] = defaultdict(lambda: deque(maxlen=1000))
         self.sync_operations: dict[str, SyncOperation] = {}
         self.drift_detections: dict[str, deque[DriftDetection]] = defaultdict(
             lambda: deque(maxlen=100)
@@ -388,10 +383,7 @@ class GitOpsService:
         # Privileged container check
         if "privileged == true" in query:
             containers = (
-                resource.get("spec", {})
-                .get("template", {})
-                .get("spec", {})
-                .get("containers", [])
+                resource.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
             )
             for container in containers:
                 if container.get("securityContext", {}).get("privileged"):
@@ -400,10 +392,7 @@ class GitOpsService:
         # Resource limits check
         if "not input.spec.template.spec.containers[_].resources.limits" in query:
             containers = (
-                resource.get("spec", {})
-                .get("template", {})
-                .get("spec", {})
-                .get("containers", [])
+                resource.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
             )
             for container in containers:
                 if not container.get("resources", {}).get("limits"):
@@ -557,9 +546,7 @@ class GitOpsService:
         if not app:
             return {}
 
-        recent_syncs = [
-            op for op in self.sync_operations.values() if op.app_id == app_id
-        ][-10:]
+        recent_syncs = [op for op in self.sync_operations.values() if op.app_id == app_id][-10:]
 
         drifts = list(self.drift_detections.get(app_id, []))
 
@@ -568,9 +555,9 @@ class GitOpsService:
             "app_name": app.name,
             "sync_status": recent_syncs[-1].status.value if recent_syncs else "unknown",
             "last_sync": app.last_sync.isoformat() if app.last_sync else None,
-            "health_status": HealthStatus.HEALTHY.value
-            if not drifts
-            else HealthStatus.OUT_OF_SYNC.value,
+            "health_status": (
+                HealthStatus.HEALTHY.value if not drifts else HealthStatus.OUT_OF_SYNC.value
+            ),
             "resources_synced": recent_syncs[-1].resources_synced if recent_syncs else 0,
             "drift_count": len(drifts),
         }

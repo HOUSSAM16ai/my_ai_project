@@ -46,6 +46,7 @@ jobs:
   monitor-and-analyze:
     name: 📊 Monitor & Analyze Actions
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: |
       github.event.workflow_run.conclusion == 'failure' ||
       github.event.workflow_run.conclusion == 'action_required' ||
@@ -181,6 +182,7 @@ jobs:
   auto-fix:
     name: 🔧 Auto-Fix Issues
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: monitor-and-analyze
     if: |
       always() &&
@@ -317,6 +319,7 @@ jobs:
   health-dashboard:
     name: 📊 Generate Health Dashboard
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: monitor-and-analyze
     if: always() && needs.monitor-and-analyze.result != 'cancelled'
 
@@ -453,6 +456,7 @@ jobs:
   notify:
     name: 📢 Notification System
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [monitor-and-analyze, auto-fix, health-dashboard]
     if: always() && needs.monitor-and-analyze.result != 'cancelled'
 

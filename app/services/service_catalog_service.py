@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import threading
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -23,7 +22,6 @@ from enum import Enum
 from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -236,9 +234,7 @@ class ServiceCatalogService:
         """Register API specification"""
         with self.lock:
             self.api_specs[spec.service_id].append(spec)
-            current_app.logger.info(
-                f"Registered API spec for {spec.service_id}: {spec.version}"
-            )
+            current_app.logger.info(f"Registered API spec for {spec.service_id}: {spec.version}")
             return True
 
     def get_api_specs(self, service_id: str) -> list[APISpec]:
@@ -255,9 +251,7 @@ class ServiceCatalogService:
             self.templates[template.template_id] = template
             return True
 
-    def get_templates(
-        self, service_type: ServiceType | None = None
-    ) -> list[ServiceTemplate]:
+    def get_templates(self, service_type: ServiceType | None = None) -> list[ServiceTemplate]:
         """Get available templates"""
         templates = list(self.templates.values())
 
@@ -266,9 +260,7 @@ class ServiceCatalogService:
 
         return templates
 
-    def scaffold_service(
-        self, template_id: str, parameters: dict[str, Any]
-    ) -> dict[str, str]:
+    def scaffold_service(self, template_id: str, parameters: dict[str, Any]) -> dict[str, str]:
         """Scaffold new service from template"""
         template = self.templates.get(template_id)
         if not template:

@@ -16,14 +16,12 @@ from __future__ import annotations
 
 import threading
 import uuid
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -234,9 +232,7 @@ class EdgeMultiCloudService:
 
         # Select replica regions
         replica_regions = [
-            r.region_id
-            for r in suitable_regions
-            if r.region_id != primary_region.region_id
+            r.region_id for r in suitable_regions if r.region_id != primary_region.region_id
         ][:2]
 
         # Select edge locations near primary
@@ -276,9 +272,7 @@ class EdgeMultiCloudService:
             return regions[0]  # Simplified
         else:
             # Balanced
-            return min(
-                regions, key=lambda r: r.cost_factor * 0.5 + len(r.latency_ms) * 0.5
-            )
+            return min(regions, key=lambda r: r.cost_factor * 0.5 + len(r.latency_ms) * 0.5)
 
     def _select_edge_locations(
         self, region: CloudRegion, max_latency_ms: float
@@ -318,9 +312,7 @@ class EdgeMultiCloudService:
             self.failover_events.append(event)
             # Update placement
             placement.primary_region = to_region
-            placement.replica_regions = [
-                r for r in placement.replica_regions if r != to_region
-            ]
+            placement.replica_regions = [r for r in placement.replica_regions if r != to_region]
 
         current_app.logger.info(
             f"Failover executed: {workload_name} from {from_region} to {to_region}"
@@ -337,11 +329,9 @@ class EdgeMultiCloudService:
         return {
             "total_regions": len(self.regions),
             "available_regions": len([r for r in self.regions.values() if r.available]),
-            "cloud_providers": len(set(r.provider for r in self.regions.values())),
+            "cloud_providers": len({r.provider for r in self.regions.values()}),
             "edge_locations": len(self.edge_locations),
-            "active_edge_locations": len(
-                [e for e in self.edge_locations.values() if e.active]
-            ),
+            "active_edge_locations": len([e for e in self.edge_locations.values() if e.active]),
             "workload_placements": len(self.workload_placements),
             "failover_events": len(self.failover_events),
             "multi_cloud_workloads": len(

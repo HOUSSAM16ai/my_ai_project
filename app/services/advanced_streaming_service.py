@@ -17,13 +17,13 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -148,9 +148,7 @@ class AdvancedStreamingService:
 
     def __init__(self):
         self.streams: dict[str, StreamConfig] = {}
-        self.messages: dict[str, deque[StreamMessage]] = defaultdict(
-            lambda: deque(maxlen=1000000)
-        )
+        self.messages: dict[str, deque[StreamMessage]] = defaultdict(lambda: deque(maxlen=1000000))
         self.consumers: dict[str, list[StreamConsumer]] = defaultdict(list)
         self.schemas: dict[str, StreamSchema] = {}
         self.metrics: dict[str, StreamMetrics] = {}
@@ -180,9 +178,7 @@ class AdvancedStreamingService:
                 },
             )
 
-            current_app.logger.info(
-                f"Created stream: {config.name} ({config.protocol.value})"
-            )
+            current_app.logger.info(f"Created stream: {config.name} ({config.protocol.value})")
             return True
 
     def get_stream(self, stream_id: str) -> StreamConfig | None:
@@ -209,9 +205,7 @@ class AdvancedStreamingService:
         if stream.schema_id:
             schema = self.schemas.get(stream.schema_id)
             if schema and not self._validate_schema(payload, schema):
-                current_app.logger.error(
-                    f"Schema validation failed for stream {stream_id}"
-                )
+                current_app.logger.error(f"Schema validation failed for stream {stream_id}")
                 return None
 
         # Determine partition
@@ -250,9 +244,7 @@ class AdvancedStreamingService:
 
         return hash(key) % num_partitions
 
-    def _validate_schema(
-        self, payload: dict[str, Any], schema: StreamSchema
-    ) -> bool:
+    def _validate_schema(self, payload: dict[str, Any], schema: StreamSchema) -> bool:
         """Validate message against schema"""
         # Simple validation (in production, use proper schema validators)
         if schema.schema_type == "json":
@@ -284,9 +276,7 @@ class AdvancedStreamingService:
         with self.lock:
             self.consumers[stream_id].append(consumer)
 
-        current_app.logger.info(
-            f"Consumer {consumer_id} subscribed to {stream_id}"
-        )
+        current_app.logger.info(f"Consumer {consumer_id} subscribed to {stream_id}")
 
         return consumer_id
 
@@ -300,9 +290,7 @@ class AdvancedStreamingService:
                     consumer.callback(message)
                     consumer.offset = message.offset
                 except Exception as e:
-                    current_app.logger.error(
-                        f"Consumer {consumer.consumer_id} error: {e}"
-                    )
+                    current_app.logger.error(f"Consumer {consumer.consumer_id} error: {e}")
 
     def unsubscribe(self, consumer_id: str):
         """Unsubscribe consumer"""
@@ -363,9 +351,7 @@ class AdvancedStreamingService:
     # GEO-REPLICATION
     # ==================================================================================
 
-    def replicate_stream(
-        self, stream_id: str, target_region: str
-    ) -> dict[str, Any]:
+    def replicate_stream(self, stream_id: str, target_region: str) -> dict[str, Any]:
         """Replicate stream to another region"""
         stream = self.streams.get(stream_id)
         if not stream:
@@ -378,9 +364,7 @@ class AdvancedStreamingService:
             }
 
         # In production, replicate to actual region
-        current_app.logger.info(
-            f"Replicating stream {stream_id} to region {target_region}"
-        )
+        current_app.logger.info(f"Replicating stream {stream_id} to region {target_region}")
 
         return {
             "success": True,
@@ -435,13 +419,10 @@ class AdvancedStreamingService:
             "total_throughput_mps": total_throughput,
             "total_consumers": sum(len(c) for c in self.consumers.values()),
             "active_consumers": sum(
-                len([c for c in consumers if c.active])
-                for consumers in self.consumers.values()
+                len([c for c in consumers if c.active]) for consumers in self.consumers.values()
             ),
             "total_schemas": len(self.schemas),
-            "protocols_used": list(
-                set(s.protocol.value for s in self.streams.values())
-            ),
+            "protocols_used": list({s.protocol.value for s in self.streams.values()}),
         }
 
 

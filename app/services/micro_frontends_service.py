@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import threading
 import uuid
 from collections import defaultdict
@@ -23,7 +22,6 @@ from enum import Enum
 from typing import Any
 
 from flask import current_app
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -138,9 +136,7 @@ class MicroFrontendsService:
         """Get module by ID"""
         return self.modules.get(module_id)
 
-    def get_modules_by_framework(
-        self, framework: FrontendFramework
-    ) -> list[MicroFrontend]:
+    def get_modules_by_framework(self, framework: FrontendFramework) -> list[MicroFrontend]:
         """Get modules by framework"""
         return [m for m in self.modules.values() if m.framework == framework]
 
@@ -201,9 +197,7 @@ class MicroFrontendsService:
     # SHARED STATE
     # ==================================================================================
 
-    def set_shared_state(
-        self, key: str, value: Any, owner_module_id: str
-    ) -> SharedState:
+    def set_shared_state(self, key: str, value: Any, owner_module_id: str) -> SharedState:
         """Set shared state"""
         state = SharedState(
             state_id=str(uuid.uuid4()),
@@ -232,9 +226,7 @@ class MicroFrontendsService:
             "total_modules": len(self.modules),
             "active_modules": len([m for m in self.modules.values() if m.active]),
             "modules_by_framework": {
-                fw.value: len(
-                    [m for m in self.modules.values() if m.framework == fw]
-                )
+                fw.value: len([m for m in self.modules.values() if m.framework == fw])
                 for fw in FrontendFramework
             },
             "module_types": {
