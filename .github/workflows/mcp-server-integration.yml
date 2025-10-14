@@ -400,8 +400,8 @@ jobs:
     name: 🧹 Cleanup & Summary
     runs-on: ubuntu-latest
     needs: [build-and-test, ai-code-review, security-analysis, deployment-preview]
-    if: always()
-    
+    if: always() && needs.build-and-test.result != 'cancelled'
+
     steps:
       - name: 📊 Workflow Summary
         run: |
@@ -421,63 +421,64 @@ jobs:
           echo "- ⚡ Direct GitHub API access (faster than container-based MCP)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "*Powered by CogniForge - Technology surpassing Google, Microsoft, OpenAI, and Apple!*" >> $GITHUB_STEP_SUMMARY
-      
+
+
       - name: ✅ Verify Workflow Success
         run: |
           echo "🔍 Verifying workflow completion status..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Get all job results
           BUILD_RESULT="${{ needs.build-and-test.result }}"
           AI_REVIEW_RESULT="${{ needs.ai-code-review.result }}"
           SECURITY_RESULT="${{ needs.security-analysis.result }}"
           DEPLOYMENT_RESULT="${{ needs.deployment-preview.result }}"
-          
+
           echo "📊 Job Status Summary:"
           echo "  • Build & Test: $BUILD_RESULT"
           echo "  • AI Review: $AI_REVIEW_RESULT"
           echo "  • Security Analysis: $SECURITY_RESULT"
           echo "  • Deployment Preview: $DEPLOYMENT_RESULT"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Check for actual failures (not skipped)
           FAILED=false
-          
+
           # Build & Test is critical
           if [ "$BUILD_RESULT" = "failure" ]; then
             echo "❌ Critical: Build & Test job failed!"
             FAILED=true
           fi
-          
+
           # Security is critical
           if [ "$SECURITY_RESULT" = "failure" ]; then
             echo "❌ Critical: Security analysis failed!"
             FAILED=true
           fi
-          
+
           # AI Review and Deployment are optional (can be skipped for PRs)
           if [ "$AI_REVIEW_RESULT" = "failure" ]; then
             echo "⚠️  Warning: AI review encountered issues (non-critical)"
           fi
-          
+
           if [ "$DEPLOYMENT_RESULT" = "failure" ]; then
             echo "⚠️  Warning: Deployment preview encountered issues (non-critical)"
           fi
-          
+
           # Handle cancellations
           if [ "$BUILD_RESULT" = "cancelled" ] || [ "$SECURITY_RESULT" = "cancelled" ]; then
             echo "⚠️  Workflow was cancelled by user"
             echo "📋 Status: CANCELLED"
             exit 0  # Don't fail on user cancellation
           fi
-          
+
           # Final decision
           if [ "$FAILED" = "true" ]; then
             echo "❌ Workflow failed due to critical job failures"
             echo "📋 Please review the logs above"
             exit 1
           fi
-          
+
           # Success: all critical jobs completed
           echo "✅ All critical jobs completed successfully!"
           echo "🎯 Workflow Status: SUCCESS"

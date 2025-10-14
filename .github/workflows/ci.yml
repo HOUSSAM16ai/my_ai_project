@@ -33,17 +33,17 @@ jobs:
       run: |
         echo "🧪 Running test suite..."
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
+
         # Run pytest with explicit error handling
         if pytest --verbose --cov=app --cov-report=xml --cov-report=html; then
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ All tests passed successfully!"
-          
+
           # Save coverage for AI analysis
           if [ -f coverage.xml ]; then
             echo "📊 Coverage report generated"
           fi
-          
+
           echo "🎯 Test Status: SUCCESS"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           exit 0
