@@ -46,7 +46,16 @@ def init_api(app):
     app.register_blueprint(developer_portal_routes.api_bp)
     app.register_blueprint(analytics_routes.api_bp)
 
+    # Register intelligent platform routes
+    try:
+        from app.api import intelligent_platform_routes
+
+        app.register_blueprint(intelligent_platform_routes.intelligent_platform_bp)
+        app.logger.info("🔥 Intelligent Service Platform routes registered")
+    except Exception as exc:
+        app.logger.warning("Failed to register Intelligent Platform routes: %s", exc)
+
     app.logger.info("🚀 World-Class API Gateway initialized successfully")
     app.logger.info("📡 API endpoints available at /api, /api/v1, /api/v2")
     app.logger.info("📚 API Documentation available at /api/docs")
-    app.logger.info("🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics")
+    app.logger.info("🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform")
