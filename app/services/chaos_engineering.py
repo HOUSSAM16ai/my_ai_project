@@ -421,7 +421,7 @@ class ChaosEngineer:
         """Rollback all faults in experiment"""
         current_app.logger.info(f"Rolling back faults for experiment: {experiment.name}")
 
-        for fault in experiment.fault_injections:
+        for _fault in experiment.fault_injections:
             # Deactivate fault
             pass
 

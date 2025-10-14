@@ -33,10 +33,7 @@ from flask import current_app
 
 # Import new superhuman components
 try:
-    from app.services.distributed_tracing import DistributedTracer, SpanKind
     from app.services.domain_events import DomainEvent, DomainEventRegistry
-    from app.services.saga_orchestrator import SagaOrchestrator
-    from app.services.service_mesh_integration import ServiceMeshManager
 
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError:
