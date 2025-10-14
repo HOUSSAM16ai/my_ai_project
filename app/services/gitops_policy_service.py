@@ -190,7 +190,7 @@ class GitOpsService:
         self.admission_decisions: deque[AdmissionDecision] = deque(maxlen=10000)
         self.git_states: dict[str, dict[str, Any]] = {}
         self.live_states: dict[str, dict[str, Any]] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # Initialize default policies
         self._initialize_default_policies()

@@ -182,7 +182,7 @@ class AIOpsService:
         self.healing_decisions: dict[str, HealingDecision] = {}
         self.capacity_plans: dict[str, CapacityPlan] = {}
         self.baseline_metrics: dict[str, dict[str, float]] = defaultdict(dict)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # ML models (in production, load pre-trained models)
         self.anomaly_thresholds = {

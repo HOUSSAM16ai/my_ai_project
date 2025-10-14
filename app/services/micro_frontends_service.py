@@ -113,7 +113,7 @@ class MicroFrontendsService:
         self.federations: dict[str, ModuleFederation] = {}
         self.shared_state: dict[str, SharedState] = {}
         self.module_versions: dict[str, list[str]] = defaultdict(list)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         current_app.logger.info("Micro Frontends Service initialized")
 

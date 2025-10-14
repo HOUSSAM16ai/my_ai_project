@@ -492,7 +492,7 @@ class SelfAdaptiveMicroservices:
         self.scaling_engine = AIScalingEngine()
         self.router = IntelligentRouter()
         self.health_monitor = PredictiveHealthMonitor()
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
     def register_service(
         self, service_name: str, initial_instances: int = 1

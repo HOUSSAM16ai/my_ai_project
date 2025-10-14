@@ -203,7 +203,7 @@ class DataMeshService:
         self.event_streams: dict[str, deque[dict[str, Any]]] = defaultdict(
             lambda: deque(maxlen=10000)
         )
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # Initialize default governance policies
         self._initialize_governance()

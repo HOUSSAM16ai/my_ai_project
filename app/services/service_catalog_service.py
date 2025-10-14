@@ -146,7 +146,7 @@ class ServiceCatalogService:
         self.api_specs: dict[str, list[APISpec]] = defaultdict(list)
         self.templates: dict[str, ServiceTemplate] = {}
         self.health_status: dict[str, ServiceHealth] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # Initialize default templates
         self._initialize_templates()

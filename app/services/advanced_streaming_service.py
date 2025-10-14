@@ -152,7 +152,7 @@ class AdvancedStreamingService:
         self.consumers: dict[str, list[StreamConsumer]] = defaultdict(list)
         self.schemas: dict[str, StreamSchema] = {}
         self.metrics: dict[str, StreamMetrics] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
         self.message_counter = 0
 
         current_app.logger.info("Advanced Streaming Service initialized")

@@ -126,7 +126,7 @@ class WorkflowOrchestrationService:
         self.workflow_events: deque[WorkflowEvent] = deque(maxlen=10000)
         self.activity_handlers: dict[str, Callable] = {}
         self.event_subscriptions: dict[str, list[str]] = defaultdict(list)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         current_app.logger.info("Workflow Orchestration Service initialized")
 

@@ -137,7 +137,7 @@ class EdgeMultiCloudService:
         self.edge_locations: dict[str, EdgeLocation] = {}
         self.workload_placements: dict[str, WorkloadPlacement] = {}
         self.failover_events: list[FailoverEvent] = []
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         # Initialize default regions
         self._initialize_regions()

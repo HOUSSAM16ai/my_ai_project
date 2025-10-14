@@ -147,7 +147,7 @@ class SREErrorBudgetService:
         self.error_budgets: dict[str, ErrorBudget] = {}
         self.deployment_risks: dict[str, DeploymentRisk] = {}
         self.canary_deployments: dict[str, CanaryDeployment] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
         current_app.logger.info("SRE & Error Budget Service initialized")
 
