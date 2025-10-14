@@ -204,7 +204,24 @@ def handle_chat():
 
     except Exception as e:
         current_app.logger.error(f"Chat API failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Return 200 with error details so frontend can display helpful message
+        error_msg = (
+            f"⚠️ حدث خطأ غير متوقع في معالجة السؤال.\n\n"
+            f"An unexpected error occurred while processing your question.\n\n"
+            f"**Error details:** {str(e)}\n\n"
+            f"**Possible causes:**\n"
+            f"- Temporary service interruption\n"
+            f"- Invalid configuration\n"
+            f"- Database connection issue\n\n"
+            f"**Solution:**\n"
+            f"Please try again. If the problem persists, check the application logs or contact support."
+        )
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "answer": error_msg,
+            "conversation_id": conversation_id
+        }), 200
 
 
 @bp.route("/api/analyze-project", methods=["POST"])
@@ -248,7 +265,24 @@ def handle_analyze_project():
 
     except Exception as e:
         current_app.logger.error(f"Project analysis API failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Return 200 with error details so frontend can display helpful message
+        error_msg = (
+            f"⚠️ فشل تحليل المشروع.\n\n"
+            f"Project analysis failed.\n\n"
+            f"**Error details:** {str(e)}\n\n"
+            f"**Possible causes:**\n"
+            f"- Missing dependencies for deep analysis\n"
+            f"- File system access issue\n"
+            f"- Memory constraints\n\n"
+            f"**Solution:**\n"
+            f"Please try again. You can also use the regular chat to ask questions about the project."
+        )
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "answer": error_msg,
+            "conversation_id": conversation_id if 'conversation_id' in locals() else None
+        }), 200
 
 
 @bp.route("/api/execute-modification", methods=["POST"])
@@ -306,7 +340,24 @@ def handle_execute_modification():
 
     except Exception as e:
         current_app.logger.error(f"Modification API failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Return 200 with error details so frontend can display helpful message
+        error_msg = (
+            f"⚠️ فشل تنفيذ التعديل.\n\n"
+            f"Failed to execute modification.\n\n"
+            f"**Error details:** {str(e)}\n\n"
+            f"**Possible causes:**\n"
+            f"- Invalid modification request\n"
+            f"- File system permissions\n"
+            f"- Overmind service unavailable\n\n"
+            f"**Solution:**\n"
+            f"Please try again with a clearer objective or contact support."
+        )
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "answer": error_msg,
+            "conversation_id": conversation_id if 'conversation_id' in locals() else None
+        }), 200
 
 
 @bp.route("/api/conversations", methods=["GET"])
@@ -350,7 +401,13 @@ def handle_get_conversations():
 
     except Exception as e:
         current_app.logger.error(f"Failed to get conversations: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Return 200 with error details
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to load conversations: {str(e)}",
+            "conversations": [],
+            "count": 0
+        }), 200
 
 
 @bp.route("/api/conversation/<int:conversation_id>", methods=["GET"])
