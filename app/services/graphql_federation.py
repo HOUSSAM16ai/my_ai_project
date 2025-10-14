@@ -325,14 +325,14 @@ class GraphQLFederationManager:
             fields = step["fields"]
 
             # Execute resolvers for each field
-            for field in fields:
+            for field_name in fields:
                 # Find resolver
-                resolver = self._find_resolver(service, operation, field)
+                resolver = self._find_resolver(service, operation, field_name)
 
                 if resolver:
                     try:
                         field_result = resolver()
-                        result["data"][field] = field_result
+                        result["data"][field_name] = field_result
                     except Exception as e:
                         if "errors" not in result:
                             result["errors"] = []
@@ -407,12 +407,12 @@ class GraphQLFederationManager:
         # Types
         for type_name, gql_type in self.federated_schema.types.items():
             sdl_parts.append(f"type {type_name} {{")
-            for field_name, field in gql_type.fields.items():
+            for field_name, field_def in gql_type.fields.items():
                 args = ""
-                if field.arguments:
-                    arg_list = [f"{k}: {v}" for k, v in field.arguments.items()]
+                if field_def.arguments:
+                    arg_list = [f"{k}: {v}" for k, v in field_def.arguments.items()]
                     args = f"({', '.join(arg_list)})"
-                sdl_parts.append(f"  {field_name}{args}: {field.field_type}")
+                sdl_parts.append(f"  {field_name}{args}: {field_def.field_type}")
             sdl_parts.append("}")
             sdl_parts.append("")
 

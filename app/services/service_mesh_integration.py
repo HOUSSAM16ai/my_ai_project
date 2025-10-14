@@ -292,7 +292,7 @@ class ServiceMeshManager:
     def deregister_service(self, endpoint_id: str) -> bool:
         """Deregister a service endpoint"""
         with self.lock:
-            for service_name, endpoints in self.services.items():
+            for _service_name, endpoints in self.services.items():
                 for endpoint in endpoints:
                     if endpoint.endpoint_id == endpoint_id:
                         endpoints.remove(endpoint)

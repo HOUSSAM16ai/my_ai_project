@@ -159,7 +159,12 @@ jobs:
     name: 🔧 Auto-Fix Issues
     runs-on: ubuntu-latest
     needs: monitor-and-analyze
-    if: needs.monitor-and-analyze.outputs.needs_fix == 'true' && (github.event.inputs.mode == 'auto-fix' || github.event.inputs.mode == 'full-health-check')
+    if: |
+      always() &&
+      needs.monitor-and-analyze.outputs.needs_fix == 'true' &&
+      (github.event.inputs.mode == 'auto-fix' || 
+       github.event.inputs.mode == 'full-health-check' ||
+       github.event_name == 'workflow_run')
     
     steps:
       - name: 📥 Checkout Repository
@@ -260,12 +265,7 @@ jobs:
     name: 📊 Generate Health Dashboard
     runs-on: ubuntu-latest
     needs: monitor-and-analyze
-    if: |
-      always() &&
-      (github.event_name == 'schedule' ||
-       github.event.inputs.mode == 'full-health-check' ||
-       needs.monitor-and-analyze.outputs.monitor_status == 'success' ||
-       needs.monitor-and-analyze.outputs.monitor_status == 'scheduled_check')
+    if: always()
     
     steps:
       - name: 📥 Checkout Repository
