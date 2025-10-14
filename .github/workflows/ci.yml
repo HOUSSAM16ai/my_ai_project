@@ -38,3 +38,6 @@ jobs:
         if [ -f coverage.xml ]; then
           echo "✅ Tests completed with coverage report"
         fi
+        
+        # Explicit success exit
+        exit 0
