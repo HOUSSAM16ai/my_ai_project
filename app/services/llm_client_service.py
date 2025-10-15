@@ -315,9 +315,28 @@ class _HttpFallbackClient:
                     raise RuntimeError(f"HTTP fallback request error: {e}")
 
                 if resp.status_code >= 400:
-                    raise RuntimeError(
-                        f"HTTP fallback bad status {resp.status_code}: {resp.text[:400]}"
-                    )
+                    # Enhanced error handling with better context
+                    error_text = resp.text[:400] if resp.text else "No error details"
+                    if resp.status_code == 500:
+                        raise RuntimeError(
+                            f"server_error_500: OpenRouter API returned internal server error. "
+                            f"This may be due to invalid API key, service issues, or request problems. "
+                            f"Details: {error_text}"
+                        )
+                    elif resp.status_code == 401 or resp.status_code == 403:
+                        raise RuntimeError(
+                            f"authentication_error: Invalid or missing API key. "
+                            f"Status {resp.status_code}: {error_text}"
+                        )
+                    elif resp.status_code == 429:
+                        raise RuntimeError(
+                            f"rate_limit_error: Too many requests. "
+                            f"Status {resp.status_code}: {error_text}"
+                        )
+                    else:
+                        raise RuntimeError(
+                            f"HTTP fallback bad status {resp.status_code}: {error_text}"
+                        )
 
                 data = resp.json()
                 choices = data.get("choices", [])
@@ -703,9 +722,12 @@ _SENSITIVE_MARKERS = ("OPENAI_API_KEY=", "sk-or-", "sk-")
 
 def _classify_error(exc: Exception) -> str:
     msg = str(exc).lower()
+    # Check for specific error patterns (order matters - most specific first)
+    if "server_error_500" in msg or "500" in msg or "internal server error" in msg:
+        return "server_error"
     if "rate" in msg and "limit" in msg:
         return "rate_limit"
-    if "unauthorized" in msg or "api key" in msg or "invalid api key" in msg:
+    if "authentication_error" in msg or "unauthorized" in msg or "api key" in msg or "invalid api key" in msg or "401" in msg or "403" in msg:
         return "auth_error"
     if "timeout" in msg:
         return "timeout"

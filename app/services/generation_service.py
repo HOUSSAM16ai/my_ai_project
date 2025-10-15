@@ -917,6 +917,40 @@ class MaestroGenerationService:
                 f"- Error: {error}"
             )
 
+        # Server error (500)
+        if "500" in error_lower or "server" in error_lower or "server_error" in error_lower:
+            return (
+                f"🔴 **خطأ في الخادم** (Server Error 500)\n\n"
+                f"**بالعربية:**\n"
+                f"حدث خطأ في خادم الذكاء الاصطناعي (OpenRouter/OpenAI).\n\n"
+                f"**الأسباب المحتملة:**\n"
+                f"1. مفتاح API غير صالح أو منتهي الصلاحية\n"
+                f"2. مشكلة مؤقتة في خدمة الذكاء الاصطناعي\n"
+                f"3. السؤال يحتوي على محتوى غير مسموح\n"
+                f"4. تجاوز حد الاستخدام أو الرصيد\n\n"
+                f"**الحلول المقترحة:**\n"
+                f"1. تحقق من صلاحية مفتاح API في ملف .env\n"
+                f"2. تأكد من وجود رصيد كافٍ في حساب OpenRouter/OpenAI\n"
+                f"3. حاول مرة أخرى بعد بضع دقائق\n"
+                f"4. إذا استمرت المشكلة، راجع سجلات الخادم (docker-compose logs web)\n\n"
+                f"**English:**\n"
+                f"An error occurred in the AI server (OpenRouter/OpenAI).\n\n"
+                f"**Possible Causes:**\n"
+                f"1. Invalid or expired API key\n"
+                f"2. Temporary issue with the AI service\n"
+                f"3. Question contains prohibited content\n"
+                f"4. Usage limit or credit exceeded\n\n"
+                f"**Suggested Solutions:**\n"
+                f"1. Verify API key validity in .env file\n"
+                f"2. Ensure sufficient credit in OpenRouter/OpenAI account\n"
+                f"3. Try again in a few minutes\n"
+                f"4. If the problem persists, check server logs (docker-compose logs web)\n\n"
+                f"**Technical Details:**\n"
+                f"- Prompt length: {prompt_length:,} characters\n"
+                f"- Max tokens: {max_tokens:,}\n"
+                f"- Error: {error}"
+            )
+
         # Empty response or no response
         if error == "no_response":
             return (
