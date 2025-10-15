@@ -31,7 +31,7 @@ def logged_in_admin(client, admin_user, session):
 def test_chat_handles_simple_greeting(client, logged_in_admin):
     """
     Test that simple greetings work correctly
-    
+
     اختبار أن التحيات البسيطة تعمل بشكل صحيح
     """
     response = client.post(
@@ -51,7 +51,7 @@ def test_chat_handles_simple_greeting(client, logged_in_admin):
     assert data is not None
     assert "status" in data
     assert "conversation_id" in data
-    
+
     # Even if there's an error, it should be returned as structured data
     if data["status"] == "error":
         # Should have user-friendly error message in 'answer' field
@@ -61,11 +61,11 @@ def test_chat_handles_simple_greeting(client, logged_in_admin):
 def test_chat_handles_complex_arabic_question(client, logged_in_admin):
     """
     Test that complex Arabic questions work correctly
-    
+
     اختبار أن الأسئلة العربية المعقدة تعمل بشكل صحيح
     """
     complex_question = "شرح بنية المشروع والملفات المختلفة واشرح لي كيف يعمل نظام قاعدة البيانات"
-    
+
     response = client.post(
         "/admin/api/chat",
         data=json.dumps({"question": complex_question}),
@@ -83,7 +83,7 @@ def test_chat_handles_complex_arabic_question(client, logged_in_admin):
     assert data is not None
     assert "status" in data
     assert "conversation_id" in data
-    
+
     # Should have either success answer or error with helpful message
     if data["status"] == "success":
         assert "answer" in data
@@ -96,12 +96,12 @@ def test_chat_handles_complex_arabic_question(client, logged_in_admin):
 def test_chat_handles_very_long_question(client, logged_in_admin):
     """
     Test that very long questions are handled gracefully
-    
+
     اختبار أن الأسئلة الطويلة جداً يتم التعامل معها بشكل صحيح
     """
     # Create a very long question (5000 characters)
     long_question = "شرح " + ("المشروع " * 1000)
-    
+
     response = client.post(
         "/admin/api/chat",
         data=json.dumps({"question": long_question}),
@@ -118,7 +118,7 @@ def test_chat_handles_very_long_question(client, logged_in_admin):
     data = response.get_json()
     assert data is not None
     assert "status" in data
-    
+
     # Should handle long question (either successfully or with proper error)
     if data["status"] == "error":
         # Should explain the issue in a user-friendly way
@@ -128,12 +128,12 @@ def test_chat_handles_very_long_question(client, logged_in_admin):
 def test_chat_rejects_extremely_long_question(client, logged_in_admin):
     """
     Test that extremely long questions (>100k chars) are rejected
-    
+
     اختبار أن الأسئلة الطويلة جداً (>100k حرف) يتم رفضها
     """
     # Create an extremely long question (150k characters)
     extremely_long_question = "ا" * 150000
-    
+
     response = client.post(
         "/admin/api/chat",
         data=json.dumps({"question": extremely_long_question}),
@@ -157,11 +157,11 @@ def test_chat_rejects_extremely_long_question(client, logged_in_admin):
 def test_chat_handles_project_structure_question(client, logged_in_admin):
     """
     Test the specific failing case: explaining project structure
-    
+
     اختبار الحالة المحددة الفاشلة: شرح بنية المشروع
     """
     question = "اشرح بنية المشروع والملفات المختلفة"
-    
+
     response = client.post(
         "/admin/api/chat",
         data=json.dumps({"question": question}),
@@ -178,10 +178,10 @@ def test_chat_handles_project_structure_question(client, logged_in_admin):
     data = response.get_json()
     assert data is not None
     assert "status" in data
-    
+
     # Should not crash - either success or graceful error
     assert data["status"] in ["success", "error"]
-    
+
     if data["status"] == "error":
         # Should provide helpful error message
         assert "answer" in data or "message" in data
@@ -194,13 +194,13 @@ def test_chat_handles_project_structure_question(client, logged_in_admin):
 def test_chat_without_api_key_shows_helpful_message(client, logged_in_admin, monkeypatch):
     """
     Test that when API key is missing, a helpful message is shown
-    
+
     اختبار أنه عند عدم وجود مفتاح API، يتم عرض رسالة مفيدة
     """
     # Simulate missing API key
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    
+
     response = client.post(
         "/admin/api/chat",
         data=json.dumps({"question": "السلام عليكم"}),
@@ -216,7 +216,7 @@ def test_chat_without_api_key_shows_helpful_message(client, logged_in_admin, mon
     # Should have error with helpful message about API key
     data = response.get_json()
     assert data is not None
-    
+
     # Should explain the API key issue
     if data["status"] == "error":
         error_message = data.get("answer", "") or data.get("message", "")
@@ -226,7 +226,7 @@ def test_chat_without_api_key_shows_helpful_message(client, logged_in_admin, mon
 def test_chat_creates_conversation_automatically(client, logged_in_admin):
     """
     Test that conversation is created automatically when not provided
-    
+
     اختبار أن المحادثة يتم إنشاؤها تلقائياً عند عدم توفيرها
     """
     response = client.post(
@@ -251,15 +251,12 @@ def test_chat_creates_conversation_automatically(client, logged_in_admin):
 def test_chat_with_deep_context_disabled(client, logged_in_admin):
     """
     Test that chat works with deep context disabled
-    
+
     اختبار أن المحادثة تعمل مع تعطيل السياق العميق
     """
     response = client.post(
         "/admin/api/chat",
-        data=json.dumps({
-            "question": "شرح المشروع",
-            "use_deep_context": False
-        }),
+        data=json.dumps({"question": "شرح المشروع", "use_deep_context": False}),
         content_type="application/json",
     )
 
