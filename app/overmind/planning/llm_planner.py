@@ -43,9 +43,9 @@ PLANNER_SMART_FILENAME=1
 PLANNER_ALLOW_SUBDIRS=1
 
 # Chunking / Streaming
-PLANNER_MAX_CHUNKS=60
+PLANNER_MAX_CHUNKS=100                 # Increased for extreme complexity (was 60)
 PLANNER_CHUNK_SIZE_HINT=1400
-PLANNER_HARD_LINE_CAP=1200000
+PLANNER_HARD_LINE_CAP=2000000          # Increased for extreme complexity (was 1200000)
 PLANNER_FAST_SINGLE_THRESHOLD=2200
 PLANNER_STREAMING_ENABLE=1
 PLANNER_ALLOW_APPEND_TOOL=auto|1|0
@@ -89,8 +89,8 @@ PLANNER_INDEX_FILE=1
 PLANNER_INDEX_NAME=ARTIFACT_INDEX.md
 PLANNER_COMPREHENSIVE_MODE=0
 
-# Guardrails
-PLANNER_MAX_TASKS_GLOBAL=550
+# Guardrails (with extreme mode support)
+PLANNER_MAX_TASKS_GLOBAL=800           # Increased for extreme complexity (was 550)
 PLANNER_OPTIONAL_TASK_GROUPS=semantic,global_summary,deep_arch_report # order of pruning under pressure
 
 ======================================================================
@@ -241,9 +241,9 @@ SMART_FN = _env_flag("PLANNER_SMART_FILENAME", True)
 ALLOW_SUBDIRS = _env_flag("PLANNER_ALLOW_SUBDIRS", True)
 GLOBAL_TASK_CAP = _env_int("PLANNER_MAX_TASKS_GLOBAL", 550)
 
-MAX_CHUNKS = _env_int("PLANNER_MAX_CHUNKS", 60)
+MAX_CHUNKS = _env_int("PLANNER_MAX_CHUNKS", 100)  # Increased for extreme complexity
 CHUNK_SIZE_HINT = _env_int("PLANNER_CHUNK_SIZE_HINT", 1400)
-HARD_LINE_CAP = _env_int("PLANNER_HARD_LINE_CAP", 1_200_000)
+HARD_LINE_CAP = _env_int("PLANNER_HARD_LINE_CAP", 2_000_000)  # Increased for extreme complexity
 FAST_SINGLE_THRESH = _env_int("PLANNER_FAST_SINGLE_THRESHOLD", 2200)
 STREAM_ENABLE = _env_flag("PLANNER_STREAMING_ENABLE", True)
 ALLOW_APPEND_MODE = os.getenv("PLANNER_ALLOW_APPEND_TOOL", "auto")

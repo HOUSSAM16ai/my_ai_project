@@ -785,12 +785,25 @@ class MaestroGenerationService:
         started = time.perf_counter()
 
         # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
+        # Support for EXTREME COMPLEXITY MODE
         prompt_length = len(prompt)
         is_complex_question = prompt_length > 5000  # Similar to admin_ai_service threshold
+        is_extreme_question = prompt_length > 20000  # Extremely complex threshold
 
-        # Allocate more tokens for complex questions
-        max_tokens = 16000 if is_complex_question else 4000
-        max_retries = 2 if is_complex_question else 1
+        # Allocate more tokens for complex questions with extreme mode support
+        if is_extreme_question:
+            max_tokens = 32000  # Maximum for extreme complexity
+            max_retries = 5  # More retries for extreme cases
+            self._safe_log(
+                f"⚡ EXTREME COMPLEXITY: prompt_length={prompt_length}, max_tokens={max_tokens}, max_retries={max_retries}",
+                level="warning"
+            )
+        elif is_complex_question:
+            max_tokens = 16000
+            max_retries = 2
+        else:
+            max_tokens = 4000
+            max_retries = 1
 
         try:
             answer = self.text_completion(
