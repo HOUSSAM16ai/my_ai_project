@@ -894,7 +894,9 @@ def ask_command(prompt: tuple[str], mode: str, json_out: bool, debug: bool):
             click.echo(answer or "(empty answer)")
         else:
             C_RED("\n--- ERROR ---")
-            click.echo(result.get("error") or result.get("message") or "(unknown error)")
+            # SUPERHUMAN: Display the bilingual error message from answer field if available
+            error_message = answer or result.get("error") or result.get("message") or "(unknown error)"
+            click.echo(error_message)
 
         meta = result.get("meta")
         if meta:
