@@ -683,12 +683,11 @@ class MaestroGenerationService:
                 if "500" in error_msg or "server" in error_msg:
                     self._safe_log(
                         f"[text_completion] Server error (500) on attempt {attempt+1}: {e}",
-                        level="error"
+                        level="error",
                     )
                 elif "timeout" in error_msg:
                     self._safe_log(
-                        f"[text_completion] Timeout on attempt {attempt+1}: {e}",
-                        level="warning"
+                        f"[text_completion] Timeout on attempt {attempt+1}: {e}", level="warning"
                     )
                 else:
                     self._safe_log(
@@ -696,13 +695,13 @@ class MaestroGenerationService:
                     )
                 if attempt < max_retries:
                     time.sleep(backoff_base * math.pow(1.45, attempt))
-        
+
         # SUPERHUMAN FIX: Always raise the exception so forge_new_code can handle it properly
         # with bilingual error messages
         if last_err:
             raise last_err
         if fail_hard:
-            raise RuntimeError(f"text_completion_failed:unknown_error")
+            raise RuntimeError("text_completion_failed:unknown_error")
         return ""
 
     # ------------------------------------------------------------------
@@ -787,23 +786,23 @@ class MaestroGenerationService:
         # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
         # Support for ULTIMATE COMPLEXITY MODE (better than tech giants)
         prompt_length = len(prompt)
-        
+
         # Check if ULTIMATE or EXTREME mode is enabled via environment
         ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
         extreme_mode = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-        
+
         # Define complexity thresholds
         is_complex_question = prompt_length > 5000
         is_extreme_question = prompt_length > 20000
         is_ultimate_question = prompt_length > 50000 or ultimate_mode
-        
+
         # ULTIMATE MODE: Answer no matter what (like tech giants - Google, Microsoft, etc.)
         if is_ultimate_question or ultimate_mode:
             max_tokens = 128000  # Maximum possible (Claude 3.7 Sonnet supports up to 200K)
             max_retries = 10  # Many retries - we WILL answer this
             self._safe_log(
                 f"🚀 ULTIMATE COMPLEXITY MODE: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
-                level="warning"
+                level="warning",
             )
         # EXTREME MODE: Very complex questions
         elif is_extreme_question or extreme_mode:
@@ -811,7 +810,7 @@ class MaestroGenerationService:
             max_retries = 5  # More retries for extreme cases
             self._safe_log(
                 f"⚡ EXTREME COMPLEXITY: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
-                level="warning"
+                level="warning",
             )
         # COMPLEX MODE: Long questions
         elif is_complex_question:
@@ -986,13 +985,13 @@ class MaestroGenerationService:
             # Check if we're already in ultimate/extreme mode
             ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
             extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-            
+
             mode_status = ""
             if ultimate_active:
                 mode_status = "🚀 ULTIMATE MODE نشط | ULTIMATE MODE Active\n"
             elif extreme_active:
                 mode_status = "💪 EXTREME MODE نشط | EXTREME MODE Active\n"
-            
+
             return (
                 f"🔴 **خطأ في الخادم** (Server Error 500)\n\n"
                 f"{mode_status}"

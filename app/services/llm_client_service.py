@@ -668,14 +668,13 @@ _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
 _LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
 _LLM_MAX_RETRIES = int(
     os.getenv(
-        "LLM_MAX_RETRIES",
-        "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
+        "LLM_MAX_RETRIES", "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
     )
 )
 _LLM_RETRY_BACKOFF_BASE = float(
     os.getenv(
         "LLM_RETRY_BACKOFF_BASE",
-        "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3")
+        "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3"),
     )
 )
 _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
@@ -749,7 +748,14 @@ def _classify_error(exc: Exception) -> str:
         return "server_error"
     if "rate" in msg and "limit" in msg:
         return "rate_limit"
-    if "authentication_error" in msg or "unauthorized" in msg or "api key" in msg or "invalid api key" in msg or "401" in msg or "403" in msg:
+    if (
+        "authentication_error" in msg
+        or "unauthorized" in msg
+        or "api key" in msg
+        or "invalid api key" in msg
+        or "401" in msg
+        or "403" in msg
+    ):
         return "auth_error"
     if "timeout" in msg:
         return "timeout"
