@@ -765,16 +765,46 @@ class MaestroGenerationService:
         _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
+        
+        # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
+        prompt_length = len(prompt)
+        is_complex_question = prompt_length > 5000  # Similar to admin_ai_service threshold
+        
+        # Allocate more tokens for complex questions
+        max_tokens = 16000 if is_complex_question else 4000
+        max_retries = 2 if is_complex_question else 1
+        
         try:
             answer = self.text_completion(
                 "You are a concise, helpful AI assistant.",
                 prompt,
                 temperature=0.3,
-                max_tokens=800,
-                max_retries=1,
-                fail_hard=True,
+                max_tokens=max_tokens,
+                max_retries=max_retries,
+                fail_hard=False,  # Don't raise exceptions, return errors gracefully
                 model=model,
             )
+            
+            # Check if we got an empty response (indicates failure)
+            if not answer:
+                error_msg = self._build_bilingual_error_message(
+                    "no_response",
+                    prompt_length,
+                    max_tokens
+                )
+                return {
+                    "status": "error",
+                    "error": "Empty response from LLM",
+                    "answer": error_msg,
+                    "meta": {
+                        "conversation_id": cid,
+                        "model": _select_model(explicit=model),
+                        "elapsed_s": round(time.perf_counter() - started, 4),
+                        "prompt_length": prompt_length,
+                        "max_tokens_used": max_tokens,
+                    },
+                }
+            
             return {
                 "status": "success",
                 "answer": answer,
@@ -782,20 +812,158 @@ class MaestroGenerationService:
                     "conversation_id": cid,
                     "model": _select_model(explicit=model),
                     "elapsed_s": round(time.perf_counter() - started, 4),
+                    "prompt_length": prompt_length,
+                    "max_tokens_used": max_tokens,
+                    "is_complex": is_complex_question,
                 },
             }
         except Exception as exc:
             if os.getenv("MAESTRO_SUPPRESS_CTX_ERRORS", "0") != "1":
                 self._safe_log("[forge_new_code] Failure", level="error", exc_info=True)
+            
+            # SUPERHUMAN ERROR HANDLING: Provide bilingual, user-friendly error messages
+            error_msg = self._build_bilingual_error_message(
+                str(exc),
+                prompt_length,
+                max_tokens
+            )
+            
             return {
                 "status": "error",
                 "error": str(exc),
+                "answer": error_msg,
                 "meta": {
                     "conversation_id": cid,
                     "model": _select_model(explicit=model),
                     "elapsed_s": round(time.perf_counter() - started, 4),
+                    "prompt_length": prompt_length,
+                    "max_tokens_used": max_tokens,
                 },
             }
+
+    def _build_bilingual_error_message(
+        self, error: str, prompt_length: int, max_tokens: int
+    ) -> str:
+        """Build user-friendly bilingual error messages - SUPERHUMAN EDITION"""
+        error_lower = error.lower()
+        
+        # Timeout error
+        if "timeout" in error_lower:
+            return (
+                f"⏱️ **انتهت مهلة الانتظار** (Timeout)\n\n"
+                f"**بالعربية:**\n"
+                f"السؤال معقد جداً وتطلب وقتاً أطول من المتاح ({max_tokens:,} رمز).\n\n"
+                f"**الحلول المقترحة:**\n"
+                f"1. قسّم السؤال إلى أجزاء أصغر\n"
+                f"2. اطرح سؤالاً أكثر تحديداً\n"
+                f"3. حاول مرة أخرى بعد قليل\n\n"
+                f"**English:**\n"
+                f"Question is too complex and took longer than the available time ({max_tokens:,} tokens).\n\n"
+                f"**Suggested Solutions:**\n"
+                f"1. Break the question into smaller parts\n"
+                f"2. Ask a more specific question\n"
+                f"3. Try again in a moment\n\n"
+                f"**Technical Details:**\n"
+                f"- Prompt length: {prompt_length:,} characters\n"
+                f"- Max tokens: {max_tokens:,}\n"
+                f"- Error: {error}"
+            )
+        
+        # Rate limit error
+        if "rate" in error_lower and "limit" in error_lower:
+            return (
+                f"🚦 **تم تجاوز حد الطلبات** (Rate Limit)\n\n"
+                f"**بالعربية:**\n"
+                f"تم إرسال عدد كبير من الطلبات في فترة قصيرة.\n\n"
+                f"**الحل:**\n"
+                f"انتظر بضع ثوانٍ ثم حاول مرة أخرى.\n\n"
+                f"**English:**\n"
+                f"Too many requests sent in a short period.\n\n"
+                f"**Solution:**\n"
+                f"Wait a few seconds and try again.\n\n"
+                f"**Technical Details:**\n"
+                f"- Error: {error}"
+            )
+        
+        # Context length error
+        if "context" in error_lower or "length" in error_lower or "token" in error_lower:
+            return (
+                f"📏 **السياق طويل جداً** (Context Length Error)\n\n"
+                f"**بالعربية:**\n"
+                f"السؤال أو تاريخ المحادثة طويل جداً ({prompt_length:,} حرف).\n\n"
+                f"**الحلول:**\n"
+                f"1. ابدأ محادثة جديدة\n"
+                f"2. اطرح سؤالاً أقصر\n"
+                f"3. قلل من السياق المرفق\n\n"
+                f"**English:**\n"
+                f"Question or conversation history is too long ({prompt_length:,} characters).\n\n"
+                f"**Solutions:**\n"
+                f"1. Start a new conversation\n"
+                f"2. Ask a shorter question\n"
+                f"3. Reduce the attached context\n\n"
+                f"**Technical Details:**\n"
+                f"- Prompt length: {prompt_length:,} characters\n"
+                f"- Max tokens: {max_tokens:,}\n"
+                f"- Error: {error}"
+            )
+        
+        # API key or authentication error
+        if "api key" in error_lower or "auth" in error_lower or "unauthorized" in error_lower:
+            return (
+                f"🔑 **خطأ في المصادقة** (Authentication Error)\n\n"
+                f"**بالعربية:**\n"
+                f"هناك مشكلة في مفتاح API أو المصادقة.\n\n"
+                f"**الحل:**\n"
+                f"تواصل مع مسؤول النظام للتحقق من إعدادات API.\n\n"
+                f"**English:**\n"
+                f"There is a problem with the API key or authentication.\n\n"
+                f"**Solution:**\n"
+                f"Contact the system administrator to verify API settings.\n\n"
+                f"**Technical Details:**\n"
+                f"- Error: {error}"
+            )
+        
+        # Empty response or no response
+        if error == "no_response":
+            return (
+                f"❌ **لم يتم استلام رد** (No Response)\n\n"
+                f"**بالعربية:**\n"
+                f"النظام لم يتمكن من توليد إجابة للسؤال.\n\n"
+                f"**الحلول:**\n"
+                f"1. أعد صياغة السؤال بشكل مختلف\n"
+                f"2. تأكد من وضوح السؤال\n"
+                f"3. حاول مرة أخرى\n\n"
+                f"**English:**\n"
+                f"The system could not generate an answer to the question.\n\n"
+                f"**Solutions:**\n"
+                f"1. Rephrase the question differently\n"
+                f"2. Ensure the question is clear\n"
+                f"3. Try again\n\n"
+                f"**Technical Details:**\n"
+                f"- Prompt length: {prompt_length:,} characters\n"
+                f"- Max tokens: {max_tokens:,}"
+            )
+        
+        # Generic error
+        return (
+            f"⚠️ **حدث خطأ** (Error Occurred)\n\n"
+            f"**بالعربية:**\n"
+            f"حدث خطأ غير متوقع أثناء معالجة السؤال.\n\n"
+            f"**الحلول:**\n"
+            f"1. حاول مرة أخرى\n"
+            f"2. تحقق من صياغة السؤال\n"
+            f"3. إذا استمرت المشكلة، تواصل مع الدعم\n\n"
+            f"**English:**\n"
+            f"An unexpected error occurred while processing the question.\n\n"
+            f"**Solutions:**\n"
+            f"1. Try again\n"
+            f"2. Check the question phrasing\n"
+            f"3. If the problem persists, contact support\n\n"
+            f"**Technical Details:**\n"
+            f"- Prompt length: {prompt_length:,} characters\n"
+            f"- Max tokens: {max_tokens:,}\n"
+            f"- Error: {error}"
+        )
 
     # ------------------------------------------------------------------
     # Convenience strict JSON wrapper
@@ -829,14 +997,22 @@ class MaestroGenerationService:
                         "consolidated": True,
                     },
                 }
+            # SUPERHUMAN: Return the error with bilingual message already included
             return result
         except Exception as exc:
             self._safe_log(
                 "[generate_comprehensive_response] Failure", level="error", exc_info=True
             )
+            # SUPERHUMAN: Use the same bilingual error message builder
+            error_msg = self._build_bilingual_error_message(
+                str(exc),
+                len(prompt),
+                16000  # Max tokens for comprehensive responses
+            )
             return {
                 "status": "error",
                 "error": str(exc),
+                "answer": error_msg,
                 "meta": {"response_type": "comprehensive"},
             }
 
