@@ -971,8 +971,11 @@ class AdminAIService:
                         # Limit project index size to avoid overwhelming the prompt
                         max_index_size = 5000  # characters
                         if len(project_index) > max_index_size:
-                            project_index = project_index[:max_index_size] + "\n... [المزيد من الملفات متاح عند الطلب / More files available on request]"
-                        
+                            project_index = (
+                                project_index[:max_index_size]
+                                + "\n... [المزيد من الملفات متاح عند الطلب / More files available on request]"
+                            )
+
                         parts.extend(
                             [
                                 "\n## بنية المشروع (Project Structure):",
@@ -990,17 +993,17 @@ class AdminAIService:
                     parts.append("\n## ملفات المشروع الرئيسية:")
                     total_file_content = 0
                     max_total_content = 15000  # Maximum total characters from all files
-                    
+
                     for filename, content in list(project_files.items())[:5]:  # Limit to 5 files
                         if total_file_content >= max_total_content:
-                            parts.append(f"\n... [المزيد من الملفات متاح / More files available]")
+                            parts.append("\n... [المزيد من الملفات متاح / More files available]")
                             break
-                        
+
                         # Limit individual file content
                         max_file_size = 3000
                         if len(content) > max_file_size:
                             content = content[:max_file_size] + "\n[... truncated ...]"
-                        
+
                         parts.append(f"\n### {filename}:")
                         parts.append(f"```\n{content}\n```")
                         total_file_content += len(content)
@@ -1012,7 +1015,9 @@ class AdminAIService:
                     # Limit deep index summary size
                     max_summary_size = 2000
                     if len(deep_index_summary) > max_summary_size:
-                        deep_index_summary = deep_index_summary[:max_summary_size] + "\n... [truncated]"
+                        deep_index_summary = (
+                            deep_index_summary[:max_summary_size] + "\n... [truncated]"
+                        )
                     parts.extend(["\n## بنية الكود (تحليل هيكلي عميق):", deep_index_summary])
                 except Exception as e:
                     self.logger.warning(f"Failed to add deep index summary to prompt: {e}")
@@ -1027,20 +1032,20 @@ class AdminAIService:
                     self.logger.warning(f"Failed to add related context to prompt: {e}")
 
             final_prompt = "\n".join(parts)
-            
+
             # Log prompt size for monitoring
             prompt_size = len(final_prompt)
             self.logger.info(f"Built system prompt: {prompt_size:,} characters")
-            
+
             # Warn if prompt is very large
             if prompt_size > 50000:
                 self.logger.warning(
                     f"System prompt is very large ({prompt_size:,} chars). "
                     "This may cause issues with some AI models."
                 )
-            
+
             return final_prompt
-            
+
         except Exception as e:
             self.logger.error(f"Critical error building system prompt: {e}", exc_info=True)
             # Return a minimal fallback prompt to avoid total failure

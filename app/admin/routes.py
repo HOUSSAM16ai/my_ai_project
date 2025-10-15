@@ -187,12 +187,17 @@ def handle_chat():
             f"2. قسّم السؤال إلى أجزاء أصغر (Break it into smaller parts)\n"
             f"3. ركّز على النقاط الرئيسية (Focus on main points)"
         )
-        return jsonify({
-            "status": "error",
-            "error": "Question too long",
-            "answer": error_msg,
-            "conversation_id": conversation_id
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": "Question too long",
+                    "answer": error_msg,
+                    "conversation_id": conversation_id,
+                }
+            ),
+            200,
+        )
 
     try:
         service = get_admin_ai_service()
@@ -203,7 +208,9 @@ def handle_chat():
                 # Generate a smart title from the first question
                 title = question[:100] + "..." if len(question) > 100 else question
                 conversation = service.create_conversation(
-                    user=current_user._get_current_object(), title=title, conversation_type="general"
+                    user=current_user._get_current_object(),
+                    title=title,
+                    conversation_type="general",
                 )
                 conversation_id = conversation.id
                 current_app.logger.info(
