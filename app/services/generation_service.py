@@ -890,21 +890,31 @@ class MaestroGenerationService:
         error_lower = error.lower()
 
         # Timeout error
-        if "timeout" in error_lower:
+        if "timeout" in error_lower or "timed out" in error_lower:
             return (
                 f"⏱️ **انتهت مهلة الانتظار** (Timeout)\n\n"
                 f"**بالعربية:**\n"
                 f"السؤال معقد جداً وتطلب وقتاً أطول من المتاح ({max_tokens:,} رمز).\n\n"
                 f"**الحلول المقترحة:**\n"
-                f"1. قسّم السؤال إلى أجزاء أصغر\n"
-                f"2. اطرح سؤالاً أكثر تحديداً\n"
-                f"3. حاول مرة أخرى بعد قليل\n\n"
+                f"1. 🚀 فعّل الوضع الخارق (ULTIMATE MODE):\n"
+                f"   قم بتعيين LLM_ULTIMATE_COMPLEXITY_MODE=1 في ملف .env\n"
+                f"   هذا سيمنحك 30 دقيقة و 128K رمز و 20 محاولة!\n"
+                f"2. 💪 أو فعّل الوضع الشديد (EXTREME MODE):\n"
+                f"   قم بتعيين LLM_EXTREME_COMPLEXITY_MODE=1 في ملف .env\n"
+                f"   هذا سيمنحك 10 دقائق و 64K رمز و 8 محاولات\n"
+                f"3. أو قسّم السؤال إلى أجزاء أصغر\n"
+                f"4. أو اطرح سؤالاً أكثر تحديداً\n\n"
                 f"**English:**\n"
-                f"Question is too complex and took longer than the available time ({max_tokens:,} tokens).\n\n"
+                f"Question is too complex and took longer than available time ({max_tokens:,} tokens).\n\n"
                 f"**Suggested Solutions:**\n"
-                f"1. Break the question into smaller parts\n"
-                f"2. Ask a more specific question\n"
-                f"3. Try again in a moment\n\n"
+                f"1. 🚀 Enable ULTIMATE MODE:\n"
+                f"   Set LLM_ULTIMATE_COMPLEXITY_MODE=1 in .env file\n"
+                f"   This gives you 30 minutes, 128K tokens, and 20 retries!\n"
+                f"2. 💪 Or enable EXTREME MODE:\n"
+                f"   Set LLM_EXTREME_COMPLEXITY_MODE=1 in .env file\n"
+                f"   This gives you 10 minutes, 64K tokens, and 8 retries\n"
+                f"3. Or break the question into smaller parts\n"
+                f"4. Or ask a more specific question\n\n"
                 f"**Technical Details:**\n"
                 f"- Prompt length: {prompt_length:,} characters\n"
                 f"- Max tokens: {max_tokens:,}\n"
@@ -928,21 +938,27 @@ class MaestroGenerationService:
             )
 
         # Context length error
-        if "context" in error_lower or "length" in error_lower or "token" in error_lower:
+        if "context" in error_lower or ("length" in error_lower and "token" in error_lower):
             return (
                 f"📏 **السياق طويل جداً** (Context Length Error)\n\n"
                 f"**بالعربية:**\n"
                 f"السؤال أو تاريخ المحادثة طويل جداً ({prompt_length:,} حرف).\n\n"
                 f"**الحلول:**\n"
-                f"1. ابدأ محادثة جديدة\n"
-                f"2. اطرح سؤالاً أقصر\n"
-                f"3. قلل من السياق المرفق\n\n"
+                f"1. 🚀 للأسئلة الطويلة جداً: فعّل ULTIMATE MODE\n"
+                f"   قم بتعيين LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+                f"   يدعم حتى 500K حرف!\n"
+                f"2. ابدأ محادثة جديدة\n"
+                f"3. اطرح سؤالاً أقصر\n"
+                f"4. قلل من السياق المرفق\n\n"
                 f"**English:**\n"
                 f"Question or conversation history is too long ({prompt_length:,} characters).\n\n"
                 f"**Solutions:**\n"
-                f"1. Start a new conversation\n"
-                f"2. Ask a shorter question\n"
-                f"3. Reduce the attached context\n\n"
+                f"1. 🚀 For very long questions: Enable ULTIMATE MODE\n"
+                f"   Set LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+                f"   Supports up to 500K characters!\n"
+                f"2. Start a new conversation\n"
+                f"3. Ask a shorter question\n"
+                f"4. Reduce the attached context\n\n"
                 f"**Technical Details:**\n"
                 f"- Prompt length: {prompt_length:,} characters\n"
                 f"- Max tokens: {max_tokens:,}\n"
@@ -967,8 +983,19 @@ class MaestroGenerationService:
 
         # Server error (500)
         if "500" in error_lower or "server" in error_lower or "server_error" in error_lower:
+            # Check if we're already in ultimate/extreme mode
+            ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+            extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+            
+            mode_status = ""
+            if ultimate_active:
+                mode_status = "🚀 ULTIMATE MODE نشط | ULTIMATE MODE Active\n"
+            elif extreme_active:
+                mode_status = "💪 EXTREME MODE نشط | EXTREME MODE Active\n"
+            
             return (
                 f"🔴 **خطأ في الخادم** (Server Error 500)\n\n"
+                f"{mode_status}"
                 f"**بالعربية:**\n"
                 f"حدث خطأ في خادم الذكاء الاصطناعي (OpenRouter/OpenAI).\n\n"
                 f"**الأسباب المحتملة:**\n"
@@ -979,8 +1006,10 @@ class MaestroGenerationService:
                 f"**الحلول المقترحة:**\n"
                 f"1. تحقق من صلاحية مفتاح API في ملف .env\n"
                 f"2. تأكد من وجود رصيد كافٍ في حساب OpenRouter/OpenAI\n"
-                f"3. حاول مرة أخرى بعد بضع دقائق\n"
-                f"4. إذا استمرت المشكلة، راجع سجلات الخادم (docker-compose logs web)\n\n"
+                f"3. 🚀 إذا لم يكن نشطاً، فعّل ULTIMATE MODE للتغلب على المشكلة:\n"
+                f"   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+                f"4. حاول مرة أخرى بعد بضع دقائق\n"
+                f"5. إذا استمرت المشكلة، راجع سجلات الخادم (docker-compose logs web)\n\n"
                 f"**English:**\n"
                 f"An error occurred in the AI server (OpenRouter/OpenAI).\n\n"
                 f"**Possible Causes:**\n"
@@ -991,8 +1020,10 @@ class MaestroGenerationService:
                 f"**Suggested Solutions:**\n"
                 f"1. Verify API key validity in .env file\n"
                 f"2. Ensure sufficient credit in OpenRouter/OpenAI account\n"
-                f"3. Try again in a few minutes\n"
-                f"4. If the problem persists, check server logs (docker-compose logs web)\n\n"
+                f"3. 🚀 If not active, enable ULTIMATE MODE to overcome the issue:\n"
+                f"   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+                f"4. Try again in a few minutes\n"
+                f"5. If problem persists, check server logs (docker-compose logs web)\n\n"
                 f"**Technical Details:**\n"
                 f"- Prompt length: {prompt_length:,} characters\n"
                 f"- Max tokens: {max_tokens:,}\n"
