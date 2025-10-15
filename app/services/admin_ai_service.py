@@ -446,11 +446,20 @@ class AdminAIService:
                 except Exception as e:
                     self.logger.warning(f"Failed to get related context: {e}")
 
-            system_prompt = self._build_super_system_prompt(
-                deep_index_summary=deep_index_summary if use_deep_context else None,
-                related_context=related_context,
-                conversation_summary=context_summary if conversation_id else None,
-            )
+            # Build system prompt with comprehensive error handling
+            try:
+                system_prompt = self._build_super_system_prompt(
+                    deep_index_summary=deep_index_summary if use_deep_context else None,
+                    related_context=related_context,
+                    conversation_summary=context_summary if conversation_id else None,
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to build system prompt: {e}", exc_info=True)
+                # Use minimal fallback prompt
+                system_prompt = (
+                    "أنت مساعد ذكاء اصطناعي متخصص في مساعدة المستخدمين.\n"
+                    "You are an AI assistant specialized in helping users."
+                )
 
             # ============================================================
             # SUPERHUMAN VALIDATION - Check question length
@@ -917,68 +926,130 @@ class AdminAIService:
         include_project_index: bool = True,
     ) -> str:
         """بناء System Prompt خارق مع كل السياق - SUPERHUMAN EDITION"""
-        parts = [
-            "أنت مساعد ذكاء اصطناعي خارق ومتخصص في تحليل وفهم مشاريع البرمجة.",
-            "لديك معرفة عميقة ببنية المشروع وكل تفاصيله.",
-            "\n## قدراتك الخارقة:",
-            "- تحليل عميق للكود والبنية المعمارية",
-            "- الإجابة على أسئلة تقنية معقدة بناءً على فهم كامل للمشروع",
-            "- قراءة وتحليل أي ملف في المشروع لتقديم إجابات دقيقة",
-            "- البحث في الكود باستخدام أدوات متقدمة",
-            "- فهم العلاقات والتبعيات بين المكونات المختلفة",
-            "- اقتراح تحسينات وحلول مبنية على معرفة عميقة",
-            "\n## معلومات هامة:",
-            "⚡ لديك إمكانية الوصول الكامل إلى جميع ملفات المشروع",
-            "⚡ يمكنك قراءة أي ملف للحصول على معلومات دقيقة",
-            "⚡ لا تعتمد على تخمينات - اقرأ الملفات للحصول على إجابات دقيقة",
-            "⚡ استخدم البحث في الكود عندما تحتاج للعثور على معلومات محددة",
-            "\n## أسلوب الإجابة:",
-            "- منظم ومهني وقائم على حقائق من الكود الفعلي",
-            "- يستشهد بالملفات والأسطر المحددة عند الإجابة",
-            "- يقرأ الملفات ذات الصلة قبل الإجابة للتأكد من الدقة",
-            "- يشرح بالتفصيل مع الحفاظ على الوضوح",
-            "- يستخدم العربية والإنجليزية حسب السياق",
-        ]
+        try:
+            parts = [
+                "أنت مساعد ذكاء اصطناعي خارق ومتخصص في تحليل وفهم مشاريع البرمجة.",
+                "لديك معرفة عميقة ببنية المشروع وكل تفاصيله.",
+                "\n## قدراتك الخارقة:",
+                "- تحليل عميق للكود والبنية المعمارية",
+                "- الإجابة على أسئلة تقنية معقدة بناءً على فهم كامل للمشروع",
+                "- قراءة وتحليل أي ملف في المشروع لتقديم إجابات دقيقة",
+                "- البحث في الكود باستخدام أدوات متقدمة",
+                "- فهم العلاقات والتبعيات بين المكونات المختلفة",
+                "- اقتراح تحسينات وحلول مبنية على معرفة عميقة",
+                "\n## معلومات هامة:",
+                "⚡ لديك إمكانية الوصول الكامل إلى جميع ملفات المشروع",
+                "⚡ يمكنك قراءة أي ملف للحصول على معلومات دقيقة",
+                "⚡ لا تعتمد على تخمينات - اقرأ الملفات للحصول على إجابات دقيقة",
+                "⚡ استخدم البحث في الكود عندما تحتاج للعثور على معلومات محددة",
+                "\n## أسلوب الإجابة:",
+                "- منظم ومهني وقائم على حقائق من الكود الفعلي",
+                "- يستشهد بالملفات والأسطر المحددة عند الإجابة",
+                "- يقرأ الملفات ذات الصلة قبل الإجابة للتأكد من الدقة",
+                "- يشرح بالتفصيل مع الحفاظ على الوضوح",
+                "- يستخدم العربية والإنجليزية حسب السياق",
+            ]
 
-        # SUPERHUMAN FEATURE: Include conversation context summary for better continuity
-        if conversation_summary:
-            parts.extend(
-                [
-                    "\n## سياق المحادثة السابقة:",
-                    conversation_summary,
-                    "\nملاحظة: تذكر هذا السياق عند الإجابة على الأسئلة الجديدة.",
-                ]
-            )
+            # SUPERHUMAN FEATURE: Include conversation context summary for better continuity
+            if conversation_summary:
+                try:
+                    parts.extend(
+                        [
+                            "\n## سياق المحادثة السابقة:",
+                            conversation_summary,
+                            "\nملاحظة: تذكر هذا السياق عند الإجابة على الأسئلة الجديدة.",
+                        ]
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Failed to add conversation summary to prompt: {e}")
 
-        # SUPERHUMAN FEATURE: Add automatic project indexing for better context
-        if include_project_index:
-            project_index = self._build_lightweight_project_index()
-            if project_index:
-                parts.extend(
-                    [
-                        "\n## بنية المشروع (Project Structure):",
-                        project_index,
-                        "\n💡 استخدم هذه البنية لفهم المشروع ولكن يمكنك قراءة أي ملف للحصول على تفاصيل دقيقة.",
-                    ]
+            # SUPERHUMAN FEATURE: Add automatic project indexing for better context
+            if include_project_index:
+                try:
+                    project_index = self._build_lightweight_project_index()
+                    if project_index:
+                        # Limit project index size to avoid overwhelming the prompt
+                        max_index_size = 5000  # characters
+                        if len(project_index) > max_index_size:
+                            project_index = project_index[:max_index_size] + "\n... [المزيد من الملفات متاح عند الطلب / More files available on request]"
+                        
+                        parts.extend(
+                            [
+                                "\n## بنية المشروع (Project Structure):",
+                                project_index,
+                                "\n💡 استخدم هذه البنية لفهم المشروع ولكن يمكنك قراءة أي ملف للحصول على تفاصيل دقيقة.",
+                            ]
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Failed to build project index for prompt: {e}")
+
+            # Read key project files with size limits
+            try:
+                project_files = self._read_key_project_files()
+                if project_files:
+                    parts.append("\n## ملفات المشروع الرئيسية:")
+                    total_file_content = 0
+                    max_total_content = 15000  # Maximum total characters from all files
+                    
+                    for filename, content in list(project_files.items())[:5]:  # Limit to 5 files
+                        if total_file_content >= max_total_content:
+                            parts.append(f"\n... [المزيد من الملفات متاح / More files available]")
+                            break
+                        
+                        # Limit individual file content
+                        max_file_size = 3000
+                        if len(content) > max_file_size:
+                            content = content[:max_file_size] + "\n[... truncated ...]"
+                        
+                        parts.append(f"\n### {filename}:")
+                        parts.append(f"```\n{content}\n```")
+                        total_file_content += len(content)
+            except Exception as e:
+                self.logger.warning(f"Failed to read project files for prompt: {e}")
+
+            if deep_index_summary:
+                try:
+                    # Limit deep index summary size
+                    max_summary_size = 2000
+                    if len(deep_index_summary) > max_summary_size:
+                        deep_index_summary = deep_index_summary[:max_summary_size] + "\n... [truncated]"
+                    parts.extend(["\n## بنية الكود (تحليل هيكلي عميق):", deep_index_summary])
+                except Exception as e:
+                    self.logger.warning(f"Failed to add deep index summary to prompt: {e}")
+
+            if related_context:
+                try:
+                    parts.append("\n## سياق ذو صلة:")
+                    for i, ctx in enumerate(related_context[:3], 1):
+                        parts.append(f"\n### مقطع {i} من {ctx.get('file_path', 'unknown')}:")
+                        parts.append(ctx.get("content", "")[:500])
+                except Exception as e:
+                    self.logger.warning(f"Failed to add related context to prompt: {e}")
+
+            final_prompt = "\n".join(parts)
+            
+            # Log prompt size for monitoring
+            prompt_size = len(final_prompt)
+            self.logger.info(f"Built system prompt: {prompt_size:,} characters")
+            
+            # Warn if prompt is very large
+            if prompt_size > 50000:
+                self.logger.warning(
+                    f"System prompt is very large ({prompt_size:,} chars). "
+                    "This may cause issues with some AI models."
                 )
-
-        project_files = self._read_key_project_files()
-        if project_files:
-            parts.append("\n## ملفات المشروع الرئيسية:")
-            for filename, content in project_files.items():
-                parts.append(f"\n### {filename}:")
-                parts.append(f"```\n{content}\n```")
-
-        if deep_index_summary:
-            parts.extend(["\n## بنية الكود (تحليل هيكلي عميق):", deep_index_summary])
-
-        if related_context:
-            parts.append("\n## سياق ذو صلة:")
-            for i, ctx in enumerate(related_context[:3], 1):
-                parts.append(f"\n### مقطع {i} من {ctx.get('file_path', 'unknown')}:")
-                parts.append(ctx.get("content", "")[:500])
-
-        return "\n".join(parts)
+            
+            return final_prompt
+            
+        except Exception as e:
+            self.logger.error(f"Critical error building system prompt: {e}", exc_info=True)
+            # Return a minimal fallback prompt to avoid total failure
+            return (
+                "أنت مساعد ذكاء اصطناعي متخصص في تحليل وفهم مشاريع البرمجة.\n"
+                "You are an AI assistant specialized in analyzing and understanding programming projects.\n"
+                "يمكنك الإجابة على الأسئلة المتعلقة بالمشروع.\n"
+                "You can answer questions about the project."
+            )
 
     def execute_modification(
         self, objective: str, user: User, conversation_id: int | None = None
