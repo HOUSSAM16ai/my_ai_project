@@ -145,19 +145,19 @@ def ask(question: str, k: int = typer.Option(8, help="Number of context chunks."
         # Display the bilingual error message from the answer field
         error_message = result.get("answer") or result.get("error") or "Unknown error"
         console.print(f"[red]{error_message}[/red]")
-        
+
         # Show technical details if available
         meta = result.get("meta", {})
         if meta:
             console.rule("[dim]Technical Details[/dim]")
             console.print(f"[dim]Model: {meta.get('model', 'N/A')}[/dim]")
             console.print(f"[dim]Elapsed: {meta.get('elapsed_s', 0):.2f}s[/dim]")
-            if meta.get('prompt_length'):
+            if meta.get("prompt_length"):
                 console.print(f"[dim]Prompt length: {meta.get('prompt_length'):,} chars[/dim]")
-            if meta.get('max_tokens_used'):
+            if meta.get("max_tokens_used"):
                 console.print(f"[dim]Max tokens: {meta.get('max_tokens_used'):,}[/dim]")
         raise typer.Exit(code=1)
-    
+
     sources = result.get("sources", [])
     console.rule("[bold cyan]Agent Response[/bold cyan]")
     console.print(result.get("code") or result.get("answer") or result.get("message"))

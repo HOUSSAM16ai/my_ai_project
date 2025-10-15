@@ -765,15 +765,15 @@ class MaestroGenerationService:
         _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
-        
+
         # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
         prompt_length = len(prompt)
         is_complex_question = prompt_length > 5000  # Similar to admin_ai_service threshold
-        
+
         # Allocate more tokens for complex questions
         max_tokens = 16000 if is_complex_question else 4000
         max_retries = 2 if is_complex_question else 1
-        
+
         try:
             answer = self.text_completion(
                 "You are a concise, helpful AI assistant.",
@@ -784,13 +784,11 @@ class MaestroGenerationService:
                 fail_hard=False,  # Don't raise exceptions, return errors gracefully
                 model=model,
             )
-            
+
             # Check if we got an empty response (indicates failure)
             if not answer:
                 error_msg = self._build_bilingual_error_message(
-                    "no_response",
-                    prompt_length,
-                    max_tokens
+                    "no_response", prompt_length, max_tokens
                 )
                 return {
                     "status": "error",
@@ -804,7 +802,7 @@ class MaestroGenerationService:
                         "max_tokens_used": max_tokens,
                     },
                 }
-            
+
             return {
                 "status": "success",
                 "answer": answer,
@@ -820,14 +818,10 @@ class MaestroGenerationService:
         except Exception as exc:
             if os.getenv("MAESTRO_SUPPRESS_CTX_ERRORS", "0") != "1":
                 self._safe_log("[forge_new_code] Failure", level="error", exc_info=True)
-            
+
             # SUPERHUMAN ERROR HANDLING: Provide bilingual, user-friendly error messages
-            error_msg = self._build_bilingual_error_message(
-                str(exc),
-                prompt_length,
-                max_tokens
-            )
-            
+            error_msg = self._build_bilingual_error_message(str(exc), prompt_length, max_tokens)
+
             return {
                 "status": "error",
                 "error": str(exc),
@@ -846,7 +840,7 @@ class MaestroGenerationService:
     ) -> str:
         """Build user-friendly bilingual error messages - SUPERHUMAN EDITION"""
         error_lower = error.lower()
-        
+
         # Timeout error
         if "timeout" in error_lower:
             return (
@@ -868,7 +862,7 @@ class MaestroGenerationService:
                 f"- Max tokens: {max_tokens:,}\n"
                 f"- Error: {error}"
             )
-        
+
         # Rate limit error
         if "rate" in error_lower and "limit" in error_lower:
             return (
@@ -884,7 +878,7 @@ class MaestroGenerationService:
                 f"**Technical Details:**\n"
                 f"- Error: {error}"
             )
-        
+
         # Context length error
         if "context" in error_lower or "length" in error_lower or "token" in error_lower:
             return (
@@ -906,7 +900,7 @@ class MaestroGenerationService:
                 f"- Max tokens: {max_tokens:,}\n"
                 f"- Error: {error}"
             )
-        
+
         # API key or authentication error
         if "api key" in error_lower or "auth" in error_lower or "unauthorized" in error_lower:
             return (
@@ -922,7 +916,7 @@ class MaestroGenerationService:
                 f"**Technical Details:**\n"
                 f"- Error: {error}"
             )
-        
+
         # Empty response or no response
         if error == "no_response":
             return (
@@ -943,7 +937,7 @@ class MaestroGenerationService:
                 f"- Prompt length: {prompt_length:,} characters\n"
                 f"- Max tokens: {max_tokens:,}"
             )
-        
+
         # Generic error
         return (
             f"⚠️ **حدث خطأ** (Error Occurred)\n\n"
@@ -1005,9 +999,7 @@ class MaestroGenerationService:
             )
             # SUPERHUMAN: Use the same bilingual error message builder
             error_msg = self._build_bilingual_error_message(
-                str(exc),
-                len(prompt),
-                16000  # Max tokens for comprehensive responses
+                str(exc), len(prompt), 16000  # Max tokens for comprehensive responses
             )
             return {
                 "status": "error",
