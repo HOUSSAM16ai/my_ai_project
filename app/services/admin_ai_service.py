@@ -76,16 +76,22 @@ ENABLE_DEEP_INDEX = os.getenv("ADMIN_AI_ENABLE_DEEP_INDEX", "1") == "1"
 DEFAULT_MODEL = os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
 
 # SUPERHUMAN CONFIGURATION - Long question handling with EXTREME MODE support
-MAX_QUESTION_LENGTH = int(os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "100000"))  # Doubled for extreme cases
+MAX_QUESTION_LENGTH = int(
+    os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "100000")
+)  # Doubled for extreme cases
 MAX_RESPONSE_TOKENS = int(
     os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "32000")  # Doubled for extremely complex answers
 )  # tokens for very long responses
 LONG_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_LONG_QUESTION_THRESHOLD", "5000"))  # characters
-EXTREME_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_EXTREME_QUESTION_THRESHOLD", "20000"))  # For superhuman processing
+EXTREME_QUESTION_THRESHOLD = int(
+    os.getenv("ADMIN_AI_EXTREME_QUESTION_THRESHOLD", "20000")
+)  # For superhuman processing
 ENABLE_STREAMING = (
     os.getenv("ADMIN_AI_ENABLE_STREAMING", "1") == "1"
 )  # Enable streaming for long responses
-EXTREME_COMPLEXITY_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"  # Match LLM client setting
+EXTREME_COMPLEXITY_MODE = (
+    os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+)  # Match LLM client setting
 
 
 class AdminAIService:
@@ -622,7 +628,7 @@ class AdminAIService:
                             f"- 📝 حتى 32,000 رمز للإجابة (Up to 32k tokens for answer)\n"
                             f"- 💪 معالجة تتفوق على OpenAI نفسها (Better than OpenAI itself)"
                         )
-                    
+
                     error_msg = (
                         f"⚠️ انتهت مهلة الانتظار للإجابة على السؤال.\n\n"
                         f"Timeout occurred while waiting for AI response.\n\n"
