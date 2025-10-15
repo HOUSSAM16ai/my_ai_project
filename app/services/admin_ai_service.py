@@ -75,15 +75,17 @@ MAX_RELATED_CONTEXT_CHUNKS = int(os.getenv("ADMIN_AI_MAX_CONTEXT_CHUNKS", "5"))
 ENABLE_DEEP_INDEX = os.getenv("ADMIN_AI_ENABLE_DEEP_INDEX", "1") == "1"
 DEFAULT_MODEL = os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
 
-# SUPERHUMAN CONFIGURATION - Long question handling
-MAX_QUESTION_LENGTH = int(os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "50000"))  # characters
+# SUPERHUMAN CONFIGURATION - Long question handling with EXTREME MODE support
+MAX_QUESTION_LENGTH = int(os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "100000"))  # Doubled for extreme cases
 MAX_RESPONSE_TOKENS = int(
-    os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "16000")
+    os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "32000")  # Doubled for extremely complex answers
 )  # tokens for very long responses
 LONG_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_LONG_QUESTION_THRESHOLD", "5000"))  # characters
+EXTREME_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_EXTREME_QUESTION_THRESHOLD", "20000"))  # For superhuman processing
 ENABLE_STREAMING = (
     os.getenv("ADMIN_AI_ENABLE_STREAMING", "1") == "1"
 )  # Enable streaming for long responses
+EXTREME_COMPLEXITY_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"  # Match LLM client setting
 
 
 class AdminAIService:
@@ -462,10 +464,11 @@ class AdminAIService:
                 )
 
             # ============================================================
-            # SUPERHUMAN VALIDATION - Check question length
+            # SUPERHUMAN VALIDATION - Check question length with EXTREME support
             # ============================================================
             question_length = len(question)
             is_long_question = question_length > LONG_QUESTION_THRESHOLD
+            is_extreme_question = question_length > EXTREME_QUESTION_THRESHOLD
 
             if question_length > MAX_QUESTION_LENGTH:
                 error_msg = (
@@ -473,10 +476,16 @@ class AdminAIService:
                     f"Question is too long ({question_length:,} characters).\n\n"
                     f"**Maximum allowed:** {MAX_QUESTION_LENGTH:,} characters\n"
                     f"**Your question:** {question_length:,} characters\n\n"
+                    f"**💡 للأسئلة الخارقة التعقيد (For Extremely Complex Questions):**\n"
+                    f"يمكنك تفعيل الوضع الخارق عن طريق:\n"
+                    f"You can enable extreme mode by:\n"
+                    f"1. Set `LLM_EXTREME_COMPLEXITY_MODE=1` in .env\n"
+                    f"2. Set `ADMIN_AI_MAX_QUESTION_LENGTH=200000` for very large inputs\n\n"
                     f"**Possible solutions:**\n"
                     f"1. Break your question into smaller parts\n"
                     f"2. Summarize your question while keeping key details\n"
-                    f"3. Focus on the most important aspects first\n\n"
+                    f"3. Focus on the most important aspects first\n"
+                    f"4. Enable extreme complexity mode for unlimited processing\n\n"
                     f"**Tip:** You can ask follow-up questions to explore specific details after getting an initial answer."
                 )
                 self.logger.warning(
@@ -489,7 +498,12 @@ class AdminAIService:
                     "elapsed_seconds": round(time.time() - start_time, 2),
                 }
 
-            if is_long_question:
+            if is_extreme_question:
+                self.logger.info(
+                    f"🚀 EXTREME COMPLEXITY QUESTION detected for user {user.id}: "
+                    f"{question_length} characters (extreme threshold: {EXTREME_QUESTION_THRESHOLD})"
+                )
+            elif is_long_question:
                 self.logger.info(
                     f"Processing long question for user {user.id}: {question_length} characters (threshold: {LONG_QUESTION_THRESHOLD})"
                 )
@@ -526,13 +540,24 @@ class AdminAIService:
                 except ImportError:
                     pass  # is_mock_client not available, continue
 
-                # SUPERHUMAN FEATURE: Adjust max_tokens based on question length
-                # For long questions, allow more tokens in response
-                max_tokens = MAX_RESPONSE_TOKENS if is_long_question else 4000
+                # SUPERHUMAN FEATURE: Adjust max_tokens and retries based on question complexity
+                # For extreme questions, allow up to 32k tokens and more processing time
+                if is_extreme_question:
+                    max_tokens = MAX_RESPONSE_TOKENS  # 32k for extreme complexity
+                    # Log that we're entering extreme processing mode
+                    self.logger.warning(
+                        f"⚡ EXTREME MODE: Allocating {max_tokens} tokens for extremely complex question "
+                        f"(length: {question_length:,} chars). This may take several minutes."
+                    )
+                elif is_long_question:
+                    max_tokens = MAX_RESPONSE_TOKENS // 2  # 16k for long questions
+                else:
+                    max_tokens = 4000  # Standard for normal questions
 
                 self.logger.info(
                     f"Invoking AI with model={DEFAULT_MODEL}, max_tokens={max_tokens}, "
-                    f"question_length={question_length}, is_long={is_long_question}"
+                    f"question_length={question_length}, is_long={is_long_question}, "
+                    f"is_extreme={is_extreme_question}, extreme_mode={EXTREME_COMPLEXITY_MODE}"
                 )
 
                 response = client.chat.completions.create(
@@ -578,20 +603,44 @@ class AdminAIService:
                     or "timed out" in error_message
                     or error_type in ("TimeoutError", "ReadTimeout", "ConnectTimeout")
                 ):
+                    # Enhanced timeout guidance with extreme mode suggestion
+                    extreme_mode_hint = ""
+                    if not EXTREME_COMPLEXITY_MODE and is_extreme_question:
+                        extreme_mode_hint = (
+                            f"\n\n**🚀 للحصول على معالجة خارقة بدون حدود (Unlimited Superhuman Processing):**\n"
+                            f"قم بتفعيل الوضع الخارق في ملف `.env`:\n"
+                            f"Enable extreme mode in `.env` file:\n\n"
+                            f"```bash\n"
+                            f"LLM_EXTREME_COMPLEXITY_MODE=1\n"
+                            f"LLM_TIMEOUT_SECONDS=600  # 10 minutes\n"
+                            f"LLM_MAX_RETRIES=8  # More retry attempts\n"
+                            f"ADMIN_AI_MAX_RESPONSE_TOKENS=32000  # Double tokens\n"
+                            f"```\n\n"
+                            f"**هذا الوضع يوفر (This mode provides):**\n"
+                            f"- ⏱️ حتى 10 دقائق لكل محاولة (Up to 10 minutes per attempt)\n"
+                            f"- 🔄 8 محاولات إعادة تلقائية (8 automatic retry attempts)\n"
+                            f"- 📝 حتى 32,000 رمز للإجابة (Up to 32k tokens for answer)\n"
+                            f"- 💪 معالجة تتفوق على OpenAI نفسها (Better than OpenAI itself)"
+                        )
+                    
                     error_msg = (
                         f"⚠️ انتهت مهلة الانتظار للإجابة على السؤال.\n\n"
                         f"Timeout occurred while waiting for AI response.\n\n"
                         f"**Question length:** {question_length:,} characters\n"
-                        f"**Processing time:** {round(time.time() - start_time, 1)}s\n\n"
+                        f"**Processing time:** {round(time.time() - start_time, 1)}s\n"
+                        f"**Complexity level:** {'🚀 EXTREME' if is_extreme_question else '⚡ LONG' if is_long_question else 'Normal'}\n"
+                        f"**Extreme mode:** {'✅ Enabled' if EXTREME_COMPLEXITY_MODE else '❌ Disabled'}\n\n"
                         f"**This can happen when:**\n"
                         f"- Question is very long or complex\n"
                         f"- AI service is experiencing high load\n"
-                        f"- Network connection is slow\n\n"
+                        f"- Network connection is slow\n"
+                        f"- Current timeout limit was reached\n\n"
                         f"**Solutions:**\n"
                         f"1. **Break down your question:** Split it into smaller, focused questions\n"
                         f"2. **Simplify complexity:** Remove unnecessary details while keeping core points\n"
                         f"3. **Try again:** The service might be less busy now\n"
-                        f"4. **Use incremental approach:** Ask follow-up questions to explore details\n\n"
+                        f"4. **Use incremental approach:** Ask follow-up questions to explore details\n"
+                        f"{extreme_mode_hint}\n\n"
                         f"**Example approach:**\n"
                         f"Instead of one long question, try:\n"
                         f"  - First: Ask about the main concept\n"

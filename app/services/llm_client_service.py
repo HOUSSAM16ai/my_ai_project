@@ -44,11 +44,12 @@
 #    LLM_DISABLE_CACHE=0|1
 #    LLM_HTTP_FALLBACK=0|1
 #
-#    LLM_MAX_RETRIES=2
+#    LLM_MAX_RETRIES=2                  # Default retries (use 5+ for complex questions)
 #    LLM_RETRY_BACKOFF_BASE=1.3
 #    LLM_RETRY_JITTER=1
 #    LLM_RETRY_ON_AUTH=0              (auth_error normally not retried)
 #    LLM_RETRY_ON_PARSE=0
+#    LLM_EXTREME_COMPLEXITY_MODE=0    # When 1, increases retries and timeout drastically
 #
 #    LLM_ENABLE_STREAM=0
 #    LLM_FORCE_MODEL=""               Force override model name
@@ -556,9 +557,11 @@ def _build_client() -> Any:
     build_id = _CLIENT_BUILD_SEQ
 
     creds = _resolve_api_credentials()
+    # SUPERHUMAN TIMEOUT - Extreme mode allows up to 10 minutes for very complex questions
+    default_timeout = 600.0 if _LLM_EXTREME_MODE else 180.0
     timeout_s = float(
-        _read_config_key("LLM_TIMEOUT_SECONDS") or 180.0
-    )  # Increased from 90 to 180 for long questions
+        _read_config_key("LLM_TIMEOUT_SECONDS") or default_timeout
+    )  # Increased from 90 to 180 (or 600 in extreme mode) for long/complex questions
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
     forced_mock = _should_force_mock()
 
@@ -654,8 +657,10 @@ def is_mock_client(client: Any | None = None) -> bool:
 # METRICS / STATE / COST / HOOKS / BREAKER
 # ======================================================================================
 
-_LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
-_LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", "1.3"))
+# SUPERHUMAN RETRY CONFIGURATION - For extremely complex questions
+_LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+_LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "8" if _LLM_EXTREME_MODE else "2"))
+_LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", "1.5" if _LLM_EXTREME_MODE else "1.3"))
 _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
 _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
 _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
