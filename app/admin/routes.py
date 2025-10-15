@@ -175,20 +175,43 @@ def handle_chat():
     if not question:
         return jsonify({"status": "error", "message": "Question is required."}), 400
 
+    # Validate question length before processing
+    max_question_length = 100000  # 100k characters max
+    if len(question) > max_question_length:
+        error_msg = (
+            f"⚠️ السؤال طويل جداً ({len(question):,} حرف).\n\n"
+            f"Question is too long ({len(question):,} characters).\n\n"
+            f"**Maximum allowed:** {max_question_length:,} characters\n\n"
+            f"**الحل (Solution):**\n"
+            f"1. اختصر السؤال (Shorten your question)\n"
+            f"2. قسّم السؤال إلى أجزاء أصغر (Break it into smaller parts)\n"
+            f"3. ركّز على النقاط الرئيسية (Focus on main points)"
+        )
+        return jsonify({
+            "status": "error",
+            "error": "Question too long",
+            "answer": error_msg,
+            "conversation_id": conversation_id
+        }), 200
+
     try:
         service = get_admin_ai_service()
 
         # Auto-create conversation if not provided
         if not conversation_id:
-            # Generate a smart title from the first question
-            title = question[:100] + "..." if len(question) > 100 else question
-            conversation = service.create_conversation(
-                user=current_user._get_current_object(), title=title, conversation_type="general"
-            )
-            conversation_id = conversation.id
-            current_app.logger.info(
-                f"Auto-created conversation #{conversation_id} for user {current_user.id}"
-            )
+            try:
+                # Generate a smart title from the first question
+                title = question[:100] + "..." if len(question) > 100 else question
+                conversation = service.create_conversation(
+                    user=current_user._get_current_object(), title=title, conversation_type="general"
+                )
+                conversation_id = conversation.id
+                current_app.logger.info(
+                    f"Auto-created conversation #{conversation_id} for user {current_user.id}"
+                )
+            except Exception as e:
+                current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
+                # Continue without conversation - will be handled in service
 
         result = service.answer_question(
             question=question,
@@ -208,13 +231,19 @@ def handle_chat():
         error_msg = (
             f"⚠️ حدث خطأ غير متوقع في معالجة السؤال.\n\n"
             f"An unexpected error occurred while processing your question.\n\n"
-            f"**Error details:** {str(e)}\n\n"
-            f"**Possible causes:**\n"
-            f"- Temporary service interruption\n"
-            f"- Invalid configuration\n"
-            f"- Database connection issue\n\n"
-            f"**Solution:**\n"
-            f"Please try again. If the problem persists, check the application logs or contact support."
+            f"**نوع الخطأ (Error type):** {type(e).__name__}\n"
+            f"**التفاصيل (Details):** {str(e)[:200]}\n\n"
+            f"**الأسباب المحتملة (Possible causes):**\n"
+            f"- انقطاع مؤقت في الخدمة (Temporary service interruption)\n"
+            f"- تكوين غير صحيح (Invalid configuration)\n"
+            f"- مشكلة في الاتصال بقاعدة البيانات (Database connection issue)\n"
+            f"- السؤال معقد جداً (Question too complex)\n\n"
+            f"**الحل (Solution):**\n"
+            f"1. حاول مرة أخرى (Try again)\n"
+            f"2. اطرح سؤالاً أبسط (Ask a simpler question)\n"
+            f"3. ابدأ محادثة جديدة (Start a new conversation)\n"
+            f"4. راجع سجلات التطبيق أو اتصل بالدعم الفني إذا استمرت المشكلة\n"
+            f"   (Check application logs or contact support if the problem persists)"
         )
         return (
             jsonify(
