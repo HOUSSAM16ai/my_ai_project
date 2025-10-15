@@ -38,18 +38,19 @@
 #    OPENROUTER_API_KEY                Primary key (priority #1)
 #    OPENAI_API_KEY                    Secondary key
 #    LLM_BASE_URL                      Override base URL
-#    LLM_TIMEOUT_SECONDS=180            # Increased from 90 to handle long/complex questions
+#    LLM_TIMEOUT_SECONDS=180            # Default timeout (auto-adjusts in extreme/ultimate modes)
 #    LLM_FORCE_MOCK=0|1
 #    LLM_MOCK_MODE=0|1                 (alias)
 #    LLM_DISABLE_CACHE=0|1
 #    LLM_HTTP_FALLBACK=0|1
 #
-#    LLM_MAX_RETRIES=2                  # Default retries (use 5+ for complex questions)
+#    LLM_MAX_RETRIES=2                  # Default retries (auto-increases in extreme/ultimate modes)
 #    LLM_RETRY_BACKOFF_BASE=1.3
 #    LLM_RETRY_JITTER=1
 #    LLM_RETRY_ON_AUTH=0              (auth_error normally not retried)
 #    LLM_RETRY_ON_PARSE=0
-#    LLM_EXTREME_COMPLEXITY_MODE=0    # When 1, increases retries and timeout drastically
+#    LLM_EXTREME_COMPLEXITY_MODE=0    # When 1: 8 retries, 600s timeout, backoff 1.5
+#    LLM_ULTIMATE_COMPLEXITY_MODE=0   # When 1: 20 retries, 1800s timeout, backoff 1.8 (SUPERHUMAN MODE)
 #
 #    LLM_ENABLE_STREAM=0
 #    LLM_FORCE_MODEL=""               Force override model name
@@ -558,10 +559,14 @@ def _build_client() -> Any:
 
     creds = _resolve_api_credentials()
     # SUPERHUMAN TIMEOUT - Extreme mode allows up to 10 minutes for very complex questions
-    default_timeout = 600.0 if _LLM_EXTREME_MODE else 180.0
+    # SUPERHUMAN TIMEOUT CONFIGURATION
+    # Ultimate mode: 1800s (30 minutes) - for questions that MUST be answered
+    # Extreme mode: 600s (10 minutes) - for very complex questions
+    # Normal mode: 180s (3 minutes) - for typical questions
+    default_timeout = 1800.0 if _LLM_ULTIMATE_MODE else (600.0 if _LLM_EXTREME_MODE else 180.0)
     timeout_s = float(
         _read_config_key("LLM_TIMEOUT_SECONDS") or default_timeout
-    )  # Increased from 90 to 180 (or 600 in extreme mode) for long/complex questions
+    )  # Adaptive timeout based on complexity mode
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
     forced_mock = _should_force_mock()
 
@@ -659,8 +664,20 @@ def is_mock_client(client: Any | None = None) -> bool:
 
 # SUPERHUMAN RETRY CONFIGURATION - For extremely complex questions
 _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-_LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "8" if _LLM_EXTREME_MODE else "2"))
-_LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", "1.5" if _LLM_EXTREME_MODE else "1.3"))
+# ULTIMATE MODE: For questions that MUST be answered no matter what (like tech giants)
+_LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+_LLM_MAX_RETRIES = int(
+    os.getenv(
+        "LLM_MAX_RETRIES",
+        "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
+    )
+)
+_LLM_RETRY_BACKOFF_BASE = float(
+    os.getenv(
+        "LLM_RETRY_BACKOFF_BASE",
+        "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3")
+    )
+)
 _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
 _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
 _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None

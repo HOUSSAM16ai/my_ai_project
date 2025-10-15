@@ -785,22 +785,39 @@ class MaestroGenerationService:
         started = time.perf_counter()
 
         # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
-        # Support for EXTREME COMPLEXITY MODE
+        # Support for ULTIMATE COMPLEXITY MODE (better than tech giants)
         prompt_length = len(prompt)
-        is_complex_question = prompt_length > 5000  # Similar to admin_ai_service threshold
-        is_extreme_question = prompt_length > 20000  # Extremely complex threshold
-
-        # Allocate more tokens for complex questions with extreme mode support
-        if is_extreme_question:
-            max_tokens = 32000  # Maximum for extreme complexity
-            max_retries = 5  # More retries for extreme cases
+        
+        # Check if ULTIMATE or EXTREME mode is enabled via environment
+        ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+        extreme_mode = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+        
+        # Define complexity thresholds
+        is_complex_question = prompt_length > 5000
+        is_extreme_question = prompt_length > 20000
+        is_ultimate_question = prompt_length > 50000 or ultimate_mode
+        
+        # ULTIMATE MODE: Answer no matter what (like tech giants - Google, Microsoft, etc.)
+        if is_ultimate_question or ultimate_mode:
+            max_tokens = 128000  # Maximum possible (Claude 3.7 Sonnet supports up to 200K)
+            max_retries = 10  # Many retries - we WILL answer this
             self._safe_log(
-                f"⚡ EXTREME COMPLEXITY: prompt_length={prompt_length}, max_tokens={max_tokens}, max_retries={max_retries}",
+                f"🚀 ULTIMATE COMPLEXITY MODE: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
                 level="warning"
             )
+        # EXTREME MODE: Very complex questions
+        elif is_extreme_question or extreme_mode:
+            max_tokens = 64000  # Very high token limit
+            max_retries = 5  # More retries for extreme cases
+            self._safe_log(
+                f"⚡ EXTREME COMPLEXITY: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
+                level="warning"
+            )
+        # COMPLEX MODE: Long questions
         elif is_complex_question:
             max_tokens = 16000
             max_retries = 2
+        # NORMAL MODE: Standard questions
         else:
             max_tokens = 4000
             max_retries = 1
@@ -1063,8 +1080,11 @@ class MaestroGenerationService:
                 "[generate_comprehensive_response] Failure", level="error", exc_info=True
             )
             # SUPERHUMAN: Use the same bilingual error message builder
+            # For comprehensive responses, we allocate even more tokens
+            ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+            max_tokens_for_error = 128000 if ultimate_mode else 32000
             error_msg = self._build_bilingual_error_message(
-                str(exc), len(prompt), 16000  # Max tokens for comprehensive responses
+                str(exc), len(prompt), max_tokens_for_error
             )
             return {
                 "status": "error",
