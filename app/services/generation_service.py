@@ -701,7 +701,7 @@ class MaestroGenerationService:
         if last_err:
             raise last_err
         if fail_hard:
-            raise RuntimeError(f"text_completion_failed:unknown_error")
+            raise RuntimeError("text_completion_failed:unknown_error")
         return ""
 
     # ------------------------------------------------------------------
