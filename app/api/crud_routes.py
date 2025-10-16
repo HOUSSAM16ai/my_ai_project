@@ -25,11 +25,27 @@ from sqlalchemy import asc, desc, text
 
 from app import db
 from app.api import api_v1_bp
-from app.models import Mission, Task, User
 from app.services.api_contract_service import validate_contract
 from app.services.api_observability_service import monitor_performance
 from app.services.api_security_service import rate_limit, require_jwt_auth
+
+# Use model registry to reduce coupling - models loaded lazily on first access
+from app.utils.model_registry import get_mission_model, get_task_model, get_user_model
+
 from app.validators.schemas import PaginationSchema, TaskSchema, UserSchema
+
+# Lazy-loaded model references
+User = None
+Mission = None
+Task = None
+
+def _load_models():
+    """Load models on first use."""
+    global User, Mission, Task
+    if User is None:
+        User = get_user_model()
+        Mission = get_mission_model()
+        Task = get_task_model()
 
 # ======================================================================================
 # HELPER FUNCTIONS
@@ -129,6 +145,7 @@ def get_users():
     - email: Filter by email
     - is_admin: Filter by admin status
     """
+    _load_models()
     try:
         # Get pagination
         pagination = get_pagination_params()
