@@ -1824,3 +1824,216 @@ def create_incident():
     except Exception as e:
         current_app.logger.error(f"Create incident failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ======================================================================================
+# PROMPT ENGINEERING ENDPOINTS - SUPERHUMAN EDITION
+# ======================================================================================
+
+try:
+    from app.services.prompt_engineering_service import get_prompt_engineering_service
+except ImportError:
+    get_prompt_engineering_service = None
+
+
+@bp.route("/api/prompt-engineering/generate", methods=["POST"])
+@admin_required
+def handle_generate_prompt():
+    """
+    API endpoint لتوليد Prompt خارق احترافي
+    
+    توليد prompt engineering عظيم يفهم المشروع بشكل عميق
+    """
+    if not get_prompt_engineering_service:
+        return jsonify({
+            "status": "error", 
+            "message": "⚠️ Prompt Engineering service not available."
+        }), 503
+
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({
+                "status": "error", 
+                "message": "Invalid JSON in request body."
+            }), 400
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to parse JSON: {str(e)}"
+        }), 400
+
+    user_description = data.get("description", "").strip()
+    template_id = data.get("template_id")
+    conversation_id = data.get("conversation_id")
+    use_rag = data.get("use_rag", True)
+    prompt_type = data.get("prompt_type", "general")
+
+    if not user_description:
+        return jsonify({
+            "status": "error",
+            "message": "⚠️ الوصف مطلوب. Description is required."
+        }), 400
+
+    # Validate description length
+    max_description_length = 10000  # 10k characters
+    if len(user_description) > max_description_length:
+        return jsonify({
+            "status": "error",
+            "message": (
+                f"⚠️ الوصف طويل جداً ({len(user_description):,} حرف).\n"
+                f"Description too long ({len(user_description):,} characters).\n"
+                f"**Maximum:** {max_description_length:,} characters"
+            )
+        }), 400
+
+    try:
+        service = get_prompt_engineering_service()
+        
+        # Generate the prompt
+        result = service.generate_prompt(
+            user_description=user_description,
+            user=current_user._get_current_object(),
+            template_id=template_id,
+            conversation_id=conversation_id,
+            use_rag=use_rag,
+            prompt_type=prompt_type,
+        )
+
+        return jsonify(result)
+
+    except Exception as e:
+        current_app.logger.error(f"Prompt generation API failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "message": (
+                f"⚠️ حدث خطأ في توليد الـ Prompt.\n\n"
+                f"Failed to generate prompt.\n\n"
+                f"**Error:** {str(e)}\n\n"
+                f"Please try again or contact support."
+            )
+        }), 200
+
+
+@bp.route("/api/prompt-engineering/templates", methods=["GET"])
+@admin_required
+def handle_list_templates():
+    """API endpoint لجلب قوالب Prompt Engineering"""
+    if not get_prompt_engineering_service:
+        return jsonify({
+            "status": "error", 
+            "message": "Service not available"
+        }), 503
+
+    try:
+        category = request.args.get("category")
+        active_only = request.args.get("active_only", "true").lower() == "true"
+        
+        service = get_prompt_engineering_service()
+        templates = service.list_templates(category=category, active_only=active_only)
+
+        return jsonify({
+            "status": "success",
+            "templates": templates,
+            "count": len(templates)
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"List templates failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@bp.route("/api/prompt-engineering/templates", methods=["POST"])
+@admin_required
+def handle_create_template():
+    """API endpoint لإنشاء قالب جديد"""
+    if not get_prompt_engineering_service:
+        return jsonify({
+            "status": "error", 
+            "message": "Service not available"
+        }), 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid request body"
+            }), 400
+
+        name = data.get("name", "").strip()
+        template_content = data.get("template_content", "").strip()
+        
+        if not name or not template_content:
+            return jsonify({
+                "status": "error",
+                "message": "⚠️ Name and template content are required"
+            }), 400
+
+        service = get_prompt_engineering_service()
+        result = service.create_template(
+            name=name,
+            template_content=template_content,
+            user=current_user._get_current_object(),
+            description=data.get("description"),
+            category=data.get("category", "general"),
+            few_shot_examples=data.get("few_shot_examples"),
+            variables=data.get("variables"),
+        )
+
+        return jsonify(result)
+
+    except Exception as e:
+        current_app.logger.error(f"Create template failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@bp.route("/api/prompt-engineering/rate/<int:prompt_id>", methods=["POST"])
+@admin_required
+def handle_rate_prompt(prompt_id):
+    """API endpoint لتقييم Prompt مولد (RLHF)"""
+    if not get_prompt_engineering_service:
+        return jsonify({
+            "status": "error", 
+            "message": "Service not available"
+        }), 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid request body"
+            }), 400
+
+        rating = data.get("rating")
+        feedback_text = data.get("feedback")
+
+        if not rating or not isinstance(rating, int):
+            return jsonify({
+                "status": "error",
+                "message": "⚠️ Rating is required and must be an integer"
+            }), 400
+
+        service = get_prompt_engineering_service()
+        result = service.rate_prompt(
+            prompt_id=prompt_id,
+            rating=rating,
+            feedback_text=feedback_text,
+        )
+
+        return jsonify(result)
+
+    except Exception as e:
+        current_app.logger.error(f"Rate prompt failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500

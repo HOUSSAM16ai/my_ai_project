@@ -1001,6 +1001,221 @@ def index_command(force: bool, json_out: bool, debug: bool):
 
 
 # ======================================================================================
+# PROMPT ENGINEERING COMMANDS - SUPERHUMAN EDITION
+# ======================================================================================
+@mindgate_cli.cli.command("prompt-generate")
+@click.argument("description", nargs=-1, required=True)
+@click.option(
+    "--type",
+    "prompt_type",
+    type=click.Choice([
+        "general", 
+        "code_generation", 
+        "documentation", 
+        "architecture", 
+        "testing",
+        "refactoring"
+    ]),
+    default="general",
+    help="نوع الـ Prompt المطلوب"
+)
+@click.option("--template-id", type=int, help="معرف القالب المراد استخدامه")
+@click.option("--no-rag", is_flag=True, help="تعطيل RAG")
+@click.option("--json-output", "json_out", is_flag=True)
+@click.option("--debug", is_flag=True)
+def prompt_generate_command(
+    description: tuple[str], 
+    prompt_type: str,
+    template_id: int | None,
+    no_rag: bool,
+    json_out: bool, 
+    debug: bool
+):
+    """
+    توليد Prompt Engineering خارق احترافي
+    
+    ينتج prompt مخصص للمشروع يفهم كل فاصلة وعلاقتها بباقي المشروع
+    
+    Examples:
+      flask mindgate prompt-generate "create a REST API for users"
+      flask mindgate prompt-generate "generate tests for database service" --type testing
+      flask mindgate prompt-generate "document the admin panel" --type documentation
+    """
+    try:
+        ensure_services(debug)
+        ensure_db()
+        
+        # Get prompt engineering service
+        try:
+            from app.services.prompt_engineering_service import get_prompt_engineering_service
+            service = get_prompt_engineering_service()
+        except ImportError:
+            raise RuntimeError("⚠️ Prompt Engineering service not available")
+        
+        # Get or create admin user
+        models = _get_models()
+        db = models["db"]
+        User = models["User"]
+        
+        admin_user = db.session.query(User).filter_by(is_admin=True).first()
+        if not admin_user:
+            raise RuntimeError("⚠️ No admin user found. Create one first with: flask users create-admin")
+        
+        # Combine description
+        user_description = " ".join(description).strip()
+        if not user_description:
+            raise ValueError("⚠️ Description cannot be empty")
+        
+        if not json_out:
+            C_CYAN(f"🚀 Generating prompt for: {user_description[:100]}...")
+            C_DIM(f"Type: {prompt_type}, RAG: {not no_rag}")
+        
+        # Generate the prompt
+        result = service.generate_prompt(
+            user_description=user_description,
+            user=admin_user,
+            template_id=template_id,
+            use_rag=not no_rag,
+            prompt_type=prompt_type,
+        )
+        
+        if json_out:
+            click.echo(_safe_json_dump(result))
+        else:
+            if result.get("status") == "success":
+                C_GREEN("✅ Prompt generated successfully!")
+                click.echo(f"\n{'='*80}")
+                click.echo(f"GENERATED PROMPT (ID: {result.get('prompt_id')})")
+                click.echo(f"{'='*80}\n")
+                click.echo(result.get("generated_prompt", ""))
+                click.echo(f"\n{'='*80}")
+                click.echo(f"Template: {result.get('template_name', 'dynamic')}")
+                click.echo(f"Context chunks: {len(result.get('context_snippets', []))}")
+                click.echo(f"Few-shot examples: {len(result.get('few_shot_examples', []))}")
+                click.echo(f"Time: {result.get('elapsed_seconds', 0):.2f}s")
+                C_DIM(f"\n💡 Rate this prompt: flask mindgate prompt-rate {result.get('prompt_id')} --rating 5")
+            else:
+                C_RED("❌ Failed to generate prompt")
+                click.echo(result.get("message", result.get("error", "Unknown error")))
+                
+    except Exception as e:
+        if json_out:
+            click.echo(_safe_json_dump({"error": str(e)}))
+        else:
+            C_RED("❌ Prompt generation failed")
+            _print_exception(e, debug)
+
+
+@mindgate_cli.cli.command("prompt-templates")
+@click.option("--category", help="تصفية حسب الفئة")
+@click.option("--all", "show_all", is_flag=True, help="عرض جميع القوالب (بما فيها غير النشطة)")
+@click.option("--json-output", "json_out", is_flag=True)
+@click.option("--debug", is_flag=True)
+def prompt_templates_command(category: str | None, show_all: bool, json_out: bool, debug: bool):
+    """
+    عرض قوالب Prompt Engineering المتاحة
+    
+    Example:
+      flask mindgate prompt-templates
+      flask mindgate prompt-templates --category code_generation
+    """
+    try:
+        ensure_services(debug)
+        ensure_db()
+        
+        try:
+            from app.services.prompt_engineering_service import get_prompt_engineering_service
+            service = get_prompt_engineering_service()
+        except ImportError:
+            raise RuntimeError("⚠️ Prompt Engineering service not available")
+        
+        templates = service.list_templates(
+            category=category,
+            active_only=not show_all
+        )
+        
+        if json_out:
+            click.echo(_safe_json_dump({"templates": templates, "count": len(templates)}))
+        else:
+            if not templates:
+                C_YELLOW("📝 No templates found")
+                C_DIM("Create one with: flask mindgate prompt-create-template")
+                return
+            
+            C_GREEN(f"📚 Found {len(templates)} template(s)")
+            click.echo()
+            
+            for t in templates:
+                click.echo(f"ID: {t['id']} | {t['name']}")
+                if t.get('description'):
+                    C_DIM(f"  Description: {t['description'][:80]}")
+                click.echo(f"  Category: {t['category']} | Usage: {t['usage_count']} times")
+                if t.get('success_rate'):
+                    click.echo(f"  Success Rate: {t['success_rate']:.1f}%")
+                click.echo()
+                
+    except Exception as e:
+        if json_out:
+            click.echo(_safe_json_dump({"error": str(e)}))
+        else:
+            C_RED("❌ Failed to list templates")
+            _print_exception(e, debug)
+
+
+@mindgate_cli.cli.command("prompt-rate")
+@click.argument("prompt_id", type=int)
+@click.option("--rating", type=click.IntRange(1, 5), required=True, help="التقييم من 1 إلى 5")
+@click.option("--feedback", help="تعليق اختياري")
+@click.option("--json-output", "json_out", is_flag=True)
+@click.option("--debug", is_flag=True)
+def prompt_rate_command(
+    prompt_id: int,
+    rating: int,
+    feedback: str | None,
+    json_out: bool,
+    debug: bool
+):
+    """
+    تقييم Prompt مولد (RLHF feedback loop)
+    
+    Example:
+      flask mindgate prompt-rate 123 --rating 5 --feedback "Excellent prompt!"
+    """
+    try:
+        ensure_services(debug)
+        ensure_db()
+        
+        try:
+            from app.services.prompt_engineering_service import get_prompt_engineering_service
+            service = get_prompt_engineering_service()
+        except ImportError:
+            raise RuntimeError("⚠️ Prompt Engineering service not available")
+        
+        result = service.rate_prompt(
+            prompt_id=prompt_id,
+            rating=rating,
+            feedback_text=feedback
+        )
+        
+        if json_out:
+            click.echo(_safe_json_dump(result))
+        else:
+            if result.get("status") == "success":
+                C_GREEN("✅ Thank you for your feedback!")
+                click.echo("Your rating will help improve the prompt generation system.")
+            else:
+                C_RED("❌ Failed to rate prompt")
+                click.echo(result.get("message", result.get("error", "Unknown error")))
+                
+    except Exception as e:
+        if json_out:
+            click.echo(_safe_json_dump({"error": str(e)}))
+        else:
+            C_RED("❌ Rating failed")
+            _print_exception(e, debug)
+
+
+# ======================================================================================
 # REGISTER (Flask app factory hook)
 # ======================================================================================
 def init_app(app):
