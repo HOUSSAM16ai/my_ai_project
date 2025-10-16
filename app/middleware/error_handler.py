@@ -36,30 +36,27 @@ from .error_handlers import ERROR_HANDLER_REGISTRY
 def setup_error_handlers(app: Flask):
     """
     إعداد معالجات الأخطاء - Setup error handlers for the Flask app
-    
+
     This function now uses a clean registry pattern to register all error handlers.
     Each handler is a pure function that can be tested independently.
-    
+
     Args:
         app: Flask application instance
     """
     # Register HTTP status code handlers
     for status_code in [400, 401, 403, 404, 405, 422, 500, 503]:
         handler = ERROR_HANDLER_REGISTRY[status_code]
-        
+
         # Wrap handlers that need app context
         if status_code == 500:
             app.errorhandler(status_code)(lambda error, h=handler: h(error, app))
         else:
             app.errorhandler(status_code)(handler)
-    
+
     # Register exception type handlers
     app.errorhandler(ValidationError)(ERROR_HANDLER_REGISTRY[ValidationError])
     app.errorhandler(SQLAlchemyError)(
         lambda error: ERROR_HANDLER_REGISTRY[SQLAlchemyError](error, app)
     )
     app.errorhandler(HTTPException)(ERROR_HANDLER_REGISTRY[HTTPException])
-    app.errorhandler(Exception)(
-        lambda error: ERROR_HANDLER_REGISTRY[Exception](error, app)
-    )
-
+    app.errorhandler(Exception)(lambda error: ERROR_HANDLER_REGISTRY[Exception](error, app))

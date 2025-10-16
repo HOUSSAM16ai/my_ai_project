@@ -18,7 +18,6 @@ maintain and modify without touching code logic.
 """
 
 from decimal import Decimal
-from typing import Any
 
 from ..api.subscription_routes import (
     BillingCycle,
@@ -30,11 +29,11 @@ from ..api.subscription_routes import (
 class SubscriptionPlanFactory:
     """
     Factory for creating subscription plans from configuration data.
-    
+
     This class follows the Factory pattern to eliminate code duplication
     and make plan configurations data-driven and maintainable.
     """
-    
+
     # Plan configurations as data
     PLAN_CONFIGS = {
         "free": {
@@ -191,26 +190,26 @@ class SubscriptionPlanFactory:
             "custom_contract_required": True,
         },
     }
-    
+
     @classmethod
     def create_plan(cls, plan_key: str) -> SubscriptionPlan:
         """
         Create a subscription plan from configuration.
-        
+
         Args:
             plan_key: Key identifying the plan (free, starter, pro, etc.)
-            
+
         Returns:
             Configured SubscriptionPlan instance
-            
+
         Raises:
             KeyError: If plan_key is not found in PLAN_CONFIGS
         """
         if plan_key not in cls.PLAN_CONFIGS:
             raise KeyError(f"Unknown plan key: {plan_key}")
-        
+
         config = cls.PLAN_CONFIGS[plan_key].copy()
-        
+
         # Convert string prices to Decimal
         price_fields = [
             "base_price",
@@ -218,28 +217,28 @@ class SubscriptionPlanFactory:
             "price_per_1m_tokens",
             "price_per_compute_hour",
         ]
-        
+
         for field in price_fields:
             if field in config and isinstance(config[field], str):
                 config[field] = Decimal(config[field])
-        
+
         return SubscriptionPlan(**config)
-    
+
     @classmethod
     def create_all_plans(cls) -> dict[str, SubscriptionPlan]:
         """
         Create all default subscription plans.
-        
+
         Returns:
             Dictionary mapping plan keys to SubscriptionPlan instances
         """
         return {key: cls.create_plan(key) for key in cls.PLAN_CONFIGS}
-    
+
     @classmethod
     def get_plan_names(cls) -> list[str]:
         """
         Get list of all available plan names.
-        
+
         Returns:
             List of plan keys
         """

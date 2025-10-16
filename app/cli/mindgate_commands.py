@@ -50,6 +50,7 @@ DEFAULT_PLANNER_NAME = os.environ.get("MINDGATE_DEFAULT_PLANNER", "maestro_graph
 # ======================================================================================
 mindgate_cli = Blueprint("mindgate", __name__, cli_group="mindgate")
 
+
 # ======================================================================================
 # SERVICE LOADER INSTANCE
 # ======================================================================================
@@ -223,7 +224,7 @@ def _get_initiator_user() -> Any:
     models = _get_models()
     db = models["db"]
     User = models["User"]
-    
+
     user = db.session.get(User, 1)
     if user:
         return user
@@ -238,7 +239,7 @@ def _format_warnings(warnings) -> list[str]:
     result = []
     if not warnings:
         return result
-    
+
     PlanWarning = _get_plan_warning()
     for w in warnings:
         if PlanWarning and isinstance(w, PlanWarning):
@@ -268,7 +269,7 @@ def _list_available_planners() -> list[str]:
     planning = _get_planning()
     if not planning:
         return []
-    
+
     names: list[str] = []
     try:
         if hasattr(planning, "discover"):
@@ -323,10 +324,12 @@ def debug_imports_command(verbose: bool, json_out: bool):
     """عرض حالة جميع الاستيرادات للتشخيص"""
     load_services(force=True)
     loader = _get_service_loader()
-    
-    data = {n: r.to_dict(include_trace=verbose or MINDGATE_DEBUG) 
-            for n, r in loader.get_all_imports().items()}
-    
+
+    data = {
+        n: r.to_dict(include_trace=verbose or MINDGATE_DEBUG)
+        for n, r in loader.get_all_imports().items()
+    }
+
     if json_out:
         click.echo(
             _safe_json_dump(
@@ -338,7 +341,7 @@ def debug_imports_command(verbose: bool, json_out: bool):
             )
         )
         return
-    
+
     C_MAGENTA("=== Import Diagnostics ===")
     for n, r in loader.get_all_imports().items():
         status = "OK" if r.ok else "FAIL"
@@ -348,7 +351,7 @@ def debug_imports_command(verbose: bool, json_out: bool):
             C_YELLOW(f"  Error: {r.error}")
             if verbose or MINDGATE_DEBUG:
                 C_DIM(r.trace or "")
-    
+
     C_CYAN(f"\nSERVICES_READY={loader.is_ready()}  DB_READY={loader.is_db_ready()}")
     if not loader.is_ready():
         C_YELLOW("\nFix failing modules before using planners / missions.")
@@ -367,14 +370,14 @@ def planners_command(json_out: bool, stats: bool):
         ensure_services()
         names = _list_available_planners()
         planning = _get_planning()
-        
+
         payload: dict[str, Any] = {"count": len(names), "planners": names}
         if stats and planning and hasattr(planning, "planner_stats"):
             try:
                 payload["stats"] = planning.planner_stats()
             except Exception as e:
                 payload["stats_error"] = str(e)
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -403,21 +406,21 @@ def mission_command(objective: tuple[str], json_out: bool, debug: bool):
     try:
         ensure_services(debug)
         ensure_db()
-        
+
         objective_text = " ".join(objective).strip()
         if not objective_text:
             raise ValueError("Objective cannot be empty.")
-        
+
         user = _get_initiator_user()
         overmind = _get_overmind()
         mission = overmind.start_mission(objective=objective_text, initiator=user)
-        
+
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
             "objective": mission.objective,
         }
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -448,17 +451,17 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
         db = models["db"]
         Mission = models["Mission"]
         Task = models["Task"]
-        
+
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
-        
+
         tasks = Task.query.filter_by(mission_id=mission.id).all()
         counts: dict[str, int] = {}
         for t in tasks:
             st = getattr(t.status, "name", str(t.status))
             counts[st] = counts.get(st, 0) + 1
-        
+
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
@@ -466,7 +469,7 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
             "active_plan_id": mission.active_plan_id,
             "task_counts": counts,
         }
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -497,11 +500,11 @@ def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bo
         db = models["db"]
         Mission = models["Mission"]
         Task = models["Task"]
-        
+
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
-        
+
         tasks = (
             Task.query.filter_by(mission_id=mission.id).order_by(Task.id.asc()).limit(limit).all()
         )
@@ -518,7 +521,7 @@ def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bo
                     "priority": getattr(t, "priority", None),
                 }
             )
-        
+
         if json_out:
             click.echo(_safe_json_dump(rows))
         else:
@@ -550,30 +553,30 @@ def mission_follow_command(mission_id: int, interval: float, timeout: int, debug
         models = _get_models()
         db = models["db"]
         Mission = models["Mission"]
-        
+
         start = time.time()
         seen_status = None
         C_MAGENTA(f"Following Mission #{mission_id} (interval={interval}s, timeout={timeout}s)")
-        
+
         while True:
             mission = db.session.get(Mission, mission_id)
             if not mission:
                 C_RED("Mission not found.")
                 return
-            
+
             st = getattr(mission.status, "name", str(mission.status))
             if st != seen_status:
                 C_CYAN(f"Status: {st}")
                 seen_status = st
-            
+
             if st in ("SUCCESS", "FAILED", "CANCELED"):
                 C_GREEN(f"Terminal state: {st}")
                 break
-            
+
             if time.time() - start > timeout:
                 C_YELLOW("Timeout reached.")
                 break
-            
+
             time.sleep(interval)
     except Exception as e:
         C_RED("Follow failed.")
@@ -595,11 +598,11 @@ def plan_command(objective: tuple[str], planner: str, json_out: bool, debug: boo
         objective_text = " ".join(objective).strip()
         if not objective_text:
             raise ValueError("Objective cannot be empty.")
-        
+
         planning = _get_planning()
         if hasattr(planning, "discover"):
             planning.discover()
-        
+
         available = _list_available_planners()
         try:
             planner_instance = planning.get_planner(planner)
@@ -655,13 +658,13 @@ def plan_mermaid_command(objective: tuple[str], planner: str, json_out: bool, de
         planner_instance = planning.get_planner(planner)
         res = planner_instance.instrumented_generate(obj)
         plan_obj = res.plan
-        
+
         if not hasattr(plan_obj, "to_mermaid"):
             raise RuntimeError("Plan object lacks to_mermaid()")
-        
+
         mermaid = plan_obj.to_mermaid()
         payload = {"planner": res.planner_name, "objective": obj, "mermaid": mermaid}
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -692,13 +695,13 @@ def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug:
         inst = planning.get_planner(planner)
         res = inst.instrumented_generate(obj)
         plan_obj = res.plan
-        
+
         task_count = None
         if getattr(plan_obj, "stats", None) and "tasks" in plan_obj.stats:
             task_count = plan_obj.stats["tasks"]
         else:
             task_count = len(getattr(plan_obj, "tasks", []))
-        
+
         payload = {
             "planner": res.planner_name,
             "content_hash": getattr(plan_obj, "content_hash", None),
@@ -707,7 +710,7 @@ def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug:
                 getattr(w, "code", str(w)) for w in getattr(plan_obj, "warnings", []) or []
             ],
         }
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -737,7 +740,7 @@ def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
         db = models["db"]
         MissionPlan = models["MissionPlan"]
         Task = models["Task"]
-        
+
         pa = db.session.get(MissionPlan, plan_a)
         pb = db.session.get(MissionPlan, plan_b)
         if not pa or not pb:
@@ -804,26 +807,26 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
         db = models["db"]
         Mission = models["Mission"]
         MissionStatus = models["MissionStatus"]
-        
+
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
-        
+
         state = getattr(mission.status, "name", str(mission.status))
         if state not in ("RUNNING", "FAILED", "PLANNED"):
             raise ValueError(f"Cannot force replan from state {state}")
-        
+
         mission.status = MissionStatus.ADAPTING
         db.session.commit()
-        
+
         overmind = _get_overmind()
         overmind.run_mission_lifecycle(mission.id)
-        
+
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
         }
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -864,7 +867,7 @@ def ask_command(prompt: tuple[str], mode: str, json_out: bool, debug: bool):
         text = " ".join(prompt).strip()
         if not text:
             raise ValueError("Prompt cannot be empty.")
-        
+
         generation_service = _get_generation_service()
         if not generation_service:
             raise RuntimeError("generation_service module not available.")
@@ -936,11 +939,11 @@ def tools_command(json_out: bool, debug: bool):
         agent_tools = _get_agent_tools()
         if not agent_tools:
             raise RuntimeError("agent_tools module not available.")
-        
+
         index = agent_tools.get_tools_index()
         tools = index.get("tools", [])
         payload = {"version": index.get("version"), "count": len(tools), "tools": tools}
-        
+
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -969,7 +972,7 @@ def index_command(force: bool, json_out: bool, debug: bool):
         system_service = _get_system_service()
         if not system_service:
             raise RuntimeError("system_service module not available.")
-        
+
         res = system_service.index_project(force=force)
         if getattr(res, "ok", False):
             data = res.data or {}
