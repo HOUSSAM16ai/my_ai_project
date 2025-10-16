@@ -29,6 +29,7 @@ from app.utils.model_registry import ModelRegistry
 # CONFIGURATION & MODEL REGISTRY 📋
 # ==================================================================================
 
+
 # Lazy-loaded model registry - النماذج المتاحة للإدارة
 def _get_all_models():
     """Lazily load all models to reduce coupling."""
@@ -40,8 +41,10 @@ def _get_all_models():
         "mission_events": ModelRegistry.get_model("MissionEvent"),
     }
 
+
 # Cached reference
 _ALL_MODELS_CACHE = None
+
 
 def get_all_models():
     """Get all models, using cache if available."""
@@ -49,6 +52,7 @@ def get_all_models():
     if _ALL_MODELS_CACHE is None:
         _ALL_MODELS_CACHE = _get_all_models()
     return _ALL_MODELS_CACHE
+
 
 # Map of all models - النماذج المتاحة للإدارة
 ALL_MODELS = get_all_models()

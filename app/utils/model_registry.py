@@ -12,7 +12,8 @@ Benefits:
 - Easier to track model usage
 - Facilitates lazy loading
 """
-from typing import Type, TypeVar
+
+from typing import TypeVar
 
 # Type variable for generic model types
 T = TypeVar("T")
@@ -21,44 +22,45 @@ T = TypeVar("T")
 class ModelRegistry:
     """
     Centralized registry for database models.
-    
+
     This class provides lazy-loaded access to models, reducing circular
     import issues and coupling between modules.
     """
-    
+
     _models_cache = {}
-    
+
     @classmethod
-    def get_model(cls, model_name: str) -> Type:
+    def get_model(cls, model_name: str) -> type:
         """
         Get a model class by name.
-        
+
         Args:
             model_name: Name of the model (e.g., 'Mission', 'Task', 'User')
-            
+
         Returns:
             Model class
-            
+
         Raises:
             ValueError: If model not found
         """
         if model_name in cls._models_cache:
             return cls._models_cache[model_name]
-        
+
         # Lazy import to avoid circular dependencies
         try:
             from app import models
+
             model_class = getattr(models, model_name, None)
-            
+
             if model_class is None:
                 raise ValueError(f"Model '{model_name}' not found in app.models")
-            
+
             cls._models_cache[model_name] = model_class
             return model_class
-            
+
         except ImportError as e:
             raise ValueError(f"Cannot import models module: {e}")
-    
+
     @classmethod
     def clear_cache(cls):
         """Clear the model cache. Useful for testing."""

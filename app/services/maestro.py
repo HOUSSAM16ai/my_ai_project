@@ -56,10 +56,7 @@ import time
 from typing import Any
 
 # Text processing utilities (shared across services)
-from app.utils.text_processing import (
-    extract_first_json_object as _extract_first_json_object,
-    strip_markdown_fences as _strip_markdown_fences,
-)
+from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
 
 __version__ = "2.5.0"
 

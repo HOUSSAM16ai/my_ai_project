@@ -101,10 +101,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 # Text processing utilities (shared across services)
-from app.utils.text_processing import (
-    extract_first_json_object as _extract_first_json_object,
-    strip_markdown_fences as _strip_markdown_fences,
-)
+from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
+from app.utils.text_processing import strip_markdown_fences as _strip_markdown_fences
 
 # -----------------------------------------------------------------------------
 # Flask (optional)

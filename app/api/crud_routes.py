@@ -31,13 +31,13 @@ from app.services.api_security_service import rate_limit, require_jwt_auth
 
 # Use model registry to reduce coupling - models loaded lazily on first access
 from app.utils.model_registry import get_mission_model, get_task_model, get_user_model
-
 from app.validators.schemas import PaginationSchema, TaskSchema, UserSchema
 
 # Lazy-loaded model references
 User = None
 Mission = None
 Task = None
+
 
 def _load_models():
     """Load models on first use."""
@@ -46,6 +46,7 @@ def _load_models():
         User = get_user_model()
         Mission = get_mission_model()
         Task = get_task_model()
+
 
 # ======================================================================================
 # HELPER FUNCTIONS

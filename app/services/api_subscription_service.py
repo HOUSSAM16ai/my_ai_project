@@ -240,7 +240,7 @@ class APISubscriptionService:
     def _initialize_default_plans(self):
         """Initialize default subscription plans using factory pattern"""
         from .subscription_plan_factory import SubscriptionPlanFactory
-        
+
         # Use factory to create all plans - much cleaner!
         self.plans = SubscriptionPlanFactory.create_all_plans()
 
