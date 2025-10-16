@@ -21,20 +21,37 @@ from sqlalchemy import inspect, text
 from sqlalchemy.orm import class_mapper
 
 from app import db
-from app.models import Mission, MissionEvent, MissionPlan, Task, User
+
+# Use model registry to reduce coupling
+from app.utils.model_registry import ModelRegistry
 
 # ==================================================================================
 # CONFIGURATION & MODEL REGISTRY 📋
 # ==================================================================================
 
+# Lazy-loaded model registry - النماذج المتاحة للإدارة
+def _get_all_models():
+    """Lazily load all models to reduce coupling."""
+    return {
+        "users": ModelRegistry.get_model("User"),
+        "missions": ModelRegistry.get_model("Mission"),
+        "mission_plans": ModelRegistry.get_model("MissionPlan"),
+        "tasks": ModelRegistry.get_model("Task"),
+        "mission_events": ModelRegistry.get_model("MissionEvent"),
+    }
+
+# Cached reference
+_ALL_MODELS_CACHE = None
+
+def get_all_models():
+    """Get all models, using cache if available."""
+    global _ALL_MODELS_CACHE
+    if _ALL_MODELS_CACHE is None:
+        _ALL_MODELS_CACHE = _get_all_models()
+    return _ALL_MODELS_CACHE
+
 # Map of all models - النماذج المتاحة للإدارة
-ALL_MODELS = {
-    "users": User,
-    "missions": Mission,
-    "mission_plans": MissionPlan,
-    "tasks": Task,
-    "mission_events": MissionEvent,
-}
+ALL_MODELS = get_all_models()
 
 # Model metadata - معلومات وصفية عن كل نموذج
 MODEL_METADATA = {
@@ -128,6 +145,8 @@ def get_database_health() -> dict[str, Any]:
         # 5. Recent activity check (last 24 hours)
         try:
             yesterday = datetime.now(UTC) - timedelta(days=1)
+            Mission = ModelRegistry.get_model("Mission")
+            Task = ModelRegistry.get_model("Task")
             recent_missions = (
                 db.session.query(Mission).filter(Mission.created_at >= yesterday).count()
             )
