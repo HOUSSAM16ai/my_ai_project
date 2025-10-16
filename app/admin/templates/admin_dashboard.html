@@ -192,6 +192,42 @@ body {
   height: calc(100vh - 200px);
 }
 
+.prompt-engineering-container {
+  background: var(--cf-bg-card);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--cf-shadow);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+}
+
+.input-options {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--cf-text-dim);
+}
+
+.input-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.input-options label:hover {
+  color: var(--cf-accent);
+}
+
+.input-options input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 .chat-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--cf-border);
@@ -487,6 +523,9 @@ body {
         <button class="sidebar-btn active" data-action="chat">
           💬 AI Chat
         </button>
+        <button class="sidebar-btn" data-action="prompt-engineering">
+          🎯 Prompt Engineering
+        </button>
         <button class="sidebar-btn" data-action="analyze">
           📊 Analyze Project
         </button>
@@ -558,6 +597,73 @@ body {
           </div>
           <button class="send-btn" id="send-btn">
             <span>إرسال</span>
+            <span>🚀</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Prompt Engineering Section (Hidden by default) -->
+      <div class="prompt-engineering-container" id="prompt-engineering-container" style="display: none;">
+        <div class="chat-header">
+          <div class="chat-title">🎯 Prompt Engineering - Ultra Professional</div>
+          <div class="chat-actions">
+            <select class="action-btn" id="prompt-type-select">
+              <option value="general">General</option>
+              <option value="code_generation">Code Generation</option>
+              <option value="documentation">Documentation</option>
+              <option value="architecture">Architecture</option>
+              <option value="testing">Testing</option>
+              <option value="refactoring">Refactoring</option>
+            </select>
+            <button class="action-btn" id="view-templates-btn">
+              📚 Templates
+            </button>
+          </div>
+        </div>
+
+        <div class="messages-area" id="prompt-messages-area">
+          <div class="message system">
+            <div class="message-avatar">🎯</div>
+            <div class="message-content">
+              <p><strong>مرحباً بك في نظام هندسة Prompts الخارق! (Superhuman Prompt Engineering System)</strong></p>
+              <p>هذا النظام يولد prompts احترافية مخصصة تماماً لمشروعك:</p>
+              <ul>
+                <li><strong>🧠 فهم عميق:</strong> يفهم كل فاصلة وعلاقتها بآخر فاصلة في المشروع</li>
+                <li><strong>🔍 RAG متقدم:</strong> يسترجع سياق ذو صلة من قاعدة المعرفة</li>
+                <li><strong>📝 Meta-Prompting:</strong> يستخدم قوالب ديناميكية مع متغيرات المشروع</li>
+                <li><strong>🎓 Few-Shot Learning:</strong> يتعلم من أمثلة المشروع الحقيقية</li>
+                <li><strong>⭐ RLHF:</strong> يتحسن باستمرار من تقييماتك</li>
+              </ul>
+              <p><strong>🚀 كيف تستخدمه؟</strong></p>
+              <ol>
+                <li>اختر نوع الـ Prompt من القائمة أعلاه</li>
+                <li>اكتب وصفاً لما تريد في المربع أدناه</li>
+                <li>انتظر النظام ليولد لك prompt احترافي خارق</li>
+                <li>قيّم النتيجة لتحسين النظام (RLHF)</li>
+              </ol>
+              <p style="font-size: 0.9em; color: var(--cf-text-dim); margin-top: 0.5rem;">
+                <strong>أمثلة:</strong> "أنشئ prompt لتوليد REST API للمستخدمين" أو "prompt لكتابة اختبارات لخدمة قاعدة البيانات"
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-container">
+            <textarea 
+              id="prompt-input" 
+              placeholder="اكتب وصف الـ Prompt الذي تريده... مثال: أنشئ prompt لتوليد Flask API endpoint مع التوثيق الكامل 🎯"
+              rows="3"
+            ></textarea>
+            <div class="input-options" style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.875rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="enable-rag" checked>
+                <span>Enable RAG (سياق ذكي)</span>
+              </label>
+            </div>
+          </div>
+          <button class="send-btn" id="generate-prompt-btn">
+            <span>توليد Prompt</span>
             <span>🚀</span>
           </button>
         </div>
@@ -942,6 +1048,255 @@ body {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 150) + 'px';
   });
+
+  // ======================================================================================
+  // PROMPT ENGINEERING FUNCTIONALITY - SUPERHUMAN EDITION
+  // ======================================================================================
+  const promptEngContainer = document.getElementById('prompt-engineering-container');
+  const chatContainer = document.getElementById('chat-container');
+  const promptMessagesArea = document.getElementById('prompt-messages-area');
+  const promptInput = document.getElementById('prompt-input');
+  const generatePromptBtn = document.getElementById('generate-prompt-btn');
+  const promptTypeSelect = document.getElementById('prompt-type-select');
+  const enableRagCheckbox = document.getElementById('enable-rag');
+  const viewTemplatesBtn = document.getElementById('view-templates-btn');
+
+  // Handle sidebar navigation
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const action = this.getAttribute('data-action');
+      
+      // Update active state
+      document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Show/hide appropriate container
+      if (action === 'prompt-engineering') {
+        chatContainer.style.display = 'none';
+        promptEngContainer.style.display = 'flex';
+      } else if (action === 'chat' || action === 'new-chat') {
+        chatContainer.style.display = 'flex';
+        promptEngContainer.style.display = 'none';
+      }
+    });
+  });
+
+  function addPromptMessage(role, content, metadata = {}) {
+    const msg = document.createElement('div');
+    msg.className = `message ${role}`;
+    
+    const avatar = {
+      'user': '👤',
+      'assistant': '🎯',
+      'system': '🤖',
+      'error': '⚠️'
+    }[role] || '🤖';
+    
+    msg.innerHTML = `
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-content">
+        ${formatMessage(content)}
+        ${metadata.promptId ? `
+          <div style="margin-top: 1rem; padding: 0.75rem; background: var(--cf-bg-alt); border-radius: 6px;">
+            <div style="font-size: 0.875rem; color: var(--cf-text-dim); margin-bottom: 0.5rem;">
+              <strong>Rate this prompt (RLHF):</strong>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              ${[1,2,3,4,5].map(n => `
+                <button class="action-btn" onclick="ratePrompt(${metadata.promptId}, ${n})" 
+                        style="padding: 0.25rem 0.5rem; font-size: 1.2rem;">
+                  ${'⭐'.repeat(n)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    promptMessagesArea.appendChild(msg);
+    promptMessagesArea.scrollTop = promptMessagesArea.scrollHeight;
+  }
+
+  function showPromptLoading() {
+    generatePromptBtn.disabled = true;
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'message assistant';
+    loadingMsg.id = 'prompt-loading-message';
+    loadingMsg.innerHTML = `
+      <div class="message-avatar">🎯</div>
+      <div class="message-content">
+        <p><strong>🔮 Generating superhuman prompt...</strong></p>
+        <div class="loading">
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+        </div>
+        <p style="font-size: 0.875rem; color: var(--cf-text-dim); margin-top: 0.5rem;">
+          Building project context, retrieving relevant snippets, applying meta-templates...
+        </p>
+      </div>
+    `;
+    promptMessagesArea.appendChild(loadingMsg);
+    promptMessagesArea.scrollTop = promptMessagesArea.scrollHeight;
+  }
+
+  function hidePromptLoading() {
+    generatePromptBtn.disabled = false;
+    const loadingMsg = document.getElementById('prompt-loading-message');
+    if (loadingMsg) loadingMsg.remove();
+  }
+
+  async function generatePrompt() {
+    const description = promptInput.value.trim();
+    if (!description) {
+      addPromptMessage('error', '⚠️ Please enter a description for the prompt you want to generate.');
+      return;
+    }
+
+    if (description.length > 10000) {
+      addPromptMessage('error', '⚠️ Description too long. Maximum 10,000 characters.');
+      return;
+    }
+
+    // Add user message
+    addPromptMessage('user', description);
+    promptInput.value = '';
+
+    showPromptLoading();
+
+    try {
+      const response = await fetch('{{ url_for("admin.handle_generate_prompt") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: description,
+          prompt_type: promptTypeSelect.value,
+          use_rag: enableRagCheckbox.checked,
+          conversation_id: STATE.currentConversationId
+        })
+      });
+
+      const result = await response.json();
+      hidePromptLoading();
+
+      if (result.status === 'success') {
+        const metaInfo = `
+📊 **Generation Info:**
+- Template: ${result.template_name}
+- Context Chunks: ${result.context_snippets?.length || 0}
+- Few-Shot Examples: ${result.few_shot_examples?.length || 0}
+- Time: ${result.elapsed_seconds}s
+- Prompt ID: ${result.prompt_id}
+
+---
+
+**🎯 GENERATED PROMPT:**
+
+\`\`\`
+${result.generated_prompt}
+\`\`\`
+
+---
+
+💡 **Tip:** Copy this prompt and use it with your favorite LLM!
+        `;
+        
+        addPromptMessage('assistant', metaInfo, { promptId: result.prompt_id });
+        
+        // Show success notification
+        addPromptMessage('system', '✅ Prompt generated successfully! Rate it above to help improve the system (RLHF).');
+      } else {
+        addPromptMessage('error', result.message || result.error || 'Failed to generate prompt');
+      }
+    } catch (error) {
+      hidePromptLoading();
+      addPromptMessage('error', `❌ Network error: ${error.message}`);
+    }
+  }
+
+  // Make ratePrompt global so it can be called from inline onclick
+  window.ratePrompt = async function(promptId, rating) {
+    try {
+      const response = await fetch(`/admin/api/prompt-engineering/rate/${promptId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rating: rating })
+      });
+
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        addPromptMessage('system', `✅ Thank you for rating! Your feedback (${rating} stars) helps improve the system.`);
+      } else {
+        addPromptMessage('error', `⚠️ Failed to save rating: ${result.message || result.error}`);
+      }
+    } catch (error) {
+      addPromptMessage('error', `❌ Network error: ${error.message}`);
+    }
+  };
+
+  async function viewTemplates() {
+    showPromptLoading();
+    
+    try {
+      const response = await fetch('{{ url_for("admin.handle_list_templates") }}');
+      const result = await response.json();
+      hidePromptLoading();
+
+      if (result.status === 'success') {
+        const templates = result.templates || [];
+        
+        if (templates.length === 0) {
+          addPromptMessage('system', '📚 No templates found yet. Templates will be created as the system learns from usage.');
+          return;
+        }
+
+        let templateList = '📚 **Available Templates:**\n\n';
+        templates.forEach((t, i) => {
+          templateList += `${i+1}. **${t.name}** (ID: ${t.id})\n`;
+          templateList += `   - Category: ${t.category}\n`;
+          templateList += `   - Used: ${t.usage_count} times\n`;
+          if (t.success_rate) {
+            templateList += `   - Success Rate: ${t.success_rate.toFixed(1)}%\n`;
+          }
+          if (t.description) {
+            templateList += `   - Description: ${t.description}\n`;
+          }
+          templateList += '\n';
+        });
+
+        addPromptMessage('assistant', templateList);
+      } else {
+        addPromptMessage('error', result.message || 'Failed to load templates');
+      }
+    } catch (error) {
+      hidePromptLoading();
+      addPromptMessage('error', `❌ Network error: ${error.message}`);
+    }
+  }
+
+  // Event listeners for prompt engineering
+  generatePromptBtn.addEventListener('click', generatePrompt);
+  
+  promptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      generatePromptBtn.click();
+    }
+  });
+
+  promptInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+  });
+
+  viewTemplatesBtn.addEventListener('click', viewTemplates);
+
 })();
 </script>
 {% endblock %}
