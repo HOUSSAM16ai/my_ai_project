@@ -1,7 +1,7 @@
 """add prompt engineering tables
 
 Revision ID: 20251016_prompt_engineering
-Revises: 20251011_restore_superhuman_admin_chat
+Revises: 20251011_admin_chat
 Create Date: 2025-10-16 17:30:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20251016_prompt_engineering'
-down_revision = '20251011_restore_superhuman_admin_chat'
+down_revision = '20251011_admin_chat'
 branch_labels = None
 depends_on = None
 
