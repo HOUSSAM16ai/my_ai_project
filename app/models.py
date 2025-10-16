@@ -436,48 +436,51 @@ class AdminMessage(Timestamped, db.Model):
 class PromptTemplate(Timestamped, db.Model):
     """
     نموذج قوالب Prompt Engineering الخارقة (SUPERHUMAN PROMPT TEMPLATES)
-    
+
     يخزن قوالب Meta-Prompt الديناميكية مع:
     - متغيرات المشروع (project variables)
     - أمثلة Few-Shot من سياق المشروع
     - إعدادات RAG للسياق
     - تتبع الأداء والنسخ
     """
+
     __tablename__ = "prompt_templates"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(db.String(200), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(db.Text)
-    
+
     # Template content with variables like {project_name}, {user_description}, etc.
     template_content: Mapped[str] = mapped_column(db.Text, nullable=False)
-    
+
     # Category: "code_generation", "documentation", "architecture", "testing", etc.
     category: Mapped[str] = mapped_column(db.String(100), index=True, default="general")
-    
+
     # Few-shot examples from project (JSON array of examples)
     few_shot_examples: Mapped[list | None] = mapped_column(JSONB_or_JSON)
-    
+
     # Configuration for RAG (max chunks, relevance threshold, etc.)
     rag_config: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
-    
+
     # Template variables definition
-    variables: Mapped[list | None] = mapped_column(JSONB_or_JSON)  # List of variable names and descriptions
-    
+    variables: Mapped[list | None] = mapped_column(
+        JSONB_or_JSON
+    )  # List of variable names and descriptions
+
     # Usage statistics
     usage_count: Mapped[int] = mapped_column(db.Integer, default=0, server_default=text("0"))
     success_rate: Mapped[float | None] = mapped_column(db.Float)  # User feedback based
-    
+
     # Version control
     version: Mapped[int] = mapped_column(db.Integer, default=1, server_default=text("1"))
     is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, server_default=text("true"))
-    
+
     # Creator
     created_by_id: Mapped[int] = mapped_column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     created_by: Mapped[User] = relationship("User")
-    
+
     __table_args__ = (
         Index("ix_prompt_template_category_active", "category", "is_active"),
         Index("ix_prompt_template_usage", "usage_count"),
@@ -490,7 +493,7 @@ class PromptTemplate(Timestamped, db.Model):
 class GeneratedPrompt(Timestamped, db.Model):
     """
     سجل Prompts المولدة (GENERATED PROMPTS HISTORY)
-    
+
     يحفظ كل prompt تم توليده للتتبع والتحليل والتحسين المستمر:
     - الوصف المدخل من المستخدم
     - القالب المستخدم
@@ -498,56 +501,61 @@ class GeneratedPrompt(Timestamped, db.Model):
     - الـ Prompt النهائي المولد
     - تقييم المستخدم (feedback loop)
     """
+
     __tablename__ = "generated_prompts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    
+
     # Input from user
     user_description: Mapped[str] = mapped_column(db.Text, nullable=False)
-    
+
     # Template used
     template_id: Mapped[int | None] = mapped_column(
         db.Integer, db.ForeignKey("prompt_templates.id", ondelete="SET NULL"), index=True
     )
     template: Mapped[PromptTemplate | None] = relationship("PromptTemplate")
-    
+
     # Generated output
     generated_prompt: Mapped[str] = mapped_column(db.Text, nullable=False)
-    
+
     # Context used (from RAG)
     context_snippets: Mapped[list | None] = mapped_column(JSONB_or_JSON)
-    
+
     # Metadata about generation process
-    generation_metadata: Mapped[dict | None] = mapped_column(JSONB_or_JSON)  # tokens, latency, model, etc.
-    
+    generation_metadata: Mapped[dict | None] = mapped_column(
+        JSONB_or_JSON
+    )  # tokens, latency, model, etc.
+
     # User feedback (RLHF style)
     rating: Mapped[int | None] = mapped_column(db.Integer)  # 1-5 stars
     feedback_text: Mapped[str | None] = mapped_column(db.Text)
-    
+
     # Link to conversation if generated during chat
     conversation_id: Mapped[int | None] = mapped_column(
         db.Integer, db.ForeignKey("admin_conversations.id", ondelete="SET NULL"), index=True
     )
     conversation: Mapped[AdminConversation | None] = relationship("AdminConversation")
-    
+
     # Creator
     created_by_id: Mapped[int] = mapped_column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     created_by: Mapped[User] = relationship("User")
-    
+
     # Content hash for deduplication
     content_hash: Mapped[str | None] = mapped_column(db.String(64), index=True)
-    
+
     __table_args__ = (
         Index("ix_generated_prompt_template_rating", "template_id", "rating"),
         Index("ix_generated_prompt_created", "created_at"),
     )
 
     def __repr__(self):
-        preview = self.user_description[:50] if len(self.user_description) > 50 else self.user_description
+        preview = (
+            self.user_description[:50] if len(self.user_description) > 50 else self.user_description
+        )
         return f"<GeneratedPrompt id={self.id} description={preview!r}>"
-    
+
     def compute_content_hash(self):
         """Compute SHA256 hash of generated prompt for deduplication"""
         if self.generated_prompt:
