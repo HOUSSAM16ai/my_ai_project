@@ -55,6 +55,12 @@ import os
 import time
 from typing import Any
 
+# Text processing utilities (shared across services)
+from app.utils.text_processing import (
+    extract_first_json_object as _extract_first_json_object,
+    strip_markdown_fences as _strip_markdown_fences,
+)
+
 __version__ = "2.5.0"
 
 # --------------------------------------------------------------------------------------
@@ -101,35 +107,8 @@ _CREATION_TS = time.time()
 # ======================================================================================
 # Utility Functions
 # ======================================================================================
-def _strip_markdown_fences(text: str) -> str:
-    if not text:
-        return ""
-    t = text.strip()
-    if t.startswith("```"):
-        nl = t.find("\n")
-        if nl != -1:
-            t = t[nl + 1 :]
-        if t.endswith("```"):
-            t = t[:-3].strip()
-    return t
-
-
-def _extract_first_json_object(text: str) -> str | None:
-    if not text:
-        return None
-    t = _strip_markdown_fences(text)
-    start = t.find("{")
-    if start == -1:
-        return None
-    depth = 0
-    for i, ch in enumerate(t[start:], start=start):
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return t[start : i + 1]
-    return None
+# NOTE: _strip_markdown_fences and _extract_first_json_object are now imported from
+# app.utils.text_processing to eliminate code duplication across services.
 
 
 def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
