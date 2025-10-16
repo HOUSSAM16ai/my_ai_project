@@ -1,6 +1,6 @@
 # app/cli/mindgate_commands.py
 # ======================================================================================
-# MINDGATE COMMAND SUITE v105.0 "HyperGate++ FixPack"
+# MINDGATE COMMAND SUITE v106.0 "SRP Refactoring"
 # ======================================================================================
 # PURPOSE:
 #   واجهة أوامر موحدة للتحكم في:
@@ -9,16 +9,13 @@
 #     - Maestro LLM / Generation (forge_new_code + legacy wrapper + json)
 #     - الأدوات (agent_tools) والفهرسة (system_service)
 #
-# WHAT'S NEW (v105.0 vs v104.0):
-#   1. إصلاح خطأ TypeError مع Pydantic v2:
-#        model_dump_json() لا يقبل ensure_ascii -> تمت إزالته.
-#   2. إضافة دالة _dump_plan_json تدعم:
-#        - Pydantic v2 (model_dump_json(indent=2))
-#        - Pydantic v1 (dict() + json.dumps)
-#        - Fallback لأي كائن آخر.
-#   3. تصحيح نسيان استيراد uuid المستخدم في ask_command (كان سيؤدي إلى NameError).
-#   4. إخراج JSON أكثر أماناً للخطة عند --json-output.
-#   5. الحفاظ على بقية السلوكيات دون تغيير.
+# WHAT'S NEW (v106.0 vs v105.0):
+#   1. إصلاح انتهاك مبدأ المسؤولية الواحدة (SRP):
+#        - نقل منطق تحميل الخدمات إلى app.cli.service_loader
+#        - فصل المسؤوليات: استيراد الوحدات، ربط قاعدة البيانات، ربط الخدمات
+#   2. تقليل التعقيد من 24 إلى مستوى أكثر قابلية للصيانة
+#   3. تحسين قابلية الاختبار والصيانة
+#   4. الحفاظ على جميع الوظائف الحالية دون تغيير
 #
 # ENV FLAGS:
 #   MINDGATE_DEBUG=1            => إظهار Tracebacks
@@ -29,17 +26,17 @@
 from __future__ import annotations
 
 import difflib
-import importlib
 import json
 import os
 import time
 import traceback
 import uuid
-from types import ModuleType
 from typing import Any
 
 import click
 from flask import Blueprint
+
+from .service_loader import get_loader
 
 # ======================================================================================
 # ENV FLAGS
@@ -52,6 +49,13 @@ DEFAULT_PLANNER_NAME = os.environ.get("MINDGATE_DEFAULT_PLANNER", "maestro_graph
 # BLUEPRINT
 # ======================================================================================
 mindgate_cli = Blueprint("mindgate", __name__, cli_group="mindgate")
+
+# ======================================================================================
+# SERVICE LOADER INSTANCE
+# ======================================================================================
+def _get_service_loader():
+    """الحصول على نسخة ServiceLoader مع الإعدادات الحالية"""
+    return get_loader(relax_imports=MINDGATE_RELAX_IMPORTS)
 
 
 # ======================================================================================
@@ -86,89 +90,70 @@ def C_BLUE(s):
 
 
 # ======================================================================================
-# IMPORT / SERVICE LOADING STATE
+# SERVICE ACCESS HELPERS - استخدام ServiceLoader بدلاً من المتغيرات العامة
 # ======================================================================================
-class ImportRecord:
-    def __init__(self, name: str):
-        self.name = name
-        self.ok = False
-        self.error: BaseException | None = None
-        self.trace: str | None = None
-        self.module: ModuleType | None = None
-
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "ok": self.ok,
-            "error": repr(self.error) if self.error else None,
-            "trace": self.trace if (MINDGATE_DEBUG) else None,
-        }
+def _get_generation_service():
+    """الحصول على خدمة التوليد"""
+    return _get_service_loader().get_services()["generation_service"]
 
 
-IMPORTS: dict[str, ImportRecord] = {}
-SERVICES_READY = False
-DB_READY = False
+def _get_system_service():
+    """الحصول على خدمة النظام"""
+    return _get_service_loader().get_services()["system_service"]
 
-# Bound modules / symbols
-generation_service = None
-system_service = None
-agent_tools = None
-overmind = None
-planning = None
-MissionPlanSchema = None
-PlanWarning = None
 
-db = None
-User = Mission = MissionPlan = Task = None
-MissionStatus = TaskStatus = None
+def _get_agent_tools():
+    """الحصول على أدوات العميل"""
+    return _get_service_loader().get_services()["agent_tools"]
 
-# ======================================================================================
-# MODULE LISTS
-# ======================================================================================
-SERVICE_MODULES = [
-    "app.services.generation_service",
-    "app.services.system_service",
-    "app.services.agent_tools",
-    "app.services.master_agent_service",
-]
 
-PLANNING_MODULES = [
-    "app.overmind.planning.schemas",
-    "app.overmind.planning.factory",
-    "app.overmind.planning.llm_planner",
-]
+def _get_overmind():
+    """الحصول على Overmind"""
+    return _get_service_loader().get_services()["overmind"]
 
-DB_MODULES = [
-    "app",
-    "app.models",
-]
+
+def _get_planning():
+    """الحصول على وحدة التخطيط"""
+    return _get_service_loader().get_services()["planning"]
+
+
+def _get_db():
+    """الحصول على كائن قاعدة البيانات"""
+    return _get_service_loader().get_db_models()["db"]
+
+
+def _get_models():
+    """الحصول على جميع نماذج قاعدة البيانات"""
+    return _get_service_loader().get_db_models()
+
+
+def _get_plan_schema():
+    """الحصول على MissionPlanSchema"""
+    return _get_service_loader().get_services()["MissionPlanSchema"]
+
+
+def _get_plan_warning():
+    """الحصول على PlanWarning"""
+    return _get_service_loader().get_services()["PlanWarning"]
 
 
 # ======================================================================================
-# IMPORT HELPERS
+# HELPER FUNCTIONS
 # ======================================================================================
-def _import_module(path: str) -> ImportRecord:
-    rec = IMPORTS.get(path) or ImportRecord(path)
-    try:
-        rec.module = importlib.import_module(path)
-        rec.ok = True
-    except Exception as e:
-        rec.error = e
-        rec.trace = traceback.format_exc()
-    IMPORTS[path] = rec
-    return rec
-
-
 def _root_cause_summary() -> list[str]:
+    """الحصول على ملخص للأخطاء الجذرية"""
+    loader = _get_service_loader()
     msgs = []
-    for rec in IMPORTS.values():
+    for rec in loader.get_all_imports().values():
         if not rec.ok and rec.error:
             msgs.append(f"{rec.name}: {type(rec.error).__name__}: {rec.error}")
     return msgs
 
 
 def _debug_print_imports():
-    for name, rec in IMPORTS.items():
+    """طباعة حالة جميع الاستيرادات للتشخيص"""
+    loader = _get_service_loader()
+    for name, rec in loader.get_all_imports().items():
         status = "OK" if rec.ok else "FAIL"
         fn = C_GREEN if rec.ok else C_RED
         fn(f"[{status}] {name}")
@@ -179,6 +164,7 @@ def _debug_print_imports():
 
 
 def _maybe_suggest_planner(name: str, available: list[str]) -> str | None:
+    """اقتراح مخطط بديل بناءً على التشابه"""
     if not available:
         return None
     matches = difflib.get_close_matches(name, available, n=1, cutoff=0.45)
@@ -186,96 +172,19 @@ def _maybe_suggest_planner(name: str, available: list[str]) -> str | None:
 
 
 # ======================================================================================
-# LOADING / ENSURE
+# LOADING / ENSURE - استخدام ServiceLoader
 # ======================================================================================
 def load_services(force: bool = False):
-    global SERVICES_READY, DB_READY
-    global generation_service, system_service, agent_tools, overmind, planning
-    global MissionPlanSchema, PlanWarning
-    global db, User, Mission, MissionPlan, Task, MissionStatus, TaskStatus
-
-    if SERVICES_READY and DB_READY and not force:
-        return
-
-    # DB
-    for m in DB_MODULES:
-        _import_module(m)
-    if IMPORTS.get("app.models") and IMPORTS["app.models"].ok:
-        try:
-            from app import db as _db
-            from app.models import Mission as _Mission
-            from app.models import MissionPlan as _MissionPlan
-            from app.models import MissionStatus as _MissionStatus
-            from app.models import Task as _Task
-            from app.models import TaskStatus as _TaskStatus
-            from app.models import User as _User
-
-            db = _db
-            User, Mission, MissionPlan, Task = _User, _Mission, _MissionPlan, _Task
-            MissionStatus, TaskStatus = _MissionStatus, _TaskStatus
-            DB_READY = True
-        except Exception as e:
-            IMPORTS["app.models"].ok = False
-            IMPORTS["app.models"].error = e
-            IMPORTS["app.models"].trace = traceback.format_exc()
-            DB_READY = False
-
-    # Services
-    for m in SERVICE_MODULES:
-        _import_module(m)
-
-    # Planning
-    for m in PLANNING_MODULES:
-        _import_module(m)
-
-    critical_failures = [
-        r
-        for r in IMPORTS.values()
-        if (r.name in SERVICE_MODULES or r.name in PLANNING_MODULES) and not r.ok
-    ]
-    if critical_failures and not MINDGATE_RELAX_IMPORTS:
-        SERVICES_READY = False
-        return
-
-    # Bind
-    try:
-        if IMPORTS.get("app.services.generation_service", ImportRecord("")).ok:
-            import app.services.generation_service as _gen
-
-            generation_service = _gen
-        if IMPORTS.get("app.services.system_service", ImportRecord("")).ok:
-            import app.services.system_service as _sys
-
-            system_service = _sys
-        if IMPORTS.get("app.services.agent_tools", ImportRecord("")).ok:
-            import app.services.agent_tools as _tools
-
-            agent_tools = _tools
-        if IMPORTS.get("app.services.master_agent_service", ImportRecord("")).ok:
-            import app.services.master_agent_service as _over
-
-            overmind = _over
-        if IMPORTS.get("app.overmind.planning.schemas", ImportRecord("")).ok:
-            from app.overmind.planning.schemas import MissionPlanSchema as _MPS
-            from app.overmind.planning.schemas import PlanWarning as _PW
-
-            MissionPlanSchema, PlanWarning = _MPS, _PW
-        if IMPORTS.get("app.overmind.planning.factory", ImportRecord("")).ok:
-            import app.overmind.planning.factory as _planning_factory
-
-            planning = _planning_factory
-        SERVICES_READY = True
-    except Exception as e:
-        rec = ImportRecord("binding-phase")
-        rec.error = e
-        rec.trace = traceback.format_exc()
-        IMPORTS["binding-phase"] = rec
-        SERVICES_READY = False
+    """تحميل جميع الخدمات باستخدام ServiceLoader"""
+    loader = _get_service_loader()
+    loader.load(force=force)
 
 
 def ensure_services(debug: bool = False):
-    load_services()
-    if SERVICES_READY:
+    """التأكد من تحميل الخدمات أو رفع خطأ"""
+    loader = _get_service_loader()
+    loader.load()
+    if loader.is_ready():
         return
     if debug or MINDGATE_DEBUG:
         _debug_print_imports()
@@ -283,8 +192,10 @@ def ensure_services(debug: bool = False):
 
 
 def ensure_db():
-    load_services()
-    if DB_READY:
+    """التأكد من تحميل قاعدة البيانات أو رفع خطأ"""
+    loader = _get_service_loader()
+    loader.load()
+    if loader.is_db_ready():
         return
     raise RuntimeError("Database layer not loaded. Check app.models import failures.")
 
@@ -293,6 +204,7 @@ def ensure_db():
 # UTILITIES
 # ======================================================================================
 def _safe_json_dump(obj: Any, indent: int = 2) -> str:
+    """تحويل كائن إلى JSON بشكل آمن"""
     try:
         return json.dumps(obj, ensure_ascii=False, indent=indent)
     except Exception:
@@ -300,12 +212,18 @@ def _safe_json_dump(obj: Any, indent: int = 2) -> str:
 
 
 def _print_exception(e: Exception, debug: bool = False):
+    """طباعة استثناء مع تتبع اختياري"""
     C_RED(f"{type(e).__name__}: {e}")
     if debug or MINDGATE_DEBUG:
         C_DIM(traceback.format_exc())
 
 
 def _get_initiator_user() -> Any:
+    """الحصول على مستخدم للمبادرة"""
+    models = _get_models()
+    db = models["db"]
+    User = models["User"]
+    
     user = db.session.get(User, 1)
     if user:
         return user
@@ -316,9 +234,12 @@ def _get_initiator_user() -> Any:
 
 
 def _format_warnings(warnings) -> list[str]:
+    """تنسيق قائمة التحذيرات للعرض"""
     result = []
     if not warnings:
         return result
+    
+    PlanWarning = _get_plan_warning()
     for w in warnings:
         if PlanWarning and isinstance(w, PlanWarning):
             result.append(
@@ -331,16 +252,23 @@ def _format_warnings(warnings) -> list[str]:
 
 
 def print_kv(title: str, data: dict[str, Any]):
+    """طباعة قاموس بتنسيق مفتاح: قيمة"""
     C_YELLOW(f"\n-- {title} --")
     for k, v in data.items():
         click.echo(f"{k}: {v}")
 
 
 def _planner_default() -> str:
+    """الحصول على اسم المخطط الافتراضي"""
     return DEFAULT_PLANNER_NAME
 
 
 def _list_available_planners() -> list[str]:
+    """الحصول على قائمة المخططات المتاحة"""
+    planning = _get_planning()
+    if not planning:
+        return []
+    
     names: list[str] = []
     try:
         if hasattr(planning, "discover"):
@@ -392,17 +320,27 @@ def _dump_plan_json(plan_obj: Any) -> str:
 @click.option("--verbose", is_flag=True, help="Show tracebacks.")
 @click.option("--json-output", "json_out", is_flag=True)
 def debug_imports_command(verbose: bool, json_out: bool):
+    """عرض حالة جميع الاستيرادات للتشخيص"""
     load_services(force=True)
-    data = {n: r.to_dict() for n, r in IMPORTS.items()}
+    loader = _get_service_loader()
+    
+    data = {n: r.to_dict(include_trace=verbose or MINDGATE_DEBUG) 
+            for n, r in loader.get_all_imports().items()}
+    
     if json_out:
         click.echo(
             _safe_json_dump(
-                {"imports": data, "SERVICES_READY": SERVICES_READY, "DB_READY": DB_READY}
+                {
+                    "imports": data,
+                    "SERVICES_READY": loader.is_ready(),
+                    "DB_READY": loader.is_db_ready(),
+                }
             )
         )
         return
+    
     C_MAGENTA("=== Import Diagnostics ===")
-    for n, r in IMPORTS.items():
+    for n, r in loader.get_all_imports().items():
         status = "OK" if r.ok else "FAIL"
         fn = C_GREEN if r.ok else C_RED
         fn(f"{status:4} {n}")
@@ -410,8 +348,9 @@ def debug_imports_command(verbose: bool, json_out: bool):
             C_YELLOW(f"  Error: {r.error}")
             if verbose or MINDGATE_DEBUG:
                 C_DIM(r.trace or "")
-    C_CYAN(f"\nSERVICES_READY={SERVICES_READY}  DB_READY={DB_READY}")
-    if not SERVICES_READY:
+    
+    C_CYAN(f"\nSERVICES_READY={loader.is_ready()}  DB_READY={loader.is_db_ready()}")
+    if not loader.is_ready():
         C_YELLOW("\nFix failing modules before using planners / missions.")
         C_DIM("Hints: missing __init__.py, syntax errors, Pydantic mismatch, circular imports.")
 
@@ -423,15 +362,19 @@ def debug_imports_command(verbose: bool, json_out: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--stats", is_flag=True, help="Show factory stats if available.")
 def planners_command(json_out: bool, stats: bool):
+    """عرض قائمة المخططات المتاحة"""
     try:
         ensure_services()
         names = _list_available_planners()
+        planning = _get_planning()
+        
         payload: dict[str, Any] = {"count": len(names), "planners": names}
-        if stats and hasattr(planning, "planner_stats"):
+        if stats and planning and hasattr(planning, "planner_stats"):
             try:
                 payload["stats"] = planning.planner_stats()
             except Exception as e:
                 payload["stats_error"] = str(e)
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -456,19 +399,25 @@ def planners_command(json_out: bool, stats: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def mission_command(objective: tuple[str], json_out: bool, debug: bool):
+    """إنشاء مهمة Overmind جديدة"""
     try:
         ensure_services(debug)
         ensure_db()
+        
         objective_text = " ".join(objective).strip()
         if not objective_text:
             raise ValueError("Objective cannot be empty.")
+        
         user = _get_initiator_user()
+        overmind = _get_overmind()
         mission = overmind.start_mission(objective=objective_text, initiator=user)
+        
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
             "objective": mission.objective,
         }
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -492,16 +441,24 @@ def mission_command(objective: tuple[str], json_out: bool, debug: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def mission_status_command(mission_id: int, json_out: bool, debug: bool):
+    """عرض حالة مهمة محددة"""
     try:
         ensure_db()
+        models = _get_models()
+        db = models["db"]
+        Mission = models["Mission"]
+        Task = models["Task"]
+        
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
+        
         tasks = Task.query.filter_by(mission_id=mission.id).all()
         counts: dict[str, int] = {}
         for t in tasks:
             st = getattr(t.status, "name", str(t.status))
             counts[st] = counts.get(st, 0) + 1
+        
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
@@ -509,6 +466,7 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
             "active_plan_id": mission.active_plan_id,
             "task_counts": counts,
         }
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -532,11 +490,18 @@ def mission_status_command(mission_id: int, json_out: bool, debug: bool):
 @click.option("--limit", type=int, default=200)
 @click.option("--debug", is_flag=True)
 def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bool):
+    """عرض مهام مهمة محددة"""
     try:
         ensure_db()
+        models = _get_models()
+        db = models["db"]
+        Mission = models["Mission"]
+        Task = models["Task"]
+        
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
+        
         tasks = (
             Task.query.filter_by(mission_id=mission.id).order_by(Task.id.asc()).limit(limit).all()
         )
@@ -553,6 +518,7 @@ def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bo
                     "priority": getattr(t, "priority", None),
                 }
             )
+        
         if json_out:
             click.echo(_safe_json_dump(rows))
         else:
@@ -578,26 +544,36 @@ def mission_tasks_command(mission_id: int, json_out: bool, limit: int, debug: bo
 @click.option("--timeout", type=int, default=600)
 @click.option("--debug", is_flag=True)
 def mission_follow_command(mission_id: int, interval: float, timeout: int, debug: bool):
+    """متابعة تقدم مهمة في الوقت الفعلي"""
     try:
         ensure_db()
+        models = _get_models()
+        db = models["db"]
+        Mission = models["Mission"]
+        
         start = time.time()
         seen_status = None
         C_MAGENTA(f"Following Mission #{mission_id} (interval={interval}s, timeout={timeout}s)")
+        
         while True:
             mission = db.session.get(Mission, mission_id)
             if not mission:
                 C_RED("Mission not found.")
                 return
+            
             st = getattr(mission.status, "name", str(mission.status))
             if st != seen_status:
                 C_CYAN(f"Status: {st}")
                 seen_status = st
+            
             if st in ("SUCCESS", "FAILED", "CANCELED"):
                 C_GREEN(f"Terminal state: {st}")
                 break
+            
             if time.time() - start > timeout:
                 C_YELLOW("Timeout reached.")
                 break
+            
             time.sleep(interval)
     except Exception as e:
         C_RED("Follow failed.")
@@ -613,13 +589,17 @@ def mission_follow_command(mission_id: int, interval: float, timeout: int, debug
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def plan_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
+    """إنشاء خطة لهدف معين بدون حفظها في قاعدة البيانات"""
     try:
         ensure_services(debug)
         objective_text = " ".join(objective).strip()
         if not objective_text:
             raise ValueError("Objective cannot be empty.")
+        
+        planning = _get_planning()
         if hasattr(planning, "discover"):
             planning.discover()
+        
         available = _list_available_planners()
         try:
             planner_instance = planning.get_planner(planner)
@@ -667,16 +647,21 @@ def plan_command(objective: tuple[str], planner: str, json_out: bool, debug: boo
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def plan_mermaid_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
+    """إنشاء مخطط Mermaid للخطة"""
     try:
         ensure_services(debug)
         obj = " ".join(objective).strip()
+        planning = _get_planning()
         planner_instance = planning.get_planner(planner)
         res = planner_instance.instrumented_generate(obj)
         plan_obj = res.plan
+        
         if not hasattr(plan_obj, "to_mermaid"):
             raise RuntimeError("Plan object lacks to_mermaid()")
+        
         mermaid = plan_obj.to_mermaid()
         payload = {"planner": res.planner_name, "objective": obj, "mermaid": mermaid}
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -699,17 +684,21 @@ def plan_mermaid_command(objective: tuple[str], planner: str, json_out: bool, de
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug: bool):
+    """ملخص سريع للخطة بدون تفاصيل كاملة"""
     try:
         ensure_services(debug)
         obj = " ".join(objective).strip()
+        planning = _get_planning()
         inst = planning.get_planner(planner)
         res = inst.instrumented_generate(obj)
         plan_obj = res.plan
+        
         task_count = None
         if getattr(plan_obj, "stats", None) and "tasks" in plan_obj.stats:
             task_count = plan_obj.stats["tasks"]
         else:
             task_count = len(getattr(plan_obj, "tasks", []))
+        
         payload = {
             "planner": res.planner_name,
             "content_hash": getattr(plan_obj, "content_hash", None),
@@ -718,6 +707,7 @@ def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug:
                 getattr(w, "code", str(w)) for w in getattr(plan_obj, "warnings", []) or []
             ],
         }
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -740,8 +730,14 @@ def plan_dry_command(objective: tuple[str], planner: str, json_out: bool, debug:
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
+    """مقارنة خطتين"""
     try:
         ensure_db()
+        models = _get_models()
+        db = models["db"]
+        MissionPlan = models["MissionPlan"]
+        Task = models["Task"]
+        
         pa = db.session.get(MissionPlan, plan_a)
         pb = db.session.get(MissionPlan, plan_b)
         if not pa or not pb:
@@ -800,22 +796,34 @@ def plan_diff_command(plan_a: int, plan_b: int, json_out: bool, debug: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def replan_command(mission_id: int, json_out: bool, debug: bool):
+    """إعادة التخطيط لمهمة موجودة"""
     try:
         ensure_services(debug)
         ensure_db()
+        models = _get_models()
+        db = models["db"]
+        Mission = models["Mission"]
+        MissionStatus = models["MissionStatus"]
+        
         mission = db.session.get(Mission, mission_id)
         if not mission:
             raise ValueError("Mission not found.")
+        
         state = getattr(mission.status, "name", str(mission.status))
         if state not in ("RUNNING", "FAILED", "PLANNED"):
             raise ValueError(f"Cannot force replan from state {state}")
+        
         mission.status = MissionStatus.ADAPTING
         db.session.commit()
+        
+        overmind = _get_overmind()
         overmind.run_mission_lifecycle(mission.id)
+        
         payload = {
             "mission_id": mission.id,
             "status": getattr(mission.status, "name", str(mission.status)),
         }
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -844,17 +852,20 @@ def replan_command(mission_id: int, json_out: bool, debug: bool):
 @click.option("--debug", is_flag=True)
 def ask_command(prompt: tuple[str], mode: str, json_out: bool, debug: bool):
     """
-    Direct prompt to Maestro LLM gateway (no orchestration).
+    استعلام مباشر للـ LLM بدون تنسيق Overmind.
     Modes:
       legacy -> execute_task_legacy_wrapper({"description": ...})
       forge  -> forge_new_code(prompt=...)
       json   -> generate_json(prompt=...)
+      comprehensive -> generate_comprehensive_response(prompt=...)
     """
     try:
         ensure_services(debug)
         text = " ".join(prompt).strip()
         if not text:
             raise ValueError("Prompt cannot be empty.")
+        
+        generation_service = _get_generation_service()
         if not generation_service:
             raise RuntimeError("generation_service module not available.")
 
@@ -919,13 +930,17 @@ def ask_command(prompt: tuple[str], mode: str, json_out: bool, debug: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def tools_command(json_out: bool, debug: bool):
+    """عرض قائمة أدوات العميل المتاحة"""
     try:
         ensure_services(debug)
+        agent_tools = _get_agent_tools()
         if not agent_tools:
             raise RuntimeError("agent_tools module not available.")
+        
         index = agent_tools.get_tools_index()
         tools = index.get("tools", [])
         payload = {"version": index.get("version"), "count": len(tools), "tools": tools}
+        
         if json_out:
             click.echo(_safe_json_dump(payload))
         else:
@@ -948,10 +963,13 @@ def tools_command(json_out: bool, debug: bool):
 @click.option("--json-output", "json_out", is_flag=True)
 @click.option("--debug", is_flag=True)
 def index_command(force: bool, json_out: bool, debug: bool):
+    """فهرسة ملفات المشروع"""
     try:
         ensure_services(debug)
+        system_service = _get_system_service()
         if not system_service:
             raise RuntimeError("system_service module not available.")
+        
         res = system_service.index_project(force=force)
         if getattr(res, "ok", False):
             data = res.data or {}
