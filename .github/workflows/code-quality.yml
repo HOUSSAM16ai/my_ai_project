@@ -1,3 +1,4 @@
+---
 # ======================================================================================
 # CODE QUALITY CI/CD - SUPERHUMAN EDITION 🏆
 # ======================================================================================
@@ -10,7 +11,8 @@
 # ⚡ Performance: Optimized for speed and parallel execution
 #
 # Features:
-# ✅ Multi-level linting (Ruff, Pylint, Flake8) - Zero tolerance for critical issues
+# ✅ Multi-level linting (Ruff, Pylint, Flake8)
+#    Zero tolerance for critical issues
 # ✅ Type checking (MyPy) - Gradual typing with clear improvement path
 # ✅ Security scanning (Bandit) - Smart thresholds, real threat focus
 # ✅ Code formatting (Black, isort) - Auto-fix suggestions
@@ -21,7 +23,7 @@
 
 name: 🏆 Code Quality & Security (Superhuman)
 
-on:
+"on":
   push:
     branches: [main, develop]
   pull_request:
@@ -41,22 +43,22 @@ jobs:
     name: 🎨 Lint & Format Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐍 Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: 'pip'
-          
+
       - name: 📦 Install linting dependencies
         run: |
           python -m pip install --upgrade pip
           pip install black isort ruff pylint flake8 bandit[toml] pydocstyle
-          
+
       - name: ⚫ Check Black formatting
         run: |
           echo "🔍 Checking code formatting with Black..."
@@ -85,7 +87,7 @@ jobs:
           }
           echo "✅ Black formatting check passed!"
           exit 0
-          
+
       - name: 📦 Check import sorting (isort)
         run: |
           echo "🔍 Checking import order with isort..."
@@ -114,28 +116,28 @@ jobs:
           }
           echo "✅ isort check passed!"
           exit 0
-          
+
       - name: ⚡ Lint with Ruff (Ultra-fast)
         run: |
           echo "🔍 Linting with Ruff (Rust-based linter)..."
           ruff check app/ tests/ --output-format=github
           echo "✅ Ruff linting passed!"
           exit 0
-          
+
       - name: 🔍 Lint with Pylint
         run: |
           echo "🔍 Deep linting with Pylint..."
           pylint app/ --rcfile=pyproject.toml --exit-zero --score=yes
           echo "✅ Pylint check completed!"
           exit 0
-          
+
       - name: 📋 Lint with Flake8
         run: |
           echo "🔍 Style checking with Flake8..."
           flake8 app/ tests/ --count --show-source --statistics
           echo "✅ Flake8 check passed!"
           exit 0
-          
+
       - name: 📚 Check docstrings (pydocstyle)
         run: |
           echo "🔍 Checking docstring quality..."
@@ -150,42 +152,42 @@ jobs:
     name: 🔒 Security & Vulnerability Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐍 Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: 'pip'
-          
+
       - name: 📦 Install security tools
         run: |
           python -m pip install --upgrade pip
           pip install bandit[toml] safety
           pip install -r requirements.txt
-          
+
       - name: 🔒 Security scan with Bandit (Smart Thresholds)
         run: |
           echo "🔍 Scanning for security vulnerabilities with intelligent filtering..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Run Bandit and capture results
           bandit -r app/ -c pyproject.toml -f json -o bandit-report.json || true
           bandit -r app/ -c pyproject.toml > bandit-output.txt || true
-          
+
           # Parse results and show summary
           echo ""
           echo "📊 Security Scan Summary:"
           cat bandit-output.txt | tail -20
-          
+
           # Extract severity counts
           HIGH_COUNT=$(grep -o "High: [0-9]*" bandit-output.txt | grep -o "[0-9]*" || echo "0")
           MEDIUM_COUNT=$(grep -o "Medium: [0-9]*" bandit-output.txt | grep -o "[0-9]*" || echo "0")
           LOW_COUNT=$(grep -o "Low: [0-9]*" bandit-output.txt | grep -o "[0-9]*" || echo "0")
-          
+
           echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🎯 Severity Breakdown:"
@@ -193,7 +195,7 @@ jobs:
           echo "  🟡 Medium Severity: $MEDIUM_COUNT issues"
           echo "  🟢 Low Severity:    $LOW_COUNT issues"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Smart threshold: Only fail on HIGH severity issues (after filtering)
           # Most HIGH issues are already filtered in pyproject.toml (B101 asserts, B110 try-except-pass)
           # Remaining HIGH issues are real security concerns that must be fixed
@@ -216,28 +218,28 @@ jobs:
             echo "💡 All critical vulnerabilities under control"
             exit 0
           fi
-          
+
       - name: 🛡️ Dependency security check (Safety)
         run: |
           echo "🔍 Checking dependencies for known vulnerabilities..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Safety check (allow to fail, informational only)
           safety check --json --output safety-report.json 2>&1 || {
             echo "⚠️  Safety check encountered issues (API limitations or vulnerabilities found)"
             echo "📋 Check safety-report.json for details"
             echo "💡 This is informational and won't fail the build"
           }
-          
+
           safety check 2>&1 || {
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "ℹ️  Note: Safety warnings are monitored but don't block deployment"
             echo "🔧 Review and plan updates for affected dependencies"
           }
-          
+
           echo "✅ Dependency scan completed"
           exit 0
-          
+
       - name: 📊 Upload security reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -255,39 +257,39 @@ jobs:
     name: 🔍 Type Check (MyPy - Progressive)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐍 Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: 'pip'
-          
+
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install mypy types-requests types-PyYAML types-Flask
           pip install -r requirements.txt
-          
+
       - name: 🔍 Run MyPy type checker (Progressive Mode)
         run: |
           echo "🔍 Running static type analysis..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Run MyPy and capture output
           mypy app/ --ignore-missing-imports --show-error-codes --pretty > mypy-output.txt 2>&1 || {
             echo "⚠️  Type checking found issues (expected in gradual typing)"
           }
-          
+
           # Show results
           cat mypy-output.txt
-          
+
           # Count errors
           ERROR_COUNT=$(grep -c "error:" mypy-output.txt || echo "0")
-          
+
           echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Type Check Summary:"
@@ -295,7 +297,7 @@ jobs:
           echo "  🎯 Current approach: Gradual typing (informational only)"
           echo "  📈 Quality Level: PROGRESSIVE"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # MyPy is informational only - doesn't block deployment
           # This allows gradual improvement without breaking CI/CD
           echo ""
@@ -303,7 +305,7 @@ jobs:
           echo "💡 Type hints improve code quality but aren't enforced yet"
           echo "📚 See mypy-output.txt for improvement opportunities"
           exit 0
-          
+
       - name: 📊 Upload type check report
         uses: actions/upload-artifact@v4
         if: always()
@@ -318,40 +320,40 @@ jobs:
     name: 📊 Code Complexity & Maintainability
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐍 Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          
+
       - name: 📦 Install analysis tools
         run: |
           python -m pip install --upgrade pip
           pip install radon xenon mccabe
-          
+
       - name: 📊 Calculate cyclomatic complexity
         run: |
           echo "📊 Analyzing cyclomatic complexity..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           radon cc app/ -a -nb --total-average
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
       - name: 📈 Calculate maintainability index
         run: |
           echo "📈 Calculating maintainability index..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           radon mi app/ -nb --min B --show
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
       - name: 🎯 Check complexity threshold (Smart Limits)
         run: |
           echo "🎯 Verifying complexity meets superhuman standards..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Xenon check with smart thresholds
           # B = Good (complexity 11-20), A = Excellent (complexity <= 10)
           # Allow B rating as it's still maintainable
@@ -362,7 +364,7 @@ jobs:
             echo "💡 Consider refactoring F-rated (very complex) functions when possible"
             echo ""
           }
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Complexity analysis completed"
           echo "📈 Quality Level: MAINTAINABLE"
@@ -376,22 +378,22 @@ jobs:
     name: 🧪 Test Suite & Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐍 Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: 'pip'
-          
+
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: 🧪 Run test suite with coverage
         env:
           FLASK_ENV: testing
@@ -419,7 +421,7 @@ jobs:
           echo "✅ Test suite completed successfully"
           echo "⚠️ Current coverage: 33.87% | Target: 80% | Progressive improvement in progress"
           exit 0
-          
+
       - name: 📊 Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
@@ -428,7 +430,7 @@ jobs:
             htmlcov/
             coverage.xml
             junit.xml
-            
+
       - name: 📈 Coverage comment
         uses: py-cov-action/python-coverage-comment-action@v3
         if: github.event_name == 'pull_request'
@@ -444,46 +446,46 @@ jobs:
     timeout-minutes: 5
     needs: [lint-and-format, security-scan, type-check, complexity-analysis, test-suite]
     if: always()
-    
+
     steps:
       - name: 🔍 Check job results
         run: |
           echo "Checking all job results..."
-          
+
           # Check critical jobs (must pass)
           LINT_RESULT="${{ needs.lint-and-format.result }}"
           SECURITY_RESULT="${{ needs.security-scan.result }}"
           TEST_RESULT="${{ needs.test-suite.result }}"
-          
+
           # Check optional jobs (can be skipped/failure)
           TYPE_CHECK_RESULT="${{ needs.type-check.result }}"
           COMPLEXITY_RESULT="${{ needs.complexity-analysis.result }}"
-          
+
           echo "📊 Job Results:"
           echo "  🎨 Lint & Format: $LINT_RESULT"
           echo "  🔒 Security Scan: $SECURITY_RESULT"
           echo "  🧪 Test Suite: $TEST_RESULT"
           echo "  🔍 Type Check: $TYPE_CHECK_RESULT (informational)"
           echo "  📊 Complexity: $COMPLEXITY_RESULT (informational)"
-          
+
           # Fail if critical jobs failed
           if [ "$LINT_RESULT" != "success" ]; then
             echo "❌ Lint & Format check failed!"
             exit 1
           fi
-          
+
           if [ "$SECURITY_RESULT" != "success" ]; then
             echo "❌ Security scan failed!"
             exit 1
           fi
-          
+
           if [ "$TEST_RESULT" != "success" ]; then
             echo "❌ Test suite failed!"
             exit 1
           fi
-          
+
           echo "✅ All critical jobs passed!"
-          
+
       - name: 🎉 Quality gate PASSED - Superhuman level achieved!
         run: |
           echo "════════════════════════════════════════════════════════════════════════════════"
@@ -524,7 +526,7 @@ jobs:
           echo ""
           echo "  📈 Standards Exceeded:"
           echo "     ✓ Google - Code review standards"
-          echo "     ✓ Facebook - Security practices"  
+          echo "     ✓ Facebook - Security practices"
           echo "     ✓ Microsoft - Type safety approach"
           echo "     ✓ OpenAI - Testing methodology"
           echo "     ✓ Apple - Quality gates"
@@ -548,6 +550,6 @@ jobs:
           echo "════════════════════════════════════════════════════════════════════════════════"
           echo "  Built with ❤️ by Houssam Benmerah"
           echo "════════════════════════════════════════════════════════════════════════════════"
-          
+
           # Explicit success exit
           exit 0

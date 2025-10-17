@@ -1,3 +1,4 @@
+---
 # ======================================================================================
 # 🚀 SUPERHUMAN MCP SERVER INTEGRATION WORKFLOW - GitHub Actions
 # ======================================================================================
@@ -19,9 +20,9 @@ name: 🚀 Superhuman MCP Server Integration
 
 on:
   push:
-    branches: [ "main", "develop", "staging" ]
+    branches: ["main", "develop", "staging"]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop"]
   workflow_dispatch:
     inputs:
       enable_ai_review:
@@ -58,13 +59,13 @@ jobs:
     outputs:
       ai_review_enabled: ${{ steps.config.outputs.ai_review_enabled }}
       mcp_status: ${{ steps.mcp.outputs.status }}
-      
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for better AI context
-      
+
       - name: 🔐 Validate AI Agent Token
         id: validate-token
         env:
@@ -78,7 +79,7 @@ jobs:
             echo "token_available=false" >> $GITHUB_OUTPUT
           else
             echo "token_available=true" >> $GITHUB_OUTPUT
-            
+
             # Validate token format
             if [[ $AI_AGENT_TOKEN =~ ^(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})$ ]]; then
               echo "✅ AI_AGENT_TOKEN format is valid"
@@ -88,7 +89,7 @@ jobs:
               echo "token_valid=false" >> $GITHUB_OUTPUT
             fi
           fi
-      
+
       - name: 🐳 Setup MCP Server & GitHub API Integration
         id: mcp
         env:
@@ -96,7 +97,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🚀 Setting up GitHub API Integration..."
-          
+
           # Use AI_AGENT_TOKEN if available, otherwise fallback to GITHUB_TOKEN
           if [ -n "$AI_AGENT_TOKEN" ]; then
             echo "🔐 Using AI_AGENT_TOKEN for enhanced AI features"
@@ -105,14 +106,14 @@ jobs:
             echo "🔐 Using GITHUB_TOKEN for basic features"
             TOKEN="$GITHUB_TOKEN"
           fi
-          
+
           # Test GitHub API connectivity
           echo "Testing GitHub API connection..."
           RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/gh_response.json \
             -H "Authorization: token ${TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/user)
-          
+
           if [ "$RESPONSE" = "200" ]; then
             USERNAME=$(jq -r '.login' /tmp/gh_response.json)
             echo "✅ GitHub API connection successful"
@@ -128,11 +129,11 @@ jobs:
             echo "💡 Continuing with limited features"
             echo "status=limited" >> $GITHUB_OUTPUT
           fi
-          
+
           # Note: MCP Server runs in stdio mode and is designed for interactive use
           # For GitHub Actions, we use the GitHub API directly
           # This approach is more efficient and superhuman than running a container!
-      
+
       - name: ⚙️  Configuration Summary
         id: config
         run: |
@@ -143,7 +144,7 @@ jobs:
           echo "  - Python Version: ${{ env.PYTHON_VERSION }}"
           echo "  - Branch: ${{ github.ref_name }}"
           echo "  - Event: ${{ github.event_name }}"
-          
+
           echo "ai_review_enabled=${{ env.AI_ENABLED }}" >> $GITHUB_OUTPUT
 
   # ====================================================================================
@@ -154,36 +155,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: setup-and-validate
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-      
+
       - name: 📦 Install Dependencies
         run: |
           echo "📦 Installing Python dependencies..."
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           echo "✅ Dependencies installed successfully"
-      
+
       - name: 🧪 Run Tests with Coverage
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
         run: |
           echo "🧪 Running test suite..."
           pytest --verbose --cov=app --cov-report=xml --cov-report=html
-          
+
           # Save coverage for AI analysis
           if [ -f coverage.xml ]; then
             echo "✅ Tests completed with coverage report"
           fi
-      
+
       - name: 📊 Upload Coverage Report
         uses: actions/upload-artifact@v4
         with:
@@ -192,7 +193,7 @@ jobs:
             coverage.xml
             htmlcov/
           retention-days: 30
-      
+
       - name: 🤖 AI-Powered Test Analysis
         if: needs.setup-and-validate.outputs.ai_review_enabled == 'true' || github.event_name == 'workflow_dispatch'
         env:
@@ -200,27 +201,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🤖 Performing AI analysis of test results..."
-          
+
           # Use AI_AGENT_TOKEN if available, otherwise fallback to GITHUB_TOKEN
           if [ -n "$AI_AGENT_TOKEN" ]; then
             TOKEN="$AI_AGENT_TOKEN"
           else
             TOKEN="$GITHUB_TOKEN"
           fi
-          
+
           # Use GitHub API to analyze test results
           # In a full implementation, this would call AI services with test data
-          
+
           echo "✅ AI analysis completed"
           echo "💡 Recommendations available in workflow summary"
-          
+
           # Test GitHub API connectivity
           curl -s -H "Authorization: token ${TOKEN}" \
                -H "Accept: application/vnd.github.v3+json" \
                https://api.github.com/repos/${{ github.repository }} > /tmp/repo_info.json || {
             echo "⚠️  GitHub API request encountered an issue (continuing)"
           }
-          
+
           echo "Repository analyzed successfully"
 
   # ====================================================================================
@@ -234,33 +235,33 @@ jobs:
     if: |
       (github.event_name == 'pull_request' && needs.setup-and-validate.outputs.ai_review_enabled == 'true') ||
       github.event_name == 'workflow_dispatch'
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: 🤖 AI Review with GitHub API
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🧠 Starting AI-powered code review..."
-          
+
           # Use AI_AGENT_TOKEN if available, otherwise fallback to GITHUB_TOKEN
           if [ -n "$AI_AGENT_TOKEN" ]; then
             TOKEN="$AI_AGENT_TOKEN"
           else
             TOKEN="$GITHUB_TOKEN"
           fi
-          
+
           # Get changed files (only for PR)
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
             echo "📝 Files to review:"
             echo "$CHANGED_FILES"
-            
+
             # Use GitHub API to analyze PR
             curl -s -H "Authorization: token ${TOKEN}" \
                  -H "Accept: application/vnd.github.v3+json" \
@@ -271,17 +272,17 @@ jobs:
           else
             echo "📝 Analyzing repository code quality..."
           fi
-          
+
           echo "✅ AI review completed using GitHub API"
           echo "📊 Review summary available"
-      
+
       - name: 💬 Post AI Review Comment
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "💬 Posting AI review summary to PR..."
-          
+
           # Create a comment with AI insights
           COMMENT="## 🤖 AI-Powered Code Review
 
@@ -299,7 +300,7 @@ jobs:
           - Performance: Optimized
 
           *Powered by CogniForge AI - Surpassing tech giants!*"
-          
+
           # Note: Would use gh CLI to post comment in real implementation
           echo "$COMMENT"
 
@@ -311,38 +312,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: setup-and-validate
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: 🔍 Security Scan
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
         run: |
           echo "🔍 Running security analysis..."
-          
+
           # Check for security vulnerabilities
           echo "📦 Installing safety..."
           pip install -q safety 2>&1 | tail -3
-          
+
           echo "🔍 Running safety check..."
           safety check --json 2>&1 || {
             echo "⚠️  Safety check completed with warnings (acceptable)"
           }
-          
+
           echo "✅ Security scan completed"
-      
+
       - name: 📦 Dependency Review (AI-Enhanced)
         if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
         run: |
           echo "📦 Analyzing dependencies with AI..."
-          
+
           # MCP Server would provide intelligent dependency analysis
           # working with Dependabot for automated updates
-          
+
           echo "✅ Dependency analysis completed"
 
   # ====================================================================================
@@ -357,25 +358,25 @@ jobs:
       github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push'
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: 🔍 AI Deployment Analysis
         env:
           AI_AGENT_TOKEN: ${{ secrets.AI_AGENT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🔍 Analyzing deployment safety with AI..."
-          
+
           # Use AI_AGENT_TOKEN if available, otherwise fallback to GITHUB_TOKEN
           if [ -n "$AI_AGENT_TOKEN" ]; then
             TOKEN="$AI_AGENT_TOKEN"
           else
             TOKEN="$GITHUB_TOKEN"
           fi
-          
+
           # Use GitHub API to check repository status
           curl -s -H "Authorization: token ${TOKEN}" \
                -H "Accept: application/vnd.github.v3+json" \
@@ -383,9 +384,9 @@ jobs:
                > /tmp/commit_status.json || {
             echo "⚠️  GitHub API request encountered an issue (continuing)"
           }
-          
+
           echo "✅ Deployment analysis: SAFE TO DEPLOY"
-      
+
       - name: 📝 Deployment Summary
         run: |
           echo "## 🚀 Deployment Preview" >> $GITHUB_STEP_SUMMARY
@@ -394,7 +395,7 @@ jobs:
           echo "🤖 AI verified: Safe to merge" >> $GITHUB_STEP_SUMMARY
           echo "📊 Test coverage: Excellent" >> $GITHUB_STEP_SUMMARY
           echo "🔒 Security: No issues" >> $GITHUB_STEP_SUMMARY
-          
+
           # Explicit success exit
           exit 0
 
