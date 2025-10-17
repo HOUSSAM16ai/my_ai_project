@@ -2015,3 +2015,35 @@ def handle_rate_prompt(prompt_id):
     except Exception as e:
         current_app.logger.error(f"Rate prompt failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/prompt-engineering/metrics", methods=["GET"])
+@admin_required
+def handle_get_metrics():
+    """
+    API endpoint لجلب مقاييس أداء نظام Prompt Engineering - OBSERVABILITY
+    
+    Returns comprehensive metrics including:
+    - Total generations
+    - Success/failure rates
+    - Language detection statistics
+    - Security incidents blocked
+    - Average generation time
+    - Risk level distribution
+    """
+    if not get_prompt_engineering_service:
+        return jsonify({"status": "error", "message": "Service not available"}), 503
+
+    try:
+        service = get_prompt_engineering_service()
+        metrics = service.get_metrics()
+
+        return jsonify({
+            "status": "success",
+            "metrics": metrics,
+            "message": "📊 Metrics retrieved successfully"
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Get metrics failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
