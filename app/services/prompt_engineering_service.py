@@ -147,24 +147,25 @@ ENABLE_DETAILED_LOGGING = os.getenv("PROMPT_ENG_DETAILED_LOGGING", "1") == "1"
 # ============================================================================
 
 INJECTION_PATTERNS = [
-    # Direct instruction injection
-    r'ignore\s+(previous|above|all)\s+instructions?',
-    r'disregard\s+(previous|above|all)\s+(instructions?|commands?)',
-    r'forget\s+(everything|all)\s+(you\s+)?know',
-    r'new\s+instructions?:\s*',
-    r'system:\s*',
-    r'override\s+(instructions?|rules?|system)',
+    # Direct instruction injection - improved patterns
+    r'ignore.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)',
+    r'disregard.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)',
+    r'forget.*?(everything|all).*?(you\s+)?know',
+    r'(new|different)\s+instructions?:\s*',
+    r'(system|admin|root):\s*',
+    r'override.*?(instructions?|rules?|system|security)',
     
     # Prompt leaking attempts
-    r'(show|reveal|display|tell|output)\s+(your|the)\s+(prompt|instructions?|system)',
-    r'what\s+(are|is)\s+your\s+(instructions?|prompt|system)',
-    r'repeat\s+(your|the)\s+(instructions?|prompt)',
+    r'(show|reveal|display|tell|output|print).*?(your|the)\s+(prompt|instructions?|system)',
+    r'what.*?(are|is)\s+your\s+(instructions?|prompt|system)',
+    r'repeat.*?(your|the)\s+(instructions?|prompt)',
     
     # Jailbreak attempts
     r'act\s+as\s+if\s+you\s+(are|were)',
-    r'pretend\s+(to\s+be|you\s+are)',
-    r'simulate\s+(being|that\s+you)',
+    r'pretend.*?(to\s+be|you\s+are)',
+    r'simulate.*?(being|that\s+you)',
     r'roleplay\s+as',
+    r'you\s+are\s+now.*?(a|an)\s+',
     
     # Code injection
     r'<script[\s\S]*?>[\s\S]*?</script>',
