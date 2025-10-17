@@ -68,8 +68,6 @@ Quality Evaluator → Observability → Feedback Loop → Auto-Expansion
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import os
 import re
@@ -96,7 +94,7 @@ except ImportError:
     system_service = None
 
 try:
-    from app.middleware.observability import track_metric, track_event
+    from app.middleware.observability import track_event, track_metric
 except ImportError:
     track_metric = None
     track_event = None
@@ -116,8 +114,22 @@ ENABLE_RAG = os.getenv("PROMPT_ENG_ENABLE_RAG", "1") == "1"
 
 # Multi-Language Support (16+ languages)
 SUPPORTED_LANGUAGES = [
-    "en", "ar", "es", "fr", "de", "it", "pt", "ru", "zh", "ja",
-    "ko", "hi", "tr", "nl", "pl", "sv"
+    "en",
+    "ar",
+    "es",
+    "fr",
+    "de",
+    "it",
+    "pt",
+    "ru",
+    "zh",
+    "ja",
+    "ko",
+    "hi",
+    "tr",
+    "nl",
+    "pl",
+    "sv",
 ]
 DEFAULT_LANGUAGE = os.getenv("PROMPT_ENG_DEFAULT_LANGUAGE", "en")
 
@@ -130,7 +142,9 @@ MAX_RISK_LEVEL = int(os.getenv("PROMPT_ENG_MAX_RISK_LEVEL", "7"))  # 0-10 scale
 ENABLE_CHAIN_OF_THOUGHT = os.getenv("PROMPT_ENG_CHAIN_OF_THOUGHT", "1") == "1"
 ENABLE_AUTO_EXPANSION = os.getenv("PROMPT_ENG_AUTO_EXPANSION", "1") == "1"
 ENABLE_MULTI_MODAL = os.getenv("PROMPT_ENG_MULTI_MODAL", "1") == "1"
-MAX_CONTEXT_LENGTH = int(os.getenv("PROMPT_ENG_MAX_CONTEXT_LENGTH", "100000"))  # 100k tokens default
+MAX_CONTEXT_LENGTH = int(
+    os.getenv("PROMPT_ENG_MAX_CONTEXT_LENGTH", "100000")
+)  # 100k tokens default
 SUPPORT_LONG_CONTEXT = os.getenv("PROMPT_ENG_LONG_CONTEXT", "1") == "1"
 
 # Performance & Budget
@@ -148,37 +162,33 @@ ENABLE_DETAILED_LOGGING = os.getenv("PROMPT_ENG_DETAILED_LOGGING", "1") == "1"
 
 INJECTION_PATTERNS = [
     # Direct instruction injection - improved patterns
-    r'ignore.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)',
-    r'disregard.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)',
-    r'forget.*?(everything|all).*?(you\s+)?know',
-    r'(new|different)\s+instructions?:\s*',
-    r'(system|admin|root):\s*',
-    r'override.*?(instructions?|rules?|system|security)',
-    
+    r"ignore.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)",
+    r"disregard.*?(previous|above|all|prior).*?(instructions?|commands?|prompts?)",
+    r"forget.*?(everything|all).*?(you\s+)?know",
+    r"(new|different)\s+instructions?:\s*",
+    r"(system|admin|root):\s*",
+    r"override.*?(instructions?|rules?|system|security)",
     # Prompt leaking attempts
-    r'(show|reveal|display|tell|output|print).*?(your|the)\s+(prompt|instructions?|system)',
-    r'what.*?(are|is)\s+your\s+(instructions?|prompt|system)',
-    r'repeat.*?(your|the)\s+(instructions?|prompt)',
-    
+    r"(show|reveal|display|tell|output|print).*?(your|the)\s+(prompt|instructions?|system)",
+    r"what.*?(are|is)\s+your\s+(instructions?|prompt|system)",
+    r"repeat.*?(your|the)\s+(instructions?|prompt)",
     # Jailbreak attempts
-    r'act\s+as\s+if\s+you\s+(are|were)',
-    r'pretend.*?(to\s+be|you\s+are)',
-    r'simulate.*?(being|that\s+you)',
-    r'roleplay\s+as',
-    r'you\s+are\s+now.*?(a|an)\s+',
-    
+    r"act\s+as\s+if\s+you\s+(are|were)",
+    r"pretend.*?(to\s+be|you\s+are)",
+    r"simulate.*?(being|that\s+you)",
+    r"roleplay\s+as",
+    r"you\s+are\s+now.*?(a|an)\s+",
     # Code injection
-    r'<script[\s\S]*?>[\s\S]*?</script>',
-    r'javascript:\s*',
+    r"<script[\s\S]*?>[\s\S]*?</script>",
+    r"javascript:\s*",
     r'on\w+\s*=\s*["\']',
-    r'eval\s*\(',
-    r'exec\s*\(',
-    
+    r"eval\s*\(",
+    r"exec\s*\(",
     # Command injection
-    r';\s*(cat|ls|rm|sudo|bash|sh|curl|wget)',
-    r'\$\([^)]+\)',
-    r'`[^`]+`',
-    r'\|\s*(cat|ls|rm|grep|awk)',
+    r";\s*(cat|ls|rm|sudo|bash|sh|curl|wget)",
+    r"\$\([^)]+\)",
+    r"`[^`]+`",
+    r"\|\s*(cat|ls|rm|grep|awk)",
 ]
 
 # Compile patterns for performance
@@ -207,7 +217,7 @@ LANGUAGE_KEYWORDS = {
 class PromptEngineeringService:
     """
     خدمة هندسة Prompts الخارقة - SUPERHUMAN PROMPT FORGE v2.0
-    
+
     تولد prompts احترافية مخصصة لمشروعك تتفوق على أكبر الشركات العالمية
     مع ميزات خارقة تتجاوز OpenAI و Google و Microsoft و Meta و Apple
     """
@@ -217,7 +227,7 @@ class PromptEngineeringService:
         self._project_context_cache = None
         self._cache_timestamp = None
         self._cache_ttl = CACHE_TTL
-        
+
         # Metrics tracking
         self._metrics = {
             "total_generations": 0,
@@ -228,7 +238,7 @@ class PromptEngineeringService:
             "languages_detected": {},
             "risk_levels_processed": {},
         }
-        
+
         # Auto-expansion tracking
         self._new_patterns_learned = []
         self._successful_prompts_cache = []
@@ -236,50 +246,52 @@ class PromptEngineeringService:
     def detect_language(self, text: str) -> str:
         """
         اكتشاف لغة النص تلقائياً - SUPERHUMAN MULTI-LANGUAGE DETECTION
-        
+
         Detects the language of input text using keyword matching and heuristics.
         Supports 16+ languages including Arabic, English, Chinese, Japanese, etc.
         """
         text_lower = text.lower()
-        
+
         # Count keyword matches for each language
         language_scores = {}
-        
+
         for lang, keywords in LANGUAGE_KEYWORDS.items():
             score = sum(1 for keyword in keywords if keyword in text_lower)
             if score > 0:
                 language_scores[lang] = score
-        
+
         # Return language with highest score, or default
         if language_scores:
             detected_lang = max(language_scores, key=language_scores.get)
-            self.logger.info(f"Language detected: {detected_lang} (score: {language_scores[detected_lang]})")
+            self.logger.info(
+                f"Language detected: {detected_lang} (score: {language_scores[detected_lang]})"
+            )
             return detected_lang
-        
+
         # Check if text contains Arabic characters
-        if any('\u0600' <= c <= '\u06FF' for c in text):
+        if any("\u0600" <= c <= "\u06ff" for c in text):
             return "ar"
-        
+
         # Check if text contains Chinese characters
-        if any('\u4e00' <= c <= '\u9fff' for c in text):
+        if any("\u4e00" <= c <= "\u9fff" for c in text):
             return "zh"
-        
+
         # Check if text contains Japanese characters
-        if any('\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff' for c in text):
+        if any("\u3040" <= c <= "\u309f" or "\u30a0" <= c <= "\u30ff" for c in text):
             return "ja"
-        
+
         # Default to English
         return DEFAULT_LANGUAGE
 
     def detect_prompt_injection(self, text: str) -> dict[str, Any]:
         """
         اكتشاف هجمات Prompt Injection - SUPERHUMAN SECURITY
-        
+
         Detects various types of prompt injection attacks using:
         - Pattern matching (regex)
         - Heuristic analysis
         - Anomaly detection
-        
+
         Returns dict with:
         - is_malicious: bool
         - risk_level: 0-10
@@ -288,58 +300,68 @@ class PromptEngineeringService:
         """
         if not ENABLE_INJECTION_DETECTION:
             return {"is_malicious": False, "risk_level": 0, "detected_patterns": []}
-        
+
         detected_patterns = []
         risk_level = 0
-        
+
         # Check against known injection patterns
         for i, pattern in enumerate(INJECTION_REGEX):
             if pattern.search(text):
                 detected_patterns.append(INJECTION_PATTERNS[i])
                 risk_level += 2
-        
+
         # Heuristic checks
         # 1. Excessive special characters
-        special_char_ratio = len(re.findall(r'[<>{}[\]()$`|;]', text)) / max(len(text), 1)
+        special_char_ratio = len(re.findall(r"[<>{}[\]()$`|;]", text)) / max(len(text), 1)
         if special_char_ratio > 0.1:
             risk_level += 1
             detected_patterns.append("High special character density")
-        
+
         # 2. Multiple instruction keywords
-        instruction_keywords = ['ignore', 'disregard', 'forget', 'override', 'system', 'admin', 'root']
+        instruction_keywords = [
+            "ignore",
+            "disregard",
+            "forget",
+            "override",
+            "system",
+            "admin",
+            "root",
+        ]
         instruction_count = sum(1 for keyword in instruction_keywords if keyword in text.lower())
         if instruction_count >= 3:
             risk_level += 2
             detected_patterns.append("Multiple instruction override keywords")
-        
+
         # 3. Encoded payloads (base64, hex, etc.)
-        if re.search(r'(base64|hex|encode|decode)\s*[:\(]', text, re.IGNORECASE):
+        if re.search(r"(base64|hex|encode|decode)\s*[:\(]", text, re.IGNORECASE):
             risk_level += 3
             detected_patterns.append("Potential encoded payload")
-        
+
         # 4. SQL injection patterns
-        if re.search(r'(union\s+select|drop\s+table|insert\s+into|delete\s+from)', text, re.IGNORECASE):
+        if re.search(
+            r"(union\s+select|drop\s+table|insert\s+into|delete\s+from)", text, re.IGNORECASE
+        ):
             risk_level += 4
             detected_patterns.append("SQL injection pattern")
-        
+
         # Cap risk level at 10
         risk_level = min(risk_level, 10)
-        
+
         is_malicious = risk_level >= 5
-        
+
         if is_malicious:
             self._metrics["injection_attempts_blocked"] += 1
             self.logger.warning(
                 f"🚨 Prompt injection detected! Risk level: {risk_level}/10. "
                 f"Patterns: {detected_patterns}"
             )
-        
+
         recommendations = []
         if is_malicious:
             recommendations.append("⚠️ Input rejected due to security concerns")
             recommendations.append("Remove suspicious keywords and special characters")
             recommendations.append("Rephrase your request in a clear, straightforward manner")
-        
+
         return {
             "is_malicious": is_malicious,
             "risk_level": risk_level,
@@ -350,37 +372,37 @@ class PromptEngineeringService:
     def sanitize_prompt(self, text: str) -> str:
         """
         تنقية الـ Prompts من محتوى خطير - CONTENT SANITIZATION
-        
+
         Removes potentially harmful content while preserving meaning.
         """
         if not ENABLE_CONTENT_FILTERING:
             return text
-        
+
         sanitized = text
-        
+
         # Remove script tags
-        sanitized = re.sub(r'<script[\s\S]*?>[\s\S]*?</script>', '', sanitized, flags=re.IGNORECASE)
-        
+        sanitized = re.sub(r"<script[\s\S]*?>[\s\S]*?</script>", "", sanitized, flags=re.IGNORECASE)
+
         # Remove HTML event handlers
-        sanitized = re.sub(r'on\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
-        
+        sanitized = re.sub(r'on\w+\s*=\s*["\'][^"\']*["\']', "", sanitized, flags=re.IGNORECASE)
+
         # Remove JavaScript protocol
-        sanitized = re.sub(r'javascript:\s*', '', sanitized, flags=re.IGNORECASE)
-        
+        sanitized = re.sub(r"javascript:\s*", "", sanitized, flags=re.IGNORECASE)
+
         # Remove command injection attempts
-        sanitized = re.sub(r'[;|&]\s*(cat|ls|rm|sudo|bash|sh|curl|wget)', '', sanitized)
-        
+        sanitized = re.sub(r"[;|&]\s*(cat|ls|rm|sudo|bash|sh|curl|wget)", "", sanitized)
+
         # Remove excessive special characters (keep reasonable ones)
-        sanitized = re.sub(r'[<>{}$`]+', '', sanitized)
-        
+        sanitized = re.sub(r"[<>{}$`]+", "", sanitized)
+
         return sanitized.strip()
 
     def classify_risk(self, prompt: str, generated_output: str) -> dict[str, Any]:
         """
         تصنيف مخاطر الـ Prompts - RISK CLASSIFICATION
-        
+
         Classifies the risk level of prompts and generated outputs.
-        
+
         Risk Categories:
         - 0-2: Safe (green)
         - 3-5: Low risk (yellow)
@@ -389,25 +411,27 @@ class PromptEngineeringService:
         """
         risk_factors = []
         total_risk = 0
-        
+
         # Check input prompt
         injection_check = self.detect_prompt_injection(prompt)
         total_risk += injection_check["risk_level"]
         if injection_check["is_malicious"]:
             risk_factors.append("Malicious input detected")
-        
+
         # Check output length (very long outputs might be problematic)
         if len(generated_output) > 50000:
             total_risk += 1
             risk_factors.append("Very long output generated")
-        
+
         # Check for sensitive keywords in output
-        sensitive_keywords = ['password', 'secret', 'api_key', 'token', 'private_key']
-        sensitive_count = sum(1 for keyword in sensitive_keywords if keyword in generated_output.lower())
+        sensitive_keywords = ["password", "secret", "api_key", "token", "private_key"]
+        sensitive_count = sum(
+            1 for keyword in sensitive_keywords if keyword in generated_output.lower()
+        )
         if sensitive_count > 0:
             total_risk += sensitive_count
             risk_factors.append(f"Contains {sensitive_count} sensitive keywords")
-        
+
         # Classify risk category
         if total_risk <= 2:
             category = "safe"
@@ -421,7 +445,7 @@ class PromptEngineeringService:
         else:
             category = "high_risk"
             color = "red"
-        
+
         return {
             "risk_level": min(total_risk, 10),
             "category": category,
@@ -440,7 +464,7 @@ class PromptEngineeringService:
     ) -> dict[str, Any]:
         """
         توليد Prompt خارق من وصف المستخدم - SUPERHUMAN v2.0
-        
+
         New Features:
         ✅ Multi-language support (auto-detection)
         ✅ Prompt injection detection & prevention
@@ -470,25 +494,29 @@ class PromptEngineeringService:
                 f"🚀 Generating SUPERHUMAN prompt for user {user.id}, type: {prompt_type}, "
                 f"description length: {len(user_description)}"
             )
-            
+
             # Track event in observability system
             if track_event and ENABLE_METRICS:
-                track_event("prompt_generation_started", {
-                    "user_id": user.id,
-                    "prompt_type": prompt_type,
-                    "use_rag": use_rag,
-                })
+                track_event(
+                    "prompt_generation_started",
+                    {
+                        "user_id": user.id,
+                        "prompt_type": prompt_type,
+                        "use_rag": use_rag,
+                    },
+                )
 
             # ============================================================
             # STEP 1: SECURITY - Detect language & validate input
             # ============================================================
             detected_language = self.detect_language(user_description)
-            self._metrics.setdefault("languages_detected", {})[detected_language] = \
+            self._metrics.setdefault("languages_detected", {})[detected_language] = (
                 self._metrics["languages_detected"].get(detected_language, 0) + 1
-            
+            )
+
             # Detect prompt injection
             injection_check = self.detect_prompt_injection(user_description)
-            
+
             if injection_check["is_malicious"]:
                 self._metrics["failed_generations"] += 1
                 return {
@@ -499,13 +527,13 @@ class PromptEngineeringService:
                         f"🚨 Prompt Injection Attack Detected!\n\n"
                         f"**Risk Level:** {injection_check['risk_level']}/10\n\n"
                         f"**Detected Patterns:**\n"
-                        + "\n".join(f"- {p}" for p in injection_check["detected_patterns"]) +
-                        f"\n\n**Recommendations:**\n"
+                        + "\n".join(f"- {p}" for p in injection_check["detected_patterns"])
+                        + "\n\n**Recommendations:**\n"
                         + "\n".join(f"- {r}" for r in injection_check["recommendations"])
                     ),
                     "security_check": injection_check,
                 }
-            
+
             # Sanitize input
             sanitized_description = self.sanitize_prompt(user_description)
 
@@ -543,7 +571,7 @@ class PromptEngineeringService:
             # STEP 5: Build few-shot examples (DYNAMIC LEARNING)
             # ============================================================
             few_shot_examples = self._build_few_shot_examples(template, prompt_type)
-            
+
             # Add successful examples from cache for auto-expansion
             if ENABLE_AUTO_EXPANSION and self._successful_prompts_cache:
                 few_shot_examples.extend(self._successful_prompts_cache[-3:])  # Last 3 successful
@@ -581,7 +609,7 @@ class PromptEngineeringService:
             # STEP 9: Risk classification & content filtering
             # ============================================================
             risk_assessment = self.classify_risk(sanitized_description, generated_prompt)
-            
+
             if risk_assessment["risk_level"] > MAX_RISK_LEVEL:
                 self._metrics["failed_generations"] += 1
                 return {
@@ -600,7 +628,7 @@ class PromptEngineeringService:
             # STEP 10: Save to database
             # ============================================================
             elapsed_time = time.time() - start_time
-            
+
             generated_record = GeneratedPrompt(
                 user_description=user_description,
                 template_id=template.id if template and hasattr(template, "id") else None,
@@ -637,19 +665,24 @@ class PromptEngineeringService:
             # ============================================================
             self._metrics["successful_generations"] += 1
             self._metrics["average_generation_time"] = (
-                (self._metrics["average_generation_time"] * 
-                 (self._metrics["successful_generations"] - 1) + elapsed_time) /
-                self._metrics["successful_generations"]
-            )
-            self._metrics.setdefault("risk_levels_processed", {})[risk_assessment["category"]] = \
+                self._metrics["average_generation_time"]
+                * (self._metrics["successful_generations"] - 1)
+                + elapsed_time
+            ) / self._metrics["successful_generations"]
+            self._metrics.setdefault("risk_levels_processed", {})[risk_assessment["category"]] = (
                 self._metrics["risk_levels_processed"].get(risk_assessment["category"], 0) + 1
-            
+            )
+
             if track_metric and ENABLE_METRICS:
-                track_metric("prompt_generation_success", 1, {
-                    "language": detected_language,
-                    "risk_level": risk_assessment["risk_level"],
-                    "elapsed_time": elapsed_time,
-                })
+                track_metric(
+                    "prompt_generation_success",
+                    1,
+                    {
+                        "language": detected_language,
+                        "risk_level": risk_assessment["risk_level"],
+                        "elapsed_time": elapsed_time,
+                    },
+                )
 
             self.logger.info(
                 f"✅ Prompt generated successfully: ID {generated_record.id}, "
@@ -704,10 +737,12 @@ class PromptEngineeringService:
                 "elapsed_seconds": round(time.time() - start_time, 2),
             }
 
-    def _build_chain_of_thought(self, user_description: str, prompt_type: str, language: str) -> str:
+    def _build_chain_of_thought(
+        self, user_description: str, prompt_type: str, language: str
+    ) -> str:
         """
         بناء Chain-of-Thought للتفكير المنطقي - ADVANCED REASONING
-        
+
         Builds a chain-of-thought prefix that guides the LLM to think step-by-step.
         This dramatically improves prompt quality for complex tasks.
         """
@@ -733,10 +768,10 @@ Now, let's create the perfect prompt:
 الآن، لنصنع الـ prompt المثالي:
 """,
         }
-        
+
         # Get template for detected language, fallback to English
         cot_prefix = cot_templates.get(language, cot_templates["en"])
-        
+
         # Add task-specific reasoning
         if prompt_type == "code_generation":
             cot_prefix += "\n**Code Generation Considerations:**\n"
@@ -753,25 +788,25 @@ Now, let's create the perfect prompt:
             cot_prefix += "- Who is the target audience?\n"
             cot_prefix += "- What level of detail is appropriate?\n"
             cot_prefix += "- How to structure for maximum clarity?\n\n"
-        
+
         return cot_prefix
 
     def auto_expand_library(self, prompt_id: int, rating: int) -> None:
         """
         توسيع مكتبة القوالب تلقائياً - AUTO-EXPANSION
-        
+
         Learns from successful prompts and automatically expands the template library.
         This is a key feature that surpasses major companies.
         """
         if not ENABLE_AUTO_EXPANSION or rating < 4:
             return
-        
+
         try:
             # Get the successful prompt
             prompt = db.session.get(GeneratedPrompt, prompt_id)
             if not prompt:
                 return
-            
+
             # Add to successful cache
             example = {
                 "description": prompt.user_description[:200],
@@ -779,23 +814,24 @@ Now, let's create the perfect prompt:
                 "result": f"High-quality result (rated {rating}/5)",
                 "metadata": prompt.generation_metadata,
             }
-            
+
             self._successful_prompts_cache.append(example)
-            
+
             # Keep only last 50 successful prompts
             if len(self._successful_prompts_cache) > 50:
                 self._successful_prompts_cache = self._successful_prompts_cache[-50:]
-            
+
             # After collecting 10 highly-rated prompts of same type, create new template
             prompt_type = prompt.generation_metadata.get("prompt_type", "general")
             similar_prompts = [
-                p for p in self._successful_prompts_cache
+                p
+                for p in self._successful_prompts_cache
                 if p.get("metadata", {}).get("prompt_type") == prompt_type
             ]
-            
+
             if len(similar_prompts) >= 10:
                 self._create_learned_template(prompt_type, similar_prompts)
-                
+
         except Exception as e:
             self.logger.warning(f"Auto-expansion failed: {e}")
 
@@ -804,7 +840,7 @@ Now, let's create the perfect prompt:
         try:
             # Extract common patterns
             template_content = self._extract_pattern_from_examples(examples)
-            
+
             # Create new template
             new_template = PromptTemplate(
                 name=f"Auto-Learned {prompt_type.title()} Template",
@@ -819,12 +855,12 @@ Now, let's create the perfect prompt:
                 created_by_id=1,  # System user
                 version=1,
             )
-            
+
             db.session.add(new_template)
             db.session.commit()
-            
+
             self.logger.info(f"✨ Created new auto-learned template for {prompt_type}")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to create learned template: {e}")
             db.session.rollback()
@@ -833,13 +869,13 @@ Now, let's create the perfect prompt:
         """Extract common patterns from successful examples"""
         # Simple pattern extraction - can be enhanced with NLP
         common_phrases = []
-        
+
         for example in examples[:5]:
             prompt_text = example.get("prompt", "")
             # Extract first few sentences as pattern
-            sentences = prompt_text.split('.')[:3]
+            sentences = prompt_text.split(".")[:3]
             common_phrases.extend(sentences)
-        
+
         # Build template
         template = """You are an expert {prompt_type} specialist working on {project_name}.
 
@@ -860,15 +896,12 @@ Please provide your {prompt_type}:
     def get_metrics(self) -> dict[str, Any]:
         """
         الحصول على مقاييس الأداء - OBSERVABILITY
-        
+
         Returns comprehensive metrics for monitoring and analytics.
         """
         total = self._metrics["total_generations"]
-        success_rate = (
-            (self._metrics["successful_generations"] / total * 100)
-            if total > 0 else 0
-        )
-        
+        success_rate = (self._metrics["successful_generations"] / total * 100) if total > 0 else 0
+
         return {
             "total_generations": total,
             "successful_generations": self._metrics["successful_generations"],
@@ -1059,7 +1092,7 @@ Please provide your {prompt_type}:
     ) -> str:
         """
         بناء Meta-Prompt الديناميكي - MULTI-LANGUAGE AWARE
-        
+
         Constructs the meta-prompt that will be sent to LLM with full multi-language support.
         """
         # Use template if available, otherwise create dynamic one
@@ -1100,7 +1133,7 @@ Please provide your {prompt_type}:
 
     def _get_default_meta_template(self, prompt_type: str, language: str = "en") -> str:
         """الحصول على قالب Meta-Prompt الافتراضي متعدد اللغات"""
-        
+
         # Multi-language templates
         templates = {
             "ar": """أنت خبير عالمي في هندسة Prompts وتعمل على مشروع "{project_name}".
@@ -1130,7 +1163,7 @@ Please provide your {prompt_type}:
 **متطلبات الـ Prompt (REQUIREMENTS):**
 
 1. **السياق الكامل:** ضمّن معلومات كافية عن المشروع والتقنيات المستخدمة
-2. **الوضوح:** استخدم لغة واضحة ومحددة  
+2. **الوضوح:** استخدم لغة واضحة ومحددة
 3. **التنظيم:** قسّم الـ prompt إلى أقسام منطقية
 4. **الأمثلة:** قدّم أمثلة واقعية عند الحاجة
 5. **الاحترافية:** اتبع أعلى معايير هندسة Prompts العالمية تتفوق على OpenAI و Google
@@ -1143,7 +1176,6 @@ Please provide your {prompt_type}:
 ---
 
 **الـ PROMPT المولد:**""",
-            
             "en": """You are a world-class Prompt Engineering expert working on the "{project_name}" project.
 
 **Project Goal:** {project_goal}
@@ -1186,7 +1218,6 @@ The prompt should be copy-paste ready for an LLM.
 ---
 
 **GENERATED PROMPT:**""",
-
             "es": """Eres un experto mundial en Ingeniería de Prompts trabajando en el proyecto "{project_name}".
 
 **Objetivo del Proyecto:** {project_goal}
@@ -1210,7 +1241,6 @@ The prompt should be copy-paste ready for an LLM.
 Crear un prompt profesional y detallado de nivel superhumano para usar con un LLM avanzado.
 
 **PROMPT GENERADO:**""",
-
             "fr": """Vous êtes un expert mondial en Ingénierie de Prompts travaillant sur le projet "{project_name}".
 
 **Objectif du Projet:** {project_goal}
@@ -1234,7 +1264,6 @@ Crear un prompt profesional y detallado de nivel superhumano para usar con un LL
 Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser avec un LLM avancé.
 
 **PROMPT GÉNÉRÉ:**""",
-
             "zh": """你是一位世界级的提示工程专家，正在为"{project_name}"项目工作。
 
 **项目目标:** {project_goal}
@@ -1259,7 +1288,7 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
 
 **生成的提示:**""",
         }
-        
+
         # Return template for detected language, fallback to English
         return templates.get(language, templates["en"])
 
@@ -1299,7 +1328,7 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
     def _generate_with_llm(self, meta_prompt: str, language: str = "en") -> str:
         """
         توليد الـ Prompt النهائي باستخدام LLM - ENHANCED WITH RETRY & FALLBACK
-        
+
         Generates the final prompt using LLM with proper error handling and fallbacks.
         """
         try:
@@ -1317,7 +1346,7 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
                 "fr": "Vous êtes un expert mondial en Ingénierie de Prompts professionnels.",
                 "zh": "你是世界级的提示工程专家。",
             }
-            
+
             system_msg = system_messages.get(language, system_messages["en"])
 
             # Try with primary model
@@ -1331,14 +1360,14 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
                     temperature=0.7,
                     max_tokens=4000,
                 )
-                
+
                 content = response.get("content", "")
                 if content and len(content) > 50:  # Valid response
                     return content
-                    
+
             except Exception as primary_error:
                 self.logger.warning(f"Primary model failed: {primary_error}, trying fallback")
-                
+
                 # Try with low-cost fallback model
                 try:
                     response = llm.chat(
@@ -1350,11 +1379,11 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
                         temperature=0.7,
                         max_tokens=4000,
                     )
-                    
+
                     content = response.get("content", "")
                     if content and len(content) > 50:
                         return content
-                        
+
                 except Exception as fallback_error:
                     self.logger.error(f"Fallback model also failed: {fallback_error}")
 
@@ -1454,7 +1483,7 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
     ) -> dict[str, Any]:
         """
         تقييم Prompt مولد (RLHF++ feedback) - ENHANCED WITH AUTO-EXPANSION
-        
+
         Rates a generated prompt and triggers auto-expansion for highly-rated prompts.
         """
         try:
@@ -1484,13 +1513,8 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
 
             return {
                 "status": "success",
-                "message": f"✅ شكراً على تقييمك ({rating}/5)! سيساعدنا في تحسين الخدمة.\n\nThank you for your rating ({rating}/5)! This helps improve the system."
+                "message": f"✅ شكراً على تقييمك ({rating}/5)! سيساعدنا في تحسين الخدمة.\n\nThank you for your rating ({rating}/5)! This helps improve the system.",
             }
-
-        except Exception as e:
-            self.logger.error(f"Failed to rate prompt: {e}")
-            db.session.rollback()
-            return {"status": "error", "error": str(e)}
 
         except Exception as e:
             self.logger.error(f"Failed to rate prompt: {e}")

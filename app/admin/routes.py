@@ -2022,7 +2022,7 @@ def handle_rate_prompt(prompt_id):
 def handle_get_metrics():
     """
     API endpoint لجلب مقاييس أداء نظام Prompt Engineering - OBSERVABILITY
-    
+
     Returns comprehensive metrics including:
     - Total generations
     - Success/failure rates
@@ -2038,11 +2038,13 @@ def handle_get_metrics():
         service = get_prompt_engineering_service()
         metrics = service.get_metrics()
 
-        return jsonify({
-            "status": "success",
-            "metrics": metrics,
-            "message": "📊 Metrics retrieved successfully"
-        })
+        return jsonify(
+            {
+                "status": "success",
+                "metrics": metrics,
+                "message": "📊 Metrics retrieved successfully",
+            }
+        )
 
     except Exception as e:
         current_app.logger.error(f"Get metrics failed: {e}", exc_info=True)
