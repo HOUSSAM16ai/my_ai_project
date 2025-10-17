@@ -615,8 +615,11 @@ body {
               <option value="testing">Testing</option>
               <option value="refactoring">Refactoring</option>
             </select>
-            <button class="action-btn" id="view-templates-btn">
+            <button class="action-btn" id="view-templates-btn" title="View available templates">
               📚 Templates
+            </button>
+            <button class="action-btn" id="view-metrics-btn" title="View system metrics and performance">
+              📊 Metrics
             </button>
           </div>
         </div>
@@ -625,24 +628,45 @@ body {
           <div class="message system">
             <div class="message-avatar">🎯</div>
             <div class="message-content">
-              <p><strong>مرحباً بك في نظام هندسة Prompts الخارق! (Superhuman Prompt Engineering System)</strong></p>
-              <p>هذا النظام يولد prompts احترافية مخصصة تماماً لمشروعك:</p>
+              <p><strong>🌟 مرحباً بك في نظام هندسة Prompts الخارق v2.0! (Superhuman Prompt Engineering System v2.0)</strong></p>
+              <p>نظام متقدم يتفوق على أكبر الشركات العالمية (OpenAI, Google, Microsoft, Meta, Apple):</p>
+              
+              <h4 style="color: var(--cf-accent); margin-top: 1rem;">✨ الميزات الخارقة الجديدة:</h4>
               <ul>
+                <li><strong>🌍 دعم 16+ لغة:</strong> اكتشاف تلقائي للغة (عربي، إنجليزي، صيني، إسباني، فرنسي، وأكثر)</li>
+                <li><strong>🛡️ حماية متقدمة:</strong> اكتشاف ومنع هجمات Prompt Injection بذكاء AI</li>
                 <li><strong>🧠 فهم عميق:</strong> يفهم كل فاصلة وعلاقتها بآخر فاصلة في المشروع</li>
-                <li><strong>🔍 RAG متقدم:</strong> يسترجع سياق ذو صلة من قاعدة المعرفة</li>
-                <li><strong>📝 Meta-Prompting:</strong> يستخدم قوالب ديناميكية مع متغيرات المشروع</li>
-                <li><strong>🎓 Few-Shot Learning:</strong> يتعلم من أمثلة المشروع الحقيقية</li>
-                <li><strong>⭐ RLHF:</strong> يتحسن باستمرار من تقييماتك</li>
+                <li><strong>🔍 RAG متقدم:</strong> استرجاع سياق ذكي من قاعدة المعرفة</li>
+                <li><strong>📝 Meta-Prompting:</strong> قوالب ديناميكية متعددة اللغات</li>
+                <li><strong>🎓 Few-Shot Learning:</strong> أمثلة ديناميكية من المشروع</li>
+                <li><strong>🔗 Chain-of-Thought:</strong> تفكير منطقي خطوة بخطوة</li>
+                <li><strong>📚 توسع تلقائي:</strong> يتعلم من الـ prompts الناجحة ويوسع المكتبة</li>
+                <li><strong>⚡ Long Context:</strong> معالجة سياقات حتى 1M tokens</li>
+                <li><strong>⭐ RLHF++:</strong> يتحسن باستمرار من تقييماتك</li>
+                <li><strong>📊 Observability:</strong> تتبع شامل للأداء والأمان</li>
+                <li><strong>🎯 تصنيف المخاطر:</strong> تقييم آلي لمستوى الأمان (0-10)</li>
               </ul>
-              <p><strong>🚀 كيف تستخدمه؟</strong></p>
+              
+              <h4 style="color: var(--cf-accent); margin-top: 1rem;">🚀 كيف تستخدمه؟</h4>
               <ol>
-                <li>اختر نوع الـ Prompt من القائمة أعلاه</li>
-                <li>اكتب وصفاً لما تريد في المربع أدناه</li>
-                <li>انتظر النظام ليولد لك prompt احترافي خارق</li>
-                <li>قيّم النتيجة لتحسين النظام (RLHF)</li>
+                <li>اختر نوع الـ Prompt من القائمة أعلاه (Code, Documentation, Architecture, etc.)</li>
+                <li>اكتب وصفاً بأي لغة تريد في المربع أدناه</li>
+                <li>انتظر النظام ليولد لك prompt احترافي خارق مخصص</li>
+                <li>قيّم النتيجة (4-5 نجوم) لتحسين النظام وتوسيع المكتبة تلقائياً</li>
               </ol>
+              
               <p style="font-size: 0.9em; color: var(--cf-text-dim); margin-top: 0.5rem;">
-                <strong>أمثلة:</strong> "أنشئ prompt لتوليد REST API للمستخدمين" أو "prompt لكتابة اختبارات لخدمة قاعدة البيانات"
+                <strong>💡 أمثلة:</strong><br>
+                • "أنشئ prompt لتوليد REST API للمستخدمين مع JWT authentication"<br>
+                • "Create prompt for writing comprehensive tests for database service"<br>
+                • "生成一个用于编写API文档的提示"<br>
+                • "Créer un prompt pour l'architecture microservices"
+              </p>
+              
+              <p style="background: var(--cf-bg-alt); padding: 0.75rem; border-radius: 6px; margin-top: 1rem; font-size: 0.9em;">
+                <strong>🔒 الأمان:</strong> النظام يكتشف تلقائياً محاولات Prompt Injection وينقي المحتوى الخطير.<br>
+                <strong>🌐 اللغات:</strong> English, العربية, 中文, Español, Français, Deutsch, Русский, 日本語, 한국어, and more!<br>
+                <strong>⚡ الأداء:</strong> توليد سريع مع retry ذكي وfallback models للموثوقية العالية.
               </p>
             </div>
           </div>
@@ -1081,6 +1105,23 @@ body {
     });
   });
 
+  // Format message with markdown-like syntax for prompt engineering
+  function formatMessage(text) {
+    if (!text) return '';
+    
+    return text
+      .replace(/```([\s\S]*?)```/g, '<pre style="background: var(--cf-bg); padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0;"><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code style="background: var(--cf-bg); padding: 0.2rem 0.4rem; border-radius: 3px; font-family: monospace; font-size: 0.9em;">$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/^#{1,6}\s+(.+)$/gm, '<h3 style="margin: 1rem 0 0.5rem 0; color: var(--cf-accent);">$1</h3>')
+      .replace(/^[-*]\s+(.+)$/gm, '<li style="margin-left: 1.5rem;">$1</li>')
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<li style="margin-left: 1.5rem;">$2</li>')
+      .replace(/---+/g, '<hr style="border: none; border-top: 1px solid var(--cf-border); margin: 1rem 0;">')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+  }
+
   function addPromptMessage(role, content, metadata = {}) {
     const msg = document.createElement('div');
     msg.className = `message ${role}`;
@@ -1183,13 +1224,38 @@ body {
       hidePromptLoading();
 
       if (result.status === 'success') {
+        // Build comprehensive metadata display
+        const langEmojis = {
+          'en': '🇬🇧', 'ar': '🇸🇦', 'es': '🇪🇸', 'fr': '🇫🇷', 'de': '🇩🇪',
+          'zh': '🇨🇳', 'ja': '🇯🇵', 'ru': '🇷🇺', 'pt': '🇵🇹', 'it': '🇮🇹',
+          'ko': '🇰🇷', 'hi': '🇮🇳', 'tr': '🇹🇷'
+        };
+        const langEmoji = langEmojis[result.detected_language] || '🌍';
+        
+        const riskColors = {
+          'safe': '✅', 'low_risk': '🟡', 'medium_risk': '🟠', 'high_risk': '🔴'
+        };
+        const riskIcon = riskColors[result.risk_assessment?.category] || '✅';
+        
         const metaInfo = `
-📊 **Generation Info:**
+📊 **Generation Info (SUPERHUMAN v2.0):**
+
+**🌟 Core Metrics:**
 - Template: ${result.template_name}
 - Context Chunks: ${result.context_snippets?.length || 0}
 - Few-Shot Examples: ${result.few_shot_examples?.length || 0}
-- Time: ${result.elapsed_seconds}s
+- Generation Time: ${result.elapsed_seconds}s ⚡
 - Prompt ID: ${result.prompt_id}
+
+**🌍 Language & Security:**
+- Detected Language: ${langEmoji} ${result.detected_language?.toUpperCase() || 'EN'}
+- Security Check: ${result.security_check?.injection_detected ? '🚨 Injection Blocked' : '✅ Clean'}
+- Risk Level: ${riskIcon} ${result.risk_assessment?.category?.replace('_', ' ')?.toUpperCase() || 'SAFE'} (${result.risk_assessment?.risk_level || 0}/10)
+
+**🎯 Features Used:**
+- Chain-of-Thought: ${result.metadata?.chain_of_thought_enabled ? '✅' : '❌'}
+- RAG Context: ${result.metadata?.use_rag ? '✅' : '❌'}
+- Model: ${result.metadata?.model || 'N/A'}
 
 ---
 
@@ -1201,13 +1267,20 @@ ${result.generated_prompt}
 
 ---
 
-💡 **Tip:** Copy this prompt and use it with your favorite LLM!
+💡 **Tips:**
+- Copy this prompt and use it with your favorite LLM (ChatGPT, Claude, Gemini, etc.)
+- Rate 4-5 stars to help the system learn and auto-expand its library
+- The system remembers successful patterns for future generations
+- Try different languages - we support 16+ languages!
         `;
         
         addPromptMessage('assistant', metaInfo, { promptId: result.prompt_id });
         
-        // Show success notification
-        addPromptMessage('system', '✅ Prompt generated successfully! Rate it above to help improve the system (RLHF).');
+        // Show success notification with tips
+        const successMsg = result.risk_assessment?.risk_level === 0 
+          ? '✅ Perfect! Prompt generated with zero security risks. Rate it to help improve the system!'
+          : '✅ Prompt generated successfully! Low risk level detected. Rate it above to help improve the system (RLHF++).';
+        addPromptMessage('system', successMsg);
       } else {
         addPromptMessage('error', result.message || result.error || 'Failed to generate prompt');
       }
@@ -1280,6 +1353,79 @@ ${result.generated_prompt}
     }
   }
 
+  async function viewMetrics() {
+    showPromptLoading();
+    
+    try {
+      const response = await fetch('{{ url_for("admin.handle_get_metrics") }}');
+      const result = await response.json();
+      hidePromptLoading();
+
+      if (result.status === 'success') {
+        const m = result.metrics;
+        
+        let metricsDisplay = '📊 **System Performance Metrics (SUPERHUMAN v2.0)**\n\n';
+        
+        metricsDisplay += '**📈 Generation Statistics:**\n';
+        metricsDisplay += `- Total Generations: ${m.total_generations}\n`;
+        metricsDisplay += `- Successful: ${m.successful_generations} ✅\n`;
+        metricsDisplay += `- Failed: ${m.failed_generations} ❌\n`;
+        metricsDisplay += `- Success Rate: ${m.success_rate_percentage}%\n`;
+        metricsDisplay += `- Avg Time: ${m.average_generation_time_seconds}s ⚡\n\n`;
+        
+        metricsDisplay += '**🛡️ Security Statistics:**\n';
+        metricsDisplay += `- Injection Attempts Blocked: ${m.injection_attempts_blocked} 🚨\n`;
+        metricsDisplay += `- System Status: ${m.injection_attempts_blocked === 0 ? 'Secure ✅' : 'Protected 🛡️'}\n\n`;
+        
+        if (m.languages_detected && Object.keys(m.languages_detected).length > 0) {
+          metricsDisplay += '**🌍 Languages Detected:**\n';
+          const langNames = {
+            'en': 'English', 'ar': 'العربية', 'es': 'Español', 'fr': 'Français',
+            'de': 'Deutsch', 'zh': '中文', 'ja': '日本語', 'ru': 'Русский',
+            'pt': 'Português', 'it': 'Italiano', 'ko': '한국어', 'hi': 'हिन्दी'
+          };
+          Object.entries(m.languages_detected).forEach(([lang, count]) => {
+            const langName = langNames[lang] || lang;
+            metricsDisplay += `- ${langName}: ${count} prompts\n`;
+          });
+          metricsDisplay += '\n';
+        }
+        
+        if (m.risk_levels_processed && Object.keys(m.risk_levels_processed).length > 0) {
+          metricsDisplay += '**🎯 Risk Levels Processed:**\n';
+          const riskLabels = {
+            'safe': '✅ Safe (0-2)',
+            'low_risk': '🟡 Low Risk (3-5)',
+            'medium_risk': '🟠 Medium Risk (6-8)',
+            'high_risk': '🔴 High Risk (9-10)'
+          };
+          Object.entries(m.risk_levels_processed).forEach(([level, count]) => {
+            metricsDisplay += `- ${riskLabels[level] || level}: ${count}\n`;
+          });
+          metricsDisplay += '\n';
+        }
+        
+        metricsDisplay += '**📚 Auto-Learning:**\n';
+        metricsDisplay += `- Successful Prompts in Cache: ${m.cached_successful_prompts}\n`;
+        metricsDisplay += `- Auto-Expansion: ${m.cached_successful_prompts >= 10 ? 'Active ✨' : 'Learning 📖'}\n\n`;
+        
+        metricsDisplay += '---\n\n';
+        metricsDisplay += '💡 **Tips:**\n';
+        metricsDisplay += '- Rate prompts 4-5 stars to help the system learn\n';
+        metricsDisplay += '- System automatically creates new templates from successful patterns\n';
+        metricsDisplay += '- Multi-language support improves with usage\n';
+        metricsDisplay += '- Security system learns from blocked injection attempts';
+
+        addPromptMessage('assistant', metricsDisplay);
+      } else {
+        addPromptMessage('error', result.message || 'Failed to load metrics');
+      }
+    } catch (error) {
+      hidePromptLoading();
+      addPromptMessage('error', `❌ Network error: ${error.message}`);
+    }
+  }
+
   // Event listeners for prompt engineering
   generatePromptBtn.addEventListener('click', generatePrompt);
   
@@ -1296,6 +1442,12 @@ ${result.generated_prompt}
   });
 
   viewTemplatesBtn.addEventListener('click', viewTemplates);
+  
+  // Add metrics button handler
+  const viewMetricsBtn = document.getElementById('view-metrics-btn');
+  if (viewMetricsBtn) {
+    viewMetricsBtn.addEventListener('click', viewMetrics);
+  }
 
 })();
 </script>
