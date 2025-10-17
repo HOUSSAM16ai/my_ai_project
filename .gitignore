@@ -102,3 +102,4 @@ site/
 *.db
 *.sql
 test_ai_enhancements.py
+actionlint
