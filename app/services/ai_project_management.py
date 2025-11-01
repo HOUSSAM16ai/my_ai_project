@@ -294,7 +294,7 @@ class SmartScheduler:
         sorted_tasks = self._topological_sort(tasks)
 
         # Assign tasks to team members
-        assignments = defaultdict(list)
+        assignments: dict[str, list[Task]] = defaultdict(list)
 
         for task in sorted_tasks:
             if task.status in [TaskStatus.DONE, TaskStatus.CANCELLED]:
@@ -477,7 +477,7 @@ class ProjectOrchestrator:
     def generate_smart_insights(self) -> dict[str, Any]:
         """توليد رؤى ذكية عن المشروع"""
         # Predict completion
-        total_remaining_hours = 0
+        total_remaining_hours: float = 0.0
         for task in self.tasks:
             if task.status != TaskStatus.DONE:
                 predicted_hours, _ = self.task_analyzer.predict_task_duration(task)

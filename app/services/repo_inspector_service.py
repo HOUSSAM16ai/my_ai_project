@@ -49,7 +49,7 @@ def files_by_extension(root: str = ".", top_n: int = 10) -> dict[str, int]:
     return dict(sorted_items[:top_n])
 
 
-def total_lines_of_code(root: str = ".", exts: list[str] = None) -> int:
+def total_lines_of_code(root: str = ".", exts: list[str] | None = None) -> int:
     """Calculates total lines of code for specified file extensions."""
     if exts is None:
         exts = [".py", ".js", ".html", ".css", ".md"]

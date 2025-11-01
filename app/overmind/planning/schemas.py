@@ -53,7 +53,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -659,7 +659,7 @@ class MissionPlanSchema(BaseModel):
 
     def to_networkx(self):
         try:
-            import networkx as nx  # type: ignore
+            import networkx as nx
         except ImportError:  # pragma: no cover
             return None
         g = nx.DiGraph()
@@ -688,7 +688,7 @@ class PlanGenerationResult(BaseModel):
 
 
 def validate_plan(payload: dict[str, Any]) -> MissionPlanSchema:
-    return MissionPlanSchema.model_validate(payload)
+    return cast(MissionPlanSchema, MissionPlanSchema.model_validate(payload))
 
 
 # =============================================================================

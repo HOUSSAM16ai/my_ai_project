@@ -283,23 +283,25 @@ class BehavioralAnalyzer:
         """
         تحليل سلوك المستخدم
         """
-        threats = []
+        threats: list[ThreatDetection] = []
 
         if not event.user_id:
             return threats
 
+        user_id = event.user_id  # Type narrowing for mypy
+
         # Get or create profile
-        profile = self._get_or_create_profile(event.user_id)
+        profile = self._get_or_create_profile(user_id)
 
         # Store event
-        self.event_history[event.user_id].append(event)
+        self.event_history[user_id].append(event)
 
         # Check for anomalies
         anomalies = self._detect_behavioral_anomalies(event, profile)
         threats.extend(anomalies)
 
         # Update profile
-        self._update_profile(event.user_id, event)
+        self._update_profile(user_id, event)
 
         return threats
 
@@ -321,7 +323,14 @@ class BehavioralAnalyzer:
         self, event: SecurityEvent, profile: UserBehaviorProfile
     ) -> list[ThreatDetection]:
         """كشف الشذوذ السلوكي"""
-        anomalies = []
+        anomalies: list[ThreatDetection] = []
+        
+        # Type guard: user_id must not be None when this is called
+        if event.user_id is None:
+            # This should never happen as it's called after user_id check
+            return anomalies
+        
+        user_id = event.user_id
 
         # Check if user is accessing unusual endpoint
         if profile.typical_endpoints and event.endpoint not in profile.typical_endpoints:
@@ -337,7 +346,7 @@ class BehavioralAnalyzer:
                         threat_level=ThreatLevel.HIGH,
                         description=f"User accessing unusual sensitive endpoint: {event.endpoint}",
                         source_ip=event.source_ip,
-                        user_id=event.user_id,
+                        user_id=user_id,
                         confidence=0.75,
                         evidence=[f"Never accessed {event.endpoint} before"],
                         recommended_action="Require additional authentication",
@@ -356,7 +365,7 @@ class BehavioralAnalyzer:
                     threat_level=ThreatLevel.MEDIUM,
                     description=f"User accessing at unusual time: {current_hour}:00",
                     source_ip=event.source_ip,
-                    user_id=event.user_id,
+                    user_id=user_id,
                     confidence=0.6,
                     evidence=[f"Typical hours: {profile.typical_hours}, Current: {current_hour}"],
                     recommended_action="Monitor closely",
@@ -367,7 +376,7 @@ class BehavioralAnalyzer:
         # Check for rapid requests (possible brute force)
         recent_events = [
             e
-            for e in self.event_history[event.user_id]
+            for e in self.event_history[user_id]
             if (event.timestamp - e.timestamp).total_seconds() < 60
         ]
 
@@ -379,7 +388,7 @@ class BehavioralAnalyzer:
                     threat_level=ThreatLevel.HIGH,
                     description=f"Unusually high request rate: {len(recent_events)} requests/minute",
                     source_ip=event.source_ip,
-                    user_id=event.user_id,
+                    user_id=user_id,
                     confidence=0.85,
                     evidence=[f"{len(recent_events)} requests in last minute"],
                     recommended_action="Rate limit and CAPTCHA",
@@ -546,12 +555,12 @@ class SuperhumanSecuritySystem:
         ]
 
         # Group by threat type
-        threat_counts = defaultdict(int)
+        threat_counts: dict[str, int] = defaultdict(int)
         for threat in last_24h:
             threat_counts[threat.threat_type.value] += 1
 
         # Top attacking IPs
-        ip_counts = defaultdict(int)
+        ip_counts: dict[str, int] = defaultdict(int)
         for threat in last_24h:
             ip_counts[threat.source_ip] += 1
 

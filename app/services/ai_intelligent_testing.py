@@ -254,8 +254,8 @@ class AITestGenerator:
                     risks.append("File I/O: Verify file path validation")
 
             # Check for SQL-like strings
-            if isinstance(node, ast.Str):
-                if any(kw in node.s.lower() for kw in ["select ", "insert ", "update ", "delete "]):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if any(kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]):
                     risks.append("SQL Injection Risk: Raw SQL query detected")
 
         return risks
@@ -266,7 +266,7 @@ class AITestGenerator:
         """
         توليد حالات اختبار لـ function محدد
         """
-        tests = []
+        tests: list[TestCase] = []
         func_name = func_info["name"]
 
         # Generate happy path test
@@ -341,11 +341,11 @@ class AITestGenerator:
         self, func_info: dict[str, Any], file_path: str
     ) -> list[TestCase]:
         """توليد اختبارات الحالات الحدية"""
-        tests = []
+        tests: list[TestCase] = []
         func_name = func_info["name"]
         params = func_info["params"]
 
-        edge_values = {
+        edge_values: dict[str, list[Any]] = {
             "int": [0, -1, 1, 999999, -999999],
             "float": [0.0, -1.0, 1.0, float("inf"), float("-inf")],
             "str": ["", "a", "very long string" * 100, "特殊字符", '<script>alert("xss")</script>'],
@@ -360,7 +360,8 @@ class AITestGenerator:
 
             param_type = self._infer_type(param)
             if param_type in edge_values:
-                for edge_val in edge_values[param_type][:2]:  # Limit to 2 per param
+                edge_values_list = edge_values[param_type]
+                for edge_val in edge_values_list[:2]:  # Limit to 2 per param
                     inputs = {param["name"]: edge_val}
 
                     test_code = f"""def test_{func_name}_edge_{param["name"]}_{edge_val}():
@@ -400,7 +401,7 @@ class AITestGenerator:
         self, func_info: dict[str, Any], file_path: str
     ) -> list[TestCase]:
         """توليد اختبارات حالات الخطأ"""
-        tests = []
+        tests: list[TestCase] = []
         func_name = func_info["name"]
         params = func_info["params"]
 
@@ -437,7 +438,7 @@ class AITestGenerator:
 
     def _generate_boundary_tests(self, func_info: dict[str, Any], file_path: str) -> list[TestCase]:
         """توليد اختبارات الحدود"""
-        tests = []
+        tests: list[TestCase] = []
         # Would implement boundary value analysis here
         return tests
 
