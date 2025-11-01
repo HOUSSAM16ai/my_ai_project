@@ -1,0 +1,27 @@
+# Chaos Engineering Experiment: Pod Delete
+# This experiment randomly deletes pods to test resilience
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: router-service-chaos
+  namespace: ai-services
+spec:
+  appinfo:
+    appns: ai-services
+    applabel: 'app=router-service'
+    appkind: 'deployment'
+  engineState: 'active'
+  chaosServiceAccount: litmus-admin
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: '60'
+            - name: CHAOS_INTERVAL
+              value: '10'
+            - name: FORCE
+              value: 'false'
+            - name: PODS_AFFECTED_PERC
+              value: '50'
