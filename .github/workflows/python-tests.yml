@@ -44,7 +44,6 @@ jobs:
             pip install -r requirements.txt -r requirements-dev.txt
           else
             pip install -r requirements.txt
-            pip install pytest pytest-cov
           fi
 
       - name: Ensure PYTHONPATH points to repo root

@@ -259,7 +259,7 @@ def admin_user(session, user_factory):
     """Fixture لإنشاء مستخدم أدمن للاختبارات."""
     if not MODELS_AVAILABLE or User is None:
         pytest.skip("User model not available")
-    
+
     # Check if admin already exists in this session
     existing_admin = session.query(User).filter_by(email="admin@test.com").first()
     if existing_admin:
