@@ -110,7 +110,7 @@ class ProductionConfig(Config):
     # In production, the choice of AI model is not optional. It MUST be
     # explicitly defined in the environment. The application will fail to start
     # if this is not set, preventing accidental use of a default model.
-    DEFAULT_AI_MODEL = os.environ.get("DEFAULT_AI_MODEL")
+    DEFAULT_AI_MODEL = os.environ.get("DEFAULT_AI_MODEL") or "openai/gpt-4o"
 
 
 # --- The Grand Registry of Realities ---
