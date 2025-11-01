@@ -103,3 +103,24 @@ site/
 *.sql
 test_ai_enhancements.py
 actionlint
+
+# 13. Security Reports & Analysis
+# Generated security scan reports (don't commit sensitive findings)
+security-reports/
+bandit-report.json
+bandit-output.txt
+bandit-summary.txt
+safety-report.json
+safety-output.txt
+safety-summary.txt
+SBOM.txt
+
+# 14. SonarQube/SonarCloud
+# SonarQube scanner working directory
+.scannerwork/
+.sonar/
+
+# 15. Quality Metrics
+# Generated quality metric reports
+/tmp/check_output_*.log
+quality-metrics.json

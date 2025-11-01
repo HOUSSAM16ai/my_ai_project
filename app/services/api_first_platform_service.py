@@ -4,7 +4,7 @@
 # =============================================================================
 # PRIME DIRECTIVE:
 #   منصة API-First خارقة تتفوق على Google, Facebook, AWS, Microsoft
-#   
+#
 #   ✨ المميزات الخارقة:
 #   - Contract-First: OpenAPI/AsyncAPI/gRPC/GraphQL
 #   - Multi-Protocol: REST, GraphQL, gRPC, Events, Webhooks
@@ -22,9 +22,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any
 
-from flask import current_app, g, jsonify, request
+from flask import g, jsonify, request
 
 # =============================================================================
 # API CONTRACT VALIDATION
@@ -95,7 +94,9 @@ class ContractRegistry:
             old_major = int(old_contract.version.split(".")[0].replace("v", ""))
             new_major = int(new_contract.version.split(".")[0].replace("v", ""))
             if new_major > old_major:
-                breaking_changes.append(f"Major version change: {old_contract.version} -> {new_contract.version}")
+                breaking_changes.append(
+                    f"Major version change: {old_contract.version} -> {new_contract.version}"
+                )
 
         return breaking_changes
 
@@ -163,7 +164,9 @@ def idempotent(f: Callable) -> Callable:
         # Cache the response
         if isinstance(response, tuple):
             response_data, status_code = response
-            response_dict = response_data.get_json() if hasattr(response_data, "get_json") else response_data
+            response_dict = (
+                response_data.get_json() if hasattr(response_data, "get_json") else response_data
+            )
             response_dict["status_code"] = status_code
             idempotency_store.set(idempotency_key, response_dict)
         else:
@@ -375,7 +378,9 @@ class WebhookSigner:
 
             # Verify signature
             expected_sig = hmac.new(
-                self.secret, f"{timestamp}.{json.dumps(payload, sort_keys=True)}".encode(), hashlib.sha256
+                self.secret,
+                f"{timestamp}.{json.dumps(payload, sort_keys=True)}".encode(),
+                hashlib.sha256,
             ).hexdigest()
 
             return hmac.compare_digest(signature, expected_sig)
@@ -394,7 +399,10 @@ def add_correlation_id(f: Callable) -> Callable:
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Get or generate request ID
-        request_id = request.headers.get("X-Request-Id") or f"req_{hashlib.md5(str(time.time()).encode()).hexdigest()[:12]}"
+        request_id = (
+            request.headers.get("X-Request-Id")
+            or f"req_{hashlib.md5(str(time.time()).encode()).hexdigest()[:12]}"
+        )
         g.request_id = request_id
 
         # Get or generate correlation ID
@@ -428,7 +436,7 @@ def add_correlation_id(f: Callable) -> Callable:
 class APIFirstPlatformService:
     """
     خدمة منصة API-First الخارقة
-    
+
     World-class API-First Platform Service surpassing tech giants
     """
 
@@ -441,9 +449,13 @@ class APIFirstPlatformService:
     # Contract Management
     # =========================================================================
 
-    def register_contract(self, name: str, contract_type: ContractType, version: str, specification: dict):
+    def register_contract(
+        self, name: str, contract_type: ContractType, version: str, specification: dict
+    ):
         """تسجيل عقد API جديد"""
-        contract = APIContract(name=name, type=contract_type, version=version, specification=specification)
+        contract = APIContract(
+            name=name, type=contract_type, version=version, specification=specification
+        )
 
         # Check for breaking changes if contract exists
         existing = self.contract_registry.get(name)
