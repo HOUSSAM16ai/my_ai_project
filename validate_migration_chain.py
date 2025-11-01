@@ -166,7 +166,8 @@ def validate_migration_chain():
     print("=" * 80)
     print("✅ MIGRATION CHAIN VALIDATION PASSED!")
     print("=" * 80)
-    print(f"""
+    print(
+        f"""
 Summary:
   • Total migrations: {len(migrations)}
   • Chain length: {len(chain)}
@@ -174,7 +175,8 @@ Summary:
   • All references: Valid ✓
   • Circular dependencies: None ✓
   • Ready to migrate: Yes ✓
-""")
+"""
+    )
 
     return True
 

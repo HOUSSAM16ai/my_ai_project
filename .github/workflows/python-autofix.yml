@@ -1,0 +1,62 @@
+---
+# ======================================================================================
+# PYTHON AUTO-FIX - Self-Healing Code Formatting for PRs
+# ======================================================================================
+# This workflow automatically formats code on Pull Requests
+# - Runs on PR events (opened, synchronize, reopened)
+# - Auto-fixes Black and Ruff formatting issues
+# - Commits changes back to the PR branch
+# - Ensures PRs always pass formatting checks
+# ======================================================================================
+
+name: python-autofix
+
+"on":
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "**/*.py"
+      - "pyproject.toml"
+      - ".pre-commit-config.yaml"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install formatting tools
+        run: |
+          pip install --disable-pip-version-check \
+            black==24.10.0 ruff==0.6.9
+
+      - name: 🎨 Format code (black + ruff)
+        run: |
+          echo "🎨 Formatting code with Black and Ruff..."
+          black .
+          ruff --fix .
+          ruff format .
+          echo "✅ Formatting complete!"
+
+      - name: 💾 Commit changes if any
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format (black/ruff)"
+          branch: ${{ github.head_ref }}
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"

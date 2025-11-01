@@ -1,0 +1,53 @@
+---
+# ======================================================================================
+# PYTHON VERIFY - Strict Code Quality Check for Protected Branches
+# ======================================================================================
+# This workflow enforces strict code quality on protected branches (main, release)
+# - Runs on push to protected branches
+# - Check-only mode (no auto-fix)
+# - Ensures code quality standards are maintained
+# - Should be set as required check in branch protection rules
+# ======================================================================================
+
+name: python-verify
+
+"on":
+  push:
+    branches: [main, release/**]
+    paths:
+      - "**/*.py"
+      - "pyproject.toml"
+      - ".pre-commit-config.yaml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install quality tools
+        run: |
+          pip install --disable-pip-version-check \
+            black==24.10.0 ruff==0.6.9
+
+      - name: ⚫ Black (check only)
+        run: |
+          echo "⚫ Checking code formatting with Black..."
+          black --check .
+          echo "✅ Black check passed!"
+
+      - name: ⚡ Ruff (lint only)
+        run: |
+          echo "⚡ Linting code with Ruff..."
+          ruff .
+          echo "✅ Ruff check passed!"

@@ -170,7 +170,8 @@ def verify_static():
     all_ok = models_ok and service_ok and migration_ok
 
     if all_ok:
-        print("""
+        print(
+            """
     🎉 ALL CHECKS PASSED! SUPERHUMAN Implementation Verified!
 
     ✅ Models Implementation: COMPLETE
@@ -206,7 +207,8 @@ def verify_static():
        3. Enjoy SUPERHUMAN conversation tracking!
 
     Status: READY TO DEPLOY ⚡
-        """)
+        """
+        )
     else:
         print("\n   ⚠️  Some checks failed. Please review the output above.")
 

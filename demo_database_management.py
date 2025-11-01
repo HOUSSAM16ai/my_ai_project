@@ -26,13 +26,16 @@ def print_section(text):
 def main():
     print_header("🗄️ DATABASE MANAGEMENT SYSTEM - DEMO")
 
-    print("""
+    print(
+        """
     هذا النظام يوفر لك التحكم الكامل في قاعدة البيانات من صفحة الأدمن!
     This system gives you complete control over the database from the admin page!
-    """)
+    """
+    )
 
     print_section("1. Available Features / المميزات المتاحة")
-    print("""
+    print(
+        """
     ✅ View all tables and data
     ✅ Search and filter data
     ✅ Edit records
@@ -48,10 +51,12 @@ def main():
     ✅ إنشاء سجلات جديدة
     ✅ تنفيذ استعلامات SQL مخصصة
     ✅ تصدير البيانات بصيغة JSON
-    """)
+    """
+    )
 
     print_section("2. How to Access / كيفية الوصول")
-    print("""
+    print(
+        """
     1. Make sure you're logged in as admin:
        تأكد من تسجيل الدخول كمسؤول:
 
@@ -65,10 +70,12 @@ def main():
 
     3. Or click on "Database" in the navigation menu
        أو انقر على "Database" من القائمة
-    """)
+    """
+    )
 
     print_section("3. Available Tables / الجداول المتاحة")
-    print("""
+    print(
+        """
     📊 Core Tables:
     - users              : User accounts and permissions
     - subjects           : Educational subjects
@@ -85,10 +92,12 @@ def main():
     🤖 Admin Tables:
     - admin_conversations: AI conversations
     - admin_messages     : Conversation messages
-    """)
+    """
+    )
 
     print_section("4. API Endpoints / نقاط النهاية")
-    print("""
+    print(
+        """
     GET  /admin/api/database/tables
          → Get all tables / احصل على جميع الجداول
 
@@ -116,10 +125,12 @@ def main():
 
     GET  /admin/api/database/export/<table_name>
          → Export table / تصدير جدول
-    """)
+    """
+    )
 
     print_section("5. Example Usage / أمثلة الاستخدام")
-    print("""
+    print(
+        """
     Example 1: View all users
     مثال 1: عرض جميع المستخدمين
 
@@ -155,10 +166,12 @@ def main():
     → Click on any table
     → Click "Export" button
     → JSON file downloads automatically
-    """)
+    """
+    )
 
     print_section("6. Security Features / مميزات الأمان")
-    print("""
+    print(
+        """
     🔒 Security:
     - Admin authentication required
     - Only SELECT queries allowed for custom SQL
@@ -170,10 +183,12 @@ def main():
     - استعلامات SELECT فقط للأمان
     - معالجة آمنة للأخطاء
     - تأكيد قبل الحذف
-    """)
+    """
+    )
 
     print_section("7. Database Configuration / تكوين قاعدة البيانات")
-    print("""
+    print(
+        """
     Required in .env:
     مطلوب في ملف .env:
 
@@ -187,10 +202,12 @@ def main():
     ADMIN_EMAIL=benmerahhoussam16@gmail.com
     ADMIN_PASSWORD=1111
     ADMIN_NAME="Houssam Benmerah"
-    """)
+    """
+    )
 
     print_section("8. Testing / الاختبار")
-    print("""
+    print(
+        """
     To test the system:
     لاختبار النظام:
 
@@ -214,10 +231,12 @@ def main():
        - Edit records
        - Execute queries
        - Export data
-    """)
+    """
+    )
 
     print_header("✅ SYSTEM READY! / النظام جاهز!")
-    print("""
+    print(
+        """
     Your database management system is now fully operational!
     نظام إدارة قاعدة البيانات الخاص بك جاهز للعمل الآن!
 
@@ -228,7 +247,8 @@ def main():
     للمساعدة، راجع:
     - DATABASE_MANAGEMENT.md
     - DATABASE_GUIDE_AR.md
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

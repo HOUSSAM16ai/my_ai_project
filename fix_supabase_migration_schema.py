@@ -86,11 +86,13 @@ def create_supabase_migration_schema(engine):
                 # Check if schema exists
                 print_info("Checking if supabase_migrations schema exists...")
                 result = conn.execute(
-                    text("""
+                    text(
+                        """
                     SELECT schema_name
                     FROM information_schema.schemata
                     WHERE schema_name = 'supabase_migrations'
-                """)
+                """
+                    )
                 )
                 schema_exists = result.fetchone() is not None
 
@@ -104,12 +106,14 @@ def create_supabase_migration_schema(engine):
                 # Check if table exists
                 print_info("Checking if schema_migrations table exists...")
                 result = conn.execute(
-                    text("""
+                    text(
+                        """
                     SELECT table_name
                     FROM information_schema.tables
                     WHERE table_schema = 'supabase_migrations'
                     AND table_name = 'schema_migrations'
-                """)
+                """
+                    )
                 )
                 table_exists = result.fetchone() is not None
 
@@ -119,14 +123,16 @@ def create_supabase_migration_schema(engine):
                     print_info("Creating schema_migrations table...")
                     # Create table with Supabase-compatible structure
                     conn.execute(
-                        text("""
+                        text(
+                            """
                         CREATE TABLE supabase_migrations.schema_migrations (
                             version VARCHAR(255) PRIMARY KEY NOT NULL,
                             statements TEXT[],
                             name VARCHAR(255),
                             applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                         )
-                    """)
+                    """
+                        )
                     )
                     print_success("Created schema_migrations table")
 
@@ -208,11 +214,13 @@ def sync_alembic_to_supabase(engine):
                     print_info(f"  📌 Syncing: {version} - {migration_name}")
 
                     conn.execute(
-                        text("""
+                        text(
+                            """
                         INSERT INTO supabase_migrations.schema_migrations
                         (version, name, statements, applied_at)
                         VALUES (:version, :name, :statements, NOW())
-                    """),
+                    """
+                        ),
                         {
                             "version": version,
                             "name": migration_name,
@@ -244,11 +252,13 @@ def verify_setup(engine):
             # Check schema
             print_info("Checking supabase_migrations schema...")
             result = conn.execute(
-                text("""
+                text(
+                    """
                 SELECT schema_name
                 FROM information_schema.schemata
                 WHERE schema_name = 'supabase_migrations'
-            """)
+            """
+                )
             )
             if result.fetchone():
                 print_success("✓ supabase_migrations schema exists")
@@ -259,12 +269,14 @@ def verify_setup(engine):
             # Check table
             print_info("Checking schema_migrations table...")
             result = conn.execute(
-                text("""
+                text(
+                    """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = 'supabase_migrations'
                 AND table_name = 'schema_migrations'
-            """)
+            """
+                )
             )
             if result.fetchone():
                 print_success("✓ schema_migrations table exists")
@@ -284,12 +296,14 @@ def verify_setup(engine):
             if count > 0:
                 print_info("Sample migrations:")
                 result = conn.execute(
-                    text("""
+                    text(
+                        """
                     SELECT version, name, applied_at
                     FROM supabase_migrations.schema_migrations
                     ORDER BY applied_at
                     LIMIT 5
-                """)
+                """
+                    )
                 )
                 for row in result.fetchall():
                     print(f"  • {row[0]} - {row[1]} (applied: {row[2]})")
