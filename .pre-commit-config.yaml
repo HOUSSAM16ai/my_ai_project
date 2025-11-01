@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: black
         name: ⚫ Format with Black
-        language_version: python3.11
+        language_version: python3.12
 
   # =============================================================================
   # ISORT - Import Sorter (Google/Meta Standard)

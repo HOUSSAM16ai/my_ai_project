@@ -1585,11 +1585,15 @@ class AdminAIService:
 
         for msg in messages:
             role_icon = {"user": "👤", "assistant": "🤖", "system": "⚙️"}.get(msg.role, "💬")
+            # Escape HTML and convert newlines to <br> tags
+            escaped_content = (
+                msg.content.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+            )
             html_lines.extend(
                 [
                     f"  <div class='message {msg.role}'>",
                     f"    <div class='role'>{role_icon} {msg.role.title()}</div>",
-                    f"    <div class='content'>{msg.content.replace('<', '&lt;').replace('>', '&gt;').replace('\\n', '<br>')}</div>",
+                    f"    <div class='content'>{escaped_content}</div>",
                 ]
             )
 
