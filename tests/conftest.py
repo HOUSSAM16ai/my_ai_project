@@ -52,7 +52,7 @@ def _ensure_models(min_version: Tuple[int, int, int] = MIN_MODELS_VERSION):
     if current < min_version:
         pytest.skip(
             f"app.models version {current} < required {min_version}. "
-            "Update app/models.py to v10.0+."
+            f"Update app/models.py to v{'.'.join(map(str, min_version))}+."
         )
     return models
 
@@ -96,14 +96,9 @@ def db_session():
     """
     يوفر db.session إن كان app.db متاحًا، وإلا يتخطى الاختبارات المعتمدة عليه.
     """
-    try:
-        db_mod = importlib.import_module("app")
-        db = getattr(db_mod, "db", None)
-        if not db or not getattr(db, "session", None):
-            pytest.skip("app.db.session not available.")
-        return db.session
-    except Exception as e:
-        pytest.skip(f"app.db not importable: {e}")
+    if db is None or not hasattr(db, "session"):
+        pytest.skip("app.db.session not available.")
+    return db.session
 
 
 @pytest.fixture(autouse=True)
@@ -113,8 +108,10 @@ def _ensure_pythonpath_root(monkeypatch: pytest.MonkeyPatch):
     """
     root = os.path.abspath(os.curdir)
     existing = os.environ.get("PYTHONPATH", "")
-    if root not in existing.split(":"):
-        monkeypatch.setenv("PYTHONPATH", f"{root}:{existing}" if existing else root)
+    if root not in existing.split(os.pathsep):
+        monkeypatch.setenv(
+            "PYTHONPATH", f"{root}{os.pathsep}{existing}" if existing else root
+        )
 
 
 # --------------------------------------------------------------------------------------
