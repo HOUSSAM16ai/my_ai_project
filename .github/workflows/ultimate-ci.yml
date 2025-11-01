@@ -108,15 +108,17 @@ jobs:
 
       - name: 📋 Report filter results
         run: |
-          echo "## 📊 Change Detection Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Category | Changed |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|----------|---------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Python | ${{ steps.filter.outputs.py }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Docker | ${{ steps.filter.outputs.docker }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Infrastructure | ${{ steps.filter.outputs.infra }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Tests | ${{ steps.filter.outputs.tests }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Workflows | ${{ steps.filter.outputs.workflows }} |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 📊 Change Detection Results"
+            echo ""
+            echo "| Category | Changed |"
+            echo "|----------|---------|"
+            echo "| Python | ${{ steps.filter.outputs.py }} |"
+            echo "| Docker | ${{ steps.filter.outputs.docker }} |"
+            echo "| Infrastructure | ${{ steps.filter.outputs.infra }} |"
+            echo "| Tests | ${{ steps.filter.outputs.tests }} |"
+            echo "| Workflows | ${{ steps.filter.outputs.workflows }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # =============================================================================
   # BUILD & TEST (REQUIRED) - Fast, Strict, Essential
@@ -395,17 +397,21 @@ jobs:
     steps:
       - name: 🔍 Verify required jobs passed
         run: |
-          echo "## 🎯 Quality Gate Check" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 🎯 Quality Gate Check"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
           
           BUILD_RESULT="${{ needs.build-test-required.result }}"
           SECURITY_RESULT="${{ needs.security-required.result }}"
           
-          echo "| Job | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-----|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Build & Test | $BUILD_RESULT |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Security Scan | $SECURITY_RESULT |" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "| Job | Status |"
+            echo "|-----|--------|"
+            echo "| Build & Test | $BUILD_RESULT |"
+            echo "| Security Scan | $SECURITY_RESULT |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
           
           FAILED=false
           
@@ -420,17 +426,21 @@ jobs:
           fi
           
           if [ "$FAILED" = "true" ]; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "❌ **Quality gate FAILED**" >> "$GITHUB_STEP_SUMMARY"
-            echo "Required checks did not pass. Please review and fix the issues." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo ""
+              echo "❌ **Quality gate FAILED**"
+              echo "Required checks did not pass. Please review and fix the issues."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "✅ **Quality gate PASSED**" >> "$GITHUB_STEP_SUMMARY"
-          echo "All required checks passed successfully!" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### 🏆 Superhuman Quality Achieved!" >> "$GITHUB_STEP_SUMMARY"
-          echo "Standards exceeded: Google, Microsoft, OpenAI, Meta, Apple, Amazon" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo ""
+            echo "✅ **Quality gate PASSED**"
+            echo "All required checks passed successfully!"
+            echo ""
+            echo "### 🏆 Superhuman Quality Achieved!"
+            echo "Standards exceeded: Google, Microsoft, OpenAI, Meta, Apple, Amazon"
+          } >> "$GITHUB_STEP_SUMMARY"
           
           exit 0
