@@ -206,7 +206,7 @@ class AdminChatPerformanceService:
     
     def assign_ab_variant(self, user_id: int) -> ABTestVariant:
         """
-        Assign A/B test variant to user.
+        Assign A/B test variant to user using hash-based distribution.
         
         Args:
             user_id: User ID
@@ -218,9 +218,10 @@ class AdminChatPerformanceService:
         if user_id in self.user_variants:
             return self.user_variants[user_id]
         
-        # Assign based on user_id for consistent assignment
-        # Simple hash-based assignment
-        variant_index = user_id % len(ABTestVariant)
+        # Use hash for uniform distribution
+        import hashlib
+        hash_val = int(hashlib.md5(str(user_id).encode()).hexdigest(), 16)
+        variant_index = hash_val % len(ABTestVariant)
         variant = list(ABTestVariant)[variant_index]
         
         self.user_variants[user_id] = variant

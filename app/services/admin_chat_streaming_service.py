@@ -34,6 +34,9 @@ from flask import current_app
 
 logger = logging.getLogger(__name__)
 
+# Constants
+MS_TO_SECONDS = 1000.0  # Milliseconds to seconds conversion
+
 
 class StreamingConfig:
     """Configuration for streaming behavior"""
@@ -258,7 +261,7 @@ class AdminChatStreamingService:
                 max(StreamingConfig.MIN_CHUNK_DELAY_MS, chunk_latency),
                 StreamingConfig.MAX_CHUNK_DELAY_MS
             )
-            time.sleep(delay_ms / 1000.0)
+            time.sleep(delay_ms / MS_TO_SECONDS)
         
         # Send completion event
         total_time = time.time() - start_time
@@ -306,7 +309,7 @@ class AdminChatStreamingService:
             if len(buffer.split()) >= StreamingConfig.OPTIMAL_CHUNK_SIZE:
                 yield self._format_sse_event('chunk', {'text': buffer})
                 buffer = ""
-                await asyncio.sleep(StreamingConfig.MIN_CHUNK_DELAY_MS / 1000.0)
+                await asyncio.sleep(StreamingConfig.MIN_CHUNK_DELAY_MS / MS_TO_SECONDS)
         
         # Send any remaining text
         if buffer:
