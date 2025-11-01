@@ -1,15 +1,14 @@
-# -*- coding: utf-8 -*-
 """
 Conftest مرن يضمن أن فشل استيراد نماذج Overmind لا يُسقط التحصيل (collection).
 - لا ترفع RuntimeError عند غياب app.models
 - استخدم importorskip داخل Fixtures/Helpers فقط حيث يلزم
 - تحقق من نسخة models إن كانت مطلوبة، وإلا تخطِّ الاختبارات المعتمدة عليها
 """
+
 from __future__ import annotations
 
 import importlib
 import os
-from typing import Any, Tuple
 
 import pytest
 
@@ -24,7 +23,7 @@ os.environ["TESTING"] = "1"
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
 
 
-def _parse_version(ver: str) -> Tuple[int, int, int]:
+def _parse_version(ver: str) -> tuple[int, int, int]:
     # تحويل "10.0.0" أو "10.0.0+meta" إلى (10,0,0) بدون الاعتماد على packaging
     parts = []
     for chunk in ver.split("."):
@@ -39,7 +38,7 @@ def _parse_version(ver: str) -> Tuple[int, int, int]:
     return parts[0], parts[1], parts[2]
 
 
-def _ensure_models(min_version: Tuple[int, int, int] = MIN_MODELS_VERSION):
+def _ensure_models(min_version: tuple[int, int, int] = MIN_MODELS_VERSION):
     """
     حاول استيراد app.models، وإن فشل، تخطِّ الاختبارات التي تحتاجه.
     إن نجح الاستيراد لكن النسخة أقل من المطلوب، تخطِّ كذلك مع سبب واضح.
@@ -60,13 +59,15 @@ def _ensure_models(min_version: Tuple[int, int, int] = MIN_MODELS_VERSION):
 # Import core components after environment setup
 # We do this here to avoid import errors during collection
 try:
-    from app import create_app, db
     from sqlalchemy import event
     from werkzeug.security import generate_password_hash
+
+    from app import create_app, db
 
     # Try to import models, but don't fail if they're not available
     try:
         from app.models import Mission, User
+
         MODELS_AVAILABLE = True
     except ImportError:
         MODELS_AVAILABLE = False
@@ -109,9 +110,7 @@ def _ensure_pythonpath_root(monkeypatch: pytest.MonkeyPatch):
     root = os.path.abspath(os.curdir)
     existing = os.environ.get("PYTHONPATH", "")
     if root not in existing.split(os.pathsep):
-        monkeypatch.setenv(
-            "PYTHONPATH", f"{root}{os.pathsep}{existing}" if existing else root
-        )
+        monkeypatch.setenv("PYTHONPATH", f"{root}{os.pathsep}{existing}" if existing else root)
 
 
 # --------------------------------------------------------------------------------------
