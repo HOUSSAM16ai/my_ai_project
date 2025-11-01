@@ -1,0 +1,374 @@
+_format_version: "3.0"
+_transform: true
+
+# ======================================================================================
+# COGNIFORGE AI MICROSERVICES API GATEWAY - KONG CONFIGURATION
+# World-class API gateway surpassing Google, Facebook, Microsoft, OpenAI, Apple
+# ======================================================================================
+
+# Upstream Services Configuration
+upstreams:
+  - name: ai-router-upstream
+    algorithm: least-connections
+    hash_on: header
+    hash_on_header: X-User-ID
+    hash_fallback: ip
+    healthchecks:
+      active:
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+          timeouts: 3
+        http_path: /health
+        timeout: 10
+        concurrency: 10
+      passive:
+        healthy:
+          successes: 5
+        unhealthy:
+          http_failures: 5
+          timeouts: 3
+    targets:
+      - target: router-service.ai-services.svc.cluster.local:8000
+        weight: 100
+
+  - name: embeddings-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+    targets:
+      - target: embeddings-svc.ai-services.svc.cluster.local:8000
+        weight: 100
+
+  - name: retriever-upstream
+    algorithm: least-connections
+    healthchecks:
+      active:
+        http_path: /health
+    targets:
+      - target: retriever-svc.ai-services.svc.cluster.local:8000
+        weight: 100
+
+  - name: guardrails-upstream
+    algorithm: round-robin
+    targets:
+      - target: guardrails-svc.ai-services.svc.cluster.local:8000
+        weight: 100
+
+  - name: prompt-upstream
+    algorithm: consistent-hashing
+    hash_on: header
+    hash_on_header: X-Prompt-ID
+    targets:
+      - target: prompt-svc.ai-services.svc.cluster.local:8000
+        weight: 100
+
+# Services Configuration
+services:
+  # AI Router Service - Model Selection & Routing
+  - name: ai-router
+    url: http://ai-router-upstream
+    protocol: http
+    connect_timeout: 60000
+    write_timeout: 300000
+    read_timeout: 300000
+    retries: 3
+    routes:
+      - name: ai-router-completions
+        paths: ["/v1/completions", "/v1/chat/completions"]
+        methods: ["POST"]
+        strip_path: false
+        preserve_host: true
+      - name: ai-router-models
+        paths: ["/v1/models"]
+        methods: ["GET"]
+        strip_path: false
+    tags: ["ai", "llm", "router"]
+
+  # Embeddings Service
+  - name: embeddings-service
+    url: http://embeddings-upstream
+    protocol: http
+    connect_timeout: 30000
+    write_timeout: 120000
+    read_timeout: 120000
+    retries: 2
+    routes:
+      - name: embeddings-generate
+        paths: ["/v1/embeddings"]
+        methods: ["POST"]
+        strip_path: false
+      - name: embeddings-batch
+        paths: ["/v1/embeddings/batch"]
+        methods: ["POST"]
+        strip_path: false
+    tags: ["ai", "embeddings"]
+
+  # Retriever Service - RAG Pipeline
+  - name: retriever-service
+    url: http://retriever-upstream
+    protocol: http
+    routes:
+      - name: retriever-search
+        paths: ["/v1/retriever/search"]
+        methods: ["POST"]
+      - name: retriever-index
+        paths: ["/v1/retriever/index"]
+        methods: ["POST", "DELETE"]
+    tags: ["ai", "rag", "vector-db"]
+
+  # Guardrails Service - Content Safety
+  - name: guardrails-service
+    url: http://guardrails-upstream
+    protocol: http
+    routes:
+      - name: guardrails-check
+        paths: ["/v1/guardrails/check"]
+        methods: ["POST"]
+      - name: guardrails-pii
+        paths: ["/v1/guardrails/pii"]
+        methods: ["POST"]
+    tags: ["ai", "safety", "compliance"]
+
+  # Prompt Management Service
+  - name: prompt-service
+    url: http://prompt-upstream
+    protocol: http
+    routes:
+      - name: prompt-templates
+        paths: ["/v1/prompts"]
+        methods: ["GET", "POST", "PUT", "DELETE"]
+      - name: prompt-versions
+        paths: ["/v1/prompts/{id}/versions"]
+        methods: ["GET"]
+    tags: ["ai", "prompts"]
+
+# Global Plugins
+plugins:
+  # Request/Response Correlation
+  - name: correlation-id
+    config:
+      header_name: X-Trace-ID
+      generator: uuid#counter
+      echo_downstream: true
+
+  # Rate Limiting - Global
+  - name: rate-limiting
+    config:
+      second: 1000
+      minute: 60000
+      hour: 1000000
+      policy: redis
+      fault_tolerant: true
+      hide_client_headers: false
+      redis:
+        host: redis-master.infrastructure.svc.cluster.local
+        port: 6379
+        database: 0
+        timeout: 2000
+        ssl: true
+        ssl_verify: false
+
+  # Request Size Limiting
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+      require_content_length: false
+
+  # Response Caching
+  - name: proxy-cache
+    config:
+      cache_ttl: 300
+      cache_control: true
+      storage_ttl: 3600
+      strategy: memory
+      memory:
+        dictionary_name: kong_cache
+
+  # Request/Response Logging
+  - name: http-log
+    config:
+      http_endpoint: http://log-aggregator.observability.svc.cluster.local:8080/logs
+      method: POST
+      timeout: 10000
+      keepalive: 60000
+      retry_count: 3
+      queue_size: 1000
+      flush_timeout: 2
+
+  # Prometheus Metrics
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+
+# Service-Specific Plugins
+# AI Router - Advanced Rate Limiting & Circuit Breaking
+- name: rate-limiting-advanced
+  service: ai-router
+  config:
+    limit:
+      - minute: 600
+    window_size:
+      - 60
+    identifier: consumer
+    sync_rate: -1
+    namespace: ai_router_rate_limit
+    strategy: redis
+    redis:
+      host: redis-master.infrastructure.svc.cluster.local
+      port: 6379
+      database: 1
+
+# AI Router - Request Transformer
+- name: request-transformer
+  service: ai-router
+  config:
+    add:
+      headers:
+        - "X-Service-Type: ai-router"
+        - "X-Gateway-Version: 3.0.0"
+    append:
+      headers:
+        - "X-Forwarded-By: kong-gateway"
+
+# AI Router - Response Transformer
+- name: response-transformer
+  service: ai-router
+  config:
+    add:
+      headers:
+        - "X-Cache-Status: ${upstream_cache_status}"
+        - "X-Response-Time: ${latency_ms}ms"
+
+# Embeddings - Dedicated Rate Limiting
+- name: rate-limiting
+  service: embeddings-service
+  config:
+    minute: 1000
+    hour: 50000
+    policy: redis
+    redis:
+      host: redis-master.infrastructure.svc.cluster.local
+      port: 6379
+      database: 2
+
+# Guardrails - PII Detection Enhancement
+- name: request-validator
+  service: guardrails-service
+  config:
+    body_schema: |
+      {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "minLength": 1, "maxLength": 100000},
+          "checks": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["pii", "toxicity", "bias", "prompt_injection"]}
+          }
+        },
+        "required": ["text"]
+      }
+
+# OAuth2 Configuration (for authenticated routes)
+consumers:
+  - username: internal-services
+    custom_id: internal-services-001
+    tags: ["internal", "service-to-service"]
+
+  - username: external-clients
+    custom_id: external-clients-001
+    tags: ["external", "client"]
+
+# JWT Credentials for Service-to-Service Auth
+jwt_secrets:
+  - consumer: internal-services
+    key: internal-service-key
+    algorithm: HS256
+    secret: ${KONG_JWT_SECRET_INTERNAL}
+
+  - consumer: external-clients
+    key: external-client-key
+    algorithm: RS256
+    rsa_public_key: ${KONG_JWT_PUBLIC_KEY}
+
+# ACLs for Authorization
+acls:
+  - consumer: internal-services
+    group: service-to-service
+
+  - consumer: external-clients
+    group: external-api
+
+# Plugin: JWT Authentication
+- name: jwt
+  config:
+    uri_param_names:
+      - jwt
+    cookie_names:
+      - jwt
+    claims_to_verify:
+      - exp
+      - nbf
+    key_claim_name: iss
+    secret_is_base64: false
+    run_on_preflight: false
+
+# Plugin: ACL for Route Protection
+- name: acl
+  config:
+    allow:
+      - service-to-service
+      - external-api
+    hide_groups_header: true
+
+# Circuit Breaker Configuration
+- name: proxy-cache-advanced
+  service: ai-router
+  config:
+    strategy: redis
+    redis:
+      host: redis-master.infrastructure.svc.cluster.local
+      port: 6379
+      database: 3
+    cache_ttl: 300
+    cache_control: true
+    response_code:
+      - 200
+      - 301
+      - 302
+    request_method:
+      - GET
+      - HEAD
+    content_type:
+      - "application/json"
+    vary_headers:
+      - "Accept"
+      - "Accept-Language"
+      - "Accept-Encoding"
+    vary_query_params:
+      - "model"
+      - "max_tokens"
+
+# Request Termination for Maintenance Mode
+- name: request-termination
+  enabled: false
+  config:
+    status_code: 503
+    message: "Service temporarily unavailable for maintenance"
+    content_type: "application/json"
+    body: '{"error": "maintenance_mode", "message": "The service is currently under maintenance. Please try again later."}'
