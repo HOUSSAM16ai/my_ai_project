@@ -13,6 +13,7 @@
 
 from datetime import UTC, datetime
 from functools import wraps
+import time
 
 from flask import abort, current_app, flash, jsonify, render_template, request, url_for, Response, stream_with_context
 from flask_login import current_user, login_required
@@ -36,6 +37,10 @@ try:
     from app.services.admin_chat_streaming_service import get_streaming_service
 except ImportError:
     get_streaming_service = None
+try:
+    from app.services.admin_chat_performance_service import get_performance_service
+except ImportError:
+    get_performance_service = None
 
 
 # --------------------------------------------------------------------------------------
@@ -301,9 +306,11 @@ def handle_chat_stream():
     
     def generate():
         """Generator function for SSE streaming"""
+        start_time = time.time()
         try:
             service = get_admin_ai_service()
             streaming_service = get_streaming_service()
+            perf_service = get_performance_service() if get_performance_service else None
             
             # Send start event
             yield "event: start\ndata: {\"status\": \"processing\"}\n\n"
@@ -340,6 +347,17 @@ def handle_chat_stream():
                     "elapsed_seconds": result.get("elapsed_seconds"),
                     "conversation_id": conv_id
                 }
+                
+                # Record performance metric
+                if perf_service:
+                    total_latency_ms = (time.time() - start_time) * 1000
+                    perf_service.record_metric(
+                        category="streaming",
+                        latency_ms=total_latency_ms,
+                        tokens=result.get("tokens_used", 0),
+                        model_used=result.get("model_used", "unknown"),
+                        user_id=current_user.id if current_user.is_authenticated else None
+                    )
                 
                 # Use streaming service to chunk and stream response
                 for sse_event in streaming_service.stream_response(answer_text, metadata):
@@ -2141,3 +2159,122 @@ def handle_get_metrics():
     except Exception as e:
         current_app.logger.error(f"Get metrics failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ======================================================================================
+# SUPERHUMAN PERFORMANCE MONITORING ENDPOINTS
+# ======================================================================================
+
+
+@bp.route("/api/chat/performance/metrics", methods=["GET"])
+@admin_required
+def handle_get_performance_metrics():
+    """
+    Get real-time performance metrics for chat system.
+    
+    ✨ SUPERHUMAN FEATURE: Real-time performance monitoring
+    - Latency percentiles (P50, P95, P99)
+    - Category breakdown (streaming vs traditional)
+    - Performance distribution
+    - Optimization suggestions
+    """
+    if not get_performance_service:
+        return jsonify({"status": "error", "message": "Performance service not available"}), 503
+    
+    try:
+        service = get_performance_service()
+        
+        # Get query parameters
+        category = request.args.get("category")  # Optional filter
+        hours = int(request.args.get("hours", 24))  # Time window
+        
+        # Get statistics
+        stats = service.get_statistics(category=category, hours=hours)
+        
+        # Get optimization suggestions
+        suggestions = service.get_optimization_suggestions()
+        
+        # Get A/B test results
+        ab_results = service.get_ab_results()
+        
+        return jsonify({
+            "status": "success",
+            "statistics": stats,
+            "suggestions": suggestions,
+            "ab_test_results": ab_results,
+            "message": "📊 Performance metrics retrieved successfully"
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Get performance metrics failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/chat/streaming/metrics", methods=["GET"])
+@admin_required
+def handle_get_streaming_metrics():
+    """
+    Get streaming-specific performance metrics.
+    
+    ✨ SUPERHUMAN FEATURE: Streaming performance tracking
+    - Average chunk latency
+    - Total streams and tokens
+    - Latency percentiles for streaming
+    """
+    if not get_streaming_service:
+        return jsonify({"status": "error", "message": "Streaming service not available"}), 503
+    
+    try:
+        service = get_streaming_service()
+        metrics = service.get_metrics()
+        
+        return jsonify({
+            "status": "success",
+            "metrics": metrics,
+            "message": "⚡ Streaming metrics retrieved successfully"
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Get streaming metrics failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/api/chat/performance/record", methods=["POST"])
+@admin_required
+def handle_record_performance():
+    """
+    Record a performance metric (for client-side tracking).
+    
+    Allows frontend to record perceived performance metrics.
+    """
+    if not get_performance_service:
+        return jsonify({"status": "error", "message": "Performance service not available"}), 503
+    
+    try:
+        data = request.get_json() or {}
+        
+        category = data.get("category", "unknown")
+        latency_ms = float(data.get("latency_ms", 0))
+        tokens = int(data.get("tokens", 0))
+        model_used = data.get("model_used", "unknown")
+        
+        service = get_performance_service()
+        metric = service.record_metric(
+            category=category,
+            latency_ms=latency_ms,
+            tokens=tokens,
+            model_used=model_used,
+            user_id=current_user.id if current_user.is_authenticated else None
+        )
+        
+        return jsonify({
+            "status": "success",
+            "metric_id": metric.metric_id,
+            "performance_category": metric.get_category().value,
+            "message": "✅ Performance metric recorded"
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Record performance metric failed: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+

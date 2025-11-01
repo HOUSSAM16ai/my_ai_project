@@ -593,6 +593,9 @@ body {
         <button class="sidebar-btn" data-action="prompt-engineering">
           🎯 Prompt Engineering
         </button>
+        <button class="sidebar-btn" data-action="performance">
+          📊 Performance Metrics
+        </button>
         <button class="sidebar-btn" data-action="analyze">
           📊 Analyze Project
         </button>
@@ -768,6 +771,31 @@ body {
             <span>توليد Prompt</span>
             <span>🚀</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Performance Metrics Section (Hidden by default) -->
+      <div class="prompt-engineering-container" id="performance-container" style="display: none;">
+        <div class="chat-header">
+          <div class="chat-title">📊 Performance Metrics - Real-Time Monitoring</div>
+          <div class="chat-actions">
+            <button class="action-btn" id="refresh-metrics-btn">
+              🔄 Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="messages-area" id="performance-area">
+          <div class="message system">
+            <div class="message-avatar">📊</div>
+            <div class="message-content">
+              <p><strong>⚡ Real-Time Performance Dashboard</strong></p>
+              <p>Monitor chat system performance in real-time with advanced metrics.</p>
+              <div id="metrics-display" style="margin-top: 1rem;">
+                <p>Loading metrics...</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -1275,6 +1303,7 @@ body {
   // PROMPT ENGINEERING FUNCTIONALITY - SUPERHUMAN EDITION
   // ======================================================================================
   const promptEngContainer = document.getElementById('prompt-engineering-container');
+  const performanceContainer = document.getElementById('performance-container');
   const chatContainer = document.getElementById('chat-container');
   const promptMessagesArea = document.getElementById('prompt-messages-area');
   const promptInput = document.getElementById('prompt-input');
@@ -1296,9 +1325,16 @@ body {
       if (action === 'prompt-engineering') {
         chatContainer.style.display = 'none';
         promptEngContainer.style.display = 'flex';
+        performanceContainer.style.display = 'none';
+      } else if (action === 'performance') {
+        chatContainer.style.display = 'none';
+        promptEngContainer.style.display = 'none';
+        performanceContainer.style.display = 'flex';
+        loadPerformanceMetrics();
       } else if (action === 'chat' || action === 'new-chat') {
         chatContainer.style.display = 'flex';
         promptEngContainer.style.display = 'none';
+        performanceContainer.style.display = 'none';
       }
     });
   });
@@ -1645,6 +1681,143 @@ ${result.generated_prompt}
   const viewMetricsBtn = document.getElementById('view-metrics-btn');
   if (viewMetricsBtn) {
     viewMetricsBtn.addEventListener('click', viewMetrics);
+  }
+
+  // ======================================================================================
+  // PERFORMANCE METRICS FUNCTIONALITY
+  // ======================================================================================
+  
+  async function loadPerformanceMetrics() {
+    const metricsDisplay = document.getElementById('metrics-display');
+    metricsDisplay.innerHTML = '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    
+    try {
+      // Fetch performance metrics
+      const response = await fetch('/admin/api/chat/performance/metrics');
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        const stats = result.statistics;
+        const suggestions = result.suggestions || [];
+        
+        let html = '<div style="display: grid; gap: 1.5rem;">';
+        
+        // Performance Statistics
+        html += '<div style="background: var(--cf-bg-alt); padding: 1.5rem; border-radius: 8px;">';
+        html += '<h3 style="color: var(--cf-accent); margin: 0 0 1rem 0;">⚡ Performance Statistics</h3>';
+        html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">';
+        
+        html += `
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--cf-accent);">${stats.total_requests}</div>
+            <div style="font-size: 0.875rem; color: var(--cf-text-dim);">Total Requests</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--cf-success);">${stats.avg_latency_ms.toFixed(0)}ms</div>
+            <div style="font-size: 0.875rem; color: var(--cf-text-dim);">Avg Latency</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--cf-warning);">${stats.p95_latency_ms.toFixed(0)}ms</div>
+            <div style="font-size: 0.875rem; color: var(--cf-text-dim);">P95 Latency</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--cf-danger);">${stats.p99_latency_ms.toFixed(0)}ms</div>
+            <div style="font-size: 0.875rem; color: var(--cf-text-dim);">P99 Latency</div>
+          </div>
+        `;
+        
+        html += '</div></div>';
+        
+        // Category Breakdown
+        if (stats.category_breakdown && Object.keys(stats.category_breakdown).length > 0) {
+          html += '<div style="background: var(--cf-bg-alt); padding: 1.5rem; border-radius: 8px;">';
+          html += '<h3 style="color: var(--cf-accent); margin: 0 0 1rem 0;">📊 Category Breakdown</h3>';
+          html += '<div style="display: grid; gap: 0.5rem;">';
+          
+          Object.entries(stats.category_breakdown).forEach(([category, count]) => {
+            const percentage = (count / stats.total_requests * 100).toFixed(1);
+            html += `
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="text-transform: capitalize;">${category}</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 100px; height: 8px; background: var(--cf-bg); border-radius: 4px; overflow: hidden;">
+                    <div style="width: ${percentage}%; height: 100%; background: var(--cf-accent);"></div>
+                  </div>
+                  <span style="font-weight: 600; min-width: 60px;">${count} (${percentage}%)</span>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div></div>';
+        }
+        
+        // Performance Distribution
+        if (stats.performance_distribution) {
+          html += '<div style="background: var(--cf-bg-alt); padding: 1.5rem; border-radius: 8px;">';
+          html += '<h3 style="color: var(--cf-accent); margin: 0 0 1rem 0;">🎯 Performance Distribution</h3>';
+          html += '<div style="display: grid; gap: 0.5rem;">';
+          
+          const perfLabels = {
+            'excellent': '✅ Excellent (<500ms)',
+            'good': '🟢 Good (500ms-1s)',
+            'acceptable': '🟡 Acceptable (1-3s)',
+            'slow': '🔴 Slow (>3s)'
+          };
+          
+          Object.entries(stats.performance_distribution).forEach(([category, count]) => {
+            const percentage = (count / stats.total_requests * 100).toFixed(1);
+            const colors = {
+              'excellent': 'var(--cf-success)',
+              'good': '#66bb6a',
+              'acceptable': 'var(--cf-warning)',
+              'slow': 'var(--cf-danger)'
+            };
+            html += `
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${perfLabels[category]}</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 100px; height: 8px; background: var(--cf-bg); border-radius: 4px; overflow: hidden;">
+                    <div style="width: ${percentage}%; height: 100%; background: ${colors[category]};"></div>
+                  </div>
+                  <span style="font-weight: 600; min-width: 60px;">${count} (${percentage}%)</span>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div></div>';
+        }
+        
+        // Optimization Suggestions
+        if (suggestions.length > 0) {
+          html += '<div style="background: var(--cf-bg-alt); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--cf-accent);">';
+          html += '<h3 style="color: var(--cf-accent); margin: 0 0 1rem 0;">💡 Optimization Suggestions</h3>';
+          html += '<div style="display: grid; gap: 0.75rem;">';
+          
+          suggestions.forEach(suggestion => {
+            html += `<div style="white-space: pre-wrap; line-height: 1.6;">${suggestion}</div>`;
+          });
+          
+          html += '</div></div>';
+        }
+        
+        html += '</div>';
+        
+        metricsDisplay.innerHTML = html;
+      } else {
+        metricsDisplay.innerHTML = `<p style="color: var(--cf-danger);">❌ Failed to load metrics: ${result.message}</p>`;
+      }
+      
+    } catch (error) {
+      metricsDisplay.innerHTML = `<p style="color: var(--cf-danger);">❌ Error loading metrics: ${error.message}</p>`;
+    }
+  }
+  
+  // Refresh metrics button
+  const refreshMetricsBtn = document.getElementById('refresh-metrics-btn');
+  if (refreshMetricsBtn) {
+    refreshMetricsBtn.addEventListener('click', loadPerformanceMetrics);
   }
 
 })();
