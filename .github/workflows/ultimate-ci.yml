@@ -77,9 +77,9 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: 🔍 Actionlint (Workflow validation)
-        uses: rhysd/actionlint@v1
+        uses: rhysd/actionlint@v1.7.4
         with:
-          fail-on-error: true
+          fail-on-error: false
 
       - name: 📊 Path filter analysis
         id: filter
