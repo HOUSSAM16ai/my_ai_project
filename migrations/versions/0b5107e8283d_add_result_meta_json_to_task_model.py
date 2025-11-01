@@ -6,8 +6,9 @@ Create Date: 2025-08-26 14:08:12.440235
 
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+
 from app.models import JSONB_or_JSON
 
 # revision identifiers, used by Alembic.

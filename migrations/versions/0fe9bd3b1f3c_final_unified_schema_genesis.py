@@ -6,8 +6,8 @@ Create Date: 2025-08-26 12:21:56.169594
 
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # --- [THE CRITICAL FIX - STEP 1: IMPORT] ---
 # We explicitly import our custom type, making it known to this script.

@@ -424,7 +424,7 @@ def get_table_data(
                     row[col] = value.isoformat()
                 elif hasattr(value, "value"):  # Enum
                     row[col] = value.value
-                elif isinstance(value, (dict, list)):
+                elif isinstance(value, dict | list):
                     row[col] = value
                 else:
                     row[col] = str(value) if value is not None else None
@@ -468,7 +468,7 @@ def get_record(table_name: str, record_id: int) -> dict[str, Any]:
                 data[col] = value.isoformat()
             elif hasattr(value, "value"):
                 data[col] = value.value
-            elif isinstance(value, (dict, list)):
+            elif isinstance(value, dict | list):
                 data[col] = value
             else:
                 data[col] = str(value) if value is not None else None
@@ -679,7 +679,7 @@ def export_table_data(table_name: str) -> dict[str, Any]:
                     row[col] = value.isoformat()
                 elif hasattr(value, "value"):
                     row[col] = value.value
-                elif isinstance(value, (dict, list)):
+                elif isinstance(value, dict | list):
                     row[col] = value
                 else:
                     row[col] = str(value) if value is not None else None

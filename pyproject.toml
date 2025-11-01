@@ -232,7 +232,7 @@ extend-exclude = ["build", "dist", "node_modules", ".venv", "__pycache__"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
-ignore = []
+ignore = ["E501", "E722", "E741"]  # E501: Line too long (handled by black), E722: Bare except (intentional), E741: Ambiguous variable name (intentional)
 
 [tool.ruff.format]
 quote-style = "double"

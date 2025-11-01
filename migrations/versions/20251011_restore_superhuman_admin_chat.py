@@ -23,9 +23,8 @@ DESIGN PHILOSOPHY (فلسفة التصميم):
     نظام بسيط الاستخدام، قوي التوسع، ذكي بالتصميم
 """
 
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20251011_admin_chat"

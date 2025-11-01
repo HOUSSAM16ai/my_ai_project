@@ -7,9 +7,10 @@ Create Date: 2025-09-02 18:10:00
 
 from __future__ import annotations
 
-from alembic import op
-import sqlalchemy as sa
 from contextlib import suppress
+
+import sqlalchemy as sa
+from alembic import op
 
 # ---------------------------------------------------------------------------
 # معرفات Alembic

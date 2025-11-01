@@ -49,5 +49,5 @@ jobs:
       - name: ⚡ Ruff (lint only)
         run: |
           echo "⚡ Linting code with Ruff..."
-          ruff .
+          ruff check .
           echo "✅ Ruff check passed!"

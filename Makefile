@@ -119,20 +119,20 @@ quality: format lint type-check security complexity test
 format:
 	@echo "$(BLUE)🎨 Formatting code with Black and Ruff...$(NC)"
 	black .
-	ruff --fix .
+	ruff check --fix .
 	ruff format .
 	@echo "$(GREEN)✅ Code formatted!$(NC)"
 
 lint:
 	@echo "$(BLUE)🔍 Running linters...$(NC)"
 	@echo "$(YELLOW)⚡ Ruff (ultra-fast)...$(NC)"
-	ruff .
+	ruff check .
 	@echo "$(GREEN)✅ Linting complete!$(NC)"
 
 check:
 	@echo "$(BLUE)✅ Checking code formatting (no changes)...$(NC)"
 	black --check .
-	ruff .
+	ruff check .
 	@echo "$(GREEN)✅ Code formatting check passed!$(NC)"
 
 type-check:
