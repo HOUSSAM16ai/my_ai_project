@@ -37,8 +37,10 @@ jobs:
 
       - name: ✅ Validation complete
         run: |
-          echo "## ✅ Workflow Validation Passed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All GitHub Actions workflows are syntactically correct!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🏆 Quality: Superhuman" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## ✅ Workflow Validation Passed"
+            echo ""
+            echo "All GitHub Actions workflows are syntactically correct!"
+            echo ""
+            echo "🏆 Quality: Superhuman"
+          } >> "$GITHUB_STEP_SUMMARY"

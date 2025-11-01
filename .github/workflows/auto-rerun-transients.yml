@@ -174,10 +174,12 @@ jobs:
 
       - name: 📊 Report results
         run: |
-          echo "## 🔄 Auto-Rerun Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Run ID:** ${{ github.event.workflow_run.id }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Analysis completed. Check logs for details." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🔄 Auto-Rerun Analysis"
+            echo ""
+            echo "**Workflow:** ${{ github.event.workflow_run.name }}"
+            echo "**Run ID:** ${{ github.event.workflow_run.id }}"
+            echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}"
+            echo ""
+            echo "Analysis completed. Check logs for details."
+          } >> "$GITHUB_STEP_SUMMARY"

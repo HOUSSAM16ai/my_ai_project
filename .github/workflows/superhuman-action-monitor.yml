@@ -464,52 +464,66 @@ jobs:
     steps:
       - name: 📊 Create Summary
         run: |
-          echo "## 🏆 Superhuman Action Monitor Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Monitor Status:** ${{ needs.monitor-and-analyze.outputs.monitor_status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Event Type:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🏆 Superhuman Action Monitor Report"
+            echo ""
+            echo "**Monitor Status:** ${{ needs.monitor-and-analyze.outputs.monitor_status }}"
+            echo "**Event Type:** ${{ github.event_name }}"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ needs.monitor-and-analyze.outputs.needs_fix }}" = "true" ]; then
-            echo "### 🚨 Issues Detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Issue Type:** ${{ needs.monitor-and-analyze.outputs.failure_type }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Auto-Fix Attempted:** ${{ needs.auto-fix.result != 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Auto-Fix Status:** ${{ needs.auto-fix.result || 'Not attempted' }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "### 🚨 Issues Detected"
+              echo ""
+              echo "**Issue Type:** ${{ needs.monitor-and-analyze.outputs.failure_type }}"
+              echo "**Auto-Fix Attempted:** ${{ needs.auto-fix.result != 'skipped' }}"
+              echo "**Auto-Fix Status:** ${{ needs.auto-fix.result || 'Not attempted' }}"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
 
             if [ "${{ needs.auto-fix.result }}" = "success" ]; then
-              echo "✅ **Automatic fixes applied successfully**" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "The issues have been automatically resolved and committed." >> $GITHUB_STEP_SUMMARY
+              {
+                echo "✅ **Automatic fixes applied successfully**"
+                echo ""
+                echo "The issues have been automatically resolved and committed."
+              } >> "$GITHUB_STEP_SUMMARY"
             elif [ "${{ needs.auto-fix.result }}" = "skipped" ]; then
-              echo "ℹ️  **Auto-fix not enabled for this run**" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "💡 Enable auto-fix by setting mode to 'auto-fix' or 'full-health-check'" >> $GITHUB_STEP_SUMMARY
+              {
+                echo "ℹ️  **Auto-fix not enabled for this run**"
+                echo ""
+                echo "💡 Enable auto-fix by setting mode to 'auto-fix' or 'full-health-check'"
+              } >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "⚠️  **Manual intervention may be required**" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "Please review the workflow logs and fix any remaining issues." >> $GITHUB_STEP_SUMMARY
+              {
+                echo "⚠️  **Manual intervention may be required**"
+                echo ""
+                echo "Please review the workflow logs and fix any remaining issues."
+              } >> "$GITHUB_STEP_SUMMARY"
             fi
           else
-            echo "### ✅ All Systems Operational" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🎉 All workflows are running smoothly!" >> $GITHUB_STEP_SUMMARY
-            echo "🏆 Quality standards: SUPERHUMAN" >> $GITHUB_STEP_SUMMARY
-            echo "📊 Health Dashboard: Updated" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "### ✅ All Systems Operational"
+              echo ""
+              echo "🎉 All workflows are running smoothly!"
+              echo "🏆 Quality standards: SUPERHUMAN"
+              echo "📊 Health Dashboard: Updated"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Superhuman Features Active:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 24/7 Workflow Monitoring" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Automatic Issue Detection" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Intelligent Auto-Fix System" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Real-time Health Dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Comprehensive Reporting" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Powered by Superhuman Action Monitor - Surpassing Google, Microsoft, OpenAI, Apple!*" >> $GITHUB_STEP_SUMMARY
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "### 🚀 Superhuman Features Active:"
+            echo "- ✅ 24/7 Workflow Monitoring"
+            echo "- ✅ Automatic Issue Detection"
+            echo "- ✅ Intelligent Auto-Fix System"
+            echo "- ✅ Real-time Health Dashboard"
+            echo "- ✅ Comprehensive Reporting"
+            echo ""
+            echo "*Powered by Superhuman Action Monitor - Surpassing Google, Microsoft, OpenAI, Apple!*"
+          } >> "$GITHUB_STEP_SUMMARY"
 
 
       - name: ✅ Verify Workflow Success
