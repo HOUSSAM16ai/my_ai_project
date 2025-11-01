@@ -340,7 +340,7 @@ class BasePlanner:
             try:
                 sig = inspect.signature(test_method)
                 # Support @staticmethod / @classmethod / instance method
-                if isinstance(test_method, (classmethod, staticmethod)):
+                if isinstance(test_method, classmethod | staticmethod):
                     test_method()  # type: ignore
                 else:
                     if len(sig.parameters) == 0:
@@ -651,7 +651,7 @@ class BasePlanner:
             grade_used = getattr(pm, "structural_quality_grade", None)
 
             def _nz(v, default=0.0):
-                return v if isinstance(v, (int, float)) and v is not None else default
+                return v if isinstance(v, int | float) and v is not None else default
 
             hotspot_density = _nz(getattr(pm, "hotspot_density", None))
             layer_div = _nz(getattr(pm, "layer_diversity", None))
@@ -801,7 +801,7 @@ class BasePlanner:
             pm = plan.meta
 
             def _nz(v, default=0.0):
-                return v if isinstance(v, (int, float)) and v is not None else default
+                return v if isinstance(v, int | float) and v is not None else default
 
             hotspot_density = _nz(getattr(pm, "hotspot_density", None))
             layer_div = _nz(getattr(pm, "layer_diversity", None))

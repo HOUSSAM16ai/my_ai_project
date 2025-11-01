@@ -44,12 +44,11 @@ repos:
   # BLACK - Code Formatter (Industry Standard)
   # =============================================================================
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.10.0
     hooks:
       - id: black
         name: ⚫ Format with Black
-        language_version: python3.12
-        args: [--line-length=100]
+        language_version: python3.11
 
   # =============================================================================
   # ISORT - Import Sorter (Google/Meta Standard)
@@ -65,11 +64,11 @@ repos:
   # RUFF - Ultra-Fast Linter (Rust-based, Replaces Flake8)
   # =============================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.0
+    rev: v0.6.9
     hooks:
       - id: ruff
         name: ⚡ Lint with Ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix]
       - id: ruff-format
         name: ⚡ Format with Ruff
 

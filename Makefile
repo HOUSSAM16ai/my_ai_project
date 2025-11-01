@@ -43,8 +43,9 @@ help:
 	@echo ""
 	@echo "$(GREEN)🎨 Code Quality:$(NC)"
 	@echo "  make quality          - Run ALL quality checks (recommended)"
-	@echo "  make format           - Auto-format code (black + isort)"
+	@echo "  make format           - Auto-format code (black + ruff)"
 	@echo "  make lint             - Run all linters (ruff + pylint + flake8)"
+	@echo "  make check            - Check code formatting (no changes)"
 	@echo "  make type-check       - Run type checker (mypy)"
 	@echo "  make security         - Run security scans (bandit + safety)"
 	@echo "  make complexity       - Analyze code complexity"
@@ -116,20 +117,23 @@ quality: format lint type-check security complexity test
 	@echo "$(GREEN)════════════════════════════════════════════════════════════════$(NC)"
 
 format:
-	@echo "$(BLUE)🎨 Formatting code with Black and isort...$(NC)"
-	black --line-length=100 app/ tests/
-	isort --profile=black --line-length=100 app/ tests/
+	@echo "$(BLUE)🎨 Formatting code with Black and Ruff...$(NC)"
+	black .
+	ruff check --fix .
+	ruff format .
 	@echo "$(GREEN)✅ Code formatted!$(NC)"
 
 lint:
 	@echo "$(BLUE)🔍 Running linters...$(NC)"
 	@echo "$(YELLOW)⚡ Ruff (ultra-fast)...$(NC)"
-	ruff check app/ tests/ --fix
-	@echo "$(YELLOW)📋 Flake8...$(NC)"
-	flake8 app/ tests/ --count --statistics
-	@echo "$(YELLOW)🔍 Pylint...$(NC)"
-	pylint app/ --exit-zero --score=yes
+	ruff check .
 	@echo "$(GREEN)✅ Linting complete!$(NC)"
+
+check:
+	@echo "$(BLUE)✅ Checking code formatting (no changes)...$(NC)"
+	black --check .
+	ruff check .
+	@echo "$(GREEN)✅ Code formatting check passed!$(NC)"
 
 type-check:
 	@echo "$(BLUE)🔍 Type checking with MyPy...$(NC)"

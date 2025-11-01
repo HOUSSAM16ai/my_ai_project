@@ -210,7 +210,8 @@ def verify_implementation():
 
     # Final summary
     print_section("✅ VERIFICATION COMPLETE")
-    print("""
+    print(
+        """
     🎉 SUPERHUMAN Admin Conversation System Implementation is VALID!
 
     نظام محادثات الأدمن الخارق تم تنفيذه بنجاح
@@ -232,7 +233,8 @@ def verify_implementation():
     3. Start using the SUPERHUMAN features!
 
     System Status: READY TO DEPLOY ⚡
-    """)
+    """
+    )
 
     return True
 

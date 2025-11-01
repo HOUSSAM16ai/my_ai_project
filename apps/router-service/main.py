@@ -186,9 +186,7 @@ class AIRouter:
         }
 
         # Canary deployment configs
-        self.canary_configs: dict[str, float] = {
-            "new-model": 0.05  # 5% traffic to new model
-        }
+        self.canary_configs: dict[str, float] = {"new-model": 0.05}  # 5% traffic to new model
 
     async def initialize(self):
         """Initialize connections"""

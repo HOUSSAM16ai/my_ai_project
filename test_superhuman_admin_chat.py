@@ -225,7 +225,8 @@ def test_admin_conversation_system():
 
         # Final summary
         print_section("✅ TEST COMPLETE - ALL SYSTEMS OPERATIONAL")
-        print("""
+        print(
+            """
         🎉 SUPERHUMAN Admin Conversation System is FULLY OPERATIONAL!
 
         نظام محادثات الأدمن الخارق يعمل بكفاءة 100%
@@ -243,7 +244,8 @@ def test_admin_conversation_system():
         ✅ Database integrity
 
         System Status: SUPERIOR TO TECH GIANTS ⚡
-        """)
+        """
+        )
 
 
 if __name__ == "__main__":

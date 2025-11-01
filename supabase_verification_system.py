@@ -315,12 +315,14 @@ class SupabaseVerificationSystem:
 
             # جلب آخر 5 مهام
             result = self.session.execute(
-                text("""
+                text(
+                    """
                     SELECT id, objective, status, created_at
                     FROM missions
                     ORDER BY created_at DESC
                     LIMIT 5
-                """)
+                """
+                )
             )
 
             missions = []
@@ -380,11 +382,13 @@ class SupabaseVerificationSystem:
                 user_id = user_row[0]
 
                 insert_result = self.session.execute(
-                    text(f"""
+                    text(
+                        f"""
                         INSERT INTO {test_table} (objective, status, initiator_id, created_at, updated_at, locked, adaptive_cycles)
                         VALUES (:objective, 'PENDING', :user_id, NOW(), NOW(), false, 0)
                         RETURNING id
-                    """),
+                    """
+                    ),
                     {"objective": test_objective, "user_id": user_id},
                 )
                 test_id = insert_result.scalar()

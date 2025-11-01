@@ -158,9 +158,9 @@ def test_conversation_persistence():
             print(f"\n{C}📝 Step 7: Testing conversation analytics...{E}")
             analytics = service.get_conversation_analytics(conversation.id)
 
-            assert analytics.get("status") == "success", (
-                f"Failed to get analytics: {analytics.get('error')}"
-            )
+            assert (
+                analytics.get("status") == "success"
+            ), f"Failed to get analytics: {analytics.get('error')}"
 
             print(f"{G}✓ Retrieved conversation analytics{E}")
             print(f"  Total Messages: {analytics.get('total_messages')}")

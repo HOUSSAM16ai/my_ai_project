@@ -178,7 +178,7 @@ class AITestGenerator:
         lines = len([n for n in ast.walk(node) if isinstance(n, ast.stmt)])
 
         # Find branches (if/else, try/except, etc.)
-        branches = len([n for n in ast.walk(node) if isinstance(n, (ast.If, ast.While, ast.For))])
+        branches = len([n for n in ast.walk(node) if isinstance(n, ast.If | ast.While | ast.For)])
 
         return {
             "name": node.name,
@@ -209,7 +209,7 @@ class AITestGenerator:
         # Count decision points
         decision_points = 0
         for node in ast.walk(tree):
-            if isinstance(node, (ast.If, ast.While, ast.For, ast.ExceptHandler)):
+            if isinstance(node, ast.If | ast.While | ast.For | ast.ExceptHandler):
                 decision_points += 1
             elif isinstance(node, ast.BoolOp):
                 decision_points += len(node.values) - 1
