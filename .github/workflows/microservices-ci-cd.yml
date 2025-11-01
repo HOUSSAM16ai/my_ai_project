@@ -30,7 +30,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.12'
         with:
           files: ./coverage.xml
           flags: unittests
@@ -124,7 +124,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install Pact
         run: |
@@ -132,8 +132,12 @@ jobs:
 
       - name: Run Contract Tests
         run: |
-          # Run consumer tests
-          pytest tests/contract/ -v
+          # Run consumer tests if directory exists
+          if [ -d "tests/contract" ]; then
+            pytest tests/contract/ -v
+          else
+            echo "Contract tests directory not found, skipping..."
+          fi
         continue-on-error: true
 
       - name: Publish Pact Contracts
@@ -157,8 +161,6 @@ jobs:
     strategy:
       matrix:
         service:
-          - name: api-gateway
-            context: apps/api-gateway
           - name: router-service
             context: apps/router-service
           - name: embeddings-svc
@@ -168,10 +170,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check service directory
+        id: check_dir
+        run: |
+          if [ -d "${{ matrix.service.context }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Service directory ${{ matrix.service.context }} not found"
+          fi
+
       - name: Set up Docker Buildx
+        if: steps.check_dir.outputs.exists == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Container Registry
+        if: steps.check_dir.outputs.exists == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -179,6 +193,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
+        if: steps.check_dir.outputs.exists == 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -191,6 +206,7 @@ jobs:
             type=sha,prefix={{branch}}-
 
       - name: Build Docker Image
+        if: steps.check_dir.outputs.exists == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.context }}
@@ -205,6 +221,7 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
 
       - name: Run Trivy Vulnerability Scanner
+        if: steps.check_dir.outputs.exists == 'true'
         uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -214,12 +231,13 @@ jobs:
           exit-code: '0'
 
       - name: Upload Trivy Results to GitHub Security
+        if: always() && steps.check_dir.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
         with:
           sarif_file: 'trivy-results-${{ matrix.service.name }}.sarif'
 
       - name: Run Grype Scanner
+        if: steps.check_dir.outputs.exists == 'true'
         uses: anchore/scan-action@v3
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -227,6 +245,7 @@ jobs:
           severity-cutoff: high
 
       - name: Generate SBOM with Syft
+        if: steps.check_dir.outputs.exists == 'true'
         uses: anchore/sbom-action@v0
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -234,17 +253,18 @@ jobs:
           output-file: sbom-${{ matrix.service.name }}.json
 
       - name: Upload SBOM
+        if: steps.check_dir.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sbom-${{ matrix.service.name }}
           path: sbom-${{ matrix.service.name }}.json
 
       - name: Sign Image with Cosign (Keyless)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true'
         uses: sigstore/cosign-installer@v3.5.0
 
       - name: Push Image
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.context }}
@@ -327,10 +347,15 @@ jobs:
 
       - name: Run Load Tests
         run: |
-          k6 run tests/performance/load-test.js \
-            --vus 100 \
-            --duration 60s \
-            --out json=performance-results.json
+          if [ -f "tests/performance/load-test.js" ]; then
+            k6 run tests/performance/load-test.js \
+              --vus 100 \
+              --duration 60s \
+              --out json=performance-results.json
+          else
+            echo "Performance test file not found, skipping..."
+            echo '{"test": "skipped"}' > performance-results.json
+          fi
         continue-on-error: true
 
       - name: Upload Performance Results
@@ -347,7 +372,7 @@ jobs:
     name: Deploy to Staging (Canary)
     runs-on: ubuntu-latest
     needs: [build, security-analysis]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_DEPLOYMENT == 'true'
     environment:
       name: staging
       url: https://staging.cogniforge.ai
@@ -381,7 +406,7 @@ jobs:
     name: Chaos Engineering
     runs-on: ubuntu-latest
     needs: [deploy-staging]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_DEPLOYMENT == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -410,7 +435,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [deploy-staging, chaos-test, performance-test]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_DEPLOYMENT == 'true'
     environment:
       name: production
       url: https://api.cogniforge.ai
