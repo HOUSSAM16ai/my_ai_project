@@ -180,9 +180,9 @@ jobs:
 
       - name: 📊 Display summary
         run: |
-          echo "## 📊 CI/CD Health Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          cat .github/health-reports/latest-health.md >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 CI/CD Health Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat .github/health-reports/latest-health.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: 💾 Commit health report
         run: |
