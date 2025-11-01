@@ -5,6 +5,7 @@
 """
 اختبارات للتحقق من أن ServiceLoader يعمل بشكل صحيح ويحترم مبدأ المسؤولية الواحدة.
 """
+
 import pytest
 
 from app.cli.service_loader import (

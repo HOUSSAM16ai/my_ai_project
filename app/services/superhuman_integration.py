@@ -381,11 +381,11 @@ class SuperhumanArchitectureOrchestrator:
 
         report = f"""
 # 🚀 SUPERHUMAN ARCHITECTURE STATUS REPORT
-## Generated: {status['timestamp']}
+## Generated: {status["timestamp"]}
 
 ## 📊 System Overview
 
-**Architecture Version:** {status['architecture_version']}
+**Architecture Version:** {status["architecture_version"]}
 
 ### Available Systems:
 """
@@ -408,23 +408,23 @@ class SuperhumanArchitectureOrchestrator:
 ## 📈 Performance Metrics
 
 ### Response Time:
-- P50: {status['performance_metrics']['response_time']['p50']}
-- P95: {status['performance_metrics']['response_time']['p95']}
-- P99: {status['performance_metrics']['response_time']['p99']}
-- P99.9: {status['performance_metrics']['response_time']['p99.9']}
-- **Improvement vs Google:** {status['performance_metrics']['response_time']['improvement_vs_google']}
+- P50: {status["performance_metrics"]["response_time"]["p50"]}
+- P95: {status["performance_metrics"]["response_time"]["p95"]}
+- P99: {status["performance_metrics"]["response_time"]["p99"]}
+- P99.9: {status["performance_metrics"]["response_time"]["p99.9"]}
+- **Improvement vs Google:** {status["performance_metrics"]["response_time"]["improvement_vs_google"]}
 
 ### Scalability:
-- Requests/sec: {status['performance_metrics']['scalability']['requests_per_second']:,}
-- Concurrent Users: {status['performance_metrics']['scalability']['concurrent_users']:,}
-- Auto-scaling Time: {status['performance_metrics']['scalability']['auto_scaling_time']}
-- **Improvement vs AWS:** {status['performance_metrics']['scalability']['improvement_vs_aws']}
+- Requests/sec: {status["performance_metrics"]["scalability"]["requests_per_second"]:,}
+- Concurrent Users: {status["performance_metrics"]["scalability"]["concurrent_users"]:,}
+- Auto-scaling Time: {status["performance_metrics"]["scalability"]["auto_scaling_time"]}
+- **Improvement vs AWS:** {status["performance_metrics"]["scalability"]["improvement_vs_aws"]}
 
 ### Cost Efficiency:
-- Infrastructure: {status['performance_metrics']['cost_efficiency']['monthly_infrastructure']}/month
-- AI APIs: {status['performance_metrics']['cost_efficiency']['monthly_ai_apis']}/month
-- Monitoring: {status['performance_metrics']['cost_efficiency']['monthly_monitoring']}/month
-- **Total Savings:** {status['performance_metrics']['cost_efficiency']['total_savings']}
+- Infrastructure: {status["performance_metrics"]["cost_efficiency"]["monthly_infrastructure"]}/month
+- AI APIs: {status["performance_metrics"]["cost_efficiency"]["monthly_ai_apis"]}/month
+- Monitoring: {status["performance_metrics"]["cost_efficiency"]["monthly_monitoring"]}/month
+- **Total Savings:** {status["performance_metrics"]["cost_efficiency"]["total_savings"]}
 
 ## 🏆 Comparison with Tech Giants
 

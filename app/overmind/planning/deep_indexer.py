@@ -989,7 +989,7 @@ def summarize_for_prompt(index: dict[str, Any], max_len: int = 6000) -> str:
                 fn = edge["function"]
                 cal = edge["callee"]
                 res = edge.get("resolved") or ""
-                push(f"- {fn}@{os.path.basename(fr)} -> {cal}{(' ('+res+')') if res else ''}")
+                push(f"- {fn}@{os.path.basename(fr)} -> {cal}{(' (' + res + ')') if res else ''}")
 
     text = "\n".join(lines)
     if len(text) > max_len:

@@ -55,7 +55,10 @@ def test_configuration_values():
             content = admin_ai_file.read_text()
 
             # Check MAX_QUESTION_LENGTH
-            has_max_len = "MAX_QUESTION_LENGTH = 50000" in content or "MAX_QUESTION_LENGTH = int(os.getenv" in content
+            has_max_len = (
+                "MAX_QUESTION_LENGTH = 50000" in content
+                or "MAX_QUESTION_LENGTH = int(os.getenv" in content
+            )
             test_result(
                 "MAX_QUESTION_LENGTH",
                 has_max_len,
@@ -63,7 +66,10 @@ def test_configuration_values():
             )
 
             # Check LONG_QUESTION_THRESHOLD
-            has_threshold = "LONG_QUESTION_THRESHOLD = 5000" in content or "LONG_QUESTION_THRESHOLD = int(os.getenv" in content
+            has_threshold = (
+                "LONG_QUESTION_THRESHOLD = 5000" in content
+                or "LONG_QUESTION_THRESHOLD = int(os.getenv" in content
+            )
             test_result(
                 "LONG_QUESTION_THRESHOLD",
                 has_threshold,
@@ -71,7 +77,10 @@ def test_configuration_values():
             )
 
             # Check MAX_RESPONSE_TOKENS
-            has_max_tokens = "MAX_RESPONSE_TOKENS = 16000" in content or "MAX_RESPONSE_TOKENS = int(os.getenv" in content
+            has_max_tokens = (
+                "MAX_RESPONSE_TOKENS = 16000" in content
+                or "MAX_RESPONSE_TOKENS = int(os.getenv" in content
+            )
             test_result(
                 "MAX_RESPONSE_TOKENS",
                 has_max_tokens,
@@ -102,7 +111,6 @@ def test_llm_timeout_value():
         )
 
         # Verify it's documented in code
-        from pathlib import Path
 
         llm_client_file = project_root / "app" / "services" / "llm_client_service.py"
         if llm_client_file.exists():
@@ -127,8 +135,6 @@ def test_error_message_quality():
     print("=" * 70)
 
     try:
-        from pathlib import Path
-
         admin_ai_file = project_root / "app" / "services" / "admin_ai_service.py"
 
         if admin_ai_file.exists():
@@ -265,8 +271,6 @@ def test_dynamic_token_allocation():
     print("=" * 70)
 
     try:
-        from pathlib import Path
-
         admin_ai_file = project_root / "app" / "services" / "admin_ai_service.py"
 
         if admin_ai_file.exists():

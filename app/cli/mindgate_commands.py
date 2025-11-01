@@ -1082,11 +1082,11 @@ def prompt_generate_command(
         else:
             if result.get("status") == "success":
                 C_GREEN("✅ Prompt generated successfully!")
-                click.echo(f"\n{'='*80}")
+                click.echo(f"\n{'=' * 80}")
                 click.echo(f"GENERATED PROMPT (ID: {result.get('prompt_id')})")
-                click.echo(f"{'='*80}\n")
+                click.echo(f"{'=' * 80}\n")
                 click.echo(result.get("generated_prompt", ""))
-                click.echo(f"\n{'='*80}")
+                click.echo(f"\n{'=' * 80}")
                 click.echo(f"Template: {result.get('template_name', 'dynamic')}")
                 click.echo(f"Context chunks: {len(result.get('context_snippets', []))}")
                 click.echo(f"Few-shot examples: {len(result.get('few_shot_examples', []))}")

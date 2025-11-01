@@ -260,7 +260,7 @@ class PredictiveTaskAnalyzer:
                 {
                     "type": "high_block_rate",
                     "severity": "critical",
-                    "description": f"{len(blocked_tasks)} tasks are blocked ({len(blocked_tasks)/len(tasks)*100:.0f}%)",
+                    "description": f"{len(blocked_tasks)} tasks are blocked ({len(blocked_tasks) / len(tasks) * 100:.0f}%)",
                 }
             )
 

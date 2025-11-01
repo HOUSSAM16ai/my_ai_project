@@ -4,8 +4,6 @@ Simplified test for error classification without full app dependencies.
 This test verifies the core error classification logic.
 """
 
-import pytest
-
 
 def _classify_error(exc: Exception) -> str:
     """
@@ -18,7 +16,14 @@ def _classify_error(exc: Exception) -> str:
         return "server_error"
     if "rate" in msg and "limit" in msg:
         return "rate_limit"
-    if "authentication_error" in msg or "unauthorized" in msg or "api key" in msg or "invalid api key" in msg or "401" in msg or "403" in msg:
+    if (
+        "authentication_error" in msg
+        or "unauthorized" in msg
+        or "api key" in msg
+        or "invalid api key" in msg
+        or "401" in msg
+        or "403" in msg
+    ):
         return "auth_error"
     if "timeout" in msg:
         return "timeout"
@@ -31,21 +36,24 @@ def _classify_error(exc: Exception) -> str:
 
 class TestErrorClassification:
     """Test error classification logic"""
-    
+
     def test_classify_server_error_500(self):
         """Test that 500 errors are properly classified as server_error"""
         test_cases = [
-            (RuntimeError("server_error_500: OpenRouter API returned internal server error"), "server_error"),
+            (
+                RuntimeError("server_error_500: OpenRouter API returned internal server error"),
+                "server_error",
+            ),
             (RuntimeError("HTTP fallback bad status 500: error details"), "server_error"),
             (RuntimeError("Internal server error"), "server_error"),
             (RuntimeError("500 Internal Server Error"), "server_error"),
         ]
-        
+
         for exc, expected in test_cases:
             result = _classify_error(exc)
             assert result == expected, f"Failed: {exc} should be {expected} but got {result}"
             print(f"✓ Correctly classified: {str(exc)[:50]}... as {expected}")
-    
+
     def test_classify_auth_error(self):
         """Test that authentication errors are properly classified"""
         test_cases = [
@@ -54,24 +62,24 @@ class TestErrorClassification:
             (RuntimeError("Invalid API key provided"), "auth_error"),
             (RuntimeError("Error 403: Forbidden"), "auth_error"),
         ]
-        
+
         for exc, expected in test_cases:
             result = _classify_error(exc)
             assert result == expected, f"Failed: {exc} should be {expected} but got {result}"
             print(f"✓ Correctly classified: {str(exc)[:50]}... as {expected}")
-    
+
     def test_classify_timeout_error(self):
         """Test that timeout errors are properly classified"""
         test_cases = [
             (RuntimeError("Request timeout after 180 seconds"), "timeout"),
             (RuntimeError("Timeout occurred"), "timeout"),
         ]
-        
+
         for exc, expected in test_cases:
             result = _classify_error(exc)
             assert result == expected, f"Failed: {exc} should be {expected} but got {result}"
             print(f"✓ Correctly classified: {str(exc)[:50]}... as {expected}")
-    
+
     def test_classify_rate_limit_error(self):
         """Test that rate limit errors are properly classified"""
         test_cases = [
@@ -79,12 +87,12 @@ class TestErrorClassification:
             (RuntimeError("Rate limit exceeded"), "rate_limit"),
             (RuntimeError("429 - Rate limit reached"), "rate_limit"),
         ]
-        
+
         for exc, expected in test_cases:
             result = _classify_error(exc)
             assert result == expected, f"Failed: {exc} should be {expected} but got {result}"
             print(f"✓ Correctly classified: {str(exc)[:50]}... as {expected}")
-    
+
     def test_classify_network_error(self):
         """Test that network errors are properly classified"""
         test_cases = [
@@ -92,7 +100,7 @@ class TestErrorClassification:
             (RuntimeError("Network error occurred"), "network"),
             (RuntimeError("DNS resolution failed"), "network"),
         ]
-        
+
         for exc, expected in test_cases:
             result = _classify_error(exc)
             assert result == expected, f"Failed: {exc} should be {expected} but got {result}"
@@ -101,12 +109,12 @@ class TestErrorClassification:
 
 def test_bilingual_error_message_structure():
     """Test that bilingual error messages have the expected structure"""
-    
+
     # Simulate the error message for a 500 error
     prompt_length = 1000
     max_tokens = 16000
     error = "server_error_500: OpenRouter API returned internal server error"
-    
+
     # Build the message (simplified version)
     error_msg = (
         f"🔴 **خطأ في الخادم** (Server Error 500)\n\n"
@@ -125,7 +133,7 @@ def test_bilingual_error_message_structure():
         f"- Max tokens: {max_tokens:,}\n"
         f"- Error: {error}"
     )
-    
+
     # Verify the structure
     assert "خطأ في الخادم" in error_msg, "Missing Arabic header"
     assert "Server Error 500" in error_msg, "Missing English header"
@@ -136,7 +144,7 @@ def test_bilingual_error_message_structure():
     assert "Technical Details" in error_msg, "Missing technical details section"
     assert f"{prompt_length:,}" in error_msg, "Missing prompt length"
     assert f"{max_tokens:,}" in error_msg, "Missing max tokens"
-    
+
     print("✓ Bilingual error message structure is correct")
     print("\nSample error message preview:")
     print("-" * 60)
@@ -150,39 +158,39 @@ if __name__ == "__main__":
     print("Testing Error Classification and Bilingual Messages")
     print("=" * 70)
     print()
-    
+
     test = TestErrorClassification()
-    
+
     print("Test 1: Server Error (500) Classification")
     print("-" * 70)
     test.test_classify_server_error_500()
     print()
-    
+
     print("Test 2: Authentication Error Classification")
     print("-" * 70)
     test.test_classify_auth_error()
     print()
-    
+
     print("Test 3: Timeout Error Classification")
     print("-" * 70)
     test.test_classify_timeout_error()
     print()
-    
+
     print("Test 4: Rate Limit Error Classification")
     print("-" * 70)
     test.test_classify_rate_limit_error()
     print()
-    
+
     print("Test 5: Network Error Classification")
     print("-" * 70)
     test.test_classify_network_error()
     print()
-    
+
     print("Test 6: Bilingual Error Message Structure")
     print("-" * 70)
     test_bilingual_error_message_structure()
     print()
-    
+
     print("=" * 70)
     print("✅ All tests passed successfully!")
     print("=" * 70)

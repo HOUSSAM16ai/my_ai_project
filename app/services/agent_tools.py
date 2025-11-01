@@ -1536,7 +1536,7 @@ def read_bulk_files(
             out.append({"path": p, "exists": False, "error": str(e)})
     if merge_mode == "concat":
         merged = "\n\n".join(
-            f"# {os.path.basename(o['path'])}\n{o.get('content','')}"
+            f"# {os.path.basename(o['path'])}\n{o.get('content', '')}"
             for o in out
             if o.get("content")
         )
@@ -1770,7 +1770,7 @@ def code_search_semantic(query: str, top_k: int = 5) -> ToolResult:
         {
             "file": f"placeholder_{i}.py",
             "score": round(1.0 - (i * 0.07), 3),
-            "excerpt": f"Simulated semantic match for '{q}' (rank {i+1}).",
+            "excerpt": f"Simulated semantic match for '{q}' (rank {i + 1}).",
         }
         for i in range(min(top_k, 8))
     ]

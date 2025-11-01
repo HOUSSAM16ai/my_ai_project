@@ -598,7 +598,7 @@ def build_chunk_prompt(
     if struct_placeholder:
         struct_ref = f"\nSTRUCT_CONTEXT:\n{{{{{struct_placeholder}.answer}}}}"
     elif inline_struct:
-        struct_ref = f"\nSTRUCT_CONTEXT:\n{_truncate(inline_struct,800)}"
+        struct_ref = f"\nSTRUCT_CONTEXT:\n{_truncate(inline_struct, 800)}"
     else:
         struct_ref = ""
     if lang == "ar":
@@ -634,7 +634,7 @@ def build_final_wrap_prompt(
     if struct_placeholder:
         struct_ref = f"\nSTRUCT_CONTEXT:\n{{{{{struct_placeholder}.answer}}}}"
     elif inline_struct:
-        struct_ref = f"\nSTRUCT_CONTEXT:\n{_truncate(inline_struct,800)}"
+        struct_ref = f"\nSTRUCT_CONTEXT:\n{_truncate(inline_struct, 800)}"
     else:
         struct_ref = ""
     if lang == "ar":

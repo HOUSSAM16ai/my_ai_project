@@ -58,15 +58,15 @@ Provide the complete, ready-to-use code with explanations.""",
             {"name": "tech_stack", "description": "Technologies used"},
             {"name": "user_description", "description": "User's code request"},
             {"name": "relevant_snippets", "description": "Relevant code from project"},
-            {"name": "few_shot_examples", "description": "Examples from project"}
+            {"name": "few_shot_examples", "description": "Examples from project"},
         ],
         "few_shot_examples": [
             {
                 "description": "Create a Flask route for user registration",
                 "prompt": "As a senior Flask developer, create a secure user registration endpoint with email validation, password hashing using Werkzeug, and proper error handling. Use SQLAlchemy models and follow Flask-Login patterns.",
-                "result": "Professional Flask route with all security best practices"
+                "result": "Professional Flask route with all security best practices",
             }
-        ]
+        ],
     },
     {
         "name": "Documentation Expert",
@@ -118,15 +118,15 @@ Create clear, comprehensive documentation that:
             {"name": "architecture", "description": "Technical setup"},
             {"name": "user_description", "description": "What to document"},
             {"name": "relevant_snippets", "description": "Code to document"},
-            {"name": "few_shot_examples", "description": "Doc examples"}
+            {"name": "few_shot_examples", "description": "Doc examples"},
         ],
         "few_shot_examples": [
             {
                 "description": "Document a REST API endpoint",
                 "prompt": "Write complete API documentation for this endpoint including: purpose, authentication, request/response schemas, error codes, rate limits, and usage examples in curl and Python.",
-                "result": "Professional API documentation"
+                "result": "Professional API documentation",
             }
-        ]
+        ],
     },
     {
         "name": "Architecture Designer",
@@ -182,8 +182,8 @@ Design a robust, scalable architecture that:
             {"name": "tech_stack", "description": "Technologies"},
             {"name": "user_description", "description": "Architecture challenge"},
             {"name": "relevant_snippets", "description": "Current system"},
-            {"name": "few_shot_examples", "description": "Existing patterns"}
-        ]
+            {"name": "few_shot_examples", "description": "Existing patterns"},
+        ],
     },
     {
         "name": "Testing Maestro",
@@ -243,8 +243,8 @@ Create comprehensive tests that:
             {"name": "tech_stack", "description": "Technologies"},
             {"name": "user_description", "description": "What to test"},
             {"name": "relevant_snippets", "description": "Code to test"},
-            {"name": "few_shot_examples", "description": "Test examples"}
-        ]
+            {"name": "few_shot_examples", "description": "Test examples"},
+        ],
     },
     {
         "name": "Refactoring Guru",
@@ -309,16 +309,16 @@ Improve code quality by:
             {"name": "project_goal", "description": "Project purpose"},
             {"name": "user_description", "description": "Code to refactor"},
             {"name": "relevant_snippets", "description": "Current code"},
-            {"name": "few_shot_examples", "description": "Project patterns"}
-        ]
-    }
+            {"name": "few_shot_examples", "description": "Project patterns"},
+        ],
+    },
 ]
 
 
 def seed_templates():
     """Seed default prompt templates"""
     app = create_app()
-    
+
     with app.app_context():
         # Get or create admin user
         admin = User.query.filter_by(is_admin=True).first()
@@ -326,24 +326,22 @@ def seed_templates():
             print("❌ No admin user found. Please create one first.")
             print("Run: flask users create-admin")
             return
-        
+
         print(f"✅ Found admin user: {admin.email}")
         print(f"\n🌱 Seeding {len(TEMPLATES)} default templates...\n")
-        
+
         created = 0
         skipped = 0
-        
+
         for template_data in TEMPLATES:
             # Check if template already exists
-            existing = PromptTemplate.query.filter_by(
-                name=template_data["name"]
-            ).first()
-            
+            existing = PromptTemplate.query.filter_by(name=template_data["name"]).first()
+
             if existing:
                 print(f"⏭️  Skipping: {template_data['name']} (already exists)")
                 skipped += 1
                 continue
-            
+
             # Create new template
             template = PromptTemplate(
                 name=template_data["name"],
@@ -354,18 +352,18 @@ def seed_templates():
                 few_shot_examples=template_data.get("few_shot_examples", []),
                 created_by_id=admin.id,
             )
-            
+
             db.session.add(template)
             print(f"✅ Created: {template_data['name']} ({template_data['category']})")
             created += 1
-        
+
         if created > 0:
             db.session.commit()
             print(f"\n🎉 Successfully seeded {created} template(s)!")
-        
+
         if skipped > 0:
             print(f"⏭️  Skipped {skipped} existing template(s)")
-        
+
         print("\n📊 Summary:")
         total = PromptTemplate.query.count()
         print(f"   Total templates in database: {total}")

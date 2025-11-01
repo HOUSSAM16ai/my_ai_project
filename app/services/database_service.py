@@ -119,7 +119,7 @@ def get_database_health() -> dict[str, Any]:
 
         if missing_tables:
             health["status"] = "degraded"
-            health["errors"].append(f'Missing tables: {", ".join(missing_tables)}')
+            health["errors"].append(f"Missing tables: {', '.join(missing_tables)}")
 
         # 3. Record counts and growth metrics
         total_records = 0

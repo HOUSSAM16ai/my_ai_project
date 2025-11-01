@@ -1357,7 +1357,7 @@ class OvermindService:
                 data = result_payload.get("data") or {}
                 if isinstance(data, dict) and not data.get("exists", True):
                     if not data.get("content"):
-                        data["content"] = f"{L4_MISSING_FILE_MARKER} {data.get('path','')}"
+                        data["content"] = f"{L4_MISSING_FILE_MARKER} {data.get('path', '')}"
                         result_payload["result_text"] = data["content"]
 
             if not verification_service.verify(task):

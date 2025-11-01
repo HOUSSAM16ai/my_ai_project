@@ -179,7 +179,7 @@ def toggle_feature(feature_name):
             jsonify(
                 {
                     "status": "success",
-                    "message": f'Feature {feature_name} {"enabled" if enabled else "disabled"}',
+                    "message": f"Feature {feature_name} {'enabled' if enabled else 'disabled'}",
                 }
             ),
             200,

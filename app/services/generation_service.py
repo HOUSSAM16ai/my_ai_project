@@ -656,16 +656,16 @@ class MaestroGenerationService:
                 error_msg = str(e).lower()
                 if "500" in error_msg or "server" in error_msg:
                     self._safe_log(
-                        f"[text_completion] Server error (500) on attempt {attempt+1}: {e}",
+                        f"[text_completion] Server error (500) on attempt {attempt + 1}: {e}",
                         level="error",
                     )
                 elif "timeout" in error_msg:
                     self._safe_log(
-                        f"[text_completion] Timeout on attempt {attempt+1}: {e}", level="warning"
+                        f"[text_completion] Timeout on attempt {attempt + 1}: {e}", level="warning"
                     )
                 else:
                     self._safe_log(
-                        f"[text_completion] attempt={attempt+1} failed: {e}", level="warning"
+                        f"[text_completion] attempt={attempt + 1} failed: {e}", level="warning"
                     )
                 if attempt < max_retries:
                     time.sleep(backoff_base * math.pow(1.45, attempt))
@@ -735,7 +735,7 @@ class MaestroGenerationService:
                         else:
                             return obj
             self._safe_log(
-                f"[structured_json] attempt={attempt+1} failed: {last_err}", level="warning"
+                f"[structured_json] attempt={attempt + 1} failed: {last_err}", level="warning"
             )
             if attempt < max_retries:
                 time.sleep(0.28 * (attempt + 1))

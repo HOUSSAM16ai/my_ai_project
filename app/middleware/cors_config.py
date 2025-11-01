@@ -56,4 +56,4 @@ def setup_cors(app: Flask):
     # Initialize CORS
     CORS(app, resources={r"/api/*": cors_config, r"/admin/api/*": cors_config})
 
-    app.logger.info(f'CORS configured with origins: {cors_config["origins"]}')
+    app.logger.info(f"CORS configured with origins: {cors_config['origins']}")
