@@ -166,67 +166,84 @@ run_semgrep_scan() {
     
     # Configure rulesets based on mode
     local RULESETS=""
-    case "$SEMGREP_MODE" in
-        rapid)
-            RULESETS="p/ci"
-            ;;
-        full)
-            RULESETS="p/security-audit p/owasp-top-ten p/ci"
-            ;;
-        deep)
-            RULESETS="p/security-audit p/owasp-top-ten p/cwe-top-25 p/ci"
-            ;;
-        audit)
-            RULESETS="p/security-audit p/owasp-top-ten p/cwe-top-25 p/ci p/r2c-security-audit"
-            ;;
-        *)
-            RULESETS="p/ci"
-            ;;
-    esac
+    local USE_ONLINE_RULES=true
     
-    # Add custom rules if exists
+    # Check if we can access semgrep.dev
+    if ! curl -s --connect-timeout 5 https://semgrep.dev > /dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Cannot access semgrep.dev - using local rules only${NC}"
+        USE_ONLINE_RULES=false
+    fi
+    
+    if [ "$USE_ONLINE_RULES" = true ]; then
+        case "$SEMGREP_MODE" in
+            rapid)
+                RULESETS="p/ci"
+                ;;
+            full)
+                RULESETS="p/security-audit"
+                ;;
+            deep)
+                RULESETS="p/security-audit"
+                ;;
+            audit)
+                RULESETS="p/security-audit"
+                ;;
+            *)
+                RULESETS="p/ci"
+                ;;
+        esac
+    fi
+    
+    # Always add custom rules if exists (these are local)
     if [ -f "${PROJECT_ROOT}/.semgrep.yml" ]; then
-        RULESETS="${RULESETS} --config=${PROJECT_ROOT}/.semgrep.yml"
+        if [ -z "$RULESETS" ]; then
+            RULESETS="--config ${PROJECT_ROOT}/.semgrep.yml"
+        else
+            RULESETS="--config $RULESETS --config ${PROJECT_ROOT}/.semgrep.yml"
+        fi
+    elif [ -z "$RULESETS" ]; then
+        echo -e "${RED}❌ No rulesets available (offline and no local .semgrep.yml)${NC}"
+        echo -e "${YELLOW}Skipping Semgrep scan${NC}"
+        return 0
+    else
+        RULESETS="--config $RULESETS"
     fi
     
     # Run Semgrep with appropriate options
-    local SEMGREP_ARGS=(
-        "--config=${RULESETS}"
-        "--json"
-        "--output=${REPORT_DIR}/semgrep-report.json"
-    )
+    echo -e "${CYAN}Configuration: ${RULESETS}${NC}"
     
     # Add exclusions
     if [ -f "${PROJECT_ROOT}/.semgrepignore" ]; then
         echo -e "${CYAN}Using .semgrepignore for exclusions${NC}"
     fi
     
-    # Add severity filter
-    SEMGREP_ARGS+=("--severity=WARNING")
-    
-    # Add metrics
-    SEMGREP_ARGS+=("--metrics=off")
-    
     # Run Semgrep scan
     local SEMGREP_EXIT=0
-    if semgrep scan "${SEMGREP_ARGS[@]}" . 2>&1 | tee "${REPORT_DIR}/semgrep-output.txt"; then
+    if semgrep scan \
+        $RULESETS \
+        --json \
+        --output="${REPORT_DIR}/semgrep-report.json" \
+        --severity=WARNING \
+        --metrics=off \
+        . 2>&1 | tee "${REPORT_DIR}/semgrep-output.txt"; then
         echo -e "${GREEN}✅ Semgrep scan completed${NC}"
     else
         SEMGREP_EXIT=$?
         echo -e "${YELLOW}⚠️  Semgrep found some issues${NC}"
     fi
     
-    # Generate SARIF report for GitHub
-    semgrep scan \
-        --config="${RULESETS}" \
-        --sarif \
-        --output="${REPORT_DIR}/semgrep.sarif" \
-        . 2>/dev/null || true
+    # Generate SARIF report for GitHub (if online rules were used)
+    if [ "$USE_ONLINE_RULES" = true ]; then
+        semgrep scan \
+            $RULESETS \
+            --sarif \
+            --output="${REPORT_DIR}/semgrep.sarif" \
+            . 2>/dev/null || true
+    fi
     
     # Generate text summary
     semgrep scan \
-        --config="${RULESETS}" \
-        --text \
+        $RULESETS \
         . > "${REPORT_DIR}/semgrep-summary.txt" 2>&1 || true
     
     # Parse results

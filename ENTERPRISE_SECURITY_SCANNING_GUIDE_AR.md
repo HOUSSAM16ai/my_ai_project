@@ -105,14 +105,14 @@ PROD_SEMGREP_MODE=deep
 PROD_FAIL_ON_FINDINGS=true
 ```
 
-### 4️⃣ `scripts/security-scan.sh` - المنفذ الذكي
+### 4️⃣ `scripts/security_scan.sh` - المنفذ الذكي
 
 ```bash
 # أوضاع متعددة
-./scripts/security-scan.sh --fast    # 5 دقائق
-./scripts/security-scan.sh --full    # 20 دقيقة
-./scripts/security-scan.sh --sast    # Semgrep فقط
-./scripts/security-scan.sh --report  # تقارير فقط
+./scripts/security_scan.sh --fast    # 5 دقائق
+./scripts/security_scan.sh --full    # 20 دقيقة
+./scripts/security_scan.sh --sast    # Semgrep فقط
+./scripts/security_scan.sh --report  # تقارير فقط
 ```
 
 ### 5️⃣ `.github/workflows/security-scan.yml` - CI/CD
@@ -135,10 +135,10 @@ PROD_FAIL_ON_FINDINGS=true
 # 1. الملفات موجودة بالفعل في المشروع ✅
 
 # 2. اجعل السكريبت قابلاً للتنفيذ
-chmod +x scripts/security-scan.sh
+chmod +x scripts/security_scan.sh
 
 # 3. قم بتشغيل مسح سريع
-./scripts/security-scan.sh --fast
+./scripts/security_scan.sh --fast
 
 # 4. التزم بالتغييرات
 git add .semgrepignore .semgrep.yml .env.security .github/workflows/security-scan.yml
@@ -155,7 +155,7 @@ git push
 ### 1. Fast Mode (التطوير اليومي)
 
 ```bash
-./scripts/security-scan.sh --fast
+./scripts/security_scan.sh --fast
 ```
 
 - ⏱️ **الوقت**: 5-10 دقائق
@@ -166,7 +166,7 @@ git push
 ### 2. Full Mode (المراجعة الشاملة)
 
 ```bash
-./scripts/security-scan.sh --full
+./scripts/security_scan.sh --full
 ```
 
 - ⏱️ **الوقت**: 15-20 دقيقة
@@ -179,7 +179,7 @@ git push
 ```bash
 # يتم تشغيله تلقائياً على main branch
 # أو يدوياً:
-SEMGREP_MODE=deep ./scripts/security-scan.sh --full
+SEMGREP_MODE=deep ./scripts/security_scan.sh --full
 ```
 
 - ⏱️ **الوقت**: 30+ دقيقة
@@ -190,7 +190,7 @@ SEMGREP_MODE=deep ./scripts/security-scan.sh --full
 ### 4. SAST Only (Semgrep فقط)
 
 ```bash
-./scripts/security-scan.sh --sast
+./scripts/security_scan.sh --sast
 ```
 
 - ⏱️ **الوقت**: 3-5 دقائق
@@ -281,13 +281,13 @@ docker run --rm -v "${PWD}:/src" returntocorp/semgrep scan
 
 ```bash
 # الحل 1: استخدم rapid mode
-./scripts/security-scan.sh --fast
+./scripts/security_scan.sh --fast
 
 # الحل 2: أضف للـ .semgrepignore
 echo "noisy_directory/" >> .semgrepignore
 
 # الحل 3: ارفع severity threshold
-SEMGREP_MIN_SEVERITY=ERROR ./scripts/security-scan.sh --sast
+SEMGREP_MIN_SEVERITY=ERROR ./scripts/security_scan.sh --sast
 ```
 
 ### المشكلة: الـ workflow يفشل على PR
@@ -307,7 +307,7 @@ SEMGREP_MIN_SEVERITY=ERROR ./scripts/security-scan.sh --sast
 
 1. **استخدم rapid mode للتطوير اليومي**
    ```bash
-   ./scripts/security-scan.sh --fast
+   ./scripts/security_scan.sh --fast
    ```
 
 2. **راجع التقارير بانتظام**
@@ -418,7 +418,7 @@ Current → Next → Goal
 1. ✅ **`.semgrepignore`** - يستبعد 80% من الضوضاء
 2. ✅ **`.semgrep.yml`** - قواعد ذكية حسب السياق
 3. ✅ **`.env.security`** - تكوين مرن لكل بيئة
-4. ✅ **`scripts/security-scan.sh`** - منفذ ذكي بـ 6 أوضاع
+4. ✅ **`scripts/security_scan.sh`** - منفذ ذكي بـ 6 أوضاع
 5. ✅ **`security-scan.yml` workflow** - 5 مراحل متدرجة
 6. ✅ **Non-blocking development** - لا يعطل التطوير
 7. ✅ **Comprehensive reports** - تقارير شاملة
@@ -439,7 +439,7 @@ Current → Next → Goal
 
 ```bash
 # 1. تشغيل مسح سريع
-./scripts/security-scan.sh --fast
+./scripts/security_scan.sh --fast
 
 # 2. مراجعة النتائج
 cat security-reports/semgrep-summary.txt

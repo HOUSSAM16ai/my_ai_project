@@ -12,10 +12,10 @@ rules:
     pattern: hashlib.md5(...)
     paths:
       include:
-        - app/services/api_gateway_deployment.py
-        - app/services/api_observability_service.py
-        - apps/router-service/main.py
-        - apps/embeddings-svc/main.py
+        - /app/services/api_gateway_deployment.py
+        - /app/services/api_observability_service.py
+        - /apps/router-service/main.py
+        - /apps/embeddings-svc/main.py
     message: |
       MD5 is used for non-cryptographic purposes (routing, request IDs).
       This is acceptable as it's not used for password hashing or security.
@@ -41,8 +41,8 @@ rules:
             ...
     paths:
       include:
-        - apps/*/main.py
-        - app/middleware/cors_config.py
+        - **/apps/*/main.py
+        - **/app/middleware/cors_config.py
     message: |
       CORS wildcard (*) detected. This is acceptable in development but should
       be restricted in production. Consider using environment-based configuration.
@@ -139,8 +139,8 @@ rules:
         ...
     paths:
       include:
-        - app/services/*.py
-        - app/api/*.py
+        - /app/services/*.py
+        - /app/api/*.py
     message: |
       Bare except clause detected in critical code.
       Consider catching specific exceptions for better error handling.
