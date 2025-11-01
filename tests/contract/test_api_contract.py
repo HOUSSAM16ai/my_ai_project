@@ -12,7 +12,7 @@ class TestAPIContracts:
 
     def test_contract_placeholder(self):
         """Placeholder test for contract testing.
-        
+
         This test will be expanded when microservices contracts are defined.
         """
         assert True, "Contract tests will be implemented when services are deployed"
