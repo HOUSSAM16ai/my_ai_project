@@ -1,0 +1,369 @@
+# Kong Gateway Configuration Template
+# Enterprise-Grade API Gateway Configuration
+
+_format_version: "3.0"
+_transform: true
+
+# =============================================================================
+# Services - الخدمات
+# =============================================================================
+
+services:
+  # Account Service
+  - name: accounts-service
+    url: http://accounts.svc.cluster.local:8080
+    protocol: http
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 3
+    
+    routes:
+      - name: accounts-v1
+        paths:
+          - /v1/accounts
+        methods:
+          - GET
+          - POST
+        strip_path: false
+        preserve_host: false
+        
+      - name: accounts-v1-detail
+        paths:
+          - /v1/accounts/~
+        methods:
+          - GET
+          - PATCH
+          - DELETE
+        strip_path: false
+
+    # Service-level plugins
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 600
+          hour: 10000
+          policy: redis
+          redis_host: redis.svc.cluster.local
+          redis_port: 6379
+          fault_tolerant: true
+          hide_client_headers: false
+          
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 2
+          size_unit: megabytes
+
+  # Payment Service
+  - name: payments-service
+    url: http://payments.svc.cluster.local:8080
+    protocol: http
+    connect_timeout: 30000
+    write_timeout: 30000
+    read_timeout: 30000
+    retries: 5
+    
+    routes:
+      - name: payments-v1
+        paths:
+          - /v1/payments
+        methods:
+          - POST
+          - GET
+        strip_path: false
+
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 300
+          hour: 5000
+          policy: redis
+          
+      - name: request-termination
+        enabled: false
+        config:
+          status_code: 503
+          message: "Service temporarily unavailable for maintenance"
+
+  # User Service
+  - name: users-service
+    url: http://users.svc.cluster.local:8080
+    protocol: http
+    
+    routes:
+      - name: users-v1
+        paths:
+          - /v1/users
+        strip_path: false
+
+# =============================================================================
+# Global Plugins - الإضافات العامة
+# =============================================================================
+
+plugins:
+  # -----------------------------------------------------------------------------
+  # Observability - قابلية الملاحظة
+  # -----------------------------------------------------------------------------
+  
+  - name: correlation-id
+    config:
+      header_name: X-Request-Id
+      generator: uuid#counter
+      echo_downstream: true
+
+  - name: request-id
+    config:
+      header_name: X-Correlation-Id
+      echo_downstream: true
+
+  # -----------------------------------------------------------------------------
+  # Security - الأمان
+  # -----------------------------------------------------------------------------
+
+  - name: cors
+    config:
+      origins:
+        - https://app.cogniforge.com
+        - https://admin.cogniforge.com
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - X-Auth-Token
+        - X-Request-Id
+        - X-Correlation-Id
+        - Authorization
+        - Idempotency-Key
+      exposed_headers:
+        - X-Auth-Token
+        - X-Request-Id
+        - X-RateLimit-Limit
+        - X-RateLimit-Remaining
+        - X-RateLimit-Reset
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+  - name: ip-restriction
+    enabled: false
+    config:
+      allow:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+      deny: []
+      status: 403
+      message: "Access denied from your IP address"
+
+  - name: bot-detection
+    config:
+      allow:
+        - Googlebot
+        - Bingbot
+      deny:
+        - BadBot
+        - EvilCrawler
+
+  # -----------------------------------------------------------------------------
+  # Performance - الأداء
+  # -----------------------------------------------------------------------------
+
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "X-Powered-By: CogniForge API Gateway"
+          - "X-API-Version: v1.0"
+      remove:
+        headers:
+          - "X-Internal-Service"
+      replace:
+        headers: []
+
+  - name: proxy-cache
+    config:
+      strategy: memory
+      content_type:
+        - "text/plain"
+        - "application/json"
+      memory:
+        dictionary_name: cogniforge_cache
+      cache_ttl: 300
+      cache_control: true
+
+  # -----------------------------------------------------------------------------
+  # Traffic Control - التحكم في الحركة
+  # -----------------------------------------------------------------------------
+
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 5
+      size_unit: megabytes
+      require_content_length: false
+
+  - name: response-ratelimiting
+    enabled: false
+    config:
+      limits:
+        sms:
+          minute: 10
+        video:
+          minute: 5
+
+  # -----------------------------------------------------------------------------
+  # Logging - السجلات
+  # -----------------------------------------------------------------------------
+
+  - name: file-log
+    config:
+      path: /var/log/kong/access.log
+      reopen: true
+      custom_fields_by_lua:
+        request_id: return kong.ctx.plugin.request_id
+        tenant_id: return kong.request.get_header("X-Tenant-Id")
+
+  - name: http-log
+    enabled: false
+    config:
+      http_endpoint: http://log-collector.svc.cluster.local:8080/logs
+      method: POST
+      timeout: 10000
+      keepalive: 60000
+      retry_count: 3
+      queue_size: 1000
+      flush_timeout: 2
+
+  # -----------------------------------------------------------------------------
+  # Authentication - المصادقة
+  # -----------------------------------------------------------------------------
+
+  - name: key-auth
+    enabled: false
+    config:
+      key_names:
+        - apikey
+        - X-API-Key
+      key_in_body: false
+      key_in_header: true
+      key_in_query: true
+      hide_credentials: true
+      anonymous: null
+      run_on_preflight: true
+
+  - name: oauth2
+    enabled: false
+    config:
+      scopes:
+        - read
+        - write
+        - admin
+      mandatory_scope: true
+      token_expiration: 3600
+      enable_authorization_code: true
+      enable_client_credentials: true
+      enable_password_grant: false
+      auth_header_name: authorization
+
+  - name: jwt
+    enabled: false
+    config:
+      uri_param_names:
+        - jwt
+      cookie_names: []
+      key_claim_name: kid
+      secret_is_base64: false
+      claims_to_verify:
+        - exp
+        - nbf
+      anonymous: null
+      run_on_preflight: true
+      maximum_expiration: 0
+      header_names:
+        - authorization
+
+# =============================================================================
+# Consumers - المستهلكون
+# =============================================================================
+
+consumers:
+  - username: api-client-1
+    custom_id: client_1a2b3c4d
+    tags:
+      - tier:premium
+      - env:production
+
+  - username: api-client-sandbox
+    custom_id: client_sandbox_xyz
+    tags:
+      - tier:free
+      - env:sandbox
+
+# =============================================================================
+# Upstream Targets - الأهداف الأولية
+# =============================================================================
+
+upstreams:
+  - name: accounts-upstream
+    algorithm: round-robin
+    hash_on: none
+    hash_fallback: none
+    hash_on_cookie_path: /
+    slots: 10000
+    healthchecks:
+      active:
+        https_verify_certificate: true
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 10
+          tcp_failures: 3
+          timeouts: 3
+          http_failures: 5
+      passive:
+        healthy:
+          successes: 2
+        unhealthy:
+          tcp_failures: 3
+          timeouts: 3
+          http_failures: 5
+    targets:
+      - target: accounts-1.svc.cluster.local:8080
+        weight: 100
+      - target: accounts-2.svc.cluster.local:8080
+        weight: 100
+
+# =============================================================================
+# Notes - ملاحظات
+# =============================================================================
+
+# استخدام (Usage):
+# 1. تطبيق التكوين:
+#    deck sync -s kong-gateway.yaml
+#
+# 2. التحقق من التكوين:
+#    deck validate -s kong-gateway.yaml
+#
+# 3. عرض الفرق:
+#    deck diff -s kong-gateway.yaml
+#
+# 4. نسخ احتياطي للتكوين الحالي:
+#    deck dump -o kong-backup.yaml
+#
+# 5. إعادة تحميل الإضافات:
+#    curl -i -X POST http://localhost:8001/plugins/reload
+
+# التخصيص للبيئات المختلفة (Environment-specific):
+# - Development: تعطيل rate limiting، تفعيل logs التفصيلية
+# - Staging: rate limiting متساهل، تفعيل كل الأمان
+# - Production: rate limiting صارم، mTLS، IP whitelisting

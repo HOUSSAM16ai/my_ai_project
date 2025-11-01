@@ -1,0 +1,400 @@
+extends: 
+  - "spectral:oas"
+  - "spectral:asyncapi"
+
+documentationUrl: https://api.cogniforge.com/style-guide
+
+rules:
+  # ==========================================================================
+  # API Design Rules - قواعد تصميم API
+  # ==========================================================================
+
+  cogniforge-info-contact:
+    description: يجب توفير معلومات الاتصال في info (API must have contact information)
+    message: "يجب إضافة معلومات الاتصال في قسم info.contact"
+    severity: error
+    given: "$.info"
+    then:
+      field: contact
+      function: truthy
+
+  cogniforge-info-description:
+    description: يجب توفير وصف تفصيلي (API must have detailed description)
+    message: "يجب إضافة وصف تفصيلي في info.description"
+    severity: error
+    given: "$.info"
+    then:
+      field: description
+      function: truthy
+
+  cogniforge-info-description-length:
+    description: الوصف يجب أن يكون كافياً (Description must be adequate)
+    message: "الوصف يجب أن يكون 50 حرف على الأقل"
+    severity: warn
+    given: "$.info.description"
+    then:
+      function: length
+      functionOptions:
+        min: 50
+
+  # ==========================================================================
+  # Operations Rules - قواعد العمليات
+  # ==========================================================================
+
+  cogniforge-operation-operationId:
+    description: كل عملية يجب أن يكون لها operationId (Every operation must have operationId)
+    message: "أضف operationId فريد لكل عملية"
+    severity: error
+    given: "$.paths[*][*]"
+    then:
+      field: operationId
+      function: truthy
+
+  cogniforge-operation-operationId-unique:
+    description: operationId يجب أن يكون فريداً (operationId must be unique)
+    message: "operationId يجب أن يكون فريداً في كل المسارات"
+    severity: error
+    given: "$.paths[*][*]"
+    then:
+      function: pattern
+      field: operationId
+      functionOptions:
+        match: "^[a-zA-Z][a-zA-Z0-9]*$"
+
+  cogniforge-operation-summary:
+    description: كل عملية يجب أن يكون لها ملخص (Every operation must have summary)
+    message: "أضف ملخص واضح لكل عملية"
+    severity: error
+    given: "$.paths[*][*]"
+    then:
+      field: summary
+      function: truthy
+
+  cogniforge-operation-description:
+    description: كل عملية يجب أن يكون لها وصف (Every operation must have description)
+    message: "أضف وصف تفصيلي لكل عملية"
+    severity: warn
+    given: "$.paths[*][*]"
+    then:
+      field: description
+      function: truthy
+
+  cogniforge-operation-tags:
+    description: كل عملية يجب أن تحتوي على تصنيف (Every operation must have tags)
+    message: "أضف على الأقل تصنيف واحد لكل عملية"
+    severity: error
+    given: "$.paths[*][*]"
+    then:
+      field: tags
+      function: truthy
+
+  # ==========================================================================
+  # Response Rules - قواعد الاستجابات
+  # ==========================================================================
+
+  cogniforge-operation-success-response:
+    description: يجب تعريف استجابة النجاح (Must define success response)
+    message: "أضف استجابة نجاح (2xx) لكل عملية"
+    severity: error
+    given: "$.paths[*][*].responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["200"]
+            - required: ["201"]
+            - required: ["202"]
+            - required: ["204"]
+
+  cogniforge-response-2xx-description:
+    description: استجابات النجاح يجب أن يكون لها وصف (Success responses must have description)
+    message: "أضف وصف واضح لاستجابات النجاح"
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^2/))]"
+    then:
+      field: description
+      function: truthy
+
+  cogniforge-response-error-4xx:
+    description: يجب تعريف استجابات الأخطاء الشائعة (Must define common error responses)
+    message: "أضف استجابات 400, 401, 403, 404 حسب الحاجة"
+    severity: warn
+    given: "$.paths[*][*].responses"
+    then:
+      function: schema
+
+  cogniforge-request-id-header:
+    description: استجابات النجاح يجب أن تحتوي على X-Request-Id (Success responses must have X-Request-Id header)
+    message: "أضف رأس X-Request-Id في جميع الاستجابات"
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property.match(/^2/))].headers"
+    then:
+      field: X-Request-Id
+      function: truthy
+
+  # ==========================================================================
+  # Schema Rules - قواعد المخططات
+  # ==========================================================================
+
+  cogniforge-schema-properties-description:
+    description: خصائص المخطط يجب أن يكون لها وصف (Schema properties must have description)
+    message: "أضف وصف لكل خاصية في المخطط"
+    severity: warn
+    given: "$.components.schemas[*].properties[*]"
+    then:
+      field: description
+      function: truthy
+
+  cogniforge-schema-example:
+    description: المخططات يجب أن تحتوي على أمثلة (Schemas should have examples)
+    message: "أضف أمثلة للمخططات لتحسين التوثيق"
+    severity: warn
+    given: "$.components.schemas[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
+
+  # ==========================================================================
+  # Security Rules - قواعد الأمان
+  # ==========================================================================
+
+  cogniforge-operation-security:
+    description: العمليات الحساسة يجب أن تتطلب مصادقة (Sensitive operations must require authentication)
+    message: "أضف متطلبات الأمان للعمليات الحساسة (POST, PUT, PATCH, DELETE)"
+    severity: error
+    given: "$.paths[*][?(@property === 'post' || @property === 'put' || @property === 'patch' || @property === 'delete')]"
+    then:
+      field: security
+      function: truthy
+
+  cogniforge-global-security:
+    description: يجب تعريف مخططات الأمان (Security schemes must be defined)
+    message: "عرّف مخططات الأمان في components.securitySchemes"
+    severity: error
+    given: "$"
+    then:
+      field: components.securitySchemes
+      function: truthy
+
+  # ==========================================================================
+  # Path Rules - قواعد المسارات
+  # ==========================================================================
+
+  cogniforge-path-kebab-case:
+    description: المسارات يجب أن تستخدم kebab-case (Paths should use kebab-case)
+    message: "استخدم kebab-case في المسارات (مثال: /user-accounts)"
+    severity: warn
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/[a-z0-9-{}]+)+$"
+
+  cogniforge-path-no-trailing-slash:
+    description: المسارات يجب ألا تنتهي بـ / (Paths should not end with /)
+    message: "أزل / من نهاية المسار"
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: ".*/$"
+
+  cogniforge-path-plural-resources:
+    description: موارد المجموعات يجب أن تكون بصيغة الجمع (Collection resources should be plural)
+    message: "استخدم صيغة الجمع لموارد المجموعات (مثال: /accounts بدلاً من /account)"
+    severity: warn
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/[a-z0-9-]+)+$"
+
+  # ==========================================================================
+  # Parameter Rules - قواعد المعاملات
+  # ==========================================================================
+
+  cogniforge-parameter-description:
+    description: المعاملات يجب أن يكون لها وصف (Parameters must have description)
+    message: "أضف وصف واضح لكل معامل"
+    severity: error
+    given: "$.paths[*][*].parameters[*]"
+    then:
+      field: description
+      function: truthy
+
+  cogniforge-pagination-parameters:
+    description: عمليات القوائم يجب أن تدعم التصفح (List operations should support pagination)
+    message: "أضف معاملات التصفح (cursor, limit) لعمليات القوائم"
+    severity: warn
+    given: "$.paths[*].get"
+    then:
+      function: schema
+
+  # ==========================================================================
+  # Idempotency Rules - قواعد التماثل
+  # ==========================================================================
+
+  cogniforge-post-idempotency-key:
+    description: عمليات POST يجب أن تدعم Idempotency-Key (POST operations should support Idempotency-Key)
+    message: "أضف رأس Idempotency-Key لعمليات POST الحساسة"
+    severity: warn
+    given: "$.paths[*].post.parameters[?(@.in === 'header')]"
+    then:
+      function: schema
+
+  # ==========================================================================
+  # Versioning Rules - قواعد الإصدارات
+  # ==========================================================================
+
+  cogniforge-api-version-in-path:
+    description: يجب تضمين الإصدار في المسار (Version must be included in path)
+    message: "أضف الإصدار في بداية المسار (مثال: /v1/accounts)"
+    severity: error
+    given: "$.servers[*].url"
+    then:
+      function: pattern
+      functionOptions:
+        match: ".*/v[0-9]+.*"
+
+  # ==========================================================================
+  # Error Handling Rules - قواعد معالجة الأخطاء
+  # ==========================================================================
+
+  cogniforge-error-response-problem-json:
+    description: استخدم Problem+JSON للأخطاء (Use Problem+JSON for errors)
+    message: "استخدم application/problem+json كنوع محتوى لاستجابات الأخطاء"
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property.match(/^[45]/))]..content"
+    then:
+      field: application/problem+json
+      function: truthy
+
+  cogniforge-error-schema-problem-details:
+    description: مخططات الأخطاء يجب أن تتبع RFC 7807 (Error schemas should follow RFC 7807)
+    message: "استخدم مخطط ProblemDetails المعياري للأخطاء"
+    severity: warn
+    given: "$.components.schemas[?(@.type === 'object' && @.properties.type && @.properties.title && @.properties.status)]"
+    then:
+      function: truthy
+
+  # ==========================================================================
+  # Rate Limiting Rules - قواعد تحديد المعدل
+  # ==========================================================================
+
+  cogniforge-rate-limit-headers:
+    description: يجب إضافة رؤوس تحديد المعدل (Rate limit headers should be included)
+    message: "أضف رؤوس X-RateLimit-* في الاستجابات"
+    severity: warn
+    given: "$.paths[*][*].responses.200.headers"
+    then:
+      function: schema
+
+  # ==========================================================================
+  # Caching Rules - قواعد التخزين المؤقت
+  # ==========================================================================
+
+  cogniforge-get-cache-control:
+    description: عمليات GET يجب أن تحتوي على Cache-Control (GET operations should have Cache-Control)
+    message: "أضف رأس Cache-Control لعمليات GET"
+    severity: warn
+    given: "$.paths[*].get.responses[?(@property.match(/^2/))].headers"
+    then:
+      field: Cache-Control
+      function: truthy
+
+  cogniforge-get-etag:
+    description: عمليات GET يجب أن تدعم ETags (GET operations should support ETags)
+    message: "أضف رأس ETag لعمليات GET لدعم التخزين المؤقت الشرطي"
+    severity: warn
+    given: "$.paths[*].get.responses[?(@property.match(/^2/))].headers"
+    then:
+      field: ETag
+      function: truthy
+
+  # ==========================================================================
+  # AsyncAPI Specific Rules - قواعد خاصة بـ AsyncAPI
+  # ==========================================================================
+
+  cogniforge-asyncapi-event-version:
+    description: الأحداث يجب أن تحتوي على رقم إصدار (Events must have version)
+    message: "أضف event_version لكل حدث"
+    severity: error
+    given: "$.components.schemas[?(@.allOf)]..properties"
+    then:
+      field: event_version
+      function: truthy
+
+  cogniforge-asyncapi-event-id:
+    description: الأحداث يجب أن تحتوي على معرف فريد (Events must have unique ID)
+    message: "أضف event_id لكل حدث"
+    severity: error
+    given: "$.components.schemas[?(@.allOf)]..properties"
+    then:
+      field: event_id
+      function: truthy
+
+  cogniforge-asyncapi-occurred-at:
+    description: الأحداث يجب أن تحتوي على وقت الحدوث (Events must have occurred_at timestamp)
+    message: "أضف occurred_at لكل حدث"
+    severity: error
+    given: "$.components.schemas[?(@.allOf)]..properties"
+    then:
+      field: occurred_at
+      function: truthy
+
+  # ==========================================================================
+  # Breaking Changes Detection - كشف التغييرات المكسّرة
+  # ==========================================================================
+
+  cogniforge-no-required-properties-added:
+    description: لا تضف خصائص مطلوبة جديدة (Don't add new required properties)
+    message: "إضافة خصائص مطلوبة جديدة تكسر التوافق الخلفي"
+    severity: error
+    given: "$.components.schemas[*]"
+    then:
+      function: schema
+
+  cogniforge-no-property-type-change:
+    description: لا تغير أنواع الخصائص (Don't change property types)
+    message: "تغيير نوع الخاصية يكسر التوافق الخلفي"
+    severity: error
+    given: "$.components.schemas[*].properties[*]"
+    then:
+      function: schema
+
+  # ==========================================================================
+  # Documentation Rules - قواعد التوثيق
+  # ==========================================================================
+
+  cogniforge-examples-for-request-body:
+    description: طلبات الإنشاء يجب أن تحتوي على أمثلة (Create requests should have examples)
+    message: "أضف أمثلة لطلبات الإنشاء"
+    severity: warn
+    given: "$.paths[*].post.requestBody.content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
+
+  cogniforge-examples-for-responses:
+    description: الاستجابات يجب أن تحتوي على أمثلة (Responses should have examples)
+    message: "أضف أمثلة للاستجابات"
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property.match(/^2/))].content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
