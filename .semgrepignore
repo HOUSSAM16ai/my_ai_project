@@ -6,62 +6,6 @@
 
 # 1. Documentation files with example URLs and code snippets
 # These contain example connection strings and are not real secrets
-POOLER_*.md
-PORT_5432_FIX_DIAGRAM.md
-SUPABASE_*.md
-DATABASE_*.md
-API_*.md
-ADMIN_*.md
-GITHUB_ACTIONS_*.md
-MCP_*.md
-OVERMIND_*.md
-SUPERHUMAN_*.md
-VECTOR_*.md
-MIGRATION_*.md
-QUALITY_*.md
-PLATFORM_*.md
-DEPLOYMENT_*.md
-START_HERE_*.md
-DEVELOPER_*.md
-PROMPT_*.md
-INTELLIGENT_*.md
-MICROSERVICES_*.md
-ARCHITECTURAL_*.md
-CODE_*.md
-CRUD_*.md
-COMPREHENSIVE_*.md
-CONFLICT_*.md
-CONVERSATION_*.md
-COVERAGE_*.md
-EXTREME_*.md
-FINAL_*.md
-FIX_*.md
-IMPLEMENTATION_*.md
-MASSIVE_*.md
-MERGE_*.md
-PURIFICATION_*.md
-PYTEST_*.md
-PYTHON_*.md
-QUICK_*.md
-SETUP_*.md
-SOLUTION_*.md
-SRP_*.md
-SUCCESS_*.md
-TEST_*.md
-ULTIMATE_*.md
-VALIDATION_*.md
-VERIFICATION_*.md
-VISUAL_*.md
-WORKFLOW_*.md
-WORLD_*.md
-ZERO_*.md
-CI_CD_*.md
-ANSWER_*.md
-AI_*.md
-CHANGES_*.md
-CLI_*.md
-COMPARISON_*.md
-CONTRIBUTING.md
 *.md
 
 # 2. Test files - may contain intentional security anti-patterns for testing

@@ -169,7 +169,7 @@ run_semgrep_scan() {
     local USE_ONLINE_RULES=true
     
     # Check if we can access semgrep.dev
-    if ! curl -s --connect-timeout 5 https://semgrep.dev > /dev/null 2>&1; then
+    if ! curl -s --fail --connect-timeout 5 --max-time 10 https://semgrep.dev > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  Cannot access semgrep.dev - using local rules only${NC}"
         USE_ONLINE_RULES=false
     fi
