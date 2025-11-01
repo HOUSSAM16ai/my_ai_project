@@ -113,7 +113,13 @@ bandit-summary.txt
 safety-report.json
 safety-output.txt
 safety-summary.txt
+semgrep-report.json
+semgrep-output.txt
+semgrep-summary.txt
+semgrep.sarif
+.semgrep_cache/
 SBOM.txt
+.env.security
 
 # 14. SonarQube/SonarCloud
 # SonarQube scanner working directory
