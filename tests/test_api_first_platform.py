@@ -3,7 +3,6 @@
 # ==   TESTS FOR API-FIRST PLATFORM SERVICE                                ==
 # =============================================================================
 
-import json
 import time
 from datetime import UTC, datetime
 
@@ -17,11 +16,9 @@ from app.services.api_first_platform_service import (
     IdempotencyStore,
     RateLimitConfig,
     RateLimiter,
-    RateLimitStrategy,
     WebhookSigner,
     generate_etag,
 )
-
 
 # =============================================================================
 # Contract Management Tests
@@ -39,7 +36,9 @@ class TestContractManagement:
             "paths": {"/test": {"get": {"summary": "Test endpoint"}}},
         }
 
-        contract = APIContract(name="test-api", type=ContractType.OPENAPI, version="v1", specification=spec)
+        contract = APIContract(
+            name="test-api", type=ContractType.OPENAPI, version="v1", specification=spec
+        )
 
         assert contract.name == "test-api"
         assert contract.type == ContractType.OPENAPI
@@ -51,9 +50,13 @@ class TestContractManagement:
         """اختبار ثبات checksum"""
         spec = {"test": "data"}
 
-        contract1 = APIContract(name="test", type=ContractType.OPENAPI, version="v1", specification=spec)
+        contract1 = APIContract(
+            name="test", type=ContractType.OPENAPI, version="v1", specification=spec
+        )
 
-        contract2 = APIContract(name="test", type=ContractType.OPENAPI, version="v1", specification=spec)
+        contract2 = APIContract(
+            name="test", type=ContractType.OPENAPI, version="v1", specification=spec
+        )
 
         assert contract1.checksum == contract2.checksum
 
@@ -62,7 +65,10 @@ class TestContractManagement:
         registry = ContractRegistry()
 
         contract = APIContract(
-            name="accounts-api", type=ContractType.OPENAPI, version="v1", specification={"test": "data"}
+            name="accounts-api",
+            type=ContractType.OPENAPI,
+            version="v1",
+            specification={"test": "data"},
         )
 
         registry.register(contract)
@@ -75,9 +81,13 @@ class TestContractManagement:
         """اختبار كشف التغييرات المكسّرة"""
         registry = ContractRegistry()
 
-        old_contract = APIContract(name="test", type=ContractType.OPENAPI, version="v1", specification={})
+        old_contract = APIContract(
+            name="test", type=ContractType.OPENAPI, version="v1", specification={}
+        )
 
-        new_contract = APIContract(name="test", type=ContractType.OPENAPI, version="v2", specification={})
+        new_contract = APIContract(
+            name="test", type=ContractType.OPENAPI, version="v2", specification={}
+        )
 
         breaking_changes = registry.validate_breaking_changes(old_contract, new_contract)
 
@@ -172,7 +182,7 @@ class TestRateLimiting:
         key = "test_user"
 
         # Use up the limit
-        for i in range(5):
+        for _ in range(5):
             limiter.check_limit(key)
 
         # Manually reset by advancing time
@@ -188,11 +198,11 @@ class TestRateLimiting:
         limiter = RateLimiter(config)
 
         # Different keys should have independent limits
-        for i in range(3):
+        for _ in range(3):
             allowed, _ = limiter.check_limit("user1")
             assert allowed is True
 
-        for i in range(3):
+        for _ in range(3):
             allowed, _ = limiter.check_limit("user2")
             assert allowed is True
 
@@ -306,7 +316,9 @@ class TestAPIFirstPlatformService:
             "info": {"title": "Test API", "version": "1.0.0"},
         }
 
-        contract = service.register_contract(name="test-api", contract_type=ContractType.OPENAPI, version="v1", specification=spec)
+        contract = service.register_contract(
+            name="test-api", contract_type=ContractType.OPENAPI, version="v1", specification=spec
+        )
 
         assert contract is not None
         assert contract.name == "test-api"
@@ -314,7 +326,9 @@ class TestAPIFirstPlatformService:
     def test_get_contract(self, service):
         """اختبار الحصول على عقد"""
         spec = {"test": "data"}
-        service.register_contract(name="test", contract_type=ContractType.OPENAPI, version="v1", specification=spec)
+        service.register_contract(
+            name="test", contract_type=ContractType.OPENAPI, version="v1", specification=spec
+        )
 
         contract = service.get_contract("test")
 
@@ -323,9 +337,13 @@ class TestAPIFirstPlatformService:
 
     def test_list_contracts(self, service):
         """اختبار قائمة العقود"""
-        service.register_contract(name="api1", contract_type=ContractType.OPENAPI, version="v1", specification={})
+        service.register_contract(
+            name="api1", contract_type=ContractType.OPENAPI, version="v1", specification={}
+        )
 
-        service.register_contract(name="api2", contract_type=ContractType.GRAPHQL, version="v1", specification={})
+        service.register_contract(
+            name="api2", contract_type=ContractType.GRAPHQL, version="v1", specification={}
+        )
 
         contracts = service.list_contracts()
 
@@ -336,7 +354,9 @@ class TestAPIFirstPlatformService:
         sunset_date = datetime(2025, 12, 31, tzinfo=UTC)
         migration_guide = "https://docs.example.com/migration"
 
-        deprecation = service.deprecate_version(version="v1", sunset_date=sunset_date, migration_guide=migration_guide)
+        deprecation = service.deprecate_version(
+            version="v1", sunset_date=sunset_date, migration_guide=migration_guide
+        )
 
         assert deprecation["version"] == "v1"
         assert deprecation["deprecated"] is True
@@ -345,7 +365,9 @@ class TestAPIFirstPlatformService:
     def test_create_webhook_delivery(self, service):
         """اختبار إنشاء تسليم webhook"""
         delivery = service.create_webhook_delivery(
-            url="https://example.com/webhook", event_type="account.created", payload={"id": "acc_123"}
+            url="https://example.com/webhook",
+            event_type="account.created",
+            payload={"id": "acc_123"},
         )
 
         assert delivery is not None
@@ -359,7 +381,9 @@ class TestAPIFirstPlatformService:
         payload = {"event": "test"}
 
         # Create a delivery to get the signature
-        delivery = service.create_webhook_delivery(url="https://test.com", event_type="test", payload=payload)
+        delivery = service.create_webhook_delivery(
+            url="https://test.com", event_type="test", payload=payload
+        )
 
         signature = delivery["signature"]
 
@@ -369,7 +393,9 @@ class TestAPIFirstPlatformService:
 
     def test_track_api_usage(self, service):
         """اختبار تتبع استخدام API"""
-        usage = service.track_api_usage(endpoint="/v1/accounts", method="GET", status_code=200, duration_ms=42.5)
+        usage = service.track_api_usage(
+            endpoint="/v1/accounts", method="GET", status_code=200, duration_ms=42.5
+        )
 
         assert usage["endpoint"] == "/v1/accounts"
         assert usage["method"] == "GET"
@@ -379,7 +405,9 @@ class TestAPIFirstPlatformService:
 
     def test_generate_api_key(self, service):
         """اختبار توليد مفتاح API"""
-        api_key = service.generate_api_key(user_id="user_123", name="Production Key", scopes=["read", "write"])
+        api_key = service.generate_api_key(
+            user_id="user_123", name="Production Key", scopes=["read", "write"]
+        )
 
         assert api_key is not None
         assert api_key["key"].startswith("sk_live_")
@@ -426,23 +454,34 @@ class TestIntegration:
             },
         }
 
-        contract = service.register_contract(name="accounts-api", contract_type=ContractType.OPENAPI, version="v1", specification=spec)
+        contract = service.register_contract(
+            name="accounts-api",
+            contract_type=ContractType.OPENAPI,
+            version="v1",
+            specification=spec,
+        )
 
         assert contract is not None
 
         # 2. Generate API key
-        api_key = service.generate_api_key(user_id="dev_001", name="Test Key", scopes=["accounts:read", "accounts:write"])
+        api_key = service.generate_api_key(
+            user_id="dev_001", name="Test Key", scopes=["accounts:read", "accounts:write"]
+        )
 
         assert api_key["key"] is not None
 
         # 3. Track API usage
-        usage = service.track_api_usage(endpoint="/v1/accounts", method="POST", status_code=201, duration_ms=85.3)
+        usage = service.track_api_usage(
+            endpoint="/v1/accounts", method="POST", status_code=201, duration_ms=85.3
+        )
 
         assert usage is not None
 
         # 4. Create webhook
         webhook = service.create_webhook_delivery(
-            url="https://client.com/webhook", event_type="account.created", payload={"id": "acc_123", "name": "Test Account"}
+            url="https://client.com/webhook",
+            event_type="account.created",
+            payload={"id": "acc_123", "name": "Test Account"},
         )
 
         assert webhook is not None
