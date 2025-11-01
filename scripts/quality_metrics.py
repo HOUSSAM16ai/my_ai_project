@@ -30,11 +30,16 @@ class Colors:
 
 
 def run_command(cmd: str, capture_output: bool = True) -> tuple[int, str]:
-    """Run shell command and return exit code and output."""
+    """Run shell command and return exit code and output.
+    
+    Note: shell=True is used here for convenience with pipe commands.
+    All commands are hardcoded and controlled by this script (no user input),
+    so there is no security risk.
+    """
     try:
         result = subprocess.run(
             cmd,
-            shell=True,
+            shell=True,  # Safe: All commands are hardcoded, no user input
             capture_output=capture_output,
             text=True,
             timeout=120

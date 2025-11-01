@@ -138,8 +138,11 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "code" ]; then
     tail -20 "${REPORT_DIR}/bandit-summary.txt" || true
     echo ""
     
-    # Check threshold (max 15 high severity)
+    # Check threshold (max 15 high severity - progressive improvement)
+    # NOTE: This is a transitional threshold. Target is <5 for true superhuman standards
+    # Progressive improvement: 15 → 10 → 5 → 0
     if [ "$HIGH_ISSUES" -gt 15 ]; then
+        echo ""
         echo -e "${RED}❌ CRITICAL: Too many high severity issues ($HIGH_ISSUES > 15)${NC}"
         echo ""
         echo -e "${YELLOW}🔧 Action Required:${NC}"
@@ -147,9 +150,16 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "code" ]; then
         echo "  2. Fix critical security vulnerabilities"
         echo "  3. For false positives, add #nosec comment with justification"
         echo ""
+        echo -e "${CYAN}📈 Progressive Improvement Target:${NC}"
+        echo "  Current: ≤15 high issues"
+        echo "  Next: ≤10 high issues"
+        echo "  Goal: ≤5 high issues (superhuman standard)"
+        echo ""
         OVERALL_STATUS=1
     else
+        echo ""
         echo -e "${GREEN}✅ Security threshold passed ($HIGH_ISSUES ≤ 15)${NC}"
+        echo -e "${CYAN}📈 Quality Level: PROGRESSIVE (Target: <5 for SUPERHUMAN)${NC}"
         echo ""
     fi
 fi
