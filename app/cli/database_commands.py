@@ -45,7 +45,9 @@ def check_health():
         status_icon = (
             "✅"
             if health["status"] == "healthy"
-            else "⚠️" if health["status"] == "degraded" else "❌"
+            else "⚠️"
+            if health["status"] == "degraded"
+            else "❌"
         )
         click.echo(f"\n{status_icon} Status: {health['status'].upper()}")
         click.echo(f"📅 Timestamp: {health['timestamp']}")
