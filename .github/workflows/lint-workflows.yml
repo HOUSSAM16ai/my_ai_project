@@ -25,6 +25,9 @@ jobs:
     name: 🔍 Validate Workflow Syntax
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # ShellCheck options: treat warnings as errors for strict validation
+      SHELLCHECK_OPTS: -S error
 
     steps:
       - name: 📥 Checkout code
@@ -33,7 +36,8 @@ jobs:
       - name: 🔍 Run actionlint
         uses: rhysd/actionlint@v1.7.4
         with:
-          fail-on-error: false
+          # Use args for actionlint parameters (fail-on-error is not supported)
+          args: "-color"
 
       - name: ✅ Validation complete
         run: |
