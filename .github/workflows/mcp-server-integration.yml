@@ -75,18 +75,20 @@ jobs:
             echo "⚠️  AI_AGENT_TOKEN is not set in secrets"
             echo "💡 This is optional - workflow will continue with limited AI features"
             echo "📋 To enable full AI features, add AI_AGENT_TOKEN to repository secrets"
-            echo "token_valid=false" >> $GITHUB_OUTPUT
-            echo "token_available=false" >> $GITHUB_OUTPUT
+            {
+              echo "token_valid=false"
+              echo "token_available=false"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "token_available=true" >> $GITHUB_OUTPUT
+            echo "token_available=true" >> "$GITHUB_OUTPUT"
 
             # Validate token format
             if [[ $AI_AGENT_TOKEN =~ ^(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})$ ]]; then
               echo "✅ AI_AGENT_TOKEN format is valid"
-              echo "token_valid=true" >> $GITHUB_OUTPUT
+              echo "token_valid=true" >> "$GITHUB_OUTPUT"
             else
               echo "⚠️  AI_AGENT_TOKEN format may be invalid"
-              echo "token_valid=false" >> $GITHUB_OUTPUT
+              echo "token_valid=false" >> "$GITHUB_OUTPUT"
             fi
           fi
 
@@ -118,16 +120,18 @@ jobs:
             USERNAME=$(jq -r '.login' /tmp/gh_response.json)
             echo "✅ GitHub API connection successful"
             echo "✅ Authenticated as: $USERNAME"
-            echo "username=$USERNAME" >> $GITHUB_OUTPUT
-            echo "status=ready" >> $GITHUB_OUTPUT
+            {
+              echo "username=$USERNAME"
+              echo "status=ready"
+            } >> "$GITHUB_OUTPUT"
           elif [ "$RESPONSE" = "401" ]; then
             echo "⚠️  GitHub API authentication issue (HTTP $RESPONSE)"
             echo "💡 Continuing with limited features"
-            echo "status=limited" >> $GITHUB_OUTPUT
+            echo "status=limited" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️  GitHub API returned HTTP $RESPONSE"
             echo "💡 Continuing with limited features"
-            echo "status=limited" >> $GITHUB_OUTPUT
+            echo "status=limited" >> "$GITHUB_OUTPUT"
           fi
 
           # Note: MCP Server runs in stdio mode and is designed for interactive use
@@ -389,12 +393,14 @@ jobs:
 
       - name: 📝 Deployment Summary
         run: |
-          echo "## 🚀 Deployment Preview" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 AI verified: Safe to merge" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Test coverage: Excellent" >> $GITHUB_STEP_SUMMARY
-          echo "🔒 Security: No issues" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🚀 Deployment Preview"
+            echo ""
+            echo "✅ Ready for deployment"
+            echo "🤖 AI verified: Safe to merge"
+            echo "📊 Test coverage: Excellent"
+            echo "🔒 Security: No issues"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # Explicit success exit
           exit 0
@@ -412,22 +418,24 @@ jobs:
     steps:
       - name: 📊 Workflow Summary
         run: |
-          echo "## 🎉 Workflow Completed Successfully!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Superhuman Features Used:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ GitHub API Direct Integration with AI_AGENT_TOKEN" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ AI-Powered Code Review" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Intelligent Test Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Automated Security Scanning" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Smart Deployment Decisions" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 💡 AI_AGENT_TOKEN Benefits:" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔐 Automatically loaded from GitHub Secrets" >> $GITHUB_STEP_SUMMARY
-          echo "- 🚀 No manual configuration needed" >> $GITHUB_STEP_SUMMARY
-          echo "- 🌐 Works across Actions, Codespaces, and Dependabot" >> $GITHUB_STEP_SUMMARY
-          echo "- ⚡ Direct GitHub API access (faster than container-based MCP)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Powered by CogniForge - Technology surpassing Google, Microsoft, OpenAI, and Apple!*" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🎉 Workflow Completed Successfully!"
+            echo ""
+            echo "### 🚀 Superhuman Features Used:"
+            echo "- ✅ GitHub API Direct Integration with AI_AGENT_TOKEN"
+            echo "- ✅ AI-Powered Code Review"
+            echo "- ✅ Intelligent Test Analysis"
+            echo "- ✅ Automated Security Scanning"
+            echo "- ✅ Smart Deployment Decisions"
+            echo ""
+            echo "### 💡 AI_AGENT_TOKEN Benefits:"
+            echo "- 🔐 Automatically loaded from GitHub Secrets"
+            echo "- 🚀 No manual configuration needed"
+            echo "- 🌐 Works across Actions, Codespaces, and Dependabot"
+            echo "- ⚡ Direct GitHub API access (faster than container-based MCP)"
+            echo ""
+            echo "*Powered by CogniForge - Technology surpassing Google, Microsoft, OpenAI, and Apple!*"
+          } >> "$GITHUB_STEP_SUMMARY"
 
 
       - name: ✅ Verify Workflow Success

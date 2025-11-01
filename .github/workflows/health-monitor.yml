@@ -129,17 +129,23 @@ jobs:
           SUCCESS_RATE=${{ fromJSON(steps.analyze.outputs.stats).successRate }}
           
           if (( $(echo "$SUCCESS_RATE >= 95" | bc -l) )); then
-            echo "**Status:** 🟢 EXCELLENT (Superhuman)" >> .github/health-reports/latest-health.md
-            echo "" >> .github/health-reports/latest-health.md
-            echo "All systems operating at peak performance!" >> .github/health-reports/latest-health.md
+            {
+              echo "**Status:** 🟢 EXCELLENT (Superhuman)"
+              echo ""
+              echo "All systems operating at peak performance!"
+            } >> .github/health-reports/latest-health.md
           elif (( $(echo "$SUCCESS_RATE >= 85" | bc -l) )); then
-            echo "**Status:** 🟡 GOOD" >> .github/health-reports/latest-health.md
-            echo "" >> .github/health-reports/latest-health.md
-            echo "Performance is good but could be improved." >> .github/health-reports/latest-health.md
+            {
+              echo "**Status:** 🟡 GOOD"
+              echo ""
+              echo "Performance is good but could be improved."
+            } >> .github/health-reports/latest-health.md
           else
-            echo "**Status:** 🔴 NEEDS ATTENTION" >> .github/health-reports/latest-health.md
-            echo "" >> .github/health-reports/latest-health.md
-            echo "Success rate is below target. Investigation recommended." >> .github/health-reports/latest-health.md
+            {
+              echo "**Status:** 🔴 NEEDS ATTENTION"
+              echo ""
+              echo "Success rate is below target. Investigation recommended."
+            } >> .github/health-reports/latest-health.md
           fi
           
           cat >> .github/health-reports/latest-health.md << 'EOF'
@@ -180,9 +186,11 @@ jobs:
 
       - name: 📊 Display summary
         run: |
-          echo "## 📊 CI/CD Health Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          cat .github/health-reports/latest-health.md >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 📊 CI/CD Health Summary"
+            echo ""
+            cat .github/health-reports/latest-health.md
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 💾 Commit health report
         run: |
