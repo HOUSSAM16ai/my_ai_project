@@ -33,7 +33,7 @@ classifiers = [
 # ======================================================================================
 [tool.black]
 line-length = 100
-target-version = ["py311"]
+target-version = ["py312"]
 exclude = '''
 (
   /(\.git|\.venv|\.mypy_cache|\.ruff_cache|build|dist|node_modules)/
@@ -227,7 +227,7 @@ skips = ["*/test_*.py", "*/tests/*"]
 # ======================================================================================
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 extend-exclude = ["build", "dist", "node_modules", ".venv", "__pycache__"]
 
 [tool.ruff.lint]
