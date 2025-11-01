@@ -26,6 +26,7 @@
 # ======================================================================================
 
 import os
+
 from dotenv import load_dotenv
 
 # --- The Sacred Awakening ---
@@ -34,7 +35,7 @@ from dotenv import load_dotenv
 basedir = os.path.abspath(os.path.dirname(__file__))
 # Load .env from project root (where config.py is located)
 # If .env doesn't exist, environment variables will still be available (e.g., from Codespaces secrets)
-load_dotenv(os.path.join(basedir, '.env'), override=False)
+load_dotenv(os.path.join(basedir, ".env"), override=False)
 
 
 class Config:
@@ -42,21 +43,22 @@ class Config:
     The Primordial Law - The base configuration that all realities inherit from.
     يحتوي على القوانين الأساسية والمشتركة بين كل العوالم.
     """
+
     # Security law: A secret key is non-negotiable for session management.
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-super-secret-key-that-you-should-change'
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "a-super-secret-key-that-you-should-change"
 
     # Database efficiency law: Disable a costly and unnecessary tracking feature.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+
     # Database resilience law: Proactively check connections to prevent timeouts.
-    SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True}
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
     # --- [THE NEW SACRED EDICT - القانون المقدس الجديد] ---
     # The Sovereign AI Model Law. This is inherited by all configurations.
     # It reads the Grand Architect's choice of AI model from the environment.
     # If not found, it defaults to a powerful, safe choice for development.
-    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL') or 'openai/gpt-4o'
-    
+    DEFAULT_AI_MODEL = os.environ.get("DEFAULT_AI_MODEL") or "openai/gpt-4o"
+
     @staticmethod
     def init_app(app):
         # This hook remains for future complex initializations if needed.
@@ -68,10 +70,11 @@ class DevelopmentConfig(Config):
     The Reality of Creation - Laws for the development workshop.
     قوانين عالم "ورشة العمل" حيث يتم الخلق والتجربة.
     """
+
     DEBUG = True
-    
+
     # Database law for development: Connect to the local Dockerized "brain".
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 
 
 class TestingConfig(Config):
@@ -79,14 +82,15 @@ class TestingConfig(Config):
     The Dream World - Laws for the immune system's simulation chamber.
     قوانين عالم "الحلم" حيث يتم إجراء اختبارات خطيرة بدون عواقب.
     """
+
     TESTING = True
-    
+
     # Database law for testing: The memory is ephemeral, existing only in RAM.
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+
     # Security law for testing: Disable CSRF protection for simpler test requests.
     WTF_CSRF_ENABLED = False
-    
+
     # Ensure login is NOT disabled in tests - we want to test authentication
     LOGIN_DISABLED = False
 
@@ -96,26 +100,26 @@ class ProductionConfig(Config):
     The Real World - Laws for the silent warrior on a live mission.
     قوانين عالم "المهمة الحقيقية" حيث الأداء والأمان هما الأولوية.
     """
+
     DEBUG = False
-    
+
     # Database law for production: Connect to the immortal, persistent brain (e.g., Supabase).
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-    
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+
     # --- [STRICT AI MODEL LAW - قانون الذكاء الاصطناعي الصارم] ---
     # In production, the choice of AI model is not optional. It MUST be
     # explicitly defined in the environment. The application will fail to start
     # if this is not set, preventing accidental use of a default model.
-    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL')
+    DEFAULT_AI_MODEL = os.environ.get("DEFAULT_AI_MODEL")
 
 
 # --- The Grand Registry of Realities ---
 # A central dictionary mapping names to their corresponding constitutional laws.
 # This allows `create_app` to select the correct reality at startup.
-config_by_name = dict(
-    development=DevelopmentConfig,
-    testing=TestingConfig,
-    production=ProductionConfig,
-    
+config_by_name = {
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
     # The default reality if none is specified.
-    default=DevelopmentConfig
-)
+    "default": DevelopmentConfig,
+}

@@ -199,7 +199,7 @@ class ChaosMonkey:
             self.active_faults[fault.fault_id] = fault
 
         current_app.logger.warning(
-            f"🐒 Chaos Monkey injected {fault_type.value} fault " f"into {service_name}.{operation}"
+            f"🐒 Chaos Monkey injected {fault_type.value} fault into {service_name}.{operation}"
         )
 
         return fault

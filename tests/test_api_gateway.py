@@ -18,7 +18,6 @@ Tests cover:
 - Feature flags
 """
 
-
 from app.services.api_gateway_chaos import (
     ChaosEngineeringService,
     ChaosExperiment,

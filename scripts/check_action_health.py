@@ -20,7 +20,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 
 class Colors:
@@ -140,7 +140,7 @@ class ActionHealthChecker:
 
         return all_available
 
-    def check_code_quality(self) -> Tuple[bool, Dict[str, Any]]:
+    def check_code_quality(self) -> tuple[bool, dict[str, Any]]:
         """Check current code quality status"""
         self.print_header("📊 CHECKING CODE QUALITY")
 
@@ -222,7 +222,7 @@ class ActionHealthChecker:
         all_passed = all(r["status"] == "pass" for r in results.values())
         return all_passed, results
 
-    def generate_fix_script(self, results: Dict[str, Any]):
+    def generate_fix_script(self, results: dict[str, Any]):
         """Generate a script to fix detected issues"""
         self.print_header("🔧 GENERATING FIX SCRIPT")
 
@@ -270,8 +270,12 @@ echo "✅ Fixes applied! Please review and commit changes."
         """Generate comprehensive health report"""
         self.print_header("📊 HEALTH REPORT SUMMARY")
 
-        print(f"\n{Colors.BOLD}Successes:{Colors.ENDC} {Colors.OKGREEN}{len(self.successes)}{Colors.ENDC}")
-        print(f"{Colors.BOLD}Warnings:{Colors.ENDC} {Colors.WARNING}{len(self.warnings)}{Colors.ENDC}")
+        print(
+            f"\n{Colors.BOLD}Successes:{Colors.ENDC} {Colors.OKGREEN}{len(self.successes)}{Colors.ENDC}"
+        )
+        print(
+            f"{Colors.BOLD}Warnings:{Colors.ENDC} {Colors.WARNING}{len(self.warnings)}{Colors.ENDC}"
+        )
         print(f"{Colors.BOLD}Issues:{Colors.ENDC} {Colors.FAIL}{len(self.issues)}{Colors.ENDC}\n")
 
         if self.issues:
@@ -287,17 +291,11 @@ echo "✅ Fixes applied! Please review and commit changes."
         # Overall status
         print(f"\n{Colors.BOLD}{'=' * 80}{Colors.ENDC}")
         if not self.issues:
-            print(
-                f"{Colors.OKGREEN}{Colors.BOLD}✅ OVERALL STATUS: HEALTHY{Colors.ENDC}"
-            )
+            print(f"{Colors.OKGREEN}{Colors.BOLD}✅ OVERALL STATUS: HEALTHY{Colors.ENDC}")
         elif len(self.issues) < 3:
-            print(
-                f"{Colors.WARNING}{Colors.BOLD}⚠️  OVERALL STATUS: NEEDS ATTENTION{Colors.ENDC}"
-            )
+            print(f"{Colors.WARNING}{Colors.BOLD}⚠️  OVERALL STATUS: NEEDS ATTENTION{Colors.ENDC}")
         else:
-            print(
-                f"{Colors.FAIL}{Colors.BOLD}❌ OVERALL STATUS: CRITICAL{Colors.ENDC}"
-            )
+            print(f"{Colors.FAIL}{Colors.BOLD}❌ OVERALL STATUS: CRITICAL{Colors.ENDC}")
         print(f"{Colors.BOLD}{'=' * 80}{Colors.ENDC}\n")
 
         # Save report

@@ -315,7 +315,7 @@ class AITestGenerator:
     {self._format_inputs(inputs)}
 
     # Act
-    result = {func_name}({', '.join(f"{k}={k}" for k in inputs)})
+    result = {func_name}({", ".join(f"{k}={k}" for k in inputs)})
 
     # Assert
     assert result is not None
@@ -363,14 +363,14 @@ class AITestGenerator:
                 for edge_val in edge_values[param_type][:2]:  # Limit to 2 per param
                     inputs = {param["name"]: edge_val}
 
-                    test_code = f"""def test_{func_name}_edge_{param['name']}_{edge_val}():
-    \"\"\"Test {func_name} with edge case: {param['name']}={edge_val}\"\"\"
+                    test_code = f"""def test_{func_name}_edge_{param["name"]}_{edge_val}():
+    \"\"\"Test {func_name} with edge case: {param["name"]}={edge_val}\"\"\"
     # Arrange
-    {param['name']} = {repr(edge_val)}
+    {param["name"]} = {repr(edge_val)}
 
     # Act & Assert
     try:
-        result = {func_name}({param['name']}={param['name']})
+        result = {func_name}({param["name"]}={param["name"]})
         assert result is not None
     except Exception as e:
         # Document expected exceptions
@@ -379,7 +379,7 @@ class AITestGenerator:
 
                     tests.append(
                         TestCase(
-                            test_id=f"test_{func_name}_{len(tests)+1:03d}",
+                            test_id=f"test_{func_name}_{len(tests) + 1:03d}",
                             test_name=f"test_{func_name}_edge_{param['name']}",
                             test_type=TestType.UNIT,
                             description=f"Test {func_name} with edge case: {param['name']}={edge_val}",
@@ -409,16 +409,16 @@ class AITestGenerator:
             if param["name"] == "self":
                 continue
 
-            test_code = f"""def test_{func_name}_none_{param['name']}():
-    \"\"\"Test {func_name} with None for {param['name']}\"\"\"
+            test_code = f"""def test_{func_name}_none_{param["name"]}():
+    \"\"\"Test {func_name} with None for {param["name"]}\"\"\"
     # Act & Assert
     with pytest.raises((ValueError, TypeError)):
-        {func_name}({param['name']}=None)
+        {func_name}({param["name"]}=None)
 """
 
             tests.append(
                 TestCase(
-                    test_id=f"test_{func_name}_error_{len(tests)+1:03d}",
+                    test_id=f"test_{func_name}_error_{len(tests) + 1:03d}",
                     test_name=f"test_{func_name}_none_{param['name']}",
                     test_type=TestType.UNIT,
                     description=f"Test {func_name} rejects None for {param['name']}",

@@ -126,7 +126,10 @@ def test_burn_rate_calculation():
     # Record some failures to create burn rate
     for _ in range(10):
         slo_service.record_request(
-            endpoint="/api/test", method="GET", status_code=500, response_time_ms=100.0  # Error
+            endpoint="/api/test",
+            method="GET",
+            status_code=500,
+            response_time_ms=100.0,  # Error
         )
 
     # Calculate burn rate

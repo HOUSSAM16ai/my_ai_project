@@ -1,15 +1,17 @@
 # ai_service/main.py - The All-Knowing AI Oracle v5.2 (Code Generation Enabled)
 
 import os
-from fastapi import FastAPI, Depends, HTTPException, Body
-from pydantic import BaseModel
-from dotenv import load_dotenv
-import openai
 from contextlib import asynccontextmanager
+
+import openai
+from dotenv import load_dotenv
+from fastapi import Body, Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 
 # We need these for the restored database routes
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,7 +37,9 @@ async def lifespan(app: FastAPI):
             print("⚠️ [AI Oracle] WARNING: OPENROUTER_API_KEY is not set.")
             app.state.ai_client = None
         else:
-            app.state.ai_client = openai.OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+            app.state.ai_client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1", api_key=api_key
+            )
             print("✅ [AI Oracle] OpenRouter client configured.")
     except Exception as e:
         print(f"❌ [AI Oracle] FATAL: Error configuring AI client: {e}")
@@ -44,11 +48,8 @@ async def lifespan(app: FastAPI):
     print("--- [AI Oracle Lifespan] System entering graceful shutdown...")
 
 
-app = FastAPI(
-    lifespan=lifespan,
-    title="CogniForge AI Oracle & System Services",
-    version="5.2.0"
-)
+app = FastAPI(lifespan=lifespan, title="CogniForge AI Oracle & System Services", version="5.2.0")
+
 
 # --- Dependency Injection System ---
 def get_db():
@@ -60,24 +61,31 @@ def get_db():
     finally:
         db.close()
 
+
 def get_ai_client():
     if not app.state.ai_client:
         raise HTTPException(status_code=503, detail="AI Service is not configured.")
     return app.state.ai_client
+
 
 # --- Data Models for Payloads ---
 class GenerateCodePayload(BaseModel):
     prompt: str
     context: str
 
+
 # --- Core & AI Endpoints ---
+
 
 @app.get("/", tags=["System Status"])
 def read_root():
     return {"status": "AI Oracle Online"}
 
+
 @app.post("/ai/chat/completion", tags=["AI Features"])
-async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Depends(get_ai_client)):
+async def chat_completion(
+    payload: dict = Body(...), client: openai.OpenAI = Depends(get_ai_client)
+):
     try:
         model = payload.get("model", "mistralai/mistral-7b-instruct")
         messages = payload.get("messages", [])
@@ -86,11 +94,11 @@ async def chat_completion(payload: dict = Body(...), client: openai.OpenAI = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # --- [THE ULTIMATE ADDITION] The Context-Aware Creation Endpoint ---
 @app.post("/ai/generate/code", tags=["AI Features"])
 async def generate_code_with_context(
-    payload: GenerateCodePayload = Body(...),
-    client: openai.OpenAI = Depends(get_ai_client)
+    payload: GenerateCodePayload = Body(...), client: openai.OpenAI = Depends(get_ai_client)
 ):
     """
     Receives a prompt and code context, then generates new, complete code.
@@ -113,7 +121,7 @@ async def generate_code_with_context(
     Python code for the new feature or modification. Only output the raw code,
     without any explanations, comments, or markdown formatting like ```python or ```.
     """
-    
+
     try:
         completion = client.chat.completions.create(
             model="openai/gpt-4o",  # Using a powerful model for code generation
@@ -121,24 +129,30 @@ async def generate_code_with_context(
                 {"role": "system", "content": "You are a world-class code generation engine."},
                 {"role": "user", "content": system_prompt},
             ],
-            temperature=0.2, # Low temperature for precise and deterministic code
-            max_tokens=4000  # Generous token limit for larger files
+            temperature=0.2,  # Low temperature for precise and deterministic code
+            max_tokens=4000,  # Generous token limit for larger files
         )
         generated_code = completion.choices[0].message.content
         return {"status": "success", "generated_code": generated_code}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # --- Diagnostic and Admin Routes ---
+
 
 @app.get("/diagnostics/ai-connection", tags=["Diagnostics"])
 def test_ai_connection(client: openai.OpenAI = Depends(get_ai_client)):
     """Performs a LIVE test of the connection to the AI model provider."""
     try:
         models = client.models.list()
-        return {"status": "success", "message": f"Successfully connected. {len(models.data)} models available."}
+        return {
+            "status": "success",
+            "message": f"Successfully connected. {len(models.data)} models available.",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
 
 @app.get("/admin/vitals/user-count", tags=["Admin Vitals"])
 async def get_user_count(db: Session = Depends(get_db)):
@@ -148,6 +162,7 @@ async def get_user_count(db: Session = Depends(get_db)):
         return {"status": "success", "data": user_count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
 
 @app.get("/admin/vitals/users", tags=["Admin Vitals"])
 async def list_all_users(db: Session = Depends(get_db)):

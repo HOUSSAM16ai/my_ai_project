@@ -337,7 +337,7 @@ def track_request_metrics():
         if not data or not all(field in data for field in required_fields):
             return (
                 jsonify(
-                    {"status": "error", "message": f'Required fields: {", ".join(required_fields)}'}
+                    {"status": "error", "message": f"Required fields: {', '.join(required_fields)}"}
                 ),
                 400,
             )

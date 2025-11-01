@@ -381,7 +381,8 @@ class TestPromptEngineeringEdgeCases:
 
         # Service should handle gracefully
         result = service.generate_prompt(
-            user_description=long_description[:10000], user=admin_user  # Truncate to reasonable
+            user_description=long_description[:10000],
+            user=admin_user,  # Truncate to reasonable
         )
         # Should not crash
         assert result is not None
@@ -390,7 +391,9 @@ class TestPromptEngineeringEdgeCases:
         """Test with non-existent template"""
         service = PromptEngineeringService()
         result = service.generate_prompt(
-            user_description="Test", user=admin_user, template_id=99999  # Non-existent
+            user_description="Test",
+            user=admin_user,
+            template_id=99999,  # Non-existent
         )
 
         assert result["status"] == "error"

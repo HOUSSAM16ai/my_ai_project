@@ -179,7 +179,7 @@ def _configure_logging(app: Flask) -> None:
     )
     file_handler.setFormatter(
         logging.Formatter(
-            "%(asctime)s %(levelname)s [%(name)s] %(message)s " "[in %(pathname)s:%(lineno)d]"
+            "%(asctime)s %(levelname)s [%(name)s] %(message)s [in %(pathname)s:%(lineno)d]"
         )
     )
     file_handler.setLevel(level)
