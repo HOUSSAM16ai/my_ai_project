@@ -1,3 +1,4 @@
+---
 # ======================================================================================
 # ENTERPRISE SECURITY SCANNING - GitHub Actions Workflow
 # ======================================================================================
@@ -52,7 +53,7 @@ env:
   # Environment detection
   IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
-  
+
   # Scan configuration
   SCAN_MODE: ${{ inputs.scan_mode || 'rapid' }}
   SECURITY_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
@@ -67,7 +68,7 @@ jobs:
     timeout-minutes: 15
     # Always run for PRs, optional for main branch
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -94,7 +95,7 @@ jobs:
         env:
           SEMGREP_RULES: >-
             --exclude="*.md"
-            --exclude="test_*.py" 
+            --exclude="test_*.py"
             --exclude="migrations/"
             --exclude="scripts/"
             --severity=WARNING
@@ -132,7 +133,7 @@ jobs:
     timeout-minutes: 30
     # Run on main branch pushes or manually
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -183,14 +184,14 @@ jobs:
           mkdir -p security-reports
           bandit -r app/ -c pyproject.toml -f json -o security-reports/bandit-report.json
           bandit -r app/ -c pyproject.toml > security-reports/bandit-summary.txt || true
-          
+
           # Check severity counts
           HIGH_COUNT=$(grep -o "High: [0-9]*" security-reports/bandit-summary.txt | grep -o "[0-9]*" || echo "0")
-          
+
           echo "📊 Bandit Results:"
           echo "  High severity issues: $HIGH_COUNT"
           cat security-reports/bandit-summary.txt | tail -20
-          
+
           # Fail if too many high severity issues in production
           if [ "${{ env.SECURITY_ENV }}" = "production" ] && [ "$HIGH_COUNT" -gt 15 ]; then
             echo "❌ Too many high severity issues: $HIGH_COUNT > 15"
@@ -250,7 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -293,7 +294,7 @@ jobs:
     timeout-minutes: 10
     needs: [rapid-scan, codeql-analysis]
     if: always()
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -314,23 +315,23 @@ jobs:
           echo "- **Scan Mode**: ${{ env.SCAN_MODE }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## ✅ Completed Scans" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Semgrep SAST" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ CodeQL Analysis" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Bandit Security Scan" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 📊 Results" >> $GITHUB_STEP_SUMMARY
           echo "All security findings are available in the Security tab." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 🎯 Quality Standards" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ OWASP Top 10" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ CWE Top 25" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ SANS Top 25" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Non-blocking message for development
           if [ "${{ env.SECURITY_ENV }}" != "production" ]; then
             echo "## 💡 Development Mode" >> $GITHUB_STEP_SUMMARY

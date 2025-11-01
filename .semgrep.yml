@@ -1,3 +1,4 @@
+---
 # ==========================================
 # === Semgrep Custom Rules Configuration ===
 # ==========================================
@@ -41,8 +42,8 @@ rules:
             ...
     paths:
       include:
-        - **/apps/*/main.py
-        - **/app/middleware/cors_config.py
+        - "**/apps/*/main.py"
+        - "**/app/middleware/cors_config.py"
     message: |
       CORS wildcard (*) detected. This is acceptable in development but should
       be restricted in production. Consider using environment-based configuration.
