@@ -1,0 +1,17 @@
+name: project-setup
+description: Unified setup (locale, cache, mirrors, retries) - Deterministic environment configuration
+runs:
+  using: "composite"
+  steps:
+    - name: Set deterministic environment
+      shell: bash
+      run: |
+        echo "🔧 Setting up deterministic environment..."
+        echo "TZ=UTC" >> $GITHUB_ENV
+        echo "LANG=C.UTF-8" >> $GITHUB_ENV
+        echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
+        echo "PYTHONDONTWRITEBYTECODE=1" >> $GITHUB_ENV
+        echo "PIP_DISABLE_PIP_VERSION_CHECK=1" >> $GITHUB_ENV
+        echo "PIP_NO_CACHE_DIR=0" >> $GITHUB_ENV
+        echo "PYTHONHASHSEED=0" >> $GITHUB_ENV
+        echo "✅ Environment configured for deterministic builds"

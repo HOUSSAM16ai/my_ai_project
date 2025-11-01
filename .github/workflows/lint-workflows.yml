@@ -1,0 +1,44 @@
+# ======================================================================================
+# WORKFLOW LINTING - Prevent YAML Errors Early 🔍
+# ======================================================================================
+# Validates GitHub Actions workflow syntax before merge
+# Uses actionlint to catch common mistakes
+# ======================================================================================
+
+name: 🔍 Workflow Linting
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**.yml"
+      - ".github/workflows/**.yaml"
+      - ".github/actions/**/action.yml"
+      - ".github/actions/**/action.yaml"
+  push:
+    branches: [main, develop]
+    paths:
+      - ".github/workflows/**.yml"
+      - ".github/workflows/**.yaml"
+
+jobs:
+  actionlint:
+    name: 🔍 Validate Workflow Syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Run actionlint
+        uses: rhysd/actionlint@v1
+        with:
+          fail-on-error: true
+
+      - name: ✅ Validation complete
+        run: |
+          echo "## ✅ Workflow Validation Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All GitHub Actions workflows are syntactically correct!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🏆 Quality: Superhuman" >> $GITHUB_STEP_SUMMARY

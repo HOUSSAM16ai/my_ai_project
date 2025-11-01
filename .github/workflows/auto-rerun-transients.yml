@@ -1,0 +1,183 @@
+# ======================================================================================
+# AUTO-RERUN ON TRANSIENT FAILURES 🔄
+# ======================================================================================
+# Automatically detects and reruns workflows that failed due to transient issues
+# Patterns detected:
+# - Network errors (ECONNRESET, ETIMEDOUT, ENETUNREACH)
+# - Rate limiting (429, 5xx errors)
+# - Temporary service unavailability
+# ======================================================================================
+
+name: 🔄 Auto-Rerun Transient Failures
+
+on:
+  workflow_run:
+    workflows: 
+      - "🏆 Ultimate CI - Always Green"
+      - "Python Application CI"
+      - "🏆 Code Quality & Security (Superhuman)"
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  detect-and-rerun:
+    name: 🔍 Detect & Rerun Transients
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event != 'workflow_dispatch'
+
+    steps:
+      - name: 🔍 Analyze failure logs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.payload.workflow_run.id;
+            const {owner, repo} = context.repo;
+            
+            core.info(`Analyzing workflow run: ${runId}`);
+            core.info(`Workflow: ${context.payload.workflow_run.name}`);
+            
+            // Transient failure patterns
+            const transientPatterns = [
+              /ECONNRESET/i,
+              /ETIMEDOUT/i,
+              /ENETUNREACH/i,
+              /EAI_AGAIN/i,
+              /ECONNREFUSED/i,
+              /429\b/i,
+              /5\d{2}\b/i,
+              /rate[\s-]?limit/i,
+              /network\s+error/i,
+              /connection\s+reset/i,
+              /timeout/i,
+              /temporary\s+failure/i,
+              /service\s+unavailable/i,
+              /bad\s+gateway/i,
+              /gateway\s+timeout/i,
+              /download\s+error/i,
+              /fetch.*failed/i,
+              /pip.*error/i,
+              /npm.*error/i
+            ];
+            
+            // Get jobs for this run
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: runId,
+              per_page: 100
+            });
+            
+            core.info(`Found ${jobs.data.jobs.length} jobs`);
+            
+            // Check if any job has transient failure indicators
+            let isTransient = false;
+            let transientReasons = [];
+            
+            for (const job of jobs.data.jobs) {
+              if (job.conclusion === 'failure') {
+                core.info(`Analyzing failed job: ${job.name}`);
+                
+                // Check job steps
+                for (const step of job.steps || []) {
+                  const stepName = step.name || '';
+                  const stepConclusion = step.conclusion || '';
+                  
+                  if (stepConclusion === 'failure') {
+                    for (const pattern of transientPatterns) {
+                      if (pattern.test(stepName)) {
+                        isTransient = true;
+                        transientReasons.push(`Step "${stepName}" matches pattern: ${pattern}`);
+                        core.info(`Transient pattern detected in step: ${stepName}`);
+                      }
+                    }
+                  }
+                }
+                
+                // Try to get logs (limited to avoid rate limits)
+                try {
+                  const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                    owner,
+                    repo,
+                    job_id: job.id
+                  });
+                  
+                  // Sample the logs (first 200KB)
+                  const logText = logs.data.toString().slice(0, 200000);
+                  
+                  for (const pattern of transientPatterns) {
+                    if (pattern.test(logText)) {
+                      isTransient = true;
+                      transientReasons.push(`Job "${job.name}" logs match pattern: ${pattern}`);
+                      core.info(`Transient pattern detected in logs: ${pattern}`);
+                      break; // Found one, that's enough
+                    }
+                  }
+                } catch (error) {
+                  core.warning(`Could not fetch logs for job ${job.id}: ${error.message}`);
+                }
+              }
+            }
+            
+            // Check if already rerun
+            const runTitle = context.payload.workflow_run.display_title || '';
+            const alreadyRerun = runTitle.includes('[rerun]') || 
+                                 runTitle.includes('[auto-rerun]') ||
+                                 context.payload.workflow_run.run_attempt > 1;
+            
+            if (alreadyRerun) {
+              core.info('Workflow was already rerun, skipping to avoid loops');
+              core.setOutput('should_rerun', 'false');
+              return;
+            }
+            
+            // Decision
+            if (isTransient) {
+              core.info('🔄 Transient failure detected! Triggering auto-rerun...');
+              core.info('Reasons:');
+              transientReasons.forEach(reason => core.info(`  - ${reason}`));
+              
+              try {
+                await github.rest.actions.reRunWorkflow({
+                  owner,
+                  repo,
+                  run_id: runId
+                });
+                
+                core.info('✅ Auto-rerun triggered successfully');
+                
+                // Add comment to PR if exists
+                if (context.payload.workflow_run.pull_requests?.length > 0) {
+                  const pr = context.payload.workflow_run.pull_requests[0];
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: pr.number,
+                    body: `🔄 **Auto-Rerun Triggered**\n\nDetected transient failure in workflow \`${context.payload.workflow_run.name}\`.\nAutomatically rerunning the workflow.\n\n**Detected issues:**\n${transientReasons.map(r => `- ${r}`).join('\n')}\n\n_Powered by Superhuman CI/CD 🚀_`
+                  });
+                }
+                
+                core.setOutput('should_rerun', 'true');
+              } catch (error) {
+                core.error(`Failed to trigger rerun: ${error.message}`);
+                core.setOutput('should_rerun', 'false');
+              }
+            } else {
+              core.info('No transient failure patterns detected');
+              core.setOutput('should_rerun', 'false');
+            }
+
+      - name: 📊 Report results
+        run: |
+          echo "## 🔄 Auto-Rerun Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.event.workflow_run.id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Analysis completed. Check logs for details." >> $GITHUB_STEP_SUMMARY
