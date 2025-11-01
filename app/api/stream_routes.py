@@ -92,7 +92,10 @@ def sse_event(
 
 async def ai_token_stream(prompt: str) -> AsyncIterator[str]:
     """
-    Mock token generator - replace with your actual LLM client.
+    Mock token generator - REPLACE WITH ACTUAL LLM INTEGRATION.
+    
+    ⚠️ WARNING: This is a mock implementation for demonstration purposes.
+    In production, replace this with your actual LLM client (OpenRouter, OpenAI, etc.)
     
     This should yield small chunks quickly with minimal delay between chunks.
     
@@ -101,8 +104,23 @@ async def ai_token_stream(prompt: str) -> AsyncIterator[str]:
         
     Yields:
         Token strings
+        
+    TODO: Replace with actual LLM integration:
+        from app.services.llm_client_service import get_llm_client
+        client = get_llm_client()
+        async for token in client.stream(prompt):
+            yield token
     """
-    # Example: Stream 100 tokens
+    # 🚨 MOCK MODE - Remove in production
+    import os
+    if not os.getenv('ALLOW_MOCK_LLM', 'false').lower() == 'true':
+        raise RuntimeError(
+            "Mock LLM is not allowed in production. "
+            "Set ALLOW_MOCK_LLM=true in .env for development, "
+            "or replace ai_token_stream() with actual LLM integration."
+        )
+    
+    # Example: Stream 100 tokens (MOCK DATA)
     words = ["Hello", "world", "this", "is", "a", "streaming", "response", "with", "proper", "SSE"]
     
     for i in range(100):
@@ -238,7 +256,24 @@ def sse_chat():
             )
     
     def generate_sync():
-        """Sync wrapper for async generator"""
+        """
+        Sync wrapper for async generator.
+        
+        Note: Creates a new event loop for this request. In a production async
+        framework (like FastAPI), you would use native async/await instead.
+        For Flask sync context, this is the standard approach.
+        """
+        # Check if we're in an async context already
+        try:
+            running_loop = asyncio.get_running_loop()
+            # If we're here, there's already a loop - this shouldn't happen in Flask sync
+            logger.warning("Unexpected: already in async context")
+            raise RuntimeError("Cannot run in existing event loop")
+        except RuntimeError:
+            # Good - no running loop, we can create one
+            pass
+        
+        # Create event loop for this request
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -250,7 +285,9 @@ def sse_chat():
                 except StopAsyncIteration:
                     break
         finally:
+            # Always clean up the loop
             loop.close()
+            asyncio.set_event_loop(None)
     
     # Return SSE response with proper headers
     headers = {

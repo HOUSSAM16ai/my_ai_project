@@ -163,7 +163,12 @@ class SSEConsumer {
    */
   async processStream(stream) {
     const reader = stream.getReader();
+    
     // Use TextDecoder with stream=true for proper multi-byte UTF-8 handling
+    // fatal: false is intentional - we want graceful degradation rather than
+    // crashing mid-stream on rare encoding issues. The server sends valid UTF-8,
+    // but network issues could cause corruption. Replacement chars (�) are
+    // better than stream failure in a production streaming context.
     const decoder = new TextDecoder('utf-8', { fatal: false });
     let carry = '';
     
