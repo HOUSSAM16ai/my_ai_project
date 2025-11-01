@@ -302,18 +302,27 @@ def handle_chat_stream():
     if not question:
         def error_stream():
             yield "event: error\ndata: {\"message\": \"Question is required\"}\n\n"
-        return Response(stream_with_context(error_stream()), mimetype='text/event-stream')
+        headers = {
+            "Cache-Control": "no-cache, no-transform",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "X-Accel-Buffering": "no",
+        }
+        return Response(stream_with_context(error_stream()), headers=headers)
     
     def generate():
         """Generator function for SSE streaming"""
         start_time = time.time()
+        last_heartbeat = time.monotonic()
+        event_id = 0
+        
         try:
             service = get_admin_ai_service()
             streaming_service = get_streaming_service()
             perf_service = get_performance_service() if get_performance_service else None
             
-            # Send start event
-            yield "event: start\ndata: {\"status\": \"processing\"}\n\n"
+            # Send start event with event ID
+            yield f"event: start\nid: {event_id}\ndata: {{\"status\": \"processing\"}}\n\n"
+            event_id += 1
             
             # Auto-create conversation if needed
             conv_id = conversation_id
@@ -326,7 +335,8 @@ def handle_chat_stream():
                         conversation_type="general",
                     )
                     conv_id = conversation.id
-                    yield f"event: conversation\ndata: {{\"id\": {conv_id}}}\n\n"
+                    yield f"event: conversation\nid: {event_id}\ndata: {{\"id\": {conv_id}}}\n\n"
+                    event_id += 1
                 except Exception as e:
                     current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
             
@@ -362,6 +372,13 @@ def handle_chat_stream():
                 # Use streaming service to chunk and stream response
                 for sse_event in streaming_service.stream_response(answer_text, metadata):
                     yield sse_event
+                    
+                    # Send heartbeat every 20 seconds to keep connection alive
+                    now = time.monotonic()
+                    if now - last_heartbeat > 20:
+                        yield f"event: ping\nid: {event_id}\ndata: \"🔧\"\n\n"
+                        event_id += 1
+                        last_heartbeat = now
             else:
                 # Stream error message
                 error_text = result.get("answer") or result.get("message") or "An error occurred"
@@ -370,9 +387,18 @@ def handle_chat_stream():
                     
         except Exception as e:
             current_app.logger.error(f"Streaming error: {e}", exc_info=True)
-            yield f"event: error\ndata: {{\"message\": \"{str(e)}\"}}\n\n"
+            error_msg = str(e).replace('"', '\\"')  # Escape quotes for JSON
+            yield f"event: error\nid: {event_id}\ndata: {{\"message\": \"{error_msg[:500]}\", \"type\": \"{type(e).__name__}\"}}\n\n"
     
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+    # Add proper SSE headers to prevent buffering and caching
+    headers = {
+        "Cache-Control": "no-cache, no-transform",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",  # For NGINX - disables proxy buffering
+    }
+    
+    return Response(stream_with_context(generate()), headers=headers)
 
 
 @bp.route("/api/analyze-project", methods=["POST"])
