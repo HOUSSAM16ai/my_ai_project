@@ -3,8 +3,32 @@
 ## 🚀 Quick Start
 
 - **[README.md](../README.md)** - Project overview and quick start
+- **[QUICK_START.md](QUICK_START.md)** - ⭐ NEW: Get running in 10 minutes!
 - **[SETUP_GUIDE.md](setup/SETUP_GUIDE.md)** - Complete setup instructions
 - **[QUICK_REFERENCE.md](../QUICK_REFERENCE.md)** - Quick reference guide
+
+## 🎯 Microservices Platform (NEW!)
+
+### Platform Overview
+- **[MICROSERVICES_PLATFORM.md](MICROSERVICES_PLATFORM.md)** - ⭐ Complete microservices architecture
+- **[MICROSERVICES_IMPLEMENTATION.md](../MICROSERVICES_IMPLEMENTATION.md)** - ⭐ Implementation summary
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - ⭐ Production deployment guide
+
+### Architecture Decisions
+- **[ADR 001: Microservices Architecture](adrs/001-microservices-architecture.md)** - Design decisions
+
+### AI Services
+- **AI Router Service** (`apps/router-service/`) - Intelligent model routing
+- **Embeddings Service** (`apps/embeddings-svc/`) - Vector generation
+- **Guardrails Service** (`apps/guardrails-svc/`) - Content safety
+
+### Infrastructure
+- **[KServe Model Serving](../infra/k8s/kserve/)** - LLM deployment with vLLM
+- **[Istio Service Mesh](../infra/k8s/mesh/)** - mTLS and traffic management
+- **[Kong API Gateway](../infra/k8s/gateway/)** - API management
+- **[Kafka Cluster](../infra/k8s/kafka/)** - Event streaming
+- **[Monitoring Stack](../infra/k8s/monitoring/)** - Prometheus + Grafana
+- **[GitOps](../infra/argocd/)** - Argo CD + Argo Rollouts
 
 ## 🏗️ Architecture
 

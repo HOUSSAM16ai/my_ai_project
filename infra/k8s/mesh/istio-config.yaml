@@ -1,0 +1,340 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cogniforge-istio
+  namespace: istio-system
+spec:
+  profile: production
+  
+  # Mesh Configuration
+  meshConfig:
+    # Access Logging
+    accessLogFile: /dev/stdout
+    accessLogEncoding: JSON
+    
+    # Tracing with OpenTelemetry
+    defaultConfig:
+      tracing:
+        sampling: 10.0  # 10% sampling
+        openCensusAgent:
+          address: otel-collector.observability.svc.cluster.local:55678
+          context:
+            - W3C_TRACE_CONTEXT
+    
+    # Default mTLS
+    enableAutoMtls: true
+    
+    # Outbound traffic policy
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
+    
+    # Protocol detection timeout
+    protocolDetectionTimeout: 5s
+  
+  # Components Configuration
+  components:
+    # Pilot (Control Plane)
+    pilot:
+      enabled: true
+      k8s:
+        replicaCount: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        hpaSpec:
+          minReplicas: 3
+          maxReplicas: 10
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                targetAverageUtilization: 80
+        env:
+          - name: PILOT_TRACE_SAMPLING
+            value: "10.0"
+          - name: PILOT_ENABLE_PROTOCOL_SNIFFING_FOR_OUTBOUND
+            value: "true"
+          - name: PILOT_ENABLE_PROTOCOL_SNIFFING_FOR_INBOUND
+            value: "true"
+    
+    # Ingress Gateway
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          replicaCount: 3
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          hpaSpec:
+            minReplicas: 3
+            maxReplicas: 10
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+          service:
+            type: LoadBalancer
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: http2
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8443
+              - name: grpc
+                port: 15443
+                targetPort: 15443
+    
+    # Egress Gateway (for controlled external access)
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: true
+        k8s:
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+    
+    # CNI (for better security)
+    cni:
+      enabled: true
+      namespace: kube-system
+    
+  # Values configuration
+  values:
+    global:
+      # Proxy configuration
+      proxy:
+        # Resource limits for sidecars
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1Gi
+        
+        # Concurrency
+        concurrency: 2
+        
+        # Access log format
+        accessLogFormat: |
+          {
+            "start_time": "%START_TIME%",
+            "method": "%REQ(:METHOD)%",
+            "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+            "protocol": "%PROTOCOL%",
+            "response_code": "%RESPONSE_CODE%",
+            "duration": "%DURATION%",
+            "upstream_service_time": "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%",
+            "x_forwarded_for": "%REQ(X-FORWARDED-FOR)%",
+            "user_agent": "%REQ(USER-AGENT)%",
+            "request_id": "%REQ(X-REQUEST-ID)%",
+            "authority": "%REQ(:AUTHORITY)%",
+            "upstream_host": "%UPSTREAM_HOST%",
+            "trace_id": "%REQ(X-B3-TRACEID)%"
+          }
+      
+      # mTLS settings
+      mtls:
+        enabled: true
+        auto: true
+      
+      # Control plane security
+      controlPlaneSecurityEnabled: true
+      
+      # Network
+      network: cogniforge-network
+      
+      # Multi-cluster
+      multiCluster:
+        enabled: false
+    
+    # Sidecar injector
+    sidecarInjectorWebhook:
+      enableNamespacesByDefault: false
+      rewriteAppHTTPProbe: true
+    
+    # Telemetry
+    telemetry:
+      enabled: true
+      v2:
+        enabled: true
+        prometheus:
+          enabled: true
+        stackdriver:
+          enabled: false
+    
+    # Kiali (Service Mesh Observability)
+    kiali:
+      enabled: true
+      dashboard:
+        auth:
+          strategy: anonymous
+    
+    # Grafana
+    grafana:
+      enabled: true
+    
+    # Prometheus
+    prometheus:
+      enabled: true
+    
+    # Tracing
+    tracing:
+      enabled: true
+      provider: zipkin
+      zipkin:
+        address: jaeger-collector.observability.svc.cluster.local:9411
+---
+# PeerAuthentication - Enforce mTLS across mesh
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT
+---
+# Authorization Policy - Default deny
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: istio-system
+spec:
+  {}
+---
+# Gateway for AI Services
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ai-gateway
+  namespace: ai-services
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "api.cogniforge.ai"
+        - "*.api.cogniforge.ai"
+      tls:
+        httpsRedirect: true
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+        - "api.cogniforge.ai"
+        - "*.api.cogniforge.ai"
+      tls:
+        mode: SIMPLE
+        credentialName: cogniforge-tls-cert
+---
+# Virtual Service - AI Router
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ai-router-vs
+  namespace: ai-services
+spec:
+  hosts:
+    - "api.cogniforge.ai"
+  gateways:
+    - ai-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/v1/chat/completions"
+        - uri:
+            prefix: "/v1/completions"
+      route:
+        - destination:
+            host: router-service.ai-services.svc.cluster.local
+            port:
+              number: 8000
+          weight: 90
+        - destination:
+            host: router-service-canary.ai-services.svc.cluster.local
+            port:
+              number: 8000
+          weight: 10
+      timeout: 300s
+      retries:
+        attempts: 3
+        perTryTimeout: 100s
+        retryOn: 5xx,connect-failure,refused-stream
+      corsPolicy:
+        allowOrigins:
+          - exact: https://app.cogniforge.ai
+        allowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        allowHeaders:
+          - content-type
+          - authorization
+          - x-trace-id
+        maxAge: 86400s
+---
+# DestinationRule - Circuit Breaking
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: router-service-dr
+  namespace: ai-services
+spec:
+  host: router-service.ai-services.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+      http:
+        http1MaxPendingRequests: 1000
+        http2MaxRequests: 10000
+        maxRequestsPerConnection: 10
+        idleTimeout: 90s
+    loadBalancer:
+      simple: LEAST_REQUEST
+      localityLbSetting:
+        enabled: true
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+    - name: canary
+      labels:
+        version: canary

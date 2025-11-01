@@ -1,0 +1,328 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'cogniforge-production'
+        environment: 'production'
+    
+    # Alertmanager configuration
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager:9093
+    
+    # Rule files
+    rule_files:
+      - '/etc/prometheus/rules/*.yml'
+    
+    # Scrape configurations
+    scrape_configs:
+      # Prometheus itself
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      
+      # Kubernetes API server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: default;kubernetes;https
+      
+      # Kubernetes nodes
+      - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+      
+      # Kubernetes pods
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+      
+      # AI Router Service
+      - job_name: 'ai-router'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - ai-services
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: router-service
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8000
+            target_label: __address__
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'router_.*'
+            action: keep
+      
+      # Embeddings Service
+      - job_name: 'embeddings'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - ai-services
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: embeddings-svc
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8000
+            target_label: __address__
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'embeddings_.*'
+            action: keep
+      
+      # Guardrails Service
+      - job_name: 'guardrails'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - ai-services
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: guardrails-svc
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8000
+            target_label: __address__
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'guardrails_.*'
+            action: keep
+      
+      # Istio mesh metrics
+      - job_name: 'istio-mesh'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - istio-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: istio-telemetry;prometheus
+      
+      # Kafka metrics
+      - job_name: 'kafka'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - infrastructure
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_strimzi_io_kind]
+            action: keep
+            regex: Kafka
+      
+      # OpenTelemetry Collector
+      - job_name: 'otel-collector'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - observability
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: opentelemetry-collector
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8888
+            target_label: __address__
+
+  # SLO Rules
+  slo-rules.yml: |
+    groups:
+      - name: slo_rules
+        interval: 30s
+        rules:
+          # AI Router SLO - 99.9% availability
+          - record: slo:router:availability:ratio
+            expr: |
+              (
+                sum(rate(router_requests_total{status="success"}[5m]))
+                /
+                sum(rate(router_requests_total[5m]))
+              )
+          
+          - record: slo:router:error_budget:remaining
+            expr: |
+              1 - (
+                (1 - slo:router:availability:ratio)
+                /
+                (1 - 0.999)
+              )
+          
+          # AI Router latency SLO - P99 < 2s
+          - record: slo:router:latency:p99
+            expr: |
+              histogram_quantile(0.99, 
+                sum(rate(router_request_duration_seconds_bucket[5m])) by (le)
+              )
+          
+          # Embeddings SLO - 99.95% availability
+          - record: slo:embeddings:availability:ratio
+            expr: |
+              (
+                sum(rate(embeddings_requests_total{status="success"}[5m]))
+                /
+                sum(rate(embeddings_requests_total[5m]))
+              )
+          
+          # Embeddings latency SLO - P99 < 500ms
+          - record: slo:embeddings:latency:p99
+            expr: |
+              histogram_quantile(0.99,
+                sum(rate(embeddings_duration_seconds_bucket[5m])) by (le)
+              )
+          
+          # Guardrails SLO - 99.9% availability
+          - record: slo:guardrails:availability:ratio
+            expr: |
+              (
+                sum(rate(guardrails_checks_total{result="completed"}[5m]))
+                /
+                sum(rate(guardrails_checks_total[5m]))
+              )
+
+  # Alert Rules
+  alert-rules.yml: |
+    groups:
+      - name: ai_services_alerts
+        interval: 30s
+        rules:
+          # High error rate
+          - alert: HighErrorRate
+            expr: |
+              (
+                sum(rate(router_requests_total{status="error"}[5m]))
+                /
+                sum(rate(router_requests_total[5m]))
+              ) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: ai-router
+            annotations:
+              summary: "High error rate on AI Router"
+              description: "Error rate is {{ $value | humanizePercentage }} for AI Router service"
+          
+          # SLO burn rate alert
+          - alert: SLOBurnRateTooFast
+            expr: |
+              slo:router:error_budget:remaining < 0.1
+            for: 1h
+            labels:
+              severity: warning
+              service: ai-router
+            annotations:
+              summary: "SLO error budget burning too fast"
+              description: "Only {{ $value | humanizePercentage }} of error budget remaining"
+          
+          # High latency
+          - alert: HighLatency
+            expr: |
+              slo:router:latency:p99 > 2
+            for: 10m
+            labels:
+              severity: warning
+              service: ai-router
+            annotations:
+              summary: "High P99 latency on AI Router"
+              description: "P99 latency is {{ $value }}s (SLO: 2s)"
+          
+          # Service down
+          - alert: ServiceDown
+            expr: |
+              up{job=~"ai-router|embeddings|guardrails"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service {{ $labels.job }} is down"
+              description: "{{ $labels.job }} has been down for more than 2 minutes"
+          
+          # High memory usage
+          - alert: HighMemoryUsage
+            expr: |
+              (
+                container_memory_working_set_bytes{namespace="ai-services"}
+                /
+                container_spec_memory_limit_bytes{namespace="ai-services"}
+              ) > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage"
+              description: "Memory usage is {{ $value | humanizePercentage }} for {{ $labels.pod }}"
+          
+          # High CPU usage
+          - alert: HighCPUUsage
+            expr: |
+              (
+                rate(container_cpu_usage_seconds_total{namespace="ai-services"}[5m])
+                /
+                container_spec_cpu_quota{namespace="ai-services"}
+              ) > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage"
+              description: "CPU usage is {{ $value | humanizePercentage }} for {{ $labels.pod }}"

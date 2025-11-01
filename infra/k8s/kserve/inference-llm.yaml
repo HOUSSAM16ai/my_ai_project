@@ -1,0 +1,141 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: textgen-vllm
+  namespace: ai-models
+  labels:
+    app: textgen
+    model: llm
+    version: v1
+  annotations:
+    serving.kserve.io/autoscalerClass: "hpa"
+    serving.kserve.io/enable-prometheus-scraping: "true"
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 10
+    scaleTarget: 80
+    scaleMetric: concurrency
+    serviceAccountName: model-serving
+    containers:
+      - name: vllm
+        image: vllm/vllm-openai:v0.6.0
+        args:
+          - --model=/models/llm
+          - --max-model-len=32768
+          - --enable-chunked-prefill
+          - --gpu-memory-utilization=0.9
+          - --max-num-batched-tokens=8192
+          - --tensor-parallel-size=1
+          - --dtype=auto
+          - --trust-remote-code
+          - --enable-prefix-caching
+        env:
+          - name: VLLM_WORKER_USE_FLASH_ATTENTION
+            value: "1"
+          - name: VLLM_USE_MODELSCOPE
+            value: "False"
+          - name: HF_HOME
+            value: /models/.cache
+        ports:
+          - name: http
+            containerPort: 8000
+            protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            cpu: "4"
+            memory: "32Gi"
+          requests:
+            nvidia.com/gpu: 1
+            cpu: "2"
+            memory: "24Gi"
+        volumeMounts:
+          - name: model-storage
+            mountPath: /models
+          - name: cache
+            mountPath: /models/.cache
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+    volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: cache
+        emptyDir:
+          sizeLimit: 10Gi
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nvidia.com/gpu.product
+                  operator: In
+                  values:
+                    - NVIDIA-A100-SXM4-40GB
+                    - NVIDIA-A100-SXM4-80GB
+                    - Tesla-V100-SXM2-16GB
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: textgen-vllm-dr
+  namespace: ai-models
+spec:
+  host: textgen-vllm-predictor-default.ai-models.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      http:
+        http2MaxRequests: 10000
+        maxRequestsPerConnection: 10000
+        idleTimeout: 30s
+        h2UpgradePolicy: UPGRADE
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 30s
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 5s
+      baseEjectionTime: 1m
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: textgen-vllm-vs
+  namespace: ai-models
+spec:
+  hosts:
+    - textgen-vllm-predictor-default.ai-models.svc.cluster.local
+  http:
+    - match:
+        - uri:
+            prefix: /v1/
+      timeout: 120s
+      retries:
+        attempts: 3
+        perTryTimeout: 40s
+        retryOn: 5xx,connect-failure,refused-stream
+      route:
+        - destination:
+            host: textgen-vllm-predictor-default.ai-models.svc.cluster.local
+            port:
+              number: 8000

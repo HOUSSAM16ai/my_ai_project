@@ -1,0 +1,214 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: router-service
+  namespace: ai-services
+spec:
+  replicas: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: router-service
+  
+  template:
+    metadata:
+      labels:
+        app: router-service
+        version: stable
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      serviceAccountName: router-service
+      containers:
+        - name: router-service
+          image: ghcr.io/houssam16ai/my_ai_project/router-service:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: VERSION
+              value: stable
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+  
+  # Progressive Delivery Strategy
+  strategy:
+    canary:
+      # Canary service for testing new version
+      canaryService: router-service-canary
+      # Stable service for production traffic
+      stableService: router-service
+      
+      # Traffic routing via Istio
+      trafficRouting:
+        istio:
+          virtualService:
+            name: router-service-vs
+            routes:
+              - primary
+      
+      # Analysis during rollout
+      analysis:
+        templates:
+          - templateName: success-rate
+          - templateName: latency
+        startingStep: 2
+        args:
+          - name: service-name
+            value: router-service
+      
+      # Canary steps
+      steps:
+        # Step 1: Deploy canary with 5% traffic
+        - setWeight: 5
+        - pause:
+            duration: 2m
+        
+        # Step 2: Increase to 10% if metrics look good
+        - setWeight: 10
+        - pause:
+            duration: 5m
+        
+        # Step 3: Increase to 25%
+        - setWeight: 25
+        - pause:
+            duration: 10m
+        
+        # Step 4: Increase to 50%
+        - setWeight: 50
+        - pause:
+            duration: 10m
+        
+        # Step 5: Increase to 75%
+        - setWeight: 75
+        - pause:
+            duration: 10m
+        
+        # Step 6: Full rollout
+        - setWeight: 100
+        
+      # Anti-affinity to spread pods
+      antiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: {}
+      
+      # Max surge and unavailable
+      maxSurge: "25%"
+      maxUnavailable: 0
+---
+# Analysis Template - Success Rate
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: ai-services
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: success-rate
+      interval: 1m
+      count: 5
+      successCondition: result >= 0.95
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.observability.svc.cluster.local:9090
+          query: |
+            sum(rate(
+              router_requests_total{
+                service="{{args.service-name}}",
+                status="success"
+              }[5m]
+            ))
+            /
+            sum(rate(
+              router_requests_total{
+                service="{{args.service-name}}"
+              }[5m]
+            ))
+---
+# Analysis Template - Latency
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: latency
+  namespace: ai-services
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: latency-p99
+      interval: 1m
+      count: 5
+      successCondition: result < 2
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.observability.svc.cluster.local:9090
+          query: |
+            histogram_quantile(0.99,
+              sum(rate(
+                router_request_duration_seconds_bucket{
+                  service="{{args.service-name}}"
+                }[5m]
+              )) by (le)
+            )
+---
+# Blue-Green Deployment Strategy (Alternative)
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: embeddings-service-bluegreen
+  namespace: ai-services
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: embeddings-service
+  
+  template:
+    metadata:
+      labels:
+        app: embeddings-service
+    spec:
+      containers:
+        - name: embeddings-service
+          image: ghcr.io/houssam16ai/my_ai_project/embeddings-svc:latest
+          ports:
+            - containerPort: 8000
+  
+  strategy:
+    blueGreen:
+      # Active service points to stable version
+      activeService: embeddings-service
+      # Preview service for testing
+      previewService: embeddings-service-preview
+      
+      # Auto promotion after successful tests
+      autoPromotionEnabled: false
+      autoPromotionSeconds: 300
+      
+      # Preview replicas
+      previewReplicaCount: 1
+      
+      # Scale down delay
+      scaleDownDelaySeconds: 30
+      scaleDownDelayRevisionLimit: 2
