@@ -33,6 +33,7 @@ def init_api(app):
         gateway_routes,
         observability_routes,
         security_routes,
+        stream_routes,
         subscription_routes,
     )
 
@@ -45,6 +46,10 @@ def init_api(app):
     app.register_blueprint(subscription_routes.api_bp)
     app.register_blueprint(developer_portal_routes.api_bp)
     app.register_blueprint(analytics_routes.api_bp)
+    
+    # Register SSE streaming routes
+    app.register_blueprint(stream_routes.bp)
+    app.logger.info("🌊 SSE Streaming routes registered at /api/v1/stream")
 
     # Register intelligent platform routes
     try:
@@ -59,5 +64,5 @@ def init_api(app):
     app.logger.info("📡 API endpoints available at /api, /api/v1, /api/v2")
     app.logger.info("📚 API Documentation available at /api/docs")
     app.logger.info(
-        "🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform"
+        "🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform, SSE Streaming"
     )
