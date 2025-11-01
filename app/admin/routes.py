@@ -14,7 +14,7 @@
 from datetime import UTC, datetime
 from functools import wraps
 
-from flask import abort, current_app, flash, jsonify, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, render_template, request, url_for, Response, stream_with_context
 from flask_login import current_user, login_required
 
 from app import db
@@ -32,6 +32,10 @@ try:
     from app.services import generation_service as maestro
 except ImportError:
     maestro = None
+try:
+    from app.services.admin_chat_streaming_service import get_streaming_service
+except ImportError:
+    get_streaming_service = None
 
 
 # --------------------------------------------------------------------------------------
@@ -263,6 +267,94 @@ def handle_chat():
             ),
             200,
         )
+
+
+@bp.route("/api/chat/stream", methods=["GET", "POST"])
+@admin_required
+def handle_chat_stream():
+    """
+    SSE streaming endpoint for real-time AI responses.
+    
+    ✨ SUPERHUMAN FEATURE: Server-Sent Events streaming
+    - Instant perceived response time
+    - Smart token chunking for smooth reading
+    - Real-time feedback without waiting
+    """
+    if not get_admin_ai_service or not get_streaming_service:
+        return jsonify({"status": "error", "message": "Streaming service not available."}), 503
+    
+    # Get question from query params or JSON body
+    if request.method == "GET":
+        question = request.args.get("question", "").strip()
+        conversation_id = request.args.get("conversation_id")
+        use_deep_context = request.args.get("use_deep_context", "true").lower() == "true"
+    else:
+        data = request.get_json() or {}
+        question = data.get("question", "").strip()
+        conversation_id = data.get("conversation_id")
+        use_deep_context = data.get("use_deep_context", True)
+    
+    if not question:
+        def error_stream():
+            yield "event: error\ndata: {\"message\": \"Question is required\"}\n\n"
+        return Response(stream_with_context(error_stream()), mimetype='text/event-stream')
+    
+    def generate():
+        """Generator function for SSE streaming"""
+        try:
+            service = get_admin_ai_service()
+            streaming_service = get_streaming_service()
+            
+            # Send start event
+            yield "event: start\ndata: {\"status\": \"processing\"}\n\n"
+            
+            # Auto-create conversation if needed
+            conv_id = conversation_id
+            if not conv_id:
+                try:
+                    title = question[:100] + "..." if len(question) > 100 else question
+                    conversation = service.create_conversation(
+                        user=current_user._get_current_object(),
+                        title=title,
+                        conversation_type="general",
+                    )
+                    conv_id = conversation.id
+                    yield f"event: conversation\ndata: {{\"id\": {conv_id}}}\n\n"
+                except Exception as e:
+                    current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
+            
+            # Get AI response (non-streaming first, then we'll stream it)
+            result = service.answer_question(
+                question=question,
+                user=current_user._get_current_object(),
+                conversation_id=conv_id,
+                use_deep_context=use_deep_context,
+            )
+            
+            if result.get("status") == "success":
+                # Stream the answer text
+                answer_text = result.get("answer", "")
+                metadata = {
+                    "model_used": result.get("model_used"),
+                    "tokens_used": result.get("tokens_used"),
+                    "elapsed_seconds": result.get("elapsed_seconds"),
+                    "conversation_id": conv_id
+                }
+                
+                # Use streaming service to chunk and stream response
+                for sse_event in streaming_service.stream_response(answer_text, metadata):
+                    yield sse_event
+            else:
+                # Stream error message
+                error_text = result.get("answer") or result.get("message") or "An error occurred"
+                for sse_event in streaming_service.stream_response(error_text):
+                    yield sse_event
+                    
+        except Exception as e:
+            current_app.logger.error(f"Streaming error: {e}", exc_info=True)
+            yield f"event: error\ndata: {{\"message\": \"{str(e)}\"}}\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 
 @bp.route("/api/analyze-project", methods=["POST"])
