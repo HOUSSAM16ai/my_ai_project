@@ -802,6 +802,9 @@ body {
   </div>
 </div>
 
+<!-- Include robust SSE consumer -->
+<script src="{{ url_for('static', filename='js/useSSE.js') }}"></script>
+
 <script>
 (function() {
   const STATE = {
@@ -917,83 +920,111 @@ body {
       let fullText = '';
       let metadata = {};
       
-      // Create EventSource for SSE streaming
+      // Use robust SSE consumer with adaptive typewriter
       const url = new URL("{{ url_for('admin.handle_chat_stream') }}", window.location.origin);
       url.searchParams.set('question', question);
       url.searchParams.set('conversation_id', STATE.currentConversationId || '');
       url.searchParams.set('use_deep_context', 'true');
       
-      const eventSource = new EventSource(url.toString());
+      // Create adaptive typewriter for smooth display
+      const typewriter = new AdaptiveTypewriter(contentDiv, {
+        baseDelayMs: 5,
+        punctuationDelayMultiplier: 8,
+        commaDelayMultiplier: 3,
+        charsPerStep: 3
+      });
       
-      eventSource.addEventListener('start', (e) => {
+      // Create SSE consumer with error recovery
+      const consumer = new SSEConsumer(url.toString(), {
+        reconnect: true,
+        maxReconnectAttempts: 3,
+        reconnectDelay: 1000,
+        onOpen: () => {
+          hideLoading();
+          console.log('🌊 SSE connection established');
+        },
+        onError: (err) => {
+          console.error('❌ SSE error:', err);
+          hideLoading();
+        },
+        onClose: () => {
+          console.log('🔌 SSE connection closed');
+        }
+      });
+      
+      // Handle streaming events
+      consumer.onStart(() => {
         hideLoading();
         console.log('🚀 Streaming started');
       });
       
-      eventSource.addEventListener('conversation', (e) => {
-        const data = JSON.parse(e.data);
+      consumer.onConversation((data) => {
         STATE.currentConversationId = data.id;
         console.log('📝 Conversation created:', data.id);
       });
       
-      eventSource.addEventListener('metadata', (e) => {
-        metadata = JSON.parse(e.data);
+      consumer.onMetadata((data) => {
+        metadata = data;
         console.log('📊 Metadata received:', metadata);
       });
       
-      eventSource.addEventListener('chunk', (e) => {
-        const data = JSON.parse(e.data);
+      consumer.onDelta((data) => {
         fullText += data.text;
         
-        // Update content with smooth typing effect
-        contentDiv.innerHTML = formatContent(fullText);
+        // Use adaptive typewriter for smooth display
+        typewriter.append(data.text);
+        
+        // Auto-scroll as content grows
         messagesArea.scrollTop = messagesArea.scrollHeight;
       });
       
-      eventSource.addEventListener('complete', (e) => {
-        eventSource.close();
+      consumer.onComplete((data) => {
         console.log('✅ Streaming complete');
         
-        // Add metadata footer
-        if (metadata.model_used || metadata.tokens_used) {
-          const metaHtml = `
-            <div class="message-meta">
-              ${metadata.model_used ? `Model: ${metadata.model_used}` : ''}
-              ${metadata.tokens_used ? ` • Tokens: ${metadata.tokens_used}` : ''}
-              ${metadata.elapsed_seconds ? ` • ${metadata.elapsed_seconds}s` : ''}
-            </div>
-          `;
-          contentDiv.innerHTML += metaHtml;
-        }
-        
-        // Update conversation ID if provided
-        if (metadata.conversation_id) {
-          STATE.currentConversationId = metadata.conversation_id;
-        }
-        
-        loadConversations();
+        // Wait for typewriter to finish, then add metadata
+        setTimeout(() => {
+          if (metadata.model_used || metadata.tokens_used) {
+            const metaHtml = `
+              <div class="message-meta">
+                ${metadata.model_used ? `Model: ${metadata.model_used}` : ''}
+                ${metadata.tokens_used ? ` • Tokens: ${metadata.tokens_used}` : ''}
+                ${metadata.elapsed_seconds ? ` • ${metadata.elapsed_seconds}s` : ''}
+              </div>
+            `;
+            contentDiv.innerHTML += metaHtml;
+          }
+          
+          // Update conversation ID if provided
+          if (metadata.conversation_id) {
+            STATE.currentConversationId = metadata.conversation_id;
+          }
+          
+          loadConversations();
+        }, 500);
       });
       
-      eventSource.addEventListener('error', (e) => {
-        eventSource.close();
+      consumer.onDone((data) => {
+        console.log('✅ Stream done:', data);
+        consumer.disconnect();
+      });
+      
+      consumer.onError((data) => {
         hideLoading();
-        
-        // Try to parse error message
-        let errorMsg = 'Stream connection error';
-        try {
-          const data = JSON.parse(e.data);
-          errorMsg = data.message || errorMsg;
-        } catch (err) {
-          // Use default message
-        }
-        
+        const errorMsg = data.message || 'Stream connection error';
         contentDiv.innerHTML = `<p style="color: var(--cf-danger);">❌ ${errorMsg}</p>`;
         console.error('❌ Streaming error:', errorMsg);
       });
       
+      consumer.onPing(() => {
+        console.log('💓 Heartbeat received');
+      });
+      
+      // Start the connection
+      consumer.connect();
+      
       // Cleanup on page unload
       window.addEventListener('beforeunload', () => {
-        eventSource.close();
+        consumer.disconnect();
       });
       
     } catch (error) {
