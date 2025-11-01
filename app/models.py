@@ -64,6 +64,9 @@
 
 from __future__ import annotations
 
+# Version information for conftest.py version checking
+__version__ = "14.1.0"
+
 import enum
 import hashlib
 from datetime import UTC, datetime, timedelta
