@@ -1,0 +1,241 @@
+---
+# ==========================================
+# === Semgrep Custom Rules Configuration ===
+# ==========================================
+# Enterprise-grade security rules with smart severity levels
+# Following best practices from Google, Facebook, Microsoft, OpenAI
+
+rules:
+  # =========================================
+  # 1. MD5 Hash Usage - Context-Aware Rules
+  # =========================================
+  - id: ignore-md5-in-routing
+    pattern: hashlib.md5(...)
+    paths:
+      include:
+        - /app/services/api_gateway_deployment.py
+        - /app/services/api_observability_service.py
+        - /apps/router-service/main.py
+        - /apps/embeddings-svc/main.py
+    message: |
+      MD5 is used for non-cryptographic purposes (routing, request IDs).
+      This is acceptable as it's not used for password hashing or security.
+    severity: INFO
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [audit]
+
+  # =========================================
+  # 2. CORS Configuration - Development vs Production
+  # =========================================
+  - id: ignore-cors-dev-wildcard
+    patterns:
+      - pattern: allow_origins=["*"]
+      - pattern-not-inside: |
+          if DEBUG:
+            ...
+    paths:
+      include:
+        - "**/apps/*/main.py"
+        - "**/app/middleware/cors_config.py"
+    message: |
+      CORS wildcard (*) detected. This is acceptable in development but should
+      be restricted in production. Consider using environment-based configuration.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python, fastapi, flask]
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [audit]
+
+  # =========================================
+  # 3. SQL Injection - ORM Usage
+  # =========================================
+  - id: safe-sqlalchemy-usage
+    pattern: |
+      db.session.query(...)
+    message: |
+      Using SQLAlchemy ORM which provides protection against SQL injection.
+      Ensure you're not using raw SQL with user input.
+    severity: INFO
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python, sqlalchemy]
+      cwe: "CWE-89: SQL Injection"
+      confidence: HIGH
+      likelihood: LOW
+      impact: LOW
+      subcategory: [audit]
+
+  # =========================================
+  # 4. Environment Variable Usage
+  # =========================================
+  - id: check-env-var-defaults
+    patterns:
+      - pattern: os.getenv($KEY, $DEFAULT)
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: .*(SECRET|PASSWORD|KEY|TOKEN|API_KEY).*
+    message: |
+      Sensitive environment variable with a default value detected.
+      Consider not providing defaults for secrets.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [audit]
+
+  # =========================================
+  # 5. Logging Sensitive Data
+  # =========================================
+  - id: avoid-logging-secrets
+    patterns:
+      - pattern-either:
+          - pattern: logging.info(..., $VAR, ...)
+          - pattern: logging.debug(..., $VAR, ...)
+          - pattern: logging.warning(..., $VAR, ...)
+          - pattern: logging.error(..., $VAR, ...)
+          - pattern: print(..., $VAR, ...)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: .*(password|secret|token|api_key|private_key).*
+    message: |
+      Potential logging of sensitive data detected.
+      Ensure secrets are not logged in production.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [audit]
+
+  # =========================================
+  # 6. Exception Handling - Avoid Bare Except
+  # =========================================
+  - id: avoid-bare-except-in-critical
+    pattern: |
+      try:
+        ...
+      except:
+        ...
+    paths:
+      include:
+        - /app/services/*.py
+        - /app/api/*.py
+    message: |
+      Bare except clause detected in critical code.
+      Consider catching specific exceptions for better error handling.
+    severity: INFO
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-703: Improper Check or Handling of Exceptional Conditions"
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [audit]
+
+  # =========================================
+  # 7. JWT Token Handling
+  # =========================================
+  - id: safe-jwt-decode
+    patterns:
+      - pattern: jwt.decode($TOKEN, ..., verify=False)
+    message: |
+      JWT token verification is disabled! This is a critical security issue.
+      Always verify JWT tokens in production.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python, jwt]
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+
+  # =========================================
+  # 8. Pickle Deserialization
+  # =========================================
+  - id: avoid-pickle-untrusted-data
+    patterns:
+      - pattern: pickle.loads($DATA)
+      - pattern-not-inside: |
+          # Safe pickle usage
+          ...
+    message: |
+      Pickle deserialization from untrusted data can lead to code execution.
+      Use JSON or other safe serialization formats instead.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+
+  # =========================================
+  # 9. eval() and exec() Usage
+  # =========================================
+  - id: avoid-eval-exec
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+    message: |
+      Use of eval() or exec() detected. This can lead to code injection
+      if used with user input. Avoid if possible.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python]
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+
+  # =========================================
+  # 10. Flask Debug Mode
+  # =========================================
+  - id: flask-debug-production
+    patterns:
+      - pattern: app.run(..., debug=True, ...)
+    message: |
+      Flask debug mode should never be enabled in production.
+      Use environment variables to control debug mode.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      technology: [python, flask]
+      cwe: "CWE-489: Active Debug Code"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory: [vuln]

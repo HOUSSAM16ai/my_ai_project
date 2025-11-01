@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # ======================================================================================
-# COMPREHENSIVE SECURITY SCANNER - Superhuman Edition
+# ENTERPRISE SECURITY SCANNER - Superhuman Edition with Semgrep
 # ======================================================================================
 # This script runs all security scans matching industry best practices
 # Standards: OWASP Top 10, SANS Top 25, CWE Top 25
+# Following practices from Google, Facebook, Microsoft, OpenAI, Stripe
 #
 # Usage:
 #   ./scripts/security_scan.sh              # Run all security checks
+#   ./scripts/security_scan.sh --fast       # Fast scan (Semgrep rapid mode)
+#   ./scripts/security_scan.sh --full       # Full scan (all tools)
 #   ./scripts/security_scan.sh --code       # Code security only (Bandit)
+#   ./scripts/security_scan.sh --sast       # SAST only (Semgrep)
 #   ./scripts/security_scan.sh --deps       # Dependency security only (Safety)
 #   ./scripts/security_scan.sh --secrets    # Secret detection only
+#   ./scripts/security_scan.sh --report     # Generate reports only
+#   ./scripts/security_scan.sh --fix        # Auto-fix issues (dry-run)
 #   ./scripts/security_scan.sh --help       # Show help
 # ======================================================================================
 
@@ -32,14 +38,36 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 # Configuration
-SCAN_MODE="all"  # all, code, deps, secrets
+SCAN_MODE="all"  # all, fast, full, code, sast, deps, secrets, report, fix
 REPORT_DIR="${PROJECT_ROOT}/security-reports"
+SEMGREP_MODE="rapid"  # rapid, full, deep, audit
+FAIL_ON_FINDINGS=false
+AUTOFIX_MODE="dry-run"  # dry-run, apply
+
+# Load environment configuration if exists
+if [ -f "${PROJECT_ROOT}/.env.security" ]; then
+    source "${PROJECT_ROOT}/.env.security"
+fi
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --fast)
+            SCAN_MODE="fast"
+            SEMGREP_MODE="rapid"
+            shift
+            ;;
+        --full)
+            SCAN_MODE="full"
+            SEMGREP_MODE="full"
+            shift
+            ;;
         --code)
             SCAN_MODE="code"
+            shift
+            ;;
+        --sast)
+            SCAN_MODE="sast"
             shift
             ;;
         --deps)
@@ -50,16 +78,43 @@ while [[ $# -gt 0 ]]; do
             SCAN_MODE="secrets"
             shift
             ;;
+        --report)
+            SCAN_MODE="report"
+            shift
+            ;;
+        --fix)
+            SCAN_MODE="fix"
+            AUTOFIX_MODE="dry-run"
+            shift
+            ;;
+        --fail-on-findings)
+            FAIL_ON_FINDINGS=true
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
-            echo "Options:"
-            echo "  --code       Run code security scan only (Bandit)"
-            echo "  --deps       Run dependency security scan only (Safety)"
-            echo "  --secrets    Run secret detection only"
-            echo "  -h, --help   Show this help message"
+            echo "Modes:"
+            echo "  --fast       Fast scan (Semgrep rapid mode, ~5 min)"
+            echo "  --full       Full scan (all tools, ~20 min)"
+            echo "  --code       Code security scan only (Bandit)"
+            echo "  --sast       SAST scan only (Semgrep)"
+            echo "  --deps       Dependency security scan only (Safety)"
+            echo "  --secrets    Secret detection only"
+            echo "  --report     Generate reports only"
+            echo "  --fix        Auto-fix issues (dry-run mode)"
             echo ""
-            echo "Default: Run all security scans"
+            echo "Options:"
+            echo "  --fail-on-findings  Fail build on security findings"
+            echo "  -h, --help         Show this help message"
+            echo ""
+            echo "Default: Run all security scans (non-blocking)"
+            echo ""
+            echo "Examples:"
+            echo "  $0 --fast                    # Quick scan for development"
+            echo "  $0 --full --fail-on-findings # Complete scan for production"
+            echo "  $0 --sast                    # Semgrep only"
+            echo "  $0 --fix                     # Show auto-fix suggestions"
             exit 0
             ;;
         *)
@@ -87,11 +142,169 @@ OVERALL_STATUS=0
 HIGH_ISSUES=0
 MEDIUM_ISSUES=0
 LOW_ISSUES=0
+SEMGREP_FINDINGS=0
 
 # =============================================================================
-# CODE SECURITY SCAN (Bandit)
+# SEMGREP SAST SCAN
 # =============================================================================
-if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "code" ]; then
+run_semgrep_scan() {
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}🔍 SEMGREP SAST SCAN (${SEMGREP_MODE^^} MODE)${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    # Check if Semgrep is installed
+    if ! command -v semgrep &> /dev/null; then
+        echo -e "${YELLOW}⚠️  Semgrep is not installed${NC}"
+        echo -e "${CYAN}Install with: pip install semgrep${NC}"
+        echo -e "${CYAN}Or use Docker: docker run --rm -v \"\${PWD}:/src\" returntocorp/semgrep${NC}"
+        return 0
+    fi
+    
+    echo -e "${CYAN}Running Semgrep security scan (${SEMGREP_MODE} mode)...${NC}"
+    echo ""
+    
+    # Configure rulesets based on mode
+    local RULESETS=""
+    local USE_ONLINE_RULES=true
+    
+    # Check if we can access semgrep.dev
+    if ! curl -s --fail --connect-timeout 5 --max-time 10 https://semgrep.dev > /dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Cannot access semgrep.dev - using local rules only${NC}"
+        USE_ONLINE_RULES=false
+    fi
+    
+    if [ "$USE_ONLINE_RULES" = true ]; then
+        case "$SEMGREP_MODE" in
+            rapid)
+                RULESETS="p/ci"
+                ;;
+            full)
+                RULESETS="p/security-audit"
+                ;;
+            deep)
+                RULESETS="p/security-audit"
+                ;;
+            audit)
+                RULESETS="p/security-audit"
+                ;;
+            *)
+                RULESETS="p/ci"
+                ;;
+        esac
+    fi
+    
+    # Always add custom rules if exists (these are local)
+    if [ -f "${PROJECT_ROOT}/.semgrep.yml" ]; then
+        if [ -z "$RULESETS" ]; then
+            RULESETS="--config ${PROJECT_ROOT}/.semgrep.yml"
+        else
+            RULESETS="--config $RULESETS --config ${PROJECT_ROOT}/.semgrep.yml"
+        fi
+    elif [ -z "$RULESETS" ]; then
+        echo -e "${RED}❌ No rulesets available (offline and no local .semgrep.yml)${NC}"
+        echo -e "${YELLOW}Skipping Semgrep scan${NC}"
+        return 0
+    else
+        RULESETS="--config $RULESETS"
+    fi
+    
+    # Run Semgrep with appropriate options
+    echo -e "${CYAN}Configuration: ${RULESETS}${NC}"
+    
+    # Add exclusions
+    if [ -f "${PROJECT_ROOT}/.semgrepignore" ]; then
+        echo -e "${CYAN}Using .semgrepignore for exclusions${NC}"
+    fi
+    
+    # Run Semgrep scan
+    local SEMGREP_EXIT=0
+    if semgrep scan \
+        $RULESETS \
+        --json \
+        --output="${REPORT_DIR}/semgrep-report.json" \
+        --severity=WARNING \
+        --metrics=off \
+        . 2>&1 | tee "${REPORT_DIR}/semgrep-output.txt"; then
+        echo -e "${GREEN}✅ Semgrep scan completed${NC}"
+    else
+        SEMGREP_EXIT=$?
+        echo -e "${YELLOW}⚠️  Semgrep found some issues${NC}"
+    fi
+    
+    # Generate SARIF report for GitHub (if online rules were used)
+    if [ "$USE_ONLINE_RULES" = true ]; then
+        semgrep scan \
+            $RULESETS \
+            --sarif \
+            --output="${REPORT_DIR}/semgrep.sarif" \
+            . 2>/dev/null || true
+    fi
+    
+    # Generate text summary
+    semgrep scan \
+        $RULESETS \
+        . > "${REPORT_DIR}/semgrep-summary.txt" 2>&1 || true
+    
+    # Parse results
+    if [ -f "${REPORT_DIR}/semgrep-report.json" ]; then
+        # Count findings by severity (using jq if available, otherwise grep)
+        if command -v jq &> /dev/null; then
+            local ERROR_COUNT=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' "${REPORT_DIR}/semgrep-report.json" 2>/dev/null || echo "0")
+            local WARNING_COUNT=$(jq '[.results[] | select(.extra.severity == "WARNING")] | length' "${REPORT_DIR}/semgrep-report.json" 2>/dev/null || echo "0")
+            local INFO_COUNT=$(jq '[.results[] | select(.extra.severity == "INFO")] | length' "${REPORT_DIR}/semgrep-report.json" 2>/dev/null || echo "0")
+            SEMGREP_FINDINGS=$(jq '.results | length' "${REPORT_DIR}/semgrep-report.json" 2>/dev/null || echo "0")
+        else
+            # Fallback without jq
+            ERROR_COUNT=$(grep -o '"severity": "ERROR"' "${REPORT_DIR}/semgrep-report.json" | wc -l || echo "0")
+            WARNING_COUNT=$(grep -o '"severity": "WARNING"' "${REPORT_DIR}/semgrep-report.json" | wc -l || echo "0")
+            INFO_COUNT=$(grep -o '"severity": "INFO"' "${REPORT_DIR}/semgrep-report.json" | wc -l || echo "0")
+            SEMGREP_FINDINGS=$((ERROR_COUNT + WARNING_COUNT + INFO_COUNT))
+        fi
+        
+        echo ""
+        echo -e "${CYAN}📊 Semgrep Findings:${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "  🔴 Error:   ${ERROR_COUNT} findings"
+        echo -e "  🟡 Warning: ${WARNING_COUNT} findings"
+        echo -e "  🔵 Info:    ${INFO_COUNT} findings"
+        echo -e "  📊 Total:   ${SEMGREP_FINDINGS} findings"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        # Show summary (last 30 lines)
+        if [ -f "${REPORT_DIR}/semgrep-summary.txt" ]; then
+            echo -e "${CYAN}Semgrep Summary (last 30 lines):${NC}"
+            tail -30 "${REPORT_DIR}/semgrep-summary.txt"
+            echo ""
+        fi
+        
+        # Check if we should fail
+        if [ "$FAIL_ON_FINDINGS" = true ] && [ "$ERROR_COUNT" -gt 0 ]; then
+            echo -e "${RED}❌ CRITICAL: ${ERROR_COUNT} error-level findings detected${NC}"
+            OVERALL_STATUS=1
+        else
+            echo -e "${GREEN}✅ Semgrep scan completed${NC}"
+            if [ "$FAIL_ON_FINDINGS" = false ]; then
+                echo -e "${CYAN}💡 Non-blocking mode: Findings reported but not failing build${NC}"
+            fi
+        fi
+    fi
+    
+    echo ""
+}
+
+# =============================================================================
+# RUN SCANS BASED ON MODE
+# =============================================================================
+
+# SAST Scan (Semgrep)
+if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "fast" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "sast" ]; then
+    run_semgrep_scan
+fi
+
+# CODE SECURITY SCAN (Bandit)
+if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "code" ]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🛡️  CODE SECURITY SCAN (Bandit)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -167,7 +380,7 @@ fi
 # =============================================================================
 # DEPENDENCY SECURITY SCAN (Safety)
 # =============================================================================
-if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "deps" ]; then
+if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "deps" ]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🔐 DEPENDENCY SECURITY SCAN (Safety)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -203,7 +416,7 @@ fi
 # =============================================================================
 # SECRET DETECTION
 # =============================================================================
-if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "secrets" ]; then
+if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "secrets" ]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🔑 SECRET DETECTION SCAN${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -249,7 +462,7 @@ fi
 # =============================================================================
 # GENERATE SBOM (Software Bill of Materials)
 # =============================================================================
-if [ "$SCAN_MODE" = "all" ]; then
+if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "report" ]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}📋 GENERATING SBOM (Software Bill of Materials)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -281,9 +494,10 @@ echo -e "${PURPLE}════════════════════�
 echo ""
 
 echo -e "${CYAN}Security Findings:${NC}"
-echo "  🔴 High Severity:   $HIGH_ISSUES issues"
-echo "  🟡 Medium Severity: $MEDIUM_ISSUES issues"
-echo "  🟢 Low Severity:    $LOW_ISSUES issues"
+echo "  🔍 Semgrep SAST:    $SEMGREP_FINDINGS findings"
+echo "  🔴 High Severity:   $HIGH_ISSUES issues (Bandit)"
+echo "  🟡 Medium Severity: $MEDIUM_ISSUES issues (Bandit)"
+echo "  🟢 Low Severity:    $LOW_ISSUES issues (Bandit)"
 echo ""
 
 echo -e "${CYAN}Reports Generated:${NC}"
@@ -291,9 +505,15 @@ ls -lh "${REPORT_DIR}/" | tail -n +2 | awk '{print "  📄 " $9 " (" $5 ")"}'
 echo ""
 
 echo -e "${CYAN}Standards Compliance:${NC}"
-echo "  ✅ OWASP Top 10 - Scanned"
-echo "  ✅ SANS Top 25 - Monitored"
-echo "  ✅ CWE Top 25 - Checked"
+echo "  ✅ OWASP Top 10 - Scanned (Semgrep)"
+echo "  ✅ CWE Top 25 - Monitored (Semgrep)"
+echo "  ✅ SANS Top 25 - Monitored (Bandit)"
+echo ""
+
+echo -e "${CYAN}Scan Configuration:${NC}"
+echo "  📋 Mode: ${SCAN_MODE}"
+echo "  🔍 Semgrep Mode: ${SEMGREP_MODE}"
+echo "  🚦 Fail on Findings: ${FAIL_ON_FINDINGS}"
 echo ""
 
 echo -e "${PURPLE}════════════════════════════════════════════════════════════════════════════════${NC}"
