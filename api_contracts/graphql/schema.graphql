@@ -1,0 +1,612 @@
+# =============================================================================
+# CogniForge GraphQL Schema
+# =============================================================================
+# Flexible query interface for web and mobile clients
+# نظام استعلام مرن للواجهات الويب والموبايل
+
+"""
+الحساب - Account entity
+"""
+type Account {
+  """معرف الحساب الفريد"""
+  id: ID!
+  
+  """اسم الحساب"""
+  name: String!
+  
+  """نوع الحساب"""
+  type: AccountType!
+  
+  """حالة الحساب"""
+  status: AccountStatus!
+  
+  """الرصيد بأصغر وحدة عملة"""
+  balance: Int!
+  
+  """رمز العملة ISO 4217"""
+  currency: String!
+  
+  """البيانات الوصفية المخصصة"""
+  metadata: JSON
+  
+  """تاريخ الإنشاء"""
+  createdAt: DateTime!
+  
+  """تاريخ آخر تحديث"""
+  updatedAt: DateTime!
+  
+  """المعاملات المرتبطة بهذا الحساب"""
+  transactions(
+    first: Int = 20
+    after: String
+    before: String
+    filter: TransactionFilter
+  ): TransactionConnection!
+  
+  """المدفوعات الصادرة من هذا الحساب"""
+  outgoingPayments(
+    first: Int = 20
+    after: String
+  ): PaymentConnection!
+  
+  """المدفوعات الواردة لهذا الحساب"""
+  incomingPayments(
+    first: Int = 20
+    after: String
+  ): PaymentConnection!
+}
+
+"""
+أنواع الحساب - Account types
+"""
+enum AccountType {
+  """حساب فردي"""
+  INDIVIDUAL
+  
+  """حساب تجاري"""
+  BUSINESS
+}
+
+"""
+حالات الحساب - Account statuses
+"""
+enum AccountStatus {
+  """نشط"""
+  ACTIVE
+  
+  """معلق"""
+  SUSPENDED
+  
+  """مغلق"""
+  CLOSED
+}
+
+"""
+الدفعة - Payment entity
+"""
+type Payment {
+  """معرف الدفعة"""
+  id: ID!
+  
+  """حالة الدفعة"""
+  status: PaymentStatus!
+  
+  """المبلغ بأصغر وحدة عملة"""
+  amount: Int!
+  
+  """العملة"""
+  currency: String!
+  
+  """الحساب المصدر"""
+  sourceAccount: Account
+  
+  """الحساب المستهدف"""
+  destinationAccount: Account!
+  
+  """الوصف"""
+  description: String
+  
+  """البيانات الوصفية"""
+  metadata: JSON
+  
+  """تاريخ الإنشاء"""
+  createdAt: DateTime!
+  
+  """تاريخ التحديث"""
+  updatedAt: DateTime!
+  
+  """تاريخ التسوية"""
+  settledAt: DateTime
+}
+
+"""
+حالات الدفعة - Payment statuses
+"""
+enum PaymentStatus {
+  """قيد الانتظار"""
+  PENDING
+  
+  """قيد المعالجة"""
+  PROCESSING
+  
+  """تمت التسوية"""
+  SETTLED
+  
+  """فشلت"""
+  FAILED
+  
+  """ملغاة"""
+  CANCELLED
+}
+
+"""
+المعاملة - Transaction entity
+"""
+type Transaction {
+  """معرف المعاملة"""
+  id: ID!
+  
+  """نوع المعاملة"""
+  type: TransactionType!
+  
+  """المبلغ"""
+  amount: Int!
+  
+  """العملة"""
+  currency: String!
+  
+  """الحساب"""
+  account: Account!
+  
+  """الوصف"""
+  description: String
+  
+  """التاريخ"""
+  timestamp: DateTime!
+}
+
+"""
+أنواع المعاملات - Transaction types
+"""
+enum TransactionType {
+  """إيداع"""
+  DEPOSIT
+  
+  """سحب"""
+  WITHDRAWAL
+  
+  """تحويل وارد"""
+  TRANSFER_IN
+  
+  """تحويل صادر"""
+  TRANSFER_OUT
+}
+
+"""
+المستخدم - User entity
+"""
+type User {
+  """معرف المستخدم"""
+  id: ID!
+  
+  """البريد الإلكتروني"""
+  email: String!
+  
+  """الاسم"""
+  name: String!
+  
+  """تم التحقق"""
+  verified: Boolean!
+  
+  """الحسابات المملوكة"""
+  accounts(
+    first: Int = 20
+    after: String
+    filter: AccountFilter
+  ): AccountConnection!
+  
+  """تاريخ التسجيل"""
+  registeredAt: DateTime!
+}
+
+# =============================================================================
+# Connections & Edges (Relay-style pagination)
+# =============================================================================
+
+"""
+اتصال الحسابات - Account connection for pagination
+"""
+type AccountConnection {
+  """الحواف"""
+  edges: [AccountEdge!]!
+  
+  """معلومات الصفحة"""
+  pageInfo: PageInfo!
+  
+  """إجمالي العدد"""
+  totalCount: Int
+}
+
+"""
+حافة الحساب - Account edge
+"""
+type AccountEdge {
+  """المؤشر"""
+  cursor: String!
+  
+  """العقدة"""
+  node: Account!
+}
+
+"""
+اتصال المدفوعات - Payment connection
+"""
+type PaymentConnection {
+  edges: [PaymentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+type PaymentEdge {
+  cursor: String!
+  node: Payment!
+}
+
+"""
+اتصال المعاملات - Transaction connection
+"""
+type TransactionConnection {
+  edges: [TransactionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+type TransactionEdge {
+  cursor: String!
+  node: Transaction!
+}
+
+"""
+معلومات الصفحة - Page information
+"""
+type PageInfo {
+  """هل توجد صفحة تالية"""
+  hasNextPage: Boolean!
+  
+  """هل توجد صفحة سابقة"""
+  hasPreviousPage: Boolean!
+  
+  """مؤشر البداية"""
+  startCursor: String
+  
+  """مؤشر النهاية"""
+  endCursor: String
+}
+
+# =============================================================================
+# Filters - المرشحات
+# =============================================================================
+
+"""
+مرشح الحساب - Account filter
+"""
+input AccountFilter {
+  """حسب الحالة"""
+  status: AccountStatus
+  
+  """حسب النوع"""
+  type: AccountType
+  
+  """حسب العملة"""
+  currency: String
+  
+  """تم الإنشاء بعد"""
+  createdAfter: DateTime
+  
+  """تم الإنشاء قبل"""
+  createdBefore: DateTime
+}
+
+"""
+مرشح المعاملة - Transaction filter
+"""
+input TransactionFilter {
+  """حسب النوع"""
+  type: TransactionType
+  
+  """المبلغ الأدنى"""
+  minAmount: Int
+  
+  """المبلغ الأقصى"""
+  maxAmount: Int
+  
+  """بعد التاريخ"""
+  after: DateTime
+  
+  """قبل التاريخ"""
+  before: DateTime
+}
+
+# =============================================================================
+# Inputs - المدخلات
+# =============================================================================
+
+"""
+مدخلات إنشاء حساب - Create account input
+"""
+input CreateAccountInput {
+  """الاسم"""
+  name: String!
+  
+  """النوع"""
+  type: AccountType = INDIVIDUAL
+  
+  """العملة"""
+  currency: String!
+  
+  """البيانات الوصفية"""
+  metadata: JSON
+  
+  """مفتاح التماثل"""
+  idempotencyKey: String!
+}
+
+"""
+مدخلات تحديث حساب - Update account input
+"""
+input UpdateAccountInput {
+  """الاسم"""
+  name: String
+  
+  """الحالة"""
+  status: AccountStatus
+  
+  """البيانات الوصفية"""
+  metadata: JSON
+}
+
+"""
+مدخلات إنشاء دفعة - Create payment input
+"""
+input CreatePaymentInput {
+  """المبلغ"""
+  amount: Int!
+  
+  """العملة"""
+  currency: String!
+  
+  """معرف الحساب المصدر"""
+  sourceAccountId: ID
+  
+  """معرف الحساب المستهدف"""
+  destinationAccountId: ID!
+  
+  """الوصف"""
+  description: String
+  
+  """البيانات الوصفية"""
+  metadata: JSON
+  
+  """مفتاح التماثل"""
+  idempotencyKey: String!
+}
+
+# =============================================================================
+# Query Root - جذر الاستعلامات
+# =============================================================================
+
+"""
+الاستعلامات - Root query type
+"""
+type Query {
+  """المستخدم الحالي"""
+  me: User!
+  
+  """الحصول على حساب بالمعرف"""
+  account(id: ID!): Account
+  
+  """قائمة الحسابات"""
+  accounts(
+    first: Int = 20
+    after: String
+    before: String
+    filter: AccountFilter
+  ): AccountConnection!
+  
+  """الحصول على دفعة بالمعرف"""
+  payment(id: ID!): Payment
+  
+  """قائمة المدفوعات"""
+  payments(
+    first: Int = 20
+    after: String
+    before: String
+  ): PaymentConnection!
+  
+  """البحث عن حسابات"""
+  searchAccounts(
+    query: String!
+    first: Int = 10
+  ): [Account!]!
+  
+  """إحصائيات الحساب"""
+  accountStats(accountId: ID!): AccountStats!
+}
+
+"""
+إحصائيات الحساب - Account statistics
+"""
+type AccountStats {
+  """إجمالي المعاملات"""
+  totalTransactions: Int!
+  
+  """إجمالي الإيداعات"""
+  totalDeposits: Int!
+  
+  """إجمالي السحوبات"""
+  totalWithdrawals: Int!
+  
+  """الرصيد الحالي"""
+  currentBalance: Int!
+  
+  """متوسط قيمة المعاملة"""
+  averageTransactionValue: Float!
+}
+
+# =============================================================================
+# Mutation Root - جذر التعديلات
+# =============================================================================
+
+"""
+التعديلات - Root mutation type
+"""
+type Mutation {
+  """إنشاء حساب"""
+  createAccount(input: CreateAccountInput!): CreateAccountPayload!
+  
+  """تحديث حساب"""
+  updateAccount(id: ID!, input: UpdateAccountInput!): UpdateAccountPayload!
+  
+  """حذف حساب"""
+  deleteAccount(id: ID!): DeleteAccountPayload!
+  
+  """إنشاء دفعة"""
+  createPayment(input: CreatePaymentInput!): CreatePaymentPayload!
+  
+  """إلغاء دفعة"""
+  cancelPayment(id: ID!): CancelPaymentPayload!
+}
+
+"""
+نتيجة إنشاء حساب - Create account payload
+"""
+type CreateAccountPayload {
+  """الحساب المُنشأ"""
+  account: Account!
+  
+  """رمز النجاح"""
+  success: Boolean!
+  
+  """الأخطاء إن وجدت"""
+  errors: [UserError!]
+}
+
+"""
+نتيجة تحديث حساب - Update account payload
+"""
+type UpdateAccountPayload {
+  account: Account!
+  success: Boolean!
+  errors: [UserError!]
+}
+
+"""
+نتيجة حذف حساب - Delete account payload
+"""
+type DeleteAccountPayload {
+  """المعرف المحذوف"""
+  deletedId: ID!
+  success: Boolean!
+  errors: [UserError!]
+}
+
+"""
+نتيجة إنشاء دفعة - Create payment payload
+"""
+type CreatePaymentPayload {
+  payment: Payment!
+  success: Boolean!
+  errors: [UserError!]
+}
+
+"""
+نتيجة إلغاء دفعة - Cancel payment payload
+"""
+type CancelPaymentPayload {
+  payment: Payment!
+  success: Boolean!
+  errors: [UserError!]
+}
+
+"""
+خطأ المستخدم - User-facing error
+"""
+type UserError {
+  """رسالة الخطأ"""
+  message: String!
+  
+  """الحقل المرتبط بالخطأ"""
+  field: String
+  
+  """رمز الخطأ"""
+  code: String!
+}
+
+# =============================================================================
+# Subscription Root - جذر الاشتراكات
+# =============================================================================
+
+"""
+الاشتراكات - Root subscription type للتحديثات الفورية
+"""
+type Subscription {
+  """الاشتراك في تحديثات حساب"""
+  accountUpdated(accountId: ID!): Account!
+  
+  """الاشتراك في دفعات جديدة"""
+  paymentCreated(accountId: ID!): Payment!
+  
+  """الاشتراك في تحديثات الدفعة"""
+  paymentStatusChanged(paymentId: ID!): Payment!
+}
+
+# =============================================================================
+# Scalar Types - الأنواع القياسية المخصصة
+# =============================================================================
+
+"""
+التاريخ والوقت - DateTime scalar (ISO 8601)
+"""
+scalar DateTime
+
+"""
+JSON - JSON scalar for flexible metadata
+"""
+scalar JSON
+
+# =============================================================================
+# Directives - التوجيهات
+# =============================================================================
+
+"""
+يتطلب مصادقة - Requires authentication
+"""
+directive @auth on FIELD_DEFINITION
+
+"""
+يتطلب نطاق محدد - Requires specific scope
+"""
+directive @requiresScope(scope: String!) on FIELD_DEFINITION
+
+"""
+حد المعدل - Rate limiting
+"""
+directive @rateLimit(limit: Int!, window: String!) on FIELD_DEFINITION
+
+"""
+قديم - Deprecated field
+"""
+directive @deprecated(
+  reason: String = "This field is deprecated"
+  removedIn: String
+) on FIELD_DEFINITION | ENUM_VALUE
+
+# =============================================================================
+# Schema Definition
+# =============================================================================
+
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}

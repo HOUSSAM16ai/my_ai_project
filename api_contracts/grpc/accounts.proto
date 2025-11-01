@@ -1,0 +1,439 @@
+// =============================================================================
+// CogniForge gRPC Protocol Buffers
+// =============================================================================
+// High-performance binary protocol for internal service communication
+// بروتوكول ثنائي عالي الأداء للاتصالات الداخلية بين الخدمات
+
+syntax = "proto3";
+
+package cogniforge.accounts.v1;
+
+option go_package = "github.com/cogniforge/api/gen/go/accounts/v1;accountsv1";
+option java_multiple_files = true;
+option java_package = "com.cogniforge.api.accounts.v1";
+option java_outer_classname = "AccountsProto";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// =============================================================================
+// Account Service - خدمة الحسابات
+// =============================================================================
+
+// AccountService provides account management operations
+// خدمة إدارة الحسابات مع عمليات CRUD
+service AccountService {
+  // إنشاء حساب جديد - Create a new account
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  
+  // الحصول على حساب - Get an account by ID
+  rpc GetAccount(GetAccountRequest) returns (Account);
+  
+  // قائمة الحسابات - List accounts with pagination
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+  
+  // تحديث حساب - Update an account
+  rpc UpdateAccount(UpdateAccountRequest) returns (Account);
+  
+  // حذف حساب - Delete an account
+  rpc DeleteAccount(DeleteAccountRequest) returns (google.protobuf.Empty);
+  
+  // تعليق حساب - Suspend an account
+  rpc SuspendAccount(SuspendAccountRequest) returns (Account);
+  
+  // تفعيل حساب - Activate a suspended account
+  rpc ActivateAccount(ActivateAccountRequest) returns (Account);
+  
+  // إحصائيات الحساب - Get account statistics
+  rpc GetAccountStats(GetAccountStatsRequest) returns (AccountStats);
+  
+  // دفق الأحداث - Stream account events (server streaming)
+  rpc StreamAccountEvents(StreamAccountEventsRequest) returns (stream AccountEvent);
+}
+
+// =============================================================================
+// Messages - الرسائل
+// =============================================================================
+
+// Account represents a user account
+// الحساب
+message Account {
+  // معرف الحساب الفريد
+  string id = 1;
+  
+  // اسم الحساب
+  string name = 2;
+  
+  // نوع الحساب
+  AccountType type = 3;
+  
+  // حالة الحساب
+  AccountStatus status = 4;
+  
+  // الرصيد بأصغر وحدة عملة
+  int64 balance = 5;
+  
+  // رمز العملة ISO 4217
+  string currency = 6;
+  
+  // البيانات الوصفية
+  map<string, string> metadata = 7;
+  
+  // تاريخ الإنشاء
+  google.protobuf.Timestamp created_at = 8;
+  
+  // تاريخ آخر تحديث
+  google.protobuf.Timestamp updated_at = 9;
+  
+  // الإصدار (للتحكم في التزامن المتفائل)
+  int64 version = 10;
+}
+
+// AccountType defines the type of account
+// نوع الحساب
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_INDIVIDUAL = 1;  // حساب فردي
+  ACCOUNT_TYPE_BUSINESS = 2;    // حساب تجاري
+}
+
+// AccountStatus defines the status of an account
+// حالة الحساب
+enum AccountStatus {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_STATUS_ACTIVE = 1;      // نشط
+  ACCOUNT_STATUS_SUSPENDED = 2;   // معلق
+  ACCOUNT_STATUS_CLOSED = 3;      // مغلق
+}
+
+// CreateAccountRequest - طلب إنشاء حساب
+message CreateAccountRequest {
+  // اسم الحساب
+  string name = 1;
+  
+  // نوع الحساب
+  AccountType type = 2;
+  
+  // العملة
+  string currency = 3;
+  
+  // البيانات الوصفية
+  map<string, string> metadata = 4;
+  
+  // مفتاح التماثل
+  string idempotency_key = 5;
+}
+
+// CreateAccountResponse - استجابة إنشاء حساب
+message CreateAccountResponse {
+  // الحساب المُنشأ
+  Account account = 1;
+}
+
+// GetAccountRequest - طلب الحصول على حساب
+message GetAccountRequest {
+  // معرف الحساب
+  string id = 1;
+}
+
+// ListAccountsRequest - طلب قائمة الحسابات
+message ListAccountsRequest {
+  // حجم الصفحة
+  int32 page_size = 1;
+  
+  // رمز الصفحة
+  string page_token = 2;
+  
+  // الترشيح
+  AccountFilter filter = 3;
+  
+  // الترتيب
+  string order_by = 4;
+}
+
+// AccountFilter - مرشح الحسابات
+message AccountFilter {
+  // حسب الحالة
+  AccountStatus status = 1;
+  
+  // حسب النوع
+  AccountType type = 2;
+  
+  // حسب العملة
+  string currency = 3;
+  
+  // تم الإنشاء بعد
+  google.protobuf.Timestamp created_after = 4;
+  
+  // تم الإنشاء قبل
+  google.protobuf.Timestamp created_before = 5;
+}
+
+// ListAccountsResponse - استجابة قائمة الحسابات
+message ListAccountsResponse {
+  // الحسابات
+  repeated Account accounts = 1;
+  
+  // رمز الصفحة التالية
+  string next_page_token = 2;
+  
+  // إجمالي العدد (اختياري)
+  int64 total_count = 3;
+}
+
+// UpdateAccountRequest - طلب تحديث حساب
+message UpdateAccountRequest {
+  // معرف الحساب
+  string id = 1;
+  
+  // الاسم الجديد
+  optional string name = 2;
+  
+  // الحالة الجديدة
+  optional AccountStatus status = 3;
+  
+  // البيانات الوصفية الجديدة
+  map<string, string> metadata = 4;
+  
+  // الإصدار المتوقع (للتحكم في التزامن)
+  int64 expected_version = 5;
+}
+
+// DeleteAccountRequest - طلب حذف حساب
+message DeleteAccountRequest {
+  // معرف الحساب
+  string id = 1;
+}
+
+// SuspendAccountRequest - طلب تعليق حساب
+message SuspendAccountRequest {
+  // معرف الحساب
+  string id = 1;
+  
+  // سبب التعليق
+  string reason = 2;
+}
+
+// ActivateAccountRequest - طلب تفعيل حساب
+message ActivateAccountRequest {
+  // معرف الحساب
+  string id = 1;
+}
+
+// GetAccountStatsRequest - طلب إحصائيات حساب
+message GetAccountStatsRequest {
+  // معرف الحساب
+  string id = 1;
+  
+  // فترة الإحصائيات
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+}
+
+// AccountStats - إحصائيات الحساب
+message AccountStats {
+  // معرف الحساب
+  string account_id = 1;
+  
+  // إجمالي المعاملات
+  int64 total_transactions = 2;
+  
+  // إجمالي الإيداعات
+  int64 total_deposits = 3;
+  
+  // إجمالي السحوبات
+  int64 total_withdrawals = 4;
+  
+  // الرصيد الحالي
+  int64 current_balance = 5;
+  
+  // متوسط قيمة المعاملة
+  double average_transaction_value = 6;
+}
+
+// StreamAccountEventsRequest - طلب دفق أحداث الحساب
+message StreamAccountEventsRequest {
+  // معرف الحساب (اختياري - فارغ لكل الحسابات)
+  string account_id = 1;
+  
+  // أنواع الأحداث المطلوبة
+  repeated EventType event_types = 2;
+}
+
+// AccountEvent - حدث الحساب
+message AccountEvent {
+  // معرف الحدث
+  string event_id = 1;
+  
+  // نوع الحدث
+  EventType event_type = 2;
+  
+  // معرف الحساب
+  string account_id = 3;
+  
+  // وقت الحدوث
+  google.protobuf.Timestamp occurred_at = 4;
+  
+  // البيانات
+  oneof data {
+    Account account_created = 5;
+    Account account_updated = 6;
+    AccountSuspended account_suspended = 7;
+    AccountClosed account_closed = 8;
+  }
+}
+
+// EventType - نوع الحدث
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_ACCOUNT_CREATED = 1;
+  EVENT_TYPE_ACCOUNT_UPDATED = 2;
+  EVENT_TYPE_ACCOUNT_SUSPENDED = 3;
+  EVENT_TYPE_ACCOUNT_CLOSED = 4;
+}
+
+// AccountSuspended - بيانات حدث التعليق
+message AccountSuspended {
+  string account_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp suspended_at = 3;
+}
+
+// AccountClosed - بيانات حدث الإغلاق
+message AccountClosed {
+  string account_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp closed_at = 3;
+}
+
+// =============================================================================
+// Payment Service - خدمة المدفوعات
+// =============================================================================
+
+// PaymentService provides payment processing operations
+// خدمة معالجة المدفوعات
+service PaymentService {
+  // إنشاء دفعة - Create a payment
+  rpc CreatePayment(CreatePaymentRequest) returns (Payment);
+  
+  // الحصول على دفعة - Get a payment by ID
+  rpc GetPayment(GetPaymentRequest) returns (Payment);
+  
+  // إلغاء دفعة - Cancel a payment
+  rpc CancelPayment(CancelPaymentRequest) returns (Payment);
+  
+  // قائمة المدفوعات - List payments
+  rpc ListPayments(ListPaymentsRequest) returns (ListPaymentsResponse);
+}
+
+// Payment - الدفعة
+message Payment {
+  // معرف الدفعة
+  string id = 1;
+  
+  // حالة الدفعة
+  PaymentStatus status = 2;
+  
+  // المبلغ
+  int64 amount = 3;
+  
+  // العملة
+  string currency = 4;
+  
+  // معرف الحساب المصدر
+  string source_account_id = 5;
+  
+  // معرف الحساب المستهدف
+  string destination_account_id = 6;
+  
+  // الوصف
+  string description = 7;
+  
+  // البيانات الوصفية
+  map<string, string> metadata = 8;
+  
+  // تاريخ الإنشاء
+  google.protobuf.Timestamp created_at = 9;
+  
+  // تاريخ التحديث
+  google.protobuf.Timestamp updated_at = 10;
+  
+  // تاريخ التسوية
+  google.protobuf.Timestamp settled_at = 11;
+}
+
+// PaymentStatus - حالة الدفعة
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_PENDING = 1;       // قيد الانتظار
+  PAYMENT_STATUS_PROCESSING = 2;    // قيد المعالجة
+  PAYMENT_STATUS_SETTLED = 3;       // تمت التسوية
+  PAYMENT_STATUS_FAILED = 4;        // فشلت
+  PAYMENT_STATUS_CANCELLED = 5;     // ملغاة
+}
+
+// CreatePaymentRequest - طلب إنشاء دفعة
+message CreatePaymentRequest {
+  // المبلغ
+  int64 amount = 1;
+  
+  // العملة
+  string currency = 2;
+  
+  // معرف الحساب المصدر
+  string source_account_id = 3;
+  
+  // معرف الحساب المستهدف
+  string destination_account_id = 4;
+  
+  // الوصف
+  string description = 5;
+  
+  // البيانات الوصفية
+  map<string, string> metadata = 6;
+  
+  // مفتاح التماثل
+  string idempotency_key = 7;
+}
+
+// GetPaymentRequest - طلب الحصول على دفعة
+message GetPaymentRequest {
+  // معرف الدفعة
+  string id = 1;
+}
+
+// CancelPaymentRequest - طلب إلغاء دفعة
+message CancelPaymentRequest {
+  // معرف الدفعة
+  string id = 1;
+  
+  // سبب الإلغاء
+  string reason = 2;
+}
+
+// ListPaymentsRequest - طلب قائمة المدفوعات
+message ListPaymentsRequest {
+  // حجم الصفحة
+  int32 page_size = 1;
+  
+  // رمز الصفحة
+  string page_token = 2;
+  
+  // معرف الحساب (اختياري)
+  string account_id = 3;
+  
+  // حالة الدفعة (اختياري)
+  PaymentStatus status = 4;
+}
+
+// ListPaymentsResponse - استجابة قائمة المدفوعات
+message ListPaymentsResponse {
+  // المدفوعات
+  repeated Payment payments = 1;
+  
+  // رمز الصفحة التالية
+  string next_page_token = 2;
+  
+  // إجمالي العدد
+  int64 total_count = 3;
+}

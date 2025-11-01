@@ -1,0 +1,696 @@
+asyncapi: '2.6.0'
+info:
+  title: CogniForge Domain Events API
+  version: 1.0.0
+  description: |
+    أحداث مجالية لفصل الأنظمة وتمكين التكامل غير المتزامن
+    
+    Domain events for system decoupling and asynchronous integration.
+    
+    **المبادئ (Principles):**
+    - الأحداث غير قابلة للتغيير (Events are immutable)
+    - كل حدث له معرف فريد ووقت حدوث
+    - استخدم Schema Registry للتحكم في الإصدارات
+    - الأحداث تتبع نمط Event Sourcing عند الحاجة
+    
+  contact:
+    name: CogniForge Events Team
+    email: benmerahhoussam16@gmail.com
+  license:
+    name: Proprietary
+
+defaultContentType: application/json
+
+servers:
+  production:
+    url: kafka1.cogniforge.com:9092
+    protocol: kafka
+    description: إنتاج - Kafka Cluster (Production)
+    security:
+      - saslScram: []
+  staging:
+    url: kafka-staging.cogniforge.com:9092
+    protocol: kafka
+    description: اختبار - Staging Environment
+  development:
+    url: localhost:9092
+    protocol: kafka
+    description: تطوير - Local Development
+
+channels:
+  # ============================================================================
+  # Account Domain Events - أحداث نطاق الحسابات
+  # ============================================================================
+  
+  account.created.v1:
+    description: |
+      يتم نشر هذا الحدث عند إنشاء حساب جديد
+      
+      Published when a new account is created.
+    subscribe:
+      summary: الاشتراك في أحداث إنشاء الحسابات
+      operationId: onAccountCreated
+      message:
+        $ref: '#/components/messages/AccountCreated'
+      bindings:
+        kafka:
+          groupId: account-service-consumers
+          clientId: account-consumer-1
+    publish:
+      summary: نشر حدث إنشاء حساب
+      operationId: publishAccountCreated
+      message:
+        $ref: '#/components/messages/AccountCreated'
+
+  account.updated.v1:
+    description: يتم نشره عند تحديث حساب (Published when account is updated)
+    subscribe:
+      message:
+        $ref: '#/components/messages/AccountUpdated'
+    publish:
+      message:
+        $ref: '#/components/messages/AccountUpdated'
+
+  account.suspended.v1:
+    description: يتم نشره عند تعليق حساب (Published when account is suspended)
+    subscribe:
+      message:
+        $ref: '#/components/messages/AccountSuspended'
+
+  account.closed.v1:
+    description: يتم نشره عند إغلاق حساب (Published when account is closed)
+    subscribe:
+      message:
+        $ref: '#/components/messages/AccountClosed'
+
+  # ============================================================================
+  # Payment Domain Events - أحداث نطاق المدفوعات
+  # ============================================================================
+
+  payment.initiated.v1:
+    description: يتم نشره عند بدء دفعة (Published when payment is initiated)
+    subscribe:
+      message:
+        $ref: '#/components/messages/PaymentInitiated'
+    publish:
+      message:
+        $ref: '#/components/messages/PaymentInitiated'
+
+  payment.processing.v1:
+    description: يتم نشره عند معالجة دفعة (Published when payment is processing)
+    subscribe:
+      message:
+        $ref: '#/components/messages/PaymentProcessing'
+
+  payment.settled.v1:
+    description: يتم نشره عند تسوية دفعة بنجاح (Published when payment is successfully settled)
+    subscribe:
+      message:
+        $ref: '#/components/messages/PaymentSettled'
+    publish:
+      message:
+        $ref: '#/components/messages/PaymentSettled'
+
+  payment.failed.v1:
+    description: يتم نشره عند فشل دفعة (Published when payment fails)
+    subscribe:
+      message:
+        $ref: '#/components/messages/PaymentFailed'
+
+  payment.refunded.v1:
+    description: يتم نشره عند استرداد دفعة (Published when payment is refunded)
+    subscribe:
+      message:
+        $ref: '#/components/messages/PaymentRefunded'
+
+  # ============================================================================
+  # User Domain Events - أحداث نطاق المستخدمين
+  # ============================================================================
+
+  user.registered.v1:
+    description: يتم نشره عند تسجيل مستخدم جديد (Published when new user registers)
+    subscribe:
+      message:
+        $ref: '#/components/messages/UserRegistered'
+
+  user.verified.v1:
+    description: يتم نشره عند التحقق من بريد المستخدم (Published when user email is verified)
+    subscribe:
+      message:
+        $ref: '#/components/messages/UserVerified'
+
+  user.login.v1:
+    description: يتم نشره عند تسجيل دخول المستخدم (Published when user logs in)
+    subscribe:
+      message:
+        $ref: '#/components/messages/UserLogin'
+
+  # ============================================================================
+  # System Events - أحداث النظام
+  # ============================================================================
+
+  system.health.degraded.v1:
+    description: يتم نشره عند تدهور صحة النظام (Published when system health degrades)
+    subscribe:
+      message:
+        $ref: '#/components/messages/SystemHealthDegraded'
+
+  system.maintenance.scheduled.v1:
+    description: يتم نشره عند جدولة صيانة (Published when maintenance is scheduled)
+    subscribe:
+      message:
+        $ref: '#/components/messages/MaintenanceScheduled'
+
+components:
+  messages:
+    # ========================================================================
+    # Account Messages
+    # ========================================================================
+    
+    AccountCreated:
+      name: AccountCreated
+      title: تم إنشاء حساب (Account Created)
+      summary: حدث إنشاء حساب جديد
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/AccountCreatedPayload'
+      examples:
+        - name: Individual Account
+          summary: حساب فردي
+          payload:
+            event_id: "evt_1a2b3c4d5e6f"
+            event_type: "account.created"
+            event_version: "1.0"
+            occurred_at: "2025-01-15T10:30:00.000Z"
+            account_id: "acc_1a2b3c4d"
+            account_type: "individual"
+            account_name: "أحمد محمد"
+            currency: "USD"
+            initial_balance: 0
+            metadata:
+              source: "web_signup"
+              customer_id: "cust_123456"
+
+    AccountUpdated:
+      name: AccountUpdated
+      title: تم تحديث حساب (Account Updated)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/AccountUpdatedPayload'
+
+    AccountSuspended:
+      name: AccountSuspended
+      title: تم تعليق حساب (Account Suspended)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/AccountSuspendedPayload'
+
+    AccountClosed:
+      name: AccountClosed
+      title: تم إغلاق حساب (Account Closed)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/AccountClosedPayload'
+
+    # ========================================================================
+    # Payment Messages
+    # ========================================================================
+
+    PaymentInitiated:
+      name: PaymentInitiated
+      title: تم بدء دفعة (Payment Initiated)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/PaymentInitiatedPayload'
+      examples:
+        - payload:
+            event_id: "evt_2x3y4z5a6b7c"
+            event_type: "payment.initiated"
+            event_version: "1.0"
+            occurred_at: "2025-01-15T11:00:00.000Z"
+            payment_id: "pay_1a2b3c4d"
+            amount: 5000
+            currency: "USD"
+            source_account_id: "acc_source123"
+            destination_account_id: "acc_dest456"
+            idempotency_key: "idp_payment_unique_123"
+
+    PaymentProcessing:
+      name: PaymentProcessing
+      title: دفعة قيد المعالجة (Payment Processing)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/PaymentProcessingPayload'
+
+    PaymentSettled:
+      name: PaymentSettled
+      title: تمت تسوية الدفعة (Payment Settled)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/PaymentSettledPayload'
+      examples:
+        - payload:
+            event_id: "evt_3a4b5c6d7e8f"
+            event_type: "payment.settled"
+            event_version: "1.0"
+            occurred_at: "2025-01-15T11:05:00.000Z"
+            payment_id: "pay_1a2b3c4d"
+            settled_amount: 5000
+            settlement_currency: "USD"
+            settlement_timestamp: "2025-01-15T11:04:59.123Z"
+
+    PaymentFailed:
+      name: PaymentFailed
+      title: فشلت الدفعة (Payment Failed)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/PaymentFailedPayload'
+
+    PaymentRefunded:
+      name: PaymentRefunded
+      title: تم استرداد الدفعة (Payment Refunded)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/PaymentRefundedPayload'
+
+    # ========================================================================
+    # User Messages
+    # ========================================================================
+
+    UserRegistered:
+      name: UserRegistered
+      title: تسجيل مستخدم جديد (User Registered)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/UserRegisteredPayload'
+
+    UserVerified:
+      name: UserVerified
+      title: تم التحقق من المستخدم (User Verified)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/UserVerifiedPayload'
+
+    UserLogin:
+      name: UserLogin
+      title: تسجيل دخول مستخدم (User Login)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/UserLoginPayload'
+
+    # ========================================================================
+    # System Messages
+    # ========================================================================
+
+    SystemHealthDegraded:
+      name: SystemHealthDegraded
+      title: تدهور صحة النظام (System Health Degraded)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/SystemHealthDegradedPayload'
+
+    MaintenanceScheduled:
+      name: MaintenanceScheduled
+      title: صيانة مجدولة (Maintenance Scheduled)
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/MaintenanceScheduledPayload'
+
+  schemas:
+    # ========================================================================
+    # Common Schemas
+    # ========================================================================
+
+    BaseEvent:
+      type: object
+      required:
+        - event_id
+        - event_type
+        - event_version
+        - occurred_at
+      properties:
+        event_id:
+          type: string
+          description: معرف الحدث الفريد (Unique event identifier)
+          pattern: '^evt_[a-zA-Z0-9]+$'
+          example: "evt_1a2b3c4d5e6f"
+        event_type:
+          type: string
+          description: نوع الحدث (Event type)
+          example: "account.created"
+        event_version:
+          type: string
+          description: إصدار مخطط الحدث (Event schema version)
+          pattern: '^\d+\.\d+$'
+          example: "1.0"
+        occurred_at:
+          type: string
+          format: date-time
+          description: وقت حدوث الحدث (Event occurrence timestamp)
+        correlation_id:
+          type: string
+          description: معرف الارتباط للربط بين الأحداث (Correlation ID for event tracing)
+        causation_id:
+          type: string
+          description: معرف السببية - الحدث الذي تسبب بهذا الحدث (Causation ID - triggering event)
+
+    # ========================================================================
+    # Account Event Payloads
+    # ========================================================================
+
+    AccountCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - account_id
+            - account_type
+            - currency
+          properties:
+            account_id:
+              type: string
+              pattern: '^acc_[a-zA-Z0-9]+$'
+            account_type:
+              type: string
+              enum: [individual, business]
+            account_name:
+              type: string
+            currency:
+              type: string
+              pattern: '^[A-Z]{3}$'
+            initial_balance:
+              type: integer
+              default: 0
+            metadata:
+              type: object
+              additionalProperties: true
+
+    AccountUpdatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - account_id
+            - changes
+          properties:
+            account_id:
+              type: string
+            changes:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  old_value:
+                    type: string
+                  new_value:
+                    type: string
+
+    AccountSuspendedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - account_id
+            - reason
+          properties:
+            account_id:
+              type: string
+            reason:
+              type: string
+              enum: [fraud_detection, regulatory_compliance, user_request, payment_dispute]
+            notes:
+              type: string
+
+    AccountClosedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - account_id
+          properties:
+            account_id:
+              type: string
+            closure_reason:
+              type: string
+            final_balance:
+              type: integer
+
+    # ========================================================================
+    # Payment Event Payloads
+    # ========================================================================
+
+    PaymentInitiatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - payment_id
+            - amount
+            - currency
+            - destination_account_id
+          properties:
+            payment_id:
+              type: string
+              pattern: '^pay_[a-zA-Z0-9]+$'
+            amount:
+              type: integer
+              minimum: 1
+            currency:
+              type: string
+              pattern: '^[A-Z]{3}$'
+            source_account_id:
+              type: string
+            destination_account_id:
+              type: string
+            idempotency_key:
+              type: string
+            metadata:
+              type: object
+
+    PaymentProcessingPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - payment_id
+          properties:
+            payment_id:
+              type: string
+            processor_id:
+              type: string
+            processing_started_at:
+              type: string
+              format: date-time
+
+    PaymentSettledPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - payment_id
+            - settled_amount
+            - settlement_currency
+          properties:
+            payment_id:
+              type: string
+            settled_amount:
+              type: integer
+            settlement_currency:
+              type: string
+            settlement_timestamp:
+              type: string
+              format: date-time
+            settlement_reference:
+              type: string
+
+    PaymentFailedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - payment_id
+            - failure_reason
+          properties:
+            payment_id:
+              type: string
+            failure_reason:
+              type: string
+              enum: [insufficient_funds, invalid_account, network_error, fraud_detected, timeout]
+            failure_code:
+              type: string
+            failure_message:
+              type: string
+
+    PaymentRefundedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - payment_id
+            - refund_amount
+          properties:
+            payment_id:
+              type: string
+            refund_amount:
+              type: integer
+            refund_reason:
+              type: string
+            original_payment_id:
+              type: string
+
+    # ========================================================================
+    # User Event Payloads
+    # ========================================================================
+
+    UserRegisteredPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - user_id
+            - email
+          properties:
+            user_id:
+              type: string
+            email:
+              type: string
+              format: email
+            registration_source:
+              type: string
+              enum: [web, mobile, api, oauth]
+
+    UserVerifiedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - user_id
+          properties:
+            user_id:
+              type: string
+            verification_method:
+              type: string
+              enum: [email, phone, two_factor]
+
+    UserLoginPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - user_id
+          properties:
+            user_id:
+              type: string
+            login_method:
+              type: string
+              enum: [password, oauth, sso, biometric]
+            ip_address:
+              type: string
+            user_agent:
+              type: string
+            location:
+              type: object
+              properties:
+                country:
+                  type: string
+                city:
+                  type: string
+
+    # ========================================================================
+    # System Event Payloads
+    # ========================================================================
+
+    SystemHealthDegradedPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - service_name
+            - health_status
+          properties:
+            service_name:
+              type: string
+            health_status:
+              type: string
+              enum: [degraded, unhealthy, critical]
+            affected_endpoints:
+              type: array
+              items:
+                type: string
+            estimated_recovery_time:
+              type: string
+              format: date-time
+
+    MaintenanceScheduledPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          required:
+            - maintenance_window_start
+            - maintenance_window_end
+          properties:
+            maintenance_window_start:
+              type: string
+              format: date-time
+            maintenance_window_end:
+              type: string
+              format: date-time
+            affected_services:
+              type: array
+              items:
+                type: string
+            maintenance_type:
+              type: string
+              enum: [scheduled, emergency, upgrade]
+            expected_downtime_minutes:
+              type: integer
+
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        properties:
+          X-Correlation-Id:
+            type: string
+            description: معرف الارتباط (Correlation ID)
+          X-Tenant-Id:
+            type: string
+            description: معرف المستأجر (Tenant ID)
+          X-User-Id:
+            type: string
+            description: معرف المستخدم (User ID)
+
+  securitySchemes:
+    saslScram:
+      type: scramSha256
+      description: SASL/SCRAM-SHA-256 authentication for Kafka
