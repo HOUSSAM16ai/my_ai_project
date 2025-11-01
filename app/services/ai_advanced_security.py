@@ -323,10 +323,13 @@ class BehavioralAnalyzer:
         self, event: SecurityEvent, profile: UserBehaviorProfile
     ) -> list[ThreatDetection]:
         """كشف الشذوذ السلوكي"""
-        anomalies = []
+        anomalies: list[ThreatDetection] = []
         
         # Type guard: user_id must not be None when this is called
-        assert event.user_id is not None, "user_id must not be None in behavioral analysis"
+        if event.user_id is None:
+            # This should never happen as it's called after user_id check
+            return anomalies
+        
         user_id = event.user_id
 
         # Check if user is accessing unusual endpoint
