@@ -388,40 +388,36 @@ class WebhookSigner:
 # =============================================================================
 
 
-def add_correlation_id():
+def add_correlation_id(f: Callable) -> Callable:
     """إضافة معرفات الارتباط"""
 
-    @wraps
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            # Get or generate request ID
-            request_id = request.headers.get("X-Request-Id") or f"req_{hashlib.md5(str(time.time()).encode()).hexdigest()[:12]}"
-            g.request_id = request_id
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Get or generate request ID
+        request_id = request.headers.get("X-Request-Id") or f"req_{hashlib.md5(str(time.time()).encode()).hexdigest()[:12]}"
+        g.request_id = request_id
 
-            # Get or generate correlation ID
-            correlation_id = request.headers.get("X-Correlation-Id") or request_id
-            g.correlation_id = correlation_id
+        # Get or generate correlation ID
+        correlation_id = request.headers.get("X-Correlation-Id") or request_id
+        g.correlation_id = correlation_id
 
-            # Execute function
-            response = f(*args, **kwargs)
+        # Execute function
+        response = f(*args, **kwargs)
 
-            # Add headers
-            if isinstance(response, tuple):
-                resp, status = response
-            else:
-                resp = response
-                status = 200
+        # Add headers
+        if isinstance(response, tuple):
+            resp, status = response
+        else:
+            resp = response
+            status = 200
 
-            if hasattr(resp, "headers"):
-                resp.headers["X-Request-Id"] = request_id
-                resp.headers["X-Correlation-Id"] = correlation_id
+        if hasattr(resp, "headers"):
+            resp.headers["X-Request-Id"] = request_id
+            resp.headers["X-Correlation-Id"] = correlation_id
 
-            return resp, status if isinstance(response, tuple) else resp
+        return resp, status if isinstance(response, tuple) else resp
 
-        return decorated_function
-
-    return decorator
+    return decorated_function
 
 
 # =============================================================================
