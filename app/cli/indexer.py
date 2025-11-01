@@ -116,7 +116,12 @@ def load_model(model_name: str | None = None):
 
     name = (model_name or DEFAULT_MODEL).strip()
 
-    if _model_instance is None or getattr(_model_instance, "_name_or_path", "") != name:
+    # Check if we need to load or reload the model
+    needs_reload = _model_instance is None
+    if not needs_reload and hasattr(_model_instance, "_name_or_path"):
+        needs_reload = getattr(_model_instance, "_name_or_path", "") != name
+    
+    if needs_reload:
         print(f"Loading embedding model '{name}'...")
         _model_instance = SentenceTransformer(name)
 

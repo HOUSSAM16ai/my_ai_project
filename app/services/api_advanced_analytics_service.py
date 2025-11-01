@@ -349,7 +349,7 @@ class AdvancedAnalyticsService:
         self, metrics: list[UsageMetric], limit: int = 10
     ) -> list[dict[str, Any]]:
         """Get top endpoints by request count"""
-        endpoint_counts = defaultdict(int)
+        endpoint_counts: dict[str, int] = defaultdict(int)
 
         for metric in metrics:
             if metric.name == "api_request" and metric.endpoint:
@@ -380,7 +380,7 @@ class AdvancedAnalyticsService:
             avg_requests_per_day = len(user_metrics) / max(days_active, 1)
 
             # Find favorite endpoints
-            endpoint_counts = defaultdict(int)
+            endpoint_counts: dict[str, int] = defaultdict(int)
             for m in user_metrics:
                 if m.endpoint:
                     endpoint_counts[m.endpoint] += 1
@@ -388,15 +388,15 @@ class AdvancedAnalyticsService:
             favorite_endpoints = sorted(endpoint_counts.items(), key=lambda x: x[1], reverse=True)[
                 :5
             ]
-            favorite_endpoints = [ep for ep, _ in favorite_endpoints]
+            favorite_endpoints_list = [ep for ep, _ in favorite_endpoints]
 
             # Find peak usage hours
-            hour_counts = defaultdict(int)
+            hour_counts: dict[int, int] = defaultdict(int)
             for m in user_metrics:
                 hour_counts[m.timestamp.hour] += 1
 
             peak_hours = sorted(hour_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-            peak_hours = [hour for hour, _ in peak_hours]
+            peak_hours_list = [hour for hour, _ in peak_hours]
 
             # Determine pattern
             if avg_requests_per_day > 1000:
@@ -419,8 +419,8 @@ class AdvancedAnalyticsService:
                 pattern=pattern,
                 avg_requests_per_day=avg_requests_per_day,
                 avg_session_duration=0.0,  # Simplified
-                favorite_endpoints=favorite_endpoints,
-                peak_usage_hours=peak_hours,
+                favorite_endpoints=favorite_endpoints_list,
+                peak_usage_hours=peak_hours_list,
                 churn_probability=churn_probability,
                 lifetime_value_estimate=avg_requests_per_day * 0.01,  # Simplified
             )
@@ -522,7 +522,7 @@ class AdvancedAnalyticsService:
             recent_metrics = [m for m in list(self.metrics) if m.timestamp > cutoff]
 
             # Detect traffic spikes
-            hourly_counts = defaultdict(int)
+            hourly_counts: dict[str, int] = defaultdict(int)
             for m in recent_metrics:
                 if m.name == "api_request":
                     hour_key = m.timestamp.strftime("%Y-%m-%d-%H")
@@ -573,7 +573,7 @@ class AdvancedAnalyticsService:
         """Get cost optimization insights"""
         with self.lock:
             # Analyze endpoint efficiency
-            endpoint_metrics = defaultdict(
+            endpoint_metrics: dict[str, dict[str, Any]] = defaultdict(
                 lambda: {"requests": 0, "total_response_time": 0.0, "errors": 0}
             )
 

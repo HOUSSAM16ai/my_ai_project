@@ -315,14 +315,15 @@ class CodeAnalyzer:
                         )
 
             # Check for hardcoded secrets
-            if isinstance(node, ast.Str) and isinstance(node.s, str):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                secret_value = node.value
                 if (
                     any(
-                        keyword in node.s.lower()
+                        keyword in secret_value.lower()
                         for keyword in ["password", "api_key", "secret", "token"]
                     )
-                    and len(node.s) > 10
-                    and not node.s.startswith("your_")
+                    and len(secret_value) > 10
+                    and not secret_value.startswith("your_")
                 ):
                     self.issues_found.append(
                         CodeIssue(
@@ -333,7 +334,7 @@ class CodeAnalyzer:
                             file_path=file_path,
                             line_number=node.lineno,
                             column=node.col_offset,
-                            code_snippet=f'"{node.s[:20]}..."',
+                            code_snippet=f'"{secret_value[:20]}..."',
                             suggested_fix="Move secrets to environment variables",
                             auto_fixable=False,
                             impact_score=80,

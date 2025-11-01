@@ -385,7 +385,7 @@ class SLOService:
                 )
                 self.measurements.append(measurement)
 
-    def calculate_burn_rate(self, slo_id: str) -> ErrorBudgetBurn:
+    def calculate_burn_rate(self, slo_id: str) -> ErrorBudgetBurn | None:
         """Calculate error budget burn rate"""
         with self.lock:
             if slo_id not in self.slos:
