@@ -255,7 +255,9 @@ class AITestGenerator:
 
             # Check for SQL-like strings
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if any(kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]):
+                if any(
+                    kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]
+                ):
                     risks.append("SQL Injection Risk: Raw SQL query detected")
 
         return risks

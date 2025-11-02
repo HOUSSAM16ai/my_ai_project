@@ -14,11 +14,11 @@ Features surpassing tech giants:
 - Event tracking with correlation
 """
 
-from app.telemetry.tracing import DistributedTracer
-from app.telemetry.metrics import MetricsCollector
-from app.telemetry.logging import StructuredLogger
 from app.telemetry.events import EventTracker
+from app.telemetry.logging import StructuredLogger
+from app.telemetry.metrics import MetricsCollector
 from app.telemetry.performance import PerformanceMonitor
+from app.telemetry.tracing import DistributedTracer
 
 __all__ = [
     "DistributedTracer",

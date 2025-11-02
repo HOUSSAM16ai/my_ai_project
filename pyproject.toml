@@ -209,6 +209,7 @@ skips = [
     "B404",  # subprocess_import - OK, the usage is what matters
     "B112",  # try_except_continue - OK for non-critical error recovery
     "B110",  # try_except_pass - OK for optional cleanup and graceful degradation
+    "B324",  # hashlib MD5 - OK for non-cryptographic use (cache keys, ETags, IDs)
 ]
 
 [tool.bandit.assert_used]

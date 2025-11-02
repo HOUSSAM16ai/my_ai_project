@@ -11,11 +11,21 @@
 #     "admin/admin_dashboard.html") to correctly leverage the blueprint's scoped
 #     `template_folder`.
 
+import time
 from datetime import UTC, datetime
 from functools import wraps
-import time
 
-from flask import abort, current_app, flash, jsonify, render_template, request, url_for, Response, stream_with_context
+from flask import (
+    Response,
+    abort,
+    current_app,
+    flash,
+    jsonify,
+    render_template,
+    request,
+    stream_with_context,
+    url_for,
+)
 from flask_login import current_user, login_required
 
 from app import db
@@ -279,7 +289,7 @@ def handle_chat():
 def handle_chat_stream():
     """
     SSE streaming endpoint for real-time AI responses.
-    
+
     ✨ SUPERHUMAN FEATURE: Server-Sent Events streaming
     - Instant perceived response time
     - Smart token chunking for smooth reading
@@ -287,7 +297,7 @@ def handle_chat_stream():
     """
     if not get_admin_ai_service or not get_streaming_service:
         return jsonify({"status": "error", "message": "Streaming service not available."}), 503
-    
+
     # Get question from query params or JSON body
     if request.method == "GET":
         question = request.args.get("question", "").strip()
@@ -298,32 +308,34 @@ def handle_chat_stream():
         question = data.get("question", "").strip()
         conversation_id = data.get("conversation_id")
         use_deep_context = data.get("use_deep_context", True)
-    
+
     if not question:
+
         def error_stream():
-            yield "event: error\ndata: {\"message\": \"Question is required\"}\n\n"
+            yield 'event: error\ndata: {"message": "Question is required"}\n\n'
+
         headers = {
             "Cache-Control": "no-cache, no-transform",
             "Content-Type": "text/event-stream; charset=utf-8",
             "X-Accel-Buffering": "no",
         }
         return Response(stream_with_context(error_stream()), headers=headers)
-    
+
     def generate():
         """Generator function for SSE streaming"""
         start_time = time.time()
         last_heartbeat = time.monotonic()
         event_id = 0
-        
+
         try:
             service = get_admin_ai_service()
             streaming_service = get_streaming_service()
             perf_service = get_performance_service() if get_performance_service else None
-            
+
             # Send start event with event ID
-            yield f"event: start\nid: {event_id}\ndata: {{\"status\": \"processing\"}}\n\n"
+            yield f'event: start\nid: {event_id}\ndata: {{"status": "processing"}}\n\n'
             event_id += 1
-            
+
             # Auto-create conversation if needed
             conv_id = conversation_id
             if not conv_id:
@@ -335,11 +347,11 @@ def handle_chat_stream():
                         conversation_type="general",
                     )
                     conv_id = conversation.id
-                    yield f"event: conversation\nid: {event_id}\ndata: {{\"id\": {conv_id}}}\n\n"
+                    yield f'event: conversation\nid: {event_id}\ndata: {{"id": {conv_id}}}\n\n'
                     event_id += 1
                 except Exception as e:
                     current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
-            
+
             # Get AI response (non-streaming first, then we'll stream it)
             result = service.answer_question(
                 question=question,
@@ -347,7 +359,7 @@ def handle_chat_stream():
                 conversation_id=conv_id,
                 use_deep_context=use_deep_context,
             )
-            
+
             if result.get("status") == "success":
                 # Stream the answer text
                 answer_text = result.get("answer", "")
@@ -355,9 +367,9 @@ def handle_chat_stream():
                     "model_used": result.get("model_used"),
                     "tokens_used": result.get("tokens_used"),
                     "elapsed_seconds": result.get("elapsed_seconds"),
-                    "conversation_id": conv_id
+                    "conversation_id": conv_id,
                 }
-                
+
                 # Record performance metric
                 if perf_service:
                     total_latency_ms = (time.time() - start_time) * 1000
@@ -366,17 +378,17 @@ def handle_chat_stream():
                         latency_ms=total_latency_ms,
                         tokens=result.get("tokens_used", 0),
                         model_used=result.get("model_used", "unknown"),
-                        user_id=current_user.id if current_user.is_authenticated else None
+                        user_id=current_user.id if current_user.is_authenticated else None,
                     )
-                
+
                 # Use streaming service to chunk and stream response
                 for sse_event in streaming_service.stream_response(answer_text, metadata):
                     yield sse_event
-                    
+
                     # Send heartbeat every 20 seconds to keep connection alive
                     now = time.monotonic()
                     if now - last_heartbeat > 20:
-                        yield f"event: ping\nid: {event_id}\ndata: \"🔧\"\n\n"
+                        yield f'event: ping\nid: {event_id}\ndata: "🔧"\n\n'
                         event_id += 1
                         last_heartbeat = now
             else:
@@ -384,12 +396,12 @@ def handle_chat_stream():
                 error_text = result.get("answer") or result.get("message") or "An error occurred"
                 for sse_event in streaming_service.stream_response(error_text):
                     yield sse_event
-                    
+
         except Exception as e:
             current_app.logger.error(f"Streaming error: {e}", exc_info=True)
             error_msg = str(e).replace('"', '\\"')  # Escape quotes for JSON
-            yield f"event: error\nid: {event_id}\ndata: {{\"message\": \"{error_msg[:500]}\", \"type\": \"{type(e).__name__}\"}}\n\n"
-    
+            yield f'event: error\nid: {event_id}\ndata: {{"message": "{error_msg[:500]}", "type": "{type(e).__name__}"}}\n\n'
+
     # Add proper SSE headers to prevent buffering and caching
     headers = {
         "Cache-Control": "no-cache, no-transform",
@@ -397,7 +409,7 @@ def handle_chat_stream():
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",  # For NGINX - disables proxy buffering
     }
-    
+
     return Response(stream_with_context(generate()), headers=headers)
 
 
@@ -2197,7 +2209,7 @@ def handle_get_metrics():
 def handle_get_performance_metrics():
     """
     Get real-time performance metrics for chat system.
-    
+
     ✨ SUPERHUMAN FEATURE: Real-time performance monitoring
     - Latency percentiles (P50, P95, P99)
     - Category breakdown (streaming vs traditional)
@@ -2206,31 +2218,33 @@ def handle_get_performance_metrics():
     """
     if not get_performance_service:
         return jsonify({"status": "error", "message": "Performance service not available"}), 503
-    
+
     try:
         service = get_performance_service()
-        
+
         # Get query parameters
         category = request.args.get("category")  # Optional filter
         hours = int(request.args.get("hours", 24))  # Time window
-        
+
         # Get statistics
         stats = service.get_statistics(category=category, hours=hours)
-        
+
         # Get optimization suggestions
         suggestions = service.get_optimization_suggestions()
-        
+
         # Get A/B test results
         ab_results = service.get_ab_results()
-        
-        return jsonify({
-            "status": "success",
-            "statistics": stats,
-            "suggestions": suggestions,
-            "ab_test_results": ab_results,
-            "message": "📊 Performance metrics retrieved successfully"
-        })
-        
+
+        return jsonify(
+            {
+                "status": "success",
+                "statistics": stats,
+                "suggestions": suggestions,
+                "ab_test_results": ab_results,
+                "message": "📊 Performance metrics retrieved successfully",
+            }
+        )
+
     except Exception as e:
         current_app.logger.error(f"Get performance metrics failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -2241,7 +2255,7 @@ def handle_get_performance_metrics():
 def handle_get_streaming_metrics():
     """
     Get streaming-specific performance metrics.
-    
+
     ✨ SUPERHUMAN FEATURE: Streaming performance tracking
     - Average chunk latency
     - Total streams and tokens
@@ -2249,17 +2263,19 @@ def handle_get_streaming_metrics():
     """
     if not get_streaming_service:
         return jsonify({"status": "error", "message": "Streaming service not available"}), 503
-    
+
     try:
         service = get_streaming_service()
         metrics = service.get_metrics()
-        
-        return jsonify({
-            "status": "success",
-            "metrics": metrics,
-            "message": "⚡ Streaming metrics retrieved successfully"
-        })
-        
+
+        return jsonify(
+            {
+                "status": "success",
+                "metrics": metrics,
+                "message": "⚡ Streaming metrics retrieved successfully",
+            }
+        )
+
     except Exception as e:
         current_app.logger.error(f"Get streaming metrics failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -2270,37 +2286,38 @@ def handle_get_streaming_metrics():
 def handle_record_performance():
     """
     Record a performance metric (for client-side tracking).
-    
+
     Allows frontend to record perceived performance metrics.
     """
     if not get_performance_service:
         return jsonify({"status": "error", "message": "Performance service not available"}), 503
-    
+
     try:
         data = request.get_json() or {}
-        
+
         category = data.get("category", "unknown")
         latency_ms = float(data.get("latency_ms", 0))
         tokens = int(data.get("tokens", 0))
         model_used = data.get("model_used", "unknown")
-        
+
         service = get_performance_service()
         metric = service.record_metric(
             category=category,
             latency_ms=latency_ms,
             tokens=tokens,
             model_used=model_used,
-            user_id=current_user.id if current_user.is_authenticated else None
+            user_id=current_user.id if current_user.is_authenticated else None,
         )
-        
-        return jsonify({
-            "status": "success",
-            "metric_id": metric.metric_id,
-            "performance_category": metric.get_category().value,
-            "message": "✅ Performance metric recorded"
-        })
-        
+
+        return jsonify(
+            {
+                "status": "success",
+                "metric_id": metric.metric_id,
+                "performance_category": metric.get_category().value,
+                "message": "✅ Performance metric recorded",
+            }
+        )
+
     except Exception as e:
         current_app.logger.error(f"Record performance metric failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-

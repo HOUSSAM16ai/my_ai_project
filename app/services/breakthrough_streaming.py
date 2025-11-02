@@ -18,8 +18,9 @@ import asyncio
 import hashlib
 import logging
 import time
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import numpy as np
 
@@ -110,7 +111,9 @@ class AdaptiveCache:
                 return entry["data"]
 
         # Compute new value
-        result = await compute_func() if asyncio.iscoroutinefunction(compute_func) else compute_func()
+        result = (
+            await compute_func() if asyncio.iscoroutinefunction(compute_func) else compute_func()
+        )
 
         # Store if should cache
         if self.should_cache(key):
@@ -196,7 +199,7 @@ class NextTokenPredictor:
 class HybridStreamEngine:
     """
     Hybrid streaming engine - Superior to standard streaming
-    
+
     Combines:
     1. Real streaming from LLM
     2. Predictive prefetching
@@ -214,11 +217,11 @@ class HybridStreamEngine:
     ) -> AsyncGenerator[StreamChunk, None]:
         """
         Ultra-fast hybrid streaming
-        
+
         Args:
             llm_stream: Actual LLM token stream
             user_context: User context for predictions
-            
+
         Yields:
             StreamChunk objects with content and metadata
         """

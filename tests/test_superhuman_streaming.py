@@ -7,8 +7,8 @@ Run with: pytest tests/test_superhuman_streaming.py -v
 """
 
 import asyncio
+
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
 
 # Mark all tests as not requiring Flask app
 pytestmark = pytest.mark.unit
@@ -154,7 +154,7 @@ class TestHybridStreamEngine:
         # Test with different latencies
         # Reset the engine for each test
         engine.quality_monitor.latencies = []
-        
+
         engine.quality_monitor.record_latency(30.0)  # Fast
         size1 = engine.get_optimal_chunk_size()
         assert size1 == 1  # Token by token

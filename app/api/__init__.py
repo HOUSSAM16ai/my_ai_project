@@ -46,7 +46,7 @@ def init_api(app):
     app.register_blueprint(subscription_routes.api_bp)
     app.register_blueprint(developer_portal_routes.api_bp)
     app.register_blueprint(analytics_routes.api_bp)
-    
+
     # Register SSE streaming routes
     app.register_blueprint(stream_routes.bp)
     app.logger.info("🌊 SSE Streaming routes registered at /api/v1/stream")
