@@ -90,47 +90,106 @@ def sse_event(
 # ======================================================================================
 
 
-async def ai_token_stream(prompt: str) -> AsyncIterator[str]:
+async def ai_token_stream(prompt: str, model: str | None = None) -> AsyncIterator[str]:
     """
-    Mock token generator - REPLACE WITH ACTUAL LLM INTEGRATION.
+    Real LLM token streaming with optional mock mode for development.
     
-    ⚠️ WARNING: This is a mock implementation for demonstration purposes.
-    In production, replace this with your actual LLM client (OpenRouter, OpenAI, etc.)
-    
-    This should yield small chunks quickly with minimal delay between chunks.
+    This integrates with the actual LLM client service for production streaming,
+    with optional mock mode for development and testing.
     
     Args:
         prompt: User prompt
+        model: Optional model override
         
     Yields:
         Token strings
         
-    TODO: Replace with actual LLM integration:
-        from app.services.llm_client_service import get_llm_client
-        client = get_llm_client()
-        async for token in client.stream(prompt):
-            yield token
+    Environment Variables:
+        ALLOW_MOCK_LLM: Set to 'true' for development mock mode (default: false)
+        ENABLE_HYBRID_STREAMING: Enable advanced hybrid streaming (default: false)
     """
-    # 🚨 MOCK MODE - Remove in production
     import os
-    if not os.getenv('ALLOW_MOCK_LLM', 'false').lower() == 'true':
-        raise RuntimeError(
-            "Mock LLM is not allowed in production. "
-            "Set ALLOW_MOCK_LLM=true in .env for development, "
-            "or replace ai_token_stream() with actual LLM integration."
-        )
+
+    # Check if mock mode is allowed
+    allow_mock = os.getenv('ALLOW_MOCK_LLM', 'false').lower() == 'true'
     
-    # Example: Stream 100 tokens (MOCK DATA)
-    words = ["Hello", "world", "this", "is", "a", "streaming", "response", "with", "proper", "SSE"]
+    # Try real LLM first
+    try:
+        from app.services.llm_client_service import invoke_chat_stream
+        from app.services.ensemble_ai import get_router, ModelTier
+        from app.services.breakthrough_streaming import get_hybrid_engine
+        
+        # Use intelligent routing if enabled
+        use_routing = os.getenv('ENABLE_INTELLIGENT_ROUTING', 'false').lower() == 'true'
+        if use_routing and not model:
+            router = get_router()
+            model, tier = await router.route(prompt, {"user_query": prompt})
+            logger.info(f"Intelligent router selected: {model} ({tier.value})")
+        
+        # Use default model if not specified
+        if not model:
+            model = os.getenv('DEFAULT_AI_MODEL', 'openai/gpt-4o-mini')
+        
+        # Create streaming request
+        messages = [
+            {"role": "system", "content": "You are a helpful AI assistant."},
+            {"role": "user", "content": prompt}
+        ]
+        
+        # Check if hybrid streaming is enabled
+        use_hybrid = os.getenv('ENABLE_HYBRID_STREAMING', 'false').lower() == 'true'
+        
+        if use_hybrid:
+            # Use hybrid streaming engine
+            logger.info("Using hybrid streaming engine")
+            hybrid_engine = get_hybrid_engine()
+            
+            # Create async generator for real LLM stream
+            async def llm_generator():
+                for chunk in invoke_chat_stream(model=model, messages=messages):
+                    content = chunk.get('delta', {}).get('content', '')
+                    if content:
+                        yield content
+            
+            # Stream through hybrid engine
+            async for stream_chunk in hybrid_engine.ultra_stream(
+                llm_generator(), 
+                {"current_text": prompt}
+            ):
+                if stream_chunk.content:
+                    yield stream_chunk.content
+        else:
+            # Standard streaming
+            logger.info(f"Using standard streaming with model: {model}")
+            for chunk in invoke_chat_stream(model=model, messages=messages):
+                # Extract content from chunk
+                content = chunk.get('delta', {}).get('content', '')
+                if content:
+                    yield content
     
-    for i in range(100):
-        word = words[i % len(words)]
-        token = f"{word}{i} "
+    except Exception as e:
+        logger.error(f"Real LLM streaming failed: {e}", exc_info=True)
         
-        # Small delay to simulate LLM streaming
-        await asyncio.sleep(0.02)
-        
-        yield token
+        # Fallback to mock if allowed
+        if allow_mock:
+            logger.warning("Falling back to mock LLM (development mode)")
+            # Mock streaming for development
+            words = ["Hello", "world", "this", "is", "a", "streaming", "response", "with", "proper", "SSE"]
+            
+            for i in range(100):
+                word = words[i % len(words)]
+                token = f"{word}{i} "
+                
+                # Small delay to simulate LLM streaming
+                await asyncio.sleep(0.02)
+                
+                yield token
+        else:
+            # Re-raise in production
+            raise RuntimeError(
+                f"LLM streaming failed and mock mode is disabled: {e}. "
+                "Set ALLOW_MOCK_LLM=true in .env for development mode."
+            )
 
 
 # ======================================================================================
