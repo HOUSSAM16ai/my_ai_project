@@ -174,9 +174,9 @@ jobs:
         id: check_dir
         run: |
           if [ -d "${{ matrix.service.context }}" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Service directory ${{ matrix.service.context }} not found"
           fi
 
@@ -385,7 +385,7 @@ jobs:
       - name: Configure kubectl
         run: |
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
-          echo "KUBECONFIG=$(pwd)/kubeconfig" >> $GITHUB_ENV
+          echo "KUBECONFIG=$(pwd)/kubeconfig" >> "$GITHUB_ENV"
 
       - name: Deploy with Argo Rollouts (Canary)
         run: |
