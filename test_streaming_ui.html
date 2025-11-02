@@ -258,6 +258,8 @@
             }
             
             const className = allPassed ? 'test-result success' : 'test-result error';
+            // Note: Using innerHTML here is safe as 'results' contains only static test messages
+            // and 'className' is from a controlled set of values
             testDiv.innerHTML = `<div class="${className}">${results.join('<br>')}</div>`;
         }
         

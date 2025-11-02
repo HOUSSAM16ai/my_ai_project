@@ -986,7 +986,19 @@ body {
           streamingIndicator.style.display = 'flex';
           streamingIndicator.style.alignItems = 'center';
           streamingIndicator.style.gap = '0.5rem';
-          streamingIndicator.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span><span>جارٍ الكتابة...</span>';
+          
+          // Create typing indicator safely
+          const typingDiv = document.createElement('span');
+          typingDiv.className = 'typing-indicator';
+          for (let i = 0; i < 3; i++) {
+            typingDiv.appendChild(document.createElement('span'));
+          }
+          
+          const textSpan = document.createElement('span');
+          textSpan.textContent = 'جارٍ الكتابة...';
+          
+          streamingIndicator.appendChild(typingDiv);
+          streamingIndicator.appendChild(textSpan);
           contentDiv.appendChild(streamingIndicator);
           
           firstChunk = false;
