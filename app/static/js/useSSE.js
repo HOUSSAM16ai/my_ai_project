@@ -381,6 +381,9 @@ class AdaptiveTypewriter {
     
     // Add to rendered text
     this.rendered += chunk;
+    
+    // Use textContent for safe display (prevents XSS)
+    // Format line breaks and preserve whitespace
     this.element.textContent = this.rendered;
     
     // Calculate delay based on last character
@@ -421,6 +424,14 @@ class AdaptiveTypewriter {
     this.clear();
     this.rendered = text;
     this.element.textContent = text;
+  }
+  
+  /**
+   * Get the current rendered text
+   * @returns {string} Current text
+   */
+  getText() {
+    return this.rendered;
   }
 }
 
