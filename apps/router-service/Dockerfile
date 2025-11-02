@@ -1,7 +1,7 @@
 # AI Router Service Dockerfile
 # Distroless base for security and minimal attack surface
 
-FROM python:3.11-slim as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
