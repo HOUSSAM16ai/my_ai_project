@@ -1,0 +1,676 @@
+/* ========================================================================
+   🌟 SUPERHUMAN UI FRAMEWORK v3.0 - SURPASSING TECH GIANTS 🌟
+   A cutting-edge UI framework that exceeds Google, Apple, Microsoft, OpenAI
+   ======================================================================== */
+
+/* ========================================================================
+   🎨 ADVANCED CSS VARIABLES - DYNAMIC THEMING SYSTEM
+   ======================================================================== */
+:root {
+  /* 🌈 Primary Color Palette - Dynamic with HSL for easy manipulation */
+  --primary-hue: 210;
+  --primary-sat: 100%;
+  --primary-light: 50%;
+  --primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
+  --primary-rgb: 0, 123, 255;
+  
+  /* 🎨 Gradient System - Multi-layered, animated gradients */
+  --gradient-primary: linear-gradient(135deg, 
+    hsl(var(--primary-hue), 100%, 60%) 0%, 
+    hsl(calc(var(--primary-hue) + 30), 100%, 55%) 100%);
+  --gradient-mesh: radial-gradient(at 40% 20%, hsla(210, 100%, 60%, 0.3) 0px, transparent 50%),
+                   radial-gradient(at 80% 0%, hsla(270, 100%, 60%, 0.3) 0px, transparent 50%),
+                   radial-gradient(at 0% 50%, hsla(180, 100%, 60%, 0.3) 0px, transparent 50%);
+  
+  /* 🌑 Dark Theme Colors */
+  --dark-bg-primary: #0a0e1a;
+  --dark-bg-secondary: #12182b;
+  --dark-bg-tertiary: #1a2238;
+  --dark-surface: rgba(255, 255, 255, 0.05);
+  --dark-surface-hover: rgba(255, 255, 255, 0.08);
+  --dark-border: rgba(255, 255, 255, 0.1);
+  --dark-text: #e8eef6;
+  --dark-text-secondary: #9ba3b4;
+  
+  /* ☀️ Light Theme Colors */
+  --light-bg-primary: #ffffff;
+  --light-bg-secondary: #f8f9fc;
+  --light-bg-tertiary: #f0f2f7;
+  --light-surface: rgba(0, 0, 0, 0.02);
+  --light-surface-hover: rgba(0, 0, 0, 0.05);
+  --light-border: rgba(0, 0, 0, 0.08);
+  --light-text: #1a1d2e;
+  --light-text-secondary: #6c7589;
+  
+  /* 🎭 Glassmorphism Effects */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-blur: blur(20px);
+  
+  /* 🌊 Neumorphism Effects */
+  --neu-light-shadow: 12px 12px 24px rgba(0, 0, 0, 0.1), -12px -12px 24px rgba(255, 255, 255, 0.8);
+  --neu-dark-shadow: 12px 12px 24px rgba(0, 0, 0, 0.3), -12px -12px 24px rgba(255, 255, 255, 0.05);
+  
+  /* ⚡ Animation & Transition Speeds */
+  --speed-instant: 50ms;
+  --speed-fast: 150ms;
+  --speed-normal: 300ms;
+  --speed-slow: 500ms;
+  --speed-slower: 800ms;
+  
+  /* 📏 Spacing System - Fibonacci-based for visual harmony */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.5rem;   /* 24px */
+  --space-6: 2rem;     /* 32px */
+  --space-8: 3rem;     /* 48px */
+  --space-10: 4rem;    /* 64px */
+  --space-12: 6rem;    /* 96px */
+  
+  /* 🔤 Typography System - Perfect vertical rhythm */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-display: 'Space Grotesk', var(--font-sans);
+  
+  /* 📊 Z-index System - Organized layers */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-notification: 800;
+  
+  /* 🎨 Semantic Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --info-bg: rgba(59, 130, 246, 0.1);
+}
+
+/* ========================================================================
+   🌓 DARK MODE - AUTOMATIC THEME SWITCHING
+   ======================================================================== */
+:root {
+  --bg-primary: var(--dark-bg-primary);
+  --bg-secondary: var(--dark-bg-secondary);
+  --bg-tertiary: var(--dark-bg-tertiary);
+  --surface: var(--dark-surface);
+  --surface-hover: var(--dark-surface-hover);
+  --border-color: var(--dark-border);
+  --text-primary: var(--dark-text);
+  --text-secondary: var(--dark-text-secondary);
+  --shadow: var(--neu-dark-shadow);
+}
+
+[data-theme="light"] {
+  --bg-primary: var(--light-bg-primary);
+  --bg-secondary: var(--light-bg-secondary);
+  --bg-tertiary: var(--light-bg-tertiary);
+  --surface: var(--light-surface);
+  --surface-hover: var(--light-surface-hover);
+  --border-color: var(--light-border);
+  --text-primary: var(--light-text);
+  --text-secondary: var(--light-text-secondary);
+  --shadow: var(--neu-light-shadow);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================================================
+   🎯 GLOBAL RESETS & BASE STYLES
+   ======================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: background var(--speed-normal), color var(--speed-normal);
+}
+
+/* ========================================================================
+   🎨 GLASSMORPHISM COMPONENTS
+   ======================================================================== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-6);
+  transition: all var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.25);
+}
+
+/* ========================================================================
+   🌊 NEUMORPHISM COMPONENTS
+   ======================================================================== */
+.neu-card {
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  border-radius: 20px;
+  padding: var(--space-6);
+  transition: all var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-button {
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  border: none;
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-6);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--speed-fast);
+}
+
+.neu-button:hover {
+  box-shadow: inset var(--shadow);
+}
+
+.neu-button:active {
+  box-shadow: inset 6px 6px 12px rgba(0, 0, 0, 0.2), 
+              inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================================================
+   ✨ GRADIENT ANIMATIONS - MOVING GRADIENTS
+   ======================================================================== */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animated {
+  background: var(--gradient-primary);
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* ========================================================================
+   🎭 3D TRANSFORMS & PERSPECTIVE
+   ======================================================================== */
+.card-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-3d:hover {
+  transform: rotateY(5deg) rotateX(5deg) translateZ(10px);
+}
+
+.card-3d::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0) 100%);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--speed-normal);
+  pointer-events: none;
+}
+
+.card-3d:hover::before {
+  opacity: 1;
+}
+
+/* ========================================================================
+   🌟 PARTICLE EFFECTS BACKGROUND
+   ======================================================================== */
+.particle-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background: var(--gradient-mesh);
+  opacity: 0.6;
+  animation: particle-float 20s ease-in-out infinite;
+}
+
+@keyframes particle-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+  75% {
+    transform: translate(20px, 20px) scale(1.02);
+  }
+}
+
+/* ========================================================================
+   💫 ADVANCED BUTTON STYLES
+   ======================================================================== */
+.btn-superhuman {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+}
+
+.btn-superhuman::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width var(--speed-slow), height var(--speed-slow);
+}
+
+.btn-superhuman:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
+}
+
+.btn-superhuman:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-superhuman:active {
+  transform: translateY(0);
+}
+
+/* ========================================================================
+   🎨 INPUT FIELDS - ADVANCED STYLING
+   ======================================================================== */
+.input-superhuman {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: var(--font-sans);
+  transition: all var(--speed-normal);
+  outline: none;
+}
+
+.input-superhuman:focus {
+  border-color: var(--primary);
+  background: var(--surface-hover);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.input-superhuman::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ========================================================================
+   🌊 RIPPLE EFFECT - MATERIAL DESIGN ENHANCED
+   ======================================================================== */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width var(--speed-slow), height var(--speed-slow);
+  pointer-events: none;
+}
+
+.ripple:active::after {
+  width: 200%;
+  height: 200%;
+  transition: width 0s, height 0s;
+}
+
+/* ========================================================================
+   📊 LOADING ANIMATIONS - SUPERHUMAN LOADERS
+   ======================================================================== */
+.loader-dots {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.loader-dots span {
+  width: 12px;
+  height: 12px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: loader-bounce 1.4s infinite ease-in-out both;
+}
+
+.loader-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loader-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loader-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================================================
+   🎯 SKELETON LOADERS - CONTENT PLACEHOLDERS
+   ======================================================================== */
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--surface) 0%,
+    var(--surface-hover) 50%,
+    var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================================================
+   🌈 PROGRESS BARS - ANIMATED PROGRESS
+   ======================================================================== */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--surface);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 999px;
+  transition: width var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%);
+  animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ========================================================================
+   🎭 MODAL & OVERLAY - ADVANCED MODALS
+   ======================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  animation: modal-fade-in var(--speed-normal);
+}
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: var(--space-8);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modal-slide-up var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================================================
+   💬 TOOLTIPS - BEAUTIFUL TOOLTIPS
+   ======================================================================== */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--speed-normal);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: var(--z-tooltip);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bg-tertiary);
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--speed-normal);
+}
+
+.tooltip:hover::before,
+.tooltip:hover::after {
+  opacity: 1;
+}
+
+/* ========================================================================
+   🎨 CUSTOM SCROLLBAR - BEAUTIFUL SCROLLBARS
+   ======================================================================== */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 999px;
+  border: 3px solid var(--surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ========================================================================
+   📱 RESPONSIVE UTILITIES
+   ======================================================================== */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .glass-card,
+  .neu-card,
+  .modal-content {
+    padding: var(--space-4);
+  }
+}
+
+/* ========================================================================
+   🎯 ACCESSIBILITY - A11Y IMPROVEMENTS
+   ======================================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.focus-visible:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ========================================================================
+   ✨ UTILITY CLASSES
+   ======================================================================== */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow {
+  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.5);
+}
+
+.blur {
+  filter: blur(8px);
+}
+
+.saturate {
+  filter: saturate(1.5);
+}
+
+.transition-all {
+  transition: all var(--speed-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
