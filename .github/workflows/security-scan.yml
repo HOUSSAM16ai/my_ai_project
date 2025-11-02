@@ -307,40 +307,43 @@ jobs:
 
       - name: 📊 Generate Security Summary
         run: |
-          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📋 Scan Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: ${{ env.SECURITY_ENV }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Scan Mode**: ${{ env.SCAN_MODE }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "## ✅ Completed Scans" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Semgrep SAST" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ CodeQL Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Bandit Security Scan" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "## 📊 Results" >> $GITHUB_STEP_SUMMARY
-          echo "All security findings are available in the Security tab." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "## 🎯 Quality Standards" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ OWASP Top 10" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ CWE Top 25" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ SANS Top 25" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "# 🔒 Security Scan Summary"
+            echo ""
+            echo "## 📋 Scan Configuration"
+            echo "- **Environment**: ${{ env.SECURITY_ENV }}"
+            echo "- **Branch**: ${{ github.ref_name }}"
+            echo "- **Scan Mode**: ${{ env.SCAN_MODE }}"
+            echo "- **Event**: ${{ github.event_name }}"
+            echo ""
+            echo "## ✅ Completed Scans"
+            echo "- ✅ Semgrep SAST"
+            echo "- ✅ CodeQL Analysis"
+            echo "- ✅ Bandit Security Scan"
+            echo ""
+            echo "## 📊 Results"
+            echo "All security findings are available in the Security tab."
+            echo ""
+            echo "## 🎯 Quality Standards"
+            echo "- ✅ OWASP Top 10"
+            echo "- ✅ CWE Top 25"
+            echo "- ✅ SANS Top 25"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # Non-blocking message for development
           if [ "${{ env.SECURITY_ENV }}" != "production" ]; then
-            echo "## 💡 Development Mode" >> $GITHUB_STEP_SUMMARY
-            echo "Security findings are **non-blocking** for development branches." >> $GITHUB_STEP_SUMMARY
-            echo "Review findings and fix before merging to main." >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## 💡 Development Mode"
+              echo "Security findings are **non-blocking** for development branches."
+              echo "Review findings and fix before merging to main."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## 🚀 Production Mode" >> $GITHUB_STEP_SUMMARY
-            echo "Security findings are **blocking** for production deployments." >> $GITHUB_STEP_SUMMARY
-            echo "All critical issues must be resolved." >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## 🚀 Production Mode"
+              echo "Security findings are **blocking** for production deployments."
+              echo "All critical issues must be resolved."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: 🎉 Security Gate Status

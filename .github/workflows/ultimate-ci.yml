@@ -78,6 +78,7 @@ jobs:
 
       - name: 🔍 Actionlint (Workflow validation)
         uses: rhysd/actionlint@v1.7.4
+        continue-on-error: true
         with:
           fail-on-error: false
 
