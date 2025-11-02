@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/superhuman-ui.css') }}">
+<style>
+.demo-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.demo-section {
+  margin-bottom: 6rem;
+}
+
+.demo-section-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.demo-section-description {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.component-demo {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.component-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.demo-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Live Preview Section */
+.live-preview {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Code Display */
+.code-display {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  overflow-x: auto;
+}
+
+/* Chat Demo */
+.chat-demo-container {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-demo-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chat-demo-input {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 1rem;
+}
+
+/* Streaming Animation */
+@keyframes stream-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.streaming {
+  animation: stream-pulse 1.5s ease-in-out infinite;
+}
+
+/* Card Grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.demo-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all var(--speed-normal);
+}
+
+.demo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Progress Demo */
+.progress-demo {
+  margin: 2rem 0;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Notification Demo */
+.notification-preview {
+  position: relative;
+  height: 200px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="particle-bg"></div>
+
+<div class="demo-container">
+  <!-- Hero -->
+  <section class="demo-section">
+    <h1 class="demo-section-title">🎨 Interactive Component Showcase</h1>
+    <p class="demo-section-description">
+      Experience cutting-edge UI components with live demonstrations and real-time interactions
+    </p>
+  </section>
+
+  <!-- Streaming Chat Demo -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">⚡ Real-Time Streaming Chat</h2>
+    <p class="demo-section-description">
+      Advanced SSE streaming with adaptive typewriter effect - faster than ChatGPT
+    </p>
+    
+    <div class="chat-demo-container glass-card">
+      <div class="chat-demo-messages" id="chat-messages">
+        <div class="message assistant">
+          <div class="message-avatar">🤖</div>
+          <div class="message-content">
+            <p>Hello! I'm the superhuman AI assistant. Try sending me a message to see the streaming effect!</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chat-demo-input">
+        <input 
+          type="text" 
+          class="input-superhuman" 
+          id="demo-chat-input"
+          placeholder="Type a message to see real-time streaming..."
+          style="flex: 1;"
+        >
+        <button class="btn-superhuman ripple" id="demo-send-btn">
+          <span>Send</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Button Variants -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">💫 Advanced Buttons</h2>
+    <p class="demo-section-description">
+      Beautiful buttons with ripple effects, gradients, and smooth animations
+    </p>
+    
+    <div class="demo-grid">
+      <div class="component-demo">
+        <h3 class="component-title">Primary Buttons</h3>
+        <div class="demo-controls">
+          <button class="btn-superhuman ripple">
+            <span>🚀 Primary</span>
+          </button>
+          <button class="btn-superhuman ripple gradient-animated">
+            <span>✨ Gradient</span>
+          </button>
+          <button class="btn-superhuman ripple" disabled>
+            <span>🔒 Disabled</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="component-demo">
+        <h3 class="component-title">Neumorphic Buttons</h3>
+        <div class="demo-controls">
+          <button class="neu-button ripple">
+            <span>🌊 Neumorphic</span>
+          </button>
+          <button class="neu-button ripple">
+            <span>🎯 Soft UI</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cards -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">🎴 Beautiful Cards</h2>
+    <p class="demo-section-description">
+      Glassmorphism, neumorphism, and 3D transform cards
+    </p>
+    
+    <div class="card-grid">
+      <div class="glass-card card-3d">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🌟</div>
+        <h3 style="margin-bottom: 0.5rem; font-weight: 700;">Glassmorphism</h3>
+        <p style="color: var(--text-secondary);">Translucent glass effect with backdrop blur</p>
+      </div>
+      
+      <div class="neu-card">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🌊</div>
+        <h3 style="margin-bottom: 0.5rem; font-weight: 700;">Neumorphism</h3>
+        <p style="color: var(--text-secondary);">Soft shadows creating depth and realism</p>
+      </div>
+      
+      <div class="glass-card card-3d">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🎭</div>
+        <h3 style="margin-bottom: 0.5rem; font-weight: 700;">3D Transform</h3>
+        <p style="color: var(--text-secondary);">Perspective and rotation effects</p>
+      </div>
+      
+      <div class="demo-card">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">⚡</div>
+        <h3 style="margin-bottom: 0.5rem; font-weight: 700;">Hover Effects</h3>
+        <p style="color: var(--text-secondary);">Smooth transitions on interaction</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Progress Bars -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">📊 Progress Indicators</h2>
+    <p class="demo-section-description">
+      Animated progress bars with shimmer effects
+    </p>
+    
+    <div class="component-demo">
+      <h3 class="component-title">Animated Progress</h3>
+      
+      <div class="progress-demo">
+        <div class="progress-label">
+          <span>Upload Progress</span>
+          <span id="progress-1">75%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progress-bar-1" style="width: 75%;"></div>
+        </div>
+      </div>
+      
+      <div class="progress-demo">
+        <div class="progress-label">
+          <span>Processing</span>
+          <span id="progress-2">45%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progress-bar-2" style="width: 45%;"></div>
+        </div>
+      </div>
+      
+      <div class="progress-demo">
+        <div class="progress-label">
+          <span>Completion</span>
+          <span id="progress-3">90%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progress-bar-3" style="width: 90%;"></div>
+        </div>
+      </div>
+      
+      <button class="btn-superhuman ripple" id="animate-progress">
+        <span>🎯 Animate Progress</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading States -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">⏳ Loading Animations</h2>
+    <p class="demo-section-description">
+      Beautiful loading indicators and skeleton screens
+    </p>
+    
+    <div class="demo-grid">
+      <div class="component-demo">
+        <h3 class="component-title">Dot Loader</h3>
+        <div class="live-preview">
+          <div class="loader-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="component-demo">
+        <h3 class="component-title">Skeleton Loading</h3>
+        <div class="live-preview" style="display: block;">
+          <div class="skeleton" style="height: 20px; width: 80%; margin-bottom: 1rem;"></div>
+          <div class="skeleton" style="height: 20px; width: 60%; margin-bottom: 1rem;"></div>
+          <div class="skeleton" style="height: 20px; width: 90%;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notifications -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">🔔 Notifications</h2>
+    <p class="demo-section-description">
+      Beautiful toast notifications with animations
+    </p>
+    
+    <div class="component-demo">
+      <h3 class="component-title">Notification Types</h3>
+      <div class="demo-controls">
+        <button class="btn-superhuman ripple" id="show-success">
+          <span>✅ Success</span>
+        </button>
+        <button class="btn-superhuman ripple" id="show-error">
+          <span>❌ Error</span>
+        </button>
+        <button class="btn-superhuman ripple" id="show-warning">
+          <span>⚠️ Warning</span>
+        </button>
+        <button class="btn-superhuman ripple" id="show-info">
+          <span>ℹ️ Info</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tooltips -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">💬 Tooltips</h2>
+    <p class="demo-section-description">
+      Hover over buttons to see beautiful tooltips
+    </p>
+    
+    <div class="component-demo">
+      <div class="demo-controls">
+        <button class="btn-superhuman ripple tooltip" data-tooltip="This is a tooltip!">
+          <span>Hover Me</span>
+        </button>
+        <button class="btn-superhuman ripple tooltip" data-tooltip="Advanced tooltip system">
+          <span>And Me</span>
+        </button>
+        <button class="btn-superhuman ripple tooltip" data-tooltip="Beautiful animations">
+          <span>Me Too!</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Performance Stats -->
+  <section class="demo-section">
+    <h2 class="demo-section-title">📈 Live Performance Monitor</h2>
+    <p class="demo-section-description">
+      Real-time performance metrics tracking
+    </p>
+    
+    <div class="demo-grid">
+      <div class="component-demo">
+        <h3 class="component-title">FPS Monitor</h3>
+        <div class="live-preview">
+          <div style="text-align: center;">
+            <div style="font-size: 3rem; font-weight: 800; color: var(--primary);" id="fps-counter">60</div>
+            <div style="color: var(--text-secondary);">Frames Per Second</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="component-demo">
+        <h3 class="component-title">Memory Usage</h3>
+        <div class="live-preview">
+          <div style="text-align: center;">
+            <div style="font-size: 3rem; font-weight: 800; color: var(--primary);" id="memory-usage">0</div>
+            <div style="color: var(--text-secondary);">MB Used</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/superhuman-framework.js') }}"></script>
+<script>
+// Initialize Framework
+const notifications = new SuperhumanFramework.NotificationManager();
+const perfMonitor = new SuperhumanFramework.PerformanceMonitor();
+const typewriter = new SuperhumanFramework.AdaptiveTypewriter(
+  document.getElementById('chat-messages')
+);
+
+// Simulate streaming chat
+document.getElementById('demo-send-btn').addEventListener('click', async () => {
+  const input = document.getElementById('demo-chat-input');
+  const message = input.value.trim();
+  
+  if (!message) return;
+  
+  // Add user message
+  const chatMessages = document.getElementById('chat-messages');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'message user';
+  userMsg.innerHTML = `
+    <div class="message-avatar">👤</div>
+    <div class="message-content"><p>${message}</p></div>
+  `;
+  chatMessages.appendChild(userMsg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  input.value = '';
+  
+  // Simulate AI response with streaming
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'message assistant';
+  aiMsg.innerHTML = `
+    <div class="message-avatar">🤖</div>
+    <div class="message-content streaming" id="ai-response"></div>
+  `;
+  chatMessages.appendChild(aiMsg);
+  
+  const responseDiv = document.getElementById('ai-response');
+  const responses = [
+    "That's a great question! Let me demonstrate the power of real-time streaming...",
+    "I'm using adaptive typewriter technology that adjusts speed based on punctuation. Notice how I pause at commas, and longer at periods!",
+    "This creates a more natural, human-like reading experience. Pretty cool, right? 🚀"
+  ];
+  
+  const fullResponse = responses.join(' ');
+  const typewriter = new SuperhumanFramework.AdaptiveTypewriter(responseDiv);
+  
+  // Simulate token-by-token streaming
+  for (let i = 0; i < fullResponse.length; i++) {
+    typewriter.append(fullResponse[i]);
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  
+  responseDiv.classList.remove('streaming');
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+// Enter key to send
+document.getElementById('demo-chat-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    document.getElementById('demo-send-btn').click();
+  }
+});
+
+// Notification demos
+document.getElementById('show-success').addEventListener('click', () => {
+  notifications.success('🎉 Operation completed successfully!');
+});
+
+document.getElementById('show-error').addEventListener('click', () => {
+  notifications.error('❌ An error occurred. Please try again.');
+});
+
+document.getElementById('show-warning').addEventListener('click', () => {
+  notifications.warning('⚠️ Warning: This action cannot be undone.');
+});
+
+document.getElementById('show-info').addEventListener('click', () => {
+  notifications.info('ℹ️ Here\'s some helpful information for you.');
+});
+
+// Animate progress bars
+document.getElementById('animate-progress').addEventListener('click', () => {
+  animateProgress('progress-bar-1', 'progress-1', 0, 100);
+  animateProgress('progress-bar-2', 'progress-2', 0, 85);
+  animateProgress('progress-bar-3', 'progress-3', 0, 100);
+});
+
+function animateProgress(barId, labelId, start, end) {
+  const bar = document.getElementById(barId);
+  const label = document.getElementById(labelId);
+  let current = start;
+  
+  const interval = setInterval(() => {
+    current += 2;
+    if (current >= end) {
+      current = end;
+      clearInterval(interval);
+    }
+    bar.style.width = current + '%';
+    label.textContent = current + '%';
+  }, 30);
+}
+
+// FPS Counter
+let lastTime = performance.now();
+let frames = 0;
+let fps = 60;
+
+function updateFPS() {
+  frames++;
+  const currentTime = performance.now();
+  
+  if (currentTime >= lastTime + 1000) {
+    fps = Math.round((frames * 1000) / (currentTime - lastTime));
+    document.getElementById('fps-counter').textContent = fps;
+    frames = 0;
+    lastTime = currentTime;
+  }
+  
+  requestAnimationFrame(updateFPS);
+}
+
+updateFPS();
+
+// Memory Usage (if available)
+function updateMemory() {
+  if (performance.memory) {
+    const usedMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
+    document.getElementById('memory-usage').textContent = usedMB;
+  }
+}
+
+setInterval(updateMemory, 1000);
+updateMemory();
+
+// Welcome notification
+setTimeout(() => {
+  notifications.success('🎨 Welcome to the Interactive Component Showcase!', 5000);
+}, 500);
+
+// Add ripple effect to all ripple buttons
+document.querySelectorAll('.ripple').forEach(button => {
+  button.addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ripple = document.createElement('span');
+    ripple.style.cssText = `
+      position: absolute;
+      left: ${x}px;
+      top: ${y}px;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transform: translate(-50%, -50%);
+      animation: ripple-effect 0.6s ease-out;
+      pointer-events: none;
+    `;
+    
+    this.style.position = 'relative';
+    this.style.overflow = 'hidden';
+    this.appendChild(ripple);
+    
+    setTimeout(() => ripple.remove(), 600);
+  });
+});
+</script>
+{% endblock %}
