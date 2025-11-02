@@ -931,22 +931,33 @@ body {
     chatInput.value = '';
     
     try {
-      // Create streaming message container
+      // Create streaming message container safely
       const streamMsgId = 'stream-message-' + Date.now();
+      
       const streamMsg = document.createElement('div');
       streamMsg.className = 'message assistant';
       streamMsg.id = streamMsgId;
-      streamMsg.innerHTML = `
-        <div class="message-avatar">🤖</div>
-        <div class="message-content" id="${streamMsgId}-content">
-          <div id="${streamMsgId}-text"></div>
-        </div>
-      `;
+      
+      // Create avatar
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = '🤖';
+      
+      // Create content container
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.id = `${streamMsgId}-content`;
+      
+      // Create text container
+      const textDiv = document.createElement('div');
+      textDiv.id = `${streamMsgId}-text`;
+      
+      // Build structure
+      contentDiv.appendChild(textDiv);
+      streamMsg.appendChild(avatar);
+      streamMsg.appendChild(contentDiv);
       messagesArea.appendChild(streamMsg);
       messagesArea.scrollTop = messagesArea.scrollHeight;
-      
-      const contentDiv = document.getElementById(`${streamMsgId}-content`);
-      const textDiv = document.getElementById(`${streamMsgId}-text`);
       let fullText = '';
       let metadata = {};
       
@@ -1315,12 +1326,21 @@ body {
       if (conv.id === STATE.currentConversationId) {
         item.classList.add('active');
       }
-      item.innerHTML = `
-        <div style="font-weight: 600; margin-bottom: 0.25rem;">${conv.title}</div>
-        <div style="font-size: 0.75rem; color: var(--cf-text-dim);">
-          ${conv.message_count} messages • ${new Date(conv.updated_at).toLocaleDateString()}
-        </div>
-      `;
+      
+      // Create title div safely
+      const titleDiv = document.createElement('div');
+      titleDiv.style.fontWeight = '600';
+      titleDiv.style.marginBottom = '0.25rem';
+      titleDiv.textContent = conv.title;
+      
+      // Create info div safely
+      const infoDiv = document.createElement('div');
+      infoDiv.style.fontSize = '0.75rem';
+      infoDiv.style.color = 'var(--cf-text-dim)';
+      infoDiv.textContent = `${conv.message_count} messages • ${new Date(conv.updated_at).toLocaleDateString()}`;
+      
+      item.appendChild(titleDiv);
+      item.appendChild(infoDiv);
       item.addEventListener('click', () => loadConversation(conv.id));
       conversationList.appendChild(item);
     });
@@ -1922,11 +1942,21 @@ ${result.generated_prompt}
         
         metricsDisplay.innerHTML = html;
       } else {
-        metricsDisplay.innerHTML = `<p style="color: var(--cf-danger);">❌ Failed to load metrics: ${result.message}</p>`;
+        // Display error safely
+        metricsDisplay.innerHTML = '';
+        const errorP = document.createElement('p');
+        errorP.style.color = 'var(--cf-danger)';
+        errorP.textContent = `❌ Failed to load metrics: ${result.message}`;
+        metricsDisplay.appendChild(errorP);
       }
       
     } catch (error) {
-      metricsDisplay.innerHTML = `<p style="color: var(--cf-danger);">❌ Error loading metrics: ${error.message}</p>`;
+      // Display error safely
+      metricsDisplay.innerHTML = '';
+      const errorP = document.createElement('p');
+      errorP.style.color = 'var(--cf-danger)';
+      errorP.textContent = `❌ Error loading metrics: ${error.message}`;
+      metricsDisplay.appendChild(errorP);
     }
   }
   
