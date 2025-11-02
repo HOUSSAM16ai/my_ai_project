@@ -871,7 +871,7 @@ body {
     
     // For user messages, escape content; for assistant, allow formatted HTML
     if (role === 'user') {
-      // Escape user input to prevent XSS
+      // User input: Must be escaped to prevent XSS
       const escapedContent = content
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -881,7 +881,10 @@ body {
         .replace(/\n/g, '<br>');
       contentDiv.innerHTML = escapedContent;
     } else {
-      // Assistant/system messages can have formatting (already sanitized by server)
+      // Assistant/system messages: Content is either:
+      // 1. Pre-escaped by formatContent() which escapes HTML then adds markdown formatting
+      // 2. Static system messages (trusted)
+      // Note: Always use formatContent() when displaying assistant responses
       contentDiv.innerHTML = content;
     }
     
@@ -1252,29 +1255,37 @@ body {
         const hotspots = result.hotspots;
         const recommendations = result.recommendations;
         
+        // Escape function to prevent XSS
+        const escapeHtml = (text) => String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+        
         let analysisHtml = `
           <h3>📊 Project Statistics</h3>
-          <p>Files scanned: <strong>${stats.files_scanned}</strong></p>
-          <p>Functions: <strong>${stats.total_functions}</strong></p>
-          <p>Classes: <strong>${stats.total_classes}</strong></p>
-          <p>Complexity Hotspots: <strong>${stats.complexity_hotspots}</strong></p>
+          <p>Files scanned: <strong>${escapeHtml(stats.files_scanned)}</strong></p>
+          <p>Functions: <strong>${escapeHtml(stats.total_functions)}</strong></p>
+          <p>Classes: <strong>${escapeHtml(stats.total_classes)}</strong></p>
+          <p>Complexity Hotspots: <strong>${escapeHtml(stats.complexity_hotspots)}</strong></p>
           
           <h3>🏗️ Architecture</h3>
-          <p>Services: <strong>${arch.services_count}</strong></p>
-          <p>Models: <strong>${arch.models_count}</strong></p>
-          <p>Routes: <strong>${arch.routes_count}</strong></p>
+          <p>Services: <strong>${escapeHtml(arch.services_count)}</strong></p>
+          <p>Models: <strong>${escapeHtml(arch.models_count)}</strong></p>
+          <p>Routes: <strong>${escapeHtml(arch.routes_count)}</strong></p>
           
           <h3>🔥 Top Complexity Hotspots</h3>
           <ul>
         `;
         
         hotspots.slice(0, 5).forEach(h => {
-          analysisHtml += `<li>${h.file} - ${h.function} (complexity: ${h.complexity})</li>`;
+          analysisHtml += `<li>${escapeHtml(h.file)} - ${escapeHtml(h.function)} (complexity: ${escapeHtml(h.complexity)})</li>`;
         });
         
         analysisHtml += '</ul><h3>💡 Recommendations</h3><ul>';
         recommendations.forEach(r => {
-          analysisHtml += `<li>${r}</li>`;
+          analysisHtml += `<li>${escapeHtml(r)}</li>`;
         });
         analysisHtml += '</ul>';
         
