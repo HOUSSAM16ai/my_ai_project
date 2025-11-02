@@ -911,12 +911,15 @@ body {
       streamMsg.id = streamMsgId;
       streamMsg.innerHTML = `
         <div class="message-avatar">🤖</div>
-        <div class="message-content" id="${streamMsgId}-content"></div>
+        <div class="message-content" id="${streamMsgId}-content">
+          <div id="${streamMsgId}-text"></div>
+        </div>
       `;
       messagesArea.appendChild(streamMsg);
       messagesArea.scrollTop = messagesArea.scrollHeight;
       
       const contentDiv = document.getElementById(`${streamMsgId}-content`);
+      const textDiv = document.getElementById(`${streamMsgId}-text`);
       let fullText = '';
       let metadata = {};
       
@@ -926,8 +929,8 @@ body {
       url.searchParams.set('conversation_id', STATE.currentConversationId || '');
       url.searchParams.set('use_deep_context', 'true');
       
-      // Create adaptive typewriter for smooth display
-      const typewriter = new AdaptiveTypewriter(contentDiv, {
+      // Create adaptive typewriter for smooth display (use textDiv not contentDiv)
+      const typewriter = new AdaptiveTypewriter(textDiv, {
         baseDelayMs: 5,
         punctuationDelayMultiplier: 8,
         commaDelayMultiplier: 3,
@@ -954,7 +957,7 @@ body {
       
       // Handle streaming events
       consumer.onStart(() => {
-        hideLoading();
+        // Don't hide loading yet - wait for first chunk
         console.log('🚀 Streaming started');
       });
       
@@ -968,7 +971,27 @@ body {
         console.log('📊 Metadata received:', metadata);
       });
       
+      let firstChunk = true;
       consumer.onDelta((data) => {
+        // Hide loading indicator on first chunk
+        if (firstChunk) {
+          hideLoading();
+          
+          // Add streaming indicator after text div
+          const streamingIndicator = document.createElement('div');
+          streamingIndicator.id = `${streamMsgId}-streaming`;
+          streamingIndicator.style.marginTop = '0.5rem';
+          streamingIndicator.style.fontSize = '0.875rem';
+          streamingIndicator.style.color = 'var(--cf-accent)';
+          streamingIndicator.style.display = 'flex';
+          streamingIndicator.style.alignItems = 'center';
+          streamingIndicator.style.gap = '0.5rem';
+          streamingIndicator.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span><span>جارٍ الكتابة...</span>';
+          contentDiv.appendChild(streamingIndicator);
+          
+          firstChunk = false;
+        }
+        
         fullText += data.text;
         
         // Use adaptive typewriter for smooth display
@@ -980,6 +1003,12 @@ body {
       
       consumer.onComplete((data) => {
         console.log('✅ Streaming complete');
+        
+        // Remove streaming indicator
+        const streamingIndicator = document.getElementById(`${streamMsgId}-streaming`);
+        if (streamingIndicator) {
+          streamingIndicator.remove();
+        }
         
         // Wait for typewriter to finish, then add metadata
         setTimeout(() => {

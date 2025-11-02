@@ -249,8 +249,8 @@ class AdminChatStreamingService:
         for chunk in self.chunker.smart_chunk(text):
             chunk_start = time.time()
             
-            # Send chunk
-            yield self._format_sse_event('chunk', {'text': chunk})
+            # Send chunk (use 'delta' event name to match JavaScript SSEConsumer)
+            yield self._format_sse_event('delta', {'text': chunk})
             
             # Record metrics
             chunk_latency = (time.time() - chunk_start) * 1000
@@ -275,7 +275,7 @@ class AdminChatStreamingService:
         Format data as Server-Sent Event.
         
         Args:
-            event_type: Type of event (chunk, metadata, complete)
+            event_type: Type of event (delta, metadata, complete)
             data: Event data
             
         Returns:
@@ -307,13 +307,13 @@ class AdminChatStreamingService:
             
             # Stream when we have enough for a chunk
             if len(buffer.split()) >= StreamingConfig.OPTIMAL_CHUNK_SIZE:
-                yield self._format_sse_event('chunk', {'text': buffer})
+                yield self._format_sse_event('delta', {'text': buffer})
                 buffer = ""
                 await asyncio.sleep(StreamingConfig.MIN_CHUNK_DELAY_MS / MS_TO_SECONDS)
         
         # Send any remaining text
         if buffer:
-            yield self._format_sse_event('chunk', {'text': buffer})
+            yield self._format_sse_event('delta', {'text': buffer})
         
         yield self._format_sse_event('complete', {})
     
