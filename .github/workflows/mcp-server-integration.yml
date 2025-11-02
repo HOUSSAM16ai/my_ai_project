@@ -149,7 +149,7 @@ jobs:
           echo "  - Branch: ${{ github.ref_name }}"
           echo "  - Event: ${{ github.event_name }}"
 
-          echo "ai_review_enabled=${{ env.AI_ENABLED }}" >> $GITHUB_OUTPUT
+          echo "ai_review_enabled=${{ env.AI_ENABLED }}" >> "$GITHUB_OUTPUT"
 
   # ====================================================================================
   # JOB 2: Build & Test with AI Assistance
