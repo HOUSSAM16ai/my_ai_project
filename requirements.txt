@@ -48,6 +48,7 @@ pytest
 pytest-flask
 pytest-cov
 pytest-timeout
+pytest-asyncio
 requests
 
 # --- Code Quality & Linting (Superhuman Edition) ---
