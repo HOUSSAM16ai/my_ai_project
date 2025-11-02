@@ -49,6 +49,7 @@ class SSEConsumer {
       hello: [],
       delta: [],
       done: [],
+      complete: [],  // Add complete event handler
       error: [],
       ping: [],
       progress: [],
@@ -77,6 +78,7 @@ class SSEConsumer {
   onHello(handler) { return this.on('hello', handler); }
   onDelta(handler) { return this.on('delta', handler); }
   onDone(handler) { return this.on('done', handler); }
+  onComplete(handler) { return this.on('complete', handler); }  // Add onComplete method
   onError(handler) { return this.on('error', handler); }
   onPing(handler) { return this.on('ping', handler); }
   onProgress(handler) { return this.on('progress', handler); }
