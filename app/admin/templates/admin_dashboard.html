@@ -861,31 +861,58 @@ body {
     
     const avatar = role === 'user' ? '👤' : (role === 'system' ? '⚙️' : '🤖');
     
-    let metaHtml = '';
-    if (metadata.model_used || metadata.tokens_used) {
-      metaHtml = `
-        <div class="message-meta">
-          ${metadata.model_used ? `Model: ${metadata.model_used}` : ''}
-          ${metadata.tokens_used ? ` • Tokens: ${metadata.tokens_used}` : ''}
-          ${metadata.elapsed_seconds ? ` • ${metadata.elapsed_seconds}s` : ''}
-        </div>
-      `;
+    // Create message structure safely
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'message-avatar';
+    avatarDiv.textContent = avatar;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    // For user messages, escape content; for assistant, allow formatted HTML
+    if (role === 'user') {
+      // Escape user input to prevent XSS
+      const escapedContent = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
+      contentDiv.innerHTML = escapedContent;
+    } else {
+      // Assistant/system messages can have formatting (already sanitized by server)
+      contentDiv.innerHTML = content;
     }
     
-    msg.innerHTML = `
-      <div class="message-avatar">${avatar}</div>
-      <div class="message-content">
-        ${content}
-        ${metaHtml}
-      </div>
-    `;
+    // Add metadata if provided
+    if (metadata.model_used || metadata.tokens_used) {
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'message-meta';
+      const metaParts = [];
+      if (metadata.model_used) metaParts.push(`Model: ${metadata.model_used}`);
+      if (metadata.tokens_used) metaParts.push(`Tokens: ${metadata.tokens_used}`);
+      if (metadata.elapsed_seconds) metaParts.push(`${metadata.elapsed_seconds}s`);
+      metaDiv.textContent = metaParts.join(' • ');
+      contentDiv.appendChild(metaDiv);
+    }
     
+    msg.appendChild(avatarDiv);
+    msg.appendChild(contentDiv);
     messagesArea.appendChild(msg);
     messagesArea.scrollTop = messagesArea.scrollHeight;
   }
 
   function formatContent(text) {
-    return text
+    // Escape HTML to prevent XSS, then apply markdown-like formatting
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+    
+    return escaped
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -1062,7 +1089,14 @@ body {
       consumer.onError((data) => {
         hideLoading();
         const errorMsg = data.message || 'Stream connection error';
-        contentDiv.innerHTML = `<p style="color: var(--cf-danger);">❌ ${errorMsg}</p>`;
+        
+        // Create error element safely
+        const errorP = document.createElement('p');
+        errorP.style.color = 'var(--cf-danger)';
+        errorP.textContent = `❌ ${errorMsg}`;
+        contentDiv.innerHTML = ''; // Clear any existing content
+        contentDiv.appendChild(errorP);
+        
         console.error('❌ Streaming error:', errorMsg);
       });
       
