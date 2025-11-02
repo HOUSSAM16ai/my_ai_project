@@ -577,6 +577,60 @@ class AdminAIService:
                 tokens_used = getattr(response.usage, "total_tokens", None)
                 model_used = response.model
 
+                # ============================================================
+                # CRITICAL FIX: Validate answer content is not None/empty
+                # ============================================================
+                if answer is None or (isinstance(answer, str) and not answer.strip()):
+                    # This can happen with thinking models or certain API configurations
+                    # that return tool calls or other data instead of text content
+                    self.logger.warning(
+                        f"AI returned None/empty content for model {model_used}. "
+                        f"Response structure: {response.choices[0].message}"
+                    )
+                    
+                    # Check if there are tool calls or other content
+                    message_obj = response.choices[0].message
+                    has_tool_calls = hasattr(message_obj, 'tool_calls') and message_obj.tool_calls
+                    
+                    if has_tool_calls:
+                        error_msg = (
+                            "⚠️ نموذج الذكاء الاصطناعي أرجع استدعاءات أدوات بدلاً من نص.\n\n"
+                            "The AI model returned tool calls instead of text content.\n\n"
+                            "**This usually happens when:**\n"
+                            "- Using a model configured for function calling\n"
+                            "- Model is trying to execute tools/functions\n\n"
+                            "**Solution:**\n"
+                            "Try asking your question again in a different way, or contact support "
+                            "to configure the model properly for chat responses."
+                        )
+                    else:
+                        error_msg = (
+                            "⚠️ نموذج الذكاء الاصطناعي لم يُرجع أي محتوى.\n\n"
+                            "The AI model did not return any content.\n\n"
+                            "**Model used:** " + str(model_used) + "\n"
+                            "**Tokens consumed:** " + str(tokens_used or 0) + "\n\n"
+                            "**This can happen when:**\n"
+                            "- Using thinking/reasoning models that may have processing issues\n"
+                            "- API response was malformed or incomplete\n"
+                            "- Model encountered an internal error\n\n"
+                            "**Solutions:**\n"
+                            "1. **Try again:** The issue may be temporary\n"
+                            "2. **Rephrase:** Try asking your question differently\n"
+                            "3. **Change model:** Try setting DEFAULT_AI_MODEL to 'openai/gpt-4o-mini' in .env\n"
+                            "4. **Check logs:** Look for detailed error information in application logs\n\n"
+                            "We apologize for the inconvenience. Your question was: \"" + question[:100] + 
+                            ("..." if len(question) > 100 else "") + "\""
+                        )
+                    
+                    return {
+                        "status": "error",
+                        "error": "Empty AI response",
+                        "answer": error_msg,
+                        "elapsed_seconds": round(time.time() - start_time, 2),
+                        "tokens_used": tokens_used,
+                        "model_used": model_used,
+                    }
+
             except AttributeError as e:
                 # This happens when mock client is used
                 self.logger.warning(f"Mock client detected or invalid response: {e}")
