@@ -120,7 +120,7 @@ def load_model(model_name: str | None = None):
     needs_reload = _model_instance is None
     if not needs_reload and hasattr(_model_instance, "_name_or_path"):
         needs_reload = getattr(_model_instance, "_name_or_path", "") != name
-    
+
     if needs_reload:
         print(f"Loading embedding model '{name}'...")
         _model_instance = SentenceTransformer(name)

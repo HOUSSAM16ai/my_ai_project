@@ -587,11 +587,11 @@ class AdminAIService:
                         f"AI returned None/empty content for model {model_used}. "
                         f"Response structure: {response.choices[0].message}"
                     )
-                    
+
                     # Check if there are tool calls or other content
                     message_obj = response.choices[0].message
-                    has_tool_calls = hasattr(message_obj, 'tool_calls') and message_obj.tool_calls
-                    
+                    has_tool_calls = hasattr(message_obj, "tool_calls") and message_obj.tool_calls
+
                     if has_tool_calls:
                         error_msg = (
                             "⚠️ نموذج الذكاء الاصطناعي أرجع استدعاءات أدوات بدلاً من نص.\n\n"
@@ -618,10 +618,12 @@ class AdminAIService:
                             "2. **Rephrase:** Try asking your question differently\n"
                             "3. **Change model:** Try setting DEFAULT_AI_MODEL to 'openai/gpt-4o-mini' in .env\n"
                             "4. **Check logs:** Look for detailed error information in application logs\n\n"
-                            "We apologize for the inconvenience. Your question was: \"" + question[:100] + 
-                            ("..." if len(question) > 100 else "") + "\""
+                            'We apologize for the inconvenience. Your question was: "'
+                            + question[:100]
+                            + ("..." if len(question) > 100 else "")
+                            + '"'
                         )
-                    
+
                     return {
                         "status": "error",
                         "error": "Empty AI response",

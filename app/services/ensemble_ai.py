@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 import os
 from enum import Enum
-from typing import Any, AsyncGenerator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,9 @@ class QueryClassifier:
 
         if any(kw in query_lower for kw in ["brief", "short", "quick", "مختصر", "قصير"]):
             return "short"
-        elif any(kw in query_lower for kw in ["detailed", "explain", "comprehensive", "مفصل", "اشرح"]):
+        elif any(
+            kw in query_lower for kw in ["detailed", "explain", "comprehensive", "مفصل", "اشرح"]
+        ):
             return "long"
         else:
             return "medium"
@@ -249,12 +251,12 @@ class IntelligentRouter:
     ) -> tuple[str, ModelTier]:
         """
         Route query to optimal model
-        
+
         Args:
             query: User query
             context: Additional context
             user_tier_preference: Optional user preference for tier
-            
+
         Returns:
             Tuple of (model_name, tier)
         """
