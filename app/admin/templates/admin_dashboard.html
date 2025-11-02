@@ -943,7 +943,7 @@ body {
         maxReconnectAttempts: 3,
         reconnectDelay: 1000,
         onOpen: () => {
-          hideLoading();
+          // Don't hide loading here - wait for first chunk
           console.log('🌊 SSE connection established');
         },
         onError: (err) => {
@@ -1013,14 +1013,24 @@ body {
         // Wait for typewriter to finish, then add metadata
         setTimeout(() => {
           if (metadata.model_used || metadata.tokens_used) {
-            const metaHtml = `
-              <div class="message-meta">
-                ${metadata.model_used ? `Model: ${metadata.model_used}` : ''}
-                ${metadata.tokens_used ? ` • Tokens: ${metadata.tokens_used}` : ''}
-                ${metadata.elapsed_seconds ? ` • ${metadata.elapsed_seconds}s` : ''}
-              </div>
-            `;
-            contentDiv.innerHTML += metaHtml;
+            // Create metadata element safely using DOM methods
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'message-meta';
+            
+            // Build metadata text safely
+            const metaParts = [];
+            if (metadata.model_used) {
+              metaParts.push(`Model: ${metadata.model_used}`);
+            }
+            if (metadata.tokens_used) {
+              metaParts.push(`Tokens: ${metadata.tokens_used}`);
+            }
+            if (metadata.elapsed_seconds) {
+              metaParts.push(`${metadata.elapsed_seconds}s`);
+            }
+            
+            metaDiv.textContent = metaParts.join(' • ');
+            contentDiv.appendChild(metaDiv);
           }
           
           // Update conversation ID if provided
