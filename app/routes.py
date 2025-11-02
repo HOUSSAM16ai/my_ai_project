@@ -60,6 +60,14 @@ def home():
     return render_template("home.html", title="Welcome")
 
 
+@bp.route("/demo")
+def demo():
+    """
+    Serves the interactive component demo page.
+    """
+    return render_template("demo.html", title="Component Demo")
+
+
 # --- User Authentication Routes (CRITICAL & RETAINED) ---
 
 
