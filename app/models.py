@@ -133,7 +133,7 @@ def coerce_datetime(value: Any) -> datetime | None:
         return None
     if isinstance(value, datetime):
         return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
-    if isinstance(value, int | float):
+    if isinstance(value, (int, float)):
         try:
             return datetime.fromtimestamp(float(value), tz=UTC)
         except Exception:

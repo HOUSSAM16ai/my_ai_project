@@ -127,20 +127,16 @@ from typing import Any
 try:
     import openai  # Modern SDK (v1.x with class OpenAI) OR legacy structure
 except Exception:  # pragma: no cover
-    openai = None  # type: ignore
-
+    openai = None
 try:
     import requests  # For HTTP fallback
 except Exception:  # pragma: no cover
-    requests = None  # type: ignore
-
+    requests = None
 try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
-    current_app = None  # type: ignore
-
-    def has_app_context() -> bool:  # type: ignore
-        return False
+    current_app = None
+    def has_app_context() -> bool:        return False
 
 
 import contextlib
@@ -446,7 +442,7 @@ def _build_openai_modern_client(creds: dict[str, Any], timeout: float):
         if creds.get("base_url"):
             client_kwargs["base_url"] = creds["base_url"]
         client_kwargs["timeout"] = timeout
-        return openai.OpenAI(**client_kwargs)  # type: ignore
+        return openai.OpenAI(**client_kwargs)
     except Exception as e:
         _LOG.warning("Failed to build modern OpenAI client: %s", e)
         return None
@@ -471,8 +467,7 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
                 **kwargs,
             ):
                 try:
-                    resp = openai.ChatCompletion.create(  # type: ignore
-                        model=model,
+                    resp = openai.ChatCompletion.create(                        model=model,
                         messages=messages,
                         temperature=temperature,
                         max_tokens=max_tokens,
@@ -516,9 +511,9 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
 
     try:
         if creds["api_key"]:
-            openai.api_key = creds["api_key"]  # type: ignore
+            openai.api_key = creds["api_key"]
         if creds.get("base_url"):
-            openai.api_base = creds["base_url"]  # type: ignore
+            openai.api_base = creds["base_url"]
     except Exception:
         pass
     return _LegacyClientWrapper()
@@ -1025,8 +1020,7 @@ def invoke_chat_stream(*args, **kwargs) -> Generator[dict[str, Any], None, None]
     result = invoke_chat(*args, **kwargs)
     if not isinstance(result, Generator):
         raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
-    return result  # type: ignore
-
+    return result
 
 # ======================================================================================
 # HEALTH & SNAPSHOT

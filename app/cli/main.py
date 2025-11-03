@@ -81,7 +81,7 @@ def deps():
     # This command remains unchanged. It is perfect.
     root = Path(".").resolve()
     g = import_graph(root)
-    counts = {}
+    counts: Any = {}
     for _, outs in g.items():
         for o in outs:
             counts[o] = counts.get(o, 0) + 1

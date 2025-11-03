@@ -290,8 +290,7 @@ def create_app(config_name: str | None = None) -> Flask:
 #
 # Smart initialization: Skip global app creation in test environments to avoid
 # premature database connection attempts before test fixtures are ready.
-app = None  # type: ignore
-
+app = None
 
 def _should_create_global_app() -> bool:
     """Determine if we should create a global app instance at module import time."""
@@ -309,8 +308,7 @@ if _should_create_global_app():
         # We do a minimal fallback logger
         _fallback_logger = logging.getLogger("genesis.factory")
         _fallback_logger.error("Global app instantiation failed: %s", _global_exc, exc_info=True)
-        app = None  # type: ignore
-
+        app = None
 
 # --------------------------------------------------------------------------------------
 # Utility: Ensure Context (for scripts / notebook usage)

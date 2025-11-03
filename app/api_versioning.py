@@ -20,7 +20,7 @@ class APIVersion:
 
     SUPPORTED_VERSIONS = ["v1", "v2"]
     DEFAULT_VERSION = "v2"
-    DEPRECATED_VERSIONS = []
+    DEPRECATED_VERSIONS: list[str] = []
 
     @staticmethod
     def get_version_from_request() -> str:

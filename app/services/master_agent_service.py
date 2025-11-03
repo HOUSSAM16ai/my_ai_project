@@ -95,7 +95,7 @@ from app.overmind.planning.schemas import MissionPlanSchema
 # Planner base errors (graceful fallback)
 # -------------------------------------------------------------------------------------------------
 try:
-    from app.overmind.planning.base_planner import PlannerError, PlanValidationError  # type: ignore
+    from app.overmind.planning.base_planner import PlannerError, PlanValidationError
 except Exception:  # pragma: no cover
 
     class PlannerError(Exception): ...
@@ -125,8 +125,7 @@ except Exception:  # pragma: no cover
 try:
     from app.services import agent_tools
 except Exception:  # pragma: no cover
-    agent_tools = None  # type: ignore
-
+    agent_tools = None
 # -------------------------------------------------------------------------------------------------
 # Optional Deep Index
 # -------------------------------------------------------------------------------------------------
@@ -786,8 +785,7 @@ class OvermindService:
                 ):
                     raise PlannerError(
                         "instrumented_generate invalid structure", pname, mission.objective
-                    )  # type: ignore
-
+                    )
                 plan_obj: MissionPlanSchema = result_dict["plan"]
                 meta: dict[str, Any] = result_dict["meta"]
                 planner_name = meta.get("planner") or pname
@@ -1388,8 +1386,7 @@ class OvermindService:
                 if not isinstance(cur, dict):
                     cur = {}
                 cur.update(meta_update)
-                task.result_meta_json = cur  # type: ignore
-
+                task.result_meta_json = cur
             task.status = TaskStatus.SUCCESS
             task.attempt_count = attempt_index
             task.finished_at = utc_now()

@@ -154,7 +154,7 @@ if not _LOG.handlers:
 # --------------------------------------------------------------------------------------
 _ALLOW_STUB = os.getenv("LLM_PLANNER_ALLOW_STUB", "0") == "1"
 try:
-    from .base_planner import BasePlanner, PlannerError, PlanValidationError  # type: ignore
+    from .base_planner import BasePlanner, PlannerError, PlanValidationError
 except Exception:
     if not _ALLOW_STUB:
         raise
@@ -173,7 +173,7 @@ except Exception:
 
 
 try:
-    from .schemas import MissionPlanSchema, PlannedTask, PlanningContext  # type: ignore
+    from .schemas import MissionPlanSchema, PlannedTask, PlanningContext
 except Exception:
     if not _ALLOW_STUB:
         raise
@@ -201,8 +201,7 @@ except Exception:
 _DEEP_INDEX_ENABLED = os.getenv("PLANNER_DEEP_INDEX_ENABLE", "1") == "1"
 if _DEEP_INDEX_ENABLED:
     try:
-        from .deep_indexer import build_index, summarize_for_prompt  # type: ignore
-
+        from .deep_indexer import build_index, summarize_for_prompt
         _HAS_INDEXER = True
     except Exception as _e:
         _LOG.warning("Deep indexer import failed: %s", _e)
@@ -503,10 +502,10 @@ def infer_sections(obj: str, lang: str) -> list[str]:
         parts = re.split(r"[;,،]|(?:\band\b)|(?:\sو\s)", tail)
         cleaned = [p.strip(" .\t") for p in parts if p.strip()]
         return cleaned[:25]
-    return (SECTION_HINTS_AR if lang == "ar" else SECTION_HINTS_EN)[:12]
+# return (SECTION_HINTS_AR if lang == "ar" else SECTION_HINTS_EN)[:12]
 
 
-def file_type(fn: str) -> str:
+# def file_type(fn: str) -> str:
     ext = os.path.splitext(fn)[1].lower()
     if ext in CODE_EXTS:
         return "code"

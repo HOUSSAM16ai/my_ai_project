@@ -72,7 +72,7 @@ from typing import (
 
 # Attempt to import BasePlanner; create safe fallbacks if missing.
 try:
-    from .base_planner import BasePlanner, PlannerError  # type: ignore
+    from .base_planner import BasePlanner, PlannerError
 except Exception:
 
     class PlannerError(RuntimeError):
@@ -253,7 +253,7 @@ def _import_module(module_name: str) -> ModuleType | None:
 def _get_planner_class(name: str):
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
-            live = BasePlanner.live_planner_classes()  # type: ignore
+            live = BasePlanner.live_planner_classes()
             if isinstance(live, dict):
                 cls = live.get(name) or live.get(name.lower())
                 if cls:
@@ -262,7 +262,7 @@ def _get_planner_class(name: str):
             _warn_once("live_planner_classes_access", f"live_planner_classes() failed: {e}")
     if hasattr(BasePlanner, "get_planner_class"):
         try:
-            return BasePlanner.get_planner_class(name)  # type: ignore
+            return BasePlanner.get_planner_class(name)
         except Exception:
             pass
     raise KeyError(f"Planner class '{name}' not found")
@@ -272,7 +272,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> set[str]:
     if not hasattr(obj, attr):
         return set()
     val = getattr(obj, attr)
-    if isinstance(val, list | tuple | set):
+    if isinstance(val, ((list, tuple, set))):
         return {str(v).strip() for v in val if v is not None}
     return set()
 
@@ -320,13 +320,13 @@ def _sync_registry_into_records():
     metadata_map = {}
     if hasattr(BasePlanner, "planner_metadata"):
         try:
-            metadata_map = BasePlanner.planner_metadata()  # type: ignore
+            metadata_map = BasePlanner.planner_metadata()
         except Exception as e:
             _warn_once("planner_metadata_access", f"planner_metadata() failed: {e}")
     live_classes = {}
     if hasattr(BasePlanner, "live_planner_classes"):
         try:
-            live_classes = BasePlanner.live_planner_classes()  # type: ignore
+            live_classes = BasePlanner.live_planner_classes()
         except Exception as e:
             _warn_once("live_planner_classes_sync", f"live_planner_classes() failed: {e}")
 
@@ -406,7 +406,7 @@ def _instantiate_planner(name: str) -> BasePlanner:
             return _INSTANCE_CACHE[key]
     cls = _get_planner_class(key)
     t0 = time.perf_counter()
-    inst = cls()  # type: ignore
+    inst = cls()
     elapsed = time.perf_counter() - t0
     with _STATE.lock:
         rec = _STATE.planner_records.setdefault(key, PlannerRecord(name=key))
@@ -447,8 +447,7 @@ def _rank_hint(
 ) -> float:
     if hasattr(BasePlanner, "compute_rank_hint"):
         try:
-            return BasePlanner.compute_rank_hint(  # type: ignore
-                objective_length=len(objective or ""),
+            return BasePlanner.compute_rank_hint(                objective_length=len(objective or ""),
                 capabilities_match_ratio=capabilities_match_ratio,
                 reliability_score=reliability_score,
                 tier=tier,
@@ -487,23 +486,21 @@ def refresh_metadata():
 # Backward compatibility: available_planners
 if not hasattr(BasePlanner, "available_planners"):
 
-    def _legacy_available_planners() -> list[str]:  # type: ignore
-        return _active_planner_names()
+    def _legacy_available_planners() -> list[str]:        return _active_planner_names()
 
     BasePlanner.available_planners = staticmethod(_legacy_available_planners)  # type: ignore
 else:
     try:
-        original_available = BasePlanner.available_planners  # type: ignore
-
+        original_available = BasePlanner.available_planners
         def _wrapped_available_planners():
             try:
-                base_names = set(original_available())  # type: ignore
+                base_names = set(original_available())
             except Exception:
                 base_names = set()
             base_names.update(_active_planner_names())
             return sorted(base_names)
 
-        BasePlanner.available_planners = staticmethod(_wrapped_available_planners)  # type: ignore
+        BasePlanner.available_planners = staticmethod(_wrapped_available_planners)
     except Exception:
         pass
 
@@ -526,8 +523,7 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     if auto_instantiate:
         return _instantiate_planner(key)
     cls = _get_planner_class(key)
-    return cls()  # type: ignore
-
+    return cls()
 
 def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
     if not _STATE.discovered:
