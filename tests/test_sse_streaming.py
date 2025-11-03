@@ -78,7 +78,7 @@ class TestSSEStreamRoutes:
         response = logged_in_client.get("/api/v1/stream/chat?q=test")
 
         assert response.status_code == 200
-        
+
         events = parse_sse_events(response.data)
 
         # Should have at least hello, delta, and done events
@@ -188,15 +188,13 @@ def logged_in_client(client, admin_user, session):
     """Create a logged-in client for SSE tests"""
     # Commit the admin user to ensure it's in the database
     session.commit()
-    
+
     # Log in
     with client:
         client.post(
-            "/login",
-            data={"email": "admin@test.com", "password": "1111"},
-            follow_redirects=True
+            "/login", data={"email": "admin@test.com", "password": "1111"}, follow_redirects=True
         )
-    
+
     return client
 
 
