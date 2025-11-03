@@ -52,13 +52,9 @@ class TestSSEStreamRoutes:
         assert data["service"] == "sse-streaming"
         assert "endpoints" in data
 
-    def test_sse_chat_requires_question(self, client, auth_headers):
+    def test_sse_chat_requires_question(self, logged_in_client):
         """Test that SSE chat requires a question parameter"""
-        response = client.get("/api/v1/stream/chat", headers=auth_headers)
-
-        # Skip if we get redirected (auth not set up)
-        if response.status_code == 302:
-            pytest.skip("Authentication not properly configured for SSE tests")
+        response = logged_in_client.get("/api/v1/stream/chat")
 
         # Should get an error event
         assert response.status_code == 200
@@ -68,27 +64,21 @@ class TestSSEStreamRoutes:
         assert len(events) > 0
         assert events[0]["event"] == "error"
 
-    def test_sse_chat_headers(self, client, auth_headers):
+    def test_sse_chat_headers(self, logged_in_client):
         """Test that SSE endpoint returns correct headers"""
-        response = client.get("/api/v1/stream/chat?q=test", headers=auth_headers)
-
-        # Skip if we get redirected (auth not set up)
-        if response.status_code == 302:
-            pytest.skip("Authentication not properly configured for SSE tests")
+        response = logged_in_client.get("/api/v1/stream/chat?q=test")
 
         assert response.status_code == 200
         assert "text/event-stream" in response.content_type
         assert response.headers.get("Cache-Control") == "no-cache, no-transform"
         assert response.headers.get("X-Accel-Buffering") == "no"
 
-    def test_sse_chat_event_format(self, client, auth_headers):
+    def test_sse_chat_event_format(self, logged_in_client):
         """Test that SSE events are properly formatted"""
-        response = client.get("/api/v1/stream/chat?q=test", headers=auth_headers)
+        response = logged_in_client.get("/api/v1/stream/chat?q=test")
 
-        # Skip if we get redirected (auth not set up)
-        if response.status_code != 200:
-            pytest.skip("Authentication not properly configured for SSE tests")
-
+        assert response.status_code == 200
+        
         events = parse_sse_events(response.data)
 
         # Should have at least hello, delta, and done events
@@ -113,13 +103,9 @@ class TestAdminStreamRoutes:
         # Should redirect to login or return 401/403
         assert response.status_code in [302, 401, 403]
 
-    def test_admin_stream_headers(self, client, admin_auth_headers):
+    def test_admin_stream_headers(self, logged_in_client):
         """Test that admin stream endpoint returns correct headers"""
-        response = client.get("/admin/api/chat/stream?question=test", headers=admin_auth_headers)
-
-        # Skip if we get redirected (auth not set up)
-        if response.status_code == 302:
-            pytest.skip("Authentication not properly configured for admin SSE tests")
+        response = logged_in_client.get("/admin/api/chat/stream?question=test")
 
         # Check SSE headers
         assert "text/event-stream" in response.content_type
@@ -198,17 +184,36 @@ class TestStreamingService:
 
 # Fixtures
 @pytest.fixture
+def logged_in_client(client, admin_user, session):
+    """Create a logged-in client for SSE tests"""
+    # Commit the admin user to ensure it's in the database
+    session.commit()
+    
+    # Log in
+    with client:
+        client.post(
+            "/login",
+            data={"email": "admin@test.com", "password": "1111"},
+            follow_redirects=True
+        )
+    
+    return client
+
+
+@pytest.fixture
 def auth_headers(client):
     """Create authentication headers for regular user"""
-    # This is a placeholder - implement based on your auth system
-    return {"Authorization": "Bearer test_token"}
+    # For Flask-Login, authentication is handled via session cookies, not headers
+    # This fixture is kept for compatibility but returns empty dict
+    return {}
 
 
 @pytest.fixture
 def admin_auth_headers(client):
     """Create authentication headers for admin user"""
-    # This is a placeholder - implement based on your auth system
-    return {"Authorization": "Bearer admin_token"}
+    # For Flask-Login, authentication is handled via session cookies, not headers
+    # This fixture is kept for compatibility but returns empty dict
+    return {}
 
 
 if __name__ == "__main__":
