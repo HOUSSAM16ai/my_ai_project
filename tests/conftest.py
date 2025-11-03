@@ -23,7 +23,9 @@ os.environ["TESTING"] = "1"
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
 
 # Fix transformers library warnings by setting HF_HOME
-os.environ.setdefault("HF_HOME", os.path.join(os.path.dirname(__file__), "..", ".cache", "huggingface"))
+os.environ.setdefault(
+    "HF_HOME", os.path.join(os.path.dirname(__file__), "..", ".cache", "huggingface")
+)
 
 # Allow mock LLM for SSE streaming tests
 os.environ.setdefault("ALLOW_MOCK_LLM", "true")

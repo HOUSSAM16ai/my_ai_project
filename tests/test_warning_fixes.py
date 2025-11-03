@@ -17,7 +17,7 @@ class TestWarningFixes:
     def test_hf_home_environment_variable_is_set(self):
         """
         Test that HF_HOME environment variable is set to suppress transformers warnings.
-        
+
         This prevents the 3 FutureWarnings about deprecated cache environment variables:
         - PYTORCH_PRETRAINED_BERT_CACHE
         - PYTORCH_TRANSFORMERS_CACHE
@@ -30,7 +30,7 @@ class TestWarningFixes:
     def test_transformers_warnings_are_filtered(self):
         """
         Test that transformers FutureWarnings are properly filtered in pytest configuration.
-        
+
         Verifies that pytest.ini has the correct filterwarnings configuration
         to ignore FutureWarning from transformers.utils.hub module.
         """
@@ -41,13 +41,13 @@ class TestWarningFixes:
     def test_no_deprecated_cache_variables_warnings(self):
         """
         Test that using transformers library doesn't produce cache-related warnings.
-        
+
         This is a verification test that imports from transformers
         and ensures no warnings about deprecated cache variables are raised.
         """
         with warnings.catch_warnings(record=True) as warning_list:
             warnings.simplefilter("always")
-            
+
             # Import transformers to trigger any potential warnings
             try:
                 import transformers
@@ -56,15 +56,15 @@ class TestWarningFixes:
                 _ = transformers.__version__
             except ImportError:
                 pytest.skip("transformers not installed")
-            
+
             # Check that no FutureWarnings about cache variables were raised
             # Note: This test may pass even if warnings occur because
             # they're being filtered by pytest.ini, which is the desired behavior
             future_warnings = [
-                w for w in warning_list
-                if issubclass(w.category, FutureWarning)
-                and "CACHE" in str(w.message)
+                w
+                for w in warning_list
+                if issubclass(w.category, FutureWarning) and "CACHE" in str(w.message)
             ]
-            
+
             # Verify no cache-related FutureWarnings were raised
             assert len(future_warnings) == 0, "No cache warnings should be raised"
