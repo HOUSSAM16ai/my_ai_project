@@ -159,8 +159,9 @@ def get_users():
         filters: dict[str, Any] = {}
         if request.args.get("email"):
             filters["email"] = request.args.get("email")
-        if request.args.get("is_admin"):
-            filters["is_admin"] = request.args.get("is_admin").lower() == "true"
+        is_admin_param = request.args.get("is_admin")
+        if is_admin_param:
+            filters["is_admin"] = is_admin_param.lower() == "true"
 
         query = apply_filters(query, User, filters)
 
