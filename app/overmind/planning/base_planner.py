@@ -79,6 +79,7 @@ from typing import Any, ClassVar
 # Strict schema imports – MUST succeed (single source of truth)
 # =============================================================================
 from .schemas import MissionPlanSchema, PlanningContext
+
 try:
     from .schemas import PlanMeta  # type hint only
 except Exception:  # pragma: no cover
