@@ -51,6 +51,7 @@ class TestWarningFixes:
             # Import transformers to trigger any potential warnings
             try:
                 import transformers
+
                 # Access a commonly used attribute that would trigger cache checks
                 _ = transformers.__version__
             except ImportError:
