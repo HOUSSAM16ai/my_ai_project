@@ -204,7 +204,7 @@ def __dir__() -> list[str]:  # pragma: no cover
 # --------------------------------------------------------------------------------------
 if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only)
     # Optional module (may not always be present)
-    from app.overmind.planning import llm_planner# noqa: F401
+    from app.overmind.planning import llm_planner  # noqa: F401
     from app.overmind.planning.base_planner import (  # noqa: F401
         BasePlanner,
         PlannerAdmissionError,

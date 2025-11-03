@@ -505,7 +505,7 @@ def infer_sections(obj: str, lang: str) -> list[str]:
 # return (SECTION_HINTS_AR if lang == "ar" else SECTION_HINTS_EN)[:12]
 
 
-# def file_type(fn: str) -> str:
+def file_type(fn: str) -> str:
     ext = os.path.splitext(fn)[1].lower()
     if ext in CODE_EXTS:
         return "code"
