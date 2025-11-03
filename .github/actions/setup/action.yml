@@ -12,6 +12,5 @@ runs:
         echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
         echo "PYTHONDONTWRITEBYTECODE=1" >> $GITHUB_ENV
         echo "PIP_DISABLE_PIP_VERSION_CHECK=1" >> $GITHUB_ENV
-        echo "PIP_NO_CACHE_DIR=0" >> $GITHUB_ENV
         echo "PYTHONHASHSEED=0" >> $GITHUB_ENV
         echo "✅ Environment configured for deterministic builds"
