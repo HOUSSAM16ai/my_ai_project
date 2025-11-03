@@ -447,7 +447,8 @@ def _rank_hint(
 ) -> float:
     if hasattr(BasePlanner, "compute_rank_hint"):
         try:
-            return BasePlanner.compute_rank_hint(                objective_length=len(objective or ""),
+            return BasePlanner.compute_rank_hint(
+                objective_length=len(objective or ""),
                 capabilities_match_ratio=capabilities_match_ratio,
                 reliability_score=reliability_score,
                 tier=tier,
@@ -486,12 +487,14 @@ def refresh_metadata():
 # Backward compatibility: available_planners
 if not hasattr(BasePlanner, "available_planners"):
 
-    def _legacy_available_planners() -> list[str]:        return _active_planner_names()
+    def _legacy_available_planners() -> list[str]:
+        return _active_planner_names()
 
     BasePlanner.available_planners = staticmethod(_legacy_available_planners)  # type: ignore
 else:
     try:
         original_available = BasePlanner.available_planners
+
         def _wrapped_available_planners():
             try:
                 base_names = set(original_available())
@@ -524,6 +527,7 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
         return _instantiate_planner(key)
     cls = _get_planner_class(key)
     return cls()
+
 
 def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
     if not _STATE.discovered:

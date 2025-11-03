@@ -136,7 +136,9 @@ try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
     current_app = None
-    def has_app_context() -> bool:        return False
+
+    def has_app_context() -> bool:
+        return False
 
 
 import contextlib
@@ -467,7 +469,8 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
                 **kwargs,
             ):
                 try:
-                    resp = openai.ChatCompletion.create(                        model=model,
+                    resp = openai.ChatCompletion.create(
+                        model=model,
                         messages=messages,
                         temperature=temperature,
                         max_tokens=max_tokens,
@@ -1021,6 +1024,7 @@ def invoke_chat_stream(*args, **kwargs) -> Generator[dict[str, Any], None, None]
     if not isinstance(result, Generator):
         raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
     return result
+
 
 # ======================================================================================
 # HEALTH & SNAPSHOT

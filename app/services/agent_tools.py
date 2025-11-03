@@ -1086,11 +1086,7 @@ def write_file(
         if not isinstance(content, str):
             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
         # COMPRESS_JSON
-        if (
-            compress_json_if_large
-            and path.lower().endswith(".json")
-            and len(content) > 400_000
-        ):
+        if compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
             gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
             path = gz_path
             out_bytes = gzip.compress(content.encode("utf-8"))
