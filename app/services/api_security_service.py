@@ -670,14 +670,14 @@ def require_signature(f: Callable) -> Callable:
 
         # Extract signature components from headers
         signature = request.headers.get("X-Signature")
-        timestamp = request.headers.get("X-Timestamp")
+        timestamp_str = request.headers.get("X-Timestamp")
         nonce = request.headers.get("X-Nonce")
 
-        if not all([signature, timestamp, nonce]):
+        if not all([signature, timestamp_str, nonce]):
             return jsonify({"error": "Missing signature headers"}), 401
 
         try:
-            timestamp = int(timestamp)
+            timestamp = int(timestamp_str)
         except ValueError:
             return jsonify({"error": "Invalid timestamp format"}), 400
 

@@ -53,7 +53,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, cast
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -688,7 +688,7 @@ class PlanGenerationResult(BaseModel):
 
 
 def validate_plan(payload: dict[str, Any]) -> MissionPlanSchema:
-    return cast(MissionPlanSchema, MissionPlanSchema.model_validate(payload))
+    return MissionPlanSchema.model_validate(payload)
 
 
 # =============================================================================

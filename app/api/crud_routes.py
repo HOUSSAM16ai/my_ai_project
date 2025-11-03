@@ -18,6 +18,7 @@
 #   ✅ Caching and optimization
 
 from datetime import UTC, datetime
+from typing import Any
 
 from flask import current_app, jsonify, request
 from marshmallow import ValidationError
@@ -155,7 +156,7 @@ def get_users():
         query = User.query
 
         # Apply filters
-        filters = {}
+        filters: dict[str, Any] = {}
         if request.args.get("email"):
             filters["email"] = request.args.get("email")
         if request.args.get("is_admin"):
