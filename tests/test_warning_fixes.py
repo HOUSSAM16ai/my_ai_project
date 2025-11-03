@@ -57,12 +57,13 @@ class TestWarningFixes:
                 pytest.skip("transformers not installed")
             
             # Check that no FutureWarnings about cache variables were raised
-            cache_warnings = [
+            # Note: This test may pass even if warnings occur because
+            # they're being filtered by pytest.ini, which is the desired behavior
+            future_warnings = [
                 w for w in warning_list
                 if issubclass(w.category, FutureWarning)
                 and "CACHE" in str(w.message)
             ]
             
-            # Note: This test may still pass even if warnings occur because
-            # they're being filtered by pytest.ini, which is the desired behavior
-            assert True, "Transformers library can be imported without cache warnings"
+            # Verify no cache-related FutureWarnings were raised
+            assert len(future_warnings) == 0, "No cache warnings should be raised"

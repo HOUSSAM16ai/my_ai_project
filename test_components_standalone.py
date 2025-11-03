@@ -10,9 +10,7 @@ def test_waf():
     print("=" * 60)
     
     from app.security.waf import WebApplicationFirewall
-    from flask import Flask
     
-    app = Flask(__name__)
     waf = WebApplicationFirewall()
     
     # Simulate a request object
@@ -54,9 +52,7 @@ def test_rate_limiter():
     print("=" * 60)
     
     from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
-    from flask import Flask
     
-    app = Flask(__name__)
     limiter = AdaptiveRateLimiter()
     
     # Simulate request

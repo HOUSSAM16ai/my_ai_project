@@ -13,8 +13,7 @@ This demonstrates:
 - Integration with Flask
 """
 
-import time
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 
 from app.middleware.superhuman_security import init_superhuman_security
 

@@ -4,7 +4,6 @@ API Contract Tests using Pact
 These tests verify that service contracts are maintained between consumers and providers.
 """
 
-import pytest
 
 
 class TestAPIContracts:
