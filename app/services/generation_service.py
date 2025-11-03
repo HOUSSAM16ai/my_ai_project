@@ -111,7 +111,9 @@ try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
     current_app = None
-    def has_app_context() -> bool:        return False
+
+    def has_app_context() -> bool:
+        return False
 
 
 # -----------------------------------------------------------------------------
@@ -121,6 +123,7 @@ def _attempt_auto_context():
     if not has_app_context() and os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1":
         try:
             from app import ensure_app_context
+
             ensure_app_context()
         except Exception:
             pass
@@ -147,8 +150,10 @@ except Exception:  # pragma: no cover
 
     def log_mission_event(*_a, **_k):
         pass
+
     def finalize_task(*_a, **_k):
         pass
+
     class MissionEventType:  # type: ignore
         TASK_STATUS_CHANGE = "TASK_STATUS_CHANGE"
         TASK_UPDATED = "TASK_UPDATED"
@@ -1516,7 +1521,7 @@ class MaestroGenerationService:
             if callable(finalize_task):
                 finalize_task(task, status=status, result_text=result_text)
             else:
-# task.status = status
+                # task.status = status
                 task.result_text = result_text
                 self._commit()
         except Exception:
