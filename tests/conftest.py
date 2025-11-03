@@ -22,6 +22,12 @@ os.environ.setdefault("FLASK_ENV", "testing")
 os.environ["TESTING"] = "1"
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
 
+# Fix transformers library warnings by setting HF_HOME
+os.environ.setdefault("HF_HOME", os.path.join(os.path.dirname(__file__), "..", ".cache", "huggingface"))
+
+# Allow mock LLM for SSE streaming tests
+os.environ.setdefault("ALLOW_MOCK_LLM", "true")
+
 
 def _parse_version(ver: str) -> tuple[int, int, int]:
     # تحويل "10.0.0" أو "10.0.0+meta" إلى (10,0,0) بدون الاعتماد على packaging
