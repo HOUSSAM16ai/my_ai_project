@@ -6,6 +6,7 @@ from flask import Blueprint
 # --- استيراد "العقول" المركزية ---
 # We now import the new history_service as well.
 from app.services import generation_service, history_service, system_service
+from typing import Any, Dict, List, Set, Optional
 
 # --- إعدادات الوزارة ---
 system_cli = Blueprint("system", __name__, cli_group="system")

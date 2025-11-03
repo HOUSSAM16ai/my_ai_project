@@ -27,7 +27,7 @@ def find_symbol(root: Path, name: str) -> list[tuple[Path, int, str]]:
             continue
         for node in ast.walk(tree):
             if (
-                isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
+                isinstance(node, ((ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)))
                 and node.name == name
             ):
                 hits.append((p, node.lineno, type(node).__name__))
