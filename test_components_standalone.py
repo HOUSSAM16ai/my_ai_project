@@ -6,10 +6,10 @@ Standalone test of superhuman system components (without Flask dependencies)
 
 def test_waf():
     """Test WAF component"""
+    from app.security.waf import WebApplicationFirewall
+
     print("\n🧪 Test 1: Web Application Firewall")
     print("=" * 60)
-    
-    from app.security.waf import WebApplicationFirewall
     
     waf = WebApplicationFirewall()
     
@@ -48,10 +48,10 @@ def test_waf():
 
 def test_rate_limiter():
     """Test Rate Limiter component"""
+    from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
+
     print("\n🧪 Test 2: Adaptive Rate Limiter")
     print("=" * 60)
-    
-    from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
     
     limiter = AdaptiveRateLimiter()
     

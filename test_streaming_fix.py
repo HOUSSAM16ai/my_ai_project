@@ -43,7 +43,7 @@ def parse_sse_event(frame: str) -> tuple:
     data_str = '\n'.join(event_data)
     try:
         data = json.loads(data_str)
-    except:
+    except (json.JSONDecodeError, ValueError):
         data = data_str
     
     return event_type, data
