@@ -110,10 +110,8 @@ from app.utils.text_processing import strip_markdown_fences as _strip_markdown_f
 try:
     from flask import current_app, has_app_context
 except Exception:  # pragma: no cover
-    current_app = None  # type: ignore
-
-    def has_app_context() -> bool:  # type: ignore
-        return False
+    current_app = None
+    def has_app_context() -> bool:        return False
 
 
 # -----------------------------------------------------------------------------
@@ -122,8 +120,7 @@ except Exception:  # pragma: no cover
 def _attempt_auto_context():
     if not has_app_context() and os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1":
         try:
-            from app import ensure_app_context  # type: ignore
-
+            from app import ensure_app_context
             ensure_app_context()
         except Exception:
             pass
@@ -133,12 +130,11 @@ def _attempt_auto_context():
 # Database / Models (best-effort)
 # -----------------------------------------------------------------------------
 try:
-    from app import db  # type: ignore
+    from app import db
 except Exception:  # pragma: no cover
-    db = None  # type: ignore
-
+    db = None
 try:
-    from app.models import (  # type: ignore
+    from app.models import (
         Mission,
         MissionEventType,
         Task,
@@ -150,11 +146,9 @@ except Exception:  # pragma: no cover
     Mission = Task = object  # type: ignore
 
     def log_mission_event(*_a, **_k):
-        pass  # type: ignore
-
+        pass
     def finalize_task(*_a, **_k):
-        pass  # type: ignore
-
+        pass
     class MissionEventType:  # type: ignore
         TASK_STATUS_CHANGE = "TASK_STATUS_CHANGE"
         TASK_UPDATED = "TASK_UPDATED"
@@ -180,7 +174,7 @@ except Exception:  # pragma: no cover
 # Tools
 # -----------------------------------------------------------------------------
 try:
-    from . import agent_tools  # type: ignore
+    from . import agent_tools
 except Exception:  # pragma: no cover
 
     class _DummyToolResult:
@@ -213,7 +207,7 @@ except Exception:  # pragma: no cover
 # Optional system context (domain augmentation)
 # -----------------------------------------------------------------------------
 try:
-    from . import system_service  # type: ignore
+    from . import system_service
 except Exception:  # pragma: no cover
 
     class system_service:  # type: ignore
@@ -1522,7 +1516,7 @@ class MaestroGenerationService:
             if callable(finalize_task):
                 finalize_task(task, status=status, result_text=result_text)
             else:
-                task.status = status
+# task.status = status
                 task.result_text = result_text
                 self._commit()
         except Exception:

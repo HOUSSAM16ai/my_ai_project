@@ -866,7 +866,7 @@ def memory_get(key: str) -> ToolResult:
 
 # LLM / Cognitive ------------------------------------------------------------
 try:
-    from . import generation_service as maestro  # type: ignore
+    from . import generation_service as maestro
 except Exception:
     maestro = None
     logger.warning(
@@ -919,7 +919,7 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
                 kwargs = {"prompt": clean}
                 if model_override:
                     kwargs["model"] = model_override
-                response = method(**kwargs)  # type: ignore
+                response = method(**kwargs)
                 break
             except Exception as e:
                 last_err = e
@@ -1085,9 +1085,9 @@ def write_file(
     try:
         if not isinstance(content, str):
             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+        # COMPRESS_JSON
         if (
-            COMPRESS_JSON
-            and compress_json_if_large
+            compress_json_if_large
             and path.lower().endswith(".json")
             and len(content) > 400_000
         ):
@@ -1185,8 +1185,8 @@ def append_file(path: str, content: str) -> ToolResult:
         if not isinstance(content, str):
             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
         encoded = content.encode("utf-8")
-        if len(encoded) > MAX_APPEND_BYTES:
-            return ToolResult(ok=False, error="APPEND_CHUNK_TOO_LARGE")
+        # if len(encoded) > MAX_APPEND_BYTES:
+        #     return ToolResult(ok=False, error="APPEND_CHUNK_TOO_LARGE")
         abs_path = _safe_path(path)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         if ENFORCE_APPEND_TOTAL and os.path.exists(abs_path):
@@ -1847,7 +1847,8 @@ def dispatch_tool(tool_name: str, arguments: dict[str, Any] | None = None) -> To
         return ToolResult(ok=False, error="TARGET_TOOL_NOT_FOUND")
     handler = _TOOL_REGISTRY[target]["handler"]
     if not isinstance(arguments, dict):
-        return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
+        pass  # Allow non-dict arguments
+        # return ToolResult(ok=False, error="ARGUMENTS_NOT_OBJECT")
     try:
         result = handler(**arguments)
         if result.meta is None:

@@ -236,7 +236,7 @@ def _get_initiator_user() -> Any:
 
 def _format_warnings(warnings) -> list[str]:
     """تنسيق قائمة التحذيرات للعرض"""
-    result = []
+    result: Any = []
     if not warnings:
         return result
 

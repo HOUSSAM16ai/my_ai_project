@@ -78,8 +78,7 @@ from typing import Any, ClassVar
 # =============================================================================
 # Strict schema imports – MUST succeed (single source of truth)
 # =============================================================================
-from .schemas import MissionPlanSchema, PlanningContext  # type: ignore
-
+from .schemas import MissionPlanSchema, PlanningContext
 try:
     from .schemas import PlanMeta  # type hint only
 except Exception:  # pragma: no cover
@@ -344,10 +343,10 @@ class BasePlanner:
                     test_method()  # type: ignore
                 else:
                     if len(sig.parameters) == 0:
-                        test_method()  # type: ignore
+                        test_method()
                     else:
                         instance = planner_cls()
-                        test_method(instance)  # type: ignore
+                        test_method(instance)
                 result["ok"] = True
             except Exception as e:
                 result["error"] = e
