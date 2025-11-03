@@ -32,7 +32,8 @@ def embed_query(text: str, model_name: str) -> np.ndarray:
     from sentence_transformers import SentenceTransformer
 
     model = SentenceTransformer(model_name)
-    q = model.encode(text, normalize_embeddings=True).astype("float32")
+    # Convert to numpy array first, then cast to float32
+    q = np.asarray(model.encode(text, normalize_embeddings=True), dtype="float32")
     return q
 
 

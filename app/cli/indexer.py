@@ -12,8 +12,11 @@ import numpy as np
 
 try:
     from sentence_transformers import SentenceTransformer
+
+    SENTENCE_TRANSFORMER_AVAILABLE = True
 except ImportError:
-    SentenceTransformer = None
+    SentenceTransformer = None  # type: ignore
+    SENTENCE_TRANSFORMER_AVAILABLE = False
 
 DEFAULT_MODEL = os.getenv("COGNI_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 INDEX_DIR = Path(".cogni")

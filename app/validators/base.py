@@ -49,9 +49,17 @@ class BaseValidator:
             return True, validated_data, None
         except ValidationError as err:
             # Format errors
+            # err.messages can be dict, list, or str - handle appropriately
+            messages = err.messages
+            if isinstance(messages, dict):
+                invalid_fields = list(messages.keys())
+            else:
+                # For list or string messages, no specific field keys
+                invalid_fields = []
+
             errors = {
-                "validation_errors": err.messages,
-                "invalid_fields": list(err.messages.keys()),
+                "validation_errors": messages,
+                "invalid_fields": invalid_fields,
             }
             return False, None, errors
 
