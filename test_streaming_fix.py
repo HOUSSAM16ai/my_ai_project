@@ -2,7 +2,6 @@
 """
 Test script to validate streaming service fixes
 """
-import sys
 import json
 
 # Test 1: Verify SSE event format
