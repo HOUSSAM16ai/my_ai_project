@@ -237,7 +237,7 @@ class CodeAnalyzer:
         complexity = 1  # Start with 1
 
         for child in ast.walk(node):
-            if isinstance(child, (ast.If, ast.While, ast.For, ast.ExceptHandler)):
+            if isinstance(child, ast.If | ast.While | ast.For | ast.ExceptHandler):
                 complexity += 1
             elif isinstance(child, ast.BoolOp):
                 complexity += len(child.values) - 1

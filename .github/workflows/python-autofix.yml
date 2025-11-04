@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "🎨 Formatting code with Black and Ruff..."
           black .
-          ruff check --fix .
+          ruff check --fix --unsafe-fixes .
           ruff format .
           echo "✅ Formatting complete!"
 
