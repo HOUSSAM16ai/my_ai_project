@@ -36,8 +36,10 @@ def run_data_quality_checkpoint() -> bool:
             logger.info("Creating new Great Expectations context...")
             gx.get_context(mode="file")
         
-        # Note: Checkpoint configuration defined for reference only
-        _ = {
+        # Example checkpoint configuration (for reference/documentation purposes)
+        # In a real implementation, this would be used to create and run a checkpoint
+        # Currently unused as this is a simulation of the data quality check process
+        _checkpoint_config_example = {
             "name": "ml-data-quality-checkpoint",
             "config_version": 1.0,
             "class_name": "SimpleCheckpoint",
