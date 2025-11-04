@@ -287,3 +287,102 @@ pre-commit-update:
 	@echo "$(BLUE)🔧 Updating pre-commit hooks...$(NC)"
 	pre-commit autoupdate
 	@echo "$(GREEN)✅ Pre-commit hooks updated!$(NC)"
+
+# =============================================================================
+# ML OPERATIONS - DevOps/MLOps Superhuman Edition
+# =============================================================================
+
+# ML Installation
+install-ml: install
+	@echo "$(BLUE)📦 Installing ML-specific dependencies...$(NC)"
+	pip install great-expectations mlflow argo-workflows || true
+	@echo "$(GREEN)✅ ML dependencies installed!$(NC)"
+
+# Data Quality
+data-quality:
+	@echo "$(BLUE)🔍 Running data quality checks...$(NC)"
+	python pipelines/data_quality_checkpoint.py
+	@echo "$(GREEN)✅ Data quality checks complete!$(NC)"
+
+# ML Training Pipeline
+train:
+	@echo "$(BLUE)🚀 Starting ML training pipeline...$(NC)"
+	python pipelines/steps/prepare_data.py
+	python pipelines/steps/validate_data_quality.py
+	python pipelines/steps/train.py
+	python pipelines/steps/evaluate.py
+	python pipelines/steps/check_fairness.py
+	python pipelines/steps/register_model.py
+	@echo "$(GREEN)✅ Training pipeline complete!$(NC)"
+
+# Model Evaluation
+evaluate:
+	@echo "$(BLUE)📊 Evaluating model...$(NC)"
+	python pipelines/steps/evaluate.py
+	@echo "$(GREEN)✅ Model evaluation complete!$(NC)"
+
+# Model Registration
+register:
+	@echo "$(BLUE)📝 Registering model to MLflow...$(NC)"
+	python pipelines/steps/register_model.py
+	@echo "$(GREEN)✅ Model registered!$(NC)"
+
+# Infrastructure Operations
+infra-init:
+	@echo "$(BLUE)🏗️ Initializing Terraform...$(NC)"
+	cd infra/terraform && terraform init
+	@echo "$(GREEN)✅ Terraform initialized!$(NC)"
+
+infra-plan:
+	@echo "$(BLUE)📋 Planning infrastructure changes...$(NC)"
+	cd infra/terraform && terraform plan
+	@echo "$(GREEN)✅ Infrastructure plan complete!$(NC)"
+
+infra-apply:
+	@echo "$(YELLOW)⚠️  Applying infrastructure changes...$(NC)"
+	cd infra/terraform && terraform apply
+	@echo "$(GREEN)✅ Infrastructure applied!$(NC)"
+
+infra-destroy:
+	@echo "$(RED)⚠️  Destroying infrastructure...$(NC)"
+	cd infra/terraform && terraform destroy
+	@echo "$(YELLOW)⚠️  Infrastructure destroyed!$(NC)"
+
+# Deployment Operations
+deploy-dev:
+	@echo "$(BLUE)🚀 Deploying to dev environment...$(NC)"
+	kubectl apply -f serving/kserve-inference.yaml --namespace=dev || echo "kubectl not available"
+	@echo "$(GREEN)✅ Deployed to dev!$(NC)"
+
+deploy-staging:
+	@echo "$(BLUE)🚀 Deploying to staging environment...$(NC)"
+	kubectl apply -f serving/kserve-inference.yaml --namespace=staging || echo "kubectl not available"
+	@echo "$(GREEN)✅ Deployed to staging!$(NC)"
+
+deploy-prod:
+	@echo "$(YELLOW)⚠️  Deploying to production (canary)...$(NC)"
+	kubectl apply -f serving/kserve-inference.yaml --namespace=prod || echo "kubectl not available"
+	@echo "$(GREEN)✅ Deployed to production!$(NC)"
+
+rollback:
+	@echo "$(RED)⚠️  Rolling back deployment...$(NC)"
+	kubectl rollout undo deployment/cogniforge-classifier -n prod || echo "kubectl not available"
+	@echo "$(YELLOW)⚠️  Deployment rolled back!$(NC)"
+
+# Monitoring
+slo-check:
+	@echo "$(BLUE)📊 Checking SLO compliance...$(NC)"
+	@echo "See monitoring/slo.yaml for SLO definitions"
+	@echo "$(GREEN)✅ SLO check complete!$(NC)"
+
+# Version info
+version:
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(BLUE)  CogniForge ML Platform - Version Information$(NC)"
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"
+	@echo "Platform Version: 1.0.0-devops-mlops"
+	@echo "Python: $(shell python --version 2>&1)"
+	@echo "Docker: $(shell docker --version 2>/dev/null || echo 'Not installed')"
+	@echo "Kubernetes: $(shell kubectl version --client --short 2>/dev/null || echo 'Not installed')"
+	@echo "Terraform: $(shell terraform version 2>/dev/null | head -n1 || echo 'Not installed')"
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"

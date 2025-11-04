@@ -1,0 +1,353 @@
+# Kubernetes Deployment Templates for CogniForge ML Platform
+# Superhuman production deployment with all enterprise features
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-platform
+  labels:
+    app: cogniforge
+    environment: production
+    istio-injection: enabled
+
+---
+# Service Account for ML Workflows
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ml-workflow-sa
+  namespace: ml-platform
+  labels:
+    app: cogniforge
+
+---
+# Role for ML Workflows
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ml-workflow-role
+  namespace: ml-platform
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "create", "delete"]
+- apiGroups: ["argoproj.io"]
+  resources: ["workflows", "workflows/finalizers"]
+  verbs: ["get", "list", "watch", "update", "patch", "create", "delete"]
+
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ml-workflow-rolebinding
+  namespace: ml-platform
+subjects:
+- kind: ServiceAccount
+  name: ml-workflow-sa
+  namespace: ml-platform
+roleRef:
+  kind: Role
+  name: ml-workflow-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ConfigMap for ML Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-config
+  namespace: ml-platform
+data:
+  MLFLOW_TRACKING_URI: "http://mlflow-server.ml-platform:5000"
+  FEATURE_STORE_URI: "feast://feast-server.ml-platform:6566"
+  MODEL_REGISTRY: "mlflow"
+  LOG_LEVEL: "INFO"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
+
+---
+# Secret for API Keys (template - replace with actual values)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ml-secrets
+  namespace: ml-platform
+type: Opaque
+stringData:
+  OPENROUTER_API_KEY: "your-api-key-here"
+  MLFLOW_TRACKING_TOKEN: "your-mlflow-token-here"
+  # Use external-secrets or sealed-secrets in production
+
+---
+# PersistentVolumeClaim for ML Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-data-pvc
+  namespace: ml-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc  # Use appropriate storage class
+  resources:
+    requests:
+      storage: 500Gi
+
+---
+# MLflow Tracking Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: ml-platform
+  labels:
+    app: mlflow-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mlflow-server
+  template:
+    metadata:
+      labels:
+        app: mlflow-server
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:latest
+        command: ["mlflow", "server"]
+        args:
+          - "--host=0.0.0.0"
+          - "--port=5000"
+          - "--backend-store-uri=postgresql://mlflow:password@postgres.ml-platform:5432/mlflow"
+          - "--default-artifact-root=s3://cogniforge-mlflow-artifacts"
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret-access-key
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# MLflow Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-server
+  namespace: ml-platform
+  labels:
+    app: mlflow-server
+spec:
+  type: ClusterIP
+  selector:
+    app: mlflow-server
+  ports:
+  - name: http
+    port: 5000
+    targetPort: 5000
+
+---
+# PostgreSQL for MLflow Backend
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mlflow-postgres
+  namespace: ml-platform
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: mlflow
+        - name: POSTGRES_USER
+          value: mlflow
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 100Gi
+
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ml-platform
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+
+---
+# NetworkPolicy for ML Platform
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-platform-netpol
+  namespace: ml-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cogniforge
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ml-serving
+    - podSelector:
+        matchLabels:
+          app: cogniforge
+    ports:
+    - protocol: TCP
+      port: 5000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: ml-platform
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: observability
+    ports:
+    - protocol: TCP
+      port: 4317  # OTEL collector
+  - ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# PodDisruptionBudget for MLflow
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mlflow-pdb
+  namespace: ml-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: mlflow-server
+
+---
+# HorizontalPodAutoscaler for MLflow
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mlflow-hpa
+  namespace: ml-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mlflow-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max

@@ -1,0 +1,98 @@
+# Feature Store Configuration (Feast)
+# Superhuman feature management for ML pipelines
+
+project: cogniforge-ml
+
+provider: local
+
+online_store:
+  type: redis
+  connection_string: redis://localhost:6379
+
+offline_store:
+  type: file
+  path: /data/feature_store
+
+registry:
+  path: /data/feature_registry
+  cache_ttl_seconds: 60
+
+# Entity definitions
+entities:
+  - name: user_id
+    description: "Unique user identifier"
+    value_type: INT64
+  
+  - name: item_id
+    description: "Unique item identifier"
+    value_type: INT64
+
+# Feature views
+feature_views:
+  - name: user_features
+    entities:
+      - user_id
+    ttl: 86400  # 24 hours
+    features:
+      - name: age
+        dtype: INT64
+      - name: country
+        dtype: STRING
+      - name: membership_level
+        dtype: STRING
+      - name: total_purchases
+        dtype: INT64
+      - name: avg_purchase_value
+        dtype: FLOAT
+    
+    batch_source:
+      type: file
+      path: /data/sources/user_features.parquet
+      timestamp_field: event_timestamp
+    
+    stream_source:
+      type: kafka
+      bootstrap_servers: localhost:9092
+      topic: user_events
+      timestamp_field: event_timestamp
+
+  - name: item_features
+    entities:
+      - item_id
+    ttl: 604800  # 7 days
+    features:
+      - name: category
+        dtype: STRING
+      - name: price
+        dtype: FLOAT
+      - name: rating
+        dtype: FLOAT
+      - name: num_reviews
+        dtype: INT64
+      - name: in_stock
+        dtype: BOOL
+    
+    batch_source:
+      type: file
+      path: /data/sources/item_features.parquet
+      timestamp_field: event_timestamp
+
+# Feature services for model serving
+feature_services:
+  - name: recommendation_service
+    features:
+      - user_features:age
+      - user_features:country
+      - user_features:membership_level
+      - user_features:total_purchases
+      - user_features:avg_purchase_value
+      - item_features:category
+      - item_features:price
+      - item_features:rating
+    
+  - name: personalization_service
+    features:
+      - user_features:age
+      - user_features:country
+      - user_features:membership_level
+      - item_features:category

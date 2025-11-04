@@ -1,0 +1,43 @@
+# Trivy Configuration for Superhuman Security Scanning
+# Surpassing enterprise standards for vulnerability detection
+
+# Scan configuration
+scan:
+  # Skip files/directories
+  skip-files:
+    - "**/*.md"
+    - "**/*.txt"
+    - "**/test_*.py"
+    - "tests/**"
+  
+  skip-dirs:
+    - ".git"
+    - ".github"
+    - "node_modules"
+    - "venv"
+    - "__pycache__"
+    - ".pytest_cache"
+    - "htmlcov"
+
+# Vulnerability settings
+vulnerability:
+  # Type of vulnerabilities to detect
+  type:
+    - os
+    - library
+
+# Severity levels to report
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+# Report format options
+format: table
+
+# Timeout for scan
+timeout: 5m
+
+# Cache directory
+cache:
+  dir: .trivycache/
