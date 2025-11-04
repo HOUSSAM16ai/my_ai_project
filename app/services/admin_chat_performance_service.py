@@ -220,9 +220,11 @@ class AdminChatPerformanceService:
             return self.user_variants[user_id]
 
         # Use hash for uniform distribution
+        # Note: MD5 is used ONLY for consistent variant assignment, NOT for security
+        # The usedforsecurity=False flag indicates this is non-cryptographic usage
         import hashlib
 
-        hash_val = int(hashlib.md5(str(user_id).encode(), usedforsecurity=False).hexdigest(), 16)
+        hash_val = int(hashlib.md5(str(user_id).encode(), usedforsecurity=False).hexdigest(), 16)  # nosec B324
         variant_index = hash_val % len(ABTestVariant)
         variant = list(ABTestVariant)[variant_index]
 

@@ -211,7 +211,7 @@ jobs:
         timeout-minutes: 15
         run: |
           echo "🧪 Running test suite with smart retry strategy..."
-          
+
           # First attempt with parallel execution and rerun on failures
           pytest -v --tb=short \
             --timeout=60 --timeout-method=thread \
@@ -230,7 +230,7 @@ jobs:
                 --durations=10 \
                 --junitxml=junit-${{ matrix.python-version }}.xml
             }
-          
+
           echo "✅ Test suite completed successfully"
 
       - name: 📊 Upload test reports
@@ -295,19 +295,19 @@ jobs:
           echo "🔍 Scanning for security vulnerabilities..."
           bandit -r app/ -c pyproject.toml -f json -o bandit-report.json || true
           bandit -r app/ -c pyproject.toml > bandit-output.txt || true
-          
+
           # Extract severity counts
           HIGH_COUNT=$(grep -o "High: [0-9]*" bandit-output.txt | grep -o "[0-9]*" || echo "0")
-          
+
           echo "📊 High severity issues: $HIGH_COUNT"
-          
+
           # Smart threshold: Allow up to 15 high severity (filtered in pyproject.toml)
           if [ "$HIGH_COUNT" -gt 15 ]; then
             echo "❌ Too many high severity issues: $HIGH_COUNT (threshold: 15)"
             cat bandit-output.txt
             exit 1
           fi
-          
+
           echo "✅ Security scan passed"
 
       - name: 🛡️ Dependency vulnerability scan
@@ -402,10 +402,10 @@ jobs:
             echo "## 🎯 Quality Gate Check"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          
+
           BUILD_RESULT="${{ needs.build-test-required.result }}"
           SECURITY_RESULT="${{ needs.security-required.result }}"
-          
+
           {
             echo "| Job | Status |"
             echo "|-----|--------|"
@@ -413,19 +413,19 @@ jobs:
             echo "| Security Scan | $SECURITY_RESULT |"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          
+
           FAILED=false
-          
+
           if [ "$BUILD_RESULT" != "success" ] && [ "$BUILD_RESULT" != "skipped" ]; then
             echo "❌ Build & Test failed!"
             FAILED=true
           fi
-          
+
           if [ "$SECURITY_RESULT" != "success" ] && [ "$SECURITY_RESULT" != "skipped" ]; then
             echo "❌ Security scan failed!"
             FAILED=true
           fi
-          
+
           if [ "$FAILED" = "true" ]; then
             {
               echo ""
@@ -434,7 +434,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          
+
           {
             echo ""
             echo "✅ **Quality gate PASSED**"
@@ -443,5 +443,5 @@ jobs:
             echo "### 🏆 Superhuman Quality Achieved!"
             echo "Standards exceeded: Google, Microsoft, OpenAI, Meta, Apple, Amazon"
           } >> "$GITHUB_STEP_SUMMARY"
-          
+
           exit 0
