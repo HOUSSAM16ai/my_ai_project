@@ -219,9 +219,7 @@ class AdminChatPerformanceService:
         if user_id in self.user_variants:
             return self.user_variants[user_id]
 
-        # Use hash for uniform distribution
-        # Note: MD5 is used ONLY for consistent variant assignment, NOT for security
-        # The usedforsecurity=False flag indicates this is non-cryptographic usage
+        # Use hash for uniform distribution - MD5 used ONLY for consistent variant assignment, NOT for security (usedforsecurity=False)
         import hashlib
 
         hash_val = int(hashlib.md5(str(user_id).encode(), usedforsecurity=False).hexdigest(), 16)  # nosec B324

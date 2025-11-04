@@ -164,9 +164,7 @@ class ABTestingService:
             if experiment_id in self.user_assignments[user_id]:
                 return self.user_assignments[user_id][experiment_id]
 
-            # Assign based on traffic split
-            # Note: MD5 is used ONLY for consistent user assignment, NOT for security
-            # The usedforsecurity=False flag indicates this is non-cryptographic usage
+            # Assign based on traffic split - MD5 used ONLY for consistent user assignment, NOT for security (usedforsecurity=False)
             hash_input = f"{user_id}:{experiment_id}"
             hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)  # nosec B324
             variant = (
@@ -287,9 +285,7 @@ class CanaryDeploymentService:
             if not deployment:
                 return None
 
-            # Use hash for consistent routing if user_id provided
-            # Note: MD5 is used ONLY for consistent routing, NOT for security
-            # The usedforsecurity=False flag indicates this is non-cryptographic usage
+            # Use hash for consistent routing if user_id provided - MD5 used ONLY for routing, NOT for security (usedforsecurity=False)
             if user_id:
                 hash_input = f"{user_id}:{deployment_id}"
                 hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)  # nosec B324
@@ -440,9 +436,7 @@ class FeatureFlagService:
                     if group in flag.enabled_groups:
                         return True
 
-            # Percentage rollout
-            # Note: MD5 is used ONLY for consistent feature flag assignment, NOT for security
-            # The usedforsecurity=False flag indicates this is non-cryptographic usage
+            # Percentage rollout - MD5 used ONLY for consistent feature flag assignment, NOT for security (usedforsecurity=False)
             if flag.status == FeatureFlagStatus.PERCENTAGE and user_id:
                 hash_input = f"{user_id}:{flag_id}"
                 hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)  # nosec B324
