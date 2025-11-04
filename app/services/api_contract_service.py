@@ -515,7 +515,7 @@ class APIContractService:
         """Log a contract violation"""
         violation = ContractViolation(
             violation_id=hashlib.md5(
-                f"{endpoint}{method}{violation_type}{time.time()}".encode()
+                f"{endpoint}{method}{violation_type}{time.time()}".encode(), usedforsecurity=False
             ).hexdigest()[:12],
             timestamp=datetime.now(UTC),
             endpoint=endpoint,

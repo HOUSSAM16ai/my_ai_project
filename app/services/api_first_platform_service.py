@@ -307,7 +307,7 @@ def generate_etag(data: dict | str) -> str:
     """توليد ETag من البيانات"""
     if isinstance(data, dict):
         data = json.dumps(data, sort_keys=True)
-    return hashlib.md5(data.encode()).hexdigest()
+    return hashlib.md5(data.encode(), usedforsecurity=False).hexdigest()
 
 
 def with_etag(f: Callable) -> Callable:
@@ -401,7 +401,7 @@ def add_correlation_id(f: Callable) -> Callable:
         # Get or generate request ID
         request_id = (
             request.headers.get("X-Request-Id")
-            or f"req_{hashlib.md5(str(time.time()).encode()).hexdigest()[:12]}"
+            or f"req_{hashlib.md5(str(time.time()).encode(), usedforsecurity=False).hexdigest()[:12]}"
         )
         g.request_id = request_id
 
@@ -499,7 +499,7 @@ class APIFirstPlatformService:
         signature = self.webhook_signer.sign(payload, timestamp)
 
         return {
-            "id": f"wh_delivery_{hashlib.md5(f'{url}{timestamp}'.encode()).hexdigest()[:12]}",
+            "id": f"wh_delivery_{hashlib.md5(f'{url}{timestamp}'.encode(), usedforsecurity=False).hexdigest()[:12]}",
             "url": url,
             "event_type": event_type,
             "payload": payload,
@@ -536,7 +536,7 @@ class APIFirstPlatformService:
         key = f"sk_live_{hashlib.sha256(f'{user_id}{time.time()}'.encode()).hexdigest()[:32]}"
 
         return {
-            "id": f"key_{hashlib.md5(key.encode()).hexdigest()[:12]}",
+            "id": f"key_{hashlib.md5(key.encode(), usedforsecurity=False).hexdigest()[:12]}",
             "key": key,
             "user_id": user_id,
             "name": name,

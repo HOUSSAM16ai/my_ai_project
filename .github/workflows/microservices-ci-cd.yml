@@ -416,13 +416,13 @@ jobs:
         run: |
           # Install Litmus
           kubectl apply -f https://litmuschaos.github.io/litmus/litmus-operator-v3.0.0.yaml
-          
+
           # Run pod delete chaos
           kubectl apply -f tests/chaos/pod-delete.yaml
-          
+
           # Wait and observe
           sleep 60
-          
+
           # Check results
           kubectl logs -n litmus -l name=chaos-runner
         continue-on-error: true
@@ -469,6 +469,6 @@ jobs:
           body: |
             Automated release from CI/CD pipeline
             Commit: ${{ github.sha }}
-            
+
             ## Changes
             ${{ github.event.head_commit.message }}

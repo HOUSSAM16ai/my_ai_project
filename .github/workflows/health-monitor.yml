@@ -41,7 +41,7 @@ jobs:
           script: |
             const {owner, repo} = context.repo;
             const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            
+
             // Get recent workflow runs
             const workflows = await github.rest.actions.listWorkflowRunsForRepo({
               owner,
@@ -49,7 +49,7 @@ jobs:
               per_page: 100,
               created: `>=${since}`
             });
-            
+
             const stats = {
               total: workflows.data.workflow_runs.length,
               success: 0,
@@ -59,10 +59,10 @@ jobs:
               successRate: 0,
               avgDuration: 0
             };
-            
+
             let totalDuration = 0;
             let completedRuns = 0;
-            
+
             for (const run of workflows.data.workflow_runs) {
               switch (run.conclusion) {
                 case 'success':
@@ -79,38 +79,38 @@ jobs:
                     stats.inProgress++;
                   }
               }
-              
+
               if (run.conclusion && run.created_at && run.updated_at) {
                 const duration = new Date(run.updated_at) - new Date(run.created_at);
                 totalDuration += duration;
                 completedRuns++;
               }
             }
-            
-            stats.successRate = stats.total > 0 
+
+            stats.successRate = stats.total > 0
               ? ((stats.success / (stats.total - stats.inProgress)) * 100).toFixed(2)
               : 0;
-            
+
             stats.avgDuration = completedRuns > 0
               ? Math.round(totalDuration / completedRuns / 1000 / 60) // minutes
               : 0;
-            
+
             core.info(`Health stats: ${JSON.stringify(stats, null, 2)}`);
-            
+
             core.setOutput('stats', JSON.stringify(stats));
             return stats;
 
       - name: 📝 Generate health report
         run: |
           mkdir -p .github/health-reports
-          
+
           cat > .github/health-reports/latest-health.md << 'EOF'
           # 🏆 CI/CD Health Dashboard
-          
+
           **Last Updated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
+
           ## 📊 7-Day Statistics
-          
+
           | Metric | Value |
           |--------|-------|
           | Total Runs | ${{ fromJSON(steps.analyze.outputs.stats).total }} |
@@ -120,14 +120,14 @@ jobs:
           | 🔄 In Progress | ${{ fromJSON(steps.analyze.outputs.stats).inProgress }} |
           | 📈 Success Rate | ${{ fromJSON(steps.analyze.outputs.stats).successRate }}% |
           | ⏱️ Avg Duration | ${{ fromJSON(steps.analyze.outputs.stats).avgDuration }} min |
-          
+
           ## 🎯 Health Status
-          
+
           EOF
-          
+
           # Determine health status based on success rate
           SUCCESS_RATE=${{ fromJSON(steps.analyze.outputs.stats).successRate }}
-          
+
           if (( $(echo "$SUCCESS_RATE >= 95" | bc -l) )); then
             {
               echo "**Status:** 🟢 EXCELLENT (Superhuman)"
@@ -147,11 +147,11 @@ jobs:
               echo "Success rate is below target. Investigation recommended."
             } >> .github/health-reports/latest-health.md
           fi
-          
+
           cat >> .github/health-reports/latest-health.md << 'EOF'
-          
+
           ## 🛡️ Active Protection Features
-          
+
           - ✅ Automatic transient failure detection & rerun
           - ✅ Smart retry mechanisms on flaky tests
           - ✅ Workflow syntax validation (actionlint)
@@ -162,25 +162,25 @@ jobs:
           - ✅ Deterministic environment configuration
           - ✅ Progressive quality gates (Required vs Optional)
           - ✅ Comprehensive artifact collection
-          
+
           ## 🚀 Superhuman Capabilities
-          
+
           This CI/CD system exceeds industry leaders:
           - ✅ Google Cloud Build - Advanced monitoring
-          - ✅ Microsoft Azure DevOps - Pipeline intelligence  
+          - ✅ Microsoft Azure DevOps - Pipeline intelligence
           - ✅ Amazon AWS CodePipeline - Deployment safety
           - ✅ Facebook/Meta - Scale and reliability
           - ✅ OpenAI - ML/AI workflow optimization
           - ✅ Apple - Quality standards
           - ✅ CircleCI - Build optimization
           - ✅ Travis CI - Integration testing
-          
+
           ---
-          
+
           *Built with ❤️ by Houssam Benmerah*
           *Powered by Ultimate CI/CD System*
           EOF
-          
+
           echo "✅ Health report generated"
           cat .github/health-reports/latest-health.md
 
@@ -196,7 +196,7 @@ jobs:
         run: |
           git config user.name "CI Health Monitor[bot]"
           git config user.email "ci-health@cogniforge.ai"
-          
+
           if git diff --quiet .github/health-reports/; then
             echo "📭 No changes to commit"
           else
@@ -205,9 +205,9 @@ jobs:
 
           Automated health monitoring update
           Success rate: ${{ fromJSON(steps.analyze.outputs.stats).successRate }}%
-          
+
           🚀 Powered by Ultimate CI/CD System"
-            
+
             git push || {
               echo "⚠️  Could not push health report (expected on forks/PRs)"
             }
@@ -220,7 +220,7 @@ jobs:
           script: |
             const {owner, repo} = context.repo;
             const stats = ${{ steps.analyze.outputs.stats }};
-            
+
             // Check if issue already exists
             const issues = await github.rest.issues.listForRepo({
               owner,
@@ -228,42 +228,42 @@ jobs:
               state: 'open',
               labels: 'ci-health-alert'
             });
-            
+
             if (issues.data.length > 0) {
               core.info('Health alert issue already exists');
               return;
             }
-            
+
             // Create new issue
             await github.rest.issues.create({
               owner,
               repo,
               title: '🚨 CI/CD Health Alert: Success Rate Below Target',
               body: `## 🚨 CI/CD Health Alert
-            
+
             The CI/CD success rate has fallen below the target threshold.
-            
+
             **Current Statistics (7 days):**
             - Success Rate: ${stats.successRate}%
             - Failed Runs: ${stats.failure}
             - Total Runs: ${stats.total}
-            
+
             **Action Required:**
             1. Review recent failed workflows
             2. Check for systematic issues
             3. Investigate transient vs persistent failures
             4. Review health report: \`.github/health-reports/latest-health.md\`
-            
+
             **Target:** ≥85% success rate
             **Current:** ${stats.successRate}%
-            
+
             This issue will auto-close when health improves.
-            
+
             ---
             *Generated by CI/CD Health Monitor*`,
               labels: ['ci-health-alert', 'priority:high']
             });
-            
+
             core.info('Created health alert issue');
 
       - name: ✅ Close health issue if recovered
@@ -272,14 +272,14 @@ jobs:
         with:
           script: |
             const {owner, repo} = context.repo;
-            
+
             const issues = await github.rest.issues.listForRepo({
               owner,
               repo,
               state: 'open',
               labels: 'ci-health-alert'
             });
-            
+
             for (const issue of issues.data) {
               await github.rest.issues.update({
                 owner,
@@ -287,13 +287,13 @@ jobs:
                 issue_number: issue.number,
                 state: 'closed'
               });
-              
+
               await github.rest.issues.createComment({
                 owner,
                 repo,
                 issue_number: issue.number,
                 body: '✅ **Health Recovered**\n\nCI/CD success rate is back above target threshold.\nClosing this alert.\n\n---\n*Automated by CI/CD Health Monitor*'
               });
-              
+
               core.info(`Closed health alert issue #${issue.number}`);
             }
