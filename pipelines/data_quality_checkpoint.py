@@ -3,9 +3,9 @@ Data Quality Checkpoint with Great Expectations
 Superhuman data validation surpassing enterprise standards
 """
 
-import sys
-from typing import Dict, Any, Optional
 import logging
+import sys
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,15 +29,17 @@ def run_data_quality_checkpoint() -> bool:
         
         # Get or create context
         try:
-            context = gx.get_context()
+            gx.get_context()
             logger.info("✅ Great Expectations context loaded")
         except Exception as e:
             logger.warning(f"⚠️ Could not load context: {e}")
             logger.info("Creating new Great Expectations context...")
-            context = gx.get_context(mode="file")
+            gx.get_context(mode="file")
         
-        # Define checkpoint configuration
-        checkpoint_config = {
+        # Example checkpoint configuration (for reference/documentation purposes)
+        # In a real implementation, this would be used to create and run a checkpoint
+        # Currently unused as this is a simulation of the data quality check process
+        _checkpoint_config_example = {
             "name": "ml-data-quality-checkpoint",
             "config_version": 1.0,
             "class_name": "SimpleCheckpoint",
@@ -80,7 +82,7 @@ def run_data_quality_checkpoint() -> bool:
         return False
 
 
-def validate_training_data(data_path: Optional[str] = None) -> Dict[str, Any]:
+def validate_training_data(data_path: str | None = None) -> dict[str, Any]:
     """
     Validate training data quality
     

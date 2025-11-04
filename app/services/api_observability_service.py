@@ -118,7 +118,9 @@ class APIObservabilityService:
     def start_request_trace(self, endpoint: str, method: str) -> dict[str, str]:
         """Start distributed tracing for a request"""
         trace_id = self.generate_trace_id()
-        span_id = hashlib.md5(f"{trace_id}{endpoint}{method}".encode(), usedforsecurity=False).hexdigest()[:8]
+        span_id = hashlib.md5(
+            f"{trace_id}{endpoint}{method}".encode(), usedforsecurity=False
+        ).hexdigest()[:8]
 
         # Store in Flask g context for access throughout request lifecycle
         g.trace_id = trace_id
@@ -150,7 +152,9 @@ class APIObservabilityService:
         span_id = getattr(g, "span_id", None)
 
         metrics = RequestMetrics(
-            request_id=hashlib.md5(f"{trace_id}{time.time_ns()}".encode(), usedforsecurity=False).hexdigest()[:12],
+            request_id=hashlib.md5(
+                f"{trace_id}{time.time_ns()}".encode(), usedforsecurity=False
+            ).hexdigest()[:12],
             endpoint=endpoint,
             method=method,
             timestamp=datetime.now(UTC),
@@ -315,7 +319,9 @@ class APIObservabilityService:
     ):
         """Create anomaly alert"""
         alert = AnomalyAlert(
-            alert_id=hashlib.md5(f"{time.time_ns()}{anomaly_type}".encode(), usedforsecurity=False).hexdigest()[:12],
+            alert_id=hashlib.md5(
+                f"{time.time_ns()}{anomaly_type}".encode(), usedforsecurity=False
+            ).hexdigest()[:12],
             timestamp=datetime.now(UTC),
             severity=severity,
             anomaly_type=anomaly_type,

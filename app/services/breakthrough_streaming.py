@@ -158,7 +158,9 @@ class NextTokenPredictor:
     async def predict_next(self, context: dict, n_tokens: int = 10) -> list[dict]:
         """Predict next tokens based on context"""
         # Generate cache key
-        cache_key = hashlib.md5(str(context.get("current_text", "")).encode(), usedforsecurity=False).hexdigest()
+        cache_key = hashlib.md5(
+            str(context.get("current_text", "")).encode(), usedforsecurity=False
+        ).hexdigest()
 
         # Check cache
         if cache_key in self.pattern_cache:
