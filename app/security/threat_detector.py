@@ -133,7 +133,9 @@ class AIThreatDetector:
                 self.stats["high_confidence_threats"] += 1
 
             detection = ThreatDetection(
-                threat_id=hashlib.md5(f"{ip_address}{time.time()}".encode(), usedforsecurity=False).hexdigest()[:12],
+                threat_id=hashlib.md5(
+                    f"{ip_address}{time.time()}".encode(), usedforsecurity=False
+                ).hexdigest()[:12],
                 timestamp=datetime.utcnow(),
                 threat_score=threat_score,
                 threat_type=self._classify_threat_type(features),

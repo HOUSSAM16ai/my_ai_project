@@ -34,10 +34,10 @@ def register_model():
     logger.info("📋 Registering model to MLflow...")
     model_version = f"v{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
     
-    logger.info(f"📦 Model version: {model_version}")
-    logger.info(f"🏷️ Stage: Staging")
-    logger.info(f"📝 Model signature: Added")
-    logger.info(f"📊 Model metrics: Logged")
+    logger.info("Model version: %s", model_version)
+    logger.info("Stage: Staging")
+    logger.info("Model signature: Added")
+    logger.info("Model metrics: Logged")
     
     logger.info("✅ Model registered successfully!")
     
