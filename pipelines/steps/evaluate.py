@@ -14,19 +14,19 @@ logger = logging.getLogger(__name__)
 def evaluate_model():
     """Evaluate trained model and calculate metrics"""
     logger.info("📊 Starting model evaluation...")
-    
+
     workflow_id = os.getenv("WORKFLOW_ID", "local")
     task_name = os.getenv("TASK_NAME", "evaluate")
-    
+
     logger.info(f"Workflow ID: {workflow_id}")
     logger.info(f"Task: {task_name}")
-    
+
     # Simulate evaluation
     logger.info("📥 Loading trained model...")
     logger.info("📊 Loading test data...")
     logger.info("🔍 Running inference...")
     logger.info("📈 Calculating metrics...")
-    
+
     metrics = {
         "accuracy": 0.945,
         "precision": 0.932,
@@ -34,13 +34,13 @@ def evaluate_model():
         "f1_score": 0.925,
         "auc_roc": 0.978,
     }
-    
+
     logger.info("📊 Model Performance Metrics:")
     for metric_name, value in metrics.items():
         logger.info(f"  • {metric_name}: {value:.3f}")
-    
+
     logger.info("✅ Model evaluation completed successfully!")
-    
+
     return {
         "status": "success",
         "timestamp": datetime.utcnow().isoformat(),

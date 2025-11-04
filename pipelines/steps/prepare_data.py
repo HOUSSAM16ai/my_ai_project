@@ -14,22 +14,22 @@ logger = logging.getLogger(__name__)
 def prepare_data():
     """Prepare training data with feature engineering"""
     logger.info("🔄 Starting data preparation...")
-    
+
     # Environment info
     workflow_id = os.getenv("WORKFLOW_ID", "local")
     task_name = os.getenv("TASK_NAME", "prepare_data")
-    
+
     logger.info(f"Workflow ID: {workflow_id}")
     logger.info(f"Task: {task_name}")
-    
+
     # Simulate data preparation steps
     logger.info("📊 Loading raw data...")
     logger.info("🔧 Applying transformations...")
     logger.info("✨ Feature engineering...")
     logger.info("💾 Saving processed data...")
-    
+
     logger.info("✅ Data preparation completed successfully!")
-    
+
     return {
         "status": "success",
         "timestamp": datetime.utcnow().isoformat(),

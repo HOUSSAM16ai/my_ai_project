@@ -14,22 +14,22 @@ logger = logging.getLogger(__name__)
 def validate_data_quality():
     """Validate data quality with Great Expectations"""
     logger.info("🔍 Starting data quality validation...")
-    
+
     workflow_id = os.getenv("WORKFLOW_ID", "local")
     task_name = os.getenv("TASK_NAME", "validate_data_quality")
-    
+
     logger.info(f"Workflow ID: {workflow_id}")
     logger.info(f"Task: {task_name}")
-    
+
     # Run validation checks
     logger.info("📋 Running quality checks...")
     logger.info("✅ Schema validation: PASS")
     logger.info("✅ Completeness check: PASS")
     logger.info("✅ Range validation: PASS")
     logger.info("✅ Freshness check: PASS")
-    
+
     logger.info("✅ All data quality checks passed!")
-    
+
     return {
         "status": "success",
         "timestamp": datetime.utcnow().isoformat(),

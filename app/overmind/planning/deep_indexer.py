@@ -240,22 +240,20 @@ def _estimate_complexity(node: ast.AST) -> int:
     for child in ast.walk(node):
         if isinstance(
             child,
-            (
-                ast.If,
-                ast.For,
-                ast.While,
-                ast.Try,
-                ast.With,
-                ast.AsyncFor,
-                ast.AsyncWith,
-                ast.Match,
-            ),
+            ast.If
+            | ast.For
+            | ast.While
+            | ast.Try
+            | ast.With
+            | ast.AsyncFor
+            | ast.AsyncWith
+            | ast.Match,
         ):
             complexity += 1
         elif isinstance(child, ast.BoolOp):
             complexity += max(1, len(getattr(child, "values", [])) - 1)
         elif isinstance(
-            child, (ast.ExceptHandler, ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
+            child, ast.ExceptHandler | ast.ListComp | ast.SetComp | ast.GeneratorExp | ast.DictComp
         ):
             complexity += 1
     return complexity
@@ -467,7 +465,7 @@ def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
                     name=node.name, lineno=start, end_lineno=end, loc=(end - start + 1), bases=bases
                 )
             )
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+        elif isinstance(node, ast.Import | ast.ImportFrom):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     imports.append(alias.name)
