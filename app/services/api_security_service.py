@@ -489,13 +489,13 @@ class APISecurityService:
         """Log security event for audit trail"""
         try:
             user_id = current_user.id if current_user.is_authenticated else None
-        except:
+        except Exception:
             user_id = None
 
         try:
             ip_address = request.remote_addr or "unknown"
             endpoint = request.endpoint or "unknown"
-        except:
+        except Exception:
             ip_address = "unknown"
             endpoint = "unknown"
 
@@ -553,14 +553,14 @@ class APISecurityService:
         """Get JWT secret from app config"""
         try:
             return current_app.config.get("SECRET_KEY", "dev-secret-change-in-production")
-        except:
+        except Exception:
             return "dev-secret-change-in-production"
 
     def _get_request_signing_secret(self) -> str:
         """Get request signing secret"""
         try:
             return current_app.config.get("API_SIGNING_SECRET", self._get_jwt_secret())
-        except:
+        except Exception:
             return "dev-signing-secret"
 
     def apply_security_headers(self, response):
@@ -629,7 +629,7 @@ def rate_limit(f: Callable) -> Callable:
             client_id = (
                 str(current_user.id) if current_user.is_authenticated else request.remote_addr
             )
-        except:
+        except Exception:
             client_id = request.remote_addr or "unknown"
 
         allowed, limit_info = service.check_rate_limit(client_id)

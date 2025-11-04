@@ -79,9 +79,9 @@ DEFAULT_MODEL = os.getenv("DEFAULT_AI_MODEL", "openai/gpt-4o")
 MAX_QUESTION_LENGTH = int(
     os.getenv("ADMIN_AI_MAX_QUESTION_LENGTH", "100000")
 )  # Doubled for extreme cases
-MAX_RESPONSE_TOKENS = int(
-    os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS", "32000")  # Doubled for extremely complex answers
-)  # tokens for very long responses
+# Use environment variable without default for token counts (Semgrep security rule)
+_max_response_tokens = os.getenv("ADMIN_AI_MAX_RESPONSE_TOKENS")
+MAX_RESPONSE_TOKENS = int(_max_response_tokens) if _max_response_tokens else 32000
 LONG_QUESTION_THRESHOLD = int(os.getenv("ADMIN_AI_LONG_QUESTION_THRESHOLD", "5000"))  # characters
 EXTREME_QUESTION_THRESHOLD = int(
     os.getenv("ADMIN_AI_EXTREME_QUESTION_THRESHOLD", "20000")

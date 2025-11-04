@@ -126,7 +126,7 @@ def _is_binary_maybe(path: Path) -> bool:
         with path.open("rb") as f:
             block = f.read(512)
         return b"\0" in block
-    except:
+    except Exception:
         return True
 
 

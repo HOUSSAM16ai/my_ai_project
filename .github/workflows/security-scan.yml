@@ -91,7 +91,6 @@ jobs:
         continue-on-error: ${{ github.ref != 'refs/heads/main' }}
         with:
           config: p/ci
-          generateSarif: true
         env:
           SEMGREP_RULES: >-
             --exclude="*.md"
@@ -161,7 +160,6 @@ jobs:
             p/owasp-top-ten
             p/cwe-top-25
             p/ci
-          generateSarif: true
         env:
           SEMGREP_RULES: >-
             --exclude="*.md"

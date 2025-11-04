@@ -558,7 +558,7 @@ def enforce_rate_limit_policy(f: Callable) -> Callable:
                 )
             else:
                 client_type = "anonymous"
-        except:
+        except Exception:
             client_type = "anonymous"
 
         policy = service.get_rate_limit_policy(client_type)
