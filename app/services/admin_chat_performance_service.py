@@ -222,7 +222,7 @@ class AdminChatPerformanceService:
         # Use hash for uniform distribution
         import hashlib
 
-        hash_val = int(hashlib.md5(str(user_id).encode()).hexdigest(), 16)
+        hash_val = int(hashlib.md5(str(user_id).encode(), usedforsecurity=False).hexdigest(), 16)
         variant_index = hash_val % len(ABTestVariant)
         variant = list(ABTestVariant)[variant_index]
 

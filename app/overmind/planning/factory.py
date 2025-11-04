@@ -300,7 +300,7 @@ def _file_fingerprint(root_package: str) -> str:
             return "na"
         names = [m.name for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + ".")]
         raw = "|".join(sorted(names))
-        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+        return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
     except Exception:
         return "na"
 
@@ -313,7 +313,7 @@ def _compute_discovery_signature(root: str) -> str:
         FACTORY_VERSION,
         _file_fingerprint(root),
     ]
-    return hashlib.md5("::".join(parts).encode("utf-8")).hexdigest()
+    return hashlib.md5("::".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def _sync_registry_into_records():

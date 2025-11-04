@@ -257,7 +257,7 @@ class APISubscriptionService:
             if not plan:
                 return None
 
-            subscription_id = f"sub_{hashlib.md5(f'{customer_id}:{plan_id}:{datetime.now(UTC)}'.encode()).hexdigest()[:16]}"
+            subscription_id = f"sub_{hashlib.md5(f'{customer_id}:{plan_id}:{datetime.now(UTC)}'.encode(), usedforsecurity=False).hexdigest()[:16]}"
 
             now = datetime.now(UTC)
             period_end = now + timedelta(days=30)  # Default monthly
@@ -321,7 +321,7 @@ class APISubscriptionService:
             total_cost = unit_price * Decimal(str(quantity))
 
             # Record usage
-            record_id = f"usage_{hashlib.md5(f'{subscription_id}:{datetime.now(UTC)}'.encode()).hexdigest()[:16]}"
+            record_id = f"usage_{hashlib.md5(f'{subscription_id}:{datetime.now(UTC)}'.encode(), usedforsecurity=False).hexdigest()[:16]}"
             usage_record = UsageRecord(
                 record_id=record_id,
                 subscription_id=subscription_id,

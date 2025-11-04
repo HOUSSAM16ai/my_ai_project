@@ -131,7 +131,7 @@ class AdaptiveCache:
     def get_cache_key(self, context: dict) -> str:
         """Generate cache key from context"""
         content = str(context.get("last_10_tokens", []))
-        return hashlib.md5(content.encode()).hexdigest()
+        return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
 
 
 # ======================================================================================
@@ -158,7 +158,7 @@ class NextTokenPredictor:
     async def predict_next(self, context: dict, n_tokens: int = 10) -> list[dict]:
         """Predict next tokens based on context"""
         # Generate cache key
-        cache_key = hashlib.md5(str(context.get("current_text", "")).encode()).hexdigest()
+        cache_key = hashlib.md5(str(context.get("current_text", "")).encode(), usedforsecurity=False).hexdigest()
 
         # Check cache
         if cache_key in self.pattern_cache:

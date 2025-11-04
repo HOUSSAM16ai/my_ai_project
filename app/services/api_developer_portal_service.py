@@ -287,7 +287,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
         with self.lock:
             # Generate secure key
             key_value = f"sk_live_{secrets.token_urlsafe(32)}"
-            key_id = f"key_{hashlib.md5(key_value.encode()).hexdigest()[:16]}"
+            key_id = f"key_{hashlib.md5(key_value.encode(), usedforsecurity=False).hexdigest()[:16]}"
 
             now = datetime.now(UTC)
             expires_at = now + timedelta(days=expires_in_days) if expires_in_days else None
