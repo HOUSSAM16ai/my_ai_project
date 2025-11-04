@@ -1,0 +1,240 @@
+# SLO/SLI Configuration for CogniForge ML Services
+# Superhuman observability surpassing enterprise standards
+
+service: "cogniforge-classifier"
+version: "v1"
+
+# Service Level Objectives (SLOs)
+slos:
+  # Inference latency SLO
+  - name: "inference-latency-p95"
+    description: "95th percentile inference latency"
+    objective: 99.0  # 99% of requests must meet target
+    
+    sli:
+      type: promql
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(http_server_duration_seconds_bucket{
+            service="cogniforge-classifier",
+            route="/v1/predict"
+          }[5m])) by (le)
+        )
+    
+    alerting:
+      window: 30m
+      threshold: 300ms  # 300ms for P95
+      annotations:
+        summary: "High inference latency detected"
+        description: "P95 latency exceeded 300ms threshold"
+        runbook: "https://docs.cogniforge.ai/runbooks/high-latency"
+        severity: "warning"
+
+  # Error rate SLO
+  - name: "error-rate"
+    description: "Service error rate"
+    objective: 99.9  # 99.9% availability
+    
+    sli:
+      type: promql
+      expr: |
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier",
+          status=~"5.."
+        }[5m])) 
+        / 
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier"
+        }[5m]))
+    
+    alerting:
+      window: 30m
+      threshold: 0.001  # 0.1% error rate
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate exceeded 0.1% threshold"
+        runbook: "https://docs.cogniforge.ai/runbooks/high-errors"
+        severity: "critical"
+
+  # Throughput SLO
+  - name: "throughput"
+    description: "Request throughput"
+    objective: 95.0
+    
+    sli:
+      type: promql
+      expr: |
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier"
+        }[5m]))
+    
+    alerting:
+      window: 15m
+      threshold: 100  # Minimum 100 requests per second
+      condition: "below"
+      annotations:
+        summary: "Low throughput detected"
+        description: "Request rate dropped below 100 RPS"
+        runbook: "https://docs.cogniforge.ai/runbooks/low-throughput"
+        severity: "warning"
+
+  # GPU utilization SLO
+  - name: "gpu-utilization"
+    description: "GPU utilization rate"
+    objective: 85.0
+    
+    sli:
+      type: promql
+      expr: |
+        avg(
+          DCGM_FI_DEV_GPU_UTIL{
+            service="cogniforge-classifier"
+          }
+        )
+    
+    alerting:
+      window: 10m
+      threshold: 95  # 95% GPU utilization
+      condition: "above"
+      annotations:
+        summary: "High GPU utilization"
+        description: "GPU utilization exceeded 95%"
+        runbook: "https://docs.cogniforge.ai/runbooks/gpu-saturation"
+        severity: "warning"
+
+  # Model drift SLO
+  - name: "model-drift"
+    description: "Model prediction drift detection"
+    objective: 99.0
+    
+    sli:
+      type: promql
+      expr: |
+        abs(
+          avg_over_time(model_prediction_mean{
+            service="cogniforge-classifier"
+          }[1h])
+          -
+          avg_over_time(model_prediction_mean{
+            service="cogniforge-classifier"
+          }[1h] offset 24h)
+        )
+    
+    alerting:
+      window: 1h
+      threshold: 0.1  # 10% drift threshold
+      annotations:
+        summary: "Model drift detected"
+        description: "Model predictions drifting from baseline"
+        runbook: "https://docs.cogniforge.ai/runbooks/model-drift"
+        severity: "warning"
+
+# Error Budget Configuration
+error_budget:
+  - service: "cogniforge-classifier"
+    slo: "error-rate"
+    budget_percent: 0.1  # 0.1% error budget
+    burn_rate_windows:
+      - name: "fast"
+        duration: 1h
+        threshold: 14.4  # Alert if burning budget 14.4x faster
+      - name: "slow"
+        duration: 6h
+        threshold: 6  # Alert if burning budget 6x faster
+
+# Alerting rules
+alerting_rules:
+  - name: "SLO Violation - Inference Latency"
+    expr: |
+      (
+        sum(rate(http_server_duration_seconds_count{
+          service="cogniforge-classifier",
+          le="0.3"
+        }[30m]))
+        /
+        sum(rate(http_server_duration_seconds_count{
+          service="cogniforge-classifier"
+        }[30m]))
+      ) < 0.99
+    for: 5m
+    labels:
+      severity: warning
+      service: cogniforge-classifier
+      slo: inference-latency
+    annotations:
+      summary: "SLO violation: Inference latency"
+      description: "Less than 99% of requests completed within 300ms"
+
+  - name: "SLO Violation - Error Rate"
+    expr: |
+      (
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier",
+          status=~"2..|3.."
+        }[30m]))
+        /
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier"
+        }[30m]))
+      ) < 0.999
+    for: 5m
+    labels:
+      severity: critical
+      service: cogniforge-classifier
+      slo: error-rate
+    annotations:
+      summary: "SLO violation: Error rate"
+      description: "Service availability dropped below 99.9%"
+
+  - name: "Error Budget Burn Rate - Fast"
+    expr: |
+      (
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier",
+          status=~"5.."
+        }[1h]))
+        /
+        sum(rate(http_requests_total{
+          service="cogniforge-classifier"
+        }[1h]))
+      ) > (0.001 * 14.4)
+    for: 2m
+    labels:
+      severity: critical
+      service: cogniforge-classifier
+      type: error-budget
+      window: fast
+    annotations:
+      summary: "Fast error budget burn rate"
+      description: "Error budget burning 14.4x faster than allowed"
+
+# Dashboard configurations
+dashboards:
+  - name: "Model Performance Dashboard"
+    panels:
+      - title: "Inference Latency P50/P95/P99"
+        type: graph
+        queries:
+          - "histogram_quantile(0.50, sum(rate(http_server_duration_seconds_bucket[5m])) by (le))"
+          - "histogram_quantile(0.95, sum(rate(http_server_duration_seconds_bucket[5m])) by (le))"
+          - "histogram_quantile(0.99, sum(rate(http_server_duration_seconds_bucket[5m])) by (le))"
+      
+      - title: "Request Rate"
+        type: graph
+        queries:
+          - "sum(rate(http_requests_total[5m]))"
+      
+      - title: "Error Rate"
+        type: graph
+        queries:
+          - "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))"
+      
+      - title: "GPU Utilization"
+        type: gauge
+        queries:
+          - "avg(DCGM_FI_DEV_GPU_UTIL)"
+      
+      - title: "Model Predictions Distribution"
+        type: heatmap
+        queries:
+          - "histogram_quantile(0.5, sum(rate(model_prediction_bucket[5m])) by (le))"

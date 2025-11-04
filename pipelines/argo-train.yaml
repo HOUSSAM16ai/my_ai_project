@@ -1,0 +1,187 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ml-train-eval-
+  namespace: ml-platform
+  labels:
+    app: cogniforge
+    component: ml-training
+    version: v1
+  annotations:
+    description: "Superhuman ML Training & Evaluation Pipeline"
+    author: "CogniForge Platform"
+
+spec:
+  entrypoint: main
+  serviceAccountName: ml-workflow-sa
+  
+  # Volume templates for shared data
+  volumeClaimTemplates:
+  - metadata:
+      name: workspace
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+
+  # Workflow templates
+  templates:
+  
+  # Main DAG orchestrating all steps
+  - name: main
+    dag:
+      tasks:
+      # Step 1: Data Preparation & Quality Checks
+      - name: prepare-data
+        template: python-task
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/prepare_data.py
+          - name: description
+            value: "Data preparation and feature engineering"
+
+      # Step 2: Data Quality Validation
+      - name: validate-data
+        template: python-task
+        dependencies: [prepare-data]
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/validate_data_quality.py
+          - name: description
+            value: "Data quality checks with Great Expectations"
+
+      # Step 3: Model Training
+      - name: train
+        template: gpu-task
+        dependencies: [validate-data]
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/train.py
+          - name: description
+            value: "Model training with hyperparameter optimization"
+
+      # Step 4: Model Evaluation
+      - name: evaluate
+        template: python-task
+        dependencies: [train]
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/evaluate.py
+          - name: description
+            value: "Model evaluation and metrics calculation"
+
+      # Step 5: Bias & Fairness Check
+      - name: fairness-check
+        template: python-task
+        dependencies: [evaluate]
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/check_fairness.py
+          - name: description
+            value: "Bias and fairness validation"
+
+      # Step 6: Register Model (Quality Gate)
+      - name: register
+        template: python-task
+        dependencies: [fairness-check]
+        arguments:
+          parameters:
+          - name: script
+            value: pipelines/steps/register_model.py
+          - name: description
+            value: "Register model to MLflow registry"
+
+  # Python task template (CPU)
+  - name: python-task
+    inputs:
+      parameters:
+      - name: script
+      - name: description
+    metadata:
+      annotations:
+        description: "{{inputs.parameters.description}}"
+    container:
+      image: ghcr.io/HOUSSAM16ai/my_ai_project/ml-runtime:{{workflow.uid}}
+      imagePullPolicy: IfNotPresent
+      command: ["python", "-u", "{{inputs.parameters.script}}"]
+      env:
+      - name: MLFLOW_TRACKING_URI
+        valueFrom:
+          secretKeyRef:
+            name: mlflow-secret
+            key: tracking-uri
+      - name: OPENROUTER_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: openrouter-secret
+            key: api-key
+      - name: WORKFLOW_ID
+        value: "{{workflow.uid}}"
+      - name: TASK_NAME
+        value: "{{inputs.parameters.script}}"
+      resources:
+        requests:
+          cpu: "2"
+          memory: "4Gi"
+        limits:
+          cpu: "4"
+          memory: "8Gi"
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+
+  # GPU task template
+  - name: gpu-task
+    inputs:
+      parameters:
+      - name: script
+      - name: description
+    metadata:
+      annotations:
+        description: "{{inputs.parameters.description}}"
+    container:
+      image: ghcr.io/HOUSSAM16ai/my_ai_project/ml-runtime-gpu:{{workflow.uid}}
+      imagePullPolicy: IfNotPresent
+      command: ["python", "-u", "{{inputs.parameters.script}}"]
+      env:
+      - name: MLFLOW_TRACKING_URI
+        valueFrom:
+          secretKeyRef:
+            name: mlflow-secret
+            key: tracking-uri
+      - name: OPENROUTER_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: openrouter-secret
+            key: api-key
+      - name: WORKFLOW_ID
+        value: "{{workflow.uid}}"
+      - name: TASK_NAME
+        value: "{{inputs.parameters.script}}"
+      - name: CUDA_VISIBLE_DEVICES
+        value: "0"
+      resources:
+        requests:
+          cpu: "4"
+          memory: "16Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "8"
+          memory: "32Gi"
+          nvidia.com/gpu: "1"
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    nodeSelector:
+      accelerator: nvidia
+    tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "present"
+      effect: "NoSchedule"

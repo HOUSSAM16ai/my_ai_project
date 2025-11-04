@@ -1,0 +1,226 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: cogniforge-classifier
+  namespace: ml-serving
+  labels:
+    app: cogniforge
+    component: inference
+    model: classifier
+  annotations:
+    serving.kserve.io/deploymentMode: "Serverless"
+    autoscaling.knative.dev/class: "kpa.autoscaling.knative.dev"
+    autoscaling.knative.dev/metric: "concurrency"
+    autoscaling.knative.dev/target: "100"
+    autoscaling.knative.dev/minScale: "1"
+    autoscaling.knative.dev/maxScale: "10"
+
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 10
+    
+    # Canary deployment configuration
+    canaryTrafficPercent: 10
+    
+    # Model container
+    containers:
+    - name: kserve-container
+      image: ghcr.io/HOUSSAM16ai/my_ai_project/classifier:latest
+      imagePullPolicy: Always
+      
+      # Environment variables
+      env:
+      - name: MLFLOW_MODEL_URI
+        value: "models:/cogniforge-classifier/Production"
+      - name: OTEL_SERVICE_NAME
+        value: "cogniforge-classifier"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector.observability:4317"
+      - name: MODEL_NAME
+        value: "classifier"
+      - name: PROTOCOL
+        value: "v2"
+      
+      # Resource allocation
+      resources:
+        requests:
+          cpu: "1"
+          memory: "2Gi"
+          ephemeral-storage: "5Gi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          ephemeral-storage: "10Gi"
+      
+      # Health checks
+      livenessProbe:
+        httpGet:
+          path: /v1/models/classifier
+          port: 8080
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      
+      readinessProbe:
+        httpGet:
+          path: /v1/models/classifier
+          port: 8080
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 3
+    
+    # Affinity for optimal scheduling
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - cogniforge
+            topologyKey: kubernetes.io/hostname
+    
+    # Tolerations for specific node pools
+    tolerations:
+    - key: "workload"
+      operator: "Equal"
+      value: "ml-serving"
+      effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cogniforge-classifier
+  namespace: ml-serving
+  labels:
+    app: cogniforge
+    component: inference
+spec:
+  type: ClusterIP
+  selector:
+    app: cogniforge
+    component: inference
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cogniforge-classifier-vs
+  namespace: ml-serving
+  labels:
+    app: cogniforge
+spec:
+  hosts:
+  - "classifier.cogniforge.ai"
+  - "cogniforge-classifier.ml-serving.svc.cluster.local"
+  
+  gateways:
+  - istio-system/cogniforge-gateway
+  
+  http:
+  # Canary deployment with traffic splitting
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: cogniforge-classifier-predictor-default
+        subset: canary
+      weight: 100
+  
+  # Production traffic split
+  - route:
+    - destination:
+        host: cogniforge-classifier-predictor-default
+        subset: stable
+      weight: 90
+    - destination:
+        host: cogniforge-classifier-predictor-default
+        subset: canary
+      weight: 10
+    
+    # Retry policy
+    retries:
+      attempts: 2
+      perTryTimeout: 2s
+      retryOn: "5xx,reset,connect-failure,refused-stream"
+    
+    # Timeout
+    timeout: 5s
+    
+    # Circuit breaker
+    fault:
+      abort:
+        percentage:
+          value: 0.1
+        httpStatus: 503
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: cogniforge-classifier-dr
+  namespace: ml-serving
+spec:
+  host: cogniforge-classifier-predictor-default
+  
+  # Connection pool settings
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    
+    # Load balancer
+    loadBalancer:
+      simple: LEAST_REQUEST
+    
+    # Outlier detection (circuit breaker)
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+  
+  # Subsets for canary deployment
+  subsets:
+  - name: stable
+    labels:
+      version: stable
+    trafficPolicy:
+      connectionPool:
+        tcp:
+          maxConnections: 100
+        http:
+          http1MaxPendingRequests: 50
+  
+  - name: canary
+    labels:
+      version: canary
+    trafficPolicy:
+      connectionPool:
+        tcp:
+          maxConnections: 50
+        http:
+          http1MaxPendingRequests: 25
