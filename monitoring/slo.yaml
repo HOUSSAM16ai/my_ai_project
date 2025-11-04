@@ -138,6 +138,8 @@ error_budget:
       - name: "fast"
         duration: 1h
         threshold: 14.4  # Alert if burning budget 14.4x faster
+                         # Calculation: 2% of monthly budget in 1 hour
+                         # = (2% / (30 days * 24 hours)) * (30 * 24 / 1) = 14.4
       - name: "slow"
         duration: 6h
         threshold: 6  # Alert if burning budget 6x faster

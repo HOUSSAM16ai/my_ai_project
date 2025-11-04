@@ -24,6 +24,7 @@ def train_model():
     logger.info(f"MLflow URI: {mlflow_uri}")
     
     # Check GPU availability
+    gpu_available = False
     try:
         import torch
         gpu_available = torch.cuda.is_available()
@@ -50,7 +51,7 @@ def train_model():
         "model_type": "transformer",
         "epochs": 10,
         "final_loss": 0.12,
-        "gpu_used": True,
+        "gpu_used": gpu_available,
     }
 
 

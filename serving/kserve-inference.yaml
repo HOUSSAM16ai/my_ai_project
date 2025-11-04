@@ -20,9 +20,6 @@ spec:
     minReplicas: 1
     maxReplicas: 10
     
-    # Canary deployment configuration
-    canaryTrafficPercent: 10
-    
     # Model container
     containers:
     - name: kserve-container
