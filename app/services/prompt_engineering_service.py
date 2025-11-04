@@ -1003,7 +1003,7 @@ Please provide your {prompt_type}:
                         results = system_service.search_code(keyword, max_results=2)
                         if results:
                             snippets.extend(results[:2])
-                    except:
+                    except Exception:
                         pass
 
             # Limit to max snippets
@@ -1405,7 +1405,7 @@ Créer un prompt professionnel et détaillé de niveau surhumain pour utiliser a
             )
 
             return template
-        except:
+        except Exception:
             return None
 
     def create_template(

@@ -30,6 +30,7 @@ rules:
       likelihood: LOW
       impact: LOW
       subcategory: [audit]
+      dev.semgrep.actions: []
 
   # =========================================
   # 2. CORS Configuration - Development vs Production
@@ -77,6 +78,7 @@ rules:
       likelihood: LOW
       impact: LOW
       subcategory: [audit]
+      dev.semgrep.actions: []
 
   # =========================================
   # 4. Environment Variable Usage
@@ -155,6 +157,7 @@ rules:
       likelihood: LOW
       impact: MEDIUM
       subcategory: [audit]
+      dev.semgrep.actions: []
 
   # =========================================
   # 7. JWT Token Handling

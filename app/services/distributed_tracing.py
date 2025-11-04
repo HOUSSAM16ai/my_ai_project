@@ -478,7 +478,7 @@ class DistributedTracer:
             from flask import has_request_context
 
             return has_request_context()
-        except:
+        except Exception:
             return False
 
 

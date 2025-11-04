@@ -469,7 +469,7 @@ def monitor_performance(f: Callable) -> Callable:
                 from flask_login import current_user
 
                 user_id = current_user.id if current_user.is_authenticated else None
-            except:
+            except Exception:
                 user_id = None
 
             service.record_request_metrics(
