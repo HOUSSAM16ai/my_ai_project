@@ -15,11 +15,12 @@ Similar to:
 - AWS Security Best Practices
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from flask import Request, current_app, g, jsonify, request
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
 
 # ======================================================================================
 # SECURE AUTHENTICATION TEMPLATES

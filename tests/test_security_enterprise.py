@@ -8,15 +8,14 @@ Following test patterns from:
 - OWASP (Testing Guide)
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
-from app.security.owasp_validator import OWASPCategory, OWASPValidator, SecuritySeverity
-from app.security.secure_auth import AuthEventType, SecureAuthenticationService, UserRole
+from app.security.owasp_validator import OWASPValidator, SecuritySeverity
+from app.security.secure_auth import SecureAuthenticationService, UserRole
 from app.security.secure_templates import (
     sanitize_filename,
-    secure_register_user,
     validate_email,
 )
 
@@ -349,7 +348,7 @@ class TestSecureTemplates:
         # The template ALWAYS sets is_admin=False
 
         # Read the template code to verify
-        with open("app/security/secure_templates.py", "r") as f:
+        with open("app/security/secure_templates.py") as f:
             code = f.read()
             assert "is_admin=False" in code
             assert "# 🔒 LOCKED - Never from user input" in code
@@ -360,7 +359,7 @@ class TestRateLimiting:
 
     def test_rate_limiter_initialization(self):
         """Test rate limiter initializes correctly"""
-        from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
+        from app.security.rate_limiter import AdaptiveRateLimiter
 
         limiter = AdaptiveRateLimiter()
 
