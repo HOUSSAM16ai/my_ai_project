@@ -17,9 +17,7 @@ Features that match/surpass Google, Meta, Microsoft, OpenAI:
 ✅ Role-based access control (RBAC)
 """
 
-import hashlib
 import secrets
-import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
@@ -219,9 +217,7 @@ class SecureAuthenticationService:
 
         # Check if account is locked
         if self._is_account_locked(email):
-            self._log_auth_event(
-                AuthEventType.LOGIN_FAILED, email, ip_address, "Account is locked"
-            )
+            self._log_auth_event(AuthEventType.LOGIN_FAILED, email, ip_address, "Account is locked")
             return False, {
                 "error": "Account is locked. Try again later.",
                 "locked_until": self._get_unlock_time(email),
@@ -319,9 +315,9 @@ class SecureAuthenticationService:
     def _verify_captcha(self, captcha_token: str, ip_address: str) -> bool:
         """
         Verify CAPTCHA token (server-side verification)
-        
+
         PRODUCTION IMPLEMENTATION:
-        
+
         import requests
         response = requests.post(
             'https://www.google.com/recaptcha/api/siteverify',
@@ -334,7 +330,7 @@ class SecureAuthenticationService:
         )
         result = response.json()
         return result.get('success', False) and result.get('score', 0) > 0.5
-        
+
         Args:
             captcha_token: CAPTCHA token from client
             ip_address: Client IP address
@@ -346,7 +342,7 @@ class SecureAuthenticationService:
         # IMPORTANT: In production, implement actual reCAPTCHA verification above
         if not captcha_token:
             return False
-        
+
         # For production, uncomment the actual verification above
         return True  # Simplified for development
 
@@ -405,9 +401,7 @@ class SecureAuthenticationService:
 
         cutoff_time = datetime.now(UTC) - timedelta(minutes=minutes)
         return [
-            attempt
-            for attempt in self.failed_attempts[email]
-            if attempt.timestamp >= cutoff_time
+            attempt for attempt in self.failed_attempts[email] if attempt.timestamp >= cutoff_time
         ]
 
     def _create_session(self, user: dict[str, Any], request: Request) -> UserSession:
@@ -432,10 +426,10 @@ class SecureAuthenticationService:
     def _get_user_by_email(self, email: str) -> dict[str, Any] | None:
         """
         Get user from database
-        
+
         PRODUCTION IMPLEMENTATION:
         This should query your actual User model from the database.
-        
+
         Example:
         from app.models import User
         user = User.query.filter_by(email=email).first()
@@ -448,10 +442,10 @@ class SecureAuthenticationService:
                 'two_factor_enabled': getattr(user, 'two_factor_enabled', False)
             }
         return None
-        
+
         Args:
             email: User email to look up
-            
+
         Returns:
             User dict or None if not found
         """
@@ -460,9 +454,7 @@ class SecureAuthenticationService:
         # Example integration is shown in the docstring above
         return None
 
-    def _log_auth_event(
-        self, event_type: AuthEventType, email: str, ip_address: str, details: str
-    ):
+    def _log_auth_event(self, event_type: AuthEventType, email: str, ip_address: str, details: str):
         """Log authentication event for audit trail"""
         if self.audit_logger:
             self.audit_logger.log(

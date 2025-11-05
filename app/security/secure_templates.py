@@ -15,12 +15,12 @@ Similar to:
 - AWS Security Best Practices
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from flask import Request, current_app, g, jsonify, request
-from werkzeug.security import check_password_hash, generate_password_hash
-
+from werkzeug.security import generate_password_hash
 
 # ======================================================================================
 # SECURE AUTHENTICATION TEMPLATES
@@ -100,7 +100,11 @@ def secure_register_user(email: str, password: str, name: str, db_session: Any) 
 
 
 def secure_login(
-    email: str, password: str, request_obj: Request, db_session: Any, captcha_token: str | None = None
+    email: str,
+    password: str,
+    request_obj: Request,
+    db_session: Any,
+    captcha_token: str | None = None,
 ) -> dict[str, Any]:
     """
     ✅ SECURE LOGIN TEMPLATE
@@ -191,7 +195,9 @@ def secure_change_password(
 
     # 2. Verify current password
     if not user.check_password(current_password):
-        current_app.logger.warning(f"Failed password change: Invalid current password for user {user_id}")
+        current_app.logger.warning(
+            f"Failed password change: Invalid current password for user {user_id}"
+        )
         return {"error": "Current password is incorrect"}
 
     # 3. Validate new password strength (same as registration)
@@ -252,7 +258,9 @@ def require_admin(f: Callable) -> Callable:
     def decorated_function(*args: Any, **kwargs: Any) -> Any:
         # Check if user is authenticated
         if not g.get("user_id"):
-            current_app.logger.warning(f"Unauthorized admin access attempt from {request.remote_addr}")
+            current_app.logger.warning(
+                f"Unauthorized admin access attempt from {request.remote_addr}"
+            )
             return jsonify({"error": "Authentication required"}), 401
 
         # Check if user is admin
@@ -458,7 +466,9 @@ def secure_search_users(query: str, limit: int = 20) -> list[dict[str, Any]]:
 # ======================================================================================
 
 
-def secure_file_upload(file: Any, allowed_extensions: set[str], max_size: int = 5 * 1024 * 1024) -> dict[str, Any]:
+def secure_file_upload(
+    file: Any, allowed_extensions: set[str], max_size: int = 5 * 1024 * 1024
+) -> dict[str, Any]:
     """
     ✅ SECURE FILE UPLOAD TEMPLATE
 
