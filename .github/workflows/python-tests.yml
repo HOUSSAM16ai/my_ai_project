@@ -57,7 +57,6 @@ jobs:
             --cov-report=html \
             --cov-report=term \
             --maxfail=1 \
-            --disable-warnings \
             -v
 
       - name: Upload coverage artifacts
