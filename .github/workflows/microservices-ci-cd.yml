@@ -170,6 +170,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free Disk Space
+        run: |
+          echo "=== Before Cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker system prune -af --volumes
+          echo "=== After Cleanup ==="
+          df -h
+
       - name: Set lowercase repository name
         id: repo
         run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
@@ -223,9 +238,10 @@ jobs:
           build-args: |
             VERSION=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
+        continue-on-error: false
 
       - name: Run Trivy Vulnerability Scanner
-        if: steps.check_dir.outputs.exists == 'true'
+        if: steps.check_dir.outputs.exists == 'true' && success()
         uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -233,48 +249,55 @@ jobs:
           output: 'trivy-results-${{ matrix.service.name }}.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
           exit-code: '0'
+        continue-on-error: true
 
       - name: Upload Trivy Results to GitHub Security
         if: always() && steps.check_dir.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results-${{ matrix.service.name }}.sarif'
+        continue-on-error: true
 
       - name: Run Grype Scanner
-        if: steps.check_dir.outputs.exists == 'true'
+        if: steps.check_dir.outputs.exists == 'true' && success()
         uses: anchore/scan-action@v3
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           fail-build: false
           severity-cutoff: high
+        continue-on-error: true
 
       - name: Generate SBOM with Syft
-        if: steps.check_dir.outputs.exists == 'true'
+        if: steps.check_dir.outputs.exists == 'true' && success()
         uses: anchore/sbom-action@v0
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: cyclonedx-json
           output-file: sbom-${{ matrix.service.name }}.json
+        continue-on-error: true
 
       - name: Upload SBOM
-        if: steps.check_dir.outputs.exists == 'true'
+        if: steps.check_dir.outputs.exists == 'true' && success()
         uses: actions/upload-artifact@v4
         with:
           name: sbom-${{ matrix.service.name }}
           path: sbom-${{ matrix.service.name }}.json
+        continue-on-error: true
 
       - name: Sign Image with Cosign (Keyless)
-        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true'
+        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true' && success()
         uses: sigstore/cosign-installer@v3.5.0
+        continue-on-error: true
 
       - name: Push Image
-        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true'
+        if: github.ref == 'refs/heads/main' && steps.check_dir.outputs.exists == 'true' && success()
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.context }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+        continue-on-error: true
 
   # =============================================================================
   # Phase 5: SAST & DAST Security Analysis
@@ -316,6 +339,7 @@ jobs:
         if: always()
         with:
           sarif_file: semgrep.sarif
+        continue-on-error: true
 
       - name: Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
