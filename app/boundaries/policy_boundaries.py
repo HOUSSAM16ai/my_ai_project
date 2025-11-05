@@ -28,15 +28,14 @@ VERSION: 1.0.0
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -50,18 +49,18 @@ logger = logging.getLogger(__name__)
 class Principal:
     """
     الكيان المصادق عليه (Principal)
-    
+
     يمثل المستخدم أو الخدمة المصادقة
     """
 
     id: str
     type: str  # user, service, system
-    claims: Dict[str, Any] = field(default_factory=dict)
-    roles: Set[str] = field(default_factory=set)
+    claims: dict[str, Any] = field(default_factory=dict)
+    roles: set[str] = field(default_factory=set)
     authenticated_at: datetime = field(default_factory=datetime.now)
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
-    def has_claim(self, claim_name: str, claim_value: Optional[Any] = None) -> bool:
+    def has_claim(self, claim_name: str, claim_value: Any | None = None) -> bool:
         """التحقق من وجود claim"""
         if claim_name not in self.claims:
             return False
@@ -83,7 +82,7 @@ class Principal:
 class AuthenticationService(ABC):
     """
     خدمة المصادقة (Authentication Service)
-    
+
     مسؤولة فقط عن التحقق من هوية المستخدم:
     - إدارة المستخدمين والبيانات الاعتمادية
     - إصدار الرموز (Token Issuance) - JWT/OAuth2
@@ -92,20 +91,20 @@ class AuthenticationService(ABC):
     """
 
     @abstractmethod
-    async def authenticate(self, credentials: Dict[str, Any]) -> Optional[Principal]:
+    async def authenticate(self, credentials: dict[str, Any]) -> Principal | None:
         """
         مصادقة مستخدم
-        
+
         Args:
             credentials: البيانات الاعتمادية (email/password, token, etc.)
-        
+
         Returns:
             Principal إذا نجحت المصادقة، None إذا فشلت
         """
         pass
 
     @abstractmethod
-    async def refresh_token(self, refresh_token: str) -> Optional[str]:
+    async def refresh_token(self, refresh_token: str) -> str | None:
         """تحديث رمز الوصول"""
         pass
 
@@ -131,40 +130,40 @@ class Effect(Enum):
 class PolicyRule:
     """
     قاعدة سياسة (Policy Rule)
-    
+
     تعريف قابل للقراءة لسياسة الوصول
     """
 
     effect: Effect
-    principals: List[str] = field(default_factory=list)  # roles or user IDs
-    actions: List[str] = field(default_factory=list)  # ["read", "write", "delete"]
-    resources: List[str] = field(default_factory=list)  # ["user:*", "document:123"]
-    conditions: List[str] = field(default_factory=list)  # ["user.region == 'EU'"]
+    principals: list[str] = field(default_factory=list)  # roles or user IDs
+    actions: list[str] = field(default_factory=list)  # ["read", "write", "delete"]
+    resources: list[str] = field(default_factory=list)  # ["user:*", "document:123"]
+    conditions: list[str] = field(default_factory=list)  # ["user.region == 'EU'"]
 
 
 @dataclass
 class Policy:
     """
     سياسة (Policy)
-    
+
     مجموعة من القواعد التي تحدد من يمكنه فعل ماذا
     """
 
     name: str
     description: str
-    rules: List[PolicyRule]
+    rules: list[PolicyRule]
     priority: int = 0  # أولوية السياسة (أعلى رقم = أولوية أعلى)
 
 
 class PolicyEngine:
     """
     محرك السياسات (Policy Engine)
-    
+
     يقيّم السياسات ويحدد ما إذا كان الوصول مسموح أو محظور
     """
 
     def __init__(self):
-        self.policies: List[Policy] = []
+        self.policies: list[Policy] = []
 
     def add_policy(self, policy: Policy) -> None:
         """إضافة سياسة جديدة"""
@@ -174,17 +173,21 @@ class PolicyEngine:
         logger.info(f"✅ Policy added: {policy.name}")
 
     def evaluate(
-        self, principal: Principal, action: str, resource: str, context: Optional[Dict[str, Any]] = None
+        self,
+        principal: Principal,
+        action: str,
+        resource: str,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """
         تقييم ما إذا كان الوصول مسموح
-        
+
         Args:
             principal: الكيان الذي يطلب الوصول
             action: الإجراء المطلوب (read, write, delete, etc.)
             resource: المورد المستهدف (user:123, document:456, etc.)
             context: سياق إضافي للتقييم
-        
+
         Returns:
             True إذا كان الوصول مسموح، False إذا كان محظور
         """
@@ -211,15 +214,12 @@ class PolicyEngine:
             return False
 
         if allow_found:
-            logger.info(
-                f"✅ Access granted: {principal.id} -> {action} on {resource}"
-            )
+            logger.info(f"✅ Access granted: {principal.id} -> {action} on {resource}")
             return True
 
         # الرفض الافتراضي (Default Deny)
         logger.info(
-            f"⚠️ Access denied (no matching policy): "
-            f"{principal.id} -> {action} on {resource}"
+            f"⚠️ Access denied (no matching policy): " f"{principal.id} -> {action} on {resource}"
         )
         return False
 
@@ -229,7 +229,7 @@ class PolicyEngine:
         action: str,
         resource: str,
         rule: PolicyRule,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """التحقق مما إذا كانت القاعدة تنطبق على الطلب"""
         # تحقق من Principal
@@ -250,7 +250,7 @@ class PolicyEngine:
 
         return True
 
-    def _matches_principals(self, principal: Principal, principals: List[str]) -> bool:
+    def _matches_principals(self, principal: Principal, principals: list[str]) -> bool:
         """التحقق من مطابقة Principal"""
         if not principals:
             return True  # لا توجد قيود
@@ -270,7 +270,7 @@ class PolicyEngine:
 
         return False
 
-    def _matches_pattern(self, value: str, patterns: List[str]) -> bool:
+    def _matches_pattern(self, value: str, patterns: list[str]) -> bool:
         """التحقق من مطابقة النمط (يدعم wildcards)"""
         if not patterns:
             return True  # لا توجد قيود
@@ -292,8 +292,8 @@ class PolicyEngine:
         self,
         principal: Principal,
         resource: str,
-        conditions: List[str],
-        context: Dict[str, Any],
+        conditions: list[str],
+        context: dict[str, Any],
     ) -> bool:
         """تقييم الشروط (Conditions)"""
         if not conditions:
@@ -318,12 +318,10 @@ class PolicyEngine:
 
         return True
 
-    def _evaluate_simple_condition(
-        self, condition: str, eval_context: Dict[str, Any]
-    ) -> bool:
+    def _evaluate_simple_condition(self, condition: str, eval_context: dict[str, Any]) -> bool:
         """
         تقييم شرط بسيط
-        
+
         أمثلة:
         - "principal.region == 'EU'"
         - "resource.location != 'EU'"
@@ -374,12 +372,12 @@ class PolicyEngine:
 class SecurityLayer(ABC):
     """
     طبقة أمان (Security Layer)
-    
+
     كل طبقة مستقلة ومسؤولة عن جانب واحد من الأمان
     """
 
     @abstractmethod
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """معالجة الطلب عبر طبقة الأمان"""
         pass
 
@@ -387,7 +385,7 @@ class SecurityLayer(ABC):
 class TLSLayer(SecurityLayer):
     """طبقة 1: تشفير النقل (TLS/mTLS)"""
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """التحقق من تشفير الاتصال"""
         if not request.get("is_secure", False):
             raise SecurityException("Connection must be secure (HTTPS/TLS)")
@@ -398,7 +396,7 @@ class TLSLayer(SecurityLayer):
 class JWTValidationLayer(SecurityLayer):
     """طبقة 2: المصادقة (JWT Validation)"""
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """التحقق من صحة JWT"""
         token = request.get("token")
         if not token:
@@ -416,16 +414,14 @@ class AuthorizationLayer(SecurityLayer):
     def __init__(self, policy_engine: PolicyEngine):
         self.policy_engine = policy_engine
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """تطبيق سياسات الترخيص"""
         principal = request.get("principal")
         action = request.get("action")
         resource = request.get("resource")
 
         if not self.policy_engine.evaluate(principal, action, resource):
-            raise SecurityException(
-                f"Access denied: {principal.id} cannot {action} on {resource}"
-            )
+            raise SecurityException(f"Access denied: {principal.id} cannot {action} on {resource}")
 
         logger.info("✅ Authorization passed")
         return request
@@ -434,7 +430,7 @@ class AuthorizationLayer(SecurityLayer):
 class InputValidationLayer(SecurityLayer):
     """طبقة 4: التحقق من المدخلات (Input Validation)"""
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """التحقق من صحة المدخلات"""
         # في الإنتاج، استخدم Marshmallow أو Pydantic
         # هنا نستخدم تحقق بسيط للمثال
@@ -457,9 +453,9 @@ class RateLimitingLayer(SecurityLayer):
     def __init__(self, max_requests: int = 100, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self._request_counts: Dict[str, List[datetime]] = {}
+        self._request_counts: dict[str, list[datetime]] = {}
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """تطبيق حدود المعدل"""
         principal = request.get("principal")
         if not principal:
@@ -492,9 +488,9 @@ class AuditLoggingLayer(SecurityLayer):
     """طبقة 6: التدقيق (Audit Logging)"""
 
     def __init__(self):
-        self._audit_log: List[Dict[str, Any]] = []
+        self._audit_log: list[dict[str, Any]] = []
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """تسجيل الطلب للتدقيق"""
         audit_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -509,8 +505,8 @@ class AuditLoggingLayer(SecurityLayer):
         return request
 
     def get_audit_log(
-        self, principal_id: Optional[str] = None, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+        self, principal_id: str | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """الحصول على سجل التدقيق"""
         logs = self._audit_log
         if principal_id:
@@ -521,19 +517,19 @@ class AuditLoggingLayer(SecurityLayer):
 class SecurityPipeline:
     """
     خط أنابيب الأمان (Security Pipeline)
-    
+
     يطبق جميع طبقات الأمان بالترتيب
     """
 
     def __init__(self):
-        self.layers: List[SecurityLayer] = []
+        self.layers: list[SecurityLayer] = []
 
     def add_layer(self, layer: SecurityLayer) -> None:
         """إضافة طبقة أمان"""
         self.layers.append(layer)
         logger.info(f"✅ Security layer added: {layer.__class__.__name__}")
 
-    async def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, request: dict[str, Any]) -> dict[str, Any]:
         """معالجة الطلب عبر جميع الطبقات"""
         for layer in self.layers:
             try:
@@ -574,19 +570,19 @@ class ComplianceRule:
     regulation: ComplianceRegulation
     rule_id: str
     description: str
-    validator: Callable[[Dict[str, Any]], bool]
+    validator: Callable[[dict[str, Any]], bool]
     remediation: str  # خطوات العلاج عند الفشل
 
 
 class ComplianceEngine:
     """
     محرك الامتثال (Compliance Engine)
-    
+
     يفصل متطلبات الامتثال عن منطق العمل
     """
 
     def __init__(self):
-        self.rules: List[ComplianceRule] = []
+        self.rules: list[ComplianceRule] = []
 
     def add_rule(self, rule: ComplianceRule) -> None:
         """إضافة قاعدة امتثال"""
@@ -594,23 +590,21 @@ class ComplianceEngine:
         logger.info(f"✅ Compliance rule added: {rule.regulation.value}/{rule.rule_id}")
 
     async def validate(
-        self, data: Dict[str, Any], regulations: Optional[List[ComplianceRegulation]] = None
-    ) -> Dict[str, Any]:
+        self, data: dict[str, Any], regulations: list[ComplianceRegulation] | None = None
+    ) -> dict[str, Any]:
         """
         التحقق من الامتثال
-        
+
         Args:
             data: البيانات المراد التحقق منها
             regulations: اللوائح المراد التحقق منها (None = جميع اللوائح)
-        
+
         Returns:
             نتيجة التحقق مع القواعد الفاشلة
         """
         applicable_rules = self.rules
         if regulations:
-            applicable_rules = [
-                r for r in self.rules if r.regulation in regulations
-            ]
+            applicable_rules = [r for r in self.rules if r.regulation in regulations]
 
         failed_rules = []
         for rule in applicable_rules:
@@ -664,13 +658,13 @@ class DataGovernancePolicy:
     encryption_required: bool  # التشفير مطلوب
     backup_required: bool  # النسخ الاحتياطي مطلوب
     access_logging_required: bool  # تسجيل الوصول مطلوب
-    allowed_locations: List[str]  # المواقع المسموحة (للسيادة على البيانات)
+    allowed_locations: list[str]  # المواقع المسموحة (للسيادة على البيانات)
 
 
 class DataGovernanceFramework:
     """
     إطار حوكمة البيانات (Data Governance Framework)
-    
+
     يدير سياسات البيانات بشكل موحد:
     - تصنيف البيانات
     - سياسات الاحتفاظ
@@ -679,7 +673,7 @@ class DataGovernanceFramework:
     """
 
     def __init__(self):
-        self.policies: Dict[DataClassification, DataGovernancePolicy] = {}
+        self.policies: dict[DataClassification, DataGovernancePolicy] = {}
         self._initialize_default_policies()
 
     def _initialize_default_policies(self) -> None:
@@ -732,9 +726,7 @@ class DataGovernanceFramework:
         """التحقق مما إذا كان النسخ الاحتياطي مطلوب"""
         return self.policies[classification].backup_required
 
-    def is_location_allowed(
-        self, classification: DataClassification, location: str
-    ) -> bool:
+    def is_location_allowed(self, classification: DataClassification, location: str) -> bool:
         """التحقق مما إذا كان الموقع مسموح"""
         allowed = self.policies[classification].allowed_locations
         return "*" in allowed or location in allowed
@@ -755,7 +747,7 @@ class DataGovernanceFramework:
 class PolicyBoundary:
     """
     حدود السياسات (Policy Boundary)
-    
+
     يجمع كل أنماط فصل السياسات في واجهة موحدة:
     - PolicyEngine للترخيص القائم على السياسات
     - SecurityPipeline للأمان متعدد الطبقات
@@ -784,7 +776,7 @@ class PolicyBoundary:
 # GLOBAL INSTANCE (اختياري)
 # ======================================================================================
 
-_global_policy_boundary: Optional[PolicyBoundary] = None
+_global_policy_boundary: PolicyBoundary | None = None
 
 
 def get_policy_boundary() -> PolicyBoundary:

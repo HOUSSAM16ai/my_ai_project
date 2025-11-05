@@ -20,35 +20,34 @@ VERSION: 1.0.0
 """
 
 import asyncio
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from app.boundaries.service_boundaries import (
-    ServiceBoundary,
-    EventType,
-    DomainEvent,
-    CircuitBreakerConfig,
-    get_service_boundary,
-)
+import pytest
+
 from app.boundaries.data_boundaries import (
     DataBoundary,
-    SagaOrchestrator,
     InMemoryEventStore,
     StoredEvent,
     get_data_boundary,
 )
 from app.boundaries.policy_boundaries import (
-    PolicyBoundary,
-    Principal,
-    Policy,
-    PolicyRule,
-    Effect,
-    DataClassification,
     ComplianceRegulation,
     ComplianceRule,
+    DataClassification,
+    Effect,
+    Policy,
+    PolicyBoundary,
+    PolicyRule,
+    Principal,
     get_policy_boundary,
 )
-
+from app.boundaries.service_boundaries import (
+    CircuitBreakerConfig,
+    DomainEvent,
+    EventType,
+    ServiceBoundary,
+    get_service_boundary,
+)
 
 # ======================================================================================
 # SERVICE BOUNDARIES TESTS
@@ -325,9 +324,7 @@ class TestPolicyBoundaries:
         principal = Principal(id="user-123", type="user", roles={"user"})
 
         # التحقق من السماح
-        assert policy_boundary.policy_engine.evaluate(
-            principal, "read", "user:123"
-        ) is True
+        assert policy_boundary.policy_engine.evaluate(principal, "read", "user:123") is True
 
     def test_policy_engine_deny_rule(self):
         """اختبار قاعدة رفض"""
@@ -369,9 +366,7 @@ class TestPolicyBoundaries:
         principal = Principal(id="user-123", type="user", roles={"user"})
 
         # DENY يتفوق على ALLOW
-        assert policy_boundary.policy_engine.evaluate(
-            principal, "read", "admin:settings"
-        ) is False
+        assert policy_boundary.policy_engine.evaluate(principal, "read", "admin:settings") is False
 
     @pytest.mark.asyncio
     async def test_security_pipeline_all_layers(self):
@@ -416,20 +411,22 @@ class TestPolicyBoundaries:
         policy_boundary = PolicyBoundary()
 
         # التحقق من سياسات التشفير
-        assert policy_boundary.data_governance.should_encrypt(
-            DataClassification.PUBLIC
-        ) is False
-        assert policy_boundary.data_governance.should_encrypt(
-            DataClassification.CONFIDENTIAL
-        ) is True
+        assert policy_boundary.data_governance.should_encrypt(DataClassification.PUBLIC) is False
+        assert (
+            policy_boundary.data_governance.should_encrypt(DataClassification.CONFIDENTIAL) is True
+        )
 
         # التحقق من القيود الجغرافية
-        assert policy_boundary.data_governance.is_location_allowed(
-            DataClassification.PUBLIC, "US"
-        ) is True
-        assert policy_boundary.data_governance.is_location_allowed(
-            DataClassification.HIGHLY_RESTRICTED, "US"
-        ) is False
+        assert (
+            policy_boundary.data_governance.is_location_allowed(DataClassification.PUBLIC, "US")
+            is True
+        )
+        assert (
+            policy_boundary.data_governance.is_location_allowed(
+                DataClassification.HIGHLY_RESTRICTED, "US"
+            )
+            is False
+        )
 
     def test_compliance_engine_validation(self):
         """اختبار محرك الامتثال"""
@@ -488,7 +485,7 @@ class TestIntegration:
     async def test_end_to_end_create_order_scenario(self):
         """
         سيناريو شامل: إنشاء طلب
-        
+
         يختبر:
         - حدود الخدمات (Event-Driven)
         - حدود البيانات (Saga Pattern)
@@ -518,9 +515,7 @@ class TestIntegration:
         principal = Principal(id="user-123", type="user", roles={"customer"})
 
         # التحقق من الترخيص
-        assert policy_boundary.policy_engine.evaluate(
-            principal, "create", "order:new"
-        ) is True
+        assert policy_boundary.policy_engine.evaluate(principal, "create", "order:new") is True
 
         # إنشاء Saga
         saga = data_boundary.create_saga("create_order")
