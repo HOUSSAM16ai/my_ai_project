@@ -170,6 +170,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Check service directory
         id: check_dir
         run: |
@@ -197,7 +201,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.repository }}/${{ matrix.service.name }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -380,6 +384,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
 
@@ -391,7 +399,7 @@ jobs:
       - name: Deploy with Argo Rollouts (Canary)
         run: |
           kubectl argo rollouts set image router-service \
-            router-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/router-service:${{ github.sha }} \
+            router-service=${{ env.REGISTRY }}/${{ steps.repo.outputs.repository }}/router-service:${{ github.sha }} \
             -n ai-services
 
           kubectl argo rollouts promote router-service -n ai-services
@@ -443,6 +451,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
 
@@ -450,7 +462,7 @@ jobs:
         run: |
           # Update production deployment
           kubectl set image deployment/router-service \
-            router-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/router-service:${{ github.sha }} \
+            router-service=${{ env.REGISTRY }}/${{ steps.repo.outputs.repository }}/router-service:${{ github.sha }} \
             -n ai-services-prod
 
           # Wait for rollout
