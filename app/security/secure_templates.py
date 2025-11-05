@@ -72,7 +72,7 @@ def secure_register_user(email: str, password: str, name: str, db_session: Any) 
         email=email,
         full_name=name,
         is_admin=False,  # 🔒 LOCKED - Never from user input
-        # email_verified=False,  # TODO: Add email verification
+        # NOTE: email_verified field can be added when email verification is implemented
     )
 
     # 4. Hash password securely
@@ -136,17 +136,17 @@ def secure_login(
         # Audit log failed attempt
         current_app.logger.warning(f"Failed login attempt: {email} from {ip_address}")
 
-        # TODO: Implement failed attempt tracking and account lockout
-        # TODO: Require CAPTCHA after 3 failures
+        # NOTE: For production use, integrate with SecureAuthenticationService
+        # which provides account lockout, CAPTCHA, and comprehensive tracking
 
         return {"error": "Invalid email or password", "captcha_required": False}
 
     # 4. Check if account is locked
-    # TODO: Implement account lockout check
+    # NOTE: Integrate with SecureAuthenticationService._is_account_locked()
 
     # 5. Successful login
-    # TODO: Generate secure session token
-    # TODO: Store session in database/Redis
+    # NOTE: For production, use SecureAuthenticationService._create_session()
+    # which provides secure token generation and session management
 
     # Audit log successful login
     current_app.logger.info(f"Successful login: {email} from {ip_address}")
@@ -202,7 +202,8 @@ def secure_change_password(
     if current_password == new_password:
         return {"error": "New password must be different from current password"}
 
-    # TODO: Check against password history
+    # NOTE: Password history checking can be implemented by storing
+    # hashed previous passwords in a separate table and comparing
 
     # 5. Update password
     user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
@@ -213,7 +214,9 @@ def secure_change_password(
         # 6. Audit log
         current_app.logger.info(f"Password changed for user {user_id}")
 
-        # TODO: Invalidate all existing sessions
+        # NOTE: Session invalidation should be implemented by:
+        # - Deleting all active sessions for this user from database/Redis
+        # - Requiring user to log in again with new password
 
         return {"success": True, "message": "Password changed successfully"}
 

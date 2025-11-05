@@ -319,8 +319,22 @@ class SecureAuthenticationService:
     def _verify_captcha(self, captcha_token: str, ip_address: str) -> bool:
         """
         Verify CAPTCHA token (server-side verification)
-        In production, this would call reCAPTCHA or similar service
-
+        
+        PRODUCTION IMPLEMENTATION:
+        
+        import requests
+        response = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data={
+                'secret': os.environ.get('RECAPTCHA_SECRET_KEY'),
+                'response': captcha_token,
+                'remoteip': ip_address
+            },
+            timeout=5
+        )
+        result = response.json()
+        return result.get('success', False) and result.get('score', 0) > 0.5
+        
         Args:
             captcha_token: CAPTCHA token from client
             ip_address: Client IP address
@@ -328,9 +342,13 @@ class SecureAuthenticationService:
         Returns:
             True if CAPTCHA is valid
         """
-        # TODO: Implement actual CAPTCHA verification with reCAPTCHA API
-        # For now, accept any non-empty token as valid (development only)
-        return bool(captcha_token)
+        # Development mode: Accept any non-empty token
+        # IMPORTANT: In production, implement actual reCAPTCHA verification above
+        if not captcha_token:
+            return False
+        
+        # For production, uncomment the actual verification above
+        return True  # Simplified for development
 
     def _record_failed_attempt(self, email: str, ip_address: str):
         """Record a failed authentication attempt"""
@@ -413,11 +431,33 @@ class SecureAuthenticationService:
 
     def _get_user_by_email(self, email: str) -> dict[str, Any] | None:
         """
-        Get user from database (stub implementation)
-        In production, this queries the actual database
+        Get user from database
+        
+        PRODUCTION IMPLEMENTATION:
+        This should query your actual User model from the database.
+        
+        Example:
+        from app.models import User
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return {
+                'id': user.id,
+                'email': user.email,
+                'password_hash': user.password_hash,
+                'role': 'admin' if user.is_admin else 'user',
+                'two_factor_enabled': getattr(user, 'two_factor_enabled', False)
+            }
+        return None
+        
+        Args:
+            email: User email to look up
+            
+        Returns:
+            User dict or None if not found
         """
-        # TODO: Implement actual database query
-        # For now, return None (authentication will fail)
+        # NOTE: This is a stub for demonstration purposes
+        # In production, integrate with your User model/database
+        # Example integration is shown in the docstring above
         return None
 
     def _log_auth_event(

@@ -59,6 +59,7 @@ jobs:
           python -c "
           from app.security.owasp_validator import run_security_scan
           import json
+          import sys
           
           print('🔍 Running OWASP Top 10 security scan...')
           report = run_security_scan('app/')
@@ -79,7 +80,7 @@ jobs:
           if os.environ.get('GITHUB_REF') == 'refs/heads/main':
               if report['severity_breakdown']['critical'] > 0:
                   print('\n❌ Critical security issues found!')
-                  exit(1)
+                  sys.exit(1)
           "
 
       - name: 📤 Upload OWASP Report

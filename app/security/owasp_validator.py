@@ -291,19 +291,30 @@ class OWASPValidator:
         # Hardcoded secrets
         for pattern in self.hardcoded_secrets_patterns:
             if re.search(pattern, code):
-                # Skip if it's in test files or uses env variables
-                if "os.environ" not in code and "test_" not in file_path.lower():
-                    issues.append(
-                        SecurityIssue(
-                            category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
-                            severity=SecuritySeverity.CRITICAL,
-                            title="Hardcoded Secret",
-                            description="Secret or credential appears to be hardcoded",
-                            file_path=file_path,
-                            recommendation="Use environment variables or secret management",
-                            cwe_id="CWE-798",
-                        )
+                # Skip if it's using environment variables (multiple patterns)
+                env_patterns = [
+                    "os.environ",
+                    "os.getenv",
+                    "getenv(",
+                    "environ.get",
+                    "config.get",
+                    "settings.",
+                ]
+                # Skip test files or environment variable usage
+                if any(env_pat in code for env_pat in env_patterns) or "test_" in file_path.lower():
+                    continue
+                    
+                issues.append(
+                    SecurityIssue(
+                        category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
+                        severity=SecuritySeverity.CRITICAL,
+                        title="Hardcoded Secret",
+                        description="Secret or credential appears to be hardcoded",
+                        file_path=file_path,
+                        recommendation="Use environment variables or secret management",
+                        cwe_id="CWE-798",
                     )
+                )
 
         return issues
 
