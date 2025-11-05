@@ -47,8 +47,8 @@ class DeviceFingerprint:
     plugins: list[str] = field(default_factory=list)
     canvas_hash: str | None = None
     webgl_hash: str | None = None
-    first_seen: datetime = field(default_factory=datetime.utcnow)
-    last_seen: datetime = field(default_factory=datetime.utcnow)
+    first_seen: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_seen: datetime = field(default_factory=lambda: datetime.now(UTC))
     trusted: bool = False
 
 
@@ -64,8 +64,8 @@ class AuthenticationSession:
     risk_score: float = 0.0
     risk_level: RiskLevel = RiskLevel.LOW
     mfa_verified: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_activity: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_activity: datetime = field(default_factory=lambda: datetime.now(UTC))
     anomalies: list[str] = field(default_factory=list)
     continuous_checks_passed: int = 0
     continuous_checks_failed: int = 0
@@ -80,7 +80,7 @@ class LocationData:
     longitude: float | None = None
     city: str | None = None
     country: str | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class ZeroTrustAuthenticator:

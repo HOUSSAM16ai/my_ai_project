@@ -52,7 +52,7 @@ class RateLimitWindow:
 
     timestamps: deque = field(default_factory=lambda: deque(maxlen=10000))
     request_count: int = 0
-    last_reset: datetime = field(default_factory=datetime.utcnow)
+    last_reset: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -66,7 +66,7 @@ class UserBehaviorProfile:
     variance: float = 0.0
     is_legitimate: bool = True
     behavior_score: float = 1.0  # 0-1, higher = more legitimate
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class AdaptiveRateLimiter:

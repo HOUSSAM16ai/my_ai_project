@@ -19,7 +19,7 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -93,7 +93,7 @@ class Trace:
     root_span_id: str
     spans: dict[str, Span] = field(default_factory=dict)
     service_name: str = "cogniforge"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def total_duration_ms(self) -> float | None:
