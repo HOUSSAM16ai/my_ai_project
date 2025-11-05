@@ -330,7 +330,7 @@ class PolicyEngine:
         # تحليل بسيط للشروط (في الإنتاج، استخدم parser محترف)
         # نمط: "object.property operator value"
         match = re.match(r"(\w+)\.(\w+)\s*(==|!=|>|<|>=|<=)\s*['\"]?([^'\"]+)['\"]?", condition)
-        if not match:
+        if match is None:
             return False
 
         obj_name, prop_name, operator, value = match.groups()
