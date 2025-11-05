@@ -86,7 +86,7 @@ class OWASPValidator:
         # Dangerous patterns to detect
         self.sql_injection_patterns = [
             r'execute\s*\(\s*["\'].*%s.*["\']',  # String formatting in SQL
-            r'\.raw\s*\(',  # Raw SQL queries
+            r"\.raw\s*\(",  # Raw SQL queries
             r'cursor\.execute\s*\(\s*f["\']',  # F-strings in SQL
         ]
 
@@ -98,15 +98,15 @@ class OWASPValidator:
         ]
 
         self.insecure_crypto_patterns = [
-            r'hashlib\.md5\(',  # MD5 is weak
-            r'hashlib\.sha1\(',  # SHA1 is weak
-            r'random\.random\(',  # Not cryptographically secure
+            r"hashlib\.md5\(",  # MD5 is weak
+            r"hashlib\.sha1\(",  # SHA1 is weak
+            r"random\.random\(",  # Not cryptographically secure
         ]
 
         self.xss_patterns = [
-            r'innerHTML\s*=',  # Direct HTML injection
-            r'\.html\s*\(',  # jQuery HTML injection
-            r'dangerouslySetInnerHTML',  # React XSS vector
+            r"innerHTML\s*=",  # Direct HTML injection
+            r"\.html\s*\(",  # jQuery HTML injection
+            r"dangerouslySetInnerHTML",  # React XSS vector
         ]
 
     def validate_authentication_code(self, code: str, file_path: str = "") -> list[SecurityIssue]:
@@ -131,7 +131,7 @@ class OWASPValidator:
             )
 
         # Check for plain text password storage
-        if re.search(r'password\s*=\s*request', code, re.IGNORECASE):
+        if re.search(r"password\s*=\s*request", code, re.IGNORECASE):
             if "hash" not in code.lower():
                 issues.append(
                     SecurityIssue(
@@ -169,7 +169,7 @@ class OWASPValidator:
         issues = []
 
         # Check for role assignment from user input
-        if re.search(r'role\s*=\s*request\.(json|form|args)', code):
+        if re.search(r"role\s*=\s*request\.(json|form|args)", code):
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
@@ -183,7 +183,7 @@ class OWASPValidator:
             )
 
         # Check for is_admin from request
-        if re.search(r'is_admin\s*=\s*request\.(json|form|args)', code):
+        if re.search(r"is_admin\s*=\s*request\.(json|form|args)", code):
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
@@ -197,7 +197,7 @@ class OWASPValidator:
             )
 
         # Check for missing authorization checks
-        if re.search(r'@app\.route.*<int:user_id>', code):
+        if re.search(r"@app\.route.*<int:user_id>", code):
             if "@login_required" not in code and "@require_auth" not in code:
                 issues.append(
                     SecurityIssue(
@@ -236,7 +236,7 @@ class OWASPValidator:
                 )
 
         # Command Injection checks
-        if re.search(r'os\.system\(|subprocess\.call\(.*shell=True', code):
+        if re.search(r"os\.system\(|subprocess\.call\(.*shell=True", code):
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A03_INJECTION,
@@ -303,7 +303,7 @@ class OWASPValidator:
                 # Skip test files or environment variable usage
                 if any(env_pat in code for env_pat in env_patterns) or "test_" in file_path.lower():
                     continue
-                    
+
                 issues.append(
                     SecurityIssue(
                         category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
@@ -377,7 +377,7 @@ class OWASPValidator:
                 )
 
         # Check for logging sensitive data
-        if re.search(r'log.*password|log.*token|log.*secret', code, re.IGNORECASE):
+        if re.search(r"log.*password|log.*token|log.*secret", code, re.IGNORECASE):
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A09_LOGGING_FAILURES,

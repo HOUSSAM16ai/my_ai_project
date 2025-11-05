@@ -65,7 +65,7 @@ import threading
 import time
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app, has_app_context
@@ -292,7 +292,7 @@ def _log(level: str, mission: Mission | None, message: str, **extra):
         "component": "orchestrator",
         "mission_id": getattr(mission, "id", None),
         "message": message,
-        "iso_ts": datetime.utcnow().isoformat() + "Z",
+        "iso_ts": datetime.now(UTC).isoformat() + "Z",
         **extra,
     }
     _emit(level, json.dumps(payload, ensure_ascii=False))
@@ -625,7 +625,7 @@ class OvermindService:
             payload={
                 "objective": objective,
                 "version": OVERMIND_VERSION,
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         self._safe_commit("mission_created_event")
@@ -751,7 +751,7 @@ class OvermindService:
                         "hotspots": deep_context["hotspots_count"],
                         "layers_detected": len(deep_context["layers"]),
                         "build_ms": deep_context["build_ms"],
-                        "iso_ts": datetime.utcnow().isoformat() + "Z",
+                        "iso_ts": datetime.now(UTC).isoformat() + "Z",
                     },
                 )
                 self._safe_commit("arch_classified")
@@ -859,7 +859,7 @@ class OvermindService:
                 "planner": best.planner_name,
                 "score": best.score,
                 "plan_hash": new_hash,
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         self._safe_commit("plan_selected_event")
@@ -1028,7 +1028,7 @@ class OvermindService:
             payload={
                 "plan_id": mission.active_plan_id,
                 "strategy": EXECUTION_STRATEGY,
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         self._safe_commit("exec_started_event")
@@ -1331,7 +1331,7 @@ class OvermindService:
                 "layer": layer_index,
                 "attempt": attempt_index,
                 "tool": task.tool_name,
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         log_debug(
@@ -1404,7 +1404,7 @@ class OvermindService:
                     "attempt": attempt_index,
                     "layer": layer_index,
                     "duration_ms": task.duration_ms,
-                    "iso_ts": datetime.utcnow().isoformat() + "Z",
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
                 },
             )
             log_info(
@@ -1442,7 +1442,7 @@ class OvermindService:
                 "retry": retry,
                 "layer": layer_index,
                 "error": task.error_text,
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         increment_counter("overmind_tasks_executed_total", {"result": "failed_early"})
@@ -1487,7 +1487,7 @@ class OvermindService:
                     "retry": True,
                     "layer": layer_index,
                     "error": str(exc)[:200],
-                    "iso_ts": datetime.utcnow().isoformat() + "Z",
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
                 },
             )
             increment_counter("overmind_tasks_executed_total", {"result": "retry"})
@@ -1510,7 +1510,7 @@ class OvermindService:
                     "retry": False,
                     "layer": layer_index,
                     "error": str(exc)[:200],
-                    "iso_ts": datetime.utcnow().isoformat() + "Z",
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
                 },
             )
             increment_counter("overmind_tasks_executed_total", {"result": "failed"})
@@ -1821,7 +1821,7 @@ class OvermindService:
             MissionEventType.REPLAN_TRIGGERED,
             payload={
                 "failed_tasks": list(failure_context.keys()),
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         self._safe_commit("replan_triggered")
@@ -1883,7 +1883,7 @@ class OvermindService:
                     "version": version,
                     "planner": candidate.planner_name,
                     "plan_hash": new_hash,
-                    "iso_ts": datetime.utcnow().isoformat() + "Z",
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
                 },
             )
             self._safe_commit("replan_applied_event")
@@ -1915,7 +1915,7 @@ class OvermindService:
             log_mission_event(
                 mission,
                 MissionEventType.MISSION_COMPLETED,
-                payload={"reason": reason, "iso_ts": datetime.utcnow().isoformat() + "Z"},
+                payload={"reason": reason, "iso_ts": datetime.now(UTC).isoformat() + "Z"},
             )
         else:
             log_mission_event(
@@ -1924,7 +1924,7 @@ class OvermindService:
                 payload={
                     "reason": reason,
                     "error": error,
-                    "iso_ts": datetime.utcnow().isoformat() + "Z",
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
                 },
             )
         log_mission_event(
@@ -1937,7 +1937,7 @@ class OvermindService:
                 "tool_fail_map": self._tool_fail_map,
                 "task_exec_metrics": self._task_exec_metrics,
                 "planner_failures_sample": self._planner_failure_samples[-10:],
-                "iso_ts": datetime.utcnow().isoformat() + "Z",
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
             },
         )
         self._safe_commit("mission_finalized")

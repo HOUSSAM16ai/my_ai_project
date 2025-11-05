@@ -16,7 +16,7 @@ Features surpassing tech giants:
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -161,7 +161,7 @@ class PatternRecognizer:
             return Pattern(
                 pattern_id=f"spike_{int(time.time())}",
                 pattern_type=PatternType.TRAFFIC_SPIKE,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=confidence,
                 description=f"Traffic spike detected: {current_value:.2f} (baseline: {baseline:.2f})",
                 metrics={
@@ -195,7 +195,7 @@ class PatternRecognizer:
             return Pattern(
                 pattern_id=f"drop_{int(time.time())}",
                 pattern_type=PatternType.TRAFFIC_DROP,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=confidence,
                 description=f"Traffic drop detected: {current_value:.2f} (baseline: {baseline:.2f})",
                 metrics={
@@ -254,7 +254,7 @@ class PatternRecognizer:
             return Pattern(
                 pattern_id=f"periodic_{int(time.time())}",
                 pattern_type=PatternType.PERIODIC,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=correlation,
                 description=f"Periodic pattern detected (period: {period})",
                 metrics={
@@ -287,7 +287,7 @@ class PatternRecognizer:
             pattern = Pattern(
                 pattern_id=f"err_cluster_{int(time.time())}",
                 pattern_type=PatternType.ERROR_CLUSTERING,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=min(1.0, len(recent_errors) / 50),
                 description=f"Error clustering detected: {len(recent_errors)} errors in 1 minute",
                 metrics={
@@ -332,7 +332,7 @@ class PatternRecognizer:
             pattern = Pattern(
                 pattern_id=f"brute_force_{int(time.time())}",
                 pattern_type=PatternType.BRUTE_FORCE,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=min(1.0, len(recent_attempts) / 100),
                 description=f"Brute force attack detected from {ip_address}",
                 metrics={

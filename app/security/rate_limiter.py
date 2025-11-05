@@ -18,7 +18,7 @@ Features that surpass tech giants:
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -258,7 +258,7 @@ class AdaptiveRateLimiter:
         Adjust limits based on time of day
         (More lenient during off-peak hours)
         """
-        hour = datetime.utcnow().hour
+        hour = datetime.now(UTC).hour
 
         # Peak hours (9 AM - 5 PM UTC): 1.0x
         # Off-peak hours (9 PM - 6 AM UTC): 1.3x
@@ -411,7 +411,7 @@ class AdaptiveRateLimiter:
         # Update profile
         profile.behavior_score = max(0.0, min(1.0, score))
         profile.is_legitimate = profile.behavior_score > 0.6
-        profile.last_updated = datetime.utcnow()
+        profile.last_updated = datetime.now(UTC)
 
     def update_system_load(self, load: float):
         """Update system load (0-1, higher = more loaded)"""

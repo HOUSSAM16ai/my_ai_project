@@ -16,7 +16,7 @@ Features surpassing tech giants:
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -185,7 +185,7 @@ class RootCauseAnalyzer:
 
         root_cause = RootCause(
             cause_id=f"rc_{int(time.time())}",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             cause_type=cause_type,
             confidence=min(1.0, confidence),
             description=description,

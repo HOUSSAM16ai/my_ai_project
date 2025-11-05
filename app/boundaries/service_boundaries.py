@@ -31,13 +31,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Protocol, Union
-from collections.abc import Awaitable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ logger = logging.getLogger(__name__)
 class BoundedContext(ABC):
     """
     المجال الفرعي المحدود (Bounded Context)
-    
+
     كل خدمة تعمل ضمن سياق محدد مع:
     - لغة محددة خاصة بالمجال (Ubiquitous Language)
     - نماذج بيانات مستقلة (Domain Models)
@@ -60,17 +59,17 @@ class BoundedContext(ABC):
 
     def __init__(self, context_name: str):
         self.context_name = context_name
-        self.domain_models: Dict[str, type] = {}
-        self.business_rules: List[Callable] = []
-        self.interfaces: Dict[str, Callable] = {}
+        self.domain_models: dict[str, type] = {}
+        self.business_rules: list[Callable] = []
+        self.interfaces: dict[str, Callable] = {}
 
     @abstractmethod
-    def get_ubiquitous_language(self) -> Dict[str, str]:
+    def get_ubiquitous_language(self) -> dict[str, str]:
         """الحصول على اللغة المحددة خاصة بالمجال"""
         pass
 
     @abstractmethod
-    def validate_business_rules(self, data: Dict[str, Any]) -> bool:
+    def validate_business_rules(self, data: dict[str, Any]) -> bool:
         """التحقق من قواعد العمل الخاصة بهذا المجال"""
         pass
 
@@ -112,7 +111,7 @@ class EventType(Enum):
 class DomainEvent:
     """
     حدث مجال (Domain Event)
-    
+
     الأحداث تمثل شيء حدث في الماضي وهي غير قابلة للتغيير
     """
 
@@ -121,16 +120,16 @@ class DomainEvent:
     aggregate_id: str  # معرف الكيان الذي أصدر الحدث
     aggregate_type: str  # نوع الكيان (Mission, Task, User, etc.)
     occurred_at: datetime
-    data: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    correlation_id: Optional[str] = None  # لتتبع الأحداث المرتبطة
-    causation_id: Optional[str] = None  # الحدث الذي سبب هذا الحدث
+    data: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    correlation_id: str | None = None  # لتتبع الأحداث المرتبطة
+    causation_id: str | None = None  # الحدث الذي سبب هذا الحدث
 
 
 class EventBus(ABC):
     """
     ناقل الأحداث (Event Bus)
-    
+
     يوفر الفصل الزمني بين الناشرين والمستهلكين:
     - الناشر لا يعرف من المستهلكين
     - يمكن إضافة مستهلكين جدد دون تعديل الناشر
@@ -153,13 +152,13 @@ class EventBus(ABC):
 class InMemoryEventBus(EventBus):
     """
     ناقل أحداث في الذاكرة (للتطوير والاختبار)
-    
+
     في الإنتاج، استخدم RabbitMQ أو Kafka أو AWS EventBridge
     """
 
     def __init__(self):
-        self._subscribers: Dict[EventType, List[Callable]] = {}
-        self._event_history: List[DomainEvent] = []
+        self._subscribers: dict[EventType, list[Callable]] = {}
+        self._event_history: list[DomainEvent] = []
 
     async def publish(self, event: DomainEvent) -> None:
         """نشر حدث وإشعار جميع المشتركين"""
@@ -185,7 +184,7 @@ class InMemoryEventBus(EventBus):
         self._subscribers[event_type].append(handler)
         logger.info(f"✅ Subscribed to {event_type.value}")
 
-    def get_event_history(self, aggregate_id: Optional[str] = None) -> List[DomainEvent]:
+    def get_event_history(self, aggregate_id: str | None = None) -> list[DomainEvent]:
         """الحصول على تاريخ الأحداث (للتدقيق والتحليل)"""
         if aggregate_id:
             return [e for e in self._event_history if e.aggregate_id == aggregate_id]
@@ -211,7 +210,7 @@ class ServiceDefinition:
 class APIGateway:
     """
     بوابة API (API Gateway)
-    
+
     توفر الفصل بين العميل والخدمات الداخلية مع:
     - المصادقة والترخيص
     - تجميع الاستجابات (Response Aggregation)
@@ -220,8 +219,8 @@ class APIGateway:
     """
 
     def __init__(self):
-        self._services: Dict[str, ServiceDefinition] = {}
-        self._cache: Dict[str, tuple[Any, datetime]] = {}
+        self._services: dict[str, ServiceDefinition] = {}
+        self._cache: dict[str, tuple[Any, datetime]] = {}
         self._cache_ttl = timedelta(minutes=5)
 
     def register_service(self, service: ServiceDefinition) -> None:
@@ -229,19 +228,19 @@ class APIGateway:
         self._services[service.service_name] = service
         logger.info(f"✅ Service registered: {service.service_name} at {service.base_url}")
 
-    def get_service(self, service_name: str) -> Optional[ServiceDefinition]:
+    def get_service(self, service_name: str) -> ServiceDefinition | None:
         """الحصول على تعريف خدمة"""
         return self._services.get(service_name)
 
     async def aggregate_response(
-        self, service_calls: List[tuple[str, str, Dict[str, Any]]]
-    ) -> Dict[str, Any]:
+        self, service_calls: list[tuple[str, str, dict[str, Any]]]
+    ) -> dict[str, Any]:
         """
         تجميع استجابات من خدمات متعددة
-        
+
         Args:
             service_calls: قائمة من (service_name, endpoint, params)
-        
+
         Returns:
             استجابة مجمعة من جميع الخدمات
         """
@@ -264,9 +263,7 @@ class APIGateway:
 
         return results
 
-    async def _call_service(
-        self, service_name: str, endpoint: str, params: Dict[str, Any]
-    ) -> Any:
+    async def _call_service(self, service_name: str, endpoint: str, params: dict[str, Any]) -> Any:
         """استدعاء خدمة (مثال بسيط)"""
         service = self.get_service(service_name)
         if not service:
@@ -316,35 +313,33 @@ class CircuitBreakerConfig:
 class CircuitBreaker:
     """
     قاطع الدائرة (Circuit Breaker)
-    
+
     يمنع الفشل المتسلسل عبر:
     - فتح الدائرة عند فشل متكرر
     - إعادة المحاولة بعد مهلة زمنية
     - استجابة بديلة عند فتح الدائرة
     """
 
-    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self.last_state_change = datetime.now()
 
-    async def call(
-        self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def call(self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
         """
         استدعاء دالة عبر قاطع الدائرة
-        
+
         Args:
             func: الدالة المراد استدعاؤها
             *args, **kwargs: معاملات الدالة
-        
+
         Returns:
             نتيجة الدالة
-        
+
         Raises:
             Exception: إذا كانت الدائرة مفتوحة أو حدث فشل
         """
@@ -398,7 +393,7 @@ class CircuitBreaker:
 class BulkheadExecutor:
     """
     نمط الحاجز (Bulkhead Pattern)
-    
+
     يعزل الموارد لمنع استنزاف موارد الخدمة بالكامل:
     - Thread pool محدد لكل خدمة
     - حد أقصى للطلبات المتزامنة
@@ -413,16 +408,14 @@ class BulkheadExecutor:
         self._queue: asyncio.Queue = asyncio.Queue(maxsize=queue_size)
         self._active_tasks = 0
 
-    async def execute(
-        self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def execute(self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
         """
         تنفيذ دالة عبر الحاجز
-        
+
         Args:
             func: الدالة المراد تنفيذها
             *args, **kwargs: معاملات الدالة
-        
+
         Returns:
             نتيجة الدالة
         """
@@ -432,7 +425,9 @@ class BulkheadExecutor:
         async with self._semaphore:
             self._active_tasks += 1
             try:
-                logger.info(f"🔧 Bulkhead {self.name}: {self._active_tasks}/{self.max_concurrent} active")
+                logger.info(
+                    f"🔧 Bulkhead {self.name}: {self._active_tasks}/{self.max_concurrent} active"
+                )
                 result = await func(*args, **kwargs)
                 return result
             finally:
@@ -447,7 +442,7 @@ class BulkheadExecutor:
 class ServiceBoundary:
     """
     حدود الخدمة (Service Boundary)
-    
+
     يجمع كل أنماط فصل الخدمات في واجهة موحدة:
     - BoundedContext للفصل المجالي
     - EventBus للفصل الزمني
@@ -460,11 +455,11 @@ class ServiceBoundary:
         self.service_name = service_name
         self.event_bus = InMemoryEventBus()
         self.api_gateway = APIGateway()
-        self._circuit_breakers: Dict[str, CircuitBreaker] = {}
-        self._bulkheads: Dict[str, BulkheadExecutor] = {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
+        self._bulkheads: dict[str, BulkheadExecutor] = {}
 
     def get_or_create_circuit_breaker(
-        self, name: str, config: Optional[CircuitBreakerConfig] = None
+        self, name: str, config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """الحصول على أو إنشاء قاطع دائرة"""
         if name not in self._circuit_breakers:
@@ -490,13 +485,13 @@ class ServiceBoundary:
     ) -> Any:
         """
         استدعاء محمي بجميع أنماط الحماية
-        
+
         Args:
             service_name: اسم الخدمة
             func: الدالة المراد استدعاؤها
             use_circuit_breaker: استخدام قاطع الدائرة
             use_bulkhead: استخدام الحاجز
-        
+
         Returns:
             نتيجة الدالة
         """
@@ -518,7 +513,7 @@ class ServiceBoundary:
 # GLOBAL INSTANCE (اختياري - يمكن استخدام Dependency Injection)
 # ======================================================================================
 
-_global_service_boundary: Optional[ServiceBoundary] = None
+_global_service_boundary: ServiceBoundary | None = None
 
 
 def get_service_boundary() -> ServiceBoundary:

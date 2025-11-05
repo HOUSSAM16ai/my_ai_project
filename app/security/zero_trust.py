@@ -18,7 +18,7 @@ import hashlib
 import secrets
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -230,12 +230,12 @@ class ZeroTrustAuthenticator:
             return False, None
 
         # Check session timeout (30 minutes of inactivity)
-        if (datetime.utcnow() - session.last_activity).seconds > 1800:
+        if (datetime.now(UTC) - session.last_activity).seconds > 1800:
             del self.sessions[session_id]
             return False, None
 
         # Update last activity
-        session.last_activity = datetime.utcnow()
+        session.last_activity = datetime.now(UTC)
 
         # Extract current device fingerprint
         device_info = self._extract_device_fingerprint(request, None)
@@ -295,7 +295,7 @@ class ZeroTrustAuthenticator:
         # Check if device is already known
         if fingerprint_id in self.devices:
             device = self.devices[fingerprint_id]
-            device.last_seen = datetime.utcnow()
+            device.last_seen = datetime.now(UTC)
             return device
 
         # New device
@@ -354,7 +354,7 @@ class ZeroTrustAuthenticator:
             self.stats["impossible_travel_detected"] += 1
 
         # Factor 4: Unusual time (3 AM - 5 AM in user's timezone)
-        current_hour = datetime.utcnow().hour
+        current_hour = datetime.now(UTC).hour
         if 3 <= current_hour < 5:
             risk_score += self.RISK_WEIGHTS["unusual_time"]
             risk_factors.append("UNUSUAL_TIME")

@@ -20,7 +20,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 import click
 from flask import Blueprint
@@ -285,7 +285,7 @@ def backup(output):
 
     try:
         # Create output directory
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_dir = os.path.join(output, f"db_backup_{timestamp}")
         os.makedirs(backup_dir, exist_ok=True)
 
