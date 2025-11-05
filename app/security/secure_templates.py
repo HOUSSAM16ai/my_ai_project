@@ -380,7 +380,7 @@ def validate_email(email: str) -> tuple[bool, str | None]:
 
     # Format check
     email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    if not re.match(email_pattern, email):
+    if re.match(email_pattern, email) is None:
         return False, "Invalid email format"
 
     # Prevent email header injection
