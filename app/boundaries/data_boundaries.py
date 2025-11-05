@@ -31,11 +31,11 @@ from __future__ import annotations
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Protocol, Union
-from collections.abc import Awaitable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 class DatabaseBoundary(ABC):
     """
     حدود قاعدة البيانات (Database Boundary)
-    
+
     كل خدمة تمتلك قاعدة بياناتها الخاصة حصرياً:
     - الوصول: حصري لخدمة واحدة فقط
     - العزل: لا تشارك البيانات مباشرة
@@ -60,17 +60,17 @@ class DatabaseBoundary(ABC):
         self.database_name = database_name
 
     @abstractmethod
-    async def get_by_id(self, entity_type: str, entity_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, entity_type: str, entity_id: str) -> dict[str, Any] | None:
         """الحصول على كيان حسب المعرف"""
         pass
 
     @abstractmethod
-    async def create(self, entity_type: str, data: Dict[str, Any]) -> str:
+    async def create(self, entity_type: str, data: dict[str, Any]) -> str:
         """إنشاء كيان جديد"""
         pass
 
     @abstractmethod
-    async def update(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> bool:
+    async def update(self, entity_type: str, entity_id: str, data: dict[str, Any]) -> bool:
         """تحديث كيان"""
         pass
 
@@ -82,7 +82,7 @@ class DatabaseBoundary(ABC):
     def validate_access(self, requesting_service: str) -> bool:
         """
         التحقق من صلاحية الوصول
-        
+
         GOLDEN RULE: فقط الخدمة المالكة يمكنها الوصول
         """
         is_valid = requesting_service == self.service_name
@@ -97,19 +97,19 @@ class DatabaseBoundary(ABC):
 class InMemoryDatabaseBoundary(DatabaseBoundary):
     """
     تطبيق في الذاكرة لحدود قاعدة البيانات (للتطوير والاختبار)
-    
+
     في الإنتاج، استخدم PostgreSQL أو MongoDB أو DynamoDB
     """
 
     def __init__(self, service_name: str, database_name: str):
         super().__init__(service_name, database_name)
-        self._storage: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        self._storage: dict[str, dict[str, dict[str, Any]]] = {}
 
-    async def get_by_id(self, entity_type: str, entity_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, entity_type: str, entity_id: str) -> dict[str, Any] | None:
         """الحصول على كيان حسب المعرف"""
         return self._storage.get(entity_type, {}).get(entity_id)
 
-    async def create(self, entity_type: str, data: Dict[str, Any]) -> str:
+    async def create(self, entity_type: str, data: dict[str, Any]) -> str:
         """إنشاء كيان جديد"""
         entity_id = str(uuid.uuid4())
         if entity_type not in self._storage:
@@ -123,7 +123,7 @@ class InMemoryDatabaseBoundary(DatabaseBoundary):
         logger.info(f"✅ Created {entity_type}#{entity_id} in {self.service_name}")
         return entity_id
 
-    async def update(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> bool:
+    async def update(self, entity_type: str, entity_id: str, data: dict[str, Any]) -> bool:
         """تحديث كيان"""
         if entity_type not in self._storage or entity_id not in self._storage[entity_type]:
             return False
@@ -162,7 +162,7 @@ class SagaStepStatus(Enum):
 class SagaStep:
     """
     خطوة في Saga
-    
+
     كل خطوة تحتوي على:
     - action: العملية الأساسية
     - compensation: العملية التعويضية (للرجوع عند الفشل)
@@ -173,21 +173,21 @@ class SagaStep:
     action: Callable[..., Awaitable[Any]]
     compensation: Callable[..., Awaitable[Any]]
     status: SagaStepStatus = SagaStepStatus.PENDING
-    result: Optional[Any] = None
-    error: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    result: Any | None = None
+    error: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class SagaOrchestrator:
     """
     منسق Saga (Saga Orchestrator)
-    
+
     يدير تنفيذ Saga مع معاملات التعويض عند الفشل:
     1. تنفيذ الخطوات بالترتيب
     2. عند فشل خطوة، تنفيذ التعويضات بالعكس
     3. ضمان التناسق النهائي
-    
+
     مثال: إنشاء طلب
     1. إنشاء طلب (PENDING) → نجح → OrderCreated
     2. حجز المخزون → نجح → InventoryReserved
@@ -196,11 +196,11 @@ class SagaOrchestrator:
 
     def __init__(self, saga_name: str):
         self.saga_name = saga_name
-        self.steps: List[SagaStep] = []
+        self.steps: list[SagaStep] = []
         self.current_step_index = 0
         self.saga_id = str(uuid.uuid4())
-        self.started_at: Optional[datetime] = None
-        self.completed_at: Optional[datetime] = None
+        self.started_at: datetime | None = None
+        self.completed_at: datetime | None = None
 
     def add_step(
         self,
@@ -219,7 +219,7 @@ class SagaOrchestrator:
     async def execute(self) -> bool:
         """
         تنفيذ Saga
-        
+
         Returns:
             True إذا نجحت جميع الخطوات، False إذا حدث فشل
         """
@@ -255,7 +255,7 @@ class SagaOrchestrator:
     async def _compensate(self, failed_step_index: int) -> None:
         """
         تنفيذ معاملات التعويض (Compensating Transactions)
-        
+
         Args:
             failed_step_index: فهرس الخطوة التي فشلت
         """
@@ -274,7 +274,7 @@ class SagaOrchestrator:
                     logger.error(f"❌ Failed to compensate step {step.step_name}: {e}")
                     # في الإنتاج، أرسل إلى Dead Letter Queue للمراجعة اليدوية
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """الحصول على حالة Saga"""
         return {
             "saga_id": self.saga_id,
@@ -304,7 +304,7 @@ class SagaOrchestrator:
 class StoredEvent:
     """
     حدث مخزّن (Stored Event)
-    
+
     بدلاً من تخزين الحالة النهائية، نخزن جميع الأحداث التي أدت إليها
     """
 
@@ -312,7 +312,7 @@ class StoredEvent:
     aggregate_id: str  # معرف الكيان
     aggregate_type: str  # نوع الكيان
     event_type: str
-    event_data: Dict[str, Any]
+    event_data: dict[str, Any]
     occurred_at: datetime
     version: int  # إصدار الكيان (للتزامن التفاؤلي)
 
@@ -320,7 +320,7 @@ class StoredEvent:
 class EventStore(ABC):
     """
     مخزن الأحداث (Event Store)
-    
+
     يخزن جميع الأحداث ويسمح بإعادة بناء الحالة من الأحداث
     """
 
@@ -330,9 +330,7 @@ class EventStore(ABC):
         pass
 
     @abstractmethod
-    async def get_events(
-        self, aggregate_id: str, from_version: int = 0
-    ) -> List[StoredEvent]:
+    async def get_events(self, aggregate_id: str, from_version: int = 0) -> list[StoredEvent]:
         """الحصول على أحداث كيان معين"""
         pass
 
@@ -346,8 +344,8 @@ class InMemoryEventStore(EventStore):
     """تطبيق في الذاكرة لمخزن الأحداث (للتطوير والاختبار)"""
 
     def __init__(self):
-        self._events: List[StoredEvent] = []
-        self._versions: Dict[str, int] = {}
+        self._events: list[StoredEvent] = []
+        self._versions: dict[str, int] = {}
 
     async def append_event(self, event: StoredEvent) -> None:
         """إضافة حدث جديد"""
@@ -357,14 +355,10 @@ class InMemoryEventStore(EventStore):
             f"📝 Event stored: {event.event_type} for {event.aggregate_type}#{event.aggregate_id} v{event.version}"
         )
 
-    async def get_events(
-        self, aggregate_id: str, from_version: int = 0
-    ) -> List[StoredEvent]:
+    async def get_events(self, aggregate_id: str, from_version: int = 0) -> list[StoredEvent]:
         """الحصول على أحداث كيان معين"""
         return [
-            e
-            for e in self._events
-            if e.aggregate_id == aggregate_id and e.version >= from_version
+            e for e in self._events if e.aggregate_id == aggregate_id and e.version >= from_version
         ]
 
     async def get_current_version(self, aggregate_id: str) -> int:
@@ -375,7 +369,7 @@ class InMemoryEventStore(EventStore):
 class EventSourcedAggregate:
     """
     كيان مُحدّث من الأحداث (Event Sourced Aggregate)
-    
+
     الحالة الحالية = تطبيق جميع الأحداث بالترتيب
     """
 
@@ -383,12 +377,12 @@ class EventSourcedAggregate:
         self.aggregate_id = aggregate_id
         self.aggregate_type = aggregate_type
         self.version = 0
-        self._changes: List[StoredEvent] = []
+        self._changes: list[StoredEvent] = []
 
     def apply_event(self, event: StoredEvent) -> None:
         """
         تطبيق حدث على الكيان
-        
+
         يجب تنفيذ في الفئات الوارثة لتحديث الحالة
         """
         self.version = event.version
@@ -397,15 +391,13 @@ class EventSourcedAggregate:
     async def load_from_history(self, event_store: EventStore) -> None:
         """
         إعادة بناء الحالة من الأحداث
-        
+
         يقرأ جميع الأحداث ويطبقها بالترتيب
         """
         events = await event_store.get_events(self.aggregate_id)
         for event in events:
             self.apply_event(event)
-        logger.info(
-            f"📖 Loaded {len(events)} events for {self.aggregate_type}#{self.aggregate_id}"
-        )
+        logger.info(f"📖 Loaded {len(events)} events for {self.aggregate_type}#{self.aggregate_id}")
 
     async def commit(self, event_store: EventStore) -> None:
         """
@@ -424,7 +416,7 @@ class EventSourcedAggregate:
 class CommandHandler(ABC):
     """
     معالج الأوامر (Command Handler)
-    
+
     جانب الكتابة:
     - نموذج الكتابة المُحسّن للاتساق
     - معاملات صارمة
@@ -432,10 +424,10 @@ class CommandHandler(ABC):
     """
 
     @abstractmethod
-    async def handle(self, command: Dict[str, Any]) -> str:
+    async def handle(self, command: dict[str, Any]) -> str:
         """
         معالجة أمر
-        
+
         Returns:
             معرف الكيان المُنشأ أو المُحدّث
         """
@@ -445,7 +437,7 @@ class CommandHandler(ABC):
 class QueryHandler(ABC):
     """
     معالج الاستعلامات (Query Handler)
-    
+
     جانب القراءة:
     - نماذج قراءة مُحسّنة للأداء (Denormalized Views)
     - تحديث لا متزامن من الأحداث
@@ -453,10 +445,10 @@ class QueryHandler(ABC):
     """
 
     @abstractmethod
-    async def handle(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, query: dict[str, Any]) -> dict[str, Any]:
         """
         معالجة استعلام
-        
+
         Returns:
             نتيجة الاستعلام
         """
@@ -466,7 +458,7 @@ class QueryHandler(ABC):
 class ReadModel:
     """
     نموذج القراءة (Read Model)
-    
+
     نموذج منسوخ ومُحسّن للقراءة السريعة:
     - Denormalized (غير مُعياري)
     - مفهرس بشكل مكثف
@@ -475,14 +467,14 @@ class ReadModel:
 
     def __init__(self, model_name: str):
         self.model_name = model_name
-        self._data: Dict[str, Dict[str, Any]] = {}
+        self._data: dict[str, dict[str, Any]] = {}
 
     async def update_from_event(self, event: StoredEvent) -> None:
         """تحديث نموذج القراءة من حدث"""
         # تنفيذ محدد في الفئات الوارثة
         pass
 
-    async def query(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def query(self, filters: dict[str, Any]) -> list[dict[str, Any]]:
         """استعلام من نموذج القراءة"""
         # بحث بسيط للمثال
         results = []
@@ -500,7 +492,7 @@ class ReadModel:
 class AntiCorruptionLayer:
     """
     طبقة مكافحة الفساد (Anti-Corruption Layer)
-    
+
     تحمي نموذجك من النماذج الخارجية:
     - ترجمة النماذج
     - تحويل البيانات
@@ -511,10 +503,10 @@ class AntiCorruptionLayer:
     def __init__(self, service_name: str):
         self.service_name = service_name
 
-    def to_domain_model(self, external_data: Dict[str, Any]) -> Dict[str, Any]:
+    def to_domain_model(self, external_data: dict[str, Any]) -> dict[str, Any]:
         """
         تحويل البيانات الخارجية إلى نموذج النطاق الداخلي
-        
+
         مثال:
         Legacy: {CUST_ID: "123", F_NAME: "أحمد", L_NAME: "محمد"}
         Domain: {id: "123", full_name: "أحمد محمد"}
@@ -522,7 +514,7 @@ class AntiCorruptionLayer:
         # تنفيذ محدد في الفئات الوارثة
         return external_data
 
-    def from_domain_model(self, domain_data: Dict[str, Any]) -> Dict[str, Any]:
+    def from_domain_model(self, domain_data: dict[str, Any]) -> dict[str, Any]:
         """
         تحويل نموذج النطاق الداخلي إلى البيانات الخارجية
         """
@@ -545,7 +537,7 @@ class AntiCorruptionLayer:
 class DataBoundary:
     """
     حدود البيانات (Data Boundary)
-    
+
     يجمع كل أنماط فصل البيانات في واجهة موحدة:
     - DatabaseBoundary لعزل قواعد البيانات
     - SagaOrchestrator للمعاملات الموزعة
@@ -558,7 +550,7 @@ class DataBoundary:
         self.service_name = service_name
         self.database = InMemoryDatabaseBoundary(service_name, f"{service_name}_db")
         self.event_store = InMemoryEventStore()
-        self.read_models: Dict[str, ReadModel] = {}
+        self.read_models: dict[str, ReadModel] = {}
         self.acl = AntiCorruptionLayer(service_name)
 
     def create_saga(self, saga_name: str) -> SagaOrchestrator:
@@ -576,7 +568,7 @@ class DataBoundary:
 # GLOBAL INSTANCE (اختياري)
 # ======================================================================================
 
-_global_data_boundaries: Dict[str, DataBoundary] = {}
+_global_data_boundaries: dict[str, DataBoundary] = {}
 
 
 def get_data_boundary(service_name: str) -> DataBoundary:

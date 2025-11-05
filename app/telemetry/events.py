@@ -17,7 +17,7 @@ import hashlib
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -192,7 +192,7 @@ class EventTracker:
 
         # Add timestamp if not present
         if "timestamp" not in enriched:
-            enriched["timestamp"] = datetime.utcnow().isoformat()
+            enriched["timestamp"] = datetime.now(UTC).isoformat()
 
         # Add server info
         if "server" not in enriched:

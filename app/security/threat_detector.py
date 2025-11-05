@@ -17,7 +17,7 @@ import hashlib
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from flask import Request
@@ -136,7 +136,7 @@ class AIThreatDetector:
                 threat_id=hashlib.md5(
                     f"{ip_address}{time.time()}".encode(), usedforsecurity=False
                 ).hexdigest()[:12],
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 threat_score=threat_score,
                 threat_type=self._classify_threat_type(features),
                 confidence=confidence,
@@ -208,7 +208,7 @@ class AIThreatDetector:
         features.burst_score = min(1.0, very_recent / 20)
 
         # Feature 9: Time of day (unusual hours = higher risk)
-        features.time_of_day = datetime.utcnow().hour
+        features.time_of_day = datetime.now(UTC).hour
 
         # Record request for history
         self.request_history.append(
@@ -339,7 +339,7 @@ class AIThreatDetector:
         pattern = {
             "features": self._features_to_dict(features),
             "threat_score": threat_score,
-            "learned_at": datetime.utcnow().isoformat(),
+            "learned_at": datetime.now(UTC).isoformat(),
         }
 
         self.attack_patterns.append(pattern)

@@ -17,7 +17,7 @@ import statistics
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -181,7 +181,7 @@ class AnomalyDetector:
             # Create anomaly object
             anomaly = Anomaly(
                 anomaly_id=f"anom_{int(time.time())}_{metric_name}",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 anomaly_type=AnomalyType.POINT,
                 severity=severity,
                 score=combined_score,
@@ -384,7 +384,7 @@ class AnomalyDetector:
         if ratio > 0.7:
             anomaly = Anomaly(
                 anomaly_id=f"coll_anom_{int(time.time())}_{metric_name}",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 anomaly_type=AnomalyType.COLLECTIVE,
                 severity=AnomalySeverity.HIGH,
                 score=ratio,

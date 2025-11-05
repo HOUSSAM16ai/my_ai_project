@@ -17,7 +17,7 @@ import statistics
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -145,7 +145,7 @@ class PredictiveAnalytics:
         prediction = Prediction(
             prediction_id=f"forecast_{int(time.time())}",
             prediction_type=PredictionType.LOAD_FORECAST,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             forecast_horizon=horizon_minutes,
             predicted_value=forecast,
             confidence=confidence,
@@ -191,7 +191,7 @@ class PredictiveAnalytics:
             prediction = Prediction(
                 prediction_id=f"failure_{int(time.time())}",
                 prediction_type=PredictionType.FAILURE_PREDICTION,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 forecast_horizon=time_to_threshold,
                 predicted_value=predicted_error_rate,
                 confidence=0.8 if abs(trend) > 0.01 else 0.6,
@@ -252,7 +252,7 @@ class PredictiveAnalytics:
             prediction = Prediction(
                 prediction_id=f"exhaust_{int(time.time())}",
                 prediction_type=PredictionType.RESOURCE_EXHAUSTION,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 forecast_horizon=minutes_to_exhaustion,
                 predicted_value=capacity * critical_threshold,
                 confidence=0.85,

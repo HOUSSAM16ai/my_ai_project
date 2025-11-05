@@ -271,7 +271,7 @@ def update_user(user_id):
         if "is_admin" in data:
             user.is_admin = data["is_admin"]
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(UTC)
         db.session.commit()
 
         return success_response(schema.dump(user), "User updated successfully")
@@ -427,7 +427,7 @@ def update_mission(mission_id):
         if "status" in data:
             mission.status = data["status"]
 
-        mission.updated_at = datetime.utcnow()
+        mission.updated_at = datetime.now(UTC)
         db.session.commit()
 
         result = {
@@ -566,7 +566,7 @@ def update_task(task_id):
             if field in data:
                 setattr(task, field, data[field])
 
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
         db.session.commit()
 
         return success_response(schema.dump(task), "Task updated successfully")

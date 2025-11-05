@@ -14,7 +14,7 @@ Preparation for quantum computing era:
 
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -110,8 +110,8 @@ class QuantumSafeEncryption:
             key_id=key_id,
             key_material=key_material,
             algorithm="HYBRID-AES-XOR",
-            created_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=90),
+            created_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(days=90),
         )
 
         self.keys[key_id] = key

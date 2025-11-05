@@ -17,7 +17,7 @@ import re
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from re import Pattern
 from typing import Any
 from urllib.parse import unquote
@@ -269,7 +269,7 @@ class WebApplicationFirewall:
                         self._block_ip(ip_address, duration_minutes=30)
 
                     attack = AttackAttempt(
-                        timestamp=datetime.utcnow(),
+                        timestamp=datetime.now(UTC),
                         ip_address=ip_address,
                         user_agent=user_agent,
                         endpoint=request.path,
@@ -343,7 +343,7 @@ class WebApplicationFirewall:
         """Check if IP is currently blocked"""
         if ip in self.blocked_ips:
             blocked_until = self.blocked_ips[ip]
-            if datetime.utcnow() < blocked_until:
+            if datetime.now(UTC) < blocked_until:
                 return True
             else:
                 # Unblock expired IPs
@@ -352,7 +352,7 @@ class WebApplicationFirewall:
 
     def _block_ip(self, ip: str, duration_minutes: int = 30):
         """Block an IP address"""
-        self.blocked_ips[ip] = datetime.utcnow() + timedelta(minutes=duration_minutes)
+        self.blocked_ips[ip] = datetime.now(UTC) + timedelta(minutes=duration_minutes)
 
     def _record_attack(self, ip: str, attack_type: str):
         """Record attack for ML learning"""
@@ -391,7 +391,7 @@ class WebApplicationFirewall:
         recent_requests = sum(
             1
             for attack in self.attack_history
-            if attack.ip_address == ip and (datetime.utcnow() - attack.timestamp).seconds < 300
+            if attack.ip_address == ip and (datetime.now(UTC) - attack.timestamp).seconds < 300
         )
         if recent_requests > 50:
             score += 0.3
@@ -438,7 +438,7 @@ class WebApplicationFirewall:
     ) -> AttackAttempt:
         """Create attack attempt record"""
         return AttackAttempt(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             ip_address=request.remote_addr or "unknown",
             user_agent=request.headers.get("User-Agent", ""),
             endpoint=request.path,

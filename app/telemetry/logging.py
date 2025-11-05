@@ -16,7 +16,7 @@ Features surpassing tech giants:
 import json
 import logging
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -63,7 +63,7 @@ class StructuredLogger:
     ) -> dict[str, Any]:
         """Enrich log with metadata"""
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": level,
             "message": message,
             "logger": self.logger.name,
