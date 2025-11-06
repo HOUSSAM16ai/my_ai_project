@@ -26,7 +26,6 @@ Usage:
 import argparse
 import ast
 import json
-import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -147,8 +146,11 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
         if lines_of_code > 0:
             halstead_volume = lines_of_code * math.log(max(num_params + 1, 2))
-            mi = 171 - 5.2 * math.log(halstead_volume + 1) - 0.23 * cyclomatic - 16.2 * math.log(
-                lines_of_code
+            mi = (
+                171
+                - 5.2 * math.log(halstead_volume + 1)
+                - 0.23 * cyclomatic
+                - 16.2 * math.log(lines_of_code)
             )
             mi = max(0, min(100, mi))  # Clamp to 0-100
         else:
@@ -218,15 +220,13 @@ class ComplexityAnalyzer(ast.NodeVisitor):
             # Decision points add complexity
             if isinstance(
                 child,
-                (
-                    ast.If,
-                    ast.While,
-                    ast.For,
-                    ast.AsyncFor,
-                    ast.ExceptHandler,
-                    ast.With,
-                    ast.AsyncWith,
-                ),
+                ast.If
+                | ast.While
+                | ast.For
+                | ast.AsyncFor
+                | ast.ExceptHandler
+                | ast.With
+                | ast.AsyncWith,
             ):
                 complexity += 1
             elif isinstance(child, ast.BoolOp):
@@ -244,7 +244,14 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
             for child in ast.iter_child_nodes(node):
                 if isinstance(
-                    child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.With, ast.AsyncWith, ast.Try)
+                    child,
+                    ast.If
+                    | ast.While
+                    | ast.For
+                    | ast.AsyncFor
+                    | ast.With
+                    | ast.AsyncWith
+                    | ast.Try,
                 ):
                     visit_depth(child, depth + 1)
                 else:
@@ -256,21 +263,20 @@ class ComplexityAnalyzer(ast.NodeVisitor):
     def _calculate_cognitive_complexity(self, node: ast.FunctionDef) -> int:
         """Calculate cognitive complexity (like SonarQube)"""
         complexity = 0
-        nesting_level = 0
 
         def visit_cognitive(n, nesting=0):
             nonlocal complexity
 
             for child in ast.iter_child_nodes(n):
                 # Flow breaking structures
-                if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor)):
+                if isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor):
                     complexity += 1 + nesting
                     visit_cognitive(child, nesting + 1)
                 elif isinstance(child, ast.BoolOp):
                     # Logical operators
                     complexity += len(child.values) - 1
                     visit_cognitive(child, nesting)
-                elif isinstance(child, (ast.Try, ast.ExceptHandler)):
+                elif isinstance(child, ast.Try | ast.ExceptHandler):
                     complexity += 1 + nesting
                     visit_cognitive(child, nesting + 1)
                 else:
@@ -340,7 +346,9 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         # Cyclomatic complexity
         if metrics.cyclomatic_complexity > 30:
             issues.append(f"❌ Very high cyclomatic complexity ({metrics.cyclomatic_complexity})")
-            recommendations.append("🔧 Break down into smaller functions using Extract Method pattern")
+            recommendations.append(
+                "🔧 Break down into smaller functions using Extract Method pattern"
+            )
         elif metrics.cyclomatic_complexity > 15:
             issues.append(f"⚠️  High cyclomatic complexity ({metrics.cyclomatic_complexity})")
             recommendations.append("💡 Consider simplifying conditional logic")
@@ -348,7 +356,9 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         # Lines of code
         if metrics.lines_of_code > 300:
             issues.append(f"❌ Extremely long function ({metrics.lines_of_code} lines)")
-            recommendations.append("🔧 Split into multiple focused functions (target: <50 lines each)")
+            recommendations.append(
+                "🔧 Split into multiple focused functions (target: <50 lines each)"
+            )
         elif metrics.lines_of_code > 100:
             issues.append(f"⚠️  Long function ({metrics.lines_of_code} lines)")
             recommendations.append("💡 Consider extracting helper methods")
@@ -373,9 +383,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
         # Maintainability index
         if metrics.maintainability_index < 20:
-            issues.append(
-                f"❌ Very low maintainability ({metrics.maintainability_index:.1f}/100)"
-            )
+            issues.append(f"❌ Very low maintainability ({metrics.maintainability_index:.1f}/100)")
             recommendations.append("🚨 URGENT: Refactor immediately - code is unmaintainable")
         elif metrics.maintainability_index < 40:
             issues.append(f"⚠️  Low maintainability ({metrics.maintainability_index:.1f}/100)")
@@ -479,9 +487,7 @@ def print_summary(metrics_list: list[FunctionMetrics], show_all: bool = False) -
         return
 
     # Sort by total complexity score
-    sorted_metrics = sorted(
-        metrics_list, key=lambda m: m.total_complexity_score, reverse=True
-    )
+    sorted_metrics = sorted(metrics_list, key=lambda m: m.total_complexity_score, reverse=True)
 
     # Statistics
     total_functions = len(sorted_metrics)
@@ -496,37 +502,39 @@ def print_summary(metrics_list: list[FunctionMetrics], show_all: bool = False) -
     print("🔍 SUPERHUMAN FUNCTION COMPLEXITY ANALYSIS")
     print("   تحليل خارق للدوال المعقدة")
     print("=" * 80)
-    print(f"\n📊 SUMMARY:")
+    print("\n📊 SUMMARY:")
     print(f"   Total complex functions: {total_functions}")
     print(f"   Average cyclomatic complexity: {avg_complexity:.1f}")
     print(f"   Average lines of code: {avg_loc:.1f}")
-    print(f"\n📈 GRADE DISTRIBUTION:")
+    print("\n📈 GRADE DISTRIBUTION:")
     for grade in ["A", "B", "C", "D", "E", "F"]:
         count = grade_counts[grade]
         if count > 0:
             bar = "█" * min(count, 50)
             print(f"   {grade}: {bar} ({count})")
 
-    print(f"\n🎯 TOP 10 MOST COMPLEX FUNCTIONS:")
+    print("\n🎯 TOP 10 MOST COMPLEX FUNCTIONS:")
     print("-" * 80)
 
     for i, metrics in enumerate(sorted_metrics[:10], 1):
         print(f"\n#{i} {metrics.name}()")
         print(f"   📁 File: {metrics.file_path}:{metrics.line_number}")
         print(f"   📊 Complexity Score: {metrics.total_complexity_score:.1f}/100")
-        print(f"   🔢 Cyclomatic: {metrics.cyclomatic_complexity} | "
-              f"LOC: {metrics.lines_of_code} | "
-              f"Nesting: {metrics.nesting_depth} | "
-              f"Grade: {metrics.complexity_grade}")
+        print(
+            f"   🔢 Cyclomatic: {metrics.cyclomatic_complexity} | "
+            f"LOC: {metrics.lines_of_code} | "
+            f"Nesting: {metrics.nesting_depth} | "
+            f"Grade: {metrics.complexity_grade}"
+        )
         print(f"   💯 Maintainability: {metrics.maintainability_index:.1f}/100")
 
         if metrics.issues:
-            print(f"   🚨 Issues:")
+            print("   🚨 Issues:")
             for issue in metrics.issues:
                 print(f"      {issue}")
 
         if metrics.recommendations:
-            print(f"   💡 Recommendations:")
+            print("   💡 Recommendations:")
             for rec in metrics.recommendations[:2]:  # Show top 2
                 print(f"      {rec}")
 
@@ -589,18 +597,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument(
-        "--path", type=str, default="app", help="Path to analyze (default: app)"
-    )
+    parser.add_argument("--path", type=str, default="app", help="Path to analyze (default: app)")
     parser.add_argument(
         "--threshold",
         type=int,
         default=10,
         help="Minimum cyclomatic complexity to report (default: 10)",
     )
-    parser.add_argument(
-        "--export", type=str, help="Export detailed JSON report to file"
-    )
+    parser.add_argument("--export", type=str, help="Export detailed JSON report to file")
     parser.add_argument(
         "--all", action="store_true", help="Show all complex functions (not just top 10)"
     )
