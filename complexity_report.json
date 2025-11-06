@@ -1,0 +1,2977 @@
+{
+  "analysis_timestamp": "2025-11-06T14:22:43.572660",
+  "total_functions_analyzed": 131,
+  "functions": [
+    {
+      "name": "coerce_datetime",
+      "file_path": "app/models.py",
+      "line_number": 127,
+      "lines_of_code": 37,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 8,
+      "num_branches": 6,
+      "num_loops": 1,
+      "cognitive_complexity": 30,
+      "maintainability_index": 92.9,
+      "complexity_grade": "C",
+      "total_complexity_score": 65.7,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "finalize_task",
+      "file_path": "app/models.py",
+      "line_number": 871,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 2,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 86.22,
+      "complexity_grade": "B",
+      "total_complexity_score": 57.6,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "ai_token_stream",
+      "file_path": "app/api/stream_routes.py",
+      "line_number": 93,
+      "lines_of_code": 64,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 0,
+      "num_branches": 7,
+      "num_loops": 4,
+      "cognitive_complexity": 38,
+      "maintainability_index": 78.22,
+      "complexity_grade": "C",
+      "total_complexity_score": 74.4,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (38)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "sse_chat",
+      "file_path": "app/api/stream_routes.py",
+      "line_number": 212,
+      "lines_of_code": 94,
+      "cyclomatic_complexity": 15,
+      "nesting_depth": 3,
+      "num_parameters": 0,
+      "num_returns": 2,
+      "num_branches": 5,
+      "num_loops": 2,
+      "cognitive_complexity": 32,
+      "maintainability_index": 72.15,
+      "complexity_grade": "C",
+      "total_complexity_score": 79.4,
+      "issues": [
+        "❌ High cognitive complexity (32)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "handle_chat_stream",
+      "file_path": "app/admin/routes.py",
+      "line_number": 289,
+      "lines_of_code": 90,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 4,
+      "num_parameters": 0,
+      "num_returns": 3,
+      "num_branches": 7,
+      "num_loops": 2,
+      "cognitive_complexity": 34,
+      "maintainability_index": 72.85,
+      "complexity_grade": "C",
+      "total_complexity_score": 81.0,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (34)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "generate",
+      "file_path": "app/admin/routes.py",
+      "line_number": 324,
+      "lines_of_code": 62,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 4,
+      "num_parameters": 0,
+      "num_returns": 0,
+      "num_branches": 4,
+      "num_loops": 2,
+      "cognitive_complexity": 29,
+      "maintainability_index": 81.94,
+      "complexity_grade": "C",
+      "total_complexity_score": 68.2,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (29)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "get_service",
+      "file_path": "app/utils/service_locator.py",
+      "line_number": 33,
+      "lines_of_code": 54,
+      "cyclomatic_complexity": 18,
+      "nesting_depth": 15,
+      "num_parameters": 2,
+      "num_returns": 5,
+      "num_branches": 15,
+      "num_loops": 0,
+      "cognitive_complexity": 125,
+      "maintainability_index": 80.92,
+      "complexity_grade": "D",
+      "total_complexity_score": 81.4,
+      "issues": [
+        "⚠️  High cyclomatic complexity (18)",
+        "❌ Excessive nesting (15 levels)",
+        "❌ High cognitive complexity (125)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "extract_first_json_object",
+      "file_path": "app/utils/text_processing.py",
+      "line_number": 39,
+      "lines_of_code": 29,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 5,
+      "num_parameters": 1,
+      "num_returns": 4,
+      "num_branches": 9,
+      "num_loops": 1,
+      "cognitive_complexity": 24,
+      "maintainability_index": 97.83,
+      "complexity_grade": "C",
+      "total_complexity_score": 66.9,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (24)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "setup_request_logging",
+      "file_path": "app/middleware/request_logger.py",
+      "line_number": 19,
+      "lines_of_code": 55,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 14,
+      "maintainability_index": 84.71,
+      "complexity_grade": "B",
+      "total_complexity_score": 61.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "process_request",
+      "file_path": "app/middleware/superhuman_security.py",
+      "line_number": 125,
+      "lines_of_code": 114,
+      "cyclomatic_complexity": 21,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 4,
+      "num_branches": 16,
+      "num_loops": 0,
+      "cognitive_complexity": 37,
+      "maintainability_index": 66.66,
+      "complexity_grade": "D",
+      "total_complexity_score": 91.4,
+      "issues": [
+        "⚠️  High cyclomatic complexity (21)",
+        "⚠️  Long function (114 lines)",
+        "❌ High cognitive complexity (37)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "process_response",
+      "file_path": "app/middleware/superhuman_security.py",
+      "line_number": 284,
+      "lines_of_code": 54,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 5,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 30,
+      "maintainability_index": 81.84,
+      "complexity_grade": "D",
+      "total_complexity_score": 73.4,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "get_statistics",
+      "file_path": "app/middleware/superhuman_security.py",
+      "line_number": 403,
+      "lines_of_code": 21,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 1,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 0,
+      "cognitive_complexity": 9,
+      "maintainability_index": 100,
+      "complexity_grade": "A",
+      "total_complexity_score": 40.6,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "run_experiment",
+      "file_path": "app/services/chaos_engineering.py",
+      "line_number": 311,
+      "lines_of_code": 63,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 4,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 15,
+      "maintainability_index": 79.24,
+      "complexity_grade": "B",
+      "total_complexity_score": 60.8,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "route_request",
+      "file_path": "app/services/api_gateway_service.py",
+      "line_number": 346,
+      "lines_of_code": 62,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 5,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 19,
+      "maintainability_index": 77.3,
+      "complexity_grade": "C",
+      "total_complexity_score": 66.2,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "_compose_federated_schema",
+      "file_path": "app/services/graphql_federation.py",
+      "line_number": 209,
+      "lines_of_code": 27,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 6,
+      "num_parameters": 1,
+      "num_returns": 0,
+      "num_branches": 2,
+      "num_loops": 7,
+      "cognitive_complexity": 21,
+      "maintainability_index": 99.57,
+      "complexity_grade": "C",
+      "total_complexity_score": 64.7,
+      "issues": [
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (21)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "get_schema_sdl",
+      "file_path": "app/services/graphql_federation.py",
+      "line_number": 396,
+      "lines_of_code": 34,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 2,
+      "num_branches": 6,
+      "num_loops": 4,
+      "cognitive_complexity": 19,
+      "maintainability_index": 94.7,
+      "complexity_grade": "B",
+      "total_complexity_score": 65.4,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_check_security_issues",
+      "file_path": "app/services/ai_auto_refactoring.py",
+      "line_number": 294,
+      "lines_of_code": 45,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 0,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 18,
+      "maintainability_index": 84.69,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.5,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "assess_deployment_risk",
+      "file_path": "app/services/sre_error_budget_service.py",
+      "line_number": 246,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 5,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 1,
+      "cognitive_complexity": 24,
+      "maintainability_index": 81.56,
+      "complexity_grade": "D",
+      "total_complexity_score": 69.1,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (24)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "detect_prompt_injection",
+      "file_path": "app/services/prompt_engineering_service.py",
+      "line_number": 286,
+      "lines_of_code": 53,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 2,
+      "num_branches": 8,
+      "num_loops": 1,
+      "cognitive_complexity": 10,
+      "maintainability_index": 83.16,
+      "complexity_grade": "B",
+      "total_complexity_score": 50.3,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "generate_prompt",
+      "file_path": "app/services/prompt_engineering_service.py",
+      "line_number": 456,
+      "lines_of_code": 191,
+      "cyclomatic_complexity": 22,
+      "nesting_depth": 3,
+      "num_parameters": 7,
+      "num_returns": 5,
+      "num_branches": 11,
+      "num_loops": 0,
+      "cognitive_complexity": 36,
+      "maintainability_index": 49.72,
+      "complexity_grade": "D",
+      "total_complexity_score": 99.1,
+      "issues": [
+        "⚠️  High cyclomatic complexity (22)",
+        "⚠️  Long function (191 lines)",
+        "❌ High cognitive complexity (36)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "check_rate_limit",
+      "file_path": "app/services/api_security_service.py",
+      "line_number": 349,
+      "lines_of_code": 50,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 3,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 8,
+      "maintainability_index": 84.4,
+      "complexity_grade": "A",
+      "total_complexity_score": 47.0,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_ensure_file_tools",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 479,
+      "lines_of_code": 96,
+      "cyclomatic_complexity": 17,
+      "nesting_depth": 3,
+      "num_parameters": 0,
+      "num_returns": 8,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 26,
+      "maintainability_index": 71.24,
+      "complexity_grade": "C",
+      "total_complexity_score": 83.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (17)",
+        "❌ High cognitive complexity (26)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_select_model",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 593,
+      "lines_of_code": 17,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 6,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 53.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "text_completion",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 624,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 8,
+      "num_returns": 2,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 23,
+      "maintainability_index": 80.42,
+      "complexity_grade": "C",
+      "total_complexity_score": 65.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "⚠️  Too many parameters (8)",
+        "❌ High cognitive complexity (23)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "structured_json",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 683,
+      "lines_of_code": 58,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 6,
+      "num_parameters": 8,
+      "num_returns": 2,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 30,
+      "maintainability_index": 77.21,
+      "complexity_grade": "D",
+      "total_complexity_score": 69.8,
+      "issues": [
+        "❌ Excessive nesting (6 levels)",
+        "⚠️  Too many parameters (8)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "forge_new_code",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 749,
+      "lines_of_code": 89,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 3,
+      "num_branches": 5,
+      "num_loops": 0,
+      "cognitive_complexity": 18,
+      "maintainability_index": 69.9,
+      "complexity_grade": "C",
+      "total_complexity_score": 70.9,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_build_bilingual_error_message",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 858,
+      "lines_of_code": 170,
+      "cyclomatic_complexity": 17,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 7,
+      "num_branches": 8,
+      "num_loops": 0,
+      "cognitive_complexity": 19,
+      "maintainability_index": 54.69,
+      "complexity_grade": "C",
+      "total_complexity_score": 91.0,
+      "issues": [
+        "⚠️  High cyclomatic complexity (17)",
+        "⚠️  Long function (170 lines)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods"
+      ]
+    },
+    {
+      "name": "execute_task",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 1164,
+      "lines_of_code": 220,
+      "cyclomatic_complexity": 43,
+      "nesting_depth": 6,
+      "num_parameters": 3,
+      "num_returns": 2,
+      "num_branches": 19,
+      "num_loops": 3,
+      "cognitive_complexity": 120,
+      "maintainability_index": 43.97,
+      "complexity_grade": "F",
+      "total_complexity_score": 100.0,
+      "issues": [
+        "❌ Very high cyclomatic complexity (43)",
+        "⚠️  Long function (220 lines)",
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (120)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "💡 Consider extracting helper methods",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_build_context_blob",
+      "file_path": "app/services/generation_service.py",
+      "line_number": 1453,
+      "lines_of_code": 30,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 21,
+      "maintainability_index": 92.64,
+      "complexity_grade": "B",
+      "total_complexity_score": 69.0,
+      "issues": [
+        "❌ High cognitive complexity (21)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_apply_traffic_split",
+      "file_path": "app/services/service_mesh_integration.py",
+      "line_number": 402,
+      "lines_of_code": 33,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 5,
+      "num_parameters": 3,
+      "num_returns": 5,
+      "num_branches": 9,
+      "num_loops": 2,
+      "cognitive_complexity": 34,
+      "maintainability_index": 91.6,
+      "complexity_grade": "C",
+      "total_complexity_score": 67.3,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (34)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "detect_anomalies",
+      "file_path": "app/services/api_advanced_analytics_service.py",
+      "line_number": 514,
+      "lines_of_code": 44,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 3,
+      "cognitive_complexity": 15,
+      "maintainability_index": 86.66,
+      "complexity_grade": "C",
+      "total_complexity_score": 65.9,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "get_cost_optimization_insights",
+      "file_path": "app/services/api_advanced_analytics_service.py",
+      "line_number": 572,
+      "lines_of_code": 38,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 5,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 6,
+      "num_loops": 2,
+      "cognitive_complexity": 22,
+      "maintainability_index": 92.11,
+      "complexity_grade": "C",
+      "total_complexity_score": 67.8,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (22)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_identify_edge_cases",
+      "file_path": "app/services/ai_intelligent_testing.py",
+      "line_number": 220,
+      "lines_of_code": 19,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 5,
+      "num_loops": 2,
+      "cognitive_complexity": 23,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 67.9,
+      "issues": [
+        "❌ High cognitive complexity (23)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_load_deep_struct_map",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 232,
+      "lines_of_code": 30,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 5,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 20,
+      "maintainability_index": 96.2,
+      "complexity_grade": "C",
+      "total_complexity_score": 75.0,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "_safe_path",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 438,
+      "lines_of_code": 40,
+      "cyclomatic_complexity": 20,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 11,
+      "num_loops": 1,
+      "cognitive_complexity": 27,
+      "maintainability_index": 84.9,
+      "complexity_grade": "B",
+      "total_complexity_score": 84.0,
+      "issues": [
+        "⚠️  High cyclomatic complexity (20)",
+        "❌ High cognitive complexity (27)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "tool",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 483,
+      "lines_of_code": 124,
+      "cyclomatic_complexity": 25,
+      "nesting_depth": 4,
+      "num_parameters": 7,
+      "num_returns": 3,
+      "num_branches": 11,
+      "num_loops": 3,
+      "cognitive_complexity": 37,
+      "maintainability_index": 58.27,
+      "complexity_grade": "D",
+      "total_complexity_score": 92.4,
+      "issues": [
+        "⚠️  High cyclomatic complexity (25)",
+        "⚠️  Long function (124 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (37)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "decorator",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 500,
+      "lines_of_code": 107,
+      "cyclomatic_complexity": 22,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 2,
+      "num_branches": 8,
+      "num_loops": 3,
+      "cognitive_complexity": 34,
+      "maintainability_index": 67.78,
+      "complexity_grade": "D",
+      "total_complexity_score": 90.7,
+      "issues": [
+        "⚠️  High cyclomatic complexity (22)",
+        "⚠️  Long function (107 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (34)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "wrapper",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 539,
+      "lines_of_code": 67,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 3,
+      "num_parameters": 0,
+      "num_returns": 1,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 25,
+      "maintainability_index": 79.82,
+      "complexity_grade": "C",
+      "total_complexity_score": 72.7,
+      "issues": [
+        "❌ High cognitive complexity (25)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_validate_arguments",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 641,
+      "lines_of_code": 22,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 2,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 13,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 56.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "canonicalize_tool_name",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 668,
+      "lines_of_code": 47,
+      "cyclomatic_complexity": 20,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 12,
+      "num_branches": 16,
+      "num_loops": 0,
+      "cognitive_complexity": 28,
+      "maintainability_index": 83.42,
+      "complexity_grade": "B",
+      "total_complexity_score": 84.7,
+      "issues": [
+        "⚠️  High cyclomatic complexity (20)",
+        "❌ High cognitive complexity (28)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "introspect_tools",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 771,
+      "lines_of_code": 49,
+      "cyclomatic_complexity": 15,
+      "nesting_depth": 2,
+      "num_parameters": 7,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 19,
+      "maintainability_index": 80.41,
+      "complexity_grade": "B",
+      "total_complexity_score": 69.9,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "generic_think",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 891,
+      "lines_of_code": 66,
+      "cyclomatic_complexity": 18,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 5,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 28,
+      "maintainability_index": 76.64,
+      "complexity_grade": "C",
+      "total_complexity_score": 82.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (18)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (28)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "write_file",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1082,
+      "lines_of_code": 45,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 6,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 19,
+      "maintainability_index": 84.23,
+      "complexity_grade": "B",
+      "total_complexity_score": 68.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "read_file",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1221,
+      "lines_of_code": 62,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 4,
+      "num_parameters": 3,
+      "num_returns": 7,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 30,
+      "maintainability_index": 77.93,
+      "complexity_grade": "C",
+      "total_complexity_score": 72.2,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "ensure_file",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1395,
+      "lines_of_code": 77,
+      "cyclomatic_complexity": 21,
+      "nesting_depth": 4,
+      "num_parameters": 6,
+      "num_returns": 9,
+      "num_branches": 10,
+      "num_loops": 0,
+      "cognitive_complexity": 43,
+      "maintainability_index": 69.72,
+      "complexity_grade": "D",
+      "total_complexity_score": 87.7,
+      "issues": [
+        "⚠️  High cyclomatic complexity (21)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (43)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "read_bulk_files",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1493,
+      "lines_of_code": 55,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 4,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 27,
+      "maintainability_index": 79.95,
+      "complexity_grade": "C",
+      "total_complexity_score": 69.5,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (27)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "code_index_project",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1565,
+      "lines_of_code": 67,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 5,
+      "num_parameters": 3,
+      "num_returns": 3,
+      "num_branches": 6,
+      "num_loops": 2,
+      "cognitive_complexity": 39,
+      "maintainability_index": 76.28,
+      "complexity_grade": "D",
+      "total_complexity_score": 72.7,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (39)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "code_search_lexical",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1652,
+      "lines_of_code": 82,
+      "cyclomatic_complexity": 19,
+      "nesting_depth": 6,
+      "num_parameters": 5,
+      "num_returns": 6,
+      "num_branches": 10,
+      "num_loops": 3,
+      "cognitive_complexity": 70,
+      "maintainability_index": 69.26,
+      "complexity_grade": "D",
+      "total_complexity_score": 86.2,
+      "issues": [
+        "⚠️  High cyclomatic complexity (19)",
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (70)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "dispatch_tool",
+      "file_path": "app/services/agent_tools.py",
+      "line_number": 1836,
+      "lines_of_code": 22,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 5,
+      "num_branches": 4,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 100,
+      "complexity_grade": "A",
+      "total_complexity_score": 51.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_normalize_endpoint",
+      "file_path": "app/services/api_contract_service.py",
+      "line_number": 413,
+      "lines_of_code": 21,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 19,
+      "maintainability_index": 100,
+      "complexity_grade": "C",
+      "total_complexity_score": 66.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "get_database_health",
+      "file_path": "app/services/database_service.py",
+      "line_number": 83,
+      "lines_of_code": 73,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 0,
+      "num_returns": 1,
+      "num_branches": 3,
+      "num_loops": 2,
+      "cognitive_complexity": 36,
+      "maintainability_index": 78.46,
+      "complexity_grade": "C",
+      "total_complexity_score": 69.3,
+      "issues": [
+        "❌ High cognitive complexity (36)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "get_table_data",
+      "file_path": "app/services/database_service.py",
+      "line_number": 366,
+      "lines_of_code": 58,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 6,
+      "num_parameters": 6,
+      "num_returns": 3,
+      "num_branches": 9,
+      "num_loops": 3,
+      "cognitive_complexity": 43,
+      "maintainability_index": 76.92,
+      "complexity_grade": "D",
+      "total_complexity_score": 77.8,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (43)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "update_record",
+      "file_path": "app/services/database_service.py",
+      "line_number": 533,
+      "lines_of_code": 37,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 5,
+      "num_parameters": 3,
+      "num_returns": 5,
+      "num_branches": 6,
+      "num_loops": 1,
+      "cognitive_complexity": 28,
+      "maintainability_index": 89.63,
+      "complexity_grade": "C",
+      "total_complexity_score": 63.7,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (28)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "create",
+      "file_path": "app/services/llm_client_service.py",
+      "line_number": 281,
+      "lines_of_code": 80,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 7,
+      "num_returns": 1,
+      "num_branches": 8,
+      "num_loops": 0,
+      "cognitive_complexity": 19,
+      "maintainability_index": 70.63,
+      "complexity_grade": "C",
+      "total_complexity_score": 72.0,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "_classify_error",
+      "file_path": "app/services/llm_client_service.py",
+      "line_number": 742,
+      "lines_of_code": 22,
+      "cyclomatic_complexity": 18,
+      "nesting_depth": 1,
+      "num_parameters": 1,
+      "num_returns": 7,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 17,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 68.2,
+      "issues": [
+        "⚠️  High cyclomatic complexity (18)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic"
+      ]
+    },
+    {
+      "name": "invoke_chat",
+      "file_path": "app/services/llm_client_service.py",
+      "line_number": 864,
+      "lines_of_code": 136,
+      "cyclomatic_complexity": 22,
+      "nesting_depth": 4,
+      "num_parameters": 8,
+      "num_returns": 4,
+      "num_branches": 11,
+      "num_loops": 4,
+      "cognitive_complexity": 62,
+      "maintainability_index": 56.7,
+      "complexity_grade": "D",
+      "total_complexity_score": 93.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (22)",
+        "⚠️  Long function (136 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "⚠️  Too many parameters (8)",
+        "❌ High cognitive complexity (62)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_complete_once",
+      "file_path": "app/services/llm_client_service.py",
+      "line_number": 918,
+      "lines_of_code": 79,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 4,
+      "num_parameters": 0,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 2,
+      "cognitive_complexity": 52,
+      "maintainability_index": 75.63,
+      "complexity_grade": "C",
+      "total_complexity_score": 79.9,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (52)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_check_quality_thresholds",
+      "file_path": "app/services/data_mesh_service.py",
+      "line_number": 458,
+      "lines_of_code": 19,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 15,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 59.4,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "calculate_developer_security_score",
+      "file_path": "app/services/security_metrics_engine.py",
+      "line_number": 327,
+      "lines_of_code": 47,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 3,
+      "num_returns": 2,
+      "num_branches": 9,
+      "num_loops": 1,
+      "cognitive_complexity": 21,
+      "maintainability_index": 84.07,
+      "complexity_grade": "C",
+      "total_complexity_score": 68.7,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (21)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "text_completion",
+      "file_path": "app/services/maestro.py",
+      "line_number": 175,
+      "lines_of_code": 57,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 4,
+      "num_parameters": 8,
+      "num_returns": 4,
+      "num_branches": 6,
+      "num_loops": 1,
+      "cognitive_complexity": 29,
+      "maintainability_index": 77.12,
+      "complexity_grade": "C",
+      "total_complexity_score": 73.7,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "⚠️  Too many parameters (8)",
+        "❌ High cognitive complexity (29)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "structured_json",
+      "file_path": "app/services/maestro.py",
+      "line_number": 246,
+      "lines_of_code": 75,
+      "cyclomatic_complexity": 15,
+      "nesting_depth": 3,
+      "num_parameters": 8,
+      "num_returns": 3,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 36,
+      "maintainability_index": 71.03,
+      "complexity_grade": "C",
+      "total_complexity_score": 77.5,
+      "issues": [
+        "⚠️  Too many parameters (8)",
+        "❌ High cognitive complexity (36)"
+      ],
+      "recommendations": [
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "apply_code_refactoring",
+      "file_path": "app/services/refactoring_tool.py",
+      "line_number": 83,
+      "lines_of_code": 31,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 5,
+      "num_returns": 9,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 17,
+      "maintainability_index": 91.86,
+      "complexity_grade": "B",
+      "total_complexity_score": 60.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "call",
+      "file_path": "app/services/api_gateway_chaos.py",
+      "line_number": 449,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 2,
+      "num_parameters": 4,
+      "num_returns": 6,
+      "num_branches": 3,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 85.76,
+      "complexity_grade": "B",
+      "total_complexity_score": 60.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "ultra_stream",
+      "file_path": "app/services/breakthrough_streaming.py",
+      "line_number": 217,
+      "lines_of_code": 53,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 4,
+      "num_parameters": 3,
+      "num_returns": 0,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 31,
+      "maintainability_index": 81.74,
+      "complexity_grade": "C",
+      "total_complexity_score": 67.3,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (31)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "is_enabled",
+      "file_path": "app/services/api_gateway_deployment.py",
+      "line_number": 418,
+      "lines_of_code": 24,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 7,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 13,
+      "maintainability_index": 97.62,
+      "complexity_grade": "C",
+      "total_complexity_score": 60.9,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "analyze_root_cause",
+      "file_path": "app/services/aiops_self_healing_service.py",
+      "line_number": 485,
+      "lines_of_code": 19,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 2,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 10,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 48.9,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "calculate_burn_rate",
+      "file_path": "app/services/api_slo_sli_service.py",
+      "line_number": 388,
+      "lines_of_code": 59,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 4,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 80.41,
+      "complexity_grade": "C",
+      "total_complexity_score": 64.4,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "get_git_status",
+      "file_path": "app/services/system_service.py",
+      "line_number": 315,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 5,
+      "num_branches": 3,
+      "num_loops": 1,
+      "cognitive_complexity": 20,
+      "maintainability_index": 90.96,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "query_file",
+      "file_path": "app/services/system_service.py",
+      "line_number": 362,
+      "lines_of_code": 87,
+      "cyclomatic_complexity": 15,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 6,
+      "num_branches": 8,
+      "num_loops": 0,
+      "cognitive_complexity": 19,
+      "maintainability_index": 73.8,
+      "complexity_grade": "C",
+      "total_complexity_score": 78.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "index_project",
+      "file_path": "app/services/system_service.py",
+      "line_number": 475,
+      "lines_of_code": 108,
+      "cyclomatic_complexity": 24,
+      "nesting_depth": 5,
+      "num_parameters": 2,
+      "num_returns": 5,
+      "num_branches": 9,
+      "num_loops": 5,
+      "cognitive_complexity": 57,
+      "maintainability_index": 64.75,
+      "complexity_grade": "E",
+      "total_complexity_score": 90.8,
+      "issues": [
+        "⚠️  High cyclomatic complexity (24)",
+        "⚠️  Long function (108 lines)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (57)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "analyze_health",
+      "file_path": "app/services/ai_adaptive_microservices.py",
+      "line_number": 353,
+      "lines_of_code": 30,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 1,
+      "num_parameters": 3,
+      "num_returns": 4,
+      "num_branches": 11,
+      "num_loops": 0,
+      "cognitive_complexity": 11,
+      "maintainability_index": 93.63,
+      "complexity_grade": "B",
+      "total_complexity_score": 48.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_compute_diff",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 390,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 3,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 12,
+      "maintainability_index": 87.21,
+      "complexity_grade": "B",
+      "total_complexity_score": 54.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_canonicalize_tool_name",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 465,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 22,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 11,
+      "num_branches": 13,
+      "num_loops": 0,
+      "cognitive_complexity": 25,
+      "maintainability_index": 85.87,
+      "complexity_grade": "B",
+      "total_complexity_score": 79.1,
+      "issues": [
+        "⚠️  High cyclomatic complexity (22)",
+        "❌ High cognitive complexity (25)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_tick",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 671,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 17,
+      "nesting_depth": 7,
+      "num_parameters": 3,
+      "num_returns": 0,
+      "num_branches": 13,
+      "num_loops": 1,
+      "cognitive_complexity": 53,
+      "maintainability_index": 81.18,
+      "complexity_grade": "D",
+      "total_complexity_score": 79.1,
+      "issues": [
+        "⚠️  High cyclomatic complexity (17)",
+        "❌ Excessive nesting (7 levels)",
+        "❌ High cognitive complexity (53)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_plan_phase",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 729,
+      "lines_of_code": 129,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 3,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 30,
+      "maintainability_index": 62.79,
+      "complexity_grade": "C",
+      "total_complexity_score": 84.9,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Long function (129 lines)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_build_deep_index_context",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 871,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 5,
+      "num_branches": 6,
+      "num_loops": 2,
+      "cognitive_complexity": 30,
+      "maintainability_index": 85.4,
+      "complexity_grade": "C",
+      "total_complexity_score": 73.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (30)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_execution_phase",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1039,
+      "lines_of_code": 61,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 6,
+      "num_loops": 5,
+      "cognitive_complexity": 25,
+      "maintainability_index": 79.47,
+      "complexity_grade": "C",
+      "total_complexity_score": 72.1,
+      "issues": [
+        "❌ High cognitive complexity (25)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_precheck_and_autofix_task",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1209,
+      "lines_of_code": 66,
+      "cyclomatic_complexity": 21,
+      "nesting_depth": 6,
+      "num_parameters": 3,
+      "num_returns": 5,
+      "num_branches": 18,
+      "num_loops": 0,
+      "cognitive_complexity": 47,
+      "maintainability_index": 74.76,
+      "complexity_grade": "D",
+      "total_complexity_score": 86.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (21)",
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (47)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_execute_task_with_retry_topological",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1276,
+      "lines_of_code": 135,
+      "cyclomatic_complexity": 39,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 5,
+      "num_branches": 20,
+      "num_loops": 0,
+      "cognitive_complexity": 58,
+      "maintainability_index": 54.56,
+      "complexity_grade": "E",
+      "total_complexity_score": 93.5,
+      "issues": [
+        "❌ Very high cyclomatic complexity (39)",
+        "⚠️  Long function (135 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (58)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_execute_tool",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1587,
+      "lines_of_code": 87,
+      "cyclomatic_complexity": 33,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 17,
+      "num_loops": 1,
+      "cognitive_complexity": 67,
+      "maintainability_index": 67.3,
+      "complexity_grade": "D",
+      "total_complexity_score": 88.7,
+      "issues": [
+        "❌ Very high cyclomatic complexity (33)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (67)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_check_terminal",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1685,
+      "lines_of_code": 44,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 0,
+      "num_branches": 6,
+      "num_loops": 0,
+      "cognitive_complexity": 20,
+      "maintainability_index": 87.12,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.4,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "_adaptive_replan",
+      "file_path": "app/services/master_agent_service.py",
+      "line_number": 1800,
+      "lines_of_code": 95,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 3,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 17,
+      "maintainability_index": 69.79,
+      "complexity_grade": "B",
+      "total_complexity_score": 72.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "answer_question",
+      "file_path": "app/services/admin_ai_service.py",
+      "line_number": 307,
+      "lines_of_code": 434,
+      "cyclomatic_complexity": 41,
+      "nesting_depth": 5,
+      "num_parameters": 5,
+      "num_returns": 14,
+      "num_branches": 21,
+      "num_loops": 0,
+      "cognitive_complexity": 111,
+      "maintainability_index": 28.57,
+      "complexity_grade": "F",
+      "total_complexity_score": 100.0,
+      "issues": [
+        "❌ Very high cyclomatic complexity (41)",
+        "❌ Extremely long function (434 lines)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (111)",
+        "⚠️  Low maintainability (28.6/100)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "🔧 Split into multiple focused functions (target: <50 lines each)",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand",
+        "⚠️  High priority refactoring needed"
+      ]
+    },
+    {
+      "name": "_build_lightweight_project_index",
+      "file_path": "app/services/admin_ai_service.py",
+      "line_number": 902,
+      "lines_of_code": 72,
+      "cyclomatic_complexity": 18,
+      "nesting_depth": 6,
+      "num_parameters": 1,
+      "num_returns": 4,
+      "num_branches": 7,
+      "num_loops": 7,
+      "cognitive_complexity": 65,
+      "maintainability_index": 77.14,
+      "complexity_grade": "D",
+      "total_complexity_score": 83.2,
+      "issues": [
+        "⚠️  High cyclomatic complexity (18)",
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (65)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_build_super_system_prompt",
+      "file_path": "app/services/admin_ai_service.py",
+      "line_number": 1032,
+      "lines_of_code": 113,
+      "cyclomatic_complexity": 20,
+      "nesting_depth": 5,
+      "num_parameters": 5,
+      "num_returns": 2,
+      "num_branches": 11,
+      "num_loops": 2,
+      "cognitive_complexity": 80,
+      "maintainability_index": 62.18,
+      "complexity_grade": "D",
+      "total_complexity_score": 91.3,
+      "issues": [
+        "⚠️  High cyclomatic complexity (20)",
+        "⚠️  Long function (113 lines)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (80)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "export_prometheus",
+      "file_path": "app/telemetry/metrics.py",
+      "line_number": 348,
+      "lines_of_code": 33,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 6,
+      "cognitive_complexity": 23,
+      "maintainability_index": 95.33,
+      "complexity_grade": "C",
+      "total_complexity_score": 65.3,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (23)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "query_events",
+      "file_path": "app/telemetry/events.py",
+      "line_number": 213,
+      "lines_of_code": 22,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 6,
+      "num_returns": 1,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 15,
+      "maintainability_index": 98.74,
+      "complexity_grade": "B",
+      "total_complexity_score": 56.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "iter_files",
+      "file_path": "app/cli/indexer.py",
+      "line_number": 66,
+      "lines_of_code": 15,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 0,
+      "num_branches": 5,
+      "num_loops": 1,
+      "cognitive_complexity": 20,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 61.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "ask",
+      "file_path": "app/cli/main.py",
+      "line_number": 115,
+      "lines_of_code": 40,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 0,
+      "num_branches": 5,
+      "num_loops": 0,
+      "cognitive_complexity": 17,
+      "maintainability_index": 88.69,
+      "complexity_grade": "B",
+      "total_complexity_score": 68.0,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "check_health",
+      "file_path": "app/cli/database_commands.py",
+      "line_number": 36,
+      "lines_of_code": 44,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 5,
+      "num_parameters": 0,
+      "num_returns": 0,
+      "num_branches": 6,
+      "num_loops": 6,
+      "cognitive_complexity": 41,
+      "maintainability_index": 88.54,
+      "complexity_grade": "C",
+      "total_complexity_score": 72.4,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (41)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "show_schema",
+      "file_path": "app/cli/database_commands.py",
+      "line_number": 170,
+      "lines_of_code": 43,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 0,
+      "num_branches": 5,
+      "num_loops": 3,
+      "cognitive_complexity": 22,
+      "maintainability_index": 89.94,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.3,
+      "issues": [
+        "❌ High cognitive complexity (22)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "planners_command",
+      "file_path": "app/cli/mindgate_commands.py",
+      "line_number": 367,
+      "lines_of_code": 25,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 0,
+      "num_branches": 4,
+      "num_loops": 1,
+      "cognitive_complexity": 26,
+      "maintainability_index": 98.91,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.5,
+      "issues": [
+        "❌ High cognitive complexity (26)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "plan_command",
+      "file_path": "app/cli/mindgate_commands.py",
+      "line_number": 594,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 6,
+      "num_loops": 1,
+      "cognitive_complexity": 26,
+      "maintainability_index": 86.68,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.1,
+      "issues": [
+        "❌ High cognitive complexity (26)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "plan_diff_command",
+      "file_path": "app/cli/mindgate_commands.py",
+      "line_number": 735,
+      "lines_of_code": 55,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 0,
+      "num_branches": 8,
+      "num_loops": 4,
+      "cognitive_complexity": 42,
+      "maintainability_index": 79.03,
+      "complexity_grade": "C",
+      "total_complexity_score": 77.5,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (42)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "ask_command",
+      "file_path": "app/cli/mindgate_commands.py",
+      "line_number": 856,
+      "lines_of_code": 57,
+      "cyclomatic_complexity": 21,
+      "nesting_depth": 5,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 13,
+      "num_loops": 0,
+      "cognitive_complexity": 48,
+      "maintainability_index": 77.12,
+      "complexity_grade": "D",
+      "total_complexity_score": 85.7,
+      "issues": [
+        "⚠️  High cyclomatic complexity (21)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (48)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_evaluate_simple_condition",
+      "file_path": "app/boundaries/policy_boundaries.py",
+      "line_number": 321,
+      "lines_of_code": 27,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 6,
+      "num_parameters": 3,
+      "num_returns": 10,
+      "num_branches": 10,
+      "num_loops": 0,
+      "cognitive_complexity": 26,
+      "maintainability_index": 96.1,
+      "complexity_grade": "C",
+      "total_complexity_score": 64.7,
+      "issues": [
+        "❌ Excessive nesting (6 levels)",
+        "❌ High cognitive complexity (26)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "check_request",
+      "file_path": "app/security/waf.py",
+      "line_number": 225,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 5,
+      "num_branches": 7,
+      "num_loops": 2,
+      "cognitive_complexity": 18,
+      "maintainability_index": 83.75,
+      "complexity_grade": "C",
+      "total_complexity_score": 67.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "check_rate_limit",
+      "file_path": "app/security/rate_limiter.py",
+      "line_number": 147,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 2,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 4,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 86.22,
+      "complexity_grade": "B",
+      "total_complexity_score": 56.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_extract_features",
+      "file_path": "app/security/threat_detector.py",
+      "line_number": 157,
+      "lines_of_code": 41,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 3,
+      "num_returns": 1,
+      "num_branches": 3,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 87.44,
+      "complexity_grade": "A",
+      "total_complexity_score": 52.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "validate_password_strength",
+      "file_path": "app/security/secure_auth.py",
+      "line_number": 157,
+      "lines_of_code": 18,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 11,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 50.3,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "authenticate",
+      "file_path": "app/security/secure_auth.py",
+      "line_number": 199,
+      "lines_of_code": 59,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 5,
+      "num_returns": 6,
+      "num_branches": 5,
+      "num_loops": 0,
+      "cognitive_complexity": 10,
+      "maintainability_index": 78.36,
+      "complexity_grade": "B",
+      "total_complexity_score": 50.9,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "require_resource_owner",
+      "file_path": "app/security/secure_templates.py",
+      "line_number": 284,
+      "lines_of_code": 30,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 8,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 95.27,
+      "complexity_grade": "B",
+      "total_complexity_score": 57.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "decorator",
+      "file_path": "app/security/secure_templates.py",
+      "line_number": 308,
+      "lines_of_code": 28,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 7,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 99.04,
+      "complexity_grade": "B",
+      "total_complexity_score": 57.3,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "decorated_function",
+      "file_path": "app/security/secure_templates.py",
+      "line_number": 310,
+      "lines_of_code": 25,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 0,
+      "num_returns": 6,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 13,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 57.0,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "validate_authentication_code",
+      "file_path": "app/security/owasp_validator.py",
+      "line_number": 157,
+      "lines_of_code": 47,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 2,
+      "num_parameters": 3,
+      "num_returns": 1,
+      "num_branches": 5,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 84.3,
+      "complexity_grade": "B",
+      "total_complexity_score": 54.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "validate_cryptography",
+      "file_path": "app/security/owasp_validator.py",
+      "line_number": 324,
+      "lines_of_code": 49,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 3,
+      "num_parameters": 3,
+      "num_returns": 1,
+      "num_branches": 3,
+      "num_loops": 4,
+      "cognitive_complexity": 20,
+      "maintainability_index": 82.95,
+      "complexity_grade": "B",
+      "total_complexity_score": 70.9,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "check_value",
+      "file_path": "app/analysis/anomaly_detector.py",
+      "line_number": 123,
+      "lines_of_code": 50,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 3,
+      "num_branches": 8,
+      "num_loops": 0,
+      "cognitive_complexity": 19,
+      "maintainability_index": 81.52,
+      "complexity_grade": "C",
+      "total_complexity_score": 73.0,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible"
+      ]
+    },
+    {
+      "name": "_attempt_register",
+      "file_path": "app/overmind/planning/base_planner.py",
+      "line_number": 282,
+      "lines_of_code": 42,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 2,
+      "num_parameters": 2,
+      "num_returns": 7,
+      "num_branches": 7,
+      "num_loops": 0,
+      "cognitive_complexity": 8,
+      "maintainability_index": 88.11,
+      "complexity_grade": "A",
+      "total_complexity_score": 46.2,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_run_self_test",
+      "file_path": "app/overmind/planning/base_planner.py",
+      "line_number": 326,
+      "lines_of_code": 48,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 3,
+      "num_parameters": 4,
+      "num_returns": 2,
+      "num_branches": 9,
+      "num_loops": 0,
+      "cognitive_complexity": 22,
+      "maintainability_index": 82.39,
+      "complexity_grade": "B",
+      "total_complexity_score": 72.8,
+      "issues": [
+        "❌ High cognitive complexity (22)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "instrumented_generate",
+      "file_path": "app/overmind/planning/base_planner.py",
+      "line_number": 572,
+      "lines_of_code": 128,
+      "cyclomatic_complexity": 30,
+      "nesting_depth": 4,
+      "num_parameters": 7,
+      "num_returns": 2,
+      "num_branches": 12,
+      "num_loops": 0,
+      "cognitive_complexity": 47,
+      "maintainability_index": 56.44,
+      "complexity_grade": "D",
+      "total_complexity_score": 92.8,
+      "issues": [
+        "⚠️  High cyclomatic complexity (30)",
+        "⚠️  Long function (128 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (47)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "a_instrumented_generate",
+      "file_path": "app/overmind/planning/base_planner.py",
+      "line_number": 725,
+      "lines_of_code": 128,
+      "cyclomatic_complexity": 30,
+      "nesting_depth": 4,
+      "num_parameters": 7,
+      "num_returns": 2,
+      "num_branches": 12,
+      "num_loops": 0,
+      "cognitive_complexity": 47,
+      "maintainability_index": 56.44,
+      "complexity_grade": "D",
+      "total_complexity_score": 92.8,
+      "issues": [
+        "⚠️  High cyclomatic complexity (30)",
+        "⚠️  Long function (128 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (47)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_sync_registry_into_records",
+      "file_path": "app/overmind/planning/factory.py",
+      "line_number": 319,
+      "lines_of_code": 44,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 2,
+      "num_parameters": 0,
+      "num_returns": 0,
+      "num_branches": 9,
+      "num_loops": 1,
+      "cognitive_complexity": 27,
+      "maintainability_index": 88.77,
+      "complexity_grade": "B",
+      "total_complexity_score": 65.4,
+      "issues": [
+        "❌ High cognitive complexity (27)"
+      ],
+      "recommendations": [
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_discover_and_register",
+      "file_path": "app/overmind/planning/factory.py",
+      "line_number": 367,
+      "lines_of_code": 27,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 2,
+      "num_loops": 2,
+      "cognitive_complexity": 10,
+      "maintainability_index": 97.28,
+      "complexity_grade": "B",
+      "total_complexity_score": 54.7,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "select_best_planner",
+      "file_path": "app/overmind/planning/factory.py",
+      "line_number": 593,
+      "lines_of_code": 84,
+      "cyclomatic_complexity": 18,
+      "nesting_depth": 2,
+      "num_parameters": 6,
+      "num_returns": 2,
+      "num_branches": 10,
+      "num_loops": 1,
+      "cognitive_complexity": 20,
+      "maintainability_index": 68.55,
+      "complexity_grade": "B",
+      "total_complexity_score": 79.4,
+      "issues": [
+        "⚠️  High cyclomatic complexity (18)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic"
+      ]
+    },
+    {
+      "name": "batch_select_best_planners",
+      "file_path": "app/overmind/planning/factory.py",
+      "line_number": 679,
+      "lines_of_code": 44,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 2,
+      "num_parameters": 6,
+      "num_returns": 4,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 14,
+      "maintainability_index": 83.74,
+      "complexity_grade": "B",
+      "total_complexity_score": 59.4,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "diagnostics_report",
+      "file_path": "app/overmind/planning/factory.py",
+      "line_number": 831,
+      "lines_of_code": 51,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 3,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 4,
+      "cognitive_complexity": 19,
+      "maintainability_index": 85.86,
+      "complexity_grade": "C",
+      "total_complexity_score": 69.1,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_hash_norm_function",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 197,
+      "lines_of_code": 25,
+      "cyclomatic_complexity": 11,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 1,
+      "num_branches": 7,
+      "num_loops": 1,
+      "cognitive_complexity": 20,
+      "maintainability_index": 98.91,
+      "complexity_grade": "B",
+      "total_complexity_score": 64.5,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_categorize",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 262,
+      "lines_of_code": 22,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 1,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 0,
+      "cognitive_complexity": 12,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 51.2,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_layer_for_path",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 286,
+      "lines_of_code": 21,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 1,
+      "num_parameters": 1,
+      "num_returns": 10,
+      "num_branches": 9,
+      "num_loops": 0,
+      "cognitive_complexity": 15,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 61.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic"
+      ]
+    },
+    {
+      "name": "_collect_python_files",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 325,
+      "lines_of_code": 34,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 5,
+      "num_parameters": 1,
+      "num_returns": 2,
+      "num_branches": 6,
+      "num_loops": 4,
+      "cognitive_complexity": 42,
+      "maintainability_index": 94.01,
+      "complexity_grade": "C",
+      "total_complexity_score": 71.4,
+      "issues": [
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (42)"
+      ],
+      "recommendations": [
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_parse_single_file",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 374,
+      "lines_of_code": 111,
+      "cyclomatic_complexity": 28,
+      "nesting_depth": 7,
+      "num_parameters": 2,
+      "num_returns": 3,
+      "num_branches": 17,
+      "num_loops": 5,
+      "cognitive_complexity": 98,
+      "maintainability_index": 63.24,
+      "complexity_grade": "E",
+      "total_complexity_score": 91.1,
+      "issues": [
+        "⚠️  High cyclomatic complexity (28)",
+        "⚠️  Long function (111 lines)",
+        "❌ Excessive nesting (7 levels)",
+        "❌ High cognitive complexity (98)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_build_call_graph",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 547,
+      "lines_of_code": 25,
+      "cyclomatic_complexity": 12,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 2,
+      "num_branches": 5,
+      "num_loops": 5,
+      "cognitive_complexity": 24,
+      "maintainability_index": 100,
+      "complexity_grade": "C",
+      "total_complexity_score": 66.5,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (24)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "build_index",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 709,
+      "lines_of_code": 171,
+      "cyclomatic_complexity": 14,
+      "nesting_depth": 3,
+      "num_parameters": 2,
+      "num_returns": 3,
+      "num_branches": 6,
+      "num_loops": 3,
+      "cognitive_complexity": 15,
+      "maintainability_index": 57.23,
+      "complexity_grade": "C",
+      "total_complexity_score": 82.6,
+      "issues": [
+        "⚠️  Long function (171 lines)"
+      ],
+      "recommendations": [
+        "💡 Consider extracting helper methods"
+      ]
+    },
+    {
+      "name": "summarize_for_prompt",
+      "file_path": "app/overmind/planning/deep_indexer.py",
+      "line_number": 921,
+      "lines_of_code": 65,
+      "cyclomatic_complexity": 25,
+      "nesting_depth": 4,
+      "num_parameters": 2,
+      "num_returns": 2,
+      "num_branches": 14,
+      "num_loops": 8,
+      "cognitive_complexity": 47,
+      "maintainability_index": 75.36,
+      "complexity_grade": "D",
+      "total_complexity_score": 86.5,
+      "issues": [
+        "⚠️  High cyclomatic complexity (25)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (47)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_build_plan",
+      "file_path": "app/overmind/planning/multi_pass_arch_planner.py",
+      "line_number": 224,
+      "lines_of_code": 245,
+      "cyclomatic_complexity": 13,
+      "nesting_depth": 2,
+      "num_parameters": 3,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 2,
+      "cognitive_complexity": 17,
+      "maintainability_index": 48.57,
+      "complexity_grade": "C",
+      "total_complexity_score": 81.0,
+      "issues": [
+        "⚠️  Long function (245 lines)"
+      ],
+      "recommendations": [
+        "💡 Consider extracting helper methods"
+      ]
+    },
+    {
+      "name": "extract_filenames",
+      "file_path": "app/overmind/planning/llm_planner.py",
+      "line_number": 433,
+      "lines_of_code": 31,
+      "cyclomatic_complexity": 15,
+      "nesting_depth": 4,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 10,
+      "num_loops": 4,
+      "cognitive_complexity": 37,
+      "maintainability_index": 95.73,
+      "complexity_grade": "C",
+      "total_complexity_score": 73.1,
+      "issues": [
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (37)"
+      ],
+      "recommendations": [
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_collect_extra_files",
+      "file_path": "app/overmind/planning/llm_planner.py",
+      "line_number": 656,
+      "lines_of_code": 35,
+      "cyclomatic_complexity": 19,
+      "nesting_depth": 5,
+      "num_parameters": 0,
+      "num_returns": 1,
+      "num_branches": 12,
+      "num_loops": 6,
+      "cognitive_complexity": 55,
+      "maintainability_index": 92.24,
+      "complexity_grade": "C",
+      "total_complexity_score": 81.5,
+      "issues": [
+        "⚠️  High cyclomatic complexity (19)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (55)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "generate_plan",
+      "file_path": "app/overmind/planning/llm_planner.py",
+      "line_number": 720,
+      "lines_of_code": 260,
+      "cyclomatic_complexity": 40,
+      "nesting_depth": 4,
+      "num_parameters": 4,
+      "num_returns": 1,
+      "num_branches": 18,
+      "num_loops": 2,
+      "cognitive_complexity": 64,
+      "maintainability_index": 40.31,
+      "complexity_grade": "E",
+      "total_complexity_score": 100.0,
+      "issues": [
+        "❌ Very high cyclomatic complexity (40)",
+        "⚠️  Long function (260 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "❌ High cognitive complexity (64)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_add_file_generation_blocks",
+      "file_path": "app/overmind/planning/llm_planner.py",
+      "line_number": 1145,
+      "lines_of_code": 186,
+      "cyclomatic_complexity": 16,
+      "nesting_depth": 4,
+      "num_parameters": 15,
+      "num_returns": 1,
+      "num_branches": 9,
+      "num_loops": 3,
+      "cognitive_complexity": 34,
+      "maintainability_index": 50.18,
+      "complexity_grade": "D",
+      "total_complexity_score": 90.6,
+      "issues": [
+        "⚠️  High cyclomatic complexity (16)",
+        "⚠️  Long function (186 lines)",
+        "⚠️  Deep nesting (4 levels)",
+        "⚠️  Too many parameters (15)",
+        "❌ High cognitive complexity (34)"
+      ],
+      "recommendations": [
+        "💡 Consider simplifying conditional logic",
+        "💡 Consider extracting helper methods",
+        "💡 Flatten nested structures where possible",
+        "💡 Consider using parameter objects or dataclasses",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    },
+    {
+      "name": "_validate",
+      "file_path": "app/overmind/planning/llm_planner.py",
+      "line_number": 1583,
+      "lines_of_code": 18,
+      "cyclomatic_complexity": 10,
+      "nesting_depth": 3,
+      "num_parameters": 3,
+      "num_returns": 0,
+      "num_branches": 4,
+      "num_loops": 3,
+      "cognitive_complexity": 15,
+      "maintainability_index": 100,
+      "complexity_grade": "B",
+      "total_complexity_score": 59.3,
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "name": "_full_graph_validation",
+      "file_path": "app/overmind/planning/schemas.py",
+      "line_number": 331,
+      "lines_of_code": 230,
+      "cyclomatic_complexity": 44,
+      "nesting_depth": 5,
+      "num_parameters": 1,
+      "num_returns": 1,
+      "num_branches": 24,
+      "num_loops": 8,
+      "cognitive_complexity": 68,
+      "maintainability_index": 46.38,
+      "complexity_grade": "F",
+      "total_complexity_score": 100.0,
+      "issues": [
+        "❌ Very high cyclomatic complexity (44)",
+        "⚠️  Long function (230 lines)",
+        "❌ Excessive nesting (5 levels)",
+        "❌ High cognitive complexity (68)"
+      ],
+      "recommendations": [
+        "🔧 Break down into smaller functions using Extract Method pattern",
+        "💡 Consider extracting helper methods",
+        "🔧 Use early returns and guard clauses to reduce nesting",
+        "🔧 Simplify logic flow - code is hard to understand"
+      ]
+    }
+  ],
+  "summary": {
+    "total_complex_functions": 131,
+    "average_cyclomatic_complexity": 15.282442748091603,
+    "average_lines_of_code": 66.0381679389313,
+    "grade_distribution": {
+      "C": 48,
+      "B": 48,
+      "D": 23,
+      "A": 5,
+      "F": 3,
+      "E": 4
+    }
+  }
+}
