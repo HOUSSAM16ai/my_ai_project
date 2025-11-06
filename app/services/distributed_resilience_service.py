@@ -1038,7 +1038,8 @@ def resilient(
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
-            service = DistributedResilienceService()
+            # Use global singleton service for component reuse
+            service = get_resilience_service()
 
             # Apply circuit breaker
             if circuit_breaker_name:
