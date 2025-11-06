@@ -1,46 +1,51 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import Plot from 'react-plotly.js'
 import { RefreshCw } from 'lucide-react'
 
 export function InteractiveChart() {
   const [chartType, setChartType] = useState<'scatter3d' | 'surface' | 'heatmap'>('scatter3d')
+  const [dataVersion, setDataVersion] = useState(0)
 
-  // Generate 3D scatter data
-  const scatter3dData = {
-    x: Array.from({ length: 100 }, () => Math.random() * 10),
-    y: Array.from({ length: 100 }, () => Math.random() * 10),
-    z: Array.from({ length: 100 }, () => Math.random() * 10),
-    mode: 'markers',
-    marker: {
-      size: 5,
-      color: Array.from({ length: 100 }, () => Math.random()),
-      colorscale: 'Viridis',
-      showscale: true,
-    },
-    type: 'scatter3d' as const,
-  }
+  // Generate data with version for proper re-rendering
+  const generateData = useCallback(() => {
+    const scatter3dData = {
+      x: Array.from({ length: 100 }, () => Math.random() * 10),
+      y: Array.from({ length: 100 }, () => Math.random() * 10),
+      z: Array.from({ length: 100 }, () => Math.random() * 10),
+      mode: 'markers',
+      marker: {
+        size: 5,
+        color: Array.from({ length: 100 }, () => Math.random()),
+        colorscale: 'Viridis',
+        showscale: true,
+      },
+      type: 'scatter3d' as const,
+    }
 
-  // Generate surface data
-  const surfaceData = {
-    z: Array.from({ length: 30 }, (_, i) =>
-      Array.from({ length: 30 }, (_, j) => {
-        const x = (i - 15) / 5
-        const y = (j - 15) / 5
-        return Math.sin(Math.sqrt(x * x + y * y))
-      })
-    ),
-    type: 'surface' as const,
-    colorscale: 'Portland',
-  }
+    const surfaceData = {
+      z: Array.from({ length: 30 }, (_, i) =>
+        Array.from({ length: 30 }, (_, j) => {
+          const x = (i - 15) / 5
+          const y = (j - 15) / 5
+          return Math.sin(Math.sqrt(x * x + y * y))
+        })
+      ),
+      type: 'surface' as const,
+      colorscale: 'Portland',
+    }
 
-  // Generate heatmap data
-  const heatmapData = {
-    z: Array.from({ length: 20 }, () =>
-      Array.from({ length: 20 }, () => Math.random() * 100)
-    ),
-    type: 'heatmap' as const,
-    colorscale: 'Hot',
-  }
+    const heatmapData = {
+      z: Array.from({ length: 20 }, () =>
+        Array.from({ length: 20 }, () => Math.random() * 100)
+      ),
+      type: 'heatmap' as const,
+      colorscale: 'Hot',
+    }
+
+    return { scatter3dData, surfaceData, heatmapData }
+  }, [dataVersion])
+
+  const { scatter3dData, surfaceData, heatmapData } = generateData()
 
   const getChartData = () => {
     switch (chartType) {
@@ -54,7 +59,7 @@ export function InteractiveChart() {
   }
 
   const refreshData = () => {
-    window.location.reload()
+    setDataVersion(v => v + 1)
   }
 
   return (

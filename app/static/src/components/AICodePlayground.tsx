@@ -55,8 +55,12 @@ export function AICodePlayground() {
         ).join(' '))
       }
 
-      // Execute code
-      const result = eval(code)
+      // Execute code in a safer way using Function constructor
+      // This is still not 100% safe but better than eval
+      // For production, use a sandboxed iframe or web worker
+      const executeCode = new Function(code + '\nreturn result;')
+      const result = executeCode()
+      
       console.log = originalLog
 
       // Display output
