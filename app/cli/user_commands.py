@@ -35,6 +35,17 @@ def create_user(full_name, email, password, admin):
 @users_cli.cli.command("init-admin")
 def initialize_admin_user():
     """Ensures the admin user exists by calling the user service."""
+    _create_admin_user_impl()
+
+
+@users_cli.cli.command("create-admin")
+def create_admin_user():
+    """Alias for init-admin. Ensures the admin user exists by calling the user service."""
+    _create_admin_user_impl()
+
+
+def _create_admin_user_impl():
+    """Shared implementation for admin user creation."""
     click.secho("--- Calling User Service to Ensure Admin Exists ---", fg="cyan")
     result = user_service.ensure_admin_user_exists()
 

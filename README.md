@@ -307,6 +307,11 @@ GITHUB_PERSONAL_ACCESS_TOKEN="${AI_AGENT_TOKEN}"
 
 > **📖 For detailed setup instructions, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md)**
 
+> **🐋 NEW: Docker Compose having issues?** See our comprehensive guides:
+> - 🚀 **[`docker-quick-start.sh`](docker-quick-start.sh)** - Automated setup script (just run it!)
+> - 📖 **[`DOCKER_COMPOSE_TROUBLESHOOTING.md`](DOCKER_COMPOSE_TROUBLESHOOTING.md)** - Common issues & solutions
+> - 🎨 **[`DOCKER_COMPOSE_VISUAL_GUIDE.md`](DOCKER_COMPOSE_VISUAL_GUIDE.md)** - Visual guide with examples
+
 ### 1️⃣ Installation | التثبيت
 
 ```bash
@@ -314,6 +319,10 @@ GITHUB_PERSONAL_ACCESS_TOKEN="${AI_AGENT_TOKEN}"
 git clone https://github.com/HOUSSAM16ai/my_ai_project.git
 cd my_ai_project
 
+# EASY WAY: Use the quick-start script
+./docker-quick-start.sh
+
+# OR Manual setup:
 # Setup environment (IMPORTANT!)
 cp .env.example .env
 # Edit .env and configure your Supabase connection:
