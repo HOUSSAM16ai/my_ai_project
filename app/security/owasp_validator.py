@@ -80,6 +80,48 @@ class OWASPValidator:
     - Logging
     """
 
+    # Configuration constants for context window sizes
+    _CONTEXT_BEFORE = 100  # Characters to include before match for context analysis
+    _CONTEXT_AFTER = 100   # Characters to include after match for context analysis
+    
+    # Safe patterns that indicate a match is not a real security issue
+    _SAFE_SECRET_PATTERNS = [
+        "class ",  # Enum or class definition
+        "Enum",
+        '= "api_key"',  # String literal representing a type, not actual key
+        '= "database_password"',
+        '= "jwt_secret"',
+        '= "webhook_secret"',
+        '= "encryption_key"',
+        '= "oauth_client_secret"',
+        '= "secret"',  # Enum value
+        "import secrets",  # Using secrets module
+        "secrets.token",
+        '["api_key"]',  # Dictionary access
+        "['api_key']",
+        '[\'api_key\']',
+        '["secret"]',
+        "['secret']",
+        '[\'secret\']',
+        "creds[",  # Reading from credentials
+        "credentials[",
+        ".api_key = creds",  # Setting from credentials
+        ".api_key=creds",
+        "_SENSITIVE_MARKERS",  # Tuple of markers for detection
+        "_MARKERS",
+    ]
+    
+    # Environment variable access patterns (safe - not hardcoded)
+    _ENV_VAR_PATTERNS = [
+        "os.environ",
+        "os.getenv",
+        "getenv(",
+        "environ.get",
+        "config.get",
+        "settings.",
+        "process.env",  # JavaScript
+    ]
+
     def __init__(self):
         self.issues: list[SecurityIssue] = []
 
@@ -108,6 +150,9 @@ class OWASPValidator:
             r"\.html\s*\(",  # jQuery HTML injection
             r"dangerouslySetInnerHTML",  # React XSS vector
         ]
+        
+        # Pattern to match hexdigest()[:n] which indicates ID generation, not password hashing
+        self._id_generation_pattern = r"hashlib\.(md5|sha1)\([^)]*\)\.hexdigest\(\)\[:?\d*\]"
 
     def validate_authentication_code(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
@@ -126,7 +171,7 @@ class OWASPValidator:
             if (
                 "usedforsecurity=False" not in code
                 and "usedforsecurity = False" not in code
-                and not re.search(r"hashlib\.(md5|sha1)\([^)]*\)\.hexdigest\(\)\[:?\d*\]", code)
+                and not re.search(self._id_generation_pattern, code)
             ):
                 issues.append(
                     SecurityIssue(
@@ -289,8 +334,8 @@ class OWASPValidator:
             matches = list(re.finditer(pattern, code))
             for match in matches:
                 # Get context around the match to check for usedforsecurity parameter
-                start = max(0, match.start() - 50)
-                end = min(len(code), match.end() + 100)
+                start = max(0, match.start() - self._CONTEXT_BEFORE)
+                end = min(len(code), match.end() + self._CONTEXT_AFTER)
                 context = code[start:end]
                 
                 # Skip if usedforsecurity=False is present
@@ -318,52 +363,14 @@ class OWASPValidator:
             matches = list(re.finditer(pattern, code, re.IGNORECASE))
             for match in matches:
                 # Get context to check for environment variable usage
-                start = max(0, match.start() - 100)
-                end = min(len(code), match.end() + 100)
+                start = max(0, match.start() - self._CONTEXT_BEFORE)
+                end = min(len(code), match.end() + self._CONTEXT_AFTER)
                 context = code[start:end]
-                
-                # Skip if it's using environment variables (multiple patterns)
-                env_patterns = [
-                    "os.environ",
-                    "os.getenv",
-                    "getenv(",
-                    "environ.get",
-                    "config.get",
-                    "settings.",
-                    "process.env",  # JavaScript
-                ]
-                
-                # Skip patterns that indicate it's not a real hardcoded secret
-                safe_patterns = [
-                    "class ",  # Enum or class definition
-                    "Enum",
-                    '= "api_key"',  # String literal representing a type, not actual key
-                    '= "database_password"',
-                    '= "jwt_secret"',
-                    '= "webhook_secret"',
-                    '= "encryption_key"',
-                    '= "oauth_client_secret"',
-                    '= "secret"',  # Enum value
-                    "import secrets",  # Using secrets module
-                    "secrets.token",
-                    '["api_key"]',  # Dictionary access
-                    "['api_key']",
-                    '[\'api_key\']',
-                    '["secret"]',
-                    "['secret']",
-                    '[\'secret\']',
-                    "creds[",  # Reading from credentials
-                    "credentials[",
-                    ".api_key = creds",  # Setting from credentials
-                    ".api_key=creds",
-                    "_SENSITIVE_MARKERS",  # Tuple of markers for detection
-                    "_MARKERS",
-                ]
                 
                 # Skip test files, environment variable usage, comments, or safe patterns
                 if (
-                    any(env_pat in context for env_pat in env_patterns)
-                    or any(safe_pat in context for safe_pat in safe_patterns)
+                    any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS)
+                    or any(safe_pat in context for safe_pat in self._SAFE_SECRET_PATTERNS)
                     or "test_" in file_path.lower()
                     or context.strip().startswith("#")
                     or context.strip().startswith("//")

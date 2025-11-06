@@ -442,6 +442,7 @@ class APIFirstPlatformService:
 
     def __init__(self):
         import os
+        import logging
         self.contract_registry = contract_registry
         self.idempotency_store = idempotency_store
         # Use environment variable or generate a random secret for development
@@ -449,6 +450,14 @@ class APIFirstPlatformService:
         if not webhook_secret:
             import secrets
             webhook_secret = secrets.token_urlsafe(32)
+            # Warn when using generated secret in production
+            if os.environ.get("FLASK_ENV") == "production":
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    "WEBHOOK_SECRET_KEY not set in production environment. "
+                    "Using generated secret which will change on restart. "
+                    "This may break webhook validation for existing webhooks."
+                )
         self.webhook_signer = WebhookSigner(secret=webhook_secret)
 
     # =========================================================================
