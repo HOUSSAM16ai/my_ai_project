@@ -55,6 +55,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: 🔍 Run OWASP Validator
+        env:
+          TESTING: "1"  # Prevent Flask app initialization during security scan
         run: |
           python -c "
           from app.security.owasp_validator import run_security_scan

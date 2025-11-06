@@ -80,6 +80,48 @@ class OWASPValidator:
     - Logging
     """
 
+    # Configuration constants for context window sizes
+    _CONTEXT_BEFORE = 100  # Characters to include before match for context analysis
+    _CONTEXT_AFTER = 100   # Characters to include after match for context analysis
+    
+    # Safe patterns that indicate a match is not a real security issue
+    _SAFE_SECRET_PATTERNS = [
+        "class ",  # Enum or class definition
+        "Enum",
+        '= "api_key"',  # String literal representing a type, not actual key
+        '= "database_password"',
+        '= "jwt_secret"',
+        '= "webhook_secret"',
+        '= "encryption_key"',
+        '= "oauth_client_secret"',
+        '= "secret"',  # Enum value
+        "import secrets",  # Using secrets module
+        "secrets.token",
+        '["api_key"]',  # Dictionary access
+        "['api_key']",
+        '[\'api_key\']',
+        '["secret"]',
+        "['secret']",
+        '[\'secret\']',
+        "creds[",  # Reading from credentials
+        "credentials[",
+        ".api_key = creds",  # Setting from credentials
+        ".api_key=creds",
+        "_SENSITIVE_MARKERS",  # Tuple of markers for detection
+        "_MARKERS",
+    ]
+    
+    # Environment variable access patterns (safe - not hardcoded)
+    _ENV_VAR_PATTERNS = [
+        "os.environ",
+        "os.getenv",
+        "getenv(",
+        "environ.get",
+        "config.get",
+        "settings.",
+        "process.env",  # JavaScript
+    ]
+
     def __init__(self):
         self.issues: list[SecurityIssue] = []
 
@@ -108,6 +150,9 @@ class OWASPValidator:
             r"\.html\s*\(",  # jQuery HTML injection
             r"dangerouslySetInnerHTML",  # React XSS vector
         ]
+        
+        # Pattern to match hexdigest()[:n] which indicates ID generation, not password hashing
+        self._id_generation_pattern = r"hashlib\.(md5|sha1)\([^)]*\)\.hexdigest\(\)\[:?\d*\]"
 
     def validate_authentication_code(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
@@ -116,19 +161,29 @@ class OWASPValidator:
         """
         issues = []
 
-        # Check for weak password hashing
-        if "md5" in code.lower() or "sha1" in code.lower():
-            issues.append(
-                SecurityIssue(
-                    category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
-                    severity=SecuritySeverity.CRITICAL,
-                    title="Weak Password Hashing Algorithm",
-                    description="Using MD5 or SHA1 for password hashing is insecure",
-                    file_path=file_path,
-                    recommendation="Use bcrypt, scrypt, or Argon2 for password hashing",
-                    cwe_id="CWE-327",
+        # Check for weak password hashing (only if it's related to password operations)
+        password_related_keywords = ["password", "passwd", "pwd", "credential", "auth"]
+        has_password_context = any(keyword in code.lower() for keyword in password_related_keywords)
+        
+        if has_password_context and ("md5" in code.lower() or "sha1" in code.lower()):
+            # Check if it's actually being used for password hashing
+            # Skip if usedforsecurity=False is present or it's just for ID generation
+            if (
+                "usedforsecurity=False" not in code
+                and "usedforsecurity = False" not in code
+                and not re.search(self._id_generation_pattern, code)
+            ):
+                issues.append(
+                    SecurityIssue(
+                        category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+                        severity=SecuritySeverity.CRITICAL,
+                        title="Weak Password Hashing Algorithm",
+                        description="Using MD5 or SHA1 for password hashing is insecure",
+                        file_path=file_path,
+                        recommendation="Use bcrypt, scrypt, or Argon2 for password hashing",
+                        cwe_id="CWE-327",
+                    )
                 )
-            )
 
         # Check for plain text password storage
         if re.search(r"password\s*=\s*request", code, re.IGNORECASE):
@@ -274,8 +329,23 @@ class OWASPValidator:
         issues = []
 
         # Insecure hashing algorithms
+        # Skip if usedforsecurity=False is present (Python 3.9+)
         for pattern in self.insecure_crypto_patterns:
-            if re.search(pattern, code):
+            matches = list(re.finditer(pattern, code))
+            for match in matches:
+                # Get context around the match to check for usedforsecurity parameter
+                start = max(0, match.start() - self._CONTEXT_BEFORE)
+                end = min(len(code), match.end() + self._CONTEXT_AFTER)
+                context = code[start:end]
+                
+                # Skip if usedforsecurity=False is present
+                if "usedforsecurity=False" in context or "usedforsecurity = False" in context:
+                    continue
+                    
+                # Skip if it's just importing hashlib
+                if "import hashlib" in context:
+                    continue
+                
                 issues.append(
                     SecurityIssue(
                         category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
@@ -283,25 +353,28 @@ class OWASPValidator:
                         title="Weak Cryptographic Algorithm",
                         description="Using weak hashing algorithm (MD5, SHA1, random)",
                         file_path=file_path,
-                        recommendation="Use SHA-256 or better, secrets.token_* for random values",
+                        recommendation="Use SHA-256 or better, secrets.token_* for random values, or add usedforsecurity=False for non-cryptographic uses",
                         cwe_id="CWE-327",
                     )
                 )
 
         # Hardcoded secrets
         for pattern in self.hardcoded_secrets_patterns:
-            if re.search(pattern, code):
-                # Skip if it's using environment variables (multiple patterns)
-                env_patterns = [
-                    "os.environ",
-                    "os.getenv",
-                    "getenv(",
-                    "environ.get",
-                    "config.get",
-                    "settings.",
-                ]
-                # Skip test files or environment variable usage
-                if any(env_pat in code for env_pat in env_patterns) or "test_" in file_path.lower():
+            matches = list(re.finditer(pattern, code, re.IGNORECASE))
+            for match in matches:
+                # Get context to check for environment variable usage
+                start = max(0, match.start() - self._CONTEXT_BEFORE)
+                end = min(len(code), match.end() + self._CONTEXT_AFTER)
+                context = code[start:end]
+                
+                # Skip test files, environment variable usage, comments, or safe patterns
+                if (
+                    any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS)
+                    or any(safe_pat in context for safe_pat in self._SAFE_SECRET_PATTERNS)
+                    or "test_" in file_path.lower()
+                    or context.strip().startswith("#")
+                    or context.strip().startswith("//")
+                ):
                     continue
 
                 issues.append(

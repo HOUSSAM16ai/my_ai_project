@@ -228,9 +228,10 @@ class DeveloperPortalService:
             description="Make a simple API request using Python",
             language=SDKLanguage.PYTHON,
             code="""import requests
+import os
 
-# Set your API key
-api_key = "your_api_key_here"
+# Set your API key from environment variable
+api_key = os.environ.get("COGNIFORGE_API_KEY")
 headers = {"Authorization": f"Bearer {api_key}"}
 
 # Make a request
@@ -255,8 +256,8 @@ print(data)""",
             language=SDKLanguage.JAVASCRIPT,
             code="""const axios = require('axios');
 
-// Set your API key
-const apiKey = 'your_api_key_here';
+// Set your API key from environment variable
+const apiKey = process.env.COGNIFORGE_API_KEY;
 
 // Make a request
 axios.get('https://api.cogniforge.ai/v1/users', {
@@ -665,7 +666,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             return [
                 {
                     "title": "Initialize Client",
-                    "code": 'client = CogniForgeClient(api_key="your_api_key")',
+                    "code": 'import os\nclient = CogniForgeClient(api_key=os.environ.get("COGNIFORGE_API_KEY"))',
                 },
                 {"title": "List Users", "code": "users = client.list_users(page=1, per_page=20)"},
                 {
@@ -677,7 +678,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             return [
                 {
                     "title": "Initialize Client",
-                    "code": 'const client = new CogniForgeClient("your_api_key");',
+                    "code": 'const client = new CogniForgeClient(process.env.COGNIFORGE_API_KEY);',
                 },
                 {"title": "List Users", "code": "const users = await client.listUsers(1, 20);"},
                 {
