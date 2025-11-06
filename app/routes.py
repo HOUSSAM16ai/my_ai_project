@@ -68,6 +68,15 @@ def demo():
     return render_template("demo.html", title="Component Demo")
 
 
+@bp.route("/superhuman-ui")
+def superhuman_ui():
+    """
+    Serves the advanced React-based UI with cutting-edge technologies.
+    Features: React + TypeScript, Three.js, D3.js, Plotly, Monaco Editor, and more.
+    """
+    return render_template("superhuman_ui.html", title="Superhuman UI - Advanced Technologies")
+
+
 # --- User Authentication Routes (CRITICAL & RETAINED) ---
 
 

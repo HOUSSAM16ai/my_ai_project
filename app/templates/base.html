@@ -53,6 +53,13 @@
                         <!-- === THE CRITICAL FIX: The Purged & Refocused Navbar === -->
                         <!-- ======================================================= -->
                         
+                        <!-- 🚀 NEW: Superhuman UI Link - Always visible -->
+                        <li class="nav-item">
+                            <a href="{{ url_for('main.superhuman_ui') }}" class="nav-link" style="color: #4fc3f7; font-weight: 600;">
+                                <i class="fas fa-rocket"></i> Superhuman UI
+                            </a>
+                        </li>
+                        
                         {% if current_user.is_authenticated %}
                             <!-- Links for an authenticated user -->
                             
