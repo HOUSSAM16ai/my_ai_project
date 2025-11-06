@@ -4,8 +4,9 @@
 ## ❌ الطريقة الخاطئة / WRONG WAY
 
 ```bash
-# خطأ: كلمة run في السطر الخطأ
-# Error: The word 'run' is on the wrong line
+# خطأ: كلمة run في السطر الخطأ والنص مختلط
+# Error: The word 'run' is on the wrong line and text is mixed up
+# THIS IS THE ACTUAL ERROR THE USER MADE - DO NOT COPY THIS!
 docker-compose run --rm \
 -e ADMIN_EMAIL="benmerahhoussam16@gmail.com" \
 -e ADMIdocker-compose run --rm web flask db upgradeN_PASSWORD="1111" \
@@ -16,6 +17,12 @@ web flask users init-admin
 ```
 no such service: run
 ```
+
+**لماذا حدث الخطأ؟ / Why did this error occur?**
+- النص مختلط ومكتوب بشكل غير صحيح
+- The text is mixed up and written incorrectly
+- `run` appears in the wrong line
+- Environment variables are malformed
 
 ---
 

@@ -212,9 +212,14 @@ if [[ "$START_NOW" =~ ^[Yy] ]]; then
     echo ""
     
     info "${BOLD}بيانات الدخول / Login credentials:${RESET}"
-    if grep -q "^ADMIN_EMAIL=" .env; then
-      ADMIN_EMAIL=$(grep "^ADMIN_EMAIL=" .env | cut -d'=' -f2-)
-      info "📧 Email: ${ADMIN_EMAIL}"
+    if grep -q "^ADMIN_EMAIL=" .env 2>/dev/null; then
+      ADMIN_EMAIL=$(grep "^ADMIN_EMAIL=" .env | cut -d'=' -f2- | tr -d '"' | head -c 50)
+      # Basic validation: check if it looks like an email
+      if [[ "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        info "📧 Email: ${ADMIN_EMAIL}"
+      else
+        info "📧 Email: (check your .env file - format may be invalid)"
+      fi
     else
       info "📧 Email: (check your .env file)"
     fi
