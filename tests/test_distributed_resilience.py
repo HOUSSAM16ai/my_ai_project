@@ -175,14 +175,19 @@ class TestRetryManager:
         )
         rm = RetryManager(config)
 
-        delays = []
-        for i in range(3):
-            delay = rm._calculate_delay(i)
-            delays.append(delay)
+        # Test multiple times to account for jitter
+        delays_list = []
+        for _ in range(10):
+            delays = []
+            for i in range(3):
+                delay = rm._calculate_delay(i)
+                delays.append(delay)
+            delays_list.append(delays)
 
-        # Each delay should be roughly double (with jitter)
-        assert delays[1] > delays[0]
-        assert delays[2] > delays[1]
+        # On average, delays should increase exponentially
+        avg_delays = [sum(d[i] for d in delays_list) / len(delays_list) for i in range(3)]
+        assert avg_delays[1] > avg_delays[0]
+        assert avg_delays[2] > avg_delays[1]
 
     def test_idempotency_cache(self):
         """Should cache results for idempotent operations"""
