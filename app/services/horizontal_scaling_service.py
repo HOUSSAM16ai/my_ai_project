@@ -568,6 +568,8 @@ class ChaosMonkey:
 
     def unleash_chaos(self):
         """إطلاق الفوضى! 🐒"""
+        import logging
+        
         if not self.is_enabled:
             return
 
@@ -583,7 +585,7 @@ class ChaosMonkey:
         if random.random() < self.chaos_level:
             target = random.choice(healthy_servers)
             target.state = ServerState.UNHEALTHY
-            print(f"🐒💥 Chaos Monkey struck! Server {target.server_id} is down!")
+            logging.warning(f"🐒💥 Chaos Monkey struck! Server {target.server_id} is down!")
 
     def enable_chaos(self, level: float = 0.01):
         """تفعيل Chaos Monkey"""

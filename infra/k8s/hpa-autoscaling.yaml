@@ -1,7 +1,9 @@
 # ======================================================================================
 # ==    KUBERNETES HPA (HORIZONTAL POD AUTOSCALER) - التوسع الأفقي التلقائي         ==
+# ==    Kubernetes HPA (Horizontal Pod Autoscaler) - Automatic Horizontal Scaling   ==
 # ======================================================================================
 # التوسع من 10 إلى 1000 بود تلقائياً حسب الحمل!
+# Auto-scale from 10 to 1000 pods based on load!
 
 ---
 # Main Application Deployment with Auto-Scaling

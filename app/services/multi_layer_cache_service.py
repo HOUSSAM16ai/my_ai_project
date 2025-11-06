@@ -149,6 +149,12 @@ class InMemoryCache:
         self.stats = CacheStats(layer=CacheLayer.APPLICATION)
         self._lock = threading.Lock()
 
+    def _delete_entry_internal(self, key: str, entry: CacheEntry):
+        """Internal deletion without lock acquisition"""
+        self.cache.pop(key, None)
+        self.stats.total_size_bytes -= entry.size_bytes
+        self.stats.total_deletes += 1
+
     def get(self, key: str) -> Any | None:
         """الحصول على قيمة من الذاكرة المؤقتة"""
         with self._lock:
@@ -161,9 +167,7 @@ class InMemoryCache:
             # فحص الصلاحية
             if entry.is_expired:
                 # Delete directly without calling self.delete() to avoid deadlock
-                self.cache.pop(key, None)
-                self.stats.total_size_bytes -= entry.size_bytes
-                self.stats.total_deletes += 1
+                self._delete_entry_internal(key, entry)
                 self.stats.total_misses += 1
                 return None
             
