@@ -41,8 +41,12 @@ echo "${BOLD}${CYAN}مرحبًا! هذا الدليل سيساعدك على تش
 echo "Welcome! This guide will help you run the application correctly"
 echo ""
 
-# Check if docker-compose is installed
-if ! command -v docker-compose >/dev/null 2>&1; then
+# Detect docker-compose command (v1 or v2)
+if command -v docker-compose >/dev/null 2>&1; then
+  DOCKER_COMPOSE="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+  DOCKER_COMPOSE="docker compose"
+else
   error "Docker Compose غير مثبت / Docker Compose is not installed!"
   info "Install it from: https://docs.docker.com/compose/install/"
   exit 1
@@ -56,6 +60,7 @@ if ! docker ps >/dev/null 2>&1; then
 fi
 
 success "Docker و Docker Compose جاهزان / Docker and Docker Compose are ready"
+info "Using: $DOCKER_COMPOSE"
 echo ""
 
 # ============================================================================
@@ -115,8 +120,8 @@ info "هذه الخطوة قد تستغرق بضع دقائق في المرة ا
 info "This step may take a few minutes the first time"
 echo ""
 
-cmd "docker-compose build"
-if docker-compose build; then
+cmd "$DOCKER_COMPOSE build"
+if $DOCKER_COMPOSE build; then
   success "تم البناء بنجاح / Build successful"
 else
   error "فشل البناء / Build failed"
@@ -134,8 +139,8 @@ info "هذا سيقوم بإنشاء الجداول في قاعدة البيان
 info "This will create database tables"
 echo ""
 
-cmd "docker-compose run --rm web flask db upgrade"
-if docker-compose run --rm web flask db upgrade; then
+cmd "$DOCKER_COMPOSE run --rm web flask db upgrade"
+if $DOCKER_COMPOSE run --rm web flask db upgrade; then
   success "الترحيلات نجحت / Migrations successful"
 else
   error "فشلت الترحيلات / Migrations failed"
@@ -157,11 +162,11 @@ echo ""
 
 # Show both commands (they do the same thing)
 info "${BOLD}الأوامر المتاحة / Available commands:${RESET}"
-cmd "docker-compose run --rm web flask users create-admin"
-cmd "docker-compose run --rm web flask users init-admin"
+cmd "$DOCKER_COMPOSE run --rm web flask users create-admin"
+cmd "$DOCKER_COMPOSE run --rm web flask users init-admin"
 echo ""
 
-if docker-compose run --rm web flask users create-admin; then
+if $DOCKER_COMPOSE run --rm web flask users create-admin; then
   success "تم إنشاء المشرف / Admin user created"
 else
   warn "قد يكون المشرف موجوداً مسبقاً / Admin might already exist"
@@ -182,8 +187,8 @@ if [ "$AUTO_MODE" = false ]; then
 fi
 
 if [[ "$START_NOW" =~ ^[Yy] ]]; then
-  cmd "docker-compose up -d"
-  if docker-compose up -d; then
+  cmd "$DOCKER_COMPOSE up -d"
+  if $DOCKER_COMPOSE up -d; then
     success "الخدمات تعمل الآن / Services are running"
     echo ""
     
@@ -192,7 +197,7 @@ if [[ "$START_NOW" =~ ^[Yy] ]]; then
     
     # Show service status
     info "${BOLD}حالة الخدمات / Service status:${RESET}"
-    docker-compose ps
+    $DOCKER_COMPOSE ps
     echo ""
     
     header "✅ التطبيق جاهز! / Application Ready!"
@@ -217,10 +222,10 @@ if [[ "$START_NOW" =~ ^[Yy] ]]; then
     echo ""
     
     info "${BOLD}أوامر مفيدة / Useful commands:${RESET}"
-    cmd "docker-compose logs -f              # عرض السجلات / View logs"
-    cmd "docker-compose ps                   # حالة الخدمات / Service status"
-    cmd "docker-compose stop                 # إيقاف الخدمات / Stop services"
-    cmd "docker-compose restart              # إعادة تشغيل / Restart services"
+    cmd "$DOCKER_COMPOSE logs -f              # عرض السجلات / View logs"
+    cmd "$DOCKER_COMPOSE ps                   # حالة الخدمات / Service status"
+    cmd "$DOCKER_COMPOSE stop                 # إيقاف الخدمات / Stop services"
+    cmd "$DOCKER_COMPOSE restart              # إعادة تشغيل / Restart services"
     echo ""
     
     # Ask about logs
@@ -233,7 +238,7 @@ if [[ "$START_NOW" =~ ^[Yy] ]]; then
         info "عرض السجلات المباشرة (Ctrl+C للخروج)"
         info "Showing live logs (Ctrl+C to exit)"
         sleep 1
-        docker-compose logs -f
+        $DOCKER_COMPOSE logs -f
       fi
     fi
   else
@@ -243,7 +248,7 @@ if [[ "$START_NOW" =~ ^[Yy] ]]; then
 else
   info "يمكنك تشغيل الخدمات لاحقاً بالأمر:"
   info "You can start services later with:"
-  cmd "docker-compose up -d"
+  cmd "$DOCKER_COMPOSE up -d"
 fi
 
 echo ""

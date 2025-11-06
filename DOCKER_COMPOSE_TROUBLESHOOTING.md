@@ -25,6 +25,8 @@ Use the correct command on one line or with proper backslash:
 ```bash
 # الطريقة الأولى: سطر واحد / Method 1: One line
 docker-compose run --rm web flask users create-admin
+# أو / or
+docker compose run --rm web flask users create-admin
 
 # الطريقة الثانية: عدة أسطر بشكل صحيح / Method 2: Multiple lines correctly
 docker-compose run --rm \
@@ -33,6 +35,11 @@ docker-compose run --rm \
   -e ADMIN_NAME="Houssam Benmerah" \
   web flask users create-admin
 ```
+
+**ملاحظة / Note:**
+- استخدم `docker-compose` (Docker Compose v1) أو `docker compose` (Docker Compose v2)
+- Use `docker-compose` (Docker Compose v1) or `docker compose` (Docker Compose v2)
+- كلاهما يعملان بنفس الطريقة / Both work the same way
 
 ---
 
