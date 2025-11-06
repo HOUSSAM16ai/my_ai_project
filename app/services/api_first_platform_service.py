@@ -441,9 +441,15 @@ class APIFirstPlatformService:
     """
 
     def __init__(self):
+        import os
         self.contract_registry = contract_registry
         self.idempotency_store = idempotency_store
-        self.webhook_signer = WebhookSigner(secret="your-webhook-secret-key")
+        # Use environment variable or generate a random secret for development
+        webhook_secret = os.environ.get("WEBHOOK_SECRET_KEY", "")
+        if not webhook_secret:
+            import secrets
+            webhook_secret = secrets.token_urlsafe(32)
+        self.webhook_signer = WebhookSigner(secret=webhook_secret)
 
     # =========================================================================
     # Contract Management
