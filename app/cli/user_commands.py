@@ -42,3 +42,15 @@ def initialize_admin_user():
         click.secho(result["message"], fg="green")
     else:
         click.secho(f"Error: {result['message']}", fg="red")
+
+
+@users_cli.cli.command("create-admin")
+def create_admin_user():
+    """Alias for init-admin. Ensures the admin user exists by calling the user service."""
+    click.secho("--- Calling User Service to Ensure Admin Exists ---", fg="cyan")
+    result = user_service.ensure_admin_user_exists()
+
+    if result["status"] == "success":
+        click.secho(result["message"], fg="green")
+    else:
+        click.secho(f"Error: {result['message']}", fg="red")
