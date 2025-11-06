@@ -148,8 +148,8 @@ class DeploymentConfig:
     config_id: str
     strategy: DeploymentStrategy
     service_name: str
-    old_version: ServiceVersion | None = None
     new_version: ServiceVersion
+    old_version: ServiceVersion | None = None
     canary_percentage_steps: list[float] = field(default_factory=lambda: [5, 10, 25, 50, 100])
     rollout_duration_minutes: int = 30
     health_checks: list[HealthCheck] = field(default_factory=list)
@@ -165,8 +165,8 @@ class DeploymentStatus:
     deployment_id: str
     config: DeploymentConfig
     phase: DeploymentPhase
-    traffic_split: TrafficSplit | None = None
     circuit_breaker: CircuitBreaker
+    traffic_split: TrafficSplit | None = None
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
     error_rate_old: float = 0.0
