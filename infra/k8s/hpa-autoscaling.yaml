@@ -1,0 +1,282 @@
+# ======================================================================================
+# ==    KUBERNETES HPA (HORIZONTAL POD AUTOSCALER) - التوسع الأفقي التلقائي         ==
+# ==    Kubernetes HPA (Horizontal Pod Autoscaler) - Automatic Horizontal Scaling   ==
+# ======================================================================================
+# التوسع من 10 إلى 1000 بود تلقائياً حسب الحمل!
+# Auto-scale from 10 to 1000 pods based on load!
+
+---
+# Main Application Deployment with Auto-Scaling
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cogniforge-api
+  namespace: production
+  labels:
+    app: cogniforge
+    component: api
+    tier: backend
+spec:
+  replicas: 10  # Initial replicas - HPA will adjust
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0  # Zero downtime!
+  selector:
+    matchLabels:
+      app: cogniforge
+      component: api
+  template:
+    metadata:
+      labels:
+        app: cogniforge
+        component: api
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Anti-affinity - distribute pods across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - cogniforge
+                topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: api
+          image: ghcr.io/houssam16ai/cogniforge-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
+              protocol: TCP
+          
+          # Resource requests & limits for HPA
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          
+          # Liveness probe - restart if unhealthy
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Readiness probe - remove from load balancer if not ready
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          
+          # Environment variables
+          env:
+            - name: FLASK_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cogniforge-secrets
+                  key: database-url
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cogniforge-secrets
+                  key: openrouter-api-key
+            - name: REDIS_URL
+              value: "redis://redis-cluster:6379"
+            - name: KAFKA_BROKERS
+              value: "cogniforge-kafka-bootstrap:9092"
+
+---
+# Horizontal Pod Autoscaler - SUPERHUMAN!
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cogniforge-api-hpa
+  namespace: production
+  labels:
+    app: cogniforge
+    component: api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cogniforge-api
+  
+  # Scale from 10 to 1000 pods!
+  minReplicas: 10
+  maxReplicas: 1000
+  
+  # Scaling behavior
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 min before scale down
+      policies:
+        - type: Percent
+          value: 10  # Scale down max 10% at a time
+          periodSeconds: 60
+        - type: Pods
+          value: 5   # Or max 5 pods at a time
+          periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Scale up immediately!
+      policies:
+        - type: Percent
+          value: 50  # Scale up 50% at a time
+          periodSeconds: 15
+        - type: Pods
+          value: 10  # Or add 10 pods at a time
+          periodSeconds: 15
+      selectPolicy: Max
+  
+  # Metrics to scale on
+  metrics:
+    # CPU utilization
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70  # Target 70% CPU
+    
+    # Memory utilization
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75  # Target 75% memory
+    
+    # Custom metrics - requests per second
+    - type: Pods
+      pods:
+        metric:
+          name: http_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "1000"  # 1000 RPS per pod
+
+---
+# Vertical Pod Autoscaler (VPA) - Optional
+# Automatically adjusts CPU/memory requests
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: cogniforge-api-vpa
+  namespace: production
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cogniforge-api
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: api
+        minAllowed:
+          cpu: "100m"
+          memory: "128Mi"
+        maxAllowed:
+          cpu: "4000m"
+          memory: "4Gi"
+
+---
+# Service for load balancing
+apiVersion: v1
+kind: Service
+metadata:
+  name: cogniforge-api
+  namespace: production
+  labels:
+    app: cogniforge
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: cogniforge
+    component: api
+  ports:
+    - port: 80
+      targetPort: 5000
+      protocol: TCP
+      name: http
+  sessionAffinity: None  # Stateless!
+
+---
+# PodDisruptionBudget - Ensure availability during disruptions
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cogniforge-api-pdb
+  namespace: production
+spec:
+  minAvailable: 5  # Always keep at least 5 pods running
+  selector:
+    matchLabels:
+      app: cogniforge
+      component: api
+
+---
+# Cluster Autoscaler ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    # Cluster Autoscaler Configuration
+    cloud-provider: aws  # or gcp, azure
+    nodes:
+      min: 3
+      max: 100
+    scale-down-enabled: true
+    scale-down-delay-after-add: 10m
+    scale-down-unneeded-time: 10m
+    skip-nodes-with-local-storage: false
+    skip-nodes-with-system-pods: false
+    balance-similar-node-groups: true
+    expander: least-waste
+
+---
+# ServiceMonitor for Prometheus metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cogniforge-api
+  namespace: production
+  labels:
+    app: cogniforge
+spec:
+  selector:
+    matchLabels:
+      app: cogniforge
+      component: api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

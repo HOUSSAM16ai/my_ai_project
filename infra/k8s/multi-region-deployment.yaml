@@ -1,0 +1,362 @@
+# ======================================================================================
+# ==    MULTI-REGION DEPLOYMENT - التوزيع الجغرافي العالمي                           ==
+# ======================================================================================
+# Active-Active deployment across US, Europe, and Asia!
+
+---
+# Global Traffic Manager (GTM) Configuration
+# This would be implemented using Cloud DNS, Route53, or similar
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-traffic-manager
+  namespace: infrastructure
+data:
+  gtm-config.yaml: |
+    # Global Traffic Manager Configuration
+    primary_region: us-east
+    regions:
+      - name: us-east
+        location: Virginia, USA
+        endpoint: api-us-east.cogniforge.io
+        weight: 40
+        health_check_url: https://api-us-east.cogniforge.io/health
+        failover_priority: 1
+      
+      - name: us-west
+        location: California, USA
+        endpoint: api-us-west.cogniforge.io
+        weight: 30
+        health_check_url: https://api-us-west.cogniforge.io/health
+        failover_priority: 2
+      
+      - name: europe
+        location: Frankfurt, Germany
+        endpoint: api-eu.cogniforge.io
+        weight: 20
+        health_check_url: https://api-eu.cogniforge.io/health
+        failover_priority: 3
+      
+      - name: asia
+        location: Tokyo, Japan
+        endpoint: api-asia.cogniforge.io
+        weight: 10
+        health_check_url: https://api-asia.cogniforge.io/health
+        failover_priority: 4
+    
+    routing_policy: geolocation
+    failover_enabled: true
+    health_check_interval: 30s
+    ttl: 60
+
+---
+# US-East Region Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cogniforge-api-us-east
+  namespace: production
+  labels:
+    app: cogniforge
+    region: us-east
+    zone: us-east-1a
+spec:
+  replicas: 50  # Heavy traffic region
+  selector:
+    matchLabels:
+      app: cogniforge
+      region: us-east
+  template:
+    metadata:
+      labels:
+        app: cogniforge
+        region: us-east
+    spec:
+      nodeSelector:
+        region: us-east
+        zone: us-east-1a
+      containers:
+        - name: api
+          image: ghcr.io/houssam16ai/cogniforge-api:latest
+          env:
+            - name: REGION
+              value: "us-east"
+            - name: DATABASE_SHARD
+              value: "us-east-shard"
+            - name: REDIS_CLUSTER
+              value: "redis-us-east:6379"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+---
+# Europe Region Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cogniforge-api-europe
+  namespace: production
+  labels:
+    app: cogniforge
+    region: europe
+    zone: eu-central-1a
+spec:
+  replicas: 30  # Medium traffic
+  selector:
+    matchLabels:
+      app: cogniforge
+      region: europe
+  template:
+    metadata:
+      labels:
+        app: cogniforge
+        region: europe
+    spec:
+      nodeSelector:
+        region: europe
+        zone: eu-central-1a
+      containers:
+        - name: api
+          image: ghcr.io/houssam16ai/cogniforge-api:latest
+          env:
+            - name: REGION
+              value: "europe"
+            - name: DATABASE_SHARD
+              value: "europe-shard"
+            - name: REDIS_CLUSTER
+              value: "redis-europe:6379"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+---
+# Asia Region Deployment  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cogniforge-api-asia
+  namespace: production
+  labels:
+    app: cogniforge
+    region: asia
+    zone: ap-northeast-1a
+spec:
+  replicas: 20  # Growing traffic
+  selector:
+    matchLabels:
+      app: cogniforge
+      region: asia
+  template:
+    metadata:
+      labels:
+        app: cogniforge
+        region: asia
+    spec:
+      nodeSelector:
+        region: asia
+        zone: ap-northeast-1a
+      containers:
+        - name: api
+          image: ghcr.io/houssam16ai/cogniforge-api:latest
+          env:
+            - name: REGION
+              value: "asia"
+            - name: DATABASE_SHARD
+              value: "asia-shard"
+            - name: REDIS_CLUSTER
+              value: "redis-asia:6379"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+---
+# Database Replication Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multi-region-db-config
+  namespace: infrastructure
+data:
+  replication-config.yaml: |
+    # Multi-Master Database Replication
+    replication_mode: multi-master
+    
+    masters:
+      - name: us-east-master
+        connection: postgresql://us-east-db.cogniforge.io:5432/cogniforge
+        region: us-east
+        replicas:
+          - postgresql://us-east-db-replica-1.cogniforge.io:5432/cogniforge
+          - postgresql://us-east-db-replica-2.cogniforge.io:5432/cogniforge
+          - postgresql://us-east-db-replica-3.cogniforge.io:5432/cogniforge
+      
+      - name: europe-master
+        connection: postgresql://europe-db.cogniforge.io:5432/cogniforge
+        region: europe
+        replicas:
+          - postgresql://europe-db-replica-1.cogniforge.io:5432/cogniforge
+          - postgresql://europe-db-replica-2.cogniforge.io:5432/cogniforge
+          - postgresql://europe-db-replica-3.cogniforge.io:5432/cogniforge
+      
+      - name: asia-master
+        connection: postgresql://asia-db.cogniforge.io:5432/cogniforge
+        region: asia
+        replicas:
+          - postgresql://asia-db-replica-1.cogniforge.io:5432/cogniforge
+          - postgresql://asia-db-replica-2.cogniforge.io:5432/cogniforge
+          - postgresql://asia-db-replica-3.cogniforge.io:5432/cogniforge
+    
+    # Cross-region replication
+    cross_region_sync:
+      enabled: true
+      sync_interval: 5s
+      conflict_resolution: last-write-wins
+      async: true
+
+---
+# Redis Cluster per Region
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-us-east
+  namespace: infrastructure
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+    region: us-east
+  ports:
+    - port: 6379
+      name: redis
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster-us-east
+  namespace: infrastructure
+spec:
+  serviceName: redis-cluster-us-east
+  replicas: 6  # 3 masters + 3 replicas
+  selector:
+    matchLabels:
+      app: redis
+      region: us-east
+  template:
+    metadata:
+      labels:
+        app: redis
+        region: us-east
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis
+          command:
+            - redis-server
+            - --cluster-enabled
+            - "yes"
+            - --cluster-config-file
+            - /data/nodes.conf
+            - --cluster-node-timeout
+            - "5000"
+            - --appendonly
+            - "yes"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+# Ingress with GeoDNS routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cogniforge-global
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # GeoDNS annotations (varies by cloud provider)
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  tls:
+    - hosts:
+        - api.cogniforge.io
+        - api-us-east.cogniforge.io
+        - api-us-west.cogniforge.io
+        - api-eu.cogniforge.io
+        - api-asia.cogniforge.io
+      secretName: cogniforge-tls
+  rules:
+    - host: api.cogniforge.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cogniforge-api
+                port:
+                  number: 80
+
+---
+# Network Policy - Allow cross-region communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cross-region
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: cogniforge
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cogniforge
+        - namespaceSelector:
+            matchLabels:
+              name: production
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: cogniforge
+    - to:  # Allow database access
+        - namespaceSelector:
+            matchLabels:
+              name: infrastructure
+    - to:  # Allow external API calls
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
