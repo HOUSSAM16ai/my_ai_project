@@ -678,7 +678,7 @@ func (c *Client) GetUser(userID int) (map[string]interface{}, error) {
             return [
                 {
                     "title": "Initialize Client",
-                    "code": 'const client = new CogniForgeClient(process.env.COGNIFORGE_API_KEY);',
+                    "code": "const client = new CogniForgeClient(process.env.COGNIFORGE_API_KEY);",
                 },
                 {"title": "List Users", "code": "const users = await client.listUsers(1, 20);"},
                 {
