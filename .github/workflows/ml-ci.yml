@@ -35,7 +35,7 @@ jobs:
         run: |
           pip install -U pip setuptools wheel
           pip install -r requirements.txt
-          pip install great-expectations ruff black mypy pytest pytest-cov
+          pip install great-expectations ruff==0.6.9 black==24.10.0 mypy pytest pytest-cov
 
       - name: Lint with Ruff
         run: |
@@ -44,7 +44,7 @@ jobs:
 
       - name: Format Check with Black
         run: |
-          black --check . || true
+          black --check --diff --color app/ tests/ || true
         continue-on-error: true
 
       - name: Type Check with MyPy

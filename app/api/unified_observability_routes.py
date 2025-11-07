@@ -137,8 +137,8 @@ def get_slow_traces():
     - limit: Maximum number of results (default: 50)
     """
     try:
-        threshold = request.args.get("threshold_ms", 100, type=float)
-        limit = request.args.get("limit", 50, type=int)
+        threshold = float(request.args.get("threshold_ms", "100"))
+        limit = int(request.args.get("limit", "50"))
 
         obs = get_unified_observability()
         traces = obs.find_traces_by_criteria(min_duration_ms=threshold, limit=limit)

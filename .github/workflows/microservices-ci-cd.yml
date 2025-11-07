@@ -37,13 +37,13 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff black mypy bandit safety
+          pip install ruff==0.6.9 black==24.10.0 mypy bandit safety
 
       - name: Run Ruff (Fast Linter)
         run: ruff check . --output-format=github
 
       - name: Run Black (Formatter Check)
-        run: black --check .
+        run: black --check --diff --color app/ tests/
 
       - name: Run MyPy (Type Checking)
         run: mypy app/ --ignore-missing-imports --no-strict-optional
@@ -128,7 +128,7 @@ jobs:
 
       - name: Install Pact
         run: |
-          pip install pact-python pytest
+          pip install pact-python pytest pytest-timeout
 
       - name: Run Contract Tests
         run: |
@@ -222,7 +222,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha,format=short,prefix=sha-
 
       - name: Build Docker Image
         if: steps.check_dir.outputs.exists == 'true'
