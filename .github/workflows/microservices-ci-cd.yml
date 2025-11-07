@@ -222,7 +222,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha,format=short,prefix=sha-
 
       - name: Build Docker Image
         if: steps.check_dir.outputs.exists == 'true'

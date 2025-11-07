@@ -163,6 +163,7 @@ filterwarnings = [
 [tool.coverage.run]
 branch = true
 source = ["app"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/migrations/*",
