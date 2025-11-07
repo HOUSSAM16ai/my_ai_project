@@ -32,6 +32,7 @@ from typing import Any, Callable
 
 class LoadBalancingAlgorithm(Enum):
     """خوارزميات توزيع الحمل"""
+
     ROUND_ROBIN = "round_robin"
     LEAST_CONNECTIONS = "least_connections"
     WEIGHTED_ROUND_ROBIN = "weighted_round_robin"
@@ -43,6 +44,7 @@ class LoadBalancingAlgorithm(Enum):
 
 class ServerState(Enum):
     """حالة الخادم"""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -52,15 +54,17 @@ class ServerState(Enum):
 
 class ScalingEvent(Enum):
     """أحداث التوسع"""
+
     SCALE_UP = "scale_up"
     SCALE_DOWN = "scale_down"
     SCALE_OUT = "scale_out"  # إضافة خوادم
-    SCALE_IN = "scale_in"    # إزالة خوادم
+    SCALE_IN = "scale_in"  # إزالة خوادم
     NO_ACTION = "no_action"
 
 
 class RegionZone(Enum):
     """المناطق الجغرافية"""
+
     US_EAST = "us-east"
     US_WEST = "us-west"
     EUROPE = "europe"
@@ -78,6 +82,7 @@ class RegionZone(Enum):
 @dataclass
 class Server:
     """خادم في الكلاستر"""
+
     server_id: str
     name: str
     ip_address: str
@@ -98,10 +103,7 @@ class Server:
     @property
     def is_available(self) -> bool:
         """هل الخادم متاح لقبول طلبات جديدة؟"""
-        return (
-            self.state == ServerState.HEALTHY
-            and self.active_connections < self.max_connections
-        )
+        return self.state == ServerState.HEALTHY and self.active_connections < self.max_connections
 
     @property
     def load_factor(self) -> float:
@@ -114,6 +116,7 @@ class Server:
 @dataclass
 class LoadBalancer:
     """موزع الحمل"""
+
     lb_id: str
     name: str
     algorithm: LoadBalancingAlgorithm
@@ -155,6 +158,7 @@ class LoadBalancer:
 @dataclass
 class ScalingMetrics:
     """مقاييس التوسع"""
+
     timestamp: datetime
     total_servers: int
     active_servers: int
@@ -169,6 +173,7 @@ class ScalingMetrics:
 @dataclass
 class ConsistentHashNode:
     """عقدة في الـ Consistent Hash Ring"""
+
     hash_value: int
     server_id: str
     is_virtual: bool = False
@@ -182,7 +187,7 @@ class ConsistentHashNode:
 class HorizontalScalingOrchestrator:
     """
     المنسق الرئيسي للتحجيم الأفقي
-    
+
     المسؤوليات:
     - إدارة موزعات الحمل المتعددة
     - التوسع التلقائي الذكي
@@ -249,7 +254,7 @@ class HorizontalScalingOrchestrator:
     ) -> Server | None:
         """
         توجيه الطلب إلى الخادم المناسب
-        
+
         Args:
             lb_id: معرف موزع الحمل
             request_key: مفتاح للـ Consistent Hashing
@@ -279,7 +284,7 @@ class HorizontalScalingOrchestrator:
             return self._geographic_routing(available_servers, client_region)
         elif lb.algorithm == LoadBalancingAlgorithm.INTELLIGENT_AI:
             return self._intelligent_routing(available_servers)
-        
+
         return available_servers[0] if available_servers else None
 
     def _round_robin(self, lb: LoadBalancer, servers: list[Server]) -> Server:
@@ -292,9 +297,7 @@ class HorizontalScalingOrchestrator:
         """خوارزمية Least Connections - اختيار الخادم بأقل اتصالات"""
         return min(servers, key=lambda s: s.active_connections)
 
-    def _weighted_round_robin(
-        self, lb: LoadBalancer, servers: list[Server]
-    ) -> Server:
+    def _weighted_round_robin(self, lb: LoadBalancer, servers: list[Server]) -> Server:
         """خوارزمية Weighted Round Robin"""
         # حساب الأوزان التراكمية
         total_weight = sum(s.weight for s in servers)
@@ -317,7 +320,7 @@ class HorizontalScalingOrchestrator:
     def _consistent_hash(self, lb: LoadBalancer, key: str) -> Server | None:
         """
         خوارزمية Consistent Hashing
-        
+
         الفوائد:
         - عند إضافة/إزالة خادم → إعادة توزيع 1/N فقط من البيانات
         - وليس كل البيانات!
@@ -327,14 +330,14 @@ class HorizontalScalingOrchestrator:
 
         # حساب الـ Hash للمفتاح
         key_hash = int(hashlib.md5(key.encode()).hexdigest(), 16)
-        
+
         # البحث في الـ Ring
         sorted_hashes = sorted(lb.hash_ring.keys())
         for hash_val in sorted_hashes:
             if hash_val >= key_hash:
                 server_id = lb.hash_ring[hash_val]
                 return self.servers.get(server_id)
-        
+
         # إذا لم نجد، نعود للبداية (الـ Ring دائري)
         first_hash = sorted_hashes[0]
         server_id = lb.hash_ring[first_hash]
@@ -349,20 +352,21 @@ class HorizontalScalingOrchestrator:
             region_servers = [s for s in servers if s.region == client_region]
             if region_servers:
                 return min(region_servers, key=lambda s: s.active_connections)
-        
+
         # إذا لم نجد، نختار أي خادم متاح
         return min(servers, key=lambda s: s.active_connections)
 
     def _intelligent_routing(self, servers: list[Server]) -> Server:
         """
         توجيه ذكي بالذكاء الاصطناعي
-        
+
         يأخذ في الاعتبار:
         - الاتصالات النشطة
         - استخدام CPU/Memory
         - زمن الاستجابة
         - معدل الأخطاء
         """
+
         def score_server(s: Server) -> float:
             # نموذج تقييم متعدد العوامل
             connection_score = 1.0 - (s.active_connections / s.max_connections)
@@ -370,7 +374,7 @@ class HorizontalScalingOrchestrator:
             memory_score = 1.0 - (s.memory_usage / 100.0)
             latency_score = max(0, 1.0 - (s.avg_latency_ms / 1000.0))
             error_score = 1.0 - (s.total_errors / max(s.total_requests, 1))
-            
+
             # الأوزان
             weights = {
                 "connections": 0.3,
@@ -379,15 +383,15 @@ class HorizontalScalingOrchestrator:
                 "latency": 0.2,
                 "errors": 0.1,
             }
-            
+
             total_score = (
-                weights["connections"] * connection_score +
-                weights["cpu"] * cpu_score +
-                weights["memory"] * memory_score +
-                weights["latency"] * latency_score +
-                weights["errors"] * error_score
+                weights["connections"] * connection_score
+                + weights["cpu"] * cpu_score
+                + weights["memory"] * memory_score
+                + weights["latency"] * latency_score
+                + weights["errors"] * error_score
             )
-            
+
             return total_score
 
         # اختيار الخادم بأعلى تقييم
@@ -396,7 +400,7 @@ class HorizontalScalingOrchestrator:
     def analyze_scaling_needs(self) -> ScalingEvent:
         """
         تحليل الحاجة للتوسع
-        
+
         Returns:
             قرار التوسع (SCALE_UP, SCALE_DOWN, NO_ACTION)
         """
@@ -405,17 +409,18 @@ class HorizontalScalingOrchestrator:
 
         # حساب المتوسطات
         active_servers = [
-            s for s in self.servers.values()
+            s
+            for s in self.servers.values()
             if s.state in (ServerState.HEALTHY, ServerState.DEGRADED)
         ]
-        
+
         if not active_servers:
             return ScalingEvent.NO_ACTION
 
         avg_cpu = sum(s.cpu_usage for s in active_servers) / len(active_servers)
         avg_memory = sum(s.memory_usage for s in active_servers) / len(active_servers)
         avg_latency = sum(s.avg_latency_ms for s in active_servers) / len(active_servers)
-        
+
         # فحص Cooldown Period
         if self.last_scaling_event:
             elapsed = (datetime.now(UTC) - self.last_scaling_event).total_seconds()
@@ -425,31 +430,35 @@ class HorizontalScalingOrchestrator:
         # قرار التوسع
         scale_up_threshold = self.scaling_policy["scale_up_threshold"]
         scale_down_threshold = self.scaling_policy["scale_down_threshold"]
-        
-        if (avg_cpu > scale_up_threshold or 
-            avg_memory > scale_up_threshold or
-            avg_latency > self.scaling_policy["target_latency_ms"] * 2):
+
+        if (
+            avg_cpu > scale_up_threshold
+            or avg_memory > scale_up_threshold
+            or avg_latency > self.scaling_policy["target_latency_ms"] * 2
+        ):
             return ScalingEvent.SCALE_OUT
-        elif (avg_cpu < scale_down_threshold and 
-              avg_memory < scale_down_threshold and
-              len(active_servers) > self.scaling_policy["min_servers"]):
+        elif (
+            avg_cpu < scale_down_threshold
+            and avg_memory < scale_down_threshold
+            and len(active_servers) > self.scaling_policy["min_servers"]
+        ):
             return ScalingEvent.SCALE_IN
-        
+
         return ScalingEvent.NO_ACTION
 
     def execute_scaling(self, event: ScalingEvent, count: int = 1) -> list[Server]:
         """
         تنفيذ عملية التوسع
-        
+
         Args:
             event: نوع التوسع
             count: عدد الخوادم للإضافة/الإزالة
-            
+
         Returns:
             قائمة الخوادم المضافة/المزالة
         """
         servers_affected = []
-        
+
         if event == ScalingEvent.SCALE_OUT:
             # إضافة خوادم جديدة
             for i in range(count):
@@ -462,34 +471,31 @@ class HorizontalScalingOrchestrator:
                     region=random.choice(list(RegionZone)),
                 )
                 servers_affected.append(server)
-                
+
                 # إضافة للـ Load Balancers
                 for lb in self.load_balancers.values():
                     lb.add_server(server)
-        
+
         elif event == ScalingEvent.SCALE_IN:
             # إزالة خوادم (اختيار الأقل استخداماً)
-            servers_sorted = sorted(
-                self.servers.values(),
-                key=lambda s: s.active_connections
-            )
+            servers_sorted = sorted(self.servers.values(), key=lambda s: s.active_connections)
             for i in range(min(count, len(servers_sorted))):
                 server = servers_sorted[i]
                 if server.active_connections == 0:  # فقط الخوادم الخالية
                     server.state = ServerState.DRAINING
                     servers_affected.append(server)
-                    
+
                     # إزالة من Load Balancers
                     for lb in self.load_balancers.values():
                         lb.remove_server(server.server_id)
-        
+
         self.last_scaling_event = datetime.now(UTC)
         return servers_affected
 
     def health_check_all_servers(self) -> dict[str, bool]:
         """
         فحص صحة جميع الخوادم
-        
+
         Returns:
             قاموس {server_id: is_healthy}
         """
@@ -497,23 +503,23 @@ class HorizontalScalingOrchestrator:
         for server_id, server in self.servers.items():
             # محاكاة فحص الصحة (في الواقع، نرسل HTTP request)
             is_healthy = self._simulate_health_check(server)
-            
+
             # تحديث حالة الخادم
             if is_healthy:
                 if server.state != ServerState.HEALTHY:
                     server.state = ServerState.HEALTHY
             else:
                 server.state = ServerState.UNHEALTHY
-            
+
             server.last_health_check = datetime.now(UTC)
             results[server_id] = is_healthy
-        
+
         return results
 
     def _simulate_health_check(self, server: Server) -> bool:
         """
         محاكاة فحص الصحة
-        
+
         في الإنتاج، هذه ستكون HTTP request إلى /health endpoint
         """
         # محاكاة: 95% نجاح
@@ -522,10 +528,11 @@ class HorizontalScalingOrchestrator:
     def get_cluster_stats(self) -> dict[str, Any]:
         """الحصول على إحصائيات الكلاستر"""
         active_servers = [
-            s for s in self.servers.values()
+            s
+            for s in self.servers.values()
             if s.state in (ServerState.HEALTHY, ServerState.DEGRADED)
         ]
-        
+
         if not active_servers:
             return {
                 "total_servers": len(self.servers),
@@ -536,7 +543,7 @@ class HorizontalScalingOrchestrator:
                 "total_connections": 0,
                 "total_requests": 0,
             }
-        
+
         return {
             "total_servers": len(self.servers),
             "active_servers": len(active_servers),
@@ -557,7 +564,7 @@ class HorizontalScalingOrchestrator:
 class ChaosMonkey:
     """
     Chaos Monkey - نيتفليكس تفعله، ونحن أيضاً! 🐒💥
-    
+
     اختبار مقاومة النظام بإيقاف خوادم عشوائية
     """
 
@@ -569,15 +576,14 @@ class ChaosMonkey:
     def unleash_chaos(self):
         """إطلاق الفوضى! 🐒"""
         import logging
-        
+
         if not self.is_enabled:
             return
 
         healthy_servers = [
-            s for s in self.orchestrator.servers.values()
-            if s.state == ServerState.HEALTHY
+            s for s in self.orchestrator.servers.values() if s.state == ServerState.HEALTHY
         ]
-        
+
         if not healthy_servers:
             return
 

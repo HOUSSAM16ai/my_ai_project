@@ -446,7 +446,9 @@ class UnifiedObservabilityService:
 
             del self.active_spans[span_id]
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None):
+    def add_span_event(
+        self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None
+    ):
         """Add event to span (like a log entry)"""
         with self.lock:
             if span_id in self.active_spans:
@@ -500,7 +502,9 @@ class UnifiedObservabilityService:
             if trace_id:
                 self.trace_metrics[trace_id].append(sample)
 
-    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None):
+    def increment_counter(
+        self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None
+    ):
         """Increment a counter"""
         key = self._metric_key(name, labels)
         with self.lock:
@@ -596,24 +600,28 @@ class UnifiedObservabilityService:
         logs = []
         with self.lock:
             for log in self.trace_logs.get(trace_id, []):
-                logs.append({
-                    "timestamp": datetime.fromtimestamp(log.timestamp, UTC).isoformat(),
-                    "level": log.level,
-                    "message": log.message,
-                    "span_id": log.span_id,
-                    "context": log.context,
-                    "exception": log.exception,
-                })
+                logs.append(
+                    {
+                        "timestamp": datetime.fromtimestamp(log.timestamp, UTC).isoformat(),
+                        "level": log.level,
+                        "message": log.message,
+                        "span_id": log.span_id,
+                        "context": log.context,
+                        "exception": log.exception,
+                    }
+                )
 
         # Get correlated metrics
         metrics = []
         with self.lock:
             for metric in self.trace_metrics.get(trace_id, []):
-                metrics.append({
-                    "value": metric.value,
-                    "timestamp": datetime.fromtimestamp(metric.timestamp, UTC).isoformat(),
-                    "labels": metric.labels,
-                })
+                metrics.append(
+                    {
+                        "value": metric.value,
+                        "timestamp": datetime.fromtimestamp(metric.timestamp, UTC).isoformat(),
+                        "labels": metric.labels,
+                    }
+                )
 
         # Build response
         return {
@@ -659,14 +667,16 @@ class UnifiedObservabilityService:
             if operation_name and trace.root_span.operation_name != operation_name:
                 continue
 
-            results.append({
-                "trace_id": trace.trace_id,
-                "operation": trace.root_span.operation_name,
-                "duration_ms": trace.total_duration_ms,
-                "error_count": trace.error_count,
-                "span_count": len(trace.spans),
-                "start_time": datetime.fromtimestamp(trace.start_time, UTC).isoformat(),
-            })
+            results.append(
+                {
+                    "trace_id": trace.trace_id,
+                    "operation": trace.root_span.operation_name,
+                    "duration_ms": trace.total_duration_ms,
+                    "error_count": trace.error_count,
+                    "span_count": len(trace.spans),
+                    "start_time": datetime.fromtimestamp(trace.start_time, UTC).isoformat(),
+                }
+            )
 
         return results
 

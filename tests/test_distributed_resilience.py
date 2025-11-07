@@ -106,9 +106,7 @@ class TestCircuitBreaker:
 
     def test_circuit_closes_after_success_in_half_open(self):
         """Circuit should close after success threshold in HALF_OPEN"""
-        config = CircuitBreakerConfig(
-            failure_threshold=1, success_threshold=2, timeout_seconds=1
-        )
+        config = CircuitBreakerConfig(failure_threshold=1, success_threshold=2, timeout_seconds=1)
         cb = CircuitBreaker("test", config)
 
         def failing_func():

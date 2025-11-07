@@ -443,12 +443,14 @@ class APIFirstPlatformService:
     def __init__(self):
         import os
         import logging
+
         self.contract_registry = contract_registry
         self.idempotency_store = idempotency_store
         # Use environment variable or generate a random secret for development
         webhook_secret = os.environ.get("WEBHOOK_SECRET_KEY", "")
         if not webhook_secret:
             import secrets
+
             webhook_secret = secrets.token_urlsafe(32)
             # Warn when using generated secret in production
             if os.environ.get("FLASK_ENV") == "production":

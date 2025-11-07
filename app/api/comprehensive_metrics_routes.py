@@ -58,9 +58,7 @@ def get_infrastructure_summary():
     except Exception as e:
         current_app.logger.error(f"Error getting infrastructure summary: {str(e)}")
         return (
-            jsonify(
-                {"status": "error", "message": "Failed to retrieve infrastructure metrics"}
-            ),
+            jsonify({"status": "error", "message": "Failed to retrieve infrastructure metrics"}),
             500,
         )
 
@@ -272,9 +270,7 @@ def get_service_availability(service_name):
     except Exception as e:
         current_app.logger.error(f"Error getting availability metrics: {str(e)}")
         return (
-            jsonify(
-                {"status": "error", "message": "Failed to retrieve availability metrics"}
-            ),
+            jsonify({"status": "error", "message": "Failed to retrieve availability metrics"}),
             500,
         )
 
@@ -537,9 +533,7 @@ def get_user_analytics_summary():
     except Exception as e:
         current_app.logger.error(f"Error getting user analytics summary: {str(e)}")
         return (
-            jsonify(
-                {"status": "error", "message": "Failed to retrieve user analytics metrics"}
-            ),
+            jsonify({"status": "error", "message": "Failed to retrieve user analytics metrics"}),
             500,
         )
 
@@ -793,9 +787,7 @@ def record_nps_response():
 
         if not 0 <= score <= 10:
             return (
-                jsonify(
-                    {"status": "error", "message": "Score must be between 0 and 10"}
-                ),
+                jsonify({"status": "error", "message": "Score must be between 0 and 10"}),
                 400,
             )
 
@@ -805,9 +797,7 @@ def record_nps_response():
         )
 
         return (
-            jsonify(
-                {"status": "success", "message": "NPS response recorded successfully"}
-            ),
+            jsonify({"status": "success", "message": "NPS response recorded successfully"}),
             201,
         )
 

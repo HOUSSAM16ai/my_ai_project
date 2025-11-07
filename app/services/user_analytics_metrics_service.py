@@ -270,9 +270,9 @@ class UserAnalyticsMetricsService:
         if session_id is None:
             session_id = self._generate_session_id(user_id)
 
-        event_id = hashlib.sha256(
-            f"{user_id}{event_name}{time.time_ns()}".encode()
-        ).hexdigest()[:16]
+        event_id = hashlib.sha256(f"{user_id}{event_name}{time.time_ns()}".encode()).hexdigest()[
+            :16
+        ]
 
         event = UserEvent(
             event_id=event_id,
@@ -303,9 +303,7 @@ class UserAnalyticsMetricsService:
                 if event_type == EventType.CONVERSION:
                     session.conversions += 1
                 session.end_time = datetime.now(UTC)
-                session.duration_seconds = (
-                    session.end_time - session.start_time
-                ).total_seconds()
+                session.duration_seconds = (session.end_time - session.start_time).total_seconds()
                 session.exit_page = page_url or session.exit_page
             else:
                 # Create new session
@@ -344,13 +342,9 @@ class UserAnalyticsMetricsService:
 
     def _generate_session_id(self, user_id: int) -> str:
         """Generate unique session ID"""
-        return hashlib.sha256(
-            f"{user_id}{time.time_ns()}".encode()
-        ).hexdigest()[:16]
+        return hashlib.sha256(f"{user_id}{time.time_ns()}".encode()).hexdigest()[:16]
 
-    def start_session(
-        self, user_id: int, device_type: str = "web", entry_page: str = "/"
-    ) -> str:
+    def start_session(self, user_id: int, device_type: str = "web", entry_page: str = "/") -> str:
         """Start a new user session"""
         session_id = self._generate_session_id(user_id)
 
@@ -380,13 +374,9 @@ class UserAnalyticsMetricsService:
             if session_id in self.sessions:
                 session = self.sessions[session_id]
                 session.end_time = datetime.now(UTC)
-                session.duration_seconds = (
-                    session.end_time - session.start_time
-                ).total_seconds()
+                session.duration_seconds = (session.end_time - session.start_time).total_seconds()
 
-    def get_engagement_metrics(
-        self, time_window: str = "30d"
-    ) -> EngagementMetrics:
+    def get_engagement_metrics(self, time_window: str = "30d") -> EngagementMetrics:
         """Get user engagement metrics"""
         with self.lock:
             now = datetime.now(UTC)
@@ -398,15 +388,11 @@ class UserAnalyticsMetricsService:
 
             # Calculate session metrics
             recent_sessions = [
-                s
-                for s in self.sessions.values()
-                if s.end_time and (now - s.start_time).days <= 30
+                s for s in self.sessions.values() if s.end_time and (now - s.start_time).days <= 30
             ]
 
             if recent_sessions:
-                avg_session_duration = statistics.mean(
-                    s.duration_seconds for s in recent_sessions
-                )
+                avg_session_duration = statistics.mean(s.duration_seconds for s in recent_sessions)
 
                 # Sessions per user
                 user_sessions = defaultdict(int)
@@ -415,9 +401,7 @@ class UserAnalyticsMetricsService:
                 avg_sessions_per_user = statistics.mean(user_sessions.values())
 
                 # Events per session
-                avg_events_per_session = statistics.mean(
-                    s.events for s in recent_sessions
-                )
+                avg_events_per_session = statistics.mean(s.events for s in recent_sessions)
 
                 # Bounce rate (sessions with only 1 event)
                 bounced_sessions = sum(1 for s in recent_sessions if s.events <= 1)
@@ -446,30 +430,20 @@ class UserAnalyticsMetricsService:
                 time_window=time_window,
             )
 
-    def get_conversion_metrics(
-        self, conversion_event: str = "conversion"
-    ) -> ConversionMetrics:
+    def get_conversion_metrics(self, conversion_event: str = "conversion") -> ConversionMetrics:
         """Get conversion metrics"""
         with self.lock:
             now = datetime.now(UTC)
 
             # Get recent events (last 30 days)
-            recent_events = [
-                e
-                for e in self.events_buffer
-                if (now - e.timestamp).days <= 30
-            ]
+            recent_events = [e for e in self.events_buffer if (now - e.timestamp).days <= 30]
 
             # Count conversions
-            conversions = [
-                e for e in recent_events if e.event_name == conversion_event
-            ]
+            conversions = [e for e in recent_events if e.event_name == conversion_event]
             unique_visitors = len(set(e.user_id for e in recent_events))
             unique_converters = len(set(e.user_id for e in conversions))
 
-            conversion_rate = (
-                unique_converters / unique_visitors if unique_visitors > 0 else 0.0
-            )
+            conversion_rate = unique_converters / unique_visitors if unique_visitors > 0 else 0.0
 
             # Average time to convert
             user_first_event = {}
@@ -487,19 +461,13 @@ class UserAnalyticsMetricsService:
             conversion_times = []
             for user_id, conversion_time in user_conversion_time.items():
                 if user_id in user_first_event:
-                    time_diff = (
-                        conversion_time - user_first_event[user_id]
-                    ).total_seconds()
+                    time_diff = (conversion_time - user_first_event[user_id]).total_seconds()
                     conversion_times.append(time_diff)
 
-            avg_time_to_convert = (
-                statistics.mean(conversion_times) if conversion_times else 0.0
-            )
+            avg_time_to_convert = statistics.mean(conversion_times) if conversion_times else 0.0
 
             # Conversion value (if revenue data available)
-            conversion_value = sum(
-                e.properties.get("value", 0.0) for e in conversions
-            )
+            conversion_value = sum(e.properties.get("value", 0.0) for e in conversions)
 
             return ConversionMetrics(
                 conversion_rate=conversion_rate,
@@ -539,19 +507,13 @@ class UserAnalyticsMetricsService:
             # Calculate retention for different periods
             now = datetime.now(UTC)
             day_1_active = sum(
-                1
-                for user_id in cohort_users
-                if (now - self.users[user_id]["last_seen"]).days <= 1
+                1 for user_id in cohort_users if (now - self.users[user_id]["last_seen"]).days <= 1
             )
             day_7_active = sum(
-                1
-                for user_id in cohort_users
-                if (now - self.users[user_id]["last_seen"]).days <= 7
+                1 for user_id in cohort_users if (now - self.users[user_id]["last_seen"]).days <= 7
             )
             day_30_active = sum(
-                1
-                for user_id in cohort_users
-                if (now - self.users[user_id]["last_seen"]).days <= 30
+                1 for user_id in cohort_users if (now - self.users[user_id]["last_seen"]).days <= 30
             )
 
             day_1_retention = day_1_active / cohort_size
@@ -638,9 +600,7 @@ class UserAnalyticsMetricsService:
         traffic_split: dict[str, float] | None = None,
     ) -> str:
         """Create a new A/B test"""
-        test_id = hashlib.sha256(
-            f"{test_name}{time.time_ns()}".encode()
-        ).hexdigest()[:16]
+        test_id = hashlib.sha256(f"{test_name}{time.time_ns()}".encode()).hexdigest()[:16]
 
         if traffic_split is None:
             # Equal split
@@ -816,9 +776,7 @@ class UserAnalyticsMetricsService:
                     "promoters": nps.promoters_percent,
                     "detractors": nps.detractors_percent,
                 },
-                "segmentation": {
-                    segment.value: len(users) for segment, users in segments.items()
-                },
+                "segmentation": {segment.value: len(users) for segment, users in segments.items()},
                 "total_users": len(self.users),
                 "total_sessions": len(self.sessions),
                 "total_events": len(self.events_buffer),

@@ -230,9 +230,7 @@ class AIModelMetricsService:
         # Model tracking
         self.models: dict[str, dict] = {}  # model_name -> tracking data
         self.inference_buffer: deque = deque(maxlen=10000)
-        self.latency_buffer: dict[str, deque] = defaultdict(
-            lambda: deque(maxlen=1000)
-        )
+        self.latency_buffer: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
 
         # Prediction tracking for drift detection
         self.baseline_predictions: dict[str, list] = defaultdict(list)
@@ -352,11 +350,7 @@ class AIModelMetricsService:
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0.0
-        )
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
 
         return AccuracyMetrics(
             accuracy=accuracy,
@@ -370,9 +364,7 @@ class AIModelMetricsService:
             sample_count=total,
         )
 
-    def calculate_bleu_score(
-        self, reference: str, candidate: str, max_n: int = 4
-    ) -> float:
+    def calculate_bleu_score(self, reference: str, candidate: str, max_n: int = 4) -> float:
         """
         Calculate BLEU score for translation/generation quality
 
@@ -415,9 +407,7 @@ class AIModelMetricsService:
             ngrams.append(tuple(tokens[i : i + n]))
         return Counter(ngrams)
 
-    def calculate_rouge_scores(
-        self, reference: str, candidate: str
-    ) -> dict[str, float]:
+    def calculate_rouge_scores(self, reference: str, candidate: str) -> dict[str, float]:
         """
         Calculate ROUGE scores (simplified version)
 
@@ -475,9 +465,7 @@ class AIModelMetricsService:
 
         return perplexity
 
-    def get_latency_metrics(
-        self, model_name: str, model_version: str
-    ) -> LatencyMetrics | None:
+    def get_latency_metrics(self, model_name: str, model_version: str) -> LatencyMetrics | None:
         """Get latency metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -504,9 +492,7 @@ class AIModelMetricsService:
                 sample_count=n,
             )
 
-    def get_cost_metrics(
-        self, model_name: str, model_version: str
-    ) -> CostMetrics | None:
+    def get_cost_metrics(self, model_name: str, model_version: str) -> CostMetrics | None:
         """Get cost metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -519,8 +505,7 @@ class AIModelMetricsService:
             recent_inferences = [
                 inf
                 for inf in self.inference_buffer
-                if inf.model_name == model_name
-                and inf.model_version == model_version
+                if inf.model_name == model_name and inf.model_version == model_version
             ]
 
             if not recent_inferences:
@@ -595,9 +580,7 @@ class AIModelMetricsService:
                 samples_analyzed=min(len(baseline), len(current)),
             )
 
-    def _calculate_distribution_shift(
-        self, baseline: list, current: list
-    ) -> float:
+    def _calculate_distribution_shift(self, baseline: list, current: list) -> float:
         """
         Calculate distribution shift between two samples
 
@@ -677,18 +660,14 @@ class AIModelMetricsService:
 
             # True positive rate (TPR)
             tp = sum(
-                1
-                for p, t in zip(preds, truths)
-                if p == positive_class and t == positive_class
+                1 for p, t in zip(preds, truths) if p == positive_class and t == positive_class
             )
             actual_positives = sum(1 for t in truths if t == positive_class)
             tpr = tp / actual_positives if actual_positives > 0 else 0.0
 
             # False positive rate (FPR)
             fp = sum(
-                1
-                for p, t in zip(preds, truths)
-                if p == positive_class and t != positive_class
+                1 for p, t in zip(preds, truths) if p == positive_class and t != positive_class
             )
             actual_negatives = sum(1 for t in truths if t != positive_class)
             fpr = fp / actual_negatives if actual_negatives > 0 else 0.0
@@ -822,9 +801,7 @@ class AIModelMetricsService:
             )
 
         if latency.p99_ms > latency.p95_ms * 2:
-            recommendations.append(
-                "⚠️ High tail latency variance. Investigate outlier requests."
-            )
+            recommendations.append("⚠️ High tail latency variance. Investigate outlier requests.")
 
         if cost.cost_per_request > 0.01:
             recommendations.append(
@@ -835,9 +812,7 @@ class AIModelMetricsService:
             DriftStatus.MODERATE_DRIFT,
             DriftStatus.SEVERE_DRIFT,
         ]:
-            recommendations.append(
-                "🔄 Model drift detected. Retrain model with recent data."
-            )
+            recommendations.append("🔄 Model drift detected. Retrain model with recent data.")
 
         if not recommendations:
             recommendations.append("✅ Model performance is optimal.")
@@ -858,9 +833,7 @@ class AIModelMetricsService:
                 model_name = model_data["model_name"]
                 model_version = model_data["model_version"]
 
-                snapshot = self.get_model_performance_snapshot(
-                    model_name, model_version
-                )
+                snapshot = self.get_model_performance_snapshot(model_name, model_version)
 
                 if snapshot:
                     summary["models"][model_key] = {

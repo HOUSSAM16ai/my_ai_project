@@ -51,7 +51,12 @@ def get_golden_signals():
 
         signals = obs.get_golden_signals(time_window_seconds=time_window)
 
-        return jsonify({"status": "success", "data": signals, "timestamp": datetime.now(UTC).isoformat()}), 200
+        return (
+            jsonify(
+                {"status": "success", "data": signals, "timestamp": datetime.now(UTC).isoformat()}
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting golden signals: {str(e)}")
@@ -265,7 +270,10 @@ def get_service_dependencies():
 
     except Exception as e:
         current_app.logger.error(f"Error getting service dependencies: {str(e)}")
-        return jsonify({"status": "error", "message": "Failed to retrieve service dependencies"}), 500
+        return (
+            jsonify({"status": "error", "message": "Failed to retrieve service dependencies"}),
+            500,
+        )
 
 
 # ======================================================================================
@@ -287,7 +295,12 @@ def get_observability_statistics():
         obs = get_unified_observability()
         stats = obs.get_statistics()
 
-        return jsonify({"status": "success", "data": stats, "timestamp": datetime.now(UTC).isoformat()}), 200
+        return (
+            jsonify(
+                {"status": "success", "data": stats, "timestamp": datetime.now(UTC).isoformat()}
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting statistics: {str(e)}")
@@ -328,7 +341,16 @@ def observability_health_check():
             },
         }
 
-        return jsonify({"status": "success", "data": health_data, "timestamp": datetime.now(UTC).isoformat()}), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": health_data,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Observability health check failed: {str(e)}")
@@ -430,7 +452,9 @@ def investigate_issue():
         relevant_traces = []
         for trace_summary in all_traces:
             try:
-                trace_time = datetime.fromisoformat(trace_summary["start_time"].replace("Z", "+00:00"))
+                trace_time = datetime.fromisoformat(
+                    trace_summary["start_time"].replace("Z", "+00:00")
+                )
                 if time_window_start <= trace_time.timestamp() <= time_window_end:
                     relevant_traces.append(trace_summary)
             except Exception:
@@ -466,7 +490,8 @@ def investigate_issue():
                 ),
             },
             "recommendations": [
-                f"Investigate bottleneck spans in trace {t['trace_id']}" for t in investigation_traces[:3]
+                f"Investigate bottleneck spans in trace {t['trace_id']}"
+                for t in investigation_traces[:3]
             ],
         }
 

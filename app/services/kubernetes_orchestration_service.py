@@ -33,6 +33,7 @@ from typing import Any
 
 class PodPhase(Enum):
     """مراحل البود في Kubernetes"""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
@@ -42,6 +43,7 @@ class PodPhase(Enum):
 
 class NodeState(Enum):
     """حالات العقدة"""
+
     READY = "ready"
     NOT_READY = "not_ready"
     UNKNOWN = "unknown"
@@ -50,13 +52,15 @@ class NodeState(Enum):
 
 class ConsensusRole(Enum):
     """أدوار الإجماع الموزع (Raft)"""
-    LEADER = "leader"          # القائد - يتخذ القرارات
-    FOLLOWER = "follower"      # تابع - يتلقى التحديثات
-    CANDIDATE = "candidate"    # مرشح - يسعى ليصبح قائداً
+
+    LEADER = "leader"  # القائد - يتخذ القرارات
+    FOLLOWER = "follower"  # تابع - يتلقى التحديثات
+    CANDIDATE = "candidate"  # مرشح - يسعى ليصبح قائداً
 
 
 class ScalingDirection(Enum):
     """اتجاه التوسع"""
+
     UP = "up"
     DOWN = "down"
     NONE = "none"
@@ -70,6 +74,7 @@ class ScalingDirection(Enum):
 @dataclass
 class Pod:
     """بود (Pod) في Kubernetes"""
+
     pod_id: str
     name: str
     namespace: str
@@ -90,6 +95,7 @@ class Pod:
 @dataclass
 class Node:
     """عقدة (Node) في الكلاستر"""
+
     node_id: str
     name: str
     state: NodeState
@@ -108,6 +114,7 @@ class Node:
 @dataclass
 class RaftState:
     """حالة بروتوكول Raft للإجماع الموزع"""
+
     node_id: str
     role: ConsensusRole
     term: int = 0  # الفترة الزمنية الحالية
@@ -123,6 +130,7 @@ class RaftState:
 @dataclass
 class AutoScalingConfig:
     """تكوين التوسع التلقائي"""
+
     config_id: str
     deployment_name: str
     namespace: str
@@ -138,6 +146,7 @@ class AutoScalingConfig:
 @dataclass
 class SelfHealingEvent:
     """حدث الشفاء الذاتي"""
+
     event_id: str
     timestamp: datetime
     event_type: str
@@ -157,7 +166,7 @@ class SelfHealingEvent:
 class KubernetesOrchestrator:
     """
     منسق Kubernetes الخارق
-    
+
     المميزات:
     - Self-Healing: إصلاح تلقائي للأعطال
     - Distributed Consensus: اتخاذ قرارات موزعة
@@ -176,13 +185,13 @@ class KubernetesOrchestrator:
         self._autoscaling_configs: dict[str, AutoScalingConfig] = {}
         self._healing_events: deque[SelfHealingEvent] = deque(maxlen=1000)
         self._lock = threading.RLock()
-        
+
         # تهيئة الكلاستر
         self._initialize_cluster()
-        
+
         # بدء مراقبة الصحة
         self._start_health_monitoring()
-        
+
         # بدء عملية الإجماع الموزع
         self._start_consensus_protocol()
 
@@ -207,6 +216,7 @@ class KubernetesOrchestrator:
 
     def _start_health_monitoring(self):
         """بدء مراقبة الصحة المستمرة"""
+
         def monitor():
             while True:
                 try:
@@ -215,7 +225,7 @@ class KubernetesOrchestrator:
                     time.sleep(10)  # فحص كل 10 ثواني
                 except Exception as e:
                     print(f"Health monitoring error: {e}")
-        
+
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 
@@ -230,7 +240,7 @@ class KubernetesOrchestrator:
     def _heal_failed_pod(self, pod: Pod):
         """
         إصلاح بود فاشل (Self-Healing)
-        
+
         الإجراءات:
         1. اكتشاف الفشل
         2. محاولة إعادة التشغيل
@@ -248,25 +258,25 @@ class KubernetesOrchestrator:
             action_taken="",
             success=False,
         )
-        
+
         # محاولة 1: إعادة التشغيل
         if pod.restart_count < 5:
             pod.restart_count += 1
             pod.last_restart = datetime.now(UTC)
             pod.phase = PodPhase.RUNNING
-            
+
             event.action_taken = f"Restarted pod (attempt {pod.restart_count})"
             event.success = True
-            
+
         # محاولة 2: جدولة على عقدة أخرى
         else:
             # البحث عن عقدة بديلة
             new_node = self._find_best_node_for_pod(pod)
-            
+
             if new_node:
                 # نقل البود للعقدة الجديدة
                 old_node_id = pod.node_id
-                
+
                 # إزالة من العقدة القديمة
                 if old_node_id in self._nodes:
                     old_node = self._nodes[old_node_id]
@@ -274,38 +284,38 @@ class KubernetesOrchestrator:
                         old_node.pods.remove(pod.pod_id)
                         old_node.cpu_used -= pod.cpu_request
                         old_node.memory_used -= pod.memory_request
-                
+
                 # إضافة للعقدة الجديدة
                 pod.node_id = new_node.node_id
                 pod.phase = PodPhase.RUNNING
                 pod.restart_count = 0
-                
+
                 new_node.pods.append(pod.pod_id)
                 new_node.cpu_used += pod.cpu_request
                 new_node.memory_used += pod.memory_request
-                
+
                 event.action_taken = f"Rescheduled pod from {old_node_id} to {new_node.node_id}"
                 event.success = True
             else:
                 pod.phase = PodPhase.FAILED
                 event.action_taken = "No available node for rescheduling"
                 event.success = False
-        
+
         self._healing_events.append(event)
 
     def _check_node_health(self):
         """فحص صحة العقد"""
         current_time = datetime.now(UTC)
-        
+
         with self._lock:
             for node in self._nodes.values():
                 # التحقق من آخر نبضة قلب
                 time_since_heartbeat = (current_time - node.last_heartbeat).total_seconds()
-                
+
                 if time_since_heartbeat > 60:  # دقيقة واحدة بدون نبضة
                     if node.state == NodeState.READY:
                         node.state = NodeState.NOT_READY
-                        
+
                         # إعادة جدولة جميع البودات على هذه العقدة
                         self._evacuate_node(node)
 
@@ -313,25 +323,25 @@ class KubernetesOrchestrator:
         """إخلاء جميع البودات من عقدة معطلة"""
         with self._lock:
             pods_to_move = list(node.pods)
-            
+
             for pod_id in pods_to_move:
                 if pod_id in self._pods:
                     pod = self._pods[pod_id]
-                    
+
                     # البحث عن عقدة بديلة
                     new_node = self._find_best_node_for_pod(pod)
-                    
+
                     if new_node:
                         # نقل البود
                         node.pods.remove(pod_id)
                         node.cpu_used -= pod.cpu_request
                         node.memory_used -= pod.memory_request
-                        
+
                         pod.node_id = new_node.node_id
                         new_node.pods.append(pod_id)
                         new_node.cpu_used += pod.cpu_request
                         new_node.memory_used += pod.memory_request
-                        
+
                         # تسجيل الحدث
                         event = SelfHealingEvent(
                             event_id=str(uuid.uuid4()),
@@ -351,6 +361,7 @@ class KubernetesOrchestrator:
 
     def _start_consensus_protocol(self):
         """بدء بروتوكول الإجماع الموزع (Raft)"""
+
         def run_consensus():
             while True:
                 try:
@@ -365,19 +376,19 @@ class KubernetesOrchestrator:
                         time.sleep(0.5)
                 except Exception as e:
                     print(f"Consensus protocol error: {e}")
-        
+
         thread = threading.Thread(target=run_consensus, daemon=True)
         thread.start()
 
     def _send_heartbeats(self):
         """
         إرسال نبضات القلب من القائد إلى الأتباع
-        
+
         في Raft، القائد يرسل نبضات منتظمة للحفاظ على سلطته
         """
         with self._lock:
             self._raft_state.last_heartbeat_time = datetime.now(UTC)
-            
+
             # في النظام الحقيقي، يتم إرسال نبضات لعقد أخرى
             # هنا نحاكي العملية
             pass
@@ -385,15 +396,15 @@ class KubernetesOrchestrator:
     def _check_election_timeout(self):
         """
         التحقق من انتهاء مهلة الانتخاب
-        
+
         إذا لم يتلق التابع نبضة من القائد، يبدأ انتخابات جديدة
         """
         current_time = datetime.now(UTC)
         elapsed = (current_time - self._raft_state.last_heartbeat_time).total_seconds()
-        
+
         # إضافة عشوائية لتجنب التصادم في الانتخابات
         timeout = self._raft_state.election_timeout + random.uniform(0, 2)
-        
+
         if elapsed > timeout:
             with self._lock:
                 # الانتقال لحالة مرشح
@@ -405,7 +416,7 @@ class KubernetesOrchestrator:
     def _conduct_election(self):
         """
         إجراء انتخاب قائد جديد
-        
+
         الخطوات:
         1. المرشح يصوت لنفسه
         2. يطلب أصوات من العقد الأخرى
@@ -414,21 +425,21 @@ class KubernetesOrchestrator:
         """
         # محاكاة الحصول على أصوات
         # في النظام الحقيقي، يتم إرسال طلبات التصويت للعقد الأخرى
-        
+
         total_nodes = len(self._nodes)
         majority = (total_nodes // 2) + 1
-        
+
         # محاكاة استجابة العقد الأخرى
         for node_id in self._nodes:
             if node_id != self.node_id and random.random() > 0.3:
                 self._raft_state.votes_received.add(node_id)
-        
+
         with self._lock:
             if len(self._raft_state.votes_received) >= majority:
                 # فوز في الانتخاب
                 self._raft_state.role = ConsensusRole.LEADER
                 self._raft_state.last_heartbeat_time = datetime.now(UTC)
-                
+
                 # إرسال نبضة فورية لتأكيد القيادة
                 self._send_heartbeats()
             else:
@@ -440,25 +451,25 @@ class KubernetesOrchestrator:
     def append_log_entry(self, entry: dict[str, Any]) -> bool:
         """
         إضافة إدخال للسجل الموزع
-        
+
         فقط القائد يمكنه إضافة إدخالات
         """
         with self._lock:
             if self._raft_state.role != ConsensusRole.LEADER:
                 return False
-            
+
             # إضافة الإدخال مع رقم الفترة
             log_entry = {
                 "term": self._raft_state.term,
                 "index": len(self._raft_state.log),
                 "data": entry,
             }
-            
+
             self._raft_state.log.append(log_entry)
-            
+
             # في النظام الحقيقي، يتم نسخ الإدخال لجميع الأتباع
             # وانتظار تأكيد الأغلبية قبل الالتزام
-            
+
             return True
 
     # ======================================================================================
@@ -468,44 +479,46 @@ class KubernetesOrchestrator:
     def schedule_pod(self, pod: Pod) -> bool:
         """
         جدولة بود على أفضل عقدة متاحة
-        
+
         الخوارزمية:
         1. تصفية العقد المؤهلة (موارد كافية، حالة جيدة)
         2. ترتيب حسب الأولوية (أقل استخدام، توزيع جغرافي)
         3. اختيار الأفضل
         """
         best_node = self._find_best_node_for_pod(pod)
-        
+
         if not best_node:
             return False
-        
+
         with self._lock:
             # تعيين البود للعقدة
             pod.node_id = best_node.node_id
             pod.phase = PodPhase.RUNNING
-            
+
             # تحديث موارد العقدة
             best_node.pods.append(pod.pod_id)
             best_node.cpu_used += pod.cpu_request
             best_node.memory_used += pod.memory_request
-            
+
             # حفظ البود
             self._pods[pod.pod_id] = pod
-            
+
             # تسجيل في السجل الموزع
             if self._raft_state.role == ConsensusRole.LEADER:
-                self.append_log_entry({
-                    "action": "schedule_pod",
-                    "pod_id": pod.pod_id,
-                    "node_id": best_node.node_id,
-                })
-        
+                self.append_log_entry(
+                    {
+                        "action": "schedule_pod",
+                        "pod_id": pod.pod_id,
+                        "node_id": best_node.node_id,
+                    }
+                )
+
         return True
 
     def _find_best_node_for_pod(self, pod: Pod) -> Node | None:
         """
         البحث عن أفضل عقدة لجدولة البود
-        
+
         معايير الاختيار:
         - موارد كافية (CPU, Memory)
         - حالة العقدة (Ready)
@@ -513,35 +526,35 @@ class KubernetesOrchestrator:
         - أقل استخدام نسبي
         """
         eligible_nodes = []
-        
+
         for node in self._nodes.values():
             # تصفية: العقدة يجب أن تكون جاهزة
             if node.state != NodeState.READY:
                 continue
-            
+
             # تصفية: موارد كافية
             cpu_available = node.cpu_allocatable - node.cpu_used
             memory_available = node.memory_allocatable - node.memory_used
-            
+
             if cpu_available < pod.cpu_request or memory_available < pod.memory_request:
                 continue
-            
+
             # حساب الأولوية
             cpu_utilization = node.cpu_used / node.cpu_allocatable
             memory_utilization = node.memory_used / node.memory_allocatable
             avg_utilization = (cpu_utilization + memory_utilization) / 2
-            
+
             # الأفضلية للعقد الأقل استخداماً
             score = 1.0 - avg_utilization
-            
+
             eligible_nodes.append((node, score))
-        
+
         if not eligible_nodes:
             return None
-        
+
         # ترتيب حسب الأولوية (الأعلى أولاً)
         eligible_nodes.sort(key=lambda x: x[1], reverse=True)
-        
+
         return eligible_nodes[0][0]
 
     # ======================================================================================
@@ -556,14 +569,14 @@ class KubernetesOrchestrator:
     def check_autoscaling(self):
         """
         فحص الحاجة للتوسع التلقائي
-        
+
         يتم التحقق من:
         - استخدام CPU/Memory
         - تطبيق سياسات التهدئة (cooldown)
         - التوسع للأعلى أو الأسفل
         """
         current_time = datetime.now(UTC)
-        
+
         with self._lock:
             for config in self._autoscaling_configs.values():
                 # التحقق من التهدئة
@@ -572,19 +585,24 @@ class KubernetesOrchestrator:
                     # تخطي إذا ما زلنا في فترة التهدئة
                     if elapsed < config.scale_up_cooldown:
                         continue
-                
+
                 # حساب متوسط الاستخدام
                 avg_cpu = self._calculate_deployment_cpu_usage(config.deployment_name)
                 avg_memory = self._calculate_deployment_memory_usage(config.deployment_name)
-                
+
                 # تحديد اتجاه التوسع
                 direction = ScalingDirection.NONE
-                
-                if avg_cpu > config.target_cpu_utilization or avg_memory > config.target_memory_utilization:
+
+                if (
+                    avg_cpu > config.target_cpu_utilization
+                    or avg_memory > config.target_memory_utilization
+                ):
                     direction = ScalingDirection.UP
-                elif avg_cpu < (config.target_cpu_utilization * 0.5) and avg_memory < (config.target_memory_utilization * 0.5):
+                elif avg_cpu < (config.target_cpu_utilization * 0.5) and avg_memory < (
+                    config.target_memory_utilization * 0.5
+                ):
                     direction = ScalingDirection.DOWN
-                
+
                 if direction != ScalingDirection.NONE:
                     self._scale_deployment(config, direction)
 
@@ -601,7 +619,7 @@ class KubernetesOrchestrator:
     def _scale_deployment(self, config: AutoScalingConfig, direction: ScalingDirection):
         """
         توسيع أو تقليص النشر
-        
+
         Args:
             config: تكوين التوسع
             direction: اتجاه التوسع (أعلى/أسفل)
@@ -609,28 +627,30 @@ class KubernetesOrchestrator:
         # حساب العدد الجديد للنسخ
         # في النظام الحقيقي، يتم قراءة العدد الحالي من Deployment
         current_replicas = random.randint(config.min_replicas, config.max_replicas)
-        
+
         if direction == ScalingDirection.UP:
             new_replicas = min(current_replicas + 1, config.max_replicas)
         else:
             new_replicas = max(current_replicas - 1, config.min_replicas)
-        
+
         if new_replicas != current_replicas:
             # تطبيق التوسع
             # في النظام الحقيقي، يتم تحديث Deployment
-            
+
             with self._lock:
                 config.last_scale_time = datetime.now(UTC)
-            
+
             # تسجيل في السجل الموزع
             if self._raft_state.role == ConsensusRole.LEADER:
-                self.append_log_entry({
-                    "action": "scale_deployment",
-                    "deployment": config.deployment_name,
-                    "old_replicas": current_replicas,
-                    "new_replicas": new_replicas,
-                    "direction": direction.value,
-                })
+                self.append_log_entry(
+                    {
+                        "action": "scale_deployment",
+                        "deployment": config.deployment_name,
+                        "old_replicas": current_replicas,
+                        "new_replicas": new_replicas,
+                        "direction": direction.value,
+                    }
+                )
 
     # ======================================================================================
     # QUERY METHODS
@@ -658,12 +678,12 @@ class KubernetesOrchestrator:
             total_pods = len(self._pods)
             running_pods = sum(1 for p in self._pods.values() if p.phase == PodPhase.RUNNING)
             failed_pods = sum(1 for p in self._pods.values() if p.phase == PodPhase.FAILED)
-            
+
             total_cpu = sum(n.cpu_capacity for n in self._nodes.values())
             total_memory = sum(n.memory_capacity for n in self._nodes.values())
             used_cpu = sum(n.cpu_used for n in self._nodes.values())
             used_memory = sum(n.memory_used for n in self._nodes.values())
-            
+
             return {
                 "total_nodes": len(self._nodes),
                 "ready_nodes": sum(1 for n in self._nodes.values() if n.state == NodeState.READY),
@@ -689,10 +709,10 @@ _k8s_lock = threading.Lock()
 def get_kubernetes_orchestrator() -> KubernetesOrchestrator:
     """الحصول على نسخة واحدة من منسق Kubernetes (Singleton)"""
     global _k8s_orchestrator_instance
-    
+
     if _k8s_orchestrator_instance is None:
         with _k8s_lock:
             if _k8s_orchestrator_instance is None:
                 _k8s_orchestrator_instance = KubernetesOrchestrator()
-    
+
     return _k8s_orchestrator_instance

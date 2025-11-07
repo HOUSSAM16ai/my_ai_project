@@ -30,15 +30,17 @@ from typing import Any
 
 class CacheLayer(Enum):
     """طبقات التخزين المؤقت"""
-    CDN_EDGE = "cdn_edge"              # الطبقة الأولى - أقرب للمستخدم
-    REVERSE_PROXY = "reverse_proxy"    # الطبقة الثانية
-    DISTRIBUTED = "distributed"        # الطبقة الثالثة - Redis Cluster
-    APPLICATION = "application"        # الطبقة الرابعة - In-Memory
-    DATABASE = "database"              # الطبقة الخامسة - Query Cache
+
+    CDN_EDGE = "cdn_edge"  # الطبقة الأولى - أقرب للمستخدم
+    REVERSE_PROXY = "reverse_proxy"  # الطبقة الثانية
+    DISTRIBUTED = "distributed"  # الطبقة الثالثة - Redis Cluster
+    APPLICATION = "application"  # الطبقة الرابعة - In-Memory
+    DATABASE = "database"  # الطبقة الخامسة - Query Cache
 
 
 class CacheStrategy(Enum):
     """استراتيجيات التخزين المؤقت"""
+
     LRU = "lru"  # Least Recently Used
     LFU = "lfu"  # Least Frequently Used
     FIFO = "fifo"  # First In First Out
@@ -48,6 +50,7 @@ class CacheStrategy(Enum):
 
 class EvictionPolicy(Enum):
     """سياسات الإزالة"""
+
     NO_EVICTION = "no_eviction"
     ALLKEYS_LRU = "allkeys_lru"
     ALLKEYS_LFU = "allkeys_lfu"
@@ -63,6 +66,7 @@ class EvictionPolicy(Enum):
 @dataclass
 class CacheEntry:
     """عنصر في الذاكرة المؤقتة"""
+
     key: str
     value: Any
     created_at: datetime
@@ -71,7 +75,7 @@ class CacheEntry:
     ttl_seconds: int | None = None
     size_bytes: int = 0
     tags: list[str] = field(default_factory=list)
-    
+
     @property
     def is_expired(self) -> bool:
         """هل انتهت صلاحية العنصر؟"""
@@ -79,7 +83,7 @@ class CacheEntry:
             return False
         elapsed = (datetime.now(UTC) - self.created_at).total_seconds()
         return elapsed > self.ttl_seconds
-    
+
     @property
     def age_seconds(self) -> float:
         """عمر العنصر بالثواني"""
@@ -89,6 +93,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """إحصائيات الذاكرة المؤقتة"""
+
     layer: CacheLayer
     total_hits: int = 0
     total_misses: int = 0
@@ -97,7 +102,7 @@ class CacheStats:
     total_evictions: int = 0
     total_size_bytes: int = 0
     avg_latency_ms: float = 0.0
-    
+
     @property
     def hit_rate(self) -> float:
         """نسبة النجاح"""
@@ -110,6 +115,7 @@ class CacheStats:
 @dataclass
 class RedisClusterNode:
     """عقدة في Redis Cluster"""
+
     node_id: str
     host: str
     port: int
@@ -130,7 +136,7 @@ class RedisClusterNode:
 class InMemoryCache:
     """
     Application Layer Cache - In-Memory
-    
+
     سريع جداً ولكن محدود بذاكرة الخادم الواحد
     """
 
@@ -144,7 +150,7 @@ class InMemoryCache:
         self.max_size_bytes = max_size_mb * 1024 * 1024
         self.strategy = strategy
         self.default_ttl = default_ttl
-        
+
         self.cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self.stats = CacheStats(layer=CacheLayer.APPLICATION)
         self._lock = threading.Lock()
@@ -159,44 +165,45 @@ class InMemoryCache:
         """الحصول على قيمة من الذاكرة المؤقتة"""
         with self._lock:
             entry = self.cache.get(key)
-            
+
             if entry is None:
                 self.stats.total_misses += 1
                 return None
-            
+
             # فحص الصلاحية
             if entry.is_expired:
                 # Delete directly without calling self.delete() to avoid deadlock
                 self._delete_entry_internal(key, entry)
                 self.stats.total_misses += 1
                 return None
-            
+
             # تحديث الإحصائيات
             entry.accessed_at = datetime.now(UTC)
             entry.access_count += 1
             self.stats.total_hits += 1
-            
+
             # نقل للنهاية (LRU)
             if self.strategy == CacheStrategy.LRU:
                 self.cache.move_to_end(key)
-            
+
             return entry.value
 
     def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """تخزين قيمة في الذاكرة المؤقتة"""
         import sys
+
         value_size = sys.getsizeof(value)
-        
+
         with self._lock:
             # فحص المساحة
             if self.stats.total_size_bytes + value_size > self.max_size_bytes:
                 self._evict()
-            
+
             # حذف القديم إن وجد
             if key in self.cache:
                 old_entry = self.cache[key]
                 self.stats.total_size_bytes -= old_entry.size_bytes
-            
+
             # إنشاء العنصر الجديد
             entry = CacheEntry(
                 key=key,
@@ -206,11 +213,11 @@ class InMemoryCache:
                 ttl_seconds=ttl or self.default_ttl,
                 size_bytes=value_size,
             )
-            
+
             self.cache[key] = entry
             self.stats.total_size_bytes += value_size
             self.stats.total_sets += 1
-            
+
             return True
 
     def delete(self, key: str) -> bool:
@@ -227,7 +234,7 @@ class InMemoryCache:
         """إزالة عناصر للمساحة"""
         if not self.cache:
             return
-        
+
         if self.strategy == CacheStrategy.LRU:
             # إزالة الأقل استخداماً (الأول)
             key, entry = self.cache.popitem(last=False)
@@ -238,7 +245,7 @@ class InMemoryCache:
         else:
             # FIFO - الأقدم
             key, entry = self.cache.popitem(last=False)
-        
+
         self.stats.total_size_bytes -= entry.size_bytes
         self.stats.total_evictions += 1
 
@@ -267,7 +274,7 @@ class InMemoryCache:
 class RedisClusterCache:
     """
     Distributed Cache Layer - Redis Cluster
-    
+
     موزع على مئات العقد، تحجيم أفقي تلقائي!
     """
 
@@ -277,21 +284,21 @@ class RedisClusterCache:
         self.nodes: dict[str, RedisClusterNode] = {}
         self.stats = CacheStats(layer=CacheLayer.DISTRIBUTED)
         self._lock = threading.Lock()
-        
+
         # تهيئة العقد
         self._initialize_cluster()
 
     def _initialize_cluster(self):
         """تهيئة Redis Cluster"""
         slots_per_node = self.total_slots // (self.num_nodes // 2)  # Masters only
-        
+
         master_count = 0
         for i in range(self.num_nodes):
             if i % 2 == 0:  # Master nodes
                 node_id = f"master-{master_count + 1}"
                 slot_start = master_count * slots_per_node
                 slot_end = min((master_count + 1) * slots_per_node - 1, self.total_slots - 1)
-                
+
                 node = RedisClusterNode(
                     node_id=node_id,
                     host=f"redis-master-{master_count + 1}",
@@ -300,7 +307,7 @@ class RedisClusterCache:
                     slot_end=slot_end,
                     is_master=True,
                 )
-                
+
                 # إضافة replica
                 replica_id = f"replica-{master_count + 1}"
                 replica = RedisClusterNode(
@@ -311,28 +318,29 @@ class RedisClusterCache:
                     slot_end=slot_end,
                     is_master=False,
                 )
-                
+
                 node.replicas.append(replica_id)
                 self.nodes[node_id] = node
                 self.nodes[replica_id] = replica
-                
+
                 master_count += 1
 
     def _get_slot(self, key: str) -> int:
         """حساب الـ hash slot للمفتاح"""
         # CRC16 mod 16384 (Redis algorithm)
         import binascii
+
         crc = binascii.crc_hqx(key.encode(), 0)
         return crc % self.total_slots
 
     def _get_node_for_key(self, key: str) -> RedisClusterNode | None:
         """الحصول على العقدة المسؤولة عن المفتاح"""
         slot = self._get_slot(key)
-        
+
         for node in self.nodes.values():
             if node.is_master and node.slot_start <= slot <= node.slot_end:
                 return node
-        
+
         return None
 
     def get(self, key: str) -> Any | None:
@@ -341,7 +349,7 @@ class RedisClusterCache:
         if not node:
             self.stats.total_misses += 1
             return None
-        
+
         # محاكاة القراءة من Redis
         # في الإنتاج: redis_client.get(key)
         self.stats.total_hits += 1
@@ -352,23 +360,23 @@ class RedisClusterCache:
         node = self._get_node_for_key(key)
         if not node:
             return False
-        
+
         # محاكاة الكتابة على Redis
         # في الإنتاج: redis_client.set(key, value, ex=ttl)
         self.stats.total_sets += 1
         node.total_keys += 1
-        
+
         return True
 
     def add_node(self, node_id: str, host: str, port: int) -> RedisClusterNode:
         """
         إضافة عقدة جديدة للكلاستر
-        
+
         الفائدة الخارقة: تحجيم أفقي تلقائي!
         """
         # إعادة توزيع الـ slots
         # في الإنتاج، Redis Cluster يقوم بهذا تلقائياً
-        
+
         new_node = RedisClusterNode(
             node_id=node_id,
             host=host,
@@ -377,16 +385,16 @@ class RedisClusterCache:
             slot_end=0,
             is_master=True,
         )
-        
+
         with self._lock:
             self.nodes[node_id] = new_node
-        
+
         return new_node
 
     def get_cluster_stats(self) -> dict[str, Any]:
         """إحصائيات الكلاستر"""
         master_nodes = [n for n in self.nodes.values() if n.is_master]
-        
+
         return {
             "layer": self.stats.layer.value,
             "total_nodes": len(self.nodes),
@@ -405,30 +413,40 @@ class RedisClusterCache:
 class CDNEdgeCache:
     """
     CDN Edge Cache Layer
-    
+
     ملايين النقاط عالمياً - أقرب نقطة للمستخدم!
     """
 
     def __init__(self):
         self.edge_locations: dict[str, InMemoryCache] = {}
         self.stats = CacheStats(layer=CacheLayer.CDN_EDGE)
-        
+
         # تهيئة نقاط Edge عالمية
         self._initialize_edge_locations()
 
     def _initialize_edge_locations(self):
         """تهيئة مواقع Edge عالمية"""
         locations = [
-            "tokyo", "singapore", "mumbai", "sydney",
-            "london", "paris", "frankfurt", "stockholm",
-            "new-york", "san-francisco", "sao-paulo", "toronto",
-            "cape-town", "lagos",
+            "tokyo",
+            "singapore",
+            "mumbai",
+            "sydney",
+            "london",
+            "paris",
+            "frankfurt",
+            "stockholm",
+            "new-york",
+            "san-francisco",
+            "sao-paulo",
+            "toronto",
+            "cape-town",
+            "lagos",
         ]
-        
+
         for location in locations:
             self.edge_locations[location] = InMemoryCache(
                 max_size_mb=10240,  # 10GB per edge
-                default_ttl=3600,    # 1 hour
+                default_ttl=3600,  # 1 hour
             )
 
     def get(self, key: str, location: str = "new-york") -> Any | None:
@@ -437,23 +455,23 @@ class CDNEdgeCache:
         if not edge:
             self.stats.total_misses += 1
             return None
-        
+
         value = edge.get(key)
         if value:
             self.stats.total_hits += 1
         else:
             self.stats.total_misses += 1
-        
+
         return value
 
     def set(self, key: str, value: Any, ttl: int = 3600) -> bool:
         """نشر على جميع نقاط Edge"""
         success_count = 0
-        
+
         for edge in self.edge_locations.values():
             if edge.set(key, value, ttl):
                 success_count += 1
-        
+
         self.stats.total_sets += 1
         return success_count > 0
 
@@ -481,7 +499,7 @@ class CDNEdgeCache:
 class MultiLayerCacheOrchestrator:
     """
     المنسق الرئيسي لجميع طبقات التخزين المؤقت
-    
+
     الهرم:
     1. CDN Edge (أسرع - 5ms)
     2. Reverse Proxy (سريع - 10ms)
@@ -494,7 +512,7 @@ class MultiLayerCacheOrchestrator:
         self.cdn_cache = CDNEdgeCache()
         self.redis_cache = RedisClusterCache(num_nodes=6)
         self.app_cache = InMemoryCache(max_size_mb=2048)
-        
+
         self.total_requests = 0
         self.cache_hits_by_layer = defaultdict(int)
 
@@ -505,18 +523,18 @@ class MultiLayerCacheOrchestrator:
     ) -> tuple[Any | None, CacheLayer | None]:
         """
         الحصول على قيمة من أي طبقة متاحة
-        
+
         Returns:
             (value, layer) - القيمة والطبقة التي وجدت فيها
         """
         self.total_requests += 1
-        
+
         # الطبقة 1: CDN Edge (الأسرع!)
         value = self.cdn_cache.get(key, user_location)
         if value is not None:
             self.cache_hits_by_layer[CacheLayer.CDN_EDGE] += 1
             return value, CacheLayer.CDN_EDGE
-        
+
         # الطبقة 2: Application Cache
         value = self.app_cache.get(key)
         if value is not None:
@@ -524,7 +542,7 @@ class MultiLayerCacheOrchestrator:
             # نشر للـ CDN للطلب التالي
             self.cdn_cache.set(key, value)
             return value, CacheLayer.APPLICATION
-        
+
         # الطبقة 3: Redis Cluster
         value = self.redis_cache.get(key)
         if value is not None:
@@ -533,14 +551,14 @@ class MultiLayerCacheOrchestrator:
             self.app_cache.set(key, value)
             self.cdn_cache.set(key, value)
             return value, CacheLayer.DISTRIBUTED
-        
+
         # Cache Miss - سنجلب من قاعدة البيانات
         return None, None
 
     def set(self, key: str, value: Any, ttl: int = 3600):
         """
         تخزين في جميع الطبقات
-        
+
         الفائدة: الطلب التالي سيكون سريع من أي مكان!
         """
         # تخزين في جميع الطبقات
@@ -558,14 +576,13 @@ class MultiLayerCacheOrchestrator:
         """إحصائيات شاملة لجميع الطبقات"""
         total_hits = sum(self.cache_hits_by_layer.values())
         hit_rate = (total_hits / self.total_requests * 100) if self.total_requests > 0 else 0
-        
+
         return {
             "total_requests": self.total_requests,
             "total_cache_hits": total_hits,
             "overall_hit_rate": hit_rate,
             "hits_by_layer": {
-                layer.value: count
-                for layer, count in self.cache_hits_by_layer.items()
+                layer.value: count for layer, count in self.cache_hits_by_layer.items()
             },
             "cdn_stats": self.cdn_cache.get_edge_stats(),
             "redis_stats": self.redis_cache.get_cluster_stats(),
