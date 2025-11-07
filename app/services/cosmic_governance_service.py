@@ -219,7 +219,7 @@ class CosmicGovernanceService:
             return context.get(field, 0) <= max_val
 
         elif rule_type == "min_consciousness_level":
-            rule_config.get("min_level", 0)
+            _ = rule_config.get("min_level", 0)
             # Would check consciousness level from context
             return True  # Simplified
 

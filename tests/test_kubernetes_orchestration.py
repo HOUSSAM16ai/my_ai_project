@@ -270,7 +270,7 @@ class TestDistributedConsensus:
 
     def test_election_timeout_mechanism(self, orchestrator):
         """اختبار آلية انتهاء مهلة الانتخاب"""
-        orchestrator.get_raft_state().role
+        _ = orchestrator.get_raft_state().role
 
         # الانتظار لفترة كافية
         time.sleep(2)

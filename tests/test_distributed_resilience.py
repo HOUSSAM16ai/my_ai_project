@@ -233,7 +233,7 @@ class TestRetryManager:
             response.status_code = 404
             return response
 
-        rm.execute_with_retry(func_with_status)
+        _ = rm.execute_with_retry(func_with_status)
         assert call_count == 1  # No retry on 4xx
 
 
