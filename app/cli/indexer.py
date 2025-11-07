@@ -15,7 +15,7 @@ try:
 
     SENTENCE_TRANSFORMER_AVAILABLE = True
 except ImportError:
-    SentenceTransformer = None  # type: ignore
+    SentenceTransformer = None
     SENTENCE_TRANSFORMER_AVAILABLE = False
 
 DEFAULT_MODEL = os.getenv("COGNI_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")

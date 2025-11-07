@@ -325,12 +325,12 @@ class SelfEvolvingConsciousnessEntity:
             self.stats["efficiency_improvements"] = total_impact
 
         # تصنيف الرؤى حسب النوع
-        insights_by_type = defaultdict(int)
+        insights_by_type: dict[str, int] = defaultdict(int)
         for insight in self.insights:
             insights_by_type[insight.learning_type.value] += 1
 
         # تصنيف التوصيات حسب الأولوية
-        recommendations_by_priority = defaultdict(int)
+        recommendations_by_priority: dict[str, int] = defaultdict(int)
         for rec in self.recommendations:
             recommendations_by_priority[rec.priority.value] += 1
 

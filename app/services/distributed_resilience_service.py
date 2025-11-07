@@ -994,9 +994,9 @@ class DistributedResilienceService:
                 self.bulkheads[name] = Bulkhead(name, config)
             return self.bulkheads[name]
 
-    def get_comprehensive_stats(self) -> dict:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive resilience statistics"""
-        stats = {
+        stats: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "circuit_breakers": {},
             "retry_managers": {},

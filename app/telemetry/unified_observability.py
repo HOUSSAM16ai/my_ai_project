@@ -896,7 +896,7 @@ class UnifiedObservabilityService:
 
         Returns mapping of service → called services
         """
-        dependencies = {}
+        dependencies: dict[str, set[str]] = {}
 
         with self.lock:
             for trace in self.completed_traces:

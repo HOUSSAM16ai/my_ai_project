@@ -394,7 +394,7 @@ class UserAnalyticsMetricsService:
                 avg_session_duration = statistics.mean(s.duration_seconds for s in recent_sessions)
 
                 # Sessions per user
-                user_sessions = defaultdict(int)
+                user_sessions: dict[int, int] = defaultdict(int)
                 for session in recent_sessions:
                     user_sessions[session.user_id] += 1
                 avg_sessions_per_user = statistics.mean(user_sessions.values())
@@ -719,7 +719,7 @@ class UserAnalyticsMetricsService:
         """Segment users based on behavior"""
         with self.lock:
             now = datetime.now(UTC)
-            segments = {segment: [] for segment in UserSegment}
+            segments: dict[UserSegment, list[int]] = {segment: [] for segment in UserSegment}
 
             for user_id, data in self.users.items():
                 days_since_last_seen = (now - data["last_seen"]).days

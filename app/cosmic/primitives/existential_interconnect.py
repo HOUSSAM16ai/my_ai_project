@@ -168,7 +168,7 @@ class ExistentialInterconnect:
             }
 
         start_time = datetime.now(UTC)
-        transfer_security_level = security_level or self.security_level
+        transfer_security_level = security_level if security_level is not None else self.security_level
 
         try:
             # التحقق من نزاهة البيانات

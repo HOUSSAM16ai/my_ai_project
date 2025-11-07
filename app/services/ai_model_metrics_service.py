@@ -641,7 +641,7 @@ class AIModelMetricsService:
             FairnessMetrics object
         """
         # Group by sensitive attribute
-        groups = defaultdict(lambda: {"pred": [], "truth": []})
+        groups: dict[Any, dict[str, list[Any]]] = defaultdict(lambda: {"pred": [], "truth": []})
 
         for pred, truth, attr in zip(predictions, ground_truths, sensitive_attributes):
             groups[attr]["pred"].append(pred)
@@ -820,7 +820,7 @@ class AIModelMetricsService:
     def export_metrics_summary(self) -> dict[str, Any]:
         """Export comprehensive metrics summary"""
         with self.lock:
-            summary = {
+            summary: dict[str, Any] = {
                 "timestamp": datetime.now(UTC).isoformat(),
                 "total_models": len(self.models),
                 "total_inferences": len(self.inference_buffer),
