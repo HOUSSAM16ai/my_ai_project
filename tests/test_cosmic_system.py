@@ -483,7 +483,7 @@ class TestExistentialTransparency:
                 )
             db.session.commit()
 
-            # Query logs (increased limit to 100 to handle pre-existing data from other tests)
+            # Query logs (increased limit from 10 to 100 to handle pre-existing data from other tests)
             logs = CosmicGovernanceService.query_transparency_logs(
                 event_type="PROTOCOL_CREATED", limit=100
             )

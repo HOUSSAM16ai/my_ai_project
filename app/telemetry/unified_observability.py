@@ -343,6 +343,7 @@ class UnifiedObservabilityService:
 
         # Always create span (even for non-sampled traces) to support tail-based sampling.
         # Non-sampled spans can still be promoted if the trace contains errors or exceeds SLA.
+        # Spans not promoted by tail-based sampling are discarded when end_span is called.
         span_id = self._generate_span_id()
         span = UnifiedSpan(
             trace_id=trace_id,
