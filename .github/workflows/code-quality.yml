@@ -58,6 +58,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install black isort ruff pylint flake8 bandit[toml] pydocstyle
+          pip install -r requirements.txt
 
       - name: ⚫ Check Black formatting
         run: |
@@ -225,7 +226,8 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Safety check (allow to fail, informational only)
-          safety check --json --output safety-report.json 2>&1 || {
+          # Use new safety scan command or legacy check with correct syntax
+          safety check --output json > safety-report.json 2>&1 || {
             echo "⚠️  Safety check encountered issues (API limitations or vulnerabilities found)"
             echo "📋 Check safety-report.json for details"
             echo "💡 This is informational and won't fail the build"
