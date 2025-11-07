@@ -65,9 +65,7 @@ def setup_request_logging(app: Flask):
             log_level = (
                 "info"
                 if response.status_code < 400
-                else "warning"
-                if response.status_code < 500
-                else "error"
+                else "warning" if response.status_code < 500 else "error"
             )
 
             log_message = (

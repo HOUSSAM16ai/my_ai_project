@@ -43,7 +43,7 @@ jobs:
       - name: ⚫ Black (check only)
         run: |
           echo "⚫ Checking code formatting with Black..."
-          black --check .
+          black --check --diff --color app/ tests/
           echo "✅ Black check passed!"
 
       - name: ⚡ Ruff (lint only)
