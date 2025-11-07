@@ -994,9 +994,9 @@ class DistributedResilienceService:
                 self.bulkheads[name] = Bulkhead(name, config)
             return self.bulkheads[name]
 
-    def get_comprehensive_stats(self) -> dict:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive resilience statistics"""
-        stats = {
+        stats: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "circuit_breakers": {},
             "retry_managers": {},
@@ -1006,16 +1006,20 @@ class DistributedResilienceService:
 
         with self._lock:
             for name, cb in self.circuit_breakers.items():
-                stats["circuit_breakers"][name] = cb.get_stats()
+                cb_stats: dict[str, Any] = stats["circuit_breakers"]
+                cb_stats[name] = cb.get_stats()
 
             for name, rm in self.retry_managers.items():
-                stats["retry_managers"][name] = rm.retry_budget.get_stats()
+                rm_stats: dict[str, Any] = stats["retry_managers"]
+                rm_stats[name] = rm.retry_budget.get_stats()
 
             for name, bh in self.bulkheads.items():
-                stats["bulkheads"][name] = bh.get_stats()
+                bh_stats: dict[str, Any] = stats["bulkheads"]
+                bh_stats[name] = bh.get_stats()
 
             for name, at in self.adaptive_timeouts.items():
-                stats["adaptive_timeouts"][name] = at.get_stats()
+                at_stats: dict[str, Any] = stats["adaptive_timeouts"]
+                at_stats[name] = at.get_stats()
 
         return stats
 

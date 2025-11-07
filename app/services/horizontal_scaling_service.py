@@ -280,10 +280,8 @@ class HorizontalScalingOrchestrator:
             return self._consistent_hash(lb, request_key or "")
         elif lb.algorithm == LoadBalancingAlgorithm.GEOGRAPHIC:
             return self._geographic_routing(available_servers, client_region)
-        elif lb.algorithm == LoadBalancingAlgorithm.INTELLIGENT_AI:
+        else:  # INTELLIGENT_AI or any future algorithm
             return self._intelligent_routing(available_servers)
-
-        return available_servers[0] if available_servers else None
 
     def _round_robin(self, lb: LoadBalancer, servers: list[Server]) -> Server:
         """خوارزمية Round Robin"""

@@ -168,11 +168,13 @@ class OWASPValidator:
         if has_password_context and ("md5" in code.lower() or "sha1" in code.lower()):
             # Check if it's actually being used for password hashing
             # Skip if usedforsecurity=False is present or it's just for ID generation
-            if (
-                "usedforsecurity=False" not in code
-                and "usedforsecurity = False" not in code
-                and not re.search(self._id_generation_pattern, code)
-            ):
+            has_use_for_security_false = (
+                "usedforsecurity=False" in code
+                or "usedforsecurity = False" in code
+            )
+            is_id_generation = re.search(self._id_generation_pattern, code) is not None
+            
+            if not has_use_for_security_false and not is_id_generation:
                 issues.append(
                     SecurityIssue(
                         category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,

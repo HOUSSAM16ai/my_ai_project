@@ -32,7 +32,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 import psutil
 
@@ -210,7 +210,7 @@ class InfrastructureMetricsService:
         self._last_disk_io_time = time.time()
 
         # Background collection thread
-        self._collection_thread = None
+        self._collection_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
 
     def start_background_collection(self):

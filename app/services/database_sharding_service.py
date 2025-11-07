@@ -378,7 +378,7 @@ class DatabaseShardingManager:
         مثال: SELECT * FROM users WHERE age > 25
         (يحتاج قراءة من جميع الشاردات)
         """
-        results = []
+        results: list[dict[str, Any]] = []
         master_shards = [
             s
             for s in self.shards.values()
@@ -387,7 +387,7 @@ class DatabaseShardingManager:
 
         for shard in master_shards:
             # تنفيذ على كل شارد
-            shard_result = {
+            shard_result: dict[str, Any] = {
                 "shard_id": shard.shard_id,
                 "query_id": query.query_id,
                 "latency_ms": shard.avg_query_latency_ms,
@@ -399,7 +399,7 @@ class DatabaseShardingManager:
             "is_cross_shard": True,
             "shards_queried": len(results),
             "results": results,
-            "total_latency_ms": max(r["latency_ms"] for r in results) if results else 0,
+            "total_latency_ms": max((float(r["latency_ms"]) for r in results), default=0.0) if results else 0.0,
         }
 
     def add_shard(
