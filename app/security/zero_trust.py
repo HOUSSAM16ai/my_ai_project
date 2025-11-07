@@ -429,7 +429,6 @@ class ZeroTrustAuthenticator:
             and current_location.latitude
             and current_location.longitude
         ):
-
             distance_km = self._calculate_distance(
                 last_loc.latitude,
                 last_loc.longitude,

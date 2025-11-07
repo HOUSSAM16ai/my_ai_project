@@ -67,9 +67,7 @@ class GovernedConsciousnessUnit:
     Examples:
         >>> # إنشاء وحدة وعي جديدة
         >>> gcu = GovernedConsciousnessUnit(
-        ...     entity_type=ConsciousnessType.AI,
-        ...     entity_id="ai-assistant-001",
-        ...     name="AI Assistant"
+        ...     entity_type=ConsciousnessType.AI, entity_id="ai-assistant-001", name="AI Assistant"
         ... )
         >>>
         >>> # الاشتراك في بروتوكول

@@ -392,7 +392,8 @@ class TestSelfEvolvingConsciousnessEntity:
     def test_sece_analyze_patterns(self):
         """Test SECE analyzes behavior patterns"""
         sece = SelfEvolvingConsciousnessEntity(
-            name="Pattern Analyzer", learning_threshold=0.5  # Lower threshold for testing
+            name="Pattern Analyzer",
+            learning_threshold=0.5,  # Lower threshold for testing
         )
 
         # Create components with patterns to detect

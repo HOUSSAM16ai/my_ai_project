@@ -8,7 +8,6 @@ Commands:
 - cosmic transparency
 """
 
-
 import click
 from flask.cli import with_appcontext
 
@@ -450,9 +449,7 @@ def show_stats():
     # Councils
     total_councils = db.session.query(CosmicGovernanceCouncil).count()
     active_councils = (
-        db.session.query(CosmicGovernanceCouncil)
-        .filter(CosmicGovernanceCouncil.is_active)
-        .count()
+        db.session.query(CosmicGovernanceCouncil).filter(CosmicGovernanceCouncil.is_active).count()
     )
     click.echo(f"🏛️  Councils: {total_councils} (Active: {active_councils})")
 

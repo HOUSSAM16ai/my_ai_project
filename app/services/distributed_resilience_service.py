@@ -986,9 +986,7 @@ class DistributedResilienceService:
                 self.retry_managers[name] = RetryManager(config)
             return self.retry_managers[name]
 
-    def get_or_create_bulkhead(
-        self, name: str, config: BulkheadConfig | None = None
-    ) -> Bulkhead:
+    def get_or_create_bulkhead(self, name: str, config: BulkheadConfig | None = None) -> Bulkhead:
         """Get or create bulkhead"""
         with self._lock:
             if name not in self.bulkheads:
@@ -1055,8 +1053,10 @@ def resilient(
             # Apply circuit breaker
             if circuit_breaker_name:
                 cb = service.get_or_create_circuit_breaker(circuit_breaker_name)
+
                 def func_to_call():
                     return func(*args, **kwargs)
+
                 return cb.call(func_to_call)
 
             # Apply retry

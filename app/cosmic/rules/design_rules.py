@@ -114,7 +114,7 @@ class DualConsciousnessRule(CosmicDesignRule):
         >>> architecture = {
         ...     "consciousness_units": 2,
         ...     "independent_operation": True,
-        ...     "handles_sensitive_data": True
+        ...     "handles_sensitive_data": True,
         ... }
         >>> result = rule.validate(architecture)
     """
@@ -207,7 +207,7 @@ class InfiniteScalabilityRule(CosmicDesignRule):
         >>> architecture = {
         ...     "horizontal_scaling": True,
         ...     "stateless_design": True,
-        ...     "load_balancing": True
+        ...     "load_balancing": True,
         ... }
         >>> result = rule.validate(architecture)
     """
@@ -327,7 +327,7 @@ class AutonomousEvolutionRule(CosmicDesignRule):
         >>> architecture = {
         ...     "self_monitoring": True,
         ...     "auto_optimization": True,
-        ...     "adaptive_configuration": True
+        ...     "adaptive_configuration": True,
         ... }
         >>> result = rule.validate(architecture)
     """

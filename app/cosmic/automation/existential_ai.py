@@ -83,8 +83,7 @@ class ExistentialAI:
         >>>
         >>> # نشر بروتوكول تلقائياً
         >>> result = e_ai.auto_deploy_protocol(
-        ...     workspace_id="ws-001",
-        ...     protocol_type=ProtocolType.CONFIDENTIALITY
+        ...     workspace_id="ws-001", protocol_type=ProtocolType.CONFIDENTIALITY
         ... )
         >>>
         >>> # مراقبة الترابط الوجودي

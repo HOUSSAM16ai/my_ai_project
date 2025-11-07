@@ -12,7 +12,6 @@ Tests:
 - Existential Transparency
 """
 
-
 import pytest
 
 from app import db
