@@ -48,7 +48,7 @@ jobs:
       - name: 🎨 Format code (black + ruff)
         run: |
           echo "🎨 Formatting code with Black and Ruff..."
-          black .
+          black --line-length=100 app/ tests/
           ruff check --fix --unsafe-fixes .
           ruff format .
           echo "✅ Formatting complete!"
