@@ -7,7 +7,7 @@
 
 نظام مراقبة البنية التحتية الخارق يتفوق على:
 - AWS CloudWatch
-- Google Cloud Monitoring  
+- Google Cloud Monitoring
 - Azure Monitor
 - Datadog
 - New Relic
@@ -219,9 +219,7 @@ class InfrastructureMetricsService:
             return
 
         self._stop_event.clear()
-        self._collection_thread = threading.Thread(
-            target=self._collect_metrics_loop, daemon=True
-        )
+        self._collection_thread = threading.Thread(target=self._collect_metrics_loop, daemon=True)
         self._collection_thread.start()
 
     def stop_background_collection(self):
@@ -296,12 +294,8 @@ class InfrastructureMetricsService:
             write_bytes_per_sec = (
                 current_disk_io.write_bytes - self._last_disk_io.write_bytes
             ) / time_delta
-            read_iops = (
-                current_disk_io.read_count - self._last_disk_io.read_count
-            ) / time_delta
-            write_iops = (
-                current_disk_io.write_count - self._last_disk_io.write_count
-            ) / time_delta
+            read_iops = (current_disk_io.read_count - self._last_disk_io.read_count) / time_delta
+            write_iops = (current_disk_io.write_count - self._last_disk_io.write_count) / time_delta
         else:
             read_bytes_per_sec = write_bytes_per_sec = 0.0
             read_iops = write_iops = 0.0
@@ -420,26 +414,16 @@ class InfrastructureMetricsService:
     ) -> HealthStatus:
         """Determine overall system health status"""
         # Critical thresholds
-        if (
-            cpu.usage_percent > 95
-            or memory.used_percent > 95
-            or disk.used_percent > 95
-        ):
+        if cpu.usage_percent > 95 or memory.used_percent > 95 or disk.used_percent > 95:
             return HealthStatus.CRITICAL
 
         # Degraded thresholds
-        if (
-            cpu.usage_percent > 80
-            or memory.used_percent > 80
-            or disk.used_percent > 80
-        ):
+        if cpu.usage_percent > 80 or memory.used_percent > 80 or disk.used_percent > 80:
             return HealthStatus.DEGRADED
 
         return HealthStatus.HEALTHY
 
-    def register_service(
-        self, service_name: str, sla_target: float = 99.9
-    ):
+    def register_service(self, service_name: str, sla_target: float = 99.9):
         """Register a service for availability tracking"""
         with self.lock:
             if service_name not in self.services:
@@ -460,9 +444,7 @@ class InfrastructureMetricsService:
             service = self.services[service_name]
             if service["status"] == "up":
                 service["status"] = "down"
-                service["incidents"].append(
-                    {"started_at": datetime.now(UTC), "ended_at": None}
-                )
+                service["incidents"].append({"started_at": datetime.now(UTC), "ended_at": None})
 
     def record_service_up(self, service_name: str):
         """Record service recovery"""
@@ -475,15 +457,11 @@ class InfrastructureMetricsService:
                 incident = service["incidents"][-1]
                 if incident["ended_at"] is None:
                     incident["ended_at"] = datetime.now(UTC)
-                    duration = (
-                        incident["ended_at"] - incident["started_at"]
-                    ).total_seconds()
+                    duration = (incident["ended_at"] - incident["started_at"]).total_seconds()
                     service["downtime_periods"].append(duration)
                 service["status"] = "up"
 
-    def get_availability_metrics(
-        self, service_name: str
-    ) -> AvailabilityMetrics | None:
+    def get_availability_metrics(self, service_name: str) -> AvailabilityMetrics | None:
         """Get availability metrics for a service"""
         with self.lock:
             if service_name not in self.services:
@@ -537,17 +515,23 @@ class InfrastructureMetricsService:
                 snapshot = self.metrics_buffer[-1]
 
             # Calculate averages from buffer
-            cpu_avg = sum(s.cpu.usage_percent for s in self.metrics_buffer) / len(
-                self.metrics_buffer
-            ) if self.metrics_buffer else snapshot.cpu.usage_percent
+            cpu_avg = (
+                sum(s.cpu.usage_percent for s in self.metrics_buffer) / len(self.metrics_buffer)
+                if self.metrics_buffer
+                else snapshot.cpu.usage_percent
+            )
 
-            memory_avg = sum(s.memory.used_percent for s in self.metrics_buffer) / len(
-                self.metrics_buffer
-            ) if self.metrics_buffer else snapshot.memory.used_percent
+            memory_avg = (
+                sum(s.memory.used_percent for s in self.metrics_buffer) / len(self.metrics_buffer)
+                if self.metrics_buffer
+                else snapshot.memory.used_percent
+            )
 
-            disk_avg = sum(s.disk.used_percent for s in self.metrics_buffer) / len(
-                self.metrics_buffer
-            ) if self.metrics_buffer else snapshot.disk.used_percent
+            disk_avg = (
+                sum(s.disk.used_percent for s in self.metrics_buffer) / len(self.metrics_buffer)
+                if self.metrics_buffer
+                else snapshot.disk.used_percent
+            )
 
             return {
                 "status": snapshot.status.value,
@@ -606,9 +590,7 @@ class InfrastructureMetricsService:
         metrics.append(f"# TYPE cpu_load_average gauge")
         metrics.append(f'cpu_load_average{{period="1m"}} {snapshot.cpu.load_average_1m}')
         metrics.append(f'cpu_load_average{{period="5m"}} {snapshot.cpu.load_average_5m}')
-        metrics.append(
-            f'cpu_load_average{{period="15m"}} {snapshot.cpu.load_average_15m}'
-        )
+        metrics.append(f'cpu_load_average{{period="15m"}} {snapshot.cpu.load_average_15m}')
 
         # Memory metrics
         metrics.append(f"# HELP memory_used_percent Memory usage percentage")
@@ -619,9 +601,7 @@ class InfrastructureMetricsService:
         metrics.append(f"# TYPE memory_bytes gauge")
         metrics.append(f'memory_bytes{{type="total"}} {snapshot.memory.total_bytes}')
         metrics.append(f'memory_bytes{{type="used"}} {snapshot.memory.used_bytes}')
-        metrics.append(
-            f'memory_bytes{{type="available"}} {snapshot.memory.available_bytes}'
-        )
+        metrics.append(f'memory_bytes{{type="available"}} {snapshot.memory.available_bytes}')
 
         # Disk metrics
         metrics.append(f"# HELP disk_used_percent Disk usage percentage")

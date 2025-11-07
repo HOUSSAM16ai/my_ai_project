@@ -33,14 +33,16 @@ from typing import Any, Callable
 
 class MetricType(Enum):
     """أنواع المقاييس"""
-    COUNTER = "counter"          # عداد (يزيد فقط)
-    GAUGE = "gauge"              # مقياس (يزيد وينقص)
-    HISTOGRAM = "histogram"      # مدرج تكراري
-    SUMMARY = "summary"          # ملخص
+
+    COUNTER = "counter"  # عداد (يزيد فقط)
+    GAUGE = "gauge"  # مقياس (يزيد وينقص)
+    HISTOGRAM = "histogram"  # مدرج تكراري
+    SUMMARY = "summary"  # ملخص
 
 
 class AlertSeverity(Enum):
     """شدة التنبيه"""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -49,6 +51,7 @@ class AlertSeverity(Enum):
 
 class TraceStatus(Enum):
     """حالة التتبع"""
+
     UNSET = "unset"
     OK = "ok"
     ERROR = "error"
@@ -62,6 +65,7 @@ class TraceStatus(Enum):
 @dataclass
 class Metric:
     """مقياس"""
+
     metric_id: str
     name: str
     metric_type: MetricType
@@ -73,6 +77,7 @@ class Metric:
 @dataclass
 class Span:
     """فترة زمنية في التتبع الموزع"""
+
     span_id: str
     trace_id: str
     parent_span_id: str | None
@@ -87,6 +92,7 @@ class Span:
 @dataclass
 class Alert:
     """تنبيه"""
+
     alert_id: str
     name: str
     severity: AlertSeverity
@@ -101,6 +107,7 @@ class Alert:
 @dataclass
 class HealthStatus:
     """حالة الصحة الإجمالية"""
+
     component: str
     healthy: bool
     message: str
@@ -111,15 +118,16 @@ class HealthStatus:
 @dataclass
 class PerformanceSnapshot:
     """لقطة من الأداء"""
+
     snapshot_id: str
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
-    
+
     # Deployment metrics
     active_deployments: int = 0
     successful_deployments: int = 0
     failed_deployments: int = 0
     avg_deployment_time_seconds: float = 0.0
-    
+
     # Kubernetes metrics
     total_pods: int = 0
     healthy_pods: int = 0
@@ -127,14 +135,14 @@ class PerformanceSnapshot:
     ready_nodes: int = 0
     cluster_cpu_usage: float = 0.0
     cluster_memory_usage: float = 0.0
-    
+
     # Model serving metrics
     total_models: int = 0
     serving_models: int = 0
     total_requests: int = 0
     avg_latency_ms: float = 0.0
     error_rate: float = 0.0
-    
+
     # Circuit breaker metrics
     open_circuits: int = 0
     half_open_circuits: int = 0
@@ -148,7 +156,7 @@ class PerformanceSnapshot:
 class ObservabilityIntegration:
     """
     خدمة تكامل المراقبة والرصد
-    
+
     تجمع المقاييس من جميع المكونات وتوفر رؤية شاملة
     """
 
@@ -158,12 +166,12 @@ class ObservabilityIntegration:
         self._alerts: deque[Alert] = deque(maxlen=10000)
         self._health_statuses: dict[str, HealthStatus] = {}
         self._performance_snapshots: deque[PerformanceSnapshot] = deque(maxlen=1000)
-        
+
         self._lock = threading.RLock()
-        
+
         # بدء جمع المقاييس الدوري
         self._start_metrics_collection()
-        
+
         # بدء كشف الشذوذ
         self._start_anomaly_detection()
 
@@ -180,7 +188,7 @@ class ObservabilityIntegration:
     ):
         """
         تسجيل مقياس
-        
+
         Args:
             name: اسم المقياس
             value: القيمة
@@ -194,7 +202,7 @@ class ObservabilityIntegration:
             value=value,
             labels=labels or {},
         )
-        
+
         with self._lock:
             self._metrics.append(metric)
 
@@ -206,29 +214,26 @@ class ObservabilityIntegration:
     ) -> list[Metric]:
         """
         الحصول على المقاييس
-        
+
         Args:
             name: تصفية حسب الاسم (اختياري)
             labels: تصفية حسب التصنيفات (اختياري)
             limit: الحد الأقصى للنتائج
-            
+
         Returns:
             قائمة المقاييس
         """
         with self._lock:
             metrics = list(self._metrics)
-        
+
         # تصفية حسب الاسم
         if name:
             metrics = [m for m in metrics if m.name == name]
-        
+
         # تصفية حسب التصنيفات
         if labels:
-            metrics = [
-                m for m in metrics
-                if all(m.labels.get(k) == v for k, v in labels.items())
-            ]
-        
+            metrics = [m for m in metrics if all(m.labels.get(k) == v for k, v in labels.items())]
+
         return metrics[-limit:]
 
     # ======================================================================================
@@ -243,18 +248,18 @@ class ObservabilityIntegration:
     ) -> Span:
         """
         بدء فترة تتبع جديدة
-        
+
         Args:
             operation_name: اسم العملية
             trace_id: معرف التتبع (يُنشأ تلقائياً إذا لم يُحدد)
             parent_span_id: معرف الفترة الأب
-            
+
         Returns:
             الفترة الجديدة
         """
         if not trace_id:
             trace_id = str(uuid.uuid4())
-        
+
         span = Span(
             span_id=str(uuid.uuid4()),
             trace_id=trace_id,
@@ -262,16 +267,16 @@ class ObservabilityIntegration:
             operation_name=operation_name,
             start_time=datetime.now(UTC),
         )
-        
+
         with self._lock:
             self._traces[trace_id].append(span)
-        
+
         return span
 
     def end_span(self, span: Span, status: TraceStatus = TraceStatus.OK):
         """
         إنهاء فترة التتبع
-        
+
         Args:
             span: الفترة
             status: الحالة النهائية
@@ -306,14 +311,14 @@ class ObservabilityIntegration:
     ) -> str:
         """
         تفعيل تنبيه
-        
+
         Args:
             name: اسم التنبيه
             severity: الشدة
             message: الرسالة
             source: المصدر
             metadata: بيانات إضافية
-            
+
         Returns:
             معرف التنبيه
         """
@@ -325,16 +330,16 @@ class ObservabilityIntegration:
             source=source,
             metadata=metadata or {},
         )
-        
+
         with self._lock:
             self._alerts.append(alert)
-        
+
         # في النظام الحقيقي، يتم إرسال التنبيه:
         # - Email
         # - Slack
         # - PagerDuty
         # - etc.
-        
+
         return alert.alert_id
 
     def resolve_alert(self, alert_id: str):
@@ -350,10 +355,10 @@ class ObservabilityIntegration:
         """الحصول على التنبيهات النشطة"""
         with self._lock:
             alerts = [a for a in self._alerts if not a.resolved]
-        
+
         if severity:
             alerts = [a for a in alerts if a.severity == severity]
-        
+
         return alerts
 
     # ======================================================================================
@@ -369,7 +374,7 @@ class ObservabilityIntegration:
     ):
         """
         تحديث حالة صحة مكون
-        
+
         Args:
             component: اسم المكون
             healthy: هل صحي؟
@@ -382,10 +387,10 @@ class ObservabilityIntegration:
             message=message,
             metrics=metrics or {},
         )
-        
+
         with self._lock:
             self._health_statuses[component] = status
-        
+
         # تفعيل تنبيه إذا كان غير صحي
         if not healthy:
             self.trigger_alert(
@@ -399,9 +404,9 @@ class ObservabilityIntegration:
         """الحصول على الحالة الصحية الإجمالية"""
         with self._lock:
             statuses = dict(self._health_statuses)
-        
+
         all_healthy = all(s.healthy for s in statuses.values())
-        
+
         return {
             "healthy": all_healthy,
             "components": {
@@ -421,6 +426,7 @@ class ObservabilityIntegration:
 
     def _start_metrics_collection(self):
         """بدء جمع المقاييس الدوري"""
+
         def collect():
             while True:
                 try:
@@ -428,7 +434,7 @@ class ObservabilityIntegration:
                     time.sleep(30)  # كل 30 ثانية
                 except Exception as e:
                     print(f"Metrics collection error: {e}")
-        
+
         thread = threading.Thread(target=collect, daemon=True)
         thread.start()
 
@@ -438,20 +444,20 @@ class ObservabilityIntegration:
         from app.services.deployment_orchestrator_service import get_deployment_orchestrator
         from app.services.kubernetes_orchestration_service import get_kubernetes_orchestrator
         from app.services.model_serving_infrastructure import get_model_serving_infrastructure
-        
+
         try:
             # Deployment metrics
             orchestrator = get_deployment_orchestrator()
             deployment_metrics = self._collect_deployment_metrics(orchestrator)
-            
+
             # Kubernetes metrics
             k8s = get_kubernetes_orchestrator()
             k8s_metrics = self._collect_kubernetes_metrics(k8s)
-            
+
             # Model serving metrics
             model_serving = get_model_serving_infrastructure()
             model_metrics = self._collect_model_serving_metrics(model_serving)
-            
+
             # إنشاء لقطة الأداء
             snapshot = PerformanceSnapshot(
                 snapshot_id=str(uuid.uuid4()),
@@ -459,10 +465,10 @@ class ObservabilityIntegration:
                 **k8s_metrics,
                 **model_metrics,
             )
-            
+
             with self._lock:
                 self._performance_snapshots.append(snapshot)
-            
+
         except Exception as e:
             print(f"Error collecting system metrics: {e}")
 
@@ -508,6 +514,7 @@ class ObservabilityIntegration:
 
     def _start_anomaly_detection(self):
         """بدء كشف الشذوذ"""
+
         def detect():
             while True:
                 try:
@@ -515,21 +522,21 @@ class ObservabilityIntegration:
                     time.sleep(60)  # كل دقيقة
                 except Exception as e:
                     print(f"Anomaly detection error: {e}")
-        
+
         thread = threading.Thread(target=detect, daemon=True)
         thread.start()
 
     def _detect_anomalies(self):
         """كشف الشذوذات"""
         # في النظام الحقيقي، استخدام ML للكشف عن الشذوذات
-        
+
         # مثال: فحص معدل الأخطاء
         error_rate_metrics = self.get_metrics(name="error_rate", limit=10)
-        
+
         if error_rate_metrics:
             recent_avg = sum(m.value for m in error_rate_metrics[-5:]) / 5
             historical_avg = sum(m.value for m in error_rate_metrics) / len(error_rate_metrics)
-            
+
             # إذا كان المعدل الحالي أعلى بكثير من التاريخي
             if recent_avg > historical_avg * 2:
                 self.trigger_alert(
@@ -551,12 +558,14 @@ class ObservabilityIntegration:
     def get_dashboard_data(self) -> dict[str, Any]:
         """
         الحصول على بيانات لوحة المعلومات
-        
+
         Returns:
             بيانات شاملة لعرض لوحة المعلومات
         """
-        snapshot = self.get_performance_snapshot(limit=1)[0] if self._performance_snapshots else None
-        
+        snapshot = (
+            self.get_performance_snapshot(limit=1)[0] if self._performance_snapshots else None
+        )
+
         return {
             "health": self.get_overall_health(),
             "active_alerts": len(self.get_active_alerts()),
@@ -577,10 +586,10 @@ _observability_lock = threading.Lock()
 def get_observability() -> ObservabilityIntegration:
     """الحصول على نسخة واحدة من خدمة المراقبة (Singleton)"""
     global _observability_instance
-    
+
     if _observability_instance is None:
         with _observability_lock:
             if _observability_instance is None:
                 _observability_instance = ObservabilityIntegration()
-    
+
     return _observability_instance

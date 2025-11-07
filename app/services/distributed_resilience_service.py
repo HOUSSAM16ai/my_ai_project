@@ -215,7 +215,7 @@ class LatencyMetrics:
 class CircuitBreaker:
     """
     Circuit Breaker Pattern Implementation
-    
+
     Features:
     - Three states: CLOSED → OPEN → HALF_OPEN → CLOSED
     - Failure threshold triggers OPEN state
@@ -317,9 +317,9 @@ class CircuitBreaker:
             "state": self.state.state.value,
             "failure_count": self.state.failure_count,
             "success_count": self.state.success_count,
-            "last_failure_time": self.state.last_failure_time.isoformat()
-            if self.state.last_failure_time
-            else None,
+            "last_failure_time": (
+                self.state.last_failure_time.isoformat() if self.state.last_failure_time else None
+            ),
             "last_state_change": self.state.last_state_change.isoformat(),
         }
 
@@ -360,7 +360,7 @@ class RetryManager:
     ) -> Any:
         """
         Execute function with retry logic
-        
+
         Args:
             func: Function to execute
             idempotency_key: Optional key for idempotent operations
@@ -397,7 +397,10 @@ class RetryManager:
 
                 attempts.append(
                     RetryAttempt(
-                        attempt_number=attempt, timestamp=datetime.now(UTC), delay_ms=0, success=True
+                        attempt_number=attempt,
+                        timestamp=datetime.now(UTC),
+                        delay_ms=0,
+                        success=True,
                     )
                 )
                 return result
@@ -484,7 +487,7 @@ class RetryManager:
 class RetryBudget:
     """
     Retry Budget - Limits retries to prevent cascading failures
-    
+
     Implements the principle: Max 10% of requests can be retries
     """
 
@@ -548,7 +551,7 @@ class RetryBudgetExhaustedError(Exception):
 class Bulkhead:
     """
     Bulkhead Pattern Implementation
-    
+
     Features:
     - Thread pool isolation per service
     - Semaphore-based concurrency limits
@@ -566,7 +569,9 @@ class Bulkhead:
         self.rejected_calls = 0
         self._lock = threading.RLock()
 
-    def execute(self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs) -> Any:
+    def execute(
+        self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs
+    ) -> Any:
         """Execute function with bulkhead protection"""
         # Try to acquire semaphore
         acquired = self.semaphore.acquire(blocking=False)
@@ -591,7 +596,9 @@ class Bulkhead:
             elapsed_ms = (time.time() - start_time) * 1000
 
             if elapsed_ms > self.config.timeout_ms:
-                raise TimeoutError(f"Operation exceeded timeout: {elapsed_ms}ms > {self.config.timeout_ms}ms")
+                raise TimeoutError(
+                    f"Operation exceeded timeout: {elapsed_ms}ms > {self.config.timeout_ms}ms"
+                )
 
             return result
         finally:
@@ -627,7 +634,7 @@ class BulkheadFullError(Exception):
 class AdaptiveTimeout:
     """
     Adaptive Timeout based on P95 latency
-    
+
     Features:
     - Tracks latency history
     - Calculates P50, P95, P99, P99.9
@@ -688,7 +695,7 @@ class AdaptiveTimeout:
 class FallbackChain:
     """
     Multi-Level Fallback Chain
-    
+
     Levels:
     1. Primary Database → Best data
     2. Read Replica → Milliseconds stale
@@ -710,7 +717,7 @@ class FallbackChain:
     def execute(self, *args, **kwargs) -> tuple[Any, FallbackLevel, bool]:
         """
         Execute with fallback chain
-        
+
         Returns:
             (result, level_used, degraded)
         """
@@ -749,7 +756,7 @@ class FallbackChain:
 class TokenBucket:
     """
     Token Bucket Algorithm
-    
+
     Features:
     - Allows bursts
     - Refills at constant rate
@@ -787,7 +794,7 @@ class TokenBucket:
 class SlidingWindowCounter:
     """
     Sliding Window Algorithm
-    
+
     More accurate than fixed window
     Prevents boundary exploitation
     """
@@ -817,7 +824,7 @@ class SlidingWindowCounter:
 class LeakyBucket:
     """
     Leaky Bucket Algorithm
-    
+
     Constant processing rate
     Queue with max size
     Smooth traffic flow
@@ -873,7 +880,7 @@ class HealthCheckResult:
 class HealthChecker:
     """
     Multi-Level Health Check System
-    
+
     Types:
     - Liveness: Process alive? Port listening?
     - Readiness: Dependencies available? Ready for traffic?
@@ -938,7 +945,7 @@ class HealthChecker:
 class DistributedResilienceService:
     """
     المدير الخارق لجميع أنماط المرونة في الأنظمة الموزعة
-    
+
     Integrates:
     - Circuit Breakers
     - Retry with Backoff
@@ -969,7 +976,9 @@ class DistributedResilienceService:
                 self.circuit_breakers[name] = CircuitBreaker(name, config)
             return self.circuit_breakers[name]
 
-    def get_or_create_retry_manager(self, name: str, config: Optional[RetryConfig] = None) -> RetryManager:
+    def get_or_create_retry_manager(
+        self, name: str, config: Optional[RetryConfig] = None
+    ) -> RetryManager:
         """Get or create retry manager"""
         with self._lock:
             if name not in self.retry_managers:
@@ -977,7 +986,9 @@ class DistributedResilienceService:
                 self.retry_managers[name] = RetryManager(config)
             return self.retry_managers[name]
 
-    def get_or_create_bulkhead(self, name: str, config: Optional[BulkheadConfig] = None) -> Bulkhead:
+    def get_or_create_bulkhead(
+        self, name: str, config: Optional[BulkheadConfig] = None
+    ) -> Bulkhead:
         """Get or create bulkhead"""
         with self._lock:
             if name not in self.bulkheads:
@@ -1024,7 +1035,7 @@ def resilient(
 ):
     """
     Decorator to make functions resilient
-    
+
     Usage:
         @resilient(
             circuit_breaker_name="database",

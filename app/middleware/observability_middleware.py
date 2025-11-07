@@ -249,7 +249,9 @@ def monitor_function(operation_name: str | None = None):
             obs = get_unified_observability()
 
             # Get parent context from Flask g if available
-            parent_context = getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            parent_context = (
+                getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            )
 
             # Start span
             op_name = operation_name or f"{func.__module__}.{func.__name__}"
@@ -317,7 +319,9 @@ def monitor_database_query():
         @wraps(func)
         def wrapper(*args, **kwargs):
             obs = get_unified_observability()
-            parent_context = getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            parent_context = (
+                getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            )
 
             # Start span
             context = obs.start_trace(
@@ -376,7 +380,9 @@ def monitor_external_call(service_name: str):
         @wraps(func)
         def wrapper(*args, **kwargs):
             obs = get_unified_observability()
-            parent_context = getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            parent_context = (
+                getattr(g, "trace_context", None) if hasattr(g, "trace_context") else None
+            )
 
             # Start span
             context = obs.start_trace(

@@ -51,7 +51,7 @@ rate_limiter = TokenBucket(capacity=100, refill_rate=10)
 def protected_endpoint():
     """
     Demo endpoint showing all resilience patterns
-    
+
     Patterns applied:
     - Rate Limiting (Token Bucket)
     - Bulkhead (Concurrency limit)
@@ -120,12 +120,15 @@ def protected_endpoint():
 def simple_protected_endpoint():
     """
     Simple endpoint using decorator for protection
-    
+
     The @resilient decorator automatically applies:
     - Circuit Breaker
     - Retry with exponential backoff
     """
-    data = {"message": "This endpoint is protected by circuit breaker and retry logic", "status": "success"}
+    data = {
+        "message": "This endpoint is protected by circuit breaker and retry logic",
+        "status": "success",
+    }
 
     return jsonify(data), 200
 
@@ -192,7 +195,7 @@ def health_check_demo():
 def resilience_stats():
     """
     Get comprehensive resilience statistics
-    
+
     Returns metrics for:
     - All circuit breakers
     - All retry managers
@@ -213,7 +216,7 @@ def resilience_stats():
 def component_stats(component_type, component_name):
     """
     Get statistics for specific component
-    
+
     Args:
         component_type: 'circuit_breaker', 'retry_manager', or 'bulkhead'
         component_name: Name of the component
@@ -245,7 +248,7 @@ def component_stats(component_type, component_name):
 def reset_component(component_type, component_name):
     """
     Reset component state (useful for testing)
-    
+
     This is a demo/testing endpoint - not for production use
     """
     if component_type == "circuit_breaker":

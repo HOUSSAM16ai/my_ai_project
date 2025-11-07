@@ -82,8 +82,8 @@ class OWASPValidator:
 
     # Configuration constants for context window sizes
     _CONTEXT_BEFORE = 100  # Characters to include before match for context analysis
-    _CONTEXT_AFTER = 100   # Characters to include after match for context analysis
-    
+    _CONTEXT_AFTER = 100  # Characters to include after match for context analysis
+
     # Safe patterns that indicate a match is not a real security issue
     _SAFE_SECRET_PATTERNS = [
         "class ",  # Enum or class definition
@@ -99,10 +99,10 @@ class OWASPValidator:
         "secrets.token",
         '["api_key"]',  # Dictionary access
         "['api_key']",
-        '[\'api_key\']',
+        "['api_key']",
         '["secret"]',
         "['secret']",
-        '[\'secret\']',
+        "['secret']",
         "creds[",  # Reading from credentials
         "credentials[",
         ".api_key = creds",  # Setting from credentials
@@ -110,7 +110,7 @@ class OWASPValidator:
         "_SENSITIVE_MARKERS",  # Tuple of markers for detection
         "_MARKERS",
     ]
-    
+
     # Environment variable access patterns (safe - not hardcoded)
     _ENV_VAR_PATTERNS = [
         "os.environ",
@@ -150,7 +150,7 @@ class OWASPValidator:
             r"\.html\s*\(",  # jQuery HTML injection
             r"dangerouslySetInnerHTML",  # React XSS vector
         ]
-        
+
         # Pattern to match hexdigest()[:n] which indicates ID generation, not password hashing
         self._id_generation_pattern = r"hashlib\.(md5|sha1)\([^)]*\)\.hexdigest\(\)\[:?\d*\]"
 
@@ -164,7 +164,7 @@ class OWASPValidator:
         # Check for weak password hashing (only if it's related to password operations)
         password_related_keywords = ["password", "passwd", "pwd", "credential", "auth"]
         has_password_context = any(keyword in code.lower() for keyword in password_related_keywords)
-        
+
         if has_password_context and ("md5" in code.lower() or "sha1" in code.lower()):
             # Check if it's actually being used for password hashing
             # Skip if usedforsecurity=False is present or it's just for ID generation
@@ -337,15 +337,15 @@ class OWASPValidator:
                 start = max(0, match.start() - self._CONTEXT_BEFORE)
                 end = min(len(code), match.end() + self._CONTEXT_AFTER)
                 context = code[start:end]
-                
+
                 # Skip if usedforsecurity=False is present
                 if "usedforsecurity=False" in context or "usedforsecurity = False" in context:
                     continue
-                    
+
                 # Skip if it's just importing hashlib
                 if "import hashlib" in context:
                     continue
-                
+
                 issues.append(
                     SecurityIssue(
                         category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
@@ -366,7 +366,7 @@ class OWASPValidator:
                 start = max(0, match.start() - self._CONTEXT_BEFORE)
                 end = min(len(code), match.end() + self._CONTEXT_AFTER)
                 context = code[start:end]
-                
+
                 # Skip test files, environment variable usage, comments, or safe patterns
                 if (
                     any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS)
