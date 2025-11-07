@@ -4,7 +4,6 @@
 # ======================================================================================
 
 import time
-from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -22,10 +21,9 @@ from app.services.distributed_resilience_service import (
     FallbackChain,
     FallbackLevel,
     HealthCheckConfig,
-    HealthCheckType,
     HealthChecker,
+    HealthCheckType,
     LeakyBucket,
-    PriorityLevel,
     RetryBudget,
     RetryBudgetExhaustedError,
     RetryConfig,
@@ -37,7 +35,6 @@ from app.services.distributed_resilience_service import (
     get_resilience_service,
     resilient,
 )
-
 
 # ======================================================================================
 # CIRCUIT BREAKER TESTS
@@ -106,9 +103,7 @@ class TestCircuitBreaker:
 
     def test_circuit_closes_after_success_in_half_open(self):
         """Circuit should close after success threshold in HALF_OPEN"""
-        config = CircuitBreakerConfig(
-            failure_threshold=1, success_threshold=2, timeout_seconds=1
-        )
+        config = CircuitBreakerConfig(failure_threshold=1, success_threshold=2, timeout_seconds=1)
         cb = CircuitBreaker("test", config)
 
         def failing_func():
@@ -238,7 +233,7 @@ class TestRetryManager:
             response.status_code = 404
             return response
 
-        result = rm.execute_with_retry(func_with_status)
+        rm.execute_with_retry(func_with_status)
         assert call_count == 1  # No retry on 4xx
 
 
