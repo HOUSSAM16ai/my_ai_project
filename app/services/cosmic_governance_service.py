@@ -13,8 +13,6 @@ import hashlib
 from datetime import datetime, UTC
 from typing import Dict, List, Optional, Any
 
-from sqlalchemy.orm.attributes import flag_modified
-
 from app import db
 from app.models import (
     ExistentialProtocol,
@@ -23,6 +21,7 @@ from app.models import (
     ConsciousnessSignature,
     CosmicPolicyStatus,
 )
+from sqlalchemy.orm.attributes import flag_modified
 
 
 class CosmicGovernanceService:

@@ -341,7 +341,8 @@ class UnifiedObservabilityService:
             parent_span_id = None
             baggage = {}
 
-        # Always create span (even for non-sampled traces) to support tail-based sampling
+        # Always create span (even for non-sampled traces) to support tail-based sampling.
+        # Non-sampled spans can still be promoted if the trace contains errors or exceeds SLA.
         span_id = self._generate_span_id()
         span = UnifiedSpan(
             trace_id=trace_id,
