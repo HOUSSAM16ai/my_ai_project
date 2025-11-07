@@ -144,20 +144,23 @@ def _register_blueprints(app: Flask) -> None:
     # API Gateway blueprints (optional)
     try:
         from .api import init_api
+        from .api import cosmic_routes
 
         init_api(app)
-        app.logger.info("API Gateway registered successfully")
+        cosmic_routes.register_cosmic_routes(app)
+        app.logger.info("API Gateway registered successfully (including cosmic routes)")
     except Exception as exc:
         app.logger.warning("Failed to register API Gateway: %s (continuing without API)", exc)
 
     # CLI commands (optional)
     try:
-        from .cli import database_commands, mindgate_commands, user_commands
+        from .cli import database_commands, mindgate_commands, user_commands, cosmic_commands
 
         app.register_blueprint(user_commands.users_cli)
         app.register_blueprint(mindgate_commands.mindgate_cli)
         app.register_blueprint(database_commands.database_cli)
-        app.logger.info("CLI commands registered successfully")
+        cosmic_commands.register_cosmic_commands(app)
+        app.logger.info("CLI commands registered successfully (including cosmic commands)")
     except Exception as exc:
         app.logger.warning("Failed to register CLI commands: %s (continuing without CLI)", exc)
 
