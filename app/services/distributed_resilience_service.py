@@ -1006,20 +1006,16 @@ class DistributedResilienceService:
 
         with self._lock:
             for name, cb in self.circuit_breakers.items():
-                cb_stats: dict[str, Any] = stats["circuit_breakers"]
-                cb_stats[name] = cb.get_stats()
+                stats["circuit_breakers"][name] = cb.get_stats()
 
             for name, rm in self.retry_managers.items():
-                rm_stats: dict[str, Any] = stats["retry_managers"]
-                rm_stats[name] = rm.retry_budget.get_stats()
+                stats["retry_managers"][name] = rm.retry_budget.get_stats()
 
             for name, bh in self.bulkheads.items():
-                bh_stats: dict[str, Any] = stats["bulkheads"]
-                bh_stats[name] = bh.get_stats()
+                stats["bulkheads"][name] = bh.get_stats()
 
             for name, at in self.adaptive_timeouts.items():
-                at_stats: dict[str, Any] = stats["adaptive_timeouts"]
-                at_stats[name] = at.get_stats()
+                stats["adaptive_timeouts"][name] = at.get_stats()
 
         return stats
 

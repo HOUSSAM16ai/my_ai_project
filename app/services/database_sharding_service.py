@@ -399,7 +399,7 @@ class DatabaseShardingManager:
             "is_cross_shard": True,
             "shards_queried": len(results),
             "results": results,
-            "total_latency_ms": max((float(r["latency_ms"]) for r in results), default=0.0) if results else 0.0,
+            "total_latency_ms": max((float(r["latency_ms"]) for r in results), default=0.0),
         }
 
     def add_shard(

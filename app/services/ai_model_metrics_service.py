@@ -834,8 +834,7 @@ class AIModelMetricsService:
                 snapshot = self.get_model_performance_snapshot(model_name, model_version)
 
                 if snapshot:
-                    models_dict: dict[str, Any] = summary["models"]
-                    models_dict[model_key] = {
+                    summary["models"][model_key] = {
                         "model_name": model_name,
                         "model_version": model_version,
                         "inference_count": model_data["inference_count"],
