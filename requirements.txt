@@ -42,6 +42,9 @@ flasgger>=0.9.7.1
 PyJWT>=2.7.0
 cryptography>=41.0.0
 
+# --- Monitoring & Metrics ---
+psutil>=5.9.0  # System and process monitoring
+
 # --- Development & Testing ---
 python-dotenv
 pytest
