@@ -1001,7 +1001,7 @@ class ExistentialNode(db.Model):
     last_harmonized_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     # Indexes for performance
     __table_args__ = (
@@ -1054,7 +1054,7 @@ class ConsciousnessSignature(db.Model):
     )
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     # Relationships
     cosmic_ledger_entries = relationship(
@@ -1116,7 +1116,7 @@ class CosmicLedgerEntry(db.Model):
     verification_hash = db.Column(db.String(512), nullable=False)
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     __table_args__ = (
         Index("idx_cosmic_ledger_time", "cosmic_timestamp"),
@@ -1169,7 +1169,7 @@ class SelfEvolvingConsciousEntity(db.Model):
     adaptation_history = db.Column(JSONB_or_JSON, nullable=False, default=list)
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     __table_args__ = (Index("idx_sece_active", "is_active", "last_active_at"),)
 
@@ -1218,7 +1218,7 @@ class ExistentialProtocol(db.Model):
     )
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     def __repr__(self):
         return f"<ExistentialProtocol {self.protocol_name} v{self.protocol_version} ({self.status.value})>"
@@ -1262,7 +1262,7 @@ class CosmicGovernanceCouncil(db.Model):
     last_meeting_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     def __repr__(self):
         return f"<CosmicGovernanceCouncil {self.council_name} ({self.member_count} members)>"
@@ -1311,7 +1311,7 @@ class ExistentialTransparencyLog(db.Model):
     recorded_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False, index=True)
 
     # Metadata
-    metadata = db.Column(JSONB_or_JSON, nullable=False, default=dict)
+    meta_data = db.Column(JSONB_or_JSON, nullable=False, default=dict)
 
     __table_args__ = (Index("idx_transparency_event_time", "event_type", "recorded_at"),)
 
