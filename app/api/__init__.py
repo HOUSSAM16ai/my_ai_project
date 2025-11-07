@@ -27,6 +27,7 @@ def init_api(app):
     """Initialize API blueprints with all services"""
     from app.api import (
         analytics_routes,
+        comprehensive_metrics_routes,
         crud_routes,
         developer_portal_routes,
         docs_routes,
@@ -65,4 +66,7 @@ def init_api(app):
     app.logger.info("📚 API Documentation available at /api/docs")
     app.logger.info(
         "🔥 SUPERHUMAN enhancements: Subscriptions, Developer Portal, Analytics, Intelligent Platform, SSE Streaming"
+    )
+    app.logger.info(
+        "📊 MEASURE EVERYTHING: Infrastructure, AI Models, User Analytics metrics available at /api/v1/metrics"
     )
