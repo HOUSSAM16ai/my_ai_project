@@ -21,6 +21,7 @@ from app.models import (
     ConsciousnessSignature,
     CosmicPolicyStatus,
 )
+from sqlalchemy.orm.attributes import flag_modified
 
 
 class CosmicGovernanceService:
@@ -376,6 +377,7 @@ class CosmicGovernanceService:
             }
 
             council.pending_decisions.append(decision)
+            flag_modified(council, "pending_decisions")
             db.session.add(council)
 
             # Log proposal
@@ -437,6 +439,8 @@ class CosmicGovernanceService:
                 "voted_at": datetime.now(UTC).isoformat(),
             }
 
+            # Mark the JSON column as modified so SQLAlchemy detects the change
+            flag_modified(council, "pending_decisions")
             db.session.add(council)
 
             return True
@@ -508,6 +512,10 @@ class CosmicGovernanceService:
             council.pending_decisions = [
                 d for d in council.pending_decisions if d.get("id") != decision_id
             ]
+
+            # Mark both JSON columns as modified
+            flag_modified(council, "decision_history")
+            flag_modified(council, "pending_decisions")
 
             # Update consensus rate
             approved_decisions = len(
