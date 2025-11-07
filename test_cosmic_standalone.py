@@ -41,9 +41,7 @@ def test_gcu_creation():
     """Test GCU creation"""
     print("Testing GCU creation...")
     gcu = GovernedConsciousnessUnit(
-        entity_type=ConsciousnessType.AI,
-        entity_id="ai-001",
-        name="Test AI"
+        entity_type=ConsciousnessType.AI, entity_id="ai-001", name="Test AI"
     )
     assert gcu.entity_type == ConsciousnessType.AI
     assert gcu.entity_id == "ai-001"
@@ -54,9 +52,7 @@ def test_gcu_protocol_subscription():
     """Test GCU protocol subscription"""
     print("Testing GCU protocol subscription...")
     gcu = GovernedConsciousnessUnit(
-        entity_type=ConsciousnessType.AI,
-        entity_id="ai-002",
-        name="Protocol Test AI"
+        entity_type=ConsciousnessType.AI, entity_id="ai-002", name="Protocol Test AI"
     )
     result = gcu.subscribe_to_protocol("confidentiality_protocol")
     assert result is True
@@ -68,13 +64,10 @@ def test_ei_transfer():
     """Test EI information transfer"""
     print("Testing EI information transfer...")
     ei = ExistentialInterconnect(
-        interconnect_type=InterconnectType.SYNCHRONOUS,
-        security_level=SecurityLevel.INTERNAL
+        interconnect_type=InterconnectType.SYNCHRONOUS, security_level=SecurityLevel.INTERNAL
     )
     result = ei.transfer_information(
-        source_gcu_id="gcu-001",
-        target_gcu_id="gcu-002",
-        data={"message": "test"}
+        source_gcu_id="gcu-001", target_gcu_id="gcu-002", data={"message": "test"}
     )
     assert result["success"] is True
     print("✅ EI transfer test passed")
@@ -84,14 +77,9 @@ def test_epp_validation():
     """Test EPP validation"""
     print("Testing EPP validation...")
     epp = ExistentialProtocolPackage(
-        protocol_type=ProtocolType.CONFIDENTIALITY,
-        name="Test Protocol",
-        description="Test"
+        protocol_type=ProtocolType.CONFIDENTIALITY, name="Test Protocol", description="Test"
     )
-    result = epp.validate_data({
-        "encrypted": True,
-        "access_control": {"role": "admin"}
-    })
+    result = epp.validate_data({"encrypted": True, "access_control": {"role": "admin"}})
     assert "valid" in result
     print("✅ EPP validation test passed")
 
@@ -113,7 +101,7 @@ def test_dual_consciousness_rule():
     compliant_arch = {
         "consciousness_units": 2,
         "independent_operation": True,
-        "handles_sensitive_data": True
+        "handles_sensitive_data": True,
     }
     result = rule.validate(compliant_arch)
     assert result["compliant"] is True
@@ -128,7 +116,7 @@ def test_infinite_scalability_rule():
         "horizontal_scaling": True,
         "stateless_design": True,
         "load_balancing": True,
-        "partitionable": True
+        "partitionable": True,
     }
     result = rule.validate(scalable_arch)
     assert result["compliant"] is True
@@ -150,7 +138,7 @@ def test_cosmic_design_enforcer():
         "self_monitoring": True,
         "auto_optimization": True,
         "adaptive_configuration": True,
-        "continuous_learning": True
+        "continuous_learning": True,
     }
     report = enforcer.validate_architecture(perfect_arch)
     assert report["architecture_compliant"] is True
@@ -164,8 +152,7 @@ def test_existential_ai():
     print("Testing Existential AI...")
     e_ai = ExistentialAI(name="Test E-AI")
     result = e_ai.auto_deploy_protocol(
-        workspace_id="ws-test",
-        protocol_type=ProtocolType.CONFIDENTIALITY
+        workspace_id="ws-test", protocol_type=ProtocolType.CONFIDENTIALITY
     )
     assert result["success"] is True
     print("✅ Existential AI test passed")
@@ -174,23 +161,18 @@ def test_existential_ai():
 def test_sece():
     """Test Self-Evolving Consciousness Entity"""
     print("Testing SECE...")
-    sece = SelfEvolvingConsciousnessEntity(
-        name="Test SECE",
-        learning_threshold=0.5
-    )
-    
+    sece = SelfEvolvingConsciousnessEntity(name="Test SECE", learning_threshold=0.5)
+
     # Create and observe a GCU
     gcu = GovernedConsciousnessUnit(
-        entity_type=ConsciousnessType.AI,
-        entity_id="ai-sece-test",
-        name="SECE Test AI"
+        entity_type=ConsciousnessType.AI, entity_id="ai-sece-test", name="SECE Test AI"
     )
     for i in range(7):  # Subscribe to many protocols
         gcu.subscribe_to_protocol(f"protocol_{i}")
-    
+
     sece.observe_gcu(gcu)
     sece.analyze_behavior_patterns()
-    
+
     report = sece.get_evolution_report()
     assert "sece_id" in report
     print("✅ SECE test passed")
@@ -199,45 +181,41 @@ def test_sece():
 def test_complete_integration():
     """Test complete integration workflow"""
     print("Testing complete integration...")
-    
+
     # 1. Create GCUs
     gcu1 = GovernedConsciousnessUnit(
-        entity_type=ConsciousnessType.AI,
-        entity_id="ai-int-1",
-        name="AI System 1"
+        entity_type=ConsciousnessType.AI, entity_id="ai-int-1", name="AI System 1"
     )
     gcu2 = GovernedConsciousnessUnit(
-        entity_type=ConsciousnessType.AI,
-        entity_id="ai-int-2",
-        name="AI System 2"
+        entity_type=ConsciousnessType.AI, entity_id="ai-int-2", name="AI System 2"
     )
-    
+
     # 2. Create protocol
     protocol = ProtocolFactory.create_high_security_package()
     gcu1.subscribe_to_protocol(protocol.name)
     gcu2.subscribe_to_protocol(protocol.name)
-    
+
     # 3. Create interconnect
     ei = ExistentialInterconnect(security_level=SecurityLevel.CONFIDENTIAL)
     result = ei.transfer_information(
         source_gcu_id=gcu1.entity_id,
         target_gcu_id=gcu2.entity_id,
-        data={"test": "data", "encrypted": True, "access_control": {"role": "admin"}}
+        data={"test": "data", "encrypted": True, "access_control": {"role": "admin"}},
     )
     assert result["success"] is True
-    
+
     # 4. E-AI automation
     e_ai = ExistentialAI(name="Integration E-AI")
     e_ai.register_gcu(gcu1)
     e_ai.register_gcu(gcu2)
     e_ai.register_interconnect(ei)
-    
+
     # 5. SECE monitoring
     sece = SelfEvolvingConsciousnessEntity(name="Integration SECE")
     sece.observe_gcu(gcu1)
     sece.observe_gcu(gcu2)
     sece.observe_interconnect(ei)
-    
+
     # 6. Architecture validation
     enforcer = CosmicDesignEnforcer()
     architecture = {
@@ -248,10 +226,10 @@ def test_complete_integration():
         "stateless_design": True,
         "load_balancing": True,
         "self_monitoring": True,
-        "auto_optimization": True
+        "auto_optimization": True,
     }
     enforcer.validate_architecture(architecture)
-    
+
     assert len(sece.observed_gcus) == 2
     assert len(e_ai.managed_gcus) == 2
     print("✅ Complete integration test passed")
@@ -259,10 +237,10 @@ def test_complete_integration():
 
 def main():
     """Run all tests"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("COSMIC EXISTENTIAL ARCHITECTURE - STANDALONE TESTS")
-    print("="*80 + "\n")
-    
+    print("=" * 80 + "\n")
+
     tests = [
         test_gcu_creation,
         test_gcu_protocol_subscription,
@@ -276,10 +254,10 @@ def main():
         test_sece,
         test_complete_integration,
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test_func in tests:
         try:
             test_func()
@@ -288,12 +266,13 @@ def main():
             print(f"❌ {test_func.__name__} failed: {str(e)}")
             failed += 1
             import traceback
+
             traceback.print_exc()
-    
-    print("\n" + "="*80)
+
+    print("\n" + "=" * 80)
     print(f"RESULTS: {passed} passed, {failed} failed out of {len(tests)} total tests")
-    print("="*80 + "\n")
-    
+    print("=" * 80 + "\n")
+
     return 0 if failed == 0 else 1
 
 

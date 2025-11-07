@@ -92,14 +92,12 @@ class ExistentialInterconnect:
         >>> # إنشاء وصلة ترابط جديدة
         >>> ei = ExistentialInterconnect(
         ...     interconnect_type=InterconnectType.SYNCHRONOUS,
-        ...     security_level=SecurityLevel.CONFIDENTIAL
+        ...     security_level=SecurityLevel.CONFIDENTIAL,
         ... )
         >>>
         >>> # نقل معلومات بين وحدتين
         >>> result = ei.transfer_information(
-        ...     source_gcu_id="gcu-001",
-        ...     target_gcu_id="gcu-002",
-        ...     data={"message": "secure data"}
+        ...     source_gcu_id="gcu-001", target_gcu_id="gcu-002", data={"message": "secure data"}
         ... )
     """
 

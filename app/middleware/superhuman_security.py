@@ -303,7 +303,8 @@ class SuperhumanSecurityMiddleware:
             if self.anomaly_detector:
                 metric_name = f"latency_{request.path}"
                 is_anomaly, anomaly = self.anomaly_detector.check_value(
-                    metric_name, duration * 1000  # Convert to ms
+                    metric_name,
+                    duration * 1000,  # Convert to ms
                 )
 
                 if is_anomaly and anomaly:

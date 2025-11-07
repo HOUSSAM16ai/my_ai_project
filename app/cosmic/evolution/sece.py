@@ -103,9 +103,7 @@ class SelfEvolvingConsciousnessEntity:
 
     Examples:
         >>> # إنشاء SECE
-        >>> sece = SelfEvolvingConsciousnessEntity(
-        ...     name="Main Evolution Controller"
-        ... )
+        >>> sece = SelfEvolvingConsciousnessEntity(name="Main Evolution Controller")
         >>>
         >>> # تحليل سلوك المكونات
         >>> insights = sece.analyze_behavior_patterns()

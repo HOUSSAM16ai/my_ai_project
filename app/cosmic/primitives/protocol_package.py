@@ -87,14 +87,14 @@ class ExistentialProtocolPackage:
         >>> confidentiality_epp = ExistentialProtocolPackage(
         ...     protocol_type=ProtocolType.CONFIDENTIALITY,
         ...     name="High Security Confidentiality",
-        ...     description="Maximum data protection protocol"
+        ...     description="Maximum data protection protocol",
         ... )
         >>>
         >>> # إضافة قاعدة مخصصة
         >>> confidentiality_epp.add_policy_rule(
         ...     name="Encryption Required",
         ...     description="All data must be encrypted",
-        ...     severity=ProtocolSeverity.CRITICAL
+        ...     severity=ProtocolSeverity.CRITICAL,
         ... )
         >>>
         >>> # التحقق من البيانات
