@@ -19,11 +19,10 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
-from dataclasses import dataclass, field
+from typing import Any
 
 from app.cosmic.primitives import (
     ExistentialInterconnect,
@@ -63,11 +62,11 @@ class AutomationTask:
     task_type: AutomationTaskType
     status: AutomationTaskStatus
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    result: dict[str, Any] | None = None
+    error: str | None = None
 
 
 class ExistentialAI:
@@ -112,12 +111,12 @@ class ExistentialAI:
         self.enable_predictive_actions = enable_predictive_actions
 
         # قائمة المهام
-        self.tasks: List[AutomationTask] = []
+        self.tasks: list[AutomationTask] = []
 
         # التسجيل والمراقبة
-        self.monitored_interconnects: List[ExistentialInterconnect] = []
-        self.managed_gcus: List[GovernedConsciousnessUnit] = []
-        self.deployed_protocols: Dict[str, ExistentialProtocolPackage] = {}
+        self.monitored_interconnects: list[ExistentialInterconnect] = []
+        self.managed_gcus: list[GovernedConsciousnessUnit] = []
+        self.deployed_protocols: dict[str, ExistentialProtocolPackage] = {}
 
         # الإحصائيات
         self.stats = {
@@ -134,8 +133,8 @@ class ExistentialAI:
         self.last_activity_at = self.created_at
 
     def auto_deploy_protocol(
-        self, workspace_id: str, protocol_type: ProtocolType, gcu_ids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, workspace_id: str, protocol_type: ProtocolType, gcu_ids: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         نشر بروتوكول تلقائياً في مساحة عمل
 
@@ -220,7 +219,7 @@ class ExistentialAI:
 
             return {"success": False, "task_id": task.task_id, "error": str(e)}
 
-    def monitor_interconnects(self, auto_correct: bool = True) -> Dict[str, Any]:
+    def monitor_interconnects(self, auto_correct: bool = True) -> dict[str, Any]:
         """
         مراقبة جميع الترابطات الوجودية
 
@@ -323,7 +322,7 @@ class ExistentialAI:
 
     def manage_access_dynamically(
         self, gcu_id: str, resource_id: str, requested_action: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         إدارة الوصول بشكل ديناميكي بناءً على الاحتياجات الوجودية
 
@@ -431,7 +430,7 @@ class ExistentialAI:
             return True
         return False
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """الحصول على تقرير أداء شامل"""
         success_rate = 0.0
         if self.stats["total_tasks_executed"] > 0:

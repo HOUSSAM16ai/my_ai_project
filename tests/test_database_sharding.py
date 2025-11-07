@@ -3,7 +3,6 @@
 Tests for Database Sharding & Multi-Master Replication Services
 """
 
-import pytest
 from app.services.database_sharding_service import (
     ConnectionPool,
     ConnectionPoolManager,

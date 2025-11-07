@@ -8,22 +8,23 @@ Endpoints:
 - /api/cosmic/transparency/*
 """
 
-from flask import Blueprint, request, jsonify
 from datetime import datetime
+
+from flask import Blueprint, jsonify, request
 
 from app import db
 from app.models import (
-    ExistentialNode,
     ConsciousnessSignature,
-    CosmicLedgerEntry,
-    SelfEvolvingConsciousEntity,
-    ExistentialProtocol,
-    CosmicGovernanceCouncil,
-    ExistentialTransparencyLog,
     ConsciousnessSignatureType,
+    CosmicGovernanceCouncil,
+    CosmicLedgerEntry,
+    ExistentialNode,
+    ExistentialProtocol,
+    ExistentialTransparencyLog,
+    SelfEvolvingConsciousEntity,
 )
-from app.services.cosmic_security_service import CosmicSecurityService
 from app.services.cosmic_governance_service import CosmicGovernanceService
+from app.services.cosmic_security_service import CosmicSecurityService
 
 cosmic_bp = Blueprint("cosmic", __name__, url_prefix="/api/cosmic")
 
@@ -632,7 +633,7 @@ def cosmic_stats():
         "seces": {
             "total": db.session.query(SelfEvolvingConsciousEntity).count(),
             "active": db.session.query(SelfEvolvingConsciousEntity)
-            .filter(SelfEvolvingConsciousEntity.is_active == True)
+            .filter(SelfEvolvingConsciousEntity.is_active)
             .count(),
         },
         "protocols": {
@@ -644,7 +645,7 @@ def cosmic_stats():
         "councils": {
             "total": db.session.query(CosmicGovernanceCouncil).count(),
             "active": db.session.query(CosmicGovernanceCouncil)
-            .filter(CosmicGovernanceCouncil.is_active == True)
+            .filter(CosmicGovernanceCouncil.is_active)
             .count(),
         },
         "transparency_logs": {

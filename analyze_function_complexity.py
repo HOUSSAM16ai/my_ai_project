@@ -26,7 +26,6 @@ Usage:
 import argparse
 import ast
 import json
-import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -256,7 +255,6 @@ class ComplexityAnalyzer(ast.NodeVisitor):
     def _calculate_cognitive_complexity(self, node: ast.FunctionDef) -> int:
         """Calculate cognitive complexity (like SonarQube)"""
         complexity = 0
-        nesting_level = 0
 
         def visit_cognitive(n, nesting=0):
             nonlocal complexity
@@ -496,18 +494,18 @@ def print_summary(metrics_list: list[FunctionMetrics], show_all: bool = False) -
     print("🔍 SUPERHUMAN FUNCTION COMPLEXITY ANALYSIS")
     print("   تحليل خارق للدوال المعقدة")
     print("=" * 80)
-    print(f"\n📊 SUMMARY:")
+    print("\n📊 SUMMARY:")
     print(f"   Total complex functions: {total_functions}")
     print(f"   Average cyclomatic complexity: {avg_complexity:.1f}")
     print(f"   Average lines of code: {avg_loc:.1f}")
-    print(f"\n📈 GRADE DISTRIBUTION:")
+    print("\n📈 GRADE DISTRIBUTION:")
     for grade in ["A", "B", "C", "D", "E", "F"]:
         count = grade_counts[grade]
         if count > 0:
             bar = "█" * min(count, 50)
             print(f"   {grade}: {bar} ({count})")
 
-    print(f"\n🎯 TOP 10 MOST COMPLEX FUNCTIONS:")
+    print("\n🎯 TOP 10 MOST COMPLEX FUNCTIONS:")
     print("-" * 80)
 
     for i, metrics in enumerate(sorted_metrics[:10], 1):
@@ -521,12 +519,12 @@ def print_summary(metrics_list: list[FunctionMetrics], show_all: bool = False) -
         print(f"   💯 Maintainability: {metrics.maintainability_index:.1f}/100")
 
         if metrics.issues:
-            print(f"   🚨 Issues:")
+            print("   🚨 Issues:")
             for issue in metrics.issues:
                 print(f"      {issue}")
 
         if metrics.recommendations:
-            print(f"   💡 Recommendations:")
+            print("   💡 Recommendations:")
             for rec in metrics.recommendations[:2]:  # Show top 2
                 print(f"      {rec}")
 

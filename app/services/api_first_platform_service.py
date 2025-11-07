@@ -441,8 +441,8 @@ class APIFirstPlatformService:
     """
 
     def __init__(self):
-        import os
         import logging
+        import os
 
         self.contract_registry = contract_registry
         self.idempotency_store = idempotency_store

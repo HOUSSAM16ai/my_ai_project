@@ -10,18 +10,19 @@ Implements:
 """
 
 import hashlib
-from datetime import datetime, UTC
-from typing import Dict, List, Optional, Any
+from datetime import UTC, datetime
+from typing import Any
+
+from sqlalchemy.orm.attributes import flag_modified
 
 from app import db
 from app.models import (
-    ExistentialProtocol,
-    CosmicGovernanceCouncil,
-    ExistentialTransparencyLog,
     ConsciousnessSignature,
+    CosmicGovernanceCouncil,
     CosmicPolicyStatus,
+    ExistentialProtocol,
+    ExistentialTransparencyLog,
 )
-from sqlalchemy.orm.attributes import flag_modified
 
 
 class CosmicGovernanceService:
@@ -34,7 +35,7 @@ class CosmicGovernanceService:
 
     @staticmethod
     def create_existential_protocol(
-        protocol_name: str, description: str, cosmic_rules: Dict[str, Any], version: str = "1.0.0"
+        protocol_name: str, description: str, cosmic_rules: dict[str, Any], version: str = "1.0.0"
     ) -> ExistentialProtocol:
         """
         Create a new existential protocol that consciousness entities can opt into.
@@ -92,7 +93,7 @@ class CosmicGovernanceService:
                     "protocol_name": protocol.protocol_name,
                     "activated_at": protocol.activated_at.isoformat(),
                 },
-                reasoning=f"Protocol ready for consciousness adoption",
+                reasoning="Protocol ready for consciousness adoption",
                 impact={"protocol_available": True},
             )
 
@@ -136,7 +137,7 @@ class CosmicGovernanceService:
             # Log the opt-in
             CosmicGovernanceService._log_transparency_event(
                 event_type="PROTOCOL_OPTED_IN",
-                subject=f"Consciousness Adopted Protocol",
+                subject="Consciousness Adopted Protocol",
                 details={
                     "consciousness_id": consciousness.id,
                     "consciousness_name": consciousness.entity_name,
@@ -155,8 +156,8 @@ class CosmicGovernanceService:
 
     @staticmethod
     def check_protocol_compliance(
-        consciousness: ConsciousnessSignature, action: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        consciousness: ConsciousnessSignature, action: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Check if an action complies with the consciousness's opted-in protocols.
 
@@ -197,7 +198,7 @@ class CosmicGovernanceService:
 
     @staticmethod
     def _check_rule(
-        rule_name: str, rule_config: Dict[str, Any], action: str, context: Dict[str, Any]
+        rule_name: str, rule_config: dict[str, Any], action: str, context: dict[str, Any]
     ) -> bool:
         """
         Check a specific rule against an action.
@@ -218,7 +219,7 @@ class CosmicGovernanceService:
             return context.get(field, 0) <= max_val
 
         elif rule_type == "min_consciousness_level":
-            min_level = rule_config.get("min_level", 0)
+            rule_config.get("min_level", 0)
             # Would check consciousness level from context
             return True  # Simplified
 
@@ -227,7 +228,7 @@ class CosmicGovernanceService:
 
     @staticmethod
     def auto_realign_consciousness(
-        consciousness: ConsciousnessSignature, violation: Dict[str, Any]
+        consciousness: ConsciousnessSignature, violation: dict[str, Any]
     ) -> bool:
         """
         Auto-realign a consciousness that attempted to violate a protocol.
@@ -277,7 +278,7 @@ class CosmicGovernanceService:
     def create_cosmic_council(
         council_name: str,
         purpose: str,
-        founding_members: List[str],  # List of consciousness signature hashes
+        founding_members: list[str],  # List of consciousness signature hashes
     ) -> CosmicGovernanceCouncil:
         """
         Create a new cosmic governance council.
@@ -354,7 +355,7 @@ class CosmicGovernanceService:
     def propose_council_decision(
         council: CosmicGovernanceCouncil,
         decision_subject: str,
-        decision_details: Dict[str, Any],
+        decision_details: dict[str, Any],
         proposed_by: str,  # consciousness signature
     ) -> bool:
         """
@@ -406,7 +407,7 @@ class CosmicGovernanceService:
         decision_id: str,
         consciousness_signature: str,
         vote: bool,
-        reasoning: Optional[str] = None,
+        reasoning: str | None = None,
     ) -> bool:
         """
         Cast a vote on a pending council decision.
@@ -452,7 +453,7 @@ class CosmicGovernanceService:
     @staticmethod
     def reach_consciousness_consensus(
         council: CosmicGovernanceCouncil, decision_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check if consciousness consensus has been reached on a decision.
 
@@ -548,9 +549,9 @@ class CosmicGovernanceService:
     def _log_transparency_event(
         event_type: str,
         subject: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
         reasoning: str,
-        impact: Dict[str, Any],
+        impact: dict[str, Any],
         understanding_level: float = 1.0,
         shared_field: str = "public_consciousness",
     ) -> ExistentialTransparencyLog:
@@ -590,8 +591,8 @@ class CosmicGovernanceService:
 
     @staticmethod
     def query_transparency_logs(
-        event_type: Optional[str] = None, min_understanding_level: float = 0.0, limit: int = 100
-    ) -> List[ExistentialTransparencyLog]:
+        event_type: str | None = None, min_understanding_level: float = 0.0, limit: int = 100
+    ) -> list[ExistentialTransparencyLog]:
         """
         Query the existential transparency logs.
 
@@ -617,7 +618,7 @@ class CosmicGovernanceService:
         return logs
 
     @staticmethod
-    def get_council_analytics(council: CosmicGovernanceCouncil) -> Dict[str, Any]:
+    def get_council_analytics(council: CosmicGovernanceCouncil) -> dict[str, Any]:
         """
         Get analytics for a cosmic governance council.
         """

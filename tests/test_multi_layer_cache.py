@@ -3,12 +3,11 @@
 Tests for Multi-Layer Caching Pyramid Service
 """
 
-import pytest
 from app.services.multi_layer_cache_service import (
-    CDNEdgeCache,
     CacheEntry,
     CacheLayer,
     CacheStrategy,
+    CDNEdgeCache,
     InMemoryCache,
     MultiLayerCacheOrchestrator,
     RedisClusterCache,
@@ -380,7 +379,7 @@ class TestCacheEntry:
 
     def test_cache_entry_creation(self):
         """Test creating cache entry"""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         entry = CacheEntry(
             key="test-key",
@@ -396,7 +395,7 @@ class TestCacheEntry:
 
     def test_entry_expiration(self):
         """Test entry expiration check"""
-        from datetime import datetime, UTC, timedelta
+        from datetime import UTC, datetime, timedelta
 
         # Create expired entry
         old_time = datetime.now(UTC) - timedelta(hours=2)
@@ -412,7 +411,7 @@ class TestCacheEntry:
 
     def test_entry_age(self):
         """Test entry age calculation"""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         entry = CacheEntry(
             key="test-key",

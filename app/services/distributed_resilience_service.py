@@ -27,17 +27,17 @@
 
 from __future__ import annotations
 
-import hashlib
 import random
 import threading
 import time
 import uuid
-from collections import defaultdict, deque
+from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any
 
 from flask import current_app
 
@@ -180,7 +180,7 @@ class RetryAttempt:
     attempt_number: int
     timestamp: datetime
     delay_ms: int
-    error: Optional[str] = None
+    error: str | None = None
     success: bool = False
 
 
@@ -191,7 +191,7 @@ class CircuitBreakerState:
     state: CircuitState = CircuitState.CLOSED
     failure_count: int = 0
     success_count: int = 0
-    last_failure_time: Optional[datetime] = None
+    last_failure_time: datetime | None = None
     last_state_change: datetime = field(default_factory=lambda: datetime.now(UTC))
     half_open_calls: int = 0
 
@@ -251,7 +251,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except self.config.expected_exceptions as e:
+        except self.config.expected_exceptions:
             self._on_failure()
             raise
         finally:
@@ -354,8 +354,8 @@ class RetryManager:
         self,
         func: Callable,
         *args,
-        idempotency_key: Optional[str] = None,
-        retry_on_status: Optional[list[int]] = None,
+        idempotency_key: str | None = None,
+        retry_on_status: list[int] | None = None,
         **kwargs,
     ) -> Any:
         """
@@ -874,7 +874,7 @@ class HealthCheckResult:
     timestamp: datetime
     latency_ms: float
     details: dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class HealthChecker:
@@ -890,7 +890,7 @@ class HealthChecker:
     def __init__(self, config: HealthCheckConfig):
         self.config = config
         self.consecutive_failures = 0
-        self.last_healthy_time: Optional[datetime] = None
+        self.last_healthy_time: datetime | None = None
         self._lock = threading.RLock()
 
     def check(self, check_func: Callable) -> HealthCheckResult:
@@ -967,7 +967,7 @@ class DistributedResilienceService:
         self._lock = threading.RLock()
 
     def get_or_create_circuit_breaker(
-        self, name: str, config: Optional[CircuitBreakerConfig] = None
+        self, name: str, config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """Get or create circuit breaker"""
         with self._lock:
@@ -977,7 +977,7 @@ class DistributedResilienceService:
             return self.circuit_breakers[name]
 
     def get_or_create_retry_manager(
-        self, name: str, config: Optional[RetryConfig] = None
+        self, name: str, config: RetryConfig | None = None
     ) -> RetryManager:
         """Get or create retry manager"""
         with self._lock:
@@ -987,7 +987,7 @@ class DistributedResilienceService:
             return self.retry_managers[name]
 
     def get_or_create_bulkhead(
-        self, name: str, config: Optional[BulkheadConfig] = None
+        self, name: str, config: BulkheadConfig | None = None
     ) -> Bulkhead:
         """Get or create bulkhead"""
         with self._lock:
@@ -1028,10 +1028,10 @@ class DistributedResilienceService:
 
 
 def resilient(
-    circuit_breaker_name: Optional[str] = None,
-    retry_config: Optional[RetryConfig] = None,
-    bulkhead_name: Optional[str] = None,
-    fallback_chain: Optional[FallbackChain] = None,
+    circuit_breaker_name: str | None = None,
+    retry_config: RetryConfig | None = None,
+    bulkhead_name: str | None = None,
+    fallback_chain: FallbackChain | None = None,
 ):
     """
     Decorator to make functions resilient
@@ -1055,7 +1055,8 @@ def resilient(
             # Apply circuit breaker
             if circuit_breaker_name:
                 cb = service.get_or_create_circuit_breaker(circuit_breaker_name)
-                func_to_call = lambda: func(*args, **kwargs)
+                def func_to_call():
+                    return func(*args, **kwargs)
                 return cb.call(func_to_call)
 
             # Apply retry
@@ -1081,7 +1082,7 @@ def resilient(
 # ======================================================================================
 
 # Singleton instance for global access
-_resilience_service: Optional[DistributedResilienceService] = None
+_resilience_service: DistributedResilienceService | None = None
 
 
 def get_resilience_service() -> DistributedResilienceService:

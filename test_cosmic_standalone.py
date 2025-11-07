@@ -11,35 +11,29 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from datetime import datetime
 
-from app.cosmic.primitives.consciousness_unit import (
+from app.cosmic.automation.existential_ai import ExistentialAI  # noqa: E402
+from app.cosmic.evolution.sece import (  # noqa: E402
+    SelfEvolvingConsciousnessEntity,
+)
+from app.cosmic.primitives.consciousness_unit import (  # noqa: E402
     ConsciousnessType,
     GovernedConsciousnessUnit,
-    ProtocolComplianceLevel,
 )
-from app.cosmic.primitives.existential_interconnect import (
+from app.cosmic.primitives.existential_interconnect import (  # noqa: E402
     ExistentialInterconnect,
     InterconnectType,
     SecurityLevel,
 )
-from app.cosmic.primitives.protocol_package import (
+from app.cosmic.primitives.protocol_package import (  # noqa: E402
     ExistentialProtocolPackage,
     ProtocolFactory,
     ProtocolType,
-    ProtocolSeverity,
 )
-from app.cosmic.rules.design_rules import (
-    AutonomousEvolutionRule,
+from app.cosmic.rules.design_rules import (  # noqa: E402
     CosmicDesignEnforcer,
     DualConsciousnessRule,
     InfiniteScalabilityRule,
-)
-from app.cosmic.automation.existential_ai import ExistentialAI
-from app.cosmic.evolution.sece import (
-    SelfEvolvingConsciousnessEntity,
-    LearningType,
-    LearningInsight,
 )
 
 
@@ -195,7 +189,7 @@ def test_sece():
         gcu.subscribe_to_protocol(f"protocol_{i}")
     
     sece.observe_gcu(gcu)
-    insights = sece.analyze_behavior_patterns()
+    sece.analyze_behavior_patterns()
     
     report = sece.get_evolution_report()
     assert "sece_id" in report
@@ -256,7 +250,7 @@ def test_complete_integration():
         "self_monitoring": True,
         "auto_optimization": True
     }
-    validation = enforcer.validate_architecture(architecture)
+    enforcer.validate_architecture(architecture)
     
     assert len(sece.observed_gcus) == 2
     assert len(e_ai.managed_gcus) == 2

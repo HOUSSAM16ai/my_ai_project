@@ -12,18 +12,17 @@ Implements:
 import hashlib
 import json
 import secrets
-from datetime import datetime, UTC
-from typing import Dict, List, Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import func
 from app import db
 from app.models import (
-    ExistentialNode,
     ConsciousnessSignature,
-    CosmicLedgerEntry,
-    SelfEvolvingConsciousEntity,
-    ExistentialNodeStatus,
     ConsciousnessSignatureType,
+    CosmicLedgerEntry,
+    ExistentialNode,
+    ExistentialNodeStatus,
+    SelfEvolvingConsciousEntity,
 )
 
 
@@ -56,7 +55,7 @@ class CosmicSecurityService:
         return existential_sig
 
     @staticmethod
-    def generate_cosmic_pattern(content: str, dimension_layer: int = 3) -> Dict[str, Any]:
+    def generate_cosmic_pattern(content: str, dimension_layer: int = 3) -> dict[str, Any]:
         """
         Generate cosmic pattern that represents how information is woven
         into the fabric of reality at various dimensional layers.
@@ -77,7 +76,7 @@ class CosmicSecurityService:
     @staticmethod
     def encrypt_existential(
         content: str,
-        consciousness_id: Optional[int] = None,
+        consciousness_id: int | None = None,
         dimension_layer: int = 3,
         meta_physical_layer: int = 0,
     ) -> ExistentialNode:
@@ -138,7 +137,7 @@ class CosmicSecurityService:
         return node
 
     @staticmethod
-    def verify_existential_coherence(node: ExistentialNode) -> Dict[str, Any]:
+    def verify_existential_coherence(node: ExistentialNode) -> dict[str, Any]:
         """
         Verify the coherence of an existential node.
         Check if the information maintains its integrity across dimensions.
@@ -185,7 +184,7 @@ class CosmicSecurityService:
 
     @staticmethod
     def harmonize_existential_node(
-        node: ExistentialNode, consciousness_id: Optional[int] = None
+        node: ExistentialNode, consciousness_id: int | None = None
     ) -> bool:
         """
         Harmonize an existential node to restore its coherence.
@@ -227,7 +226,7 @@ class CosmicSecurityService:
     @staticmethod
     def detect_existential_distortion(
         node: ExistentialNode, sece: SelfEvolvingConsciousEntity
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Use a Self-Evolving Conscious Entity to detect existential distortions.
         """
@@ -309,7 +308,7 @@ class CosmicSecurityService:
     def create_consciousness_signature(
         entity_name: str,
         entity_type: ConsciousnessSignatureType,
-        entity_origin: Optional[str] = None,
+        entity_origin: str | None = None,
         consciousness_level: float = 1.0,
     ) -> ConsciousnessSignature:
         """
@@ -354,7 +353,7 @@ class CosmicSecurityService:
         node: ExistentialNode,
         consciousness: ConsciousnessSignature,
         action: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> CosmicLedgerEntry:
         """
         Track an interaction with existential data in the cosmic ledger.
@@ -384,9 +383,9 @@ class CosmicSecurityService:
     def _log_cosmic_event(
         event_type: str,
         description: str,
-        payload: Dict[str, Any],
-        node_id: Optional[int] = None,
-        consciousness_id: Optional[int] = None,
+        payload: dict[str, Any],
+        node_id: int | None = None,
+        consciousness_id: int | None = None,
     ) -> CosmicLedgerEntry:
         """
         Log an event in the immutable cosmic ledger.
@@ -493,8 +492,8 @@ class CosmicSecurityService:
 
     @staticmethod
     def get_cosmic_ledger_chain(
-        limit: int = 100, event_type: Optional[str] = None
-    ) -> List[CosmicLedgerEntry]:
+        limit: int = 100, event_type: str | None = None
+    ) -> list[CosmicLedgerEntry]:
         """
         Retrieve the cosmic ledger chain.
         Each entry links to the previous one, forming an immutable chain.
@@ -509,7 +508,7 @@ class CosmicSecurityService:
         return entries
 
     @staticmethod
-    def verify_cosmic_ledger_integrity() -> Dict[str, Any]:
+    def verify_cosmic_ledger_integrity() -> dict[str, Any]:
         """
         Verify the integrity of the entire cosmic ledger chain.
         Ensures no entries have been tampered with.

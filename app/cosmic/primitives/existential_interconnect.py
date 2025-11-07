@@ -23,11 +23,10 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
-from dataclasses import dataclass, field
+from typing import Any
 
 
 class InterconnectType(Enum):
@@ -67,7 +66,7 @@ class ProvenanceRecord:
     timestamp: datetime
     data_hash: str
     security_level: SecurityLevel
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -130,26 +129,26 @@ class ExistentialInterconnect:
         self.enable_anomaly_detection = enable_anomaly_detection
 
         # سجل أصل البيانات
-        self.provenance_records: List[ProvenanceRecord] = []
+        self.provenance_records: list[ProvenanceRecord] = []
 
         # مقاييس الأداء
         self.metrics = InterconnectMetrics()
 
         # الطابع الزمني
         self.created_at = datetime.now(UTC)
-        self.last_transfer_at: Optional[datetime] = None
+        self.last_transfer_at: datetime | None = None
 
         # سجل التشوهات المكتشفة
-        self.anomalies: List[Dict[str, Any]] = []
+        self.anomalies: list[dict[str, Any]] = []
 
     def transfer_information(
         self,
         source_gcu_id: str,
         target_gcu_id: str,
-        data: Dict[str, Any],
-        security_level: Optional[SecurityLevel] = None,
+        data: dict[str, Any],
+        security_level: SecurityLevel | None = None,
         validate_integrity: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         نقل معلومات بشكل آمن بين وحدتي وعي
 
@@ -241,7 +240,7 @@ class ExistentialInterconnect:
 
     def get_provenance_chain(
         self, consciousness_id: str, max_depth: int = 10
-    ) -> List[ProvenanceRecord]:
+    ) -> list[ProvenanceRecord]:
         """
         الحصول على سلسلة أصل البيانات لوحدة وعي محددة
 
@@ -261,7 +260,7 @@ class ExistentialInterconnect:
                 chain.append(record)
         return chain
 
-    def get_health_report(self) -> Dict[str, Any]:
+    def get_health_report(self) -> dict[str, Any]:
         """
         الحصول على تقرير صحة الترابط
 
@@ -309,7 +308,7 @@ class ExistentialInterconnect:
         """إنهاء الترابط"""
         self.status = InterconnectStatus.TERMINATED
 
-    def _validate_data_integrity(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_data_integrity(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         التحقق من نزاهة البيانات
 
@@ -327,8 +326,8 @@ class ExistentialInterconnect:
             return {"valid": False, "error": str(e)}
 
     def _apply_dlp_policies(
-        self, data: Dict[str, Any], security_level: SecurityLevel
-    ) -> Dict[str, Any]:
+        self, data: dict[str, Any], security_level: SecurityLevel
+    ) -> dict[str, Any]:
         """
         تطبيق سياسات منع فقدان البيانات (DLP)
 
@@ -365,7 +364,7 @@ class ExistentialInterconnect:
             "security_level": security_level.value,
         }
 
-    def _create_data_signature(self, data: Dict[str, Any], source_id: str, target_id: str) -> str:
+    def _create_data_signature(self, data: dict[str, Any], source_id: str, target_id: str) -> str:
         """
         إنشاء بصمة وجودية للبيانات
 
@@ -381,7 +380,7 @@ class ExistentialInterconnect:
         return hashlib.sha256(signature_data.encode()).hexdigest()
 
     def _record_provenance(
-        self, source_id: str, target_id: str, data: Dict[str, Any], security_level: SecurityLevel
+        self, source_id: str, target_id: str, data: dict[str, Any], security_level: SecurityLevel
     ) -> ProvenanceRecord:
         """
         تسجيل سجل أصل البيانات
@@ -413,7 +412,7 @@ class ExistentialInterconnect:
         self.provenance_records.append(record)
         return record
 
-    def _detect_anomalies(self, data: Dict[str, Any], source_id: str, target_id: str) -> bool:
+    def _detect_anomalies(self, data: dict[str, Any], source_id: str, target_id: str) -> bool:
         """
         كشف التشوهات الوجودية في عملية النقل
 

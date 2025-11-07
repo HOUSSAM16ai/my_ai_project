@@ -19,14 +19,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import uuid
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
 
 from app.cosmic.primitives import (
     ExistentialInterconnect,
@@ -61,9 +59,9 @@ class LearningInsight:
     learning_type: LearningType
     description: str
     confidence_score: float  # 0.0 - 1.0
-    evidence: List[str]
+    evidence: list[str]
     timestamp: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,7 +75,7 @@ class Recommendation:
     expected_impact: str
     implementation_complexity: str  # low, medium, high
     auto_implementable: bool
-    related_insights: List[str]  # IDs of related insights
+    related_insights: list[str]  # IDs of related insights
     timestamp: datetime
 
 
@@ -89,9 +87,9 @@ class EvolutionAction:
     action_type: str
     description: str
     target_component: str
-    before_state: Dict[str, Any]
-    after_state: Dict[str, Any]
-    impact_metrics: Dict[str, Any]
+    before_state: dict[str, Any]
+    after_state: dict[str, Any]
+    impact_metrics: dict[str, Any]
     timestamp: datetime
 
 
@@ -136,18 +134,18 @@ class SelfEvolvingConsciousnessEntity:
         self.learning_threshold = learning_threshold
 
         # قواعد المعرفة المكتسبة
-        self.insights: List[LearningInsight] = []
-        self.recommendations: List[Recommendation] = []
-        self.evolution_actions: List[EvolutionAction] = []
+        self.insights: list[LearningInsight] = []
+        self.recommendations: list[Recommendation] = []
+        self.evolution_actions: list[EvolutionAction] = []
 
         # المكونات المراقبة
-        self.observed_gcus: List[GovernedConsciousnessUnit] = []
-        self.observed_interconnects: List[ExistentialInterconnect] = []
-        self.observed_protocols: List[ExistentialProtocolPackage] = []
+        self.observed_gcus: list[GovernedConsciousnessUnit] = []
+        self.observed_interconnects: list[ExistentialInterconnect] = []
+        self.observed_protocols: list[ExistentialProtocolPackage] = []
 
         # سجلات التحليل
-        self.behavior_logs: List[Dict[str, Any]] = []
-        self.pattern_database: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        self.behavior_logs: list[dict[str, Any]] = []
+        self.pattern_database: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         # الإحصائيات
         self.stats = {
@@ -177,7 +175,7 @@ class SelfEvolvingConsciousnessEntity:
         if protocol not in self.observed_protocols:
             self.observed_protocols.append(protocol)
 
-    def analyze_behavior_patterns(self) -> List[LearningInsight]:
+    def analyze_behavior_patterns(self) -> list[LearningInsight]:
         """
         تحليل أنماط السلوك واكتشاف رؤى جديدة
 
@@ -209,7 +207,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return new_insights
 
-    def generate_recommendations(self) -> List[Recommendation]:
+    def generate_recommendations(self) -> list[Recommendation]:
         """
         توليد توصيات بناءً على الرؤى المكتشفة
 
@@ -284,7 +282,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return new_recommendations
 
-    def auto_evolve(self) -> List[EvolutionAction]:
+    def auto_evolve(self) -> list[EvolutionAction]:
         """
         تنفيذ تطورات تلقائية آمنة ضمن حدود الصلاحيات
 
@@ -313,7 +311,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return actions_performed
 
-    def get_evolution_report(self) -> Dict[str, Any]:
+    def get_evolution_report(self) -> dict[str, Any]:
         """
         الحصول على تقرير التطور الشامل
 
@@ -367,7 +365,7 @@ class SelfEvolvingConsciousnessEntity:
             },
         }
 
-    def _analyze_gcu_patterns(self) -> List[LearningInsight]:
+    def _analyze_gcu_patterns(self) -> list[LearningInsight]:
         """تحليل أنماط الـ GCUs"""
         insights = []
 
@@ -414,7 +412,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return insights
 
-    def _analyze_interconnect_patterns(self) -> List[LearningInsight]:
+    def _analyze_interconnect_patterns(self) -> list[LearningInsight]:
         """تحليل أنماط الترابطات"""
         insights = []
 
@@ -440,7 +438,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return insights
 
-    def _analyze_protocol_patterns(self) -> List[LearningInsight]:
+    def _analyze_protocol_patterns(self) -> list[LearningInsight]:
         """تحليل أنماط البروتوكولات"""
         insights = []
 
@@ -490,7 +488,7 @@ class SelfEvolvingConsciousnessEntity:
 
         return insights
 
-    def _execute_safe_evolution(self, recommendation: Recommendation) -> Optional[EvolutionAction]:
+    def _execute_safe_evolution(self, recommendation: Recommendation) -> EvolutionAction | None:
         """
         تنفيذ تطور آمن ضمن الحدود
 

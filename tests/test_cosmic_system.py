@@ -12,25 +12,17 @@ Tests:
 - Existential Transparency
 """
 
+
 import pytest
-from datetime import datetime
 
-from app import db, create_app
+from app import db
 from app.models import (
-    ExistentialNode,
-    ConsciousnessSignature,
-    CosmicLedgerEntry,
-    SelfEvolvingConsciousEntity,
-    ExistentialProtocol,
-    CosmicGovernanceCouncil,
-    ExistentialTransparencyLog,
     ConsciousnessSignatureType,
-    ExistentialNodeStatus,
     CosmicPolicyStatus,
+    ExistentialNodeStatus,
 )
-from app.services.cosmic_security_service import CosmicSecurityService
 from app.services.cosmic_governance_service import CosmicGovernanceService
-
+from app.services.cosmic_security_service import CosmicSecurityService
 
 # ======================================================================================
 # SECURITY TESTS

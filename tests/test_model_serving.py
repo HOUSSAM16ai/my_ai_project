@@ -5,13 +5,14 @@ Tests for Model Serving, A/B Testing, Shadow Mode, Ensemble
 """
 
 import time
+
 import pytest
 
 from app.services.model_serving_infrastructure import (
     ModelServingInfrastructure,
-    ModelVersion,
-    ModelType,
     ModelStatus,
+    ModelType,
+    ModelVersion,
     get_model_serving_infrastructure,
 )
 
