@@ -15,6 +15,7 @@ from app.cosmic.primitives import (
     InterconnectType,
     ProtocolComplianceLevel,
     ProtocolFactory,
+    ProtocolSeverity,
     ProtocolType,
     SecurityLevel,
 )
@@ -27,6 +28,7 @@ from app.cosmic.rules import (
 )
 from app.cosmic.automation import ExistentialAI, AutomationTaskType
 from app.cosmic.evolution import SelfEvolvingConsciousnessEntity, LearningType
+from app.cosmic.evolution.sece import LearningInsight
 
 
 class TestGovernedConsciousnessUnit:
@@ -450,7 +452,6 @@ class TestSelfEvolvingConsciousnessEntity:
         )
         
         # Add some mock insights
-        from app.cosmic.evolution.sece import LearningInsight
         for i in range(4):
             insight = LearningInsight(
                 insight_id=f"insight-{i}",
