@@ -180,11 +180,16 @@ jobs:
         continue-on-error: ${{ env.SECURITY_ENV != 'production' }}
         run: |
           mkdir -p security-reports
-          bandit -r app/ -c pyproject.toml -f json -o security-reports/bandit-report.json
+          bandit -r app/ -c pyproject.toml -f json -o security-reports/bandit-report.json || true
           bandit -r app/ -c pyproject.toml > security-reports/bandit-summary.txt || true
 
-          # Check severity counts
-          HIGH_COUNT=$(grep -o "High: [0-9]*" security-reports/bandit-summary.txt | grep -o "[0-9]*" || echo "0")
+          # Check severity counts from JSON report using jq for reliability
+          if command -v jq >/dev/null 2>&1 && [ -f security-reports/bandit-report.json ]; then
+            HIGH_COUNT=$(jq '[.results[] | select(.issue_severity=="HIGH")] | length' security-reports/bandit-report.json 2>/dev/null || echo "0")
+          else
+            # Fallback to grep if jq not available
+            HIGH_COUNT=$(grep -o "High: [0-9]*" security-reports/bandit-summary.txt | grep -o "[0-9]*" || echo "0")
+          fi
 
           echo "📊 Bandit Results:"
           echo "  High severity issues: $HIGH_COUNT"

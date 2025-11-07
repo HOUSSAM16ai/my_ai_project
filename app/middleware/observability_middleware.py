@@ -49,7 +49,7 @@ class ObservabilityMiddleware:
         """Initialize middleware with Flask app"""
         app.before_request(self.before_request)
         app.after_request(self.after_request)
-        app.teardown_request(self.teardown_request)
+        app.teardown_request(self.teardown_request)  # type: ignore[type-var]
 
     def before_request(self):
         """

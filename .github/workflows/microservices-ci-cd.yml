@@ -128,7 +128,7 @@ jobs:
 
       - name: Install Pact
         run: |
-          pip install pact-python pytest
+          pip install pact-python pytest pytest-timeout
 
       - name: Run Contract Tests
         run: |
