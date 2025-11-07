@@ -21,11 +21,11 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
-
-from dataclasses import dataclass, field
+from typing import Any
 
 
 class ProtocolType(Enum):
@@ -58,8 +58,8 @@ class PolicyRule:
     name: str
     description: str
     severity: ProtocolSeverity
-    validator: Optional[Callable] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    validator: Callable | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -72,7 +72,7 @@ class ProtocolViolation:
     severity: ProtocolSeverity
     description: str
     timestamp: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ExistentialProtocolPackage:
@@ -127,10 +127,10 @@ class ExistentialProtocolPackage:
         self.auto_apply = auto_apply
 
         # القواعد المضمنة في البروتوكول
-        self.policy_rules: List[PolicyRule] = []
+        self.policy_rules: list[PolicyRule] = []
 
         # سجل الانتهاكات
-        self.violations: List[ProtocolViolation] = []
+        self.violations: list[ProtocolViolation] = []
 
         # إحصائيات التطبيق
         self.application_stats = {
@@ -152,8 +152,8 @@ class ExistentialProtocolPackage:
         name: str,
         description: str,
         severity: ProtocolSeverity,
-        validator: Optional[Callable] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        validator: Callable | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PolicyRule:
         """
         إضافة قاعدة سياسة جديدة
@@ -199,7 +199,7 @@ class ExistentialProtocolPackage:
                 return True
         return False
 
-    def validate_data(self, data: Dict[str, Any], strict_mode: bool = True) -> Dict[str, Any]:
+    def validate_data(self, data: dict[str, Any], strict_mode: bool = True) -> dict[str, Any]:
         """
         التحقق من البيانات وفقاً لقواعد البروتوكول
 
@@ -246,7 +246,7 @@ class ExistentialProtocolPackage:
             "strict_mode": strict_mode,
         }
 
-    def get_compliance_report(self) -> Dict[str, Any]:
+    def get_compliance_report(self) -> dict[str, Any]:
         """
         الحصول على تقرير الامتثال الشامل
 
@@ -279,7 +279,7 @@ class ExistentialProtocolPackage:
             "auto_apply": self.auto_apply,
         }
 
-    def get_rules_summary(self) -> List[Dict[str, Any]]:
+    def get_rules_summary(self) -> list[dict[str, Any]]:
         """
         الحصول على ملخص القواعد
 
@@ -392,7 +392,7 @@ class ExistentialProtocolPackage:
             validator=lambda data: "compliance_tags" in data or "regulation" in data,
         )
 
-    def _check_rule(self, rule: PolicyRule, data: Dict[str, Any]) -> Optional[ProtocolViolation]:
+    def _check_rule(self, rule: PolicyRule, data: dict[str, Any]) -> ProtocolViolation | None:
         """
         التحقق من قاعدة واحدة
 

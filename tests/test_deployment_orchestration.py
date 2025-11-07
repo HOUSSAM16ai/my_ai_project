@@ -5,14 +5,14 @@ Tests for Blue-Green, Canary, Rolling deployments, Circuit Breaker, Health Check
 """
 
 import time
+
 import pytest
-from datetime import datetime
 
 from app.services.deployment_orchestrator_service import (
-    DeploymentOrchestrator,
-    ServiceVersion,
-    DeploymentPhase,
     CircuitState,
+    DeploymentOrchestrator,
+    DeploymentPhase,
+    ServiceVersion,
     get_deployment_orchestrator,
 )
 
@@ -332,7 +332,7 @@ class TestDeploymentMetrics:
             health_endpoint="/health",
         )
 
-        deployment_id = orchestrator.deploy_blue_green(
+        orchestrator.deploy_blue_green(
             service_name="metrics-test",
             new_version=new_version,
         )

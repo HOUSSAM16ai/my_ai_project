@@ -4,16 +4,19 @@
 #  PURPOSE: Comprehensive tests for the Pragmatic Simplicity system
 # ======================================================================================
 
-import pytest
 from datetime import datetime
 
+import pytest
+
+from app.cosmic.automation import ExistentialAI
+from app.cosmic.evolution import LearningType, SelfEvolvingConsciousnessEntity
+from app.cosmic.evolution.sece import LearningInsight
 from app.cosmic.primitives import (
     ConsciousnessType,
     ExistentialInterconnect,
     ExistentialProtocolPackage,
     GovernedConsciousnessUnit,
     InterconnectType,
-    ProtocolComplianceLevel,
     ProtocolFactory,
     ProtocolSeverity,
     ProtocolType,
@@ -24,11 +27,7 @@ from app.cosmic.rules import (
     CosmicDesignEnforcer,
     DualConsciousnessRule,
     InfiniteScalabilityRule,
-    RuleEnforcementLevel,
 )
-from app.cosmic.automation import ExistentialAI, AutomationTaskType
-from app.cosmic.evolution import SelfEvolvingConsciousnessEntity, LearningType
-from app.cosmic.evolution.sece import LearningInsight
 
 
 class TestGovernedConsciousnessUnit:
@@ -493,7 +492,7 @@ class TestIntegration:
         sece.observe_protocol(protocol)
 
         # Analyze patterns
-        insights = sece.analyze_behavior_patterns()
+        sece.analyze_behavior_patterns()
 
         # 6. Validate architecture with Cosmic Design Rules
         enforcer = CosmicDesignEnforcer()

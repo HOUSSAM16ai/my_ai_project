@@ -18,11 +18,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
-from dataclasses import dataclass
+from typing import Any
 
 
 class RuleType(Enum):
@@ -73,10 +72,10 @@ class CosmicDesignRule(ABC):
         self.description = description
         self.enforcement_level = enforcement_level
         self.created_at = datetime.now(UTC)
-        self.violations: List[RuleViolation] = []
+        self.violations: list[RuleViolation] = []
 
     @abstractmethod
-    def validate(self, architecture: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, architecture: dict[str, Any]) -> dict[str, Any]:
         """
         التحقق من امتثال البنية المعمارية للقاعدة
 
@@ -89,7 +88,7 @@ class CosmicDesignRule(ABC):
         pass
 
     @abstractmethod
-    def suggest_improvements(self, architecture: Dict[str, Any]) -> List[str]:
+    def suggest_improvements(self, architecture: dict[str, Any]) -> list[str]:
         """
         اقتراح تحسينات للبنية المعمارية
 
@@ -129,7 +128,7 @@ class DualConsciousnessRule(CosmicDesignRule):
         )
         self.minimum_consciousness_units = 2
 
-    def validate(self, architecture: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, architecture: dict[str, Any]) -> dict[str, Any]:
         """التحقق من امتثال قاعدة الوعي المزدوج"""
         gcu_count = architecture.get("consciousness_units", 0)
         handles_sensitive_data = architecture.get("handles_sensitive_data", False)
@@ -174,7 +173,7 @@ class DualConsciousnessRule(CosmicDesignRule):
             ],
         }
 
-    def suggest_improvements(self, architecture: Dict[str, Any]) -> List[str]:
+    def suggest_improvements(self, architecture: dict[str, Any]) -> list[str]:
         """اقتراح تحسينات للوعي المزدوج"""
         suggestions = []
         gcu_count = architecture.get("consciousness_units", 0)
@@ -221,7 +220,7 @@ class InfiniteScalabilityRule(CosmicDesignRule):
             enforcement_level=RuleEnforcementLevel.MANDATORY,
         )
 
-    def validate(self, architecture: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, architecture: dict[str, Any]) -> dict[str, Any]:
         """التحقق من امتثال قاعدة التوسع اللامحدود"""
         violations = []
 
@@ -289,7 +288,7 @@ class InfiniteScalabilityRule(CosmicDesignRule):
             ],
         }
 
-    def suggest_improvements(self, architecture: Dict[str, Any]) -> List[str]:
+    def suggest_improvements(self, architecture: dict[str, Any]) -> list[str]:
         """اقتراح تحسينات للتوسع اللامحدود"""
         suggestions = []
 
@@ -341,7 +340,7 @@ class AutonomousEvolutionRule(CosmicDesignRule):
             enforcement_level=RuleEnforcementLevel.RECOMMENDED,
         )
 
-    def validate(self, architecture: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, architecture: dict[str, Any]) -> dict[str, Any]:
         """التحقق من امتثال قاعدة التغيير التلقائي"""
         violations = []
 
@@ -409,7 +408,7 @@ class AutonomousEvolutionRule(CosmicDesignRule):
             ],
         }
 
-    def suggest_improvements(self, architecture: Dict[str, Any]) -> List[str]:
+    def suggest_improvements(self, architecture: dict[str, Any]) -> list[str]:
         """اقتراح تحسينات للتغيير التلقائي"""
         suggestions = []
 
@@ -450,15 +449,15 @@ class CosmicDesignEnforcer:
     """
 
     def __init__(self):
-        self.rules: List[CosmicDesignRule] = [
+        self.rules: list[CosmicDesignRule] = [
             DualConsciousnessRule(),
             InfiniteScalabilityRule(),
             AutonomousEvolutionRule(),
         ]
 
     def validate_architecture(
-        self, architecture: Dict[str, Any], strict_mode: bool = False
-    ) -> Dict[str, Any]:
+        self, architecture: dict[str, Any], strict_mode: bool = False
+    ) -> dict[str, Any]:
         """
         التحقق من البنية المعمارية مقابل جميع القواعد
 
@@ -502,7 +501,7 @@ class CosmicDesignEnforcer:
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-    def get_compliance_score(self, architecture: Dict[str, Any]) -> float:
+    def get_compliance_score(self, architecture: dict[str, Any]) -> float:
         """
         حساب درجة الامتثال (0-100)
 

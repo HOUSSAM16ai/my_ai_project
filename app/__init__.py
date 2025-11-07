@@ -143,8 +143,7 @@ def _register_blueprints(app: Flask) -> None:
 
     # API Gateway blueprints (optional)
     try:
-        from .api import init_api
-        from .api import cosmic_routes
+        from .api import cosmic_routes, init_api
 
         init_api(app)
         cosmic_routes.register_cosmic_routes(app)
@@ -154,7 +153,7 @@ def _register_blueprints(app: Flask) -> None:
 
     # CLI commands (optional)
     try:
-        from .cli import database_commands, mindgate_commands, user_commands, cosmic_commands
+        from .cli import cosmic_commands, database_commands, mindgate_commands, user_commands
 
         app.register_blueprint(user_commands.users_cli)
         app.register_blueprint(mindgate_commands.mindgate_cli)

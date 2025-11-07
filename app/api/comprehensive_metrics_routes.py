@@ -29,7 +29,6 @@ from app.services.user_analytics_metrics_service import (
     get_user_analytics_service,
 )
 
-
 # ======================================================================================
 # INFRASTRUCTURE METRICS ENDPOINTS
 # ======================================================================================

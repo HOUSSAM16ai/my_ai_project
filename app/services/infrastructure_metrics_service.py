@@ -26,15 +26,15 @@ Features:
 
 import os
 import platform
-import psutil
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
+import psutil
 
 # ======================================================================================
 # ENUMERATIONS
@@ -582,34 +582,34 @@ class InfrastructureMetricsService:
         metrics = []
 
         # CPU metrics
-        metrics.append(f"# HELP cpu_usage_percent CPU usage percentage")
-        metrics.append(f"# TYPE cpu_usage_percent gauge")
+        metrics.append("# HELP cpu_usage_percent CPU usage percentage")
+        metrics.append("# TYPE cpu_usage_percent gauge")
         metrics.append(f"cpu_usage_percent {snapshot.cpu.usage_percent}")
 
-        metrics.append(f"# HELP cpu_load_average System load average")
-        metrics.append(f"# TYPE cpu_load_average gauge")
+        metrics.append("# HELP cpu_load_average System load average")
+        metrics.append("# TYPE cpu_load_average gauge")
         metrics.append(f'cpu_load_average{{period="1m"}} {snapshot.cpu.load_average_1m}')
         metrics.append(f'cpu_load_average{{period="5m"}} {snapshot.cpu.load_average_5m}')
         metrics.append(f'cpu_load_average{{period="15m"}} {snapshot.cpu.load_average_15m}')
 
         # Memory metrics
-        metrics.append(f"# HELP memory_used_percent Memory usage percentage")
-        metrics.append(f"# TYPE memory_used_percent gauge")
+        metrics.append("# HELP memory_used_percent Memory usage percentage")
+        metrics.append("# TYPE memory_used_percent gauge")
         metrics.append(f"memory_used_percent {snapshot.memory.used_percent}")
 
-        metrics.append(f"# HELP memory_bytes Memory in bytes")
-        metrics.append(f"# TYPE memory_bytes gauge")
+        metrics.append("# HELP memory_bytes Memory in bytes")
+        metrics.append("# TYPE memory_bytes gauge")
         metrics.append(f'memory_bytes{{type="total"}} {snapshot.memory.total_bytes}')
         metrics.append(f'memory_bytes{{type="used"}} {snapshot.memory.used_bytes}')
         metrics.append(f'memory_bytes{{type="available"}} {snapshot.memory.available_bytes}')
 
         # Disk metrics
-        metrics.append(f"# HELP disk_used_percent Disk usage percentage")
-        metrics.append(f"# TYPE disk_used_percent gauge")
+        metrics.append("# HELP disk_used_percent Disk usage percentage")
+        metrics.append("# TYPE disk_used_percent gauge")
         metrics.append(f"disk_used_percent {snapshot.disk.used_percent}")
 
-        metrics.append(f"# HELP disk_io_bytes_per_sec Disk I/O bytes per second")
-        metrics.append(f"# TYPE disk_io_bytes_per_sec gauge")
+        metrics.append("# HELP disk_io_bytes_per_sec Disk I/O bytes per second")
+        metrics.append("# TYPE disk_io_bytes_per_sec gauge")
         metrics.append(
             f'disk_io_bytes_per_sec{{direction="read"}} {snapshot.disk.read_bytes_per_sec}'
         )
@@ -618,8 +618,8 @@ class InfrastructureMetricsService:
         )
 
         # Network metrics
-        metrics.append(f"# HELP network_bytes_per_sec Network bytes per second")
-        metrics.append(f"# TYPE network_bytes_per_sec gauge")
+        metrics.append("# HELP network_bytes_per_sec Network bytes per second")
+        metrics.append("# TYPE network_bytes_per_sec gauge")
         metrics.append(
             f'network_bytes_per_sec{{direction="sent"}} {snapshot.network.bytes_sent_per_sec}'
         )
@@ -627,13 +627,13 @@ class InfrastructureMetricsService:
             f'network_bytes_per_sec{{direction="recv"}} {snapshot.network.bytes_recv_per_sec}'
         )
 
-        metrics.append(f"# HELP network_connections Active network connections")
-        metrics.append(f"# TYPE network_connections gauge")
+        metrics.append("# HELP network_connections Active network connections")
+        metrics.append("# TYPE network_connections gauge")
         metrics.append(f"network_connections {snapshot.network.connections_active}")
 
         # System uptime
-        metrics.append(f"# HELP system_uptime_seconds System uptime in seconds")
-        metrics.append(f"# TYPE system_uptime_seconds counter")
+        metrics.append("# HELP system_uptime_seconds System uptime in seconds")
+        metrics.append("# TYPE system_uptime_seconds counter")
         metrics.append(f"system_uptime_seconds {snapshot.uptime_seconds}")
 
         return "\n".join(metrics)

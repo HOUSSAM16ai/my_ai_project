@@ -20,13 +20,11 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
-
-from flask import current_app
-
+from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
@@ -736,7 +734,7 @@ class DeploymentOrchestrator:
 
             return result
 
-        except Exception as e:
+        except Exception:
             with self._lock:
                 circuit.failure_count += 1
                 circuit.total_failures += 1
@@ -818,7 +816,7 @@ class DeploymentOrchestrator:
         Returns:
             True إذا كانت المراقبة ناجحة
         """
-        status = self._deployments[deployment_id]
+        self._deployments[deployment_id]
         start_time = time.time()
 
         while (time.time() - start_time) < duration_seconds:

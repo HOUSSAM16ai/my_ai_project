@@ -3,11 +3,9 @@
 Tests for Horizontal Scaling & SPOF Elimination Services
 """
 
-import pytest
 from app.services.horizontal_scaling_service import (
     ChaosMonkey,
     HorizontalScalingOrchestrator,
-    LoadBalancer,
     LoadBalancingAlgorithm,
     RegionZone,
     ScalingEvent,

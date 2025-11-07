@@ -36,7 +36,6 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================

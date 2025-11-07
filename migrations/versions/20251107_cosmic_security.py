@@ -17,8 +17,8 @@ This is the most advanced security and governance system ever conceived,
 designed for Year Million where humanity transcends current understanding
 of matter, energy, and consciousness.
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

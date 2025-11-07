@@ -23,11 +23,10 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
-from dataclasses import dataclass, field
+from typing import Any
 
 
 class ConsciousnessType(Enum):
@@ -54,7 +53,7 @@ class ExistentialState:
     consciousness_id: str
     timestamp: datetime
     state_hash: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     protocol_compliance: ProtocolComplianceLevel = ProtocolComplianceLevel.STANDARD
 
 
@@ -86,7 +85,7 @@ class GovernedConsciousnessUnit:
         entity_id: str,
         name: str,
         compliance_level: ProtocolComplianceLevel = ProtocolComplianceLevel.STANDARD,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         تهيئة وحدة الوعي المحكم
@@ -106,10 +105,10 @@ class GovernedConsciousnessUnit:
         self.metadata = metadata or {}
 
         # البروتوكولات المشترك فيها
-        self.subscribed_protocols: List[str] = []
+        self.subscribed_protocols: list[str] = []
 
         # سجل الحالات الوجودية
-        self.state_history: List[ExistentialState] = []
+        self.state_history: list[ExistentialState] = []
 
         # الطابع الزمني للإنشاء
         self.created_at = datetime.now(UTC)
@@ -159,8 +158,8 @@ class GovernedConsciousnessUnit:
         return False
 
     def process_information(
-        self, data: Dict[str, Any], enforce_protocols: bool = True
-    ) -> Dict[str, Any]:
+        self, data: dict[str, Any], enforce_protocols: bool = True
+    ) -> dict[str, Any]:
         """
         معالجة معلومات بشكل آمن مع احترام البروتوكولات
 
@@ -222,7 +221,7 @@ class GovernedConsciousnessUnit:
         signature_data = f"{self.consciousness_id}:{self.entity_id}:{self.created_at.isoformat()}"
         return hashlib.sha256(signature_data.encode()).hexdigest()
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """
         الحصول على تقرير أداء شامل
 
@@ -249,7 +248,7 @@ class GovernedConsciousnessUnit:
             "existential_signature": self.get_existential_signature(),
         }
 
-    def _check_protocol_compliance(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_protocol_compliance(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         التحقق من الامتثال للبروتوكولات المشترك فيها
 
@@ -280,7 +279,7 @@ class GovernedConsciousnessUnit:
             "checked_protocols": self.subscribed_protocols,
         }
 
-    def _apply_existential_encryption(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_existential_encryption(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         تطبيق التشفير الوجودي على البيانات
 

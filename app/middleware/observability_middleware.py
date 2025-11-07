@@ -19,8 +19,8 @@ Better than:
 """
 
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
 
 from flask import Flask, g, request
 from werkzeug.wrappers import Response

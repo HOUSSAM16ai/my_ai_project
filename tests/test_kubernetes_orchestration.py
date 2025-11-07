@@ -5,16 +5,16 @@ Tests for Self-Healing, Distributed Consensus (Raft), Auto-Scaling
 """
 
 import time
+
 import pytest
 
 from app.services.kubernetes_orchestration_service import (
-    KubernetesOrchestrator,
-    Pod,
-    Node,
-    PodPhase,
-    NodeState,
-    ConsensusRole,
     AutoScalingConfig,
+    ConsensusRole,
+    KubernetesOrchestrator,
+    NodeState,
+    Pod,
+    PodPhase,
     get_kubernetes_orchestrator,
 )
 
@@ -270,7 +270,7 @@ class TestDistributedConsensus:
 
     def test_election_timeout_mechanism(self, orchestrator):
         """اختبار آلية انتهاء مهلة الانتخاب"""
-        initial_role = orchestrator.get_raft_state().role
+        _ = orchestrator.get_raft_state().role
 
         # الانتظار لفترة كافية
         time.sleep(2)

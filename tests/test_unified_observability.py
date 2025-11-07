@@ -19,7 +19,6 @@ Tests for the world-class observability system covering:
 
 import time
 import unittest
-from datetime import datetime
 
 from app.telemetry.unified_observability import (
     TraceContext,

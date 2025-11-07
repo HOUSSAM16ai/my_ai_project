@@ -27,8 +27,6 @@ Features:
 ✅ Prometheus + OpenTelemetry Compatible
 """
 
-import hashlib
-import json
 import random
 import statistics
 import threading
@@ -36,7 +34,7 @@ import time
 import uuid
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 

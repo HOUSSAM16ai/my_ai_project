@@ -26,7 +26,6 @@ Features:
 """
 
 import hashlib
-import json
 import math
 import statistics
 import threading
@@ -36,7 +35,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -499,7 +497,7 @@ class AIModelMetricsService:
             if model_key not in self.models:
                 return None
 
-            model = self.models[model_key]
+            self.models[model_key]
 
             # Calculate from recent inferences
             recent_inferences = [
