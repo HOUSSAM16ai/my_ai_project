@@ -29,6 +29,7 @@ Features:
 
 import hashlib
 import json
+import random
 import statistics
 import threading
 import time
@@ -772,8 +773,6 @@ class UnifiedObservabilityService:
     # =================================================================================
     def _head_based_sampling(self) -> bool:
         """Head-based sampling decision (at trace start)"""
-        import random
-
         return random.random() < self.sample_rate
 
     def _tail_based_sampling(self, trace: UnifiedTrace) -> bool:
@@ -797,8 +796,6 @@ class UnifiedObservabilityService:
             return True
 
         # Sample the rest
-        import random
-
         return random.random() < self.sample_rate
 
     # =================================================================================
