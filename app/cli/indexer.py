@@ -7,16 +7,21 @@ import os
 import re
 from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-try:
+if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
+try:
+    from sentence_transformers import SentenceTransformer as _SentenceTransformer
+
     SENTENCE_TRANSFORMER_AVAILABLE = True
+    SentenceTransformer = _SentenceTransformer  # type: ignore
 except ImportError:
-    SentenceTransformer = None
     SENTENCE_TRANSFORMER_AVAILABLE = False
+    SentenceTransformer = None  # type: ignore
 
 DEFAULT_MODEL = os.getenv("COGNI_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 INDEX_DIR = Path(".cogni")

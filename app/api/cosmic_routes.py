@@ -163,7 +163,7 @@ def list_existential_nodes():
     per_page = request.args.get("per_page", 20, type=int)
     status = request.args.get("status")
 
-    query = db.session.query(ExistentialNode)
+    query = ExistentialNode.query
 
     if status:
         query = query.filter(ExistentialNode.status == status.upper())
@@ -415,7 +415,7 @@ def list_protocols():
     per_page = request.args.get("per_page", 20, type=int)
     status = request.args.get("status")
 
-    query = db.session.query(ExistentialProtocol)
+    query = ExistentialProtocol.query
 
     if status:
         query = query.filter(ExistentialProtocol.status == status.upper())

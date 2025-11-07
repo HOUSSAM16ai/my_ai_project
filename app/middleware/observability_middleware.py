@@ -22,8 +22,7 @@ import time
 from collections.abc import Callable
 from functools import wraps
 
-from flask import Flask, g, request
-from werkzeug.wrappers import Response
+from flask import Flask, Response, g, request
 
 from app.telemetry.unified_observability import (
     TraceContext,
