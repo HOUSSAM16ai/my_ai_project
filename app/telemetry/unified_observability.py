@@ -327,29 +327,21 @@ class UnifiedObservabilityService:
         Returns:
             TraceContext for propagation to downstream services
         """
-        # Sampling decision
+        # Determine sampling decision and IDs
         if parent_context:
-            # Inherit sampling decision
-            if not parent_context.sampled:
-                return parent_context
-
+            # Inherit sampling decision from parent
+            head_sampled = parent_context.sampled
             trace_id = parent_context.trace_id
             parent_span_id = parent_context.span_id
             baggage = parent_context.baggage.copy()
         else:
-            # Head-based sampling decision
-            should_sample = self._head_based_sampling()
-            if not should_sample:
-                # Return non-sampled context
-                dummy_trace_id = self._generate_trace_id()
-                dummy_span_id = self._generate_span_id()
-                return TraceContext(dummy_trace_id, dummy_span_id, sampled=False)
-
+            # Head-based sampling decision for new trace
+            head_sampled = self._head_based_sampling()
             trace_id = self._generate_trace_id()
             parent_span_id = None
             baggage = {}
 
-        # Create span
+        # Always create span (even for non-sampled traces) to support tail-based sampling
         span_id = self._generate_span_id()
         span = UnifiedSpan(
             trace_id=trace_id,
@@ -388,7 +380,7 @@ class UnifiedObservabilityService:
                 trace_id=trace_id,
                 span_id=span_id,
                 parent_span_id=parent_span_id,
-                sampled=True,
+                sampled=head_sampled,
                 baggage=baggage,
             )
             g.current_span_id = span_id
@@ -397,7 +389,7 @@ class UnifiedObservabilityService:
             trace_id=trace_id,
             span_id=span_id,
             parent_span_id=parent_span_id,
-            sampled=True,
+            sampled=head_sampled,
             baggage=baggage,
         )
 
