@@ -21,19 +21,26 @@ print("=" * 80)
 # Test 1: Check if services can be imported
 print("\n[TEST 1] Checking service imports...")
 try:
-    from app.services.infrastructure_metrics_service import InfrastructureMetricsService  # noqa: F401, I001
+    from app.services.infrastructure_metrics_service import (
+        InfrastructureMetricsService,
+    )  # noqa: F401, I001
+
     print("✅ InfrastructureMetricsService imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import InfrastructureMetricsService: {e}")
 
 try:
     from app.services.ai_model_metrics_service import AIModelMetricsService  # noqa: F401
+
     print("✅ AIModelMetricsService imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import AIModelMetricsService: {e}")
 
 try:
-    from app.services.user_analytics_metrics_service import UserAnalyticsMetricsService  # noqa: F401, I001
+    from app.services.user_analytics_metrics_service import (
+        UserAnalyticsMetricsService,
+    )  # noqa: F401, I001
+
     print("✅ UserAnalyticsMetricsService imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import UserAnalyticsMetricsService: {e}")
@@ -42,6 +49,7 @@ except ImportError as e:
 print("\n[TEST 2] Checking API routes import...")
 try:
     from app.api import comprehensive_metrics_routes  # noqa: F401
+
     print("✅ comprehensive_metrics_routes imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import comprehensive_metrics_routes: {e}")
@@ -55,6 +63,7 @@ try:
         MemoryMetrics,
         NetworkMetrics,
     )
+
     print("✅ Infrastructure data structures OK")
 except ImportError as e:
     print(f"❌ Failed to import infrastructure data structures: {e}")
@@ -66,6 +75,7 @@ try:
         ModelDriftMetrics,
         NLPMetrics,
     )
+
     print("✅ AI model data structures OK")
 except ImportError as e:
     print(f"❌ Failed to import AI model data structures: {e}")
@@ -77,6 +87,7 @@ try:
         RetentionMetrics,
         UserEvent,
     )
+
     print("✅ User analytics data structures OK")
 except ImportError as e:
     print(f"❌ Failed to import user analytics data structures: {e}")
@@ -84,9 +95,20 @@ except ImportError as e:
 # Test 4: Check enums
 print("\n[TEST 4] Checking enumerations...")
 try:
-    from app.services.ai_model_metrics_service import DriftStatus, MetricType, ModelType  # noqa: F401, I001
-    from app.services.infrastructure_metrics_service import HealthStatus, ResourceType  # noqa: F401, I001
-    from app.services.user_analytics_metrics_service import EventType, UserSegment  # noqa: F401, I001
+    from app.services.ai_model_metrics_service import (
+        DriftStatus,
+        MetricType,
+        ModelType,
+    )  # noqa: F401, I001
+    from app.services.infrastructure_metrics_service import (
+        HealthStatus,
+        ResourceType,
+    )  # noqa: F401, I001
+    from app.services.user_analytics_metrics_service import (
+        EventType,
+        UserSegment,
+    )  # noqa: F401, I001
+
     print("✅ All enumerations imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import enumerations: {e}")
@@ -95,6 +117,7 @@ except ImportError as e:
 print("\n[TEST 5] Checking API endpoint registration...")
 try:
     from app.api import init_api  # noqa: F401
+
     print("✅ init_api function available")
 except ImportError as e:
     print(f"❌ Failed to import init_api: {e}")
