@@ -99,6 +99,15 @@ def _register_extensions(app: Flask) -> None:
     except Exception as exc:
         app.logger.warning("Failed to initialize middleware: %s", exc, exc_info=True)
 
+    # Setup Unified Observability Middleware (SUPERHUMAN)
+    try:
+        from app.middleware.observability_middleware import ObservabilityMiddleware
+
+        ObservabilityMiddleware(app)
+        app.logger.info("✅ Unified Observability System initialized (Metrics+Logs+Traces)")
+    except Exception as exc:
+        app.logger.warning("Failed to initialize observability middleware: %s", exc, exc_info=True)
+
     # Setup Swagger/OpenAPI documentation (optional)
     try:
         from app.swagger_integration import init_swagger
