@@ -18,6 +18,8 @@ on:
       - "Python Application CI"
       - "🏆 Code Quality & Security (Superhuman)"
     types: [completed]
+    branches:
+      - main
 
 permissions:
   actions: write

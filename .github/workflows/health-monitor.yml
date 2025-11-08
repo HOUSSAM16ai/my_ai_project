@@ -16,6 +16,8 @@ on:
   workflow_run:
     workflows: ["🏆 Ultimate CI - Always Green"]
     types: [completed]
+    branches:
+      - main
 
 permissions:
   actions: read

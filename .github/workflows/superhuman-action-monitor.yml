@@ -22,6 +22,8 @@ on:
     workflows: ["Python Application CI", "🏆 Code Quality & Security (Superhuman)", "🚀 Superhuman MCP Server Integration"]
     types:
       - completed
+    branches:
+      - main
   schedule:
     # Run health check every 6 hours
     - cron: '0 */6 * * *'
