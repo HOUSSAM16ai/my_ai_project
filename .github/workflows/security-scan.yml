@@ -367,3 +367,4 @@ jobs:
           echo "  Built with ❤️ following enterprise best practices"
           echo "  Google | Facebook | Microsoft | OpenAI | Stripe"
           echo "════════════════════════════════════════════════════════════════"
+          exit 0

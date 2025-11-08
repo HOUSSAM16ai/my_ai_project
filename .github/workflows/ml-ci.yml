@@ -124,3 +124,20 @@ jobs:
           echo "✅ ML CI Pipeline Completed"
           echo "Quality & Security checks finished"
           echo "Review results above for any warnings"
+          
+          # Check job results
+          QUALITY_RESULT="${{ needs.quality-security.result }}"
+          SECURITY_RESULT="${{ needs.supply-chain-security.result }}"
+          
+          echo "📊 Job Status:"
+          echo "  • Quality & Security: $QUALITY_RESULT"
+          echo "  • Supply Chain Security: $SECURITY_RESULT"
+          
+          # Only fail if a critical job actually failed
+          if [ "$QUALITY_RESULT" = "failure" ] || [ "$SECURITY_RESULT" = "failure" ]; then
+            echo "❌ One or more critical jobs failed"
+            exit 1
+          fi
+          
+          echo "✅ All jobs completed successfully"
+          exit 0
