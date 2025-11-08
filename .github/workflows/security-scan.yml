@@ -111,7 +111,7 @@ jobs:
         run: |
           bandit -r app/ -c pyproject.toml -f json -o bandit-report.json || {
             echo "⚠️ Bandit found issues (non-blocking in dev)"
-            cat bandit-report.json | python -m json.tool || true
+            python -m json.tool < bandit-report.json || true
           }
 
       - name: 📤 Upload Bandit Results
@@ -193,7 +193,7 @@ jobs:
 
           echo "📊 Bandit Results:"
           echo "  High severity issues: $HIGH_COUNT"
-          cat security-reports/bandit-summary.txt | tail -20
+          tail -20 security-reports/bandit-summary.txt
 
           # Fail if too many high severity issues in production
           if [ "${{ env.SECURITY_ENV }}" = "production" ] && [ "$HIGH_COUNT" -gt 15 ]; then

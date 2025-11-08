@@ -159,3 +159,6 @@ app/static/build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# CI/CD Tools (temporary downloads)
+actionlint*

@@ -89,9 +89,11 @@ jobs:
               echo "📋 This is the Superhuman Action Monitor workflow itself"
               echo "✅ Auto-skipping to maintain system stability"
               MONITOR_STATUS="self_skip"
-              echo "needs_fix=false" >> "$GITHUB_OUTPUT"
-              echo "failure_type=self_monitor" >> "$GITHUB_OUTPUT"
-              echo "monitor_status=$MONITOR_STATUS" >> "$GITHUB_OUTPUT"
+              {
+                echo "needs_fix=false"
+                echo "failure_type=self_monitor"
+                echo "monitor_status=$MONITOR_STATUS"
+              } >> "$GITHUB_OUTPUT"
               exit 0
             fi
 
@@ -133,9 +135,11 @@ jobs:
             MONITOR_STATUS="scheduled_check"
           fi
 
-          echo "needs_fix=$NEEDS_FIX" >> "$GITHUB_OUTPUT"
-          echo "failure_type=$FAILURE_TYPE" >> "$GITHUB_OUTPUT"
-          echo "monitor_status=$MONITOR_STATUS" >> "$GITHUB_OUTPUT"
+          {
+            echo "needs_fix=$NEEDS_FIX"
+            echo "failure_type=$FAILURE_TYPE"
+            echo "monitor_status=$MONITOR_STATUS"
+          } >> "$GITHUB_OUTPUT"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
       - name: 💾 Save Failure Report

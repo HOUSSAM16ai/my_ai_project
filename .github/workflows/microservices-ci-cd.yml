@@ -187,7 +187,7 @@ jobs:
 
       - name: Set lowercase repository name
         id: repo
-        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Check service directory
         id: check_dir
@@ -410,7 +410,7 @@ jobs:
 
       - name: Set lowercase repository name
         id: repo
-        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -477,7 +477,7 @@ jobs:
 
       - name: Set lowercase repository name
         id: repo
-        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -498,15 +498,19 @@ jobs:
           curl -f https://api.cogniforge.ai/v1/models || exit 1
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
+        if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
           body: |
             Automated release from CI/CD pipeline
             Commit: ${{ github.sha }}
 
             ## Changes
             ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
+        continue-on-error: true

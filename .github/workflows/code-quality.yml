@@ -182,7 +182,7 @@ jobs:
           # Parse results and show summary
           echo ""
           echo "📊 Security Scan Summary:"
-          cat bandit-output.txt | tail -20
+          tail -20 bandit-output.txt
 
           # Extract severity counts
           HIGH_COUNT=$(grep -o "High: [0-9]*" bandit-output.txt | grep -o "[0-9]*" || echo "0")
