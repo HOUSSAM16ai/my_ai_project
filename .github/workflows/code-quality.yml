@@ -33,7 +33,7 @@ name: 🏆 Code Quality & Security (Superhuman)
 # Cancel in-progress runs for the same PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # =============================================================================
