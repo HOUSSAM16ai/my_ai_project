@@ -69,3 +69,12 @@ jobs:
             htmlcov
             coverage.xml
           if-no-files-found: ignore
+
+      - name: ✅ Tests completed successfully
+        run: |
+          echo "════════════════════════════════════════"
+          echo "  ✅ All tests passed!"
+          echo "════════════════════════════════════════"
+
+          # Explicit success exit
+          exit 0

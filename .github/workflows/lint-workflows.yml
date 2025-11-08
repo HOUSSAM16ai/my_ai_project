@@ -48,3 +48,6 @@ jobs:
             echo ""
             echo "🏆 Quality: Superhuman"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # Explicit success exit
+          exit 0
