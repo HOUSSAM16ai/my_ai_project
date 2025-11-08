@@ -186,3 +186,6 @@ jobs:
             echo ""
             echo "Analysis completed. Check logs for details."
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # Explicit success exit
+          exit 0

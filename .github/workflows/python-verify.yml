@@ -51,3 +51,6 @@ jobs:
           echo "⚡ Linting code with Ruff..."
           ruff check .
           echo "✅ Ruff check passed!"
+
+          # Explicit success exit
+          exit 0
