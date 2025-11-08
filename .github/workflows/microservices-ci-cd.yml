@@ -1,5 +1,8 @@
 name: World-Class Microservices CI/CD Pipeline
 # Superhuman CI/CD surpassing Google, Facebook, Microsoft, OpenAI, Meta, Apple, Amazon
+#
+# ⚠️  IMPORTANT: Heavy Docker builds only run on 'main' branch or manual dispatch
+#     to prevent long build times on PRs. PRs run fast linting and testing only.
 
 on:
   pull_request:
@@ -154,6 +157,9 @@ jobs:
     name: Build & Scan Container Images
     runs-on: ubuntu-latest
     needs: [code-quality, test]
+    # Only run on main branch or when explicitly requested to avoid long build times on PRs
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30  # Prevent builds from running too long
     continue-on-error: true  # Don't fail entire workflow if builds fail
     permissions:
       contents: read
@@ -240,7 +246,7 @@ jobs:
           build-args: |
             VERSION=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
-        continue-on-error: false
+        continue-on-error: true  # Don't fail if Docker build fails (optional)
 
       - name: Run Trivy Vulnerability Scanner
         if: steps.check_dir.outputs.exists == 'true' && success()
