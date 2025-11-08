@@ -119,7 +119,7 @@ OFFICIAL_MANUAL_MODULES: list[str] = [
 # Whitelist of allowed planners (metadata-only discovery, lazy loading)
 ALLOWED_PLANNERS: set[str] = {
     "llm_planner",
-    "risk_planner", 
+    "risk_planner",
     "structural_planner",
     "multi_pass_arch_planner",
 }
@@ -141,6 +141,7 @@ ENV_EXCLUDE_MODULES: set[str] = {m.strip() for m in _env_exclude.split(",") if m
 MANUAL_IMPORT_MODULES: list[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
 EXCLUDE_MODULES: set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
 
+
 # Typed Configuration Class (safer env parsing)
 class _Cfg:
     ALLOWED = ALLOWED_PLANNERS
@@ -154,6 +155,7 @@ class _Cfg:
     HOTSPOT_CAP_BOOST = float(os.getenv("FACTORY_HOTSPOT_CAP_BOOST", "0.03") or "0.03")
     HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
     DEFAULT_RELIABILITY = 0.1  # Strict default (was 0.5)
+
 
 CFG = _Cfg()
 
@@ -241,7 +243,7 @@ def _log(message: str, level: str = "INFO", **fields):
         "level": level,
         "msg": message,
         "ts": time.time(),
-        **fields
+        **fields,
     }
     log_level = getattr(logging, level, logging.INFO)
     _logger.log(log_level, json.dumps(record, ensure_ascii=False))
@@ -268,7 +270,7 @@ def _push_selection_profile(sample: dict[str, Any]):
     with _STATE.lock:
         _STATE.selection_profile_samples.append(sample)
         if len(_STATE.selection_profile_samples) > CFG.MAX_PROFILES:
-            _STATE.selection_profile_samples = _STATE.selection_profile_samples[-CFG.MAX_PROFILES:]
+            _STATE.selection_profile_samples = _STATE.selection_profile_samples[-CFG.MAX_PROFILES :]
 
 
 def _push_instantiation_profile(sample: dict[str, Any]):
@@ -276,7 +278,9 @@ def _push_instantiation_profile(sample: dict[str, Any]):
     with _STATE.lock:
         _STATE.instantiation_profile_samples.append(sample)
         if len(_STATE.instantiation_profile_samples) > CFG.MAX_PROFILES:
-            _STATE.instantiation_profile_samples = _STATE.instantiation_profile_samples[-CFG.MAX_PROFILES:]
+            _STATE.instantiation_profile_samples = _STATE.instantiation_profile_samples[
+                -CFG.MAX_PROFILES :
+            ]
 
 
 # ======================================================================================
@@ -324,8 +328,7 @@ def _import_module_sandboxed(module_name: str) -> ModuleType:
         return importlib.import_module(module_name)
     except Exception as exc:
         _STATE.import_failures[module_name] = str(exc)
-        _log(f"Sandboxed import failed: {module_name}", "ERROR", 
-             module=module_name, error=str(exc))
+        _log(f"Sandboxed import failed: {module_name}", "ERROR", module=module_name, error=str(exc))
         raise
 
 
@@ -469,13 +472,18 @@ def _discover_and_register(force: bool = False, package: str | None = None):
         start = time.perf_counter()
         _STATE.discovery_runs += 1
         _STATE.import_failures.clear()
-        _log(f"Discovery run #{_STATE.discovery_runs} (metadata-only)", "INFO",
-             root=root, signature=signature[:10], run=_STATE.discovery_runs)
-        
+        _log(
+            f"Discovery run #{_STATE.discovery_runs} (metadata-only)",
+            "INFO",
+            root=root,
+            signature=signature[:10],
+            run=_STATE.discovery_runs,
+        )
+
         # Import manual modules only (explicit imports)
         for m in MANUAL_IMPORT_MODULES:
             _import_module(m)
-        
+
         # METADATA-ONLY: collect module names without importing
         for fullname in list(_iter_submodules(root) or []):
             short = fullname.rsplit(".", 1)[-1]
@@ -483,23 +491,30 @@ def _discover_and_register(force: bool = False, package: str | None = None):
                 continue
             # Check whitelist
             if short not in CFG.ALLOWED:
-                _log(f"Skipping module not in ALLOWED_PLANNERS", "DEBUG", 
-                     module=short, fullname=fullname)
+                _log(
+                    "Skipping module not in ALLOWED_PLANNERS",
+                    "DEBUG",
+                    module=short,
+                    fullname=fullname,
+                )
                 continue
             # Store metadata record WITHOUT importing
             _STATE.planner_records.setdefault(
-                short.lower(), 
-                PlannerRecord(name=short.lower(), module=fullname, class_name="Planner")
+                short.lower(),
+                PlannerRecord(name=short.lower(), module=fullname, class_name="Planner"),
             )
-        
+
         _sync_registry_into_records()
         _STATE.discovery_signature = signature
         _STATE.discovered = True
         elapsed = time.perf_counter() - start
-        _log(f"Discovery completed", "INFO", 
-             duration_s=round(elapsed, 4), 
-             planners=len(_STATE.planner_records),
-             metadata_only=True)
+        _log(
+            "Discovery completed",
+            "INFO",
+            duration_s=round(elapsed, 4),
+            planners=len(_STATE.planner_records),
+            metadata_only=True,
+        )
 
 
 def _instantiate_planner(name: str) -> BasePlanner:
@@ -514,16 +529,21 @@ def _instantiate_planner(name: str) -> BasePlanner:
         if rec.instantiated and key in _INSTANCE_CACHE:
             rec.last_access_ts = _now()
             return _INSTANCE_CACHE[key]
-    
+
     # Lazy import: import module now if needed
     if rec.module:
         try:
             _import_module_sandboxed(rec.module)
         except Exception as e:
-            _log(f"Failed to import module for planner", "ERROR",
-                 planner=key, module=rec.module, error=str(e))
+            _log(
+                "Failed to import module for planner",
+                "ERROR",
+                planner=key,
+                module=rec.module,
+                error=str(e),
+            )
             raise
-    
+
     cls = _get_planner_class(key)
     t0 = time.perf_counter()
     inst = cls()
@@ -537,12 +557,14 @@ def _instantiate_planner(name: str) -> BasePlanner:
         _INSTANCE_CACHE[key] = inst
         _STATE.total_instantiations += 1
         if PROFILE_INSTANTIATION:
-            _push_instantiation_profile({
-                "name": key,
-                "duration_s": elapsed,
-                "ts": rec.instantiation_ts,
-            })
-    _log(f"Instantiated planner", "INFO", planner=key, duration_s=round(elapsed, 4))
+            _push_instantiation_profile(
+                {
+                    "name": key,
+                    "duration_s": elapsed,
+                    "ts": rec.instantiation_ts,
+                }
+            )
+    _log("Instantiated planner", "INFO", planner=key, duration_s=round(elapsed, 4))
     return inst
 
 
@@ -737,7 +759,9 @@ def select_best_planner(
         if not rec or rec.quarantined:
             continue
         # STRICT DEFAULT RELIABILITY: 0.1 instead of 0.5
-        reliability = rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        reliability = (
+            rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        )
         if reliability < MIN_RELIABILITY:
             continue
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
@@ -768,27 +792,35 @@ def select_best_planner(
     if not candidates:
         raise PlannerError("No candidate planners matched constraints.", "factory", objective)
     # DETERMINISTIC SORT: primary=score desc, secondary=reliability desc, tertiary=name asc
-    candidates.sort(key=lambda x: (-x[0], -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY), x[1]))
+    candidates.sort(
+        key=lambda x: (
+            -x[0],
+            -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY),
+            x[1],
+        )
+    )
     best_score, best_name, best_breakdown = candidates[0]
     sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
-        _push_selection_profile({
-            "objective_len": len(objective or ""),
-            "required_caps": sorted(req_set),
-            "best": best_name,
-            "score": best_score,
-            "candidates_considered": len(candidates),
-            "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
-            "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
-            "breakdown": best_breakdown,
-            "boost_config": {
-                "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
-                "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
-                "hotspot_threshold": HOTSPOT_THRESHOLD,
-            },
-            "duration_s": sel_elapsed,
-            "ts": _now(),
-        })
+        _push_selection_profile(
+            {
+                "objective_len": len(objective or ""),
+                "required_caps": sorted(req_set),
+                "best": best_name,
+                "score": best_score,
+                "candidates_considered": len(candidates),
+                "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
+                "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
+                "breakdown": best_breakdown,
+                "boost_config": {
+                    "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
+                    "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
+                    "hotspot_threshold": HOTSPOT_THRESHOLD,
+                },
+                "duration_s": sel_elapsed,
+                "ts": _now(),
+            }
+        )
     if auto_instantiate:
         return get_planner(best_name, auto_instantiate=True)
     return best_name
@@ -836,7 +868,9 @@ def batch_select_best_planners(
         if not rec or rec.quarantined:
             continue
         # STRICT DEFAULT RELIABILITY: 0.1 instead of 0.5
-        reliability = rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        reliability = (
+            rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        )
         if reliability < MIN_RELIABILITY:
             continue
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
@@ -854,7 +888,13 @@ def batch_select_best_planners(
         extra, _bd = _compute_deep_boosts(rec, req_set, deep_context)
         candidates.append((base_score + extra, name))
     # DETERMINISTIC SORT
-    candidates.sort(key=lambda x: (-x[0], -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY), x[1]))
+    candidates.sort(
+        key=lambda x: (
+            -x[0],
+            -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY),
+            x[1],
+        )
+    )
     selected_names = [nme for _, nme in candidates[:n]]
     if auto_instantiate:
         return [get_planner(n) for n in selected_names]
@@ -886,7 +926,7 @@ def self_heal(
             report["after_active"] = len(_active_planner_names())
             return report
         _STATE.last_self_heal_ts = now
-    
+
     # Exponential backoff between attempts
     for attempt in range(max_attempts):
         report["attempts"] += 1
@@ -894,9 +934,9 @@ def self_heal(
         if _active_planner_names():
             break
         # Exponential backoff: 0.2s, 0.4s, 0.8s, ...
-        sleep_time = min(0.2 * (2 ** attempt), 2.0)
+        sleep_time = min(0.2 * (2**attempt), 2.0)
         time.sleep(sleep_time)
-    
+
     report["after_active"] = len(_active_planner_names())
     return report
 
