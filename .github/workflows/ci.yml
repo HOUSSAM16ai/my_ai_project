@@ -1,5 +1,15 @@
 ---
 # .github/workflows/ci.yml - Version 2.0 (Simplified for SQLite tests)
+# ======================================================================================
+# PYTHON APPLICATION CI - Required Blocking Check
+# ======================================================================================
+# This workflow is REQUIRED and BLOCKING - must pass for PR merge
+# Focuses on: pytest with coverage (< 15 minutes)
+#
+# For faster checks, see: required-ci.yml (< 3 minutes)
+# For heavy operations, see: microservices-ci-cd.yml (non-blocking)
+# ======================================================================================
+
 name: Python Application CI
 
 "on":
@@ -9,7 +19,8 @@ name: Python Application CI
     branches: ["main"]
 
 jobs:
-  build-and-test:
+  build:
+    name: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

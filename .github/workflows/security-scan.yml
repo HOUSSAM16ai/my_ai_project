@@ -1,8 +1,16 @@
 ---
+name: 🔒 Security Scan (Enterprise)
 # ======================================================================================
 # ENTERPRISE SECURITY SCANNING - GitHub Actions Workflow
 # ======================================================================================
 # Following best practices from Google, Facebook, Microsoft, OpenAI, Stripe
+#
+# Architecture:
+# - rapid-scan job: REQUIRED and BLOCKING for PRs
+# - deep-scan job: NON-BLOCKING, runs on main branch
+# - codeql-analysis job: REQUIRED and BLOCKING
+# - container-scan job: NON-BLOCKING
+# - quality-gate job: NON-BLOCKING, reporting only
 #
 # Features:
 # ✅ Progressive Security Scanning (Rapid → Deep → Quality → Report → Auto-fix)
@@ -13,8 +21,6 @@
 # ✅ SARIF upload to GitHub Security
 # ✅ Detailed reporting and metrics
 # ======================================================================================
-
-name: 🔒 Security Scan (Enterprise)
 
 on:
   push:
@@ -60,7 +66,7 @@ env:
 
 jobs:
   # =============================================================================
-  # Phase 1: Rapid Security Scan (5-10 minutes)
+  # Phase 1: Rapid Security Scan (5-10 minutes) - REQUIRED & BLOCKING
   # =============================================================================
   rapid-scan:
     name: 🚀 Rapid Security Scan
@@ -68,6 +74,7 @@ jobs:
     timeout-minutes: 15
     # Always run for PRs, optional for main branch
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    # NO continue-on-error - this is REQUIRED and BLOCKING
 
     steps:
       - name: 📥 Checkout code
@@ -217,12 +224,13 @@ jobs:
           path: security-reports/
 
   # =============================================================================
-  # Phase 3: CodeQL Analysis (Advanced SAST)
+  # Phase 3: CodeQL Analysis (Advanced SAST) - REQUIRED & BLOCKING
   # =============================================================================
   codeql-analysis:
     name: 🧬 CodeQL Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # NO continue-on-error - this is REQUIRED and BLOCKING
     permissions:
       actions: read
       contents: read
@@ -247,12 +255,13 @@ jobs:
           category: "/language:python"
 
   # =============================================================================
-  # Phase 4: Container Security (if applicable)
+  # Phase 4: Container Security (if applicable) - NON-BLOCKING
   # =============================================================================
   container-scan:
     name: 🐳 Container Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    continue-on-error: true  # 👈 Non-blocking: observability only
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -289,13 +298,14 @@ jobs:
           category: trivy-container
 
   # =============================================================================
-  # Phase 5: Quality Gate & Reporting
+  # Phase 5: Quality Gate & Reporting - NON-BLOCKING
   # =============================================================================
   quality-gate:
     name: ✅ Security Quality Gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [rapid-scan, codeql-analysis]
+    continue-on-error: true  # 👈 Non-blocking: reporting only
     if: always()
 
     steps:
