@@ -13,8 +13,6 @@ This script tests:
 """
 
 import sys
-import time
-from io import StringIO
 
 # Add project to path
 sys.path.insert(0, '/home/runner/work/my_ai_project/my_ai_project')
@@ -27,9 +25,9 @@ def test_streaming_service():
     
     try:
         from app.services.admin_chat_streaming_service import (
-            get_streaming_service,
             SmartTokenChunker,
-            StreamingConfig
+            StreamingConfig,
+            get_streaming_service,
         )
         
         service = get_streaming_service()
@@ -44,7 +42,7 @@ def test_streaming_service():
         print(f"Original text: {test_text}")
         print(f"\nNumber of chunks: {len(chunks)}")
         print(f"Chunk size: {StreamingConfig.OPTIMAL_CHUNK_SIZE} words")
-        print(f"\nChunks:")
+        print("\nChunks:")
         for i, chunk in enumerate(chunks, 1):
             print(f"  {i}. '{chunk.strip()}'")
         
@@ -142,7 +140,7 @@ def test_sse_consumer_js():
         print(f"   File size: {size:,} bytes")
         
         # Check for key methods
-        with open(js_path, 'r') as f:
+        with open(js_path) as f:
             content = f.read()
             
         methods = ['onDelta', 'onComplete', 'onError', 'onStart', 'connect']
@@ -154,7 +152,7 @@ def test_sse_consumer_js():
         
         missing = set(methods) - set(found_methods)
         if missing:
-            print(f"   Missing methods:")
+            print("   Missing methods:")
             for method in missing:
                 print(f"     ❌ {method}")
         
@@ -172,7 +170,7 @@ def test_admin_dashboard_template():
     template_path = '/home/runner/work/my_ai_project/my_ai_project/app/admin/templates/admin_dashboard.html'
     
     try:
-        with open(template_path, 'r') as f:
+        with open(template_path) as f:
             content = f.read()
         
         # Check for key streaming elements
