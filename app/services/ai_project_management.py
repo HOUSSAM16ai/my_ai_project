@@ -508,9 +508,7 @@ class ProjectOrchestrator:
                 "status": (
                     "healthy"
                     if health_score > 70
-                    else "at_risk"
-                    if health_score > 40
-                    else "critical"
+                    else "at_risk" if health_score > 40 else "critical"
                 ),
             },
             "timeline": {
