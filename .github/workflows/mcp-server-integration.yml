@@ -456,7 +456,7 @@ jobs:
           echo "  • Deployment Preview: $DEPLOYMENT_RESULT"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Check for actual failures (not skipped)
+          # Check for actual failures (not skipped, not cancelled)
           FAILED=false
 
           # Build & Test is critical
@@ -480,7 +480,7 @@ jobs:
             echo "⚠️  Warning: Deployment preview encountered issues (non-critical)"
           fi
 
-          # Handle cancellations
+          # Handle cancellations gracefully
           if [ "$BUILD_RESULT" = "cancelled" ] || [ "$SECURITY_RESULT" = "cancelled" ]; then
             echo "⚠️  Workflow was cancelled by user"
             echo "📋 Status: CANCELLED"

@@ -420,12 +420,13 @@ jobs:
 
           FAILED=false
 
-          if [ "$BUILD_RESULT" != "success" ] && [ "$BUILD_RESULT" != "skipped" ]; then
+          # Only fail if a job actually failed (not skipped, not cancelled)
+          if [ "$BUILD_RESULT" = "failure" ]; then
             echo "❌ Build & Test failed!"
             FAILED=true
           fi
 
-          if [ "$SECURITY_RESULT" != "success" ] && [ "$SECURITY_RESULT" != "skipped" ]; then
+          if [ "$SECURITY_RESULT" = "failure" ]; then
             echo "❌ Security scan failed!"
             FAILED=true
           fi

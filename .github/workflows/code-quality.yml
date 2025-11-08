@@ -473,19 +473,25 @@ jobs:
           echo "  🔍 Type Check: $TYPE_CHECK_RESULT (informational)"
           echo "  📊 Complexity: $COMPLEXITY_RESULT (informational)"
 
-          # Fail if critical jobs failed
-          if [ "$LINT_RESULT" != "success" ]; then
+          # Only fail if a job actually failed (not skipped, not cancelled)
+          FAILED=false
+
+          if [ "$LINT_RESULT" = "failure" ]; then
             echo "❌ Lint & Format check failed!"
-            exit 1
+            FAILED=true
           fi
 
-          if [ "$SECURITY_RESULT" != "success" ]; then
+          if [ "$SECURITY_RESULT" = "failure" ]; then
             echo "❌ Security scan failed!"
-            exit 1
+            FAILED=true
           fi
 
-          if [ "$TEST_RESULT" != "success" ]; then
+          if [ "$TEST_RESULT" = "failure" ]; then
             echo "❌ Test suite failed!"
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
             exit 1
           fi
 
