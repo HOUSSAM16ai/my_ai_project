@@ -22,8 +22,8 @@ def upgrade():
     tables = [
         "existential_nodes",
         "consciousness_signatures",
-        "cosmic_ledger_entries",
-        "self_evolving_conscious_entities",
+        "cosmic_ledger",
+        "seces",
         "existential_protocols",
         "cosmic_governance_councils",
         "existential_transparency_logs",
@@ -42,8 +42,8 @@ def downgrade():
     tables = [
         "existential_nodes",
         "consciousness_signatures",
-        "cosmic_ledger_entries",
-        "self_evolving_conscious_entities",
+        "cosmic_ledger",
+        "seces",
         "existential_protocols",
         "cosmic_governance_councils",
         "existential_transparency_logs",
