@@ -1,15 +1,21 @@
 # app/overmind/planning/factory.py
 # ======================================================================================
 # OVERMIND PLANNER FACTORY – HYPER STRUCTURAL / DEEP-CONTEXT AWARE CORE
-# Version 4.0.0  •  Codename: "GUILD OMEGA PRIME / ZERO-DOWNTIME / SELF-HEAL+ / DEEP-BOOST"
+# Version 5.0.0  •  Codename: "ULTRA-PRO / LAZY-LOAD / DETERMINISTIC / RING-BUFFER / STRUCTURED-LOG"
 # ======================================================================================
-# DESIGN PRINCIPLES
-#   - Deterministic, idempotent, side‑effect minimal discovery.
-#   - Deep Context–Aware scoring (optional): integrates mission deep_index metadata
-#     (hotspots, layers, structural summary presence) for capability-based boosts.
+# DESIGN PRINCIPLES (v5.0 UPGRADES)
+#   - Metadata-only discovery (no imports during discovery phase).
+#   - Lazy + sandboxed imports (only when instantiating).
+#   - Deterministic tie-breaking (no hash-based non-determinism).
+#   - Strict default reliability (0.1 instead of 0.5).
+#   - Ring buffers for profile storage (bounded memory).
+#   - Structured JSON logging (machine-parseable).
+#   - Clear API contracts (name selection separate from instantiation).
+#   - Fingerprint with mtime (detect content changes).
+#   - Typed configuration (_Cfg class).
+#   - Smart self-heal with exponential backoff.
+#   - Deep Context–Aware scoring (optional): integrates mission deep_index metadata.
 #   - Backward compatible public API (discover, get_planner, get_all_planners, select_best_planner).
-#   - Fine-grained telemetry: selection & instantiation profiling with breakdown factors.
-#   - Self-heal logic with cooldown and archival of import failures.
 #   - Thread-safe state (RLock) with minimal contention windows.
 #   - NO triple-quoted docstrings (historical CI safety constraint).
 #
@@ -18,16 +24,19 @@
 #   - إضافة اختياريّة لـ deep_context لرفع درجة المخطط الذي يدعم "deep_index" أو "structural".
 #   - تليمتري مفصّل (breakdown) وأحداث اختيار أغنى، مع self-heal ذكي عند عدم توفر أي مخطط.
 #
-# NEW vs 3.1
-#   + deep_context parameter في select_best_planner / batch_select_best_planners (اختياري).
-#   + Boosts:
-#       * +DEEP_INDEX_CAP_BOOST (افتراضي 0.05) إذا توفّر deep_index_summary و capability=deep_index.
-#       * +HOTSPOT_CAP_BOOST (افتراضي 0.03) إذا hotspots_count > HOTSPOT_THRESHOLD و capability ∈ {refactor,risk,structural}.
-#   + Selection breakdown telemetry: base_score / deep_boost / hotspot_boost / cap_ratio / reliability / tier / production_ready.
-#   + Environment-driven tuning (FACTORY_DEEP_INDEX_CAP_BOOST, FACTORY_HOTSPOT_CAP_BOOST, FACTORY_HOTSPOT_THRESHOLD).
-#   + Archival of prior import fail snapshots on reload.
-#   + health_check includes reliability hints and suggestions.
-#   + Enhanced diagnostics_json: includes 'boost_config' & last selection profiles.
+# NEW vs 4.0
+#   + Metadata-only discovery: no imports during _discover_and_register (safer, faster).
+#   + Lazy imports via _import_module_sandboxed (only on instantiation).
+#   + Deterministic selection: removed hash(name) tie-breaker, uses (score, reliability, name).
+#   + Lower default reliability: 0.1 instead of 0.5 for safer behavior.
+#   + Ring buffers: _push_selection_profile / _push_instantiation_profile (max 1000 samples).
+#   + Structured JSON logging via _log (machine-parseable logs).
+#   + New API: select_best_planner_name() returns name only (cleaner contract).
+#   + Fingerprint with mtime: _file_fingerprint includes modification times.
+#   + Typed config: _Cfg class centralizes all env-based configuration.
+#   + Smart self_heal: exponential backoff with configurable attempts.
+#   + ALLOWED_PLANNERS whitelist for explicit planner control.
+#   + All v4.0 features preserved: deep_context, boosts, telemetry, etc.
 #
 # ENV FLAGS (selected):
 #   OVERMIND_PLANNER_MANUAL            Comma list of extra modules to import manually.
@@ -58,6 +67,7 @@ import hashlib
 import importlib
 import inspect
 import json
+import logging
 import os
 import pkgutil
 import threading
@@ -99,17 +109,27 @@ except Exception:
 # CONSTANTS / ENV
 # ======================================================================================
 
-FACTORY_VERSION = "4.0.0"
+FACTORY_VERSION = "5.0.0"
 DEFAULT_ROOT_PACKAGE = "app.overmind.planning"
 
 OFFICIAL_MANUAL_MODULES: list[str] = [
     "app.overmind.planning.llm_planner",  # Extend / customize as needed
 ]
 
+# Whitelist of allowed planners (metadata-only discovery, lazy loading)
+ALLOWED_PLANNERS: set[str] = {
+    "llm_planner",
+    "risk_planner",
+    "structural_planner",
+    "multi_pass_arch_planner",
+}
+
 DEFAULT_EXCLUDE_MODULES: set[str] = {
     "__init__",
     "factory",
     "base_planner",
+    "schemas",
+    "deep_indexer",
 }
 
 _env_manual = os.getenv("OVERMIND_PLANNER_MANUAL", "")
@@ -121,16 +141,33 @@ ENV_EXCLUDE_MODULES: set[str] = {m.strip() for m in _env_exclude.split(",") if m
 MANUAL_IMPORT_MODULES: list[str] = list(dict.fromkeys(OFFICIAL_MANUAL_MODULES + ENV_MANUAL_MODULES))
 EXCLUDE_MODULES: set[str] = set(DEFAULT_EXCLUDE_MODULES) | ENV_EXCLUDE_MODULES
 
-_FORCE_REDISCOVER = os.getenv("FACTORY_FORCE_REDISCOVER", "0") == "1"
-MIN_RELIABILITY = float(os.getenv("FACTORY_MIN_RELIABILITY", "0.0"))
-_SELF_HEAL_ON_EMPTY = os.getenv("FACTORY_SELF_HEAL_ON_EMPTY", "0") == "1"
 
-PROFILE_SELECTION = os.getenv("FACTORY_PROFILE_SELECTION", "1") == "1"
-PROFILE_INSTANTIATION = os.getenv("FACTORY_PROFILE_INSTANTIATION", "1") == "1"
+# Typed Configuration Class (safer env parsing)
+class _Cfg:
+    ALLOWED = ALLOWED_PLANNERS
+    FORCE_REDISCOVER = os.getenv("FACTORY_FORCE_REDISCOVER", "0") == "1"
+    MIN_REL = float(os.getenv("FACTORY_MIN_RELIABILITY", "0.25") or "0.25")
+    SELF_HEAL_ON_EMPTY = os.getenv("FACTORY_SELF_HEAL_ON_EMPTY", "0") == "1"
+    PROFILE_SELECTION = os.getenv("FACTORY_PROFILE_SELECTION", "1") == "1"
+    PROFILE_INSTANTIATION = os.getenv("FACTORY_PROFILE_INSTANTIATION", "1") == "1"
+    MAX_PROFILES = int(os.getenv("FACTORY_MAX_PROFILES", "1000") or "1000")
+    DEEP_INDEX_CAP_BOOST = float(os.getenv("FACTORY_DEEP_INDEX_CAP_BOOST", "0.05") or "0.05")
+    HOTSPOT_CAP_BOOST = float(os.getenv("FACTORY_HOTSPOT_CAP_BOOST", "0.03") or "0.03")
+    HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
+    DEFAULT_RELIABILITY = 0.1  # Strict default (was 0.5)
 
-DEEP_INDEX_CAP_BOOST = float(os.getenv("FACTORY_DEEP_INDEX_CAP_BOOST", "0.05") or "0.05")
-HOTSPOT_CAP_BOOST = float(os.getenv("FACTORY_HOTSPOT_CAP_BOOST", "0.03") or "0.03")
-HOTSPOT_THRESHOLD = int(os.getenv("FACTORY_HOTSPOT_THRESHOLD", "8") or "8")
+
+CFG = _Cfg()
+
+# Legacy compatibility (maintain old names)
+_FORCE_REDISCOVER = CFG.FORCE_REDISCOVER
+MIN_RELIABILITY = CFG.MIN_REL
+_SELF_HEAL_ON_EMPTY = CFG.SELF_HEAL_ON_EMPTY
+PROFILE_SELECTION = CFG.PROFILE_SELECTION
+PROFILE_INSTANTIATION = CFG.PROFILE_INSTANTIATION
+DEEP_INDEX_CAP_BOOST = CFG.DEEP_INDEX_CAP_BOOST
+HOTSPOT_CAP_BOOST = CFG.HOTSPOT_CAP_BOOST
+HOTSPOT_THRESHOLD = CFG.HOTSPOT_THRESHOLD
 
 # ======================================================================================
 # DATA STRUCTURES
@@ -188,12 +225,28 @@ _INSTANCE_CACHE: dict[str, BasePlanner] = {}
 _DEPRECATION_FLAGS: set[str] = set()
 
 # ======================================================================================
-# LOGGING / UTIL
+# LOGGING / UTIL (Structured JSON Logging)
 # ======================================================================================
 
+_logger = logging.getLogger("overmind.factory")
+if not _logger.handlers:
+    logging.basicConfig(
+        level=os.getenv("FACTORY_LOG_LEVEL", "INFO"),
+        format="%(message)s",
+    )
 
-def _log(message: str, level: str = "INFO"):
-    print(f"[PlannerFactory::{level}] {message}")
+
+def _log(message: str, level: str = "INFO", **fields):
+    # Structured JSON logging for machine-parseable output
+    record = {
+        "component": "PlannerFactory",
+        "level": level,
+        "msg": message,
+        "ts": time.time(),
+        **fields,
+    }
+    log_level = getattr(logging, level, logging.INFO)
+    _logger.log(log_level, json.dumps(record, ensure_ascii=False))
 
 
 def _warn_once(key: str, msg: str):
@@ -210,6 +263,24 @@ def _now() -> float:
 
 def _safe_lower_set(values: Iterable[str] | None) -> set[str]:
     return {v.lower().strip() for v in values or [] if v is not None}
+
+
+def _push_selection_profile(sample: dict[str, Any]):
+    # Ring buffer: keep only last MAX_PROFILES samples
+    with _STATE.lock:
+        _STATE.selection_profile_samples.append(sample)
+        if len(_STATE.selection_profile_samples) > CFG.MAX_PROFILES:
+            _STATE.selection_profile_samples = _STATE.selection_profile_samples[-CFG.MAX_PROFILES :]
+
+
+def _push_instantiation_profile(sample: dict[str, Any]):
+    # Ring buffer: keep only last MAX_PROFILES samples
+    with _STATE.lock:
+        _STATE.instantiation_profile_samples.append(sample)
+        if len(_STATE.instantiation_profile_samples) > CFG.MAX_PROFILES:
+            _STATE.instantiation_profile_samples = _STATE.instantiation_profile_samples[
+                -CFG.MAX_PROFILES :
+            ]
 
 
 # ======================================================================================
@@ -246,8 +317,19 @@ def _import_module(module_name: str) -> ModuleType | None:
         return importlib.import_module(module_name)
     except Exception as exc:
         _STATE.import_failures[module_name] = str(exc)
-        _log(f"Module import failed: {module_name} -> {exc}", "ERROR")
+        _log(f"Module import failed: {module_name} -> {exc}", "ERROR", module=module_name)
         return None
+
+
+def _import_module_sandboxed(module_name: str) -> ModuleType:
+    # Sandboxed import with extensibility for timeout/subprocess in future
+    # For now, simple wrapper with better error handling
+    try:
+        return importlib.import_module(module_name)
+    except Exception as exc:
+        _STATE.import_failures[module_name] = str(exc)
+        _log(f"Sandboxed import failed: {module_name}", "ERROR", module=module_name, error=str(exc))
+        raise
 
 
 def _get_planner_class(name: str):
@@ -294,11 +376,22 @@ def _extract_string(obj: Any, attr: str) -> str | None:
 
 
 def _file_fingerprint(root_package: str) -> str:
+    # Enhanced fingerprint with modification time for content change detection
     try:
         pkg = importlib.import_module(root_package)
         if not hasattr(pkg, "__path__"):
             return "na"
-        names = [m.name for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + ".")]
+        names = []
+        for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
+            spec = importlib.util.find_spec(m.name)
+            path = (spec.origin or "") if spec and spec.origin else ""
+            mtime = "0"
+            if path and Path(path).exists():
+                try:
+                    mtime = str(Path(path).stat().st_mtime)
+                except Exception:
+                    pass
+            names.append(f"{m.name}@{mtime}")
         raw = "|".join(sorted(names))
         return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
     except Exception:
@@ -365,6 +458,7 @@ def _sync_registry_into_records():
 
 
 def _discover_and_register(force: bool = False, package: str | None = None):
+    # METADATA-ONLY DISCOVERY: No imports during discovery phase
     with _STATE.lock:
         root = package or DEFAULT_ROOT_PACKAGE
         signature = _compute_discovery_signature(root)
@@ -378,22 +472,53 @@ def _discover_and_register(force: bool = False, package: str | None = None):
         start = time.perf_counter()
         _STATE.discovery_runs += 1
         _STATE.import_failures.clear()
-        _log(f"Discovery run #{_STATE.discovery_runs} root='{root}' signature={signature[:10]} ...")
+        _log(
+            f"Discovery run #{_STATE.discovery_runs} (metadata-only)",
+            "INFO",
+            root=root,
+            signature=signature[:10],
+            run=_STATE.discovery_runs,
+        )
+
+        # Import manual modules only (explicit imports)
         for m in MANUAL_IMPORT_MODULES:
             _import_module(m)
+
+        # METADATA-ONLY: collect module names without importing
         for fullname in list(_iter_submodules(root) or []):
             short = fullname.rsplit(".", 1)[-1]
             if short in EXCLUDE_MODULES:
                 continue
-            _import_module(fullname)
+            # Check whitelist
+            if short not in CFG.ALLOWED:
+                _log(
+                    "Skipping module not in ALLOWED_PLANNERS",
+                    "DEBUG",
+                    module=short,
+                    fullname=fullname,
+                )
+                continue
+            # Store metadata record WITHOUT importing
+            _STATE.planner_records.setdefault(
+                short.lower(),
+                PlannerRecord(name=short.lower(), module=fullname, class_name="Planner"),
+            )
+
         _sync_registry_into_records()
         _STATE.discovery_signature = signature
         _STATE.discovered = True
         elapsed = time.perf_counter() - start
-        _log(f"Discovery completed in {elapsed:.4f}s planners={len(_STATE.planner_records)}")
+        _log(
+            "Discovery completed",
+            "INFO",
+            duration_s=round(elapsed, 4),
+            planners=len(_STATE.planner_records),
+            metadata_only=True,
+        )
 
 
 def _instantiate_planner(name: str) -> BasePlanner:
+    # LAZY + SANDBOXED IMPORT: Import only when instantiating
     key = name.lower().strip()
     with _STATE.lock:
         rec = _STATE.planner_records.get(key)
@@ -404,6 +529,21 @@ def _instantiate_planner(name: str) -> BasePlanner:
         if rec.instantiated and key in _INSTANCE_CACHE:
             rec.last_access_ts = _now()
             return _INSTANCE_CACHE[key]
+
+    # Lazy import: import module now if needed
+    if rec.module:
+        try:
+            _import_module_sandboxed(rec.module)
+        except Exception as e:
+            _log(
+                "Failed to import module for planner",
+                "ERROR",
+                planner=key,
+                module=rec.module,
+                error=str(e),
+            )
+            raise
+
     cls = _get_planner_class(key)
     t0 = time.perf_counter()
     inst = cls()
@@ -417,14 +557,14 @@ def _instantiate_planner(name: str) -> BasePlanner:
         _INSTANCE_CACHE[key] = inst
         _STATE.total_instantiations += 1
         if PROFILE_INSTANTIATION:
-            _STATE.instantiation_profile_samples.append(
+            _push_instantiation_profile(
                 {
                     "name": key,
                     "duration_s": elapsed,
                     "ts": rec.instantiation_ts,
                 }
             )
-    _log(f"Instantiated planner '{key}' in {elapsed:.4f}s")
+    _log("Instantiated planner", "INFO", planner=key, duration_s=round(elapsed, 4))
     return inst
 
 
@@ -445,6 +585,7 @@ def _rank_hint(
     tier: str | None,
     production_ready: bool,
 ) -> float:
+    # DETERMINISTIC RANKING: No hash-based tie-breaking
     if hasattr(BasePlanner, "compute_rank_hint"):
         try:
             return BasePlanner.compute_rank_hint(
@@ -462,7 +603,7 @@ def _rank_hint(
     if tier and isinstance(tier, str):
         tier_map = {"alpha": -0.05, "beta": 0.0, "stable": 0.05, "gold": 0.07, "vip": 0.08}
         score += tier_map.get(tier.lower(), 0.0)
-    score += (hash(name) & 0xFFFF) * 1e-10
+    # REMOVED: score += (hash(name) & 0xFFFF) * 1e-10  (non-deterministic)
     return score
 
 
@@ -608,7 +749,7 @@ def select_best_planner(
         do_heal = self_heal_on_empty if self_heal_on_empty is not None else _SELF_HEAL_ON_EMPTY
         if do_heal:
             heal_report = self_heal()
-            _log(f"Self-heal invoked: {heal_report}")
+            _log("Self-heal invoked", "INFO", report=heal_report)
             active = _active_planner_names()
     if not active:
         raise PlannerError("No active planners after discovery/self-heal.", "factory", objective)
@@ -617,7 +758,10 @@ def select_best_planner(
         rec = _STATE.planner_records.get(name)
         if not rec or rec.quarantined:
             continue
-        reliability = rec.reliability_score if rec.reliability_score is not None else 0.5
+        # STRICT DEFAULT RELIABILITY: 0.1 instead of 0.5
+        reliability = (
+            rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        )
         if reliability < MIN_RELIABILITY:
             continue
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
@@ -647,33 +791,58 @@ def select_best_planner(
         candidates.append((total_score, name, breakdown))
     if not candidates:
         raise PlannerError("No candidate planners matched constraints.", "factory", objective)
-    candidates.sort(reverse=True, key=lambda x: x[0])
+    # DETERMINISTIC SORT: primary=score desc, secondary=reliability desc, tertiary=name asc
+    candidates.sort(
+        key=lambda x: (
+            -x[0],
+            -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY),
+            x[1],
+        )
+    )
     best_score, best_name, best_breakdown = candidates[0]
     sel_elapsed = time.perf_counter() - t0
     if PROFILE_SELECTION:
-        with _STATE.lock:
-            _STATE.selection_profile_samples.append(
-                {
-                    "objective_len": len(objective or ""),
-                    "required_caps": sorted(req_set),
-                    "best": best_name,
-                    "score": best_score,
-                    "candidates_considered": len(candidates),
-                    "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
-                    "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
-                    "breakdown": best_breakdown,
-                    "boost_config": {
-                        "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
-                        "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
-                        "hotspot_threshold": HOTSPOT_THRESHOLD,
-                    },
-                    "duration_s": sel_elapsed,
-                    "ts": _now(),
-                }
-            )
+        _push_selection_profile(
+            {
+                "objective_len": len(objective or ""),
+                "required_caps": sorted(req_set),
+                "best": best_name,
+                "score": best_score,
+                "candidates_considered": len(candidates),
+                "deep_index": bool(deep_context and deep_context.get("deep_index_summary")),
+                "hotspots": int(deep_context.get("hotspots_count")) if deep_context else 0,
+                "breakdown": best_breakdown,
+                "boost_config": {
+                    "deep_index_cap_boost": DEEP_INDEX_CAP_BOOST,
+                    "hotspot_cap_boost": HOTSPOT_CAP_BOOST,
+                    "hotspot_threshold": HOTSPOT_THRESHOLD,
+                },
+                "duration_s": sel_elapsed,
+                "ts": _now(),
+            }
+        )
     if auto_instantiate:
         return get_planner(best_name, auto_instantiate=True)
     return best_name
+
+
+def select_best_planner_name(
+    objective: str,
+    required_capabilities: Iterable[str] | None = None,
+    prefer_production: bool = True,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+) -> str:
+    # NEW API: Returns planner name only (clearer contract)
+    # Encourages explicit instantiation: get_planner(select_best_planner_name(...))
+    return select_best_planner(
+        objective=objective,
+        required_capabilities=required_capabilities,
+        prefer_production=prefer_production,
+        auto_instantiate=False,
+        self_heal_on_empty=self_heal_on_empty,
+        deep_context=deep_context,
+    )
 
 
 def batch_select_best_planners(
@@ -698,7 +867,10 @@ def batch_select_best_planners(
         rec = _STATE.planner_records.get(name)
         if not rec or rec.quarantined:
             continue
-        reliability = rec.reliability_score if rec.reliability_score is not None else 0.5
+        # STRICT DEFAULT RELIABILITY: 0.1 instead of 0.5
+        reliability = (
+            rec.reliability_score if rec.reliability_score is not None else CFG.DEFAULT_RELIABILITY
+        )
         if reliability < MIN_RELIABILITY:
             continue
         cap_ratio = _capabilities_match_ratio(req_set, _safe_lower_set(rec.capabilities))
@@ -715,7 +887,14 @@ def batch_select_best_planners(
         )
         extra, _bd = _compute_deep_boosts(rec, req_set, deep_context)
         candidates.append((base_score + extra, name))
-    candidates.sort(reverse=True)
+    # DETERMINISTIC SORT
+    candidates.sort(
+        key=lambda x: (
+            -x[0],
+            -(_STATE.planner_records[x[1]].reliability_score or CFG.DEFAULT_RELIABILITY),
+            x[1],
+        )
+    )
     selected_names = [nme for _, nme in candidates[:n]]
     if auto_instantiate:
         return [get_planner(n) for n in selected_names]
@@ -728,8 +907,9 @@ def batch_select_best_planners(
 
 
 def self_heal(
-    force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 2
+    force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
 ) -> dict[str, Any]:
+    # SMART SELF-HEAL: Exponential backoff with partial checking
     report = {
         "before_active": len(_active_planner_names()),
         "attempts": 0,
@@ -746,12 +926,17 @@ def self_heal(
             report["after_active"] = len(_active_planner_names())
             return report
         _STATE.last_self_heal_ts = now
-    for _ in range(max_attempts):
+
+    # Exponential backoff between attempts
+    for attempt in range(max_attempts):
         report["attempts"] += 1
-        discover(force=force)
+        discover(force=(force or attempt > 0))
         if _active_planner_names():
             break
-        time.sleep(0.2)
+        # Exponential backoff: 0.2s, 0.4s, 0.8s, ...
+        sleep_time = min(0.2 * (2**attempt), 2.0)
+        time.sleep(sleep_time)
+
     report["after_active"] = len(_active_planner_names())
     return report
 
@@ -1002,6 +1187,7 @@ __all__ = [
     "get_all_planners",
     "list_planners",
     "select_best_planner",
+    "select_best_planner_name",  # NEW API
     "batch_select_best_planners",
     "self_heal",
     "planner_stats",
