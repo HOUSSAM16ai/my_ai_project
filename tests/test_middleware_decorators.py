@@ -7,7 +7,6 @@ Test suite to verify middleware decorators can be imported correctly.
 This test prevents regression of the ImportError that was previously occurring.
 """
 
-import pytest
 
 
 class TestMiddlewareDecorators:

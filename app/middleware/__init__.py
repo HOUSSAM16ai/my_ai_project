@@ -23,6 +23,11 @@ Philosophy: "Every request is an intelligent pipeline"
 # ======================================================================================
 
 # Core components
+# Adapters
+from app.middleware.adapters import FlaskAdapter
+
+# Configuration
+from app.middleware.config import MiddlewareSettings
 from app.middleware.core import (
     BaseMiddleware,
     LifecycleHooks,
@@ -32,6 +37,37 @@ from app.middleware.core import (
     ResponseFactory,
     SmartPipeline,
 )
+
+# CORS
+from app.middleware.cors import CORSMiddleware
+
+# ======================================================================================
+# BACKWARD COMPATIBILITY (Legacy v1.0)
+# ======================================================================================
+# Keep existing imports for backward compatibility
+from app.middleware.cors_config import setup_cors
+from app.middleware.error_handler import setup_error_handlers
+
+# Error handling
+from app.middleware.error_handling import (
+    ErrorHandlerMiddleware,
+    ExceptionMapper,
+    RecoveryMiddleware,
+)
+
+# Factory
+from app.middleware.factory import MiddlewareFactory
+
+# Observability mesh
+from app.middleware.observability import (
+    AnalyticsAdapter,
+    AnomalyInspector,
+    ObservabilityMiddleware,
+    PerformanceProfiler,
+    RequestLoggerMiddleware,
+    TelemetryBridge,
+)
+from app.middleware.request_logger import setup_request_logging
 
 # Security mesh
 from app.middleware.security import (
@@ -44,44 +80,6 @@ from app.middleware.security import (
     WAFMiddleware,
     ZeroTrustMiddleware,
 )
-
-# Observability mesh
-from app.middleware.observability import (
-    AnalyticsAdapter,
-    AnomalyInspector,
-    ObservabilityMiddleware,
-    PerformanceProfiler,
-    RequestLoggerMiddleware,
-    TelemetryBridge,
-)
-
-# Error handling
-from app.middleware.error_handling import (
-    ErrorHandlerMiddleware,
-    ExceptionMapper,
-    RecoveryMiddleware,
-)
-
-# CORS
-from app.middleware.cors import CORSMiddleware
-
-# Adapters
-from app.middleware.adapters import FlaskAdapter
-
-# Configuration
-from app.middleware.config import MiddlewareSettings
-
-# Factory
-from app.middleware.factory import MiddlewareFactory
-
-# ======================================================================================
-# BACKWARD COMPATIBILITY (Legacy v1.0)
-# ======================================================================================
-
-# Keep existing imports for backward compatibility
-from app.middleware.cors_config import setup_cors
-from app.middleware.error_handler import setup_error_handlers
-from app.middleware.request_logger import setup_request_logging
 
 # ======================================================================================
 # EXPORTS

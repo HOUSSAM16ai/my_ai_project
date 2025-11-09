@@ -4,10 +4,9 @@ Comprehensive tests for factory.py v5.0.0 modular refactoring.
 Tests all new modules and backward compatibility.
 """
 
+import importlib.util
 import sys
 import time
-import importlib.util
-from pathlib import Path
 
 
 def load_module(name, path):

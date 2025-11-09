@@ -13,7 +13,6 @@ import importlib
 import inspect
 import json
 import logging
-import os
 import pkgutil
 import threading
 import time
@@ -21,12 +20,11 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional
+from typing import Any
 
 from .config import FactoryConfig
 from .exceptions import (
     NoActivePlannersError,
-    PlannerError,
     PlannerInstantiationError,
     PlannerNotFound,
     PlannerQuarantined,
@@ -64,25 +62,25 @@ class PlannerRecord:
     """Record for a discovered planner."""
 
     name: str
-    module: Optional[str] = None
-    class_name: Optional[str] = None
+    module: str | None = None
+    class_name: str | None = None
     capabilities: set[str] = field(default_factory=set)
     tags: set[str] = field(default_factory=set)
-    tier: Optional[str] = None
-    version: Optional[str] = None
-    production_ready: Optional[bool] = None
-    quarantined: Optional[bool] = None
-    self_test_passed: Optional[bool] = None
-    reliability_score: Optional[float] = None
-    total_invocations: Optional[int] = None
-    total_failures: Optional[int] = None
-    avg_duration_ms: Optional[float] = None
+    tier: str | None = None
+    version: str | None = None
+    production_ready: bool | None = None
+    quarantined: bool | None = None
+    self_test_passed: bool | None = None
+    reliability_score: float | None = None
+    total_invocations: int | None = None
+    total_failures: int | None = None
+    avg_duration_ms: float | None = None
     instantiated: bool = False
-    instantiation_ts: Optional[float] = None
-    last_access_ts: Optional[float] = None
-    instantiation_duration_s: Optional[float] = None
-    error: Optional[str] = None
-    last_error: Optional[str] = None
+    instantiation_ts: float | None = None
+    last_access_ts: float | None = None
+    instantiation_duration_s: float | None = None
+    error: str | None = None
+    last_error: str | None = None
 
     def to_public_dict(self) -> dict[str, Any]:
         """Convert record to public dictionary."""
@@ -98,14 +96,14 @@ class FactoryState:
 
     lock: threading.RLock = field(default_factory=threading.RLock)
     discovered: bool = False
-    discovery_signature: Optional[str] = None
+    discovery_signature: str | None = None
     discovery_runs: int = 0
     planner_records: dict[str, PlannerRecord] = field(default_factory=dict)
     import_failures: dict[str, str] = field(default_factory=dict)
     archived_import_failures: list[dict[str, str]] = field(default_factory=list)
     issued_warnings: set[str] = field(default_factory=set)
     total_instantiations: int = 0
-    last_self_heal_ts: Optional[float] = None
+    last_self_heal_ts: float | None = None
 
 
 class PlannerFactory:
@@ -116,7 +114,7 @@ class PlannerFactory:
     with proper state isolation for testability.
     """
 
-    def __init__(self, config: Optional[FactoryConfig] = None):
+    def __init__(self, config: FactoryConfig | None = None):
         """
         Initialize PlannerFactory.
 
@@ -168,7 +166,7 @@ class PlannerFactory:
         with self._state.lock:
             return self._planner_locks.setdefault(key, threading.Lock())
 
-    def _safe_lower_set(self, values: Optional[Iterable[str]]) -> set[str]:
+    def _safe_lower_set(self, values: Iterable[str] | None) -> set[str]:
         """Convert values to lowercase set."""
         return {v.lower().strip() for v in values or [] if v is not None}
 
@@ -196,7 +194,7 @@ class PlannerFactory:
         for m in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
             yield m.name
 
-    def _import_module(self, module_name: str) -> Optional[ModuleType]:
+    def _import_module(self, module_name: str) -> ModuleType | None:
         """Import module with error tracking."""
         try:
             return importlib.import_module(module_name)
@@ -235,7 +233,7 @@ class PlannerFactory:
             return {str(v).strip() for v in val if v is not None}
         return set()
 
-    def _extract_bool(self, obj: Any, attr: str) -> Optional[bool]:
+    def _extract_bool(self, obj: Any, attr: str) -> bool | None:
         """Extract boolean attribute from object."""
         if not hasattr(obj, attr):
             return None
@@ -244,7 +242,7 @@ class PlannerFactory:
         except Exception:
             return None
 
-    def _extract_string(self, obj: Any, attr: str) -> Optional[str]:
+    def _extract_string(self, obj: Any, attr: str) -> str | None:
         """Extract string attribute from object."""
         if not hasattr(obj, attr):
             return None
@@ -336,7 +334,7 @@ class PlannerFactory:
                 rec.production_ready = meta.get("production_ready", rec.production_ready)
                 rec.version = meta.get("version", rec.version)
 
-    def discover(self, force: bool = False, package: Optional[str] = None):
+    def discover(self, force: bool = False, package: str | None = None):
         """
         Discover planners (metadata-only, no imports during discovery).
 
@@ -426,7 +424,6 @@ class PlannerFactory:
             PlannerInstantiationError: If instantiation fails
         """
         key = name.lower().strip()
-        plock = self._get_planner_lock(key)
 
         # CONSISTENT LOCK ORDER: state lock first, then planner lock
         with self._state.lock:
@@ -551,11 +548,11 @@ class PlannerFactory:
     def select_best_planner(
         self,
         objective: str,
-        required_capabilities: Optional[Iterable[str]] = None,
+        required_capabilities: Iterable[str] | None = None,
         prefer_production: bool = True,
         auto_instantiate: bool = True,
-        self_heal_on_empty: Optional[bool] = None,
-        deep_context: Optional[dict[str, Any]] = None,
+        self_heal_on_empty: bool | None = None,
+        deep_context: dict[str, Any] | None = None,
     ):
         """
         Select best planner for objective.

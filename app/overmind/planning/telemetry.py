@@ -10,7 +10,7 @@ Implements ring buffers for selection and instantiation profiling with bounded m
 
 import time
 from collections import deque
-from typing import Any, Dict, List
+from typing import Any
 
 
 class RingBuffer:
@@ -29,15 +29,15 @@ class RingBuffer:
         self._buffer: deque = deque(maxlen=max_size)
         self._max_size = max_size
 
-    def push(self, sample: Dict[str, Any]):
+    def push(self, sample: dict[str, Any]):
         """Add a sample to the buffer, evicting oldest if at capacity."""
         self._buffer.append(sample)
 
-    def get_all(self) -> List[Dict[str, Any]]:
+    def get_all(self) -> list[dict[str, Any]]:
         """Get all samples in the buffer."""
         return list(self._buffer)
 
-    def get_last(self, n: int) -> List[Dict[str, Any]]:
+    def get_last(self, n: int) -> list[dict[str, Any]]:
         """Get last N samples from the buffer."""
         if n <= 0:
             return []
@@ -76,9 +76,9 @@ class SelectionProfiler:
         candidates_count: int,
         deep_context: bool,
         hotspots_count: int,
-        breakdown: Dict[str, Any],
+        breakdown: dict[str, Any],
         duration_s: float,
-        boost_config: Dict[str, Any],
+        boost_config: dict[str, Any],
     ):
         """Record a planner selection event."""
         if not self._enabled:
@@ -99,11 +99,11 @@ class SelectionProfiler:
         }
         self._buffer.push(sample)
 
-    def get_samples(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_samples(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent selection samples."""
         return self._buffer.get_last(limit)
 
-    def get_all_samples(self) -> List[Dict[str, Any]]:
+    def get_all_samples(self) -> list[dict[str, Any]]:
         """Get all selection samples."""
         return self._buffer.get_all()
 
@@ -148,11 +148,11 @@ class InstantiationProfiler:
         }
         self._buffer.push(sample)
 
-    def get_samples(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_samples(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent instantiation samples."""
         return self._buffer.get_last(limit)
 
-    def get_all_samples(self) -> List[Dict[str, Any]]:
+    def get_all_samples(self) -> list[dict[str, Any]]:
         """Get all instantiation samples."""
         return self._buffer.get_all()
 
@@ -202,11 +202,11 @@ class TelemetryManager:
         """Record an instantiation event."""
         self.instantiation_profiler.record_instantiation(**kwargs)
 
-    def get_selection_samples(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_selection_samples(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent selection samples."""
         return self.selection_profiler.get_samples(limit)
 
-    def get_instantiation_samples(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_instantiation_samples(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent instantiation samples."""
         return self.instantiation_profiler.get_samples(limit)
 

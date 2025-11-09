@@ -113,7 +113,6 @@ class SmartPipeline:
             # Execute middleware
             mw_start = time.time()
             result = None
-            error = None
 
             try:
                 result = mw.process_request(ctx)
@@ -139,7 +138,6 @@ class SmartPipeline:
 
             except Exception as e:
                 # Handle middleware exceptions
-                error = e
                 mw_time = time.time() - mw_start
                 self._update_middleware_stats(mw.name, False, mw_time)
 
