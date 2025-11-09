@@ -116,9 +116,11 @@ OFFICIAL_MANUAL_MODULES: list[str] = [
     "app.overmind.planning.llm_planner",  # Extend / customize as needed
 ]
 
+
 # Whitelist of allowed planners (metadata-only discovery, lazy loading)
 def _parse_csv(s: str) -> set[str]:
     return {p.strip() for p in s.split(",") if p.strip()}
+
 
 ALLOWED_PLANNERS: set[str] = _parse_csv(
     os.getenv(
@@ -358,7 +360,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> set[str]:
     if not hasattr(obj, attr):
         return set()
     val = getattr(obj, attr)
-    if isinstance(val, (list, tuple, set)):
+    if isinstance(val, list | tuple | set):
         return {str(v).strip() for v in val if v is not None}
     return set()
 
@@ -645,9 +647,7 @@ def refresh_metadata():
             return
         # Trim ring buffers if they exceed max size
         if len(_STATE.selection_profile_samples) > CFG.MAX_PROFILES:
-            _STATE.selection_profile_samples = _STATE.selection_profile_samples[
-                -CFG.MAX_PROFILES :
-            ]
+            _STATE.selection_profile_samples = _STATE.selection_profile_samples[-CFG.MAX_PROFILES :]
         if len(_STATE.instantiation_profile_samples) > CFG.MAX_PROFILES:
             _STATE.instantiation_profile_samples = _STATE.instantiation_profile_samples[
                 -CFG.MAX_PROFILES :
