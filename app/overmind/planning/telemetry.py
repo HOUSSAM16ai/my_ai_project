@@ -180,7 +180,12 @@ class TelemetryManager:
     Coordinates selection and instantiation profiling.
     """
 
-    def __init__(self, max_profiles: int = 1000, enable_selection: bool = True, enable_instantiation: bool = True):
+    def __init__(
+        self,
+        max_profiles: int = 1000,
+        enable_selection: bool = True,
+        enable_instantiation: bool = True,
+    ):
         self.selection_profiler = SelectionProfiler(max_profiles)
         self.instantiation_profiler = InstantiationProfiler(max_profiles)
 

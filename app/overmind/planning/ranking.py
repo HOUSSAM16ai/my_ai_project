@@ -185,7 +185,11 @@ def rank_planners(
 
     for name, rec in candidates.items():
         # Get reliability
-        reliability = rec.reliability_score if rec.reliability_score is not None else config.default_reliability
+        reliability = (
+            rec.reliability_score
+            if rec.reliability_score is not None
+            else config.default_reliability
+        )
 
         # Apply production penalty if needed
         if prefer_production and not rec.production_ready and req_set:
@@ -230,7 +234,11 @@ def rank_planners(
         ranked.append((total_score, name, breakdown))
 
     # Deterministic sort
-    ranked.sort(key=lambda x: create_sort_key(x[0], candidates[x[1]].reliability_score or config.default_reliability, x[1]))
+    ranked.sort(
+        key=lambda x: create_sort_key(
+            x[0], candidates[x[1]].reliability_score or config.default_reliability, x[1]
+        )
+    )
 
     return ranked
 
