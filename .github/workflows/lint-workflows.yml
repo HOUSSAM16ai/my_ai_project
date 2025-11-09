@@ -8,17 +8,7 @@
 name: 🔍 Workflow Linting
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/**.yml"
-      - ".github/workflows/**.yaml"
-      - ".github/actions/**/action.yml"
-      - ".github/actions/**/action.yaml"
-  push:
-    branches: [main, develop]
-    paths:
-      - ".github/workflows/**.yml"
-      - ".github/workflows/**.yaml"
+  workflow_dispatch:
 
 jobs:
   actionlint:

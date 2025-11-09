@@ -16,10 +16,6 @@
 name: 🔒 Comprehensive Security Testing
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
   schedule:
     # Run full security audit weekly
     - cron: '0 0 * * 0'

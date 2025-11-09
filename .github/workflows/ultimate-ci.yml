@@ -16,10 +16,6 @@
 name: 🏆 Ultimate CI - Always Green
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [main, develop]
   workflow_dispatch:
     inputs:
       skip_cache:

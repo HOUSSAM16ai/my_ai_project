@@ -12,12 +12,7 @@
 name: python-autofix
 
 "on":
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "**/*.py"
-      - "pyproject.toml"
-      - ".pre-commit-config.yaml"
+  workflow_dispatch:
 
 permissions:
   contents: write

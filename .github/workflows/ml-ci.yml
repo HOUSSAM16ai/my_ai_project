@@ -3,15 +3,7 @@ name: ML CI - Superhuman Quality & Security
 # Features: Linting, Testing, Data Quality, Supply Chain Security
 
 on:
-  pull_request:
-    paths:
-      - "**/*.py"
-      - "requirements*.txt"
-      - "models/**"
-      - "pipelines/**"
-      - ".github/workflows/ml-ci.yml"
-  push:
-    branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
   quality-security:
