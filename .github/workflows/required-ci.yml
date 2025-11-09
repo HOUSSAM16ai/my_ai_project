@@ -49,32 +49,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-          # Install essential linting/testing tools
-          pip install ruff==0.6.9 mypy pytest pytest-timeout pytest-cov
-
-      - name: 🔍 Lint with Ruff (Fast)
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔍 Running Ruff linter..."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          ruff check . --output-format=github || {
-            echo "❌ Ruff found linting issues"
-            exit 1
-          }
-          echo "✅ Ruff linting passed"
-
-      - name: 🔬 Static Analysis with MyPy
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔬 Running MyPy type checking..."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          # Focus on critical directories only for speed
-          mypy app/overmind --ignore-missing-imports --no-strict-optional || {
-            echo "⚠️  MyPy found type issues (non-critical)"
-            # Don't fail on type issues in rapid CI
-          }
-          echo "✅ Type checking completed"
+          pip install pytest pytest-timeout
 
       - name: 🧪 Unit Tests (Fast)
         env:

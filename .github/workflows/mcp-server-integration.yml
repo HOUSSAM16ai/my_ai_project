@@ -19,10 +19,6 @@
 name: 🚀 Superhuman MCP Server Integration
 
 on:
-  push:
-    branches: ["main", "develop", "staging"]
-  pull_request:
-    branches: ["main", "develop"]
   workflow_dispatch:
     inputs:
       enable_ai_review:

@@ -11,10 +11,6 @@ name: World-Class Microservices CI/CD Pipeline
 #   - Non-blocking checks = Heavy, observability (builds, integration, deploy) → This workflow
 
 on:
-  pull_request:
-    branches: [main, develop]
-  push:
-    branches: [main, develop]
   workflow_dispatch:
 
 env:

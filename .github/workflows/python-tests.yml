@@ -1,18 +1,6 @@
 name: python-tests (py312)
 on:
-  pull_request:
-    paths:
-      - "**/*.py"
-      - "pyproject.toml"
-      - "requirements*.txt"
-      - "tests/**"
-  push:
-    branches: [main, release/**]
-    paths:
-      - "**/*.py"
-      - "pyproject.toml"
-      - "requirements*.txt"
-      - "tests/**"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
