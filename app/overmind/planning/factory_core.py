@@ -229,7 +229,7 @@ class PlannerFactory:
         if not hasattr(obj, attr):
             return set()
         val = getattr(obj, attr)
-        if isinstance(val, (list, tuple, set)):
+        if isinstance(val, list | tuple | set):
             return {str(v).strip() for v in val if v is not None}
         return set()
 

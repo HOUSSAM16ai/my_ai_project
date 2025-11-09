@@ -377,7 +377,7 @@ class AITestGenerator:
         assert result is not None
     except Exception as e:
         # Document expected exceptions
-        assert isinstance(e, (ValueError, TypeError))
+        assert isinstance(e, ValueError | TypeError)
 """
 
                     tests.append(
