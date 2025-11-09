@@ -84,9 +84,7 @@ class RateLimitMiddleware(BaseMiddleware):
 
         except Exception as e:
             # If rate limiter fails, allow request but log error
-            return MiddlewareResult.success().with_metadata(
-                "rate_limit_error", str(e)
-            )
+            return MiddlewareResult.success().with_metadata("rate_limit_error", str(e))
 
     def _get_user_tier(self, ctx: RequestContext) -> UserTier:
         """
@@ -120,9 +118,7 @@ class RateLimitMiddleware(BaseMiddleware):
                 "checked_count": self.checked_count,
                 "rate_limited_count": self.rate_limited_count,
                 "rate_limit_rate": (
-                    self.rate_limited_count / self.checked_count
-                    if self.checked_count > 0
-                    else 0.0
+                    self.rate_limited_count / self.checked_count if self.checked_count > 0 else 0.0
                 ),
             }
         )

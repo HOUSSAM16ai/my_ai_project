@@ -176,9 +176,7 @@ class SuperhumanSecurityOrchestrator:
 
         app.logger.info("🔐 Superhuman Security Orchestrator initialized")
         app.logger.info(f"✅ Active middleware layers: {len(self.pipeline.middlewares)}")
-        app.logger.info(
-            f"🛡️ Security layers: {', '.join(self.pipeline.get_middleware_list())}"
-        )
+        app.logger.info(f"🛡️ Security layers: {', '.join(self.pipeline.get_middleware_list())}")
 
     def process_request(self):
         """

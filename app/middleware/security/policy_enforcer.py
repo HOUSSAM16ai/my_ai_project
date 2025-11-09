@@ -63,9 +63,7 @@ class PolicyEnforcer(BaseMiddleware):
         # Check policy conditions
         if not self._check_policy(ctx, policy):
             self.violations += 1
-            return MiddlewareResult.forbidden(
-                message="Access denied by policy"
-            ).with_details(
+            return MiddlewareResult.forbidden(message="Access denied by policy").with_details(
                 policy_name=policy.get("name"),
                 reason=policy.get("denial_reason", "Policy violation"),
             )
@@ -173,9 +171,7 @@ class PolicyEnforcer(BaseMiddleware):
                 "enforced_count": self.enforced_count,
                 "violations": self.violations,
                 "violation_rate": (
-                    self.violations / self.enforced_count
-                    if self.enforced_count > 0
-                    else 0.0
+                    self.violations / self.enforced_count if self.enforced_count > 0 else 0.0
                 ),
                 "active_policies": len(self.policies),
             }

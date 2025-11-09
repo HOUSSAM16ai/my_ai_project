@@ -56,9 +56,7 @@ class ExceptionMapper:
         return {"status_code": 500, "message": "Internal server error"}
 
     @classmethod
-    def register_exception(
-        cls, exception_type: type, status_code: int, message: str
-    ):
+    def register_exception(cls, exception_type: type, status_code: int, message: str):
         """
         Register a custom exception mapping
 
