@@ -111,7 +111,7 @@ class FactoryState:
 class PlannerFactory:
     """
     Planner Factory with isolated state management.
-    
+
     This class manages planner discovery, instantiation, and selection
     with proper state isolation for testability.
     """
@@ -128,14 +128,14 @@ class PlannerFactory:
         self._instance_cache: dict[str, BasePlanner] = {}
         self._planner_locks: dict[str, threading.Lock] = {}
         self._logger = logging.getLogger("overmind.factory")
-        
+
         # Initialize telemetry
         self._telemetry = TelemetryManager(
             max_profiles=self._config.max_profiles,
             enable_selection=self._config.profile_selection,
             enable_instantiation=self._config.profile_instantiation,
         )
-        
+
         # Setup logging
         if not self._logger.handlers:
             logging.basicConfig(
@@ -216,7 +216,9 @@ class PlannerFactory:
                     if cls:
                         return cls
             except Exception as e:
-                self._warn_once("live_planner_classes_access", f"live_planner_classes() failed: {e}")
+                self._warn_once(
+                    "live_planner_classes_access", f"live_planner_classes() failed: {e}"
+                )
         if hasattr(BasePlanner, "get_planner_class"):
             try:
                 return BasePlanner.get_planner_class(name)
@@ -482,9 +484,7 @@ class PlannerFactory:
             self._state.total_instantiations += 1
 
             # Record telemetry
-            self._telemetry.record_instantiation(
-                planner_name=key, duration_s=elapsed, success=True
-            )
+            self._telemetry.record_instantiation(planner_name=key, duration_s=elapsed, success=True)
 
         self._log("Instantiated planner", "INFO", planner=key, duration_s=round(elapsed, 4))
         return inst
@@ -623,9 +623,7 @@ class PlannerFactory:
         )
 
         if not ranked:
-            raise PlannerSelectionError(
-                "No candidate planners after ranking", context=objective
-            )
+            raise PlannerSelectionError("No candidate planners after ranking", context=objective)
 
         best_score, best_name, best_breakdown = ranked[0]
         sel_elapsed = time.perf_counter() - t0
@@ -639,9 +637,7 @@ class PlannerFactory:
                 score=best_score,
                 candidates_count=len(ranked),
                 deep_context=bool(deep_context and deep_context.get("deep_index_summary")),
-                hotspots_count=int(deep_context.get("hotspots_count", 0))
-                if deep_context
-                else 0,
+                hotspots_count=int(deep_context.get("hotspots_count", 0)) if deep_context else 0,
                 breakdown=best_breakdown,
                 duration_s=sel_elapsed,
                 boost_config={

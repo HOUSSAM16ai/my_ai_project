@@ -163,14 +163,14 @@ else:
 def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
     """
     Get planner by name.
-    
+
     Args:
         name: Planner name
         auto_instantiate: Whether to auto-instantiate
-        
+
     Returns:
         Planner instance or class
-        
+
     Raises:
         PlannerNotFound: If planner not found
         PlannerQuarantined: If planner is quarantined
@@ -181,11 +181,11 @@ def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
 def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
     """
     List available planners.
-    
+
     Args:
         include_quarantined: Include quarantined planners
         include_errors: Include planners with errors
-        
+
     Returns:
         List of planner names
     """
@@ -225,7 +225,7 @@ def select_best_planner(
 ):
     """
     Select best planner for objective.
-    
+
     Args:
         objective: Task objective
         required_capabilities: Required capabilities
@@ -233,10 +233,10 @@ def select_best_planner(
         auto_instantiate: Return instance if True, name if False
         self_heal_on_empty: Attempt self-heal if no planners
         deep_context: Deep context for scoring boosts
-        
+
     Returns:
         Planner instance or name
-        
+
     Raises:
         NoActivePlannersError: If no active planners
         PlannerSelectionError: If selection fails
@@ -522,7 +522,6 @@ def instantiation_profiles(limit: int = 50) -> list[dict[str, Any]]:
     return _GLOBAL_FACTORY.get_telemetry_samples(instantiation_limit=limit)["instantiation"]
 
 
-
 # ======================================================================================
 # EXPORTS
 # ======================================================================================
@@ -585,4 +584,3 @@ if __name__ == "__main__":
         print("Selected planner:", p)
     export_diagnostics("planner_diagnostics.json", fmt="json", verbose=True)
     print("Diagnostics exported -> planner_diagnostics.json")
-
