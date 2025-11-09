@@ -8,7 +8,6 @@ This test prevents regression of the ImportError that was previously occurring.
 """
 
 
-
 class TestMiddlewareDecorators:
     """Test middleware decorator imports and basic functionality."""
 
