@@ -44,7 +44,7 @@ jobs:
 
       - name: Format Check with Black
         run: |
-          black --check --diff --color app/ tests/ || true
+          black --check --diff --color --line-length=100 app/ tests/ || true
         continue-on-error: true
 
       - name: Type Check with MyPy
