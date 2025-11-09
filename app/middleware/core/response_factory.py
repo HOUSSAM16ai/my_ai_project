@@ -157,7 +157,6 @@ class ResponseFactory:
         Returns:
             Framework-specific response
         """
-        from .result import MiddlewareResult
 
         if result.is_success:
             return ResponseFactory.make_success_response(

@@ -8,10 +8,10 @@ Ranking and scoring logic for planner selection.
 Implements deterministic scoring with deep context awareness.
 """
 
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any
 
 
-def capabilities_match_ratio(required: Set[str], offered: Set[str]) -> float:
+def capabilities_match_ratio(required: set[str], offered: set[str]) -> float:
     """
     Calculate match ratio between required and offered capabilities.
 
@@ -34,7 +34,7 @@ def compute_rank_hint(
     objective_length: int,
     capabilities_match_ratio: float,
     reliability_score: float,
-    tier: Optional[str],
+    tier: str | None,
     production_ready: bool,
 ) -> float:
     """
@@ -78,13 +78,13 @@ def compute_rank_hint(
 
 
 def compute_deep_boosts(
-    capabilities: Set[str],
-    required_capabilities: Set[str],
-    deep_context: Optional[Dict[str, Any]],
+    capabilities: set[str],
+    required_capabilities: set[str],
+    deep_context: dict[str, Any] | None,
     deep_index_cap_boost: float,
     hotspot_cap_boost: float,
     hotspot_threshold: int,
-) -> Tuple[float, Dict[str, Any]]:
+) -> tuple[float, dict[str, Any]]:
     """
     Compute deep context-based boost scores.
 
@@ -134,7 +134,7 @@ def _to_int(value, default: int = 0) -> int:
 
 def create_sort_key(
     score: float, reliability: float, name: str, reverse_score: bool = True
-) -> Tuple:
+) -> tuple:
     """
     Create a deterministic sort key for planner candidates.
 
@@ -159,13 +159,13 @@ def create_sort_key(
 
 
 def rank_planners(
-    candidates: Dict[str, Any],
+    candidates: dict[str, Any],
     objective: str,
-    required_capabilities: Optional[Set[str]],
+    required_capabilities: set[str] | None,
     prefer_production: bool,
-    deep_context: Optional[Dict[str, Any]],
+    deep_context: dict[str, Any] | None,
     config: Any,
-) -> list[Tuple[float, str, Dict[str, Any]]]:
+) -> list[tuple[float, str, dict[str, Any]]]:
     """
     Rank a collection of planner candidates.
 

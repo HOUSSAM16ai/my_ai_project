@@ -38,9 +38,10 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Import new modular components
 from .config import DEFAULT_CONFIG, FactoryConfig
@@ -54,7 +55,7 @@ from .exceptions import (
     SandboxImportError,
     SandboxTimeout,
 )
-from .factory_core import FACTORY_VERSION, PlannerFactory, PlannerRecord
+from .factory_core import FACTORY_VERSION, PlannerFactory
 
 # Import BasePlanner with fallback
 try:
@@ -119,7 +120,7 @@ def _warn_once(key: str, msg: str):
 # ======================================================================================
 
 
-def discover(force: bool = False, package: Optional[str] = None):
+def discover(force: bool = False, package: str | None = None):
     """Discover planners. Wraps global factory instance."""
     _GLOBAL_FACTORY.discover(force=force, package=package)
     if not _GLOBAL_FACTORY._active_planner_names():
@@ -217,11 +218,11 @@ def get_all_planners(
 
 def select_best_planner(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     prefer_production: bool = True,
     auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None,
-    deep_context: Optional[dict[str, Any]] = None,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
 ):
     """
     Select best planner for objective.
@@ -253,10 +254,10 @@ def select_best_planner(
 
 def select_best_planner_name(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     prefer_production: bool = True,
-    self_heal_on_empty: Optional[bool] = None,
-    deep_context: Optional[dict[str, Any]] = None,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
 ) -> str:
     """
     Select best planner name (without instantiation).
@@ -274,11 +275,11 @@ def select_best_planner_name(
 
 def batch_select_best_planners(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     n: int = 3,
     prefer_production: bool = True,
     auto_instantiate: bool = False,
-    deep_context: Optional[dict[str, Any]] = None,
+    deep_context: dict[str, Any] | None = None,
 ) -> list:
     """
     Select top N planners for objective.
@@ -490,11 +491,11 @@ async def a_get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner
 
 async def a_select_best_planner(
     objective: str,
-    required_capabilities: Optional[Iterable[str]] = None,
+    required_capabilities: Iterable[str] | None = None,
     prefer_production: bool = True,
     auto_instantiate: bool = True,
-    self_heal_on_empty: Optional[bool] = None,
-    deep_context: Optional[dict[str, Any]] = None,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
 ):
     """Async wrapper for select_best_planner."""
     return select_best_planner(

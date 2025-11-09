@@ -9,7 +9,6 @@ Adds comprehensive security headers to all responses.
 Implements OWASP best practices for HTTP security headers.
 """
 
-from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext

@@ -1,6 +1,6 @@
+import json
 import sys
 from pathlib import Path
-import json
 
 # اجعل روت المشروع على PYTHONPATH
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +8,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 # الآن نقدر نستورد run.py
-from run import app  # run.py يحتوي Flask app اسمه app
+from run import app  # run.py يحتوي Flask app اسمه app  # noqa: E402
 
 out = {}
 reports = ROOT / "reports"

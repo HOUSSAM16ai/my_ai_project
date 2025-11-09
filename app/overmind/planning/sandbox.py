@@ -13,7 +13,6 @@ import logging
 import subprocess
 import sys
 from types import ModuleType
-from typing import Optional
 
 from .exceptions import SandboxImportError, SandboxTimeout
 
@@ -145,7 +144,7 @@ def _validate_import_in_subprocess(module_name: str, timeout_s: float):
         raise SandboxImportError(module_name, str(exc))
 
 
-def safe_import(module_name: str, fallback: Optional[ModuleType] = None) -> Optional[ModuleType]:
+def safe_import(module_name: str, fallback: ModuleType | None = None) -> ModuleType | None:
     """
     Safe import wrapper that returns None (or fallback) on failure instead of raising.
 

@@ -11,7 +11,7 @@ Enables plugin-based architecture with runtime registration.
 Design Pattern: Registry Pattern + Service Locator
 """
 
-from typing import Any, Type
+from typing import Any
 
 from .base_middleware import BaseMiddleware
 
@@ -27,14 +27,14 @@ class MiddlewareRegistry:
 
     def __init__(self):
         """Initialize empty registry"""
-        self._registry: dict[str, Type[BaseMiddleware]] = {}
+        self._registry: dict[str, type[BaseMiddleware]] = {}
         self._instances: dict[str, BaseMiddleware] = {}
         self._metadata: dict[str, dict[str, Any]] = {}
 
     def register(
         self,
         name: str,
-        middleware_class: Type[BaseMiddleware],
+        middleware_class: type[BaseMiddleware],
         metadata: dict[str, Any] | None = None,
     ):
         """
@@ -70,7 +70,7 @@ class MiddlewareRegistry:
             return True
         return False
 
-    def get_class(self, name: str) -> Type[BaseMiddleware] | None:
+    def get_class(self, name: str) -> type[BaseMiddleware] | None:
         """
         Get middleware class by name
 
@@ -167,7 +167,7 @@ def get_global_registry() -> MiddlewareRegistry:
 
 def register_middleware(
     name: str,
-    middleware_class: Type[BaseMiddleware],
+    middleware_class: type[BaseMiddleware],
     metadata: dict[str, Any] | None = None,
 ):
     """

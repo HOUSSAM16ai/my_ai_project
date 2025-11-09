@@ -12,10 +12,7 @@ Design Pattern: Observer Pattern + Event System
 """
 
 from collections import defaultdict
-from typing import Any, Callable
-
-from .context import RequestContext
-from .result import MiddlewareResult
+from collections.abc import Callable
 
 
 class LifecycleHooks:
