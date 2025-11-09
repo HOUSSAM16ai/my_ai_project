@@ -53,7 +53,7 @@ jobs:
         run: ruff check . --output-format=github
 
       - name: Run Black (Formatter Check)
-        run: black --check --diff --color app/ tests/
+        run: black --check --diff --color --line-length=100 app/ tests/
 
       - name: Run MyPy (Type Checking)
         run: mypy app/ --ignore-missing-imports --no-strict-optional
