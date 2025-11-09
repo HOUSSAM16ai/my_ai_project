@@ -141,7 +141,7 @@ def _register_blueprints(app: Flask) -> None:
             "Failed to register admin routes: %s (continuing without admin panel)", exc
         )
 
-    # API Gateway blueprints (optional)
+    # API Gateway blueprints (required)
     try:
         from .api import cosmic_routes, init_api
 
@@ -149,7 +149,8 @@ def _register_blueprints(app: Flask) -> None:
         cosmic_routes.register_cosmic_routes(app)
         app.logger.info("API Gateway registered successfully (including cosmic routes)")
     except Exception as exc:
-        app.logger.warning("Failed to register API Gateway: %s (continuing without API)", exc)
+        app.logger.error("Failed to register API Gateway: %s", exc, exc_info=True)
+        raise  # API Gateway is critical, so we re-raise
 
     # CLI commands (optional)
     try:
