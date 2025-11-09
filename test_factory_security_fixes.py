@@ -7,7 +7,6 @@ Tests critical security vulnerabilities, race conditions, and stability improvem
 import importlib.util
 import os
 import sys
-import threading
 import time
 import unittest.mock
 
@@ -135,7 +134,7 @@ def test_safe_integer_conversion():
     # Test with invalid hotspots_count
     deep_context = {"hotspots_count": "ten"}
     boost, breakdown = factory._compute_deep_boosts(rec, set(), deep_context)
-    assert isinstance(boost, (int, float)), "Should not crash on invalid hotspots_count"
+    assert isinstance(boost, int | float), "Should not crash on invalid hotspots_count"
     
     print("✓ Test P0-5: Safe integer conversion prevents ValueError")
 
