@@ -181,9 +181,7 @@ def register_middleware(
     _global_registry.register(name, middleware_class, metadata)
 
 
-def create_middleware(
-    name: str, config: dict[str, Any] | None = None
-) -> BaseMiddleware | None:
+def create_middleware(name: str, config: dict[str, Any] | None = None) -> BaseMiddleware | None:
     """
     Create middleware instance from global registry
 

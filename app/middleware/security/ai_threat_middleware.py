@@ -79,19 +79,20 @@ class AIThreatMiddleware(BaseMiddleware):
 
                 # Log high severity threats but allow
                 if detection.severity == "high":
-                    ctx.add_metadata("high_threat_detected", {
-                        "threat_type": detection.threat_type,
-                        "threat_score": threat_score,
-                        "confidence": detection.confidence,
-                    })
+                    ctx.add_metadata(
+                        "high_threat_detected",
+                        {
+                            "threat_type": detection.threat_type,
+                            "threat_score": threat_score,
+                            "confidence": detection.confidence,
+                        },
+                    )
 
             return MiddlewareResult.success()
 
         except Exception as e:
             # If AI detector fails, allow request but log error
-            return MiddlewareResult.success().with_metadata(
-                "ai_threat_error", str(e)
-            )
+            return MiddlewareResult.success().with_metadata("ai_threat_error", str(e))
 
     def get_statistics(self) -> dict:
         """Return AI threat detector statistics"""
@@ -102,9 +103,7 @@ class AIThreatMiddleware(BaseMiddleware):
                 "threats_detected": self.threats_detected,
                 "critical_blocks": self.critical_blocks,
                 "threat_detection_rate": (
-                    self.threats_detected / self.analyzed_count
-                    if self.analyzed_count > 0
-                    else 0.0
+                    self.threats_detected / self.analyzed_count if self.analyzed_count > 0 else 0.0
                 ),
             }
         )

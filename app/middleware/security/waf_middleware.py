@@ -71,9 +71,7 @@ class WAFMiddleware(BaseMiddleware):
 
         except Exception as e:
             # If WAF fails, allow request but log error
-            return MiddlewareResult.success().with_metadata(
-                "waf_error", str(e)
-            )
+            return MiddlewareResult.success().with_metadata("waf_error", str(e))
 
     def get_statistics(self) -> dict:
         """Return WAF statistics"""
@@ -83,9 +81,7 @@ class WAFMiddleware(BaseMiddleware):
                 "checked_count": self.checked_count,
                 "blocked_count": self.blocked_count,
                 "block_rate": (
-                    self.blocked_count / self.checked_count
-                    if self.checked_count > 0
-                    else 0.0
+                    self.blocked_count / self.checked_count if self.checked_count > 0 else 0.0
                 ),
             }
         )

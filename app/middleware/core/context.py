@@ -49,30 +49,30 @@ class RequestContext:
     request_id: str = field(default_factory=lambda: str(uuid4()))
     method: str = "GET"
     path: str = "/"
-    
+
     # Request data
     headers: dict[str, str] = field(default_factory=dict)
     query_params: dict[str, Any] = field(default_factory=dict)
     body: Any = None
-    
+
     # Client information
     ip_address: str = "unknown"
     user_agent: str = ""
-    
+
     # Timing
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    
+
     # Extensibility
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     # Observability
     trace_id: str | None = None
     span_id: str | None = None
-    
+
     # Authentication/Authorization
     user_id: str | None = None
     session_id: str | None = None
-    
+
     # Framework-specific request object (for advanced use cases)
     _raw_request: Any = None
 

@@ -231,9 +231,7 @@ class MetricsMiddleware(BaseMiddleware):
                 "success_count": self.success_count,
                 "failure_count": self.failure_count,
                 "success_rate": (
-                    self.success_count / self.request_count
-                    if self.request_count > 0
-                    else 0.0
+                    self.success_count / self.request_count if self.request_count > 0 else 0.0
                 ),
             }
         )

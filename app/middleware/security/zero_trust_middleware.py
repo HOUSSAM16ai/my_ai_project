@@ -83,9 +83,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
 
         except Exception as e:
             self.failed_count += 1
-            return MiddlewareResult.unauthorized(
-                message=f"Zero Trust verification error: {str(e)}"
-            )
+            return MiddlewareResult.unauthorized(message=f"Zero Trust verification error: {str(e)}")
 
     def get_statistics(self) -> dict:
         """Return Zero Trust statistics"""
@@ -95,9 +93,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
             {
                 "verified_count": self.verified_count,
                 "failed_count": self.failed_count,
-                "verification_rate": (
-                    self.verified_count / total if total > 0 else 0.0
-                ),
+                "verification_rate": (self.verified_count / total if total > 0 else 0.0),
             }
         )
         return stats

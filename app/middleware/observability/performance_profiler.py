@@ -165,9 +165,7 @@ class PerformanceProfiler(BaseMiddleware):
                 "p95_latency_ms": p95,
                 "p99_latency_ms": p99,
                 "throughput_rps": (
-                    self.profiled_count / self.total_duration
-                    if self.total_duration > 0
-                    else 0.0
+                    self.profiled_count / self.total_duration if self.total_duration > 0 else 0.0
                 ),
                 "tracked_endpoints": len(self.endpoint_stats),
             }
