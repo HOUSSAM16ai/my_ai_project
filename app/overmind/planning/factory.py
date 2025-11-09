@@ -117,12 +117,15 @@ OFFICIAL_MANUAL_MODULES: list[str] = [
 ]
 
 # Whitelist of allowed planners (metadata-only discovery, lazy loading)
-ALLOWED_PLANNERS: set[str] = {
-    "llm_planner",
-    "risk_planner",
-    "structural_planner",
-    "multi_pass_arch_planner",
-}
+def _parse_csv(s: str) -> set[str]:
+    return {p.strip() for p in s.split(",") if p.strip()}
+
+ALLOWED_PLANNERS: set[str] = _parse_csv(
+    os.getenv(
+        "FACTORY_ALLOWED_PLANNERS",
+        "llm_planner,risk_planner,structural_planner,multi_pass_arch_planner",
+    )
+)
 
 DEFAULT_EXCLUDE_MODULES: set[str] = {
     "__init__",
@@ -316,19 +319,20 @@ def _import_module(module_name: str) -> ModuleType | None:
     try:
         return importlib.import_module(module_name)
     except Exception as exc:
-        _STATE.import_failures[module_name] = str(exc)
-        _log(f"Module import failed: {module_name} -> {exc}", "ERROR", module=module_name)
+        with _STATE.lock:
+            _STATE.import_failures[module_name] = str(exc)
+        _log("Module import failed", "ERROR", module=module_name, error=str(exc))
         return None
 
 
 def _import_module_sandboxed(module_name: str) -> ModuleType:
-    # Sandboxed import with extensibility for timeout/subprocess in future
-    # For now, simple wrapper with better error handling
+    # NOT sandboxed yet: future plan -> subprocess + timeout + strict allowlist
     try:
         return importlib.import_module(module_name)
     except Exception as exc:
-        _STATE.import_failures[module_name] = str(exc)
-        _log(f"Sandboxed import failed: {module_name}", "ERROR", module=module_name, error=str(exc))
+        with _STATE.lock:
+            _STATE.import_failures[module_name] = str(exc)
+        _log("Sandboxed import failed", "ERROR", module=module_name, error=str(exc))
         raise
 
 
@@ -354,7 +358,7 @@ def _extract_attribute_set(obj: Any, attr: str) -> set[str]:
     if not hasattr(obj, attr):
         return set()
     val = getattr(obj, attr)
-    if isinstance(val, list | tuple | set):
+    if isinstance(val, (list, tuple, set)):
         return {str(v).strip() for v in val if v is not None}
     return set()
 
@@ -375,8 +379,13 @@ def _extract_string(obj: Any, attr: str) -> str | None:
     return None if v is None else str(v)
 
 
+ENABLE_DEEP_FINGERPRINT = os.getenv("FACTORY_DEEP_FINGERPRINT", "1") == "1"
+
+
 def _file_fingerprint(root_package: str) -> str:
-    # Enhanced fingerprint with modification time for content change detection
+    # Enhanced fingerprint (optional for performance)
+    if not ENABLE_DEEP_FINGERPRINT:
+        return "na"
     try:
         pkg = importlib.import_module(root_package)
         if not hasattr(pkg, "__path__"):
@@ -517,10 +526,19 @@ def _discover_and_register(force: bool = False, package: str | None = None):
         )
 
 
+_PLANNER_LOCKS: dict[str, threading.Lock] = {}
+
+
+def _get_plock(key: str) -> threading.Lock:
+    with _STATE.lock:
+        return _PLANNER_LOCKS.setdefault(key, threading.Lock())
+
+
 def _instantiate_planner(name: str) -> BasePlanner:
     # LAZY + SANDBOXED IMPORT: Import only when instantiating
     key = name.lower().strip()
-    with _STATE.lock:
+    plock = _get_plock(key)
+    with plock, _STATE.lock:
         rec = _STATE.planner_records.get(key)
         if not rec:
             raise KeyError(f"Planner '{name}' not registered")
@@ -549,6 +567,9 @@ def _instantiate_planner(name: str) -> BasePlanner:
     inst = cls()
     elapsed = time.perf_counter() - t0
     with _STATE.lock:
+        # Double-check to prevent race between threads that arrived after import
+        if key in _INSTANCE_CACHE:
+            return _INSTANCE_CACHE[key]
         rec = _STATE.planner_records.setdefault(key, PlannerRecord(name=key))
         rec.instantiated = True
         rec.instantiation_ts = _now()
@@ -622,6 +643,15 @@ def refresh_metadata():
     with _STATE.lock:
         if not _STATE.discovered:
             return
+        # Trim ring buffers if they exceed max size
+        if len(_STATE.selection_profile_samples) > CFG.MAX_PROFILES:
+            _STATE.selection_profile_samples = _STATE.selection_profile_samples[
+                -CFG.MAX_PROFILES :
+            ]
+        if len(_STATE.instantiation_profile_samples) > CFG.MAX_PROFILES:
+            _STATE.instantiation_profile_samples = _STATE.instantiation_profile_samples[
+                -CFG.MAX_PROFILES :
+            ]
     _sync_registry_into_records()
 
 
@@ -709,6 +739,13 @@ def get_all_planners(
     return instances
 
 
+def _to_int(value, default=0) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
 def _compute_deep_boosts(
     rec: PlannerRecord, req_caps: set[str], deep_context: dict[str, Any] | None
 ) -> tuple[float, dict[str, Any]]:
@@ -718,7 +755,7 @@ def _compute_deep_boosts(
 
     caps = _safe_lower_set(rec.capabilities)
     deep_index_summary = bool(deep_context.get("deep_index_summary"))
-    hotspots_count = int(deep_context.get("hotspots_count") or 0)
+    hotspots_count = _to_int(deep_context.get("hotspots_count"), 0)
 
     if deep_index_summary and "deep_index" in caps:
         boost = max(DEEP_INDEX_CAP_BOOST, 0.0)
@@ -910,6 +947,7 @@ def self_heal(
     force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
 ) -> dict[str, Any]:
     # SMART SELF-HEAL: Exponential backoff with partial checking
+    non_blocking = os.getenv("FACTORY_SELF_HEAL_BLOCKING", "1") != "1"
     report = {
         "before_active": len(_active_planner_names()),
         "attempts": 0,
@@ -932,6 +970,9 @@ def self_heal(
         report["attempts"] += 1
         discover(force=(force or attempt > 0))
         if _active_planner_names():
+            break
+        # Skip sleep in non-blocking mode
+        if non_blocking:
             break
         # Exponential backoff: 0.2s, 0.4s, 0.8s, ...
         sleep_time = min(0.2 * (2**attempt), 2.0)
