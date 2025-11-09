@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import * as math from 'mathjs'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'

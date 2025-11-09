@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import "katex/dist/katex.min.css"
+import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ArtifactRenderer } from './components/ArtifactRenderer'
