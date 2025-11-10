@@ -144,6 +144,20 @@ class StructuredLogger:
         log_entry = self._enrich_log(message, "CRITICAL", context, trace_id, span_id)
         self.logger.critical(json.dumps(log_entry))
 
+    def log(
+        self,
+        level: str,
+        message: str,
+        context: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ):
+        """Log message at specified level"""
+        level_upper = level.upper()
+        log_entry = self._enrich_log(message, level_upper, context, trace_id, span_id)
+        log_level = self.LOG_LEVELS.get(level_upper, logging.INFO)
+        self.logger.log(log_level, json.dumps(log_entry))
+
 
 class JSONFormatter(logging.Formatter):
     """JSON log formatter"""

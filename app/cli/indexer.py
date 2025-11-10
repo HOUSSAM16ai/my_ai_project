@@ -18,10 +18,10 @@ try:
     from sentence_transformers import SentenceTransformer as _SentenceTransformer
 
     SENTENCE_TRANSFORMER_AVAILABLE = True
-    SentenceTransformer = _SentenceTransformer  # type: ignore[misc]  # noqa: F811
+    SentenceTransformer = _SentenceTransformer  # noqa: F811
 except ImportError:
     SENTENCE_TRANSFORMER_AVAILABLE = False
-    SentenceTransformer = None  # type: ignore[misc]
+    SentenceTransformer = None
 
 DEFAULT_MODEL = os.getenv("COGNI_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 INDEX_DIR = Path(".cogni")

@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import importlib.util
 import inspect
 import json
 import logging
@@ -78,6 +79,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
+    cast,
 )
 
 # Attempt to import BasePlanner; create safe fallbacks if missing.
@@ -85,11 +87,13 @@ try:
     from .base_planner import BasePlanner, PlannerError
 except Exception:
 
-    class PlannerError(RuntimeError):
+    class _PlannerError(RuntimeError):
         def __init__(self, msg: str, where: str = "factory", context: str = ""):
             super().__init__(msg)
             self.where = where
             self.context = context
+
+    PlannerError = _PlannerError  # type: ignore
 
     class BasePlanner:  # type: ignore
         @staticmethod
@@ -872,7 +876,7 @@ def select_best_planner_name(
 ) -> str:
     # NEW API: Returns planner name only (clearer contract)
     # Encourages explicit instantiation: get_planner(select_best_planner_name(...))
-    return select_best_planner(
+    result = select_best_planner(
         objective=objective,
         required_capabilities=required_capabilities,
         prefer_production=prefer_production,
@@ -880,6 +884,8 @@ def select_best_planner_name(
         self_heal_on_empty=self_heal_on_empty,
         deep_context=deep_context,
     )
+    # When auto_instantiate=False, select_best_planner returns str
+    return str(result)
 
 
 def batch_select_best_planners(
@@ -932,10 +938,11 @@ def batch_select_best_planners(
             x[1],
         )
     )
-    selected_names = [nme for _, nme in candidates[:n]]
+    selected_names: list[str] = [nme for _, nme in candidates[:n]]
     if auto_instantiate:
         return [get_planner(n) for n in selected_names]
-    return selected_names
+    # Cast list[str] to list[str | BasePlanner] for type checker
+    return cast(list[str | BasePlanner], selected_names)
 
 
 # ======================================================================================

@@ -60,7 +60,7 @@ class RateLimitMiddleware(BaseMiddleware):
             is_allowed, info = self.rate_limiter.check_rate_limit(
                 ctx._raw_request,
                 user_id=user_id,
-                user_tier=user_tier,
+                tier=user_tier,
             )
 
             if not is_allowed:

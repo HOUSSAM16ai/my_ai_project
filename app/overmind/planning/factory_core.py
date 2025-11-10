@@ -10,6 +10,7 @@ Enables testability through instance-based state instead of global state.
 
 import hashlib
 import importlib
+import importlib.util
 import inspect
 import json
 import logging
