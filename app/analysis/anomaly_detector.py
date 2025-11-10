@@ -53,6 +53,7 @@ class Anomaly:
     expected_range: tuple[float, float]
     context: dict[str, Any] = field(default_factory=dict)
     recommended_action: str = ""
+    description: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
@@ -67,6 +68,7 @@ class Anomaly:
             "expected_range": list(self.expected_range),
             "context": self.context,
             "recommended_action": self.recommended_action,
+            "description": self.description,
         }
 
 
@@ -192,6 +194,7 @@ class AnomalyDetector:
                 recommended_action=self._get_recommended_action(
                     metric_name, severity, value, expected_range
                 ),
+                description=f"Anomaly detected in {metric_name}: value {value:.2f} outside expected range {expected_range}",
             )
 
             self.anomalies.append(anomaly)
@@ -393,6 +396,7 @@ class AnomalyDetector:
                 expected_range=(0.0, 0.0),
                 context={"window_minutes": window_minutes, "anomalous_ratio": ratio},
                 recommended_action="INVESTIGATE_SYSTEM_WIDE_ISSUE",
+                description=f"Collective anomaly in {metric_name}: {ratio*100:.1f}% of recent data points are anomalous",
             )
 
             self.anomalies.append(anomaly)

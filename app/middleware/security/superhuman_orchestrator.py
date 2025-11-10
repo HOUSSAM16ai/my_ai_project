@@ -16,6 +16,7 @@ from typing import Any
 
 from flask import Flask, g
 
+from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.core.response_factory import ResponseFactory
@@ -79,7 +80,7 @@ class SuperhumanSecurityOrchestrator:
         Returns:
             Configured SmartPipeline instance
         """
-        middlewares = []
+        middlewares: list[BaseMiddleware] = []
 
         # Layer 0: Telemetry (track everything)
         telemetry_config = self.config.get("telemetry", {})
