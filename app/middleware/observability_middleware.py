@@ -196,7 +196,7 @@ class ObservabilityMiddleware:
 
         return response
 
-    def teardown_request(self, exception: Exception | None = None):
+    def teardown_request(self, exception: BaseException | None = None):
         """
         Teardown request handler
 
@@ -205,6 +205,10 @@ class ObservabilityMiddleware:
         if exception and hasattr(g, "trace_context"):
             obs = get_unified_observability()
             trace_context = g.trace_context
+
+            # Only log if it's an Exception (not KeyboardInterrupt, SystemExit, etc.)
+            # BaseException includes system-exiting exceptions that shouldn't be logged
+            log_exception = exception if isinstance(exception, Exception) else None
 
             # Log exception
             obs.log(
@@ -215,7 +219,7 @@ class ObservabilityMiddleware:
                     "method": request.method,
                     "path": request.path,
                 },
-                exception=exception,
+                exception=log_exception,
                 trace_id=trace_context.trace_id,
                 span_id=trace_context.span_id,
             )
