@@ -96,13 +96,9 @@ class TestDecoratorSources:
         Verify that importing from decorators package gives same objects
         as importing from source services.
         """
-        from app.middleware.decorators import (
-            monitor_performance as mp_from_decorators,
-        )
+        from app.middleware.decorators import monitor_performance as mp_from_decorators
         from app.middleware.decorators import rate_limit as rl_from_decorators
-        from app.services.api_observability_service import (
-            monitor_performance as mp_from_service,
-        )
+        from app.services.api_observability_service import monitor_performance as mp_from_service
         from app.services.api_security_service import rate_limit as rl_from_service
 
         # They should be the exact same objects (not copies)
