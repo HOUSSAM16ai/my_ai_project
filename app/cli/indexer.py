@@ -7,21 +7,26 @@ import os
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
+    # For type checking, define runtime variable type
+    _SentenceTransformerClass: type[SentenceTransformer] | None
+else:
+    _SentenceTransformerClass = None
+
 try:
     from sentence_transformers import SentenceTransformer as _SentenceTransformer
 
     SENTENCE_TRANSFORMER_AVAILABLE = True
-    SentenceTransformer = _SentenceTransformer  # noqa: F811
+    _SentenceTransformerClass = _SentenceTransformer
 except ImportError:
     SENTENCE_TRANSFORMER_AVAILABLE = False
-    SentenceTransformer = None
+    _SentenceTransformerClass = None
 
 DEFAULT_MODEL = os.getenv("COGNI_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 INDEX_DIR = Path(".cogni")
@@ -117,7 +122,7 @@ def load_model(model_name: str | None = None):
     It now intelligently falls back to the default model if none is provided.
     """
     global _model_instance
-    if SentenceTransformer is None:
+    if _SentenceTransformerClass is None:
         raise RuntimeError(
             "sentence-transformers is not installed. Please add it to your requirements.txt"
         )
@@ -131,7 +136,7 @@ def load_model(model_name: str | None = None):
 
     if needs_reload:
         print(f"Loading embedding model '{name}'...")
-        _model_instance = SentenceTransformer(name)
+        _model_instance = _SentenceTransformerClass(name)
 
     return _model_instance
 
