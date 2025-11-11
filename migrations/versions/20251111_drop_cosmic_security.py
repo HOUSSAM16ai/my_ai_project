@@ -1,15 +1,17 @@
 """Drop cosmic security tables
 
 Revision ID: 20251111_drop_cosmic_security
-Revises: 20251107_rename_metadata_columns
-Create Date: 2025-11-11 14:42:00.000000
+Revises: 20251107_cosmic_security
+Create Date: 2025-11-11 15:52:00.000000
 
 """
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
 revision = '20251111_drop_cosmic_security'
-down_revision = '20251107_rename_metadata_columns'
+down_revision = '20251107_cosmic_security'
 branch_labels = None
 depends_on = None
 
