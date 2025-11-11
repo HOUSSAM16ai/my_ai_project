@@ -24,6 +24,8 @@ from types import ModuleType
 from typing import Any
 
 from .config import FactoryConfig
+from .config import FactoryConfig
+from .discovery import PlannerDiscovery
 from .exceptions import (
     NoActivePlannersError,
     PlannerInstantiationError,
@@ -127,6 +129,7 @@ class PlannerFactory:
         self._instance_cache: dict[str, BasePlanner] = {}
         self._planner_locks: dict[str, threading.Lock] = {}
         self._logger = logging.getLogger("overmind.factory")
+        self._discovery = PlannerDiscovery(self._config, self._logger)
 
         # Initialize telemetry
         self._telemetry = TelemetryManager(
@@ -182,29 +185,6 @@ class PlannerFactory:
             names.append(n)
         return sorted(names)
 
-    def _iter_submodules(self, package_name: str):
-        """Iterate over submodules of a package."""
-        try:
-            package = importlib.import_module(package_name)
-        except Exception as exc:
-            self._state.import_failures[package_name] = f"root import failed: {exc}"
-            self._log(f"Failed to import root package '{package_name}': {exc}", "ERROR")
-            return
-        if not hasattr(package, "__path__"):
-            return
-        for m in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-            yield m.name
-
-    def _import_module(self, module_name: str) -> ModuleType | None:
-        """Import module with error tracking."""
-        try:
-            return importlib.import_module(module_name)
-        except Exception as exc:
-            with self._state.lock:
-                self._state.import_failures[module_name] = str(exc)
-            self._log("Module import failed", "ERROR", module=module_name, error=str(exc))
-            return None
-
     def _get_planner_class(self, name: str):
         """Get planner class by name."""
         if hasattr(BasePlanner, "live_planner_classes"):
@@ -225,116 +205,6 @@ class PlannerFactory:
                 pass
         raise PlannerNotFound(name)
 
-    def _extract_attribute_set(self, obj: Any, attr: str) -> set[str]:
-        """Extract set attribute from object."""
-        if not hasattr(obj, attr):
-            return set()
-        val = getattr(obj, attr)
-        if isinstance(val, list | tuple | set):
-            return {str(v).strip() for v in val if v is not None}
-        return set()
-
-    def _extract_bool(self, obj: Any, attr: str) -> bool | None:
-        """Extract boolean attribute from object."""
-        if not hasattr(obj, attr):
-            return None
-        try:
-            return bool(getattr(obj, attr))
-        except Exception:
-            return None
-
-    def _extract_string(self, obj: Any, attr: str) -> str | None:
-        """Extract string attribute from object."""
-        if not hasattr(obj, attr):
-            return None
-        v = getattr(obj, attr)
-        return None if v is None else str(v)
-
-    def _file_fingerprint(self, root_package: str) -> str:
-        """Compute file fingerprint for discovery signature."""
-        if not self._config.deep_fingerprint:
-            return "na"
-        try:
-            pkg = importlib.import_module(root_package)
-            if not hasattr(pkg, "__path__"):
-                return "na"
-            names = []
-            for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
-                spec = importlib.util.find_spec(m.name)
-                path = (spec.origin or "") if spec and spec.origin else ""
-                mtime = "0"
-                if path and Path(path).exists():
-                    try:
-                        mtime = str(Path(path).stat().st_mtime)
-                    except Exception:
-                        pass
-                names.append(f"{m.name}@{mtime}")
-            raw = "|".join(sorted(names))
-            return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
-        except Exception:
-            return "na"
-
-    def _compute_discovery_signature(self, root: str) -> str:
-        """Compute discovery signature for caching."""
-        parts = [
-            root,
-            "|".join(sorted(self._config.manual_modules)),
-            "|".join(sorted(self._config.exclude_modules)),
-            FACTORY_VERSION,
-            self._file_fingerprint(root),
-        ]
-        return hashlib.md5("::".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
-
-    def _sync_registry_into_records(self):
-        """Sync BasePlanner registry into planner records."""
-        metadata_map = {}
-        if hasattr(BasePlanner, "planner_metadata"):
-            try:
-                metadata_map = BasePlanner.planner_metadata()
-            except Exception as e:
-                self._warn_once("planner_metadata_access", f"planner_metadata() failed: {e}")
-
-        live_classes = {}
-        if hasattr(BasePlanner, "live_planner_classes"):
-            try:
-                live_classes = BasePlanner.live_planner_classes()
-            except Exception as e:
-                self._warn_once("live_planner_classes_sync", f"live_planner_classes() failed: {e}")
-
-        for pname, cls in live_classes.items():
-            key = pname.lower().strip()
-            rec = self._state.planner_records.get(key)
-            if not rec:
-                rec = PlannerRecord(name=key)
-                self._state.planner_records[key] = rec
-
-            rec.module = getattr(cls, "__module__", rec.module)
-            rec.class_name = getattr(cls, "__name__", rec.class_name)
-            rec.capabilities |= self._extract_attribute_set(cls, "capabilities")
-            rec.tags |= self._extract_attribute_set(cls, "tags")
-            if rec.tier is None:
-                rec.tier = self._extract_string(cls, "tier")
-            if rec.version is None:
-                rec.version = self._extract_string(cls, "version")
-            if rec.production_ready is None:
-                rec.production_ready = self._extract_bool(cls, "production_ready")
-            if rec.quarantined is None:
-                rec.quarantined = self._extract_bool(cls, "quarantined")
-            if rec.self_test_passed is None:
-                rec.self_test_passed = self._extract_bool(cls, "self_test_passed")
-
-            meta = metadata_map.get(pname) if isinstance(metadata_map, dict) else None
-            if isinstance(meta, dict):
-                rec.reliability_score = meta.get("reliability_score", rec.reliability_score)
-                rec.total_invocations = meta.get("total_invocations", rec.total_invocations)
-                rec.total_failures = meta.get("total_failures", rec.total_failures)
-                rec.avg_duration_ms = meta.get("avg_duration_ms", rec.avg_duration_ms)
-                rec.tier = meta.get("tier", rec.tier)
-                rec.quarantined = meta.get("quarantined", rec.quarantined)
-                rec.self_test_passed = meta.get("self_test_passed", rec.self_test_passed)
-                rec.production_ready = meta.get("production_ready", rec.production_ready)
-                rec.version = meta.get("version", rec.version)
-
     def discover(self, force: bool = False, package: str | None = None):
         """
         Discover planners (metadata-only, no imports during discovery).
@@ -345,53 +215,17 @@ class PlannerFactory:
         """
         with self._state.lock:
             root = package or DEFAULT_ROOT_PACKAGE
-            signature = self._compute_discovery_signature(root)
-
-            if (
-                self._state.discovered
-                and not force
-                and not self._config.force_rediscover
-                and self._state.discovery_signature == signature
-            ):
+            if self._state.discovered and not force and not self._config.force_rediscover:
                 return
 
             start = time.perf_counter()
             self._state.discovery_runs += 1
-            self._state.import_failures.clear()
-            self._log(
-                f"Discovery run #{self._state.discovery_runs} (metadata-only)",
-                "INFO",
-                root=root,
-                signature=signature[:10],
-                run=self._state.discovery_runs,
-            )
 
-            # Import manual modules only
-            for m in self._config.manual_modules:
-                self._import_module(m)
+            records = self._discovery.discover_planners(root, self._config.manual_modules)
+            self._state.import_failures = self._discovery.get_import_failures()
 
-            # METADATA-ONLY: collect module names without importing
-            for fullname in list(self._iter_submodules(root) or []):
-                short = fullname.rsplit(".", 1)[-1]
-                if short in self._config.exclude_modules:
-                    continue
-                # Check whitelist
-                if short not in self._config.allowed_planners:
-                    self._log(
-                        "Skipping module not in ALLOWED_PLANNERS",
-                        "DEBUG",
-                        module=short,
-                        fullname=fullname,
-                    )
-                    continue
-                # Store metadata record WITHOUT importing
-                self._state.planner_records.setdefault(
-                    short.lower(),
-                    PlannerRecord(name=short.lower(), module=fullname, class_name="Planner"),
-                )
+            self._state.planner_records = self._discovery.sync_with_registry(records)
 
-            self._sync_registry_into_records()
-            self._state.discovery_signature = signature
             self._state.discovered = True
             elapsed = time.perf_counter() - start
             self._log(
@@ -399,7 +233,6 @@ class PlannerFactory:
                 "INFO",
                 duration_s=round(elapsed, 4),
                 planners=len(self._state.planner_records),
-                metadata_only=True,
             )
 
     def refresh_metadata(self):
@@ -407,7 +240,9 @@ class PlannerFactory:
         with self._state.lock:
             if not self._state.discovered:
                 return
-        self._sync_registry_into_records()
+            self._state.planner_records = self._discovery.sync_with_registry(
+                self._state.planner_records
+            )
 
     def _instantiate_planner(self, name: str) -> BasePlanner:
         """
@@ -546,39 +381,11 @@ class PlannerFactory:
             out.append(n)
         return sorted(out)
 
-    def select_best_planner(
-        self,
-        objective: str,
-        required_capabilities: Iterable[str] | None = None,
-        prefer_production: bool = True,
-        auto_instantiate: bool = True,
-        self_heal_on_empty: bool | None = None,
-        deep_context: dict[str, Any] | None = None,
-    ):
-        """
-        Select best planner for objective.
-
-        Args:
-            objective: Task objective
-            required_capabilities: Required capabilities
-            prefer_production: Prefer production-ready planners
-            auto_instantiate: Return instance if True, name if False
-            self_heal_on_empty: Attempt self-heal if no planners
-            deep_context: Deep context for scoring boosts
-
-        Returns:
-            Planner instance (if auto_instantiate=True) or planner name
-
-        Raises:
-            NoActivePlannersError: If no active planners available
-            PlannerSelectionError: If selection fails
-        """
+    def _prepare_candidate_planners(self, objective: str, self_heal_on_empty: bool | None):
+        """Prepare and filter candidate planners before ranking."""
         if not self._state.discovered:
             self.discover()
         self.refresh_metadata()
-
-        req_set = self._safe_lower_set(required_capabilities)
-        t0 = time.perf_counter()
 
         active = self._active_planner_names()
         if not active:
@@ -609,6 +416,70 @@ class PlannerFactory:
             raise PlannerSelectionError(
                 "No candidate planners matched constraints", context=objective
             )
+        return active_records
+
+    def _record_selection_telemetry(
+        self,
+        objective: str,
+        required_capabilities: set[str],
+        best_name: str,
+        best_score: float,
+        best_breakdown: dict,
+        ranked_count: int,
+        deep_context: dict | None,
+        duration_s: float,
+    ):
+        """Record telemetry data for a planner selection event."""
+        if not self._config.profile_selection:
+            return
+
+        self._telemetry.record_selection(
+            objective_len=len(objective or ""),
+            required_caps=sorted(required_capabilities),
+            best_planner=best_name,
+            score=best_score,
+            candidates_count=ranked_count,
+            deep_context=bool(deep_context and deep_context.get("deep_index_summary")),
+            hotspots_count=int(deep_context.get("hotspots_count", 0)) if deep_context else 0,
+            breakdown=best_breakdown,
+            duration_s=duration_s,
+            boost_config={
+                "deep_index_cap_boost": self._config.deep_index_cap_boost,
+                "hotspot_cap_boost": self._config.hotspot_cap_boost,
+                "hotspot_threshold": self._config.hotspot_threshold,
+            },
+        )
+
+    def select_best_planner(
+        self,
+        objective: str,
+        required_capabilities: Iterable[str] | None = None,
+        prefer_production: bool = True,
+        auto_instantiate: bool = True,
+        self_heal_on_empty: bool | None = None,
+        deep_context: dict[str, Any] | None = None,
+    ):
+        """
+        Select best planner for objective.
+
+        Args:
+            objective: Task objective
+            required_capabilities: Required capabilities
+            prefer_production: Prefer production-ready planners
+            auto_instantiate: Return instance if True, name if False
+            self_heal_on_empty: Attempt self-heal if no planners
+            deep_context: Deep context for scoring boosts
+
+        Returns:
+            Planner instance (if auto_instantiate=True) or planner name
+
+        Raises:
+            NoActivePlannersError: If no active planners available
+            PlannerSelectionError: If selection fails
+        """
+        t0 = time.perf_counter()
+        active_records = self._prepare_candidate_planners(objective, self_heal_on_empty)
+        req_set = self._safe_lower_set(required_capabilities)
 
         # Rank candidates
         ranked = rank_planners(
@@ -626,24 +497,16 @@ class PlannerFactory:
         best_score, best_name, best_breakdown = ranked[0]
         sel_elapsed = time.perf_counter() - t0
 
-        # Record telemetry
-        if self._config.profile_selection:
-            self._telemetry.record_selection(
-                objective_len=len(objective or ""),
-                required_caps=sorted(req_set),
-                best_planner=best_name,
-                score=best_score,
-                candidates_count=len(ranked),
-                deep_context=bool(deep_context and deep_context.get("deep_index_summary")),
-                hotspots_count=int(deep_context.get("hotspots_count", 0)) if deep_context else 0,
-                breakdown=best_breakdown,
-                duration_s=sel_elapsed,
-                boost_config={
-                    "deep_index_cap_boost": self._config.deep_index_cap_boost,
-                    "hotspot_cap_boost": self._config.hotspot_cap_boost,
-                    "hotspot_threshold": self._config.hotspot_threshold,
-                },
-            )
+        self._record_selection_telemetry(
+            objective=objective,
+            required_capabilities=req_set,
+            best_name=best_name,
+            best_score=best_score,
+            best_breakdown=best_breakdown,
+            ranked_count=len(ranked),
+            deep_context=deep_context,
+            duration_s=sel_elapsed,
+        )
 
         if auto_instantiate:
             return self.get_planner(best_name, auto_instantiate=True)
