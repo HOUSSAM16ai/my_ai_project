@@ -5,25 +5,24 @@ Revises: 20251107_rename_metadata_columns
 Create Date: 2025-11-11 14:42:00.000000
 
 """
-from alembic import op
-import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '20251111_drop_cosmic_security'
-down_revision = '20251107_rename_metadata_columns'
+revision = "20251111_drop_cosmic_security"
+down_revision = "20251107_rename_metadata_columns"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    op.drop_table('existential_transparency_logs')
-    op.drop_table('cosmic_governance_councils')
-    op.drop_table('existential_protocols')
-    op.drop_table('seces')
-    op.drop_table('cosmic_ledger')
-    op.drop_table('consciousness_signatures')
-    op.drop_table('existential_nodes')
+    op.drop_table("existential_transparency_logs")
+    op.drop_table("cosmic_governance_councils")
+    op.drop_table("existential_protocols")
+    op.drop_table("seces")
+    op.drop_table("cosmic_ledger")
+    op.drop_table("consciousness_signatures")
+    op.drop_table("existential_nodes")
 
 
 def downgrade():
