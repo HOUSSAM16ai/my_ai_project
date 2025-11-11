@@ -74,13 +74,30 @@ try:
 
     # Try to import models, but don't fail if they're not available
     try:
-        from app.models import Mission, User
+        from app.models import (
+            AdminConversation,
+            AdminMessage,
+            GeneratedPrompt,
+            Mission,
+            MissionEvent,
+            MissionPlan,
+            PromptTemplate,
+            Task,
+            User,
+        )
 
         MODELS_AVAILABLE = True
     except ImportError:
         MODELS_AVAILABLE = False
         Mission = None
         User = None
+        AdminConversation = None
+        AdminMessage = None
+        GeneratedPrompt = None
+        MissionEvent = None
+        MissionPlan = None
+        PromptTemplate = None
+        Task = None
 except ImportError:
     # If core imports fail, we can't run any tests
     create_app = None
@@ -90,6 +107,13 @@ except ImportError:
     MODELS_AVAILABLE = False
     Mission = None
     User = None
+    AdminConversation = None
+    AdminMessage = None
+    GeneratedPrompt = None
+    MissionEvent = None
+    MissionPlan = None
+    PromptTemplate = None
+    Task = None
 
 
 @pytest.fixture(scope="session")
