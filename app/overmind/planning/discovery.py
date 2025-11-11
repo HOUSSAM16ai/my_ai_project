@@ -7,18 +7,16 @@ This module contains the PlannerDiscovery class, which is responsible for
 discovering planners from the filesystem and metadata registries.
 """
 
-import hashlib
 import importlib
 import importlib.util
 import logging
 import pkgutil
-import time
-from pathlib import Path
 from types import ModuleType
 from typing import Any
 
 from .config import FactoryConfig
-from .factory_core import PlannerRecord, BasePlanner
+from .factory_core import BasePlanner, PlannerRecord
+
 
 class PlannerDiscovery:
     """
@@ -38,7 +36,9 @@ class PlannerDiscovery:
             extra={"component": "PlannerDiscovery", **fields},
         )
 
-    def discover_planners(self, root_package: str, manual_modules: list[str]) -> dict[str, PlannerRecord]:
+    def discover_planners(
+        self, root_package: str, manual_modules: list[str]
+    ) -> dict[str, PlannerRecord]:
         """
         Discover planners from a root package and manual modules.
         """
@@ -60,7 +60,9 @@ class PlannerDiscovery:
                     class_name="Planner",
                 )
 
-        self._log(f"Discovery complete. Found {len(discovered_records)} potential planners.", "INFO")
+        self._log(
+            f"Discovery complete. Found {len(discovered_records)} potential planners.", "INFO"
+        )
         return discovered_records
 
     def sync_with_registry(self, records: dict[str, PlannerRecord]) -> dict[str, PlannerRecord]:
