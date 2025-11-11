@@ -8,22 +8,15 @@ Core PlannerFactory class with isolated state management.
 Enables testability through instance-based state instead of global state.
 """
 
-import hashlib
-import importlib
-import importlib.util
 import inspect
 import json
 import logging
-import pkgutil
 import threading
 import time
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
-from types import ModuleType
 from typing import Any
 
-from .config import FactoryConfig
 from .config import FactoryConfig
 from .discovery import PlannerDiscovery
 from .exceptions import (
