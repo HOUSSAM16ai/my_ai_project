@@ -154,7 +154,7 @@ class PlannerDiscovery:
     def _extract_attribute_set(self, obj: Any, attr: str) -> set[str]:
         """Extract a set of strings from an object's attribute."""
         val = getattr(obj, attr, None)
-        if isinstance(val, (list, tuple, set)):
+        if isinstance(val, list | tuple | set):
             return {str(v).strip() for v in val if v is not None}
         return set()
 
