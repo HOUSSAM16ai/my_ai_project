@@ -17,7 +17,7 @@ reports.mkdir(exist_ok=True)
 with app.app_context():
     routes = []
     for rule in app.url_map.iter_rules():
-        methods = sorted(m for m in rule.methods if m not in {"HEAD","OPTIONS"})
+        methods = sorted(m for m in rule.methods if m not in {"HEAD", "OPTIONS"})
         routes.append({"rule": str(rule), "endpoint": rule.endpoint, "methods": methods})
     out["routes"] = routes
     out["blueprints"] = sorted(app.blueprints.keys())
