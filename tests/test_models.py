@@ -1,5 +1,3 @@
-
-
 def test_user_set_password(user_factory):
     """Test setting a user's password."""
     user = user_factory()
