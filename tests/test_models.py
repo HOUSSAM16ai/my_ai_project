@@ -1,5 +1,3 @@
-import pytest
-from app.models import User
 
 
 def test_user_set_password(user_factory):
