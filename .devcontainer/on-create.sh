@@ -23,18 +23,8 @@
 
 set -Eeuo pipefail
 
-# ألوان
-if [ -t 1 ]; then
-  RED=$(printf '\033[31m'); GREEN=$(printf '\033[32m'); YELLOW=$(printf '\033[33m')
-  CYAN=$(printf '\033[36m'); BOLD=$(printf '\033[1m'); RESET=$(printf '\033[0m')
-else
-  RED=""; GREEN=""; YELLOW=""; CYAN=""; BOLD=""; RESET=""
-fi
-
-log()  { printf "%s[INFO]%s %s\n"  "$CYAN"  "$RESET" "$1"; }
-ok()   { printf "%s[ OK ]%s %s\n"  "$GREEN" "$RESET" "$1"; }
-warn() { printf "%s[WARN]%s %s\n"  "$YELLOW" "$RESET" "$1"; }
-err()  { printf "%s[ERR ]%s %s\n"  "$RED"   "$RESET" "$1" >&2; }
+# Source utility functions
+source .devcontainer/utils.sh
 
 trap 'err "حدث خطأ غير متوقع (Line $LINENO)."' ERR
 
@@ -85,51 +75,6 @@ else
     fi
   fi
 fi
-
-# تحميل متغيرات من .env بطريقة آمنة - فقط إذا لم تكن Secrets موجودة
-load_env_file_if_needed() {
-  # إذا secrets موجودة، لا تحمّل .env
-  if [[ -n "${DATABASE_URL:-}" && -n "${OPENROUTER_API_KEY:-}" ]]; then
-    log "🔐 استخدام Codespaces Secrets (DATABASE_URL و OPENROUTER_API_KEY موجودة)"
-    return 0
-  fi
-
-  local env_file="${1:-.env}"
-  [[ ! -f "$env_file" ]] && return 0
-
-  log "📄 تحميل المتغيرات من $env_file"
-
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    # إزالة المسافات في الأطراف
-    line="${line#"${line%%[![:space:]]*}"}"
-    line="${line%"${line##*[![:space:]]}"}"
-    # تجاهل الفارغ والتعليقات
-    [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
-    # تخطي الأسطر غير المطابقة للشكل KEY=VALUE
-    [[ "$line" != *"="* ]] && continue
-
-    local key="${line%%=*}"
-    local val="${line#*=}"
-
-    # تنظيف المفتاح من المسافات
-    key="$(echo -n "$key" | sed -E 's/[[:space:]]+//g')"
-    # التحقق من صلاحية اسم المتغير
-    if ! [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-      continue
-    fi
-
-    # إزالة التعليقات الداخلية إن كانت القيمة غير محاطة باقتباس
-    if [[ "$val" != \"*\" && "$val" != \'*\' ]]; then
-      val="${val%%#*}"
-      val="${val%"${val##*[![:space:]]}"}"
-    fi
-
-    # لا تطغى على المتغير إن كان قادماً من Secrets
-    if [[ -z "${!key:-}" ]]; then
-      export "$key=$val"
-    fi
-  done < "$env_file"
-}
 
 load_env_file_if_needed ".env" || true
 

@@ -619,105 +619,10 @@ class BasePlanner:
                 f"Unexpected validation failure: {exc}", self.name, objective
             ) from exc
 
-        node_count = self._infer_node_count(plan) if include_node_count else None
         duration = time.perf_counter() - start
-        rel_score = self.current_reliability_score()
-
-        meta: dict[str, Any] = {
-            "planner": self.name,
-            "version": getattr(self, "version", None),
-            "duration_ms": round(duration * 1000.0, 2),
-            "node_count": node_count,
-            "objective_length": len(objective or ""),
-            "reliability_score": round(rel_score, 4),
-            "capabilities": sorted(getattr(self, "capabilities", [])),
-            "tier": getattr(self, "tier", "experimental"),
-            "production_ready": getattr(self, "production_ready", False),
-            "risk_rating": getattr(self, "risk_rating", "medium"),
-            "environment": _ENV,
-            "timestamp": time.time(),
-            "deep_context_used": bool(deep_context),
-        }
-        if extra_metadata:
-            meta.update(extra_metadata)
-
-        # Structural enrichment
-        struct_base = 0.0
-        struct_bonus = 0.0
-        drift_flag = False
-        grade_used = None
-        if _STRUCT_ENABLE and isinstance(plan, MissionPlanSchema) and plan.meta:
-            pm = plan.meta
-            grade_used = getattr(pm, "structural_quality_grade", None)
-
-            def _nz(v, default=0.0):
-                return v if isinstance(v, int | float) and v is not None else default
-
-            hotspot_density = _nz(getattr(pm, "hotspot_density", None))
-            layer_div = _nz(getattr(pm, "layer_diversity", None))
-            entropy = _nz(getattr(pm, "structural_entropy", None))
-
-            grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
-            grade_component = grade_map.get(grade_used, 0.5)
-
-            struct_base = (
-                grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy
-            ) / 4.0
-            struct_base = max(0.0, min(1.0, struct_base))
-
-            # Grade bonus
-            if grade_used == "A":
-                struct_bonus += _GRADE_BONUS_A
-            elif grade_used == "B":
-                struct_bonus += _GRADE_BONUS_B
-            else:
-                struct_bonus += _GRADE_BONUS_C
-
-            # Drift detection
-            prev = _LAST_STRUCT.get(self.name.lower())
-            task_count = len(getattr(plan, "tasks", []) or [])
-            if prev:
-                prev_tasks = prev.get("tasks", task_count)
-                prev_grade = prev.get("grade")
-                if (
-                    prev_tasks > 0
-                    and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO
-                ):
-                    drift_flag = True
-                if prev_grade and grade_used:
-                    order = {"A": 3, "B": 2, "C": 1}
-                    if (order.get(prev_grade, 2) - order.get(grade_used, 2)) >= _DRIFT_GRADE_DROP:
-                        drift_flag = True
-            _LAST_STRUCT[self.name.lower()] = {
-                "tasks": task_count,
-                "grade": grade_used,
-                "ts": time.time(),
-            }
-
-            meta.update(
-                {
-                    "struct_base_score": round(struct_base, 4),
-                    "struct_grade": grade_used,
-                    "struct_bonus": round(struct_bonus, 4),
-                    "struct_drift": drift_flag,
-                }
-            )
-
-            if grade_used == "A" and _RELIABILITY_NUDGE > 0:
-                meta["reliability_nudge_applied"] = True
-                meta["reliability_score_apparent"] = min(1.0, rel_score + _RELIABILITY_NUDGE)
-
-        base_selection = self.compute_selection_score(objective, None)
-        final_selection = base_selection
-        if _STRUCT_ENABLE and struct_base:
-            final_selection = min(
-                1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus
-            )
-
-        meta["selection_score_base"] = round(base_selection, 4)
-        meta["selection_score"] = round(final_selection, 4)
-
-        return {"plan": plan, "meta": meta}
+        return self._enrich_and_finalize_plan(
+            plan, objective, duration, deep_context, extra_metadata, include_node_count
+        )
 
     def _enrich_and_finalize_plan(
         self,

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_form_helpers.html" as forms %}
 
 {% block content %}
     <div class="content-section">
@@ -7,46 +8,10 @@
             {{ form.hidden_tag() }}
             <fieldset>
                 <legend>Join Today</legend>
-                
-                <div>
-                    {{ form.full_name.label }}<br>
-                    {{ form.full_name(size=32) }}
-                    {% if form.full_name.errors %}
-                        {% for error in form.full_name.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div>
-                    {{ form.email.label }}<br>
-                    {{ form.email(size=32) }}
-                    {% if form.email.errors %}
-                        {% for error in form.email.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div>
-                    {{ form.password.label }}<br>
-                    {{ form.password(size=32) }}
-                    {% if form.password.errors %}
-                        {% for error in form.password.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div>
-                    {{ form.confirm_password.label }}<br>
-                    {{ form.confirm_password(size=32) }}
-                    {% if form.confirm_password.errors %}
-                        {% for error in form.confirm_password.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+                {{ forms.render_field(form.full_name) }}
+                {{ forms.render_field(form.email) }}
+                {{ forms.render_field(form.password) }}
+                {{ forms.render_field(form.confirm_password) }}
             </fieldset>
             <div style="margin-top: 1em;">
                 {{ form.submit() }}
