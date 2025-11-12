@@ -60,7 +60,9 @@ def test_empty_response_handling_none_content(ai_service, mock_user):
     assert result["status"] == "error"
     assert "answer" in result
     assert result["answer"] is not None and len(result["answer"]) > 0
-    assert "لم يُرجع أي محتوى" in result["answer"] or "did not return any content" in result["answer"]
+    assert (
+        "لم يُرجع أي محتوى" in result["answer"] or "did not return any content" in result["answer"]
+    )
     assert "tokens_used" in result
     assert result["model_used"] == "anthropic/claude-3.7-sonnet:thinking"
 
@@ -76,13 +78,17 @@ def test_empty_response_handling_empty_string(ai_service, mock_user):
     mock_response.usage.total_tokens = 500
     mock_response.model = "openai/gpt-4o"
 
-    result = _run_test_with_mock_response(ai_service, mock_user, mock_response, "لماذا لا تظهر الكتابة")
+    result = _run_test_with_mock_response(
+        ai_service, mock_user, mock_response, "لماذا لا تظهر الكتابة"
+    )
 
     assert result is not None
     assert result["status"] == "error"
     assert "answer" in result
     assert len(result["answer"]) > 0
-    assert "لم يُرجع أي محتوى" in result["answer"] or "did not return any content" in result["answer"]
+    assert (
+        "لم يُرجع أي محتوى" in result["answer"] or "did not return any content" in result["answer"]
+    )
 
 
 def test_empty_response_with_tool_calls(ai_service, mock_user):
