@@ -122,7 +122,9 @@ class AnomalyDetector:
             "collective_anomalies": 0,
         }
 
-    def _calculate_combined_anomaly_score(self, metric_name: str, value: float) -> tuple[bool, float]:
+    def _calculate_combined_anomaly_score(
+        self, metric_name: str, value: float
+    ) -> tuple[bool, float]:
         """Calculates the combined anomaly score from various detection methods."""
         is_anomaly_zscore, score_zscore = self._detect_zscore_anomaly(metric_name, value)
         is_anomaly_iqr, score_iqr = self._detect_iqr_anomaly(metric_name, value)
@@ -148,7 +150,12 @@ class AnomalyDetector:
         return AnomalySeverity.LOW
 
     def _create_anomaly_object(
-        self, metric_name: str, value: float, score: float, severity: AnomalySeverity, context: dict | None
+        self,
+        metric_name: str,
+        value: float,
+        score: float,
+        severity: AnomalySeverity,
+        context: dict | None,
     ) -> Anomaly:
         """Creates and returns an Anomaly object."""
         expected_range = self.thresholds.get(metric_name, (0.0, float("inf")))
@@ -162,7 +169,9 @@ class AnomalyDetector:
             value=value,
             expected_range=expected_range,
             context=context or {},
-            recommended_action=self._get_recommended_action(metric_name, severity, value, expected_range),
+            recommended_action=self._get_recommended_action(
+                metric_name, severity, value, expected_range
+            ),
             description=f"Anomaly detected in {metric_name}: value {value:.2f} outside expected range {expected_range}",
         )
         self.anomalies.append(anomaly)
@@ -191,7 +200,9 @@ class AnomalyDetector:
 
         if is_anomaly:
             severity = self._determine_anomaly_severity(combined_score)
-            anomaly = self._create_anomaly_object(metric_name, value, combined_score, severity, context)
+            anomaly = self._create_anomaly_object(
+                metric_name, value, combined_score, severity, context
+            )
             return True, anomaly
 
         if len(self.metric_history[metric_name]) % 50 == 0:
