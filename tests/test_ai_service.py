@@ -236,7 +236,7 @@ def test_generate_code_with_context_api_error():
 
 @patch("ai_service.main.create_engine", side_effect=Exception("DB connection failed"))
 def test_lifespan_db_connection_failure(mock_create_engine):
-    with TestClient(app) as client:
+    with TestClient(app) as _:
         # The lifespan event should run on startup. We don't need to make a request.
         # We can check the app state to see if the session factory is None.
         assert app.state.db_session_factory is None
@@ -244,5 +244,5 @@ def test_lifespan_db_connection_failure(mock_create_engine):
 
 @patch.dict(os.environ, {"OPENROUTER_API_KEY": ""}, clear=True)
 def test_lifespan_no_api_key():
-    with TestClient(app) as client:
+    with TestClient(app) as _:
         assert app.state.ai_client is None
