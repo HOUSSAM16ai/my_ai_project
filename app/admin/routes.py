@@ -833,14 +833,15 @@ def get_database_health():
 
 @bp.route("/api/database/stats", methods=["GET"])
 @admin_required
-def get_db_stats():
+def get_database_stats():
     """API endpoint لجلب إحصائيات قاعدة البيانات"""
     if not database_service:
         return jsonify({"status": "error", "message": "Database service not available"}), 503
 
     try:
-        stats = database_service.get_database_stats()
-        return jsonify({"status": "success", "stats": stats})
+        # Re-use the health check which includes stats
+        stats = database_service.get_database_health()
+        return jsonify(stats)
     except Exception as e:
         current_app.logger.error(f"Get database stats failed: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500

@@ -13,7 +13,7 @@ Architecture: Sequential execution with short-circuit capability
 """
 
 import time
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from .base_middleware import BaseMiddleware
 from .context import RequestContext
@@ -90,75 +90,52 @@ class SmartPipeline:
                 return True
         return False
 
+    def _execute_middleware(
+        self, mw: BaseMiddleware, ctx: RequestContext, process_func: Callable[[RequestContext], MiddlewareResult]
+    ) -> MiddlewareResult | None:
+        """Helper to execute a single middleware and handle stats and errors."""
+        mw_start = time.time()
+        try:
+            result = process_func(ctx)
+            mw_time = time.time() - mw_start
+            self._update_middleware_stats(mw.name, True, mw_time)
+
+            if result.is_success:
+                mw.on_success(ctx)
+            else:
+                mw.on_error(ctx, Exception(result.message))
+            mw.on_complete(ctx, result)
+
+            return result if not result.should_continue else None
+        except Exception as e:
+            mw_time = time.time() - mw_start
+            self._update_middleware_stats(mw.name, False, mw_time)
+            mw.on_error(ctx, e)
+            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {str(e)}")
+            mw.on_complete(ctx, result)
+            return result
+
     def run(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Execute the middleware pipeline synchronously
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            MiddlewareResult from the last executed middleware
-            or the first failure
         """
         start_time = time.time()
         self._execution_stats["total_requests"] += 1
         final_result = MiddlewareResult.success()
 
         for mw in self.middlewares:
-            # Check if middleware should process this request
             if not mw.should_process(ctx):
                 continue
 
-            # Execute middleware
-            mw_start = time.time()
-            result = None
-
-            try:
-                result = mw.process_request(ctx)
-
-                # Track execution
-                mw_time = time.time() - mw_start
-                self._update_middleware_stats(mw.name, True, mw_time)
-
-                # Call lifecycle hooks
-                if result.is_success:
-                    mw.on_success(ctx)
-                else:
-                    mw.on_error(ctx, Exception(result.message))
-
-                mw.on_complete(ctx, result)
-
-                # Handle result
-                if not result.should_continue:
-                    final_result = result
-                    if not result.is_success:
-                        self._execution_stats["failed_requests"] += 1
-                    break
-
-            except Exception as e:
-                # Handle middleware exceptions
-                mw_time = time.time() - mw_start
-                self._update_middleware_stats(mw.name, False, mw_time)
-
-                # Call error hook
-                mw.on_error(ctx, e)
-
-                # Create error result
-                result = MiddlewareResult.internal_error(
-                    message=f"Middleware {mw.name} failed: {str(e)}"
-                )
-                mw.on_complete(ctx, result)
-
-                # Stop pipeline on error
+            result = self._execute_middleware(mw, ctx, mw.process_request)
+            if result:
                 final_result = result
-                self._execution_stats["failed_requests"] += 1
+                if not result.is_success:
+                    self._execution_stats["failed_requests"] += 1
                 break
 
-        # Update global stats
         total_time = time.time() - start_time
         self._execution_stats["total_execution_time"] += total_time
-
         if final_result.is_success:
             self._execution_stats["successful_requests"] += 1
 
@@ -167,75 +144,53 @@ class SmartPipeline:
     async def run_async(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Execute the middleware pipeline asynchronously
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            MiddlewareResult from the last executed middleware
-            or the first failure
         """
         start_time = time.time()
         self._execution_stats["total_requests"] += 1
         final_result = MiddlewareResult.success()
 
         for mw in self.middlewares:
-            # Check if middleware should process this request
             if not mw.should_process(ctx):
                 continue
 
-            # Execute middleware
-            mw_start = time.time()
-
-            try:
-                result = await mw.process_request_async(ctx)
-
-                # Track execution
-                mw_time = time.time() - mw_start
-                self._update_middleware_stats(mw.name, True, mw_time)
-
-                # Call lifecycle hooks
-                if result.is_success:
-                    mw.on_success(ctx)
-                else:
-                    mw.on_error(ctx, Exception(result.message))
-
-                mw.on_complete(ctx, result)
-
-                # Handle result
-                if not result.should_continue:
-                    final_result = result
-                    if not result.is_success:
-                        self._execution_stats["failed_requests"] += 1
-                    break
-
-            except Exception as e:
-                # Handle middleware exceptions
-                mw_time = time.time() - mw_start
-                self._update_middleware_stats(mw.name, False, mw_time)
-
-                # Call error hook
-                mw.on_error(ctx, e)
-
-                # Create error result
-                result = MiddlewareResult.internal_error(
-                    message=f"Middleware {mw.name} failed: {str(e)}"
-                )
-                mw.on_complete(ctx, result)
-
-                # Stop pipeline on error
+            result = await self._execute_middleware_async(mw, ctx, mw.process_request_async)
+            if result:
                 final_result = result
-                self._execution_stats["failed_requests"] += 1
+                if not result.is_success:
+                    self._execution_stats["failed_requests"] += 1
                 break
 
-        # Update global stats
         total_time = time.time() - start_time
         self._execution_stats["total_execution_time"] += total_time
-
         if final_result.is_success:
             self._execution_stats["successful_requests"] += 1
 
         return final_result
+
+    async def _execute_middleware_async(
+        self, mw: BaseMiddleware, ctx: RequestContext, process_func: Callable[[RequestContext], Awaitable[MiddlewareResult]]
+    ) -> MiddlewareResult | None:
+        """Async helper to execute a single middleware."""
+        mw_start = time.time()
+        try:
+            result = await process_func(ctx)
+            mw_time = time.time() - mw_start
+            self._update_middleware_stats(mw.name, True, mw_time)
+
+            if result.is_success:
+                mw.on_success(ctx)
+            else:
+                mw.on_error(ctx, Exception(result.message))
+            mw.on_complete(ctx, result)
+
+            return result if not result.should_continue else None
+        except Exception as e:
+            mw_time = time.time() - mw_start
+            self._update_middleware_stats(mw.name, False, mw_time)
+            mw.on_error(ctx, e)
+            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {str(e)}")
+            mw.on_complete(ctx, result)
+            return result
 
     def _update_middleware_stats(self, name: str, success: bool, execution_time: float):
         """Update statistics for a specific middleware"""
