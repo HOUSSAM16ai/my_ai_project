@@ -122,88 +122,78 @@ class AnomalyDetector:
             "collective_anomalies": 0,
         }
 
-    def check_value(
-        self, metric_name: str, value: float, context: dict[str, Any] | None = None
-    ) -> tuple[bool, Anomaly | None]:
-        """
-        Check if a value is anomalous
-
-        Returns:
-            (is_anomaly, anomaly_object)
-        """
-        self.stats["total_checked"] += 1
-
-        # Add to history
-        self.metric_history[metric_name].append(
-            {"value": value, "timestamp": time.time(), "context": context or {}}
-        )
-
-        # Need minimum data for analysis
-        if len(self.metric_history[metric_name]) < 10:
-            return False, None
-
-        # Calculate baseline if not exists
-        if metric_name not in self.baselines:
-            self._calculate_baseline(metric_name)
-
-        # Method 1: Z-Score anomaly detection
+    def _calculate_combined_anomaly_score(self, metric_name: str, value: float) -> tuple[bool, float]:
+        """Calculates the combined anomaly score from various detection methods."""
         is_anomaly_zscore, score_zscore = self._detect_zscore_anomaly(metric_name, value)
-
-        # Method 2: IQR (Interquartile Range) detection
         is_anomaly_iqr, score_iqr = self._detect_iqr_anomaly(metric_name, value)
-
-        # Method 3: Moving Average detection
         is_anomaly_ma, score_ma = self._detect_moving_average_anomaly(metric_name, value)
 
-        # Method 4: ML-based detection (if enabled)
         is_anomaly_ml, score_ml = False, 0.0
         if self.enable_ml:
             is_anomaly_ml, score_ml = self._detect_ml_anomaly(metric_name, value)
 
-        # Combine scores (weighted average)
         combined_score = score_zscore * 0.3 + score_iqr * 0.25 + score_ma * 0.25 + score_ml * 0.20
-
-        # Determine if anomalous
         is_anomaly = is_anomaly_zscore or is_anomaly_iqr or is_anomaly_ma or is_anomaly_ml
 
+        return is_anomaly, combined_score
+
+    def _determine_anomaly_severity(self, score: float) -> AnomalySeverity:
+        """Determines the anomaly severity based on its score."""
+        if score >= 0.9:
+            return AnomalySeverity.CRITICAL
+        if score >= 0.7:
+            return AnomalySeverity.HIGH
+        if score >= 0.5:
+            return AnomalySeverity.MEDIUM
+        return AnomalySeverity.LOW
+
+    def _create_anomaly_object(
+        self, metric_name: str, value: float, score: float, severity: AnomalySeverity, context: dict | None
+    ) -> Anomaly:
+        """Creates and returns an Anomaly object."""
+        expected_range = self.thresholds.get(metric_name, (0.0, float("inf")))
+        anomaly = Anomaly(
+            anomaly_id=f"anom_{int(time.time())}_{metric_name}",
+            timestamp=datetime.now(UTC),
+            anomaly_type=AnomalyType.POINT,
+            severity=severity,
+            score=score,
+            metric_name=metric_name,
+            value=value,
+            expected_range=expected_range,
+            context=context or {},
+            recommended_action=self._get_recommended_action(metric_name, severity, value, expected_range),
+            description=f"Anomaly detected in {metric_name}: value {value:.2f} outside expected range {expected_range}",
+        )
+        self.anomalies.append(anomaly)
+        self.stats["anomalies_detected"] += 1
+        self.stats["point_anomalies"] += 1
+        return anomaly
+
+    def check_value(
+        self, metric_name: str, value: float, context: dict[str, Any] | None = None
+    ) -> tuple[bool, Anomaly | None]:
+        """
+        Check if a value is anomalous. Refactored for clarity.
+        """
+        self.stats["total_checked"] += 1
+        self.metric_history[metric_name].append(
+            {"value": value, "timestamp": time.time(), "context": context or {}}
+        )
+
+        if len(self.metric_history[metric_name]) < 10:
+            return False, None
+
+        if metric_name not in self.baselines:
+            self._calculate_baseline(metric_name)
+
+        is_anomaly, combined_score = self._calculate_combined_anomaly_score(metric_name, value)
+
         if is_anomaly:
-            # Determine severity based on score
-            if combined_score >= 0.9:
-                severity = AnomalySeverity.CRITICAL
-            elif combined_score >= 0.7:
-                severity = AnomalySeverity.HIGH
-            elif combined_score >= 0.5:
-                severity = AnomalySeverity.MEDIUM
-            else:
-                severity = AnomalySeverity.LOW
-
-            # Get expected range
-            expected_range = self.thresholds.get(metric_name, (0.0, float("inf")))
-
-            # Create anomaly object
-            anomaly = Anomaly(
-                anomaly_id=f"anom_{int(time.time())}_{metric_name}",
-                timestamp=datetime.now(UTC),
-                anomaly_type=AnomalyType.POINT,
-                severity=severity,
-                score=combined_score,
-                metric_name=metric_name,
-                value=value,
-                expected_range=expected_range,
-                context=context or {},
-                recommended_action=self._get_recommended_action(
-                    metric_name, severity, value, expected_range
-                ),
-                description=f"Anomaly detected in {metric_name}: value {value:.2f} outside expected range {expected_range}",
-            )
-
-            self.anomalies.append(anomaly)
-            self.stats["anomalies_detected"] += 1
-            self.stats["point_anomalies"] += 1
-
+            severity = self._determine_anomaly_severity(combined_score)
+            anomaly = self._create_anomaly_object(metric_name, value, combined_score, severity, context)
             return True, anomaly
 
-        # Update baseline periodically
         if len(self.metric_history[metric_name]) % 50 == 0:
             self._calculate_baseline(metric_name)
 

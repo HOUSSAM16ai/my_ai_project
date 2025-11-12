@@ -31,63 +31,75 @@ from app.services import database_service
 database_cli = Blueprint("database_cli", __name__, cli_group="database")
 
 
+def _print_health_status(health):
+    """Prints the overall health status."""
+    status_icon = "✅" if health["status"] == "healthy" else "⚠️" if health["status"] == "degraded" else "❌"
+    click.echo(f"\n{status_icon} Status: {health['status'].upper()}")
+    click.echo(f"📅 Timestamp: {health['timestamp']}")
+
+
+def _print_health_checks(checks):
+    """Prints the results of individual health checks."""
+    if not checks:
+        return
+    click.echo("\n🔧 Health Checks:")
+    for check_name, check_data in checks.items():
+        check_icon = "✅" if check_data.get("status") == "ok" else "❌"
+        click.echo(f"  {check_icon} {check_name}: {check_data.get('status', 'unknown')}")
+        for key, value in check_data.items():
+            if key != "status":
+                click.echo(f"      {key}: {value}")
+
+
+def _print_health_metrics(metrics):
+    """Prints the health metrics."""
+    if not metrics:
+        return
+    click.echo("\n📊 Metrics:")
+    for metric_name, metric_value in metrics.items():
+        if isinstance(metric_value, dict):
+            click.echo(f"  📈 {metric_name}:")
+            for k, v in metric_value.items():
+                click.echo(f"      {k}: {v}")
+        else:
+            click.echo(f"  📈 {metric_name}: {metric_value}")
+
+
+def _print_health_warnings(warnings):
+    """Prints any health warnings."""
+    if not warnings:
+        return
+    click.echo(f"\n⚠️  Warnings ({len(warnings)}):")
+    for warning in warnings:
+        click.echo(f"  - {warning}")
+
+
+def _print_health_errors(errors):
+    """Prints any health errors."""
+    if not errors:
+        return
+    click.echo(f"\n❌ Errors ({len(errors)}):")
+    for error in errors:
+        click.echo(f"  - {error}")
+
+
 @database_cli.cli.command("health")
 @with_appcontext
 def check_health():
     """🏥 فحص صحة قاعدة البيانات - Check database health"""
     click.echo("🔍 Checking database health...")
     click.echo("=" * 60)
-
     try:
         health = database_service.get_database_health()
-
-        # Display status
-        status_icon = (
-            "✅"
-            if health["status"] == "healthy"
-            else "⚠️" if health["status"] == "degraded" else "❌"
-        )
-        click.echo(f"\n{status_icon} Status: {health['status'].upper()}")
-        click.echo(f"📅 Timestamp: {health['timestamp']}")
-
-        # Display checks
-        if health.get("checks"):
-            click.echo("\n🔧 Health Checks:")
-            for check_name, check_data in health["checks"].items():
-                check_icon = "✅" if check_data.get("status") == "ok" else "❌"
-                click.echo(f"  {check_icon} {check_name}: {check_data.get('status', 'unknown')}")
-                for key, value in check_data.items():
-                    if key != "status":
-                        click.echo(f"      {key}: {value}")
-
-        # Display metrics
-        if health.get("metrics"):
-            click.echo("\n📊 Metrics:")
-            for metric_name, metric_value in health["metrics"].items():
-                if isinstance(metric_value, dict):
-                    click.echo(f"  📈 {metric_name}:")
-                    for k, v in metric_value.items():
-                        click.echo(f"      {k}: {v}")
-                else:
-                    click.echo(f"  📈 {metric_name}: {metric_value}")
-
-        # Display warnings
-        if health.get("warnings"):
-            click.echo(f"\n⚠️  Warnings ({len(health['warnings'])}):")
-            for warning in health["warnings"]:
-                click.echo(f"  - {warning}")
-
-        # Display errors
-        if health.get("errors"):
-            click.echo(f"\n❌ Errors ({len(health['errors'])}):")
-            for error in health["errors"]:
-                click.echo(f"  - {error}")
-
+        _print_health_status(health)
+        _print_health_checks(health.get("checks"))
+        _print_health_metrics(health.get("metrics"))
+        _print_health_warnings(health.get("warnings"))
+        _print_health_errors(health.get("errors"))
         click.echo("\n" + "=" * 60)
         click.echo(
             "✅ Health check complete!" if health["status"] == "healthy" else "⚠️ Issues detected!"
         )
-
     except Exception as e:
         click.echo(f"❌ Health check failed: {str(e)}", err=True)
         raise click.Abort()

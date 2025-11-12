@@ -207,6 +207,92 @@ async def ai_token_stream(prompt: str, model: str | None = None) -> AsyncIterato
 # ======================================================================================
 
 
+def _get_chat_params(req):
+    """Extracts chat parameters from the Flask request."""
+    if req.method == "GET":
+        question = req.args.get("q", "").strip()
+        conversation_id = req.args.get("conversation_id")
+    else:
+        data = req.get_json() or {}
+        question = data.get("question", "").strip()
+        conversation_id = data.get("conversation_id")
+    return question, conversation_id
+
+
+async def _generate_sse_events(question: str, conversation_id: str | None) -> AsyncIterator[str]:
+    """Async generator for SSE events for the chat stream."""
+    event_id = 0
+    last_heartbeat = time.monotonic()
+
+    try:
+        # Send hello event
+        yield sse_event(
+            "hello",
+            {"ts": time.time(), "model": "gpt-4", "conversation_id": conversation_id},
+            eid=str(event_id),
+        )
+        event_id += 1
+
+        # Stream tokens
+        buffer = ""
+        token_count = 0
+
+        async for token in ai_token_stream(question):
+            buffer += token
+            token_count += 1
+
+            # Send chunk every N tokens or at punctuation
+            should_send = token_count % 8 == 0 or (token and token[-1] in ".!?,;:\n")
+
+            if should_send and buffer:
+                yield sse_event("delta", {"text": buffer}, eid=str(event_id))
+                event_id += 1
+                buffer = ""
+
+            # Send heartbeat every 20 seconds
+            now = time.monotonic()
+            if now - last_heartbeat > 20:
+                yield sse_event("ping", "🔧", eid=str(event_id))
+                event_id += 1
+                last_heartbeat = now
+
+        # Send remaining buffer
+        if buffer:
+            yield sse_event("delta", {"text": buffer}, eid=str(event_id))
+            event_id += 1
+
+        # Send completion event
+        yield sse_event("done", {"reason": "stop", "tokens": token_count}, eid=str(event_id))
+
+    except Exception as e:
+        logger.error(f"SSE streaming error: {e}", exc_info=True)
+        # Send error event instead of crashing silently
+        yield sse_event(
+            "error",
+            {"message": str(e)[:500], "type": type(e).__name__},
+            eid=str(event_id),
+        )
+
+
+def _run_async_generator_in_sync(async_gen: AsyncIterator[str]):
+    """
+    Sync wrapper to run an async generator.
+    Creates a new event loop for the request.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        while True:
+            try:
+                chunk = loop.run_until_complete(async_gen.__anext__())
+                yield chunk
+            except StopAsyncIteration:
+                break
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
+
+
 @bp.route("/chat", methods=["GET", "POST"])
 @login_required
 def sse_chat():
@@ -222,21 +308,9 @@ def sse_chat():
         - conversation_id: Optional conversation ID
 
     Response:
-        Server-Sent Events stream with:
-        - event: hello (initial connection)
-        - event: delta (content chunks)
-        - event: done (completion)
-        - event: error (errors)
-        - event: ping (heartbeat every 20s)
+        Server-Sent Events stream with various events like 'hello', 'delta', 'done', 'error', 'ping'.
     """
-    # Get parameters
-    if request.method == "GET":
-        question = request.args.get("q", "").strip()
-        conversation_id = request.args.get("conversation_id")
-    else:
-        data = request.get_json() or {}
-        question = data.get("question", "").strip()
-        conversation_id = data.get("conversation_id")
+    question, conversation_id = _get_chat_params(request)
 
     if not question:
 
@@ -252,111 +326,9 @@ def sse_chat():
             },
         )
 
-    async def generate_async():
-        """Async generator for SSE events"""
-        event_id = 0
-        last_heartbeat = time.monotonic()
+    async_gen = _generate_sse_events(question, conversation_id)
+    sync_gen = _run_async_generator_in_sync(async_gen)
 
-        try:
-            # Send hello event
-            yield sse_event(
-                "hello",
-                {"ts": time.time(), "model": "gpt-4", "conversation_id": conversation_id},
-                eid=str(event_id),
-            )
-            event_id += 1
-
-            # Stream tokens
-            buffer = ""
-            token_count = 0
-
-            async for token in ai_token_stream(question):
-                # Check for client disconnect
-                # Note: In Flask, we can't directly check is_disconnected in async context
-                # This would need to be handled differently in production
-
-                buffer += token
-                token_count += 1
-
-                # Send chunk every N tokens or at punctuation
-                should_send = token_count % 8 == 0 or (token and token[-1] in ".!?,;:\n")
-
-                if should_send and buffer:
-                    yield sse_event(
-                        "delta",
-                        {"text": buffer},
-                        eid=str(event_id),
-                    )
-                    event_id += 1
-                    buffer = ""
-
-                # Send heartbeat every 20 seconds
-                now = time.monotonic()
-                if now - last_heartbeat > 20:
-                    yield sse_event("ping", "🔧", eid=str(event_id))
-                    event_id += 1
-                    last_heartbeat = now
-
-            # Send remaining buffer
-            if buffer:
-                yield sse_event(
-                    "delta",
-                    {"text": buffer},
-                    eid=str(event_id),
-                )
-                event_id += 1
-
-            # Send completion event
-            yield sse_event(
-                "done",
-                {"reason": "stop", "tokens": token_count},
-                eid=str(event_id),
-            )
-
-        except Exception as e:
-            logger.error(f"SSE streaming error: {e}", exc_info=True)
-            # Send error event instead of crashing silently
-            yield sse_event(
-                "error",
-                {"message": str(e)[:500], "type": type(e).__name__},
-                eid=str(event_id),
-            )
-
-    def generate_sync():
-        """
-        Sync wrapper for async generator.
-
-        Note: Creates a new event loop for this request. In a production async
-        framework (like FastAPI), you would use native async/await instead.
-        For Flask sync context, this is the standard approach.
-        """
-        # Check if we're in an async context already
-        try:
-            asyncio.get_running_loop()
-            # If we're here, there's already a loop - this shouldn't happen in Flask sync
-            logger.warning("Unexpected: already in async context")
-            raise RuntimeError("Cannot run in existing event loop")
-        except RuntimeError:
-            # Good - no running loop, we can create one
-            pass
-
-        # Create event loop for this request
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            async_gen = generate_async()
-            while True:
-                try:
-                    chunk = loop.run_until_complete(async_gen.__anext__())
-                    yield chunk
-                except StopAsyncIteration:
-                    break
-        finally:
-            # Always clean up the loop
-            loop.close()
-            asyncio.set_event_loop(None)
-
-    # Return SSE response with proper headers
     headers = {
         "Cache-Control": "no-cache, no-transform",
         "Content-Type": "text/event-stream; charset=utf-8",
@@ -364,7 +336,7 @@ def sse_chat():
         "X-Accel-Buffering": "no",  # For NGINX
     }
 
-    return Response(stream_with_context(generate_sync()), headers=headers)
+    return Response(stream_with_context(sync_gen), headers=headers)
 
 
 @bp.route("/progress/<task_id>", methods=["GET"])
