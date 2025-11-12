@@ -55,34 +55,28 @@ def test_planner_registration():
 def test_planner_registration_with_allow_list():
     with patch.dict(os.environ, {"PLANNERS_ALLOW": "allowed_planner"}, clear=True):
         importlib.reload(base_planner)
-
         class AllowedPlanner(base_planner.BasePlanner):
             name = "allowed_planner"
             allow_registration = True
-
         class DisallowedPlanner(base_planner.BasePlanner):
             name = "disallowed_planner"
             allow_registration = True
-
     assert "allowed_planner" in base_planner.BasePlanner._registry
     assert "disallowed_planner" not in base_planner.BasePlanner._registry
     base_planner.BasePlanner._registry.pop("allowed_planner", None)
-    importlib.reload(base_planner)  # revert to original state
+    importlib.reload(base_planner) # revert to original state
 
 
 def test_planner_registration_with_block_list():
     with patch.dict(os.environ, {"PLANNERS_BLOCK": "blocked_planner"}, clear=True):
         importlib.reload(base_planner)
-
         class BlockedPlanner(base_planner.BasePlanner):
             name = "blocked_planner"
             allow_registration = True
-
         class NormalPlanner(base_planner.BasePlanner):
             name = "normal_planner"
             allow_registration = True
-
     assert "blocked_planner" not in base_planner.BasePlanner._registry
     assert "normal_planner" in base_planner.BasePlanner._registry
     base_planner.BasePlanner._registry.pop("normal_planner", None)
-    importlib.reload(base_planner)  # revert to original state
+    importlib.reload(base_planner) # revert to original state

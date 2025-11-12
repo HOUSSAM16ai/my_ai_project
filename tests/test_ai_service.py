@@ -63,10 +63,7 @@ def test_generate_code_with_context():
 
     # Assert the response
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "success",
-        "generated_code": "def new_function():\n    pass",
-    }
+    assert response.json() == {"status": "success", "generated_code": "def new_function():\n    pass"}
 
 
 def test_test_ai_connection():
@@ -91,10 +88,7 @@ def test_test_ai_connection():
 
     # Assert the response
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "success",
-        "message": "Successfully connected. 3 models available.",
-    }
+    assert response.json() == {"status": "success", "message": "Successfully connected. 3 models available."}
 
 
 def test_get_user_count():
@@ -242,7 +236,7 @@ def test_generate_code_with_context_api_error():
 
 @patch("ai_service.main.create_engine", side_effect=Exception("DB connection failed"))
 def test_lifespan_db_connection_failure(mock_create_engine):
-    with TestClient(app) as _:
+    with TestClient(app) as client:
         # The lifespan event should run on startup. We don't need to make a request.
         # We can check the app state to see if the session factory is None.
         assert app.state.db_session_factory is None
@@ -250,5 +244,5 @@ def test_lifespan_db_connection_failure(mock_create_engine):
 
 @patch.dict(os.environ, {"OPENROUTER_API_KEY": ""}, clear=True)
 def test_lifespan_no_api_key():
-    with TestClient(app) as _:
+    with TestClient(app) as client:
         assert app.state.ai_client is None
