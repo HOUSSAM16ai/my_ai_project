@@ -91,7 +91,10 @@ class SmartPipeline:
         return False
 
     def _execute_middleware(
-        self, mw: BaseMiddleware, ctx: RequestContext, process_func: Callable[[RequestContext], MiddlewareResult]
+        self,
+        mw: BaseMiddleware,
+        ctx: RequestContext,
+        process_func: Callable[[RequestContext], MiddlewareResult],
     ) -> MiddlewareResult | None:
         """Helper to execute a single middleware and handle stats and errors."""
         mw_start = time.time()
@@ -168,7 +171,10 @@ class SmartPipeline:
         return final_result
 
     async def _execute_middleware_async(
-        self, mw: BaseMiddleware, ctx: RequestContext, process_func: Callable[[RequestContext], Awaitable[MiddlewareResult]]
+        self,
+        mw: BaseMiddleware,
+        ctx: RequestContext,
+        process_func: Callable[[RequestContext], Awaitable[MiddlewareResult]],
     ) -> MiddlewareResult | None:
         """Async helper to execute a single middleware."""
         mw_start = time.time()
