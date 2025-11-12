@@ -6,10 +6,12 @@ from unittest.mock import MagicMock, patch
 
 client = TestClient(app)
 
+
 def test_read_root():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"status": "AI Oracle Online"}
+
 
 def test_chat_completion():
     # Create a mock AI client
@@ -35,6 +37,7 @@ def test_chat_completion():
     assert response.status_code == 200
     assert response.json() == {"status": "success", "data": "Test response"}
 
+
 def test_generate_code_with_context():
     # Create a mock AI client
     mock_ai_client = MagicMock(spec=openai.OpenAI)
@@ -58,7 +61,11 @@ def test_generate_code_with_context():
 
     # Assert the response
     assert response.status_code == 200
-    assert response.json() == {"status": "success", "generated_code": "def new_function():\n    pass"}
+    assert response.json() == {
+        "status": "success",
+        "generated_code": "def new_function():\n    pass",
+    }
+
 
 def test_test_ai_connection():
     # Create a mock AI client
@@ -82,7 +89,11 @@ def test_test_ai_connection():
 
     # Assert the response
     assert response.status_code == 200
-    assert response.json() == {"status": "success", "message": "Successfully connected. 3 models available."}
+    assert response.json() == {
+        "status": "success",
+        "message": "Successfully connected. 3 models available.",
+    }
+
 
 def test_get_user_count():
     # Create a mock DB session
@@ -105,6 +116,7 @@ def test_get_user_count():
     # Assert the response
     assert response.status_code == 200
     assert response.json() == {"status": "success", "data": 10}
+
 
 def test_list_all_users():
     # Create a mock DB session
@@ -132,6 +144,7 @@ def test_list_all_users():
     assert response.status_code == 200
     assert response.json() == {"status": "success", "data": mock_users}
 
+
 def test_chat_completion_api_error():
     # Create a mock AI client that raises an exception
     mock_ai_client = MagicMock(spec=openai.OpenAI)
@@ -153,6 +166,7 @@ def test_chat_completion_api_error():
     # Assert the response
     assert response.status_code == 500
     assert response.json() == {"detail": "API Error"}
+
 
 def test_get_user_count_db_error():
     # Create a mock DB session that raises an exception
@@ -176,6 +190,7 @@ def test_get_user_count_db_error():
     assert response.status_code == 500
     assert response.json() == {"detail": "Database query failed: DB query failed"}
 
+
 def test_list_all_users_db_error():
     # Create a mock DB session that raises an exception
     mock_db_session = MagicMock()
@@ -197,6 +212,7 @@ def test_list_all_users_db_error():
     # Assert the response
     assert response.status_code == 500
     assert response.json() == {"detail": "Database query failed: DB query failed"}
+
 
 def test_generate_code_with_context_api_error():
     # Create a mock AI client that raises an exception
@@ -221,12 +237,14 @@ def test_generate_code_with_context_api_error():
     assert response.status_code == 500
     assert response.json() == {"detail": "API Error"}
 
+
 @patch("ai_service.main.create_engine", side_effect=Exception("DB connection failed"))
 def test_lifespan_db_connection_failure(mock_create_engine):
     with TestClient(app) as client:
         # The lifespan event should run on startup. We don't need to make a request.
         # We can check the app state to see if the session factory is None.
         assert app.state.db_session_factory is None
+
 
 @patch.dict(os.environ, {"OPENROUTER_API_KEY": ""}, clear=True)
 def test_lifespan_no_api_key():
