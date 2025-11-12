@@ -33,7 +33,9 @@ database_cli = Blueprint("database_cli", __name__, cli_group="database")
 
 def _print_health_status(health):
     """Prints the overall health status."""
-    status_icon = "✅" if health["status"] == "healthy" else "⚠️" if health["status"] == "degraded" else "❌"
+    status_icon = (
+        "✅" if health["status"] == "healthy" else "⚠️" if health["status"] == "degraded" else "❌"
+    )
     click.echo(f"\n{status_icon} Status: {health['status'].upper()}")
     click.echo(f"📅 Timestamp: {health['timestamp']}")
 
