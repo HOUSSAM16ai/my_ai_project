@@ -13,7 +13,8 @@ Architecture: Sequential execution with short-circuit capability
 """
 
 import time
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from .base_middleware import BaseMiddleware
 from .context import RequestContext
