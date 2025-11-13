@@ -35,6 +35,7 @@ rich>=13.7.0
 # --- Asynchronous Services (for ai_service) ---
 fastapi
 uvicorn
+httpx
 
 # --- API Enhancement & Validation ---
 marshmallow>=3.20.0
