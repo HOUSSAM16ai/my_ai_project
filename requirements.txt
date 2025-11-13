@@ -55,6 +55,7 @@ pytest-cov
 pytest-timeout
 pytest-asyncio
 requests
+Faker>=18.0.0
 
 # --- Code Quality & Linting (Superhuman Edition) ---
 # Formatters
