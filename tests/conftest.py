@@ -1,11 +1,13 @@
 # tests/conftest.py
-import pytest
-from app import create_app, db as _db
-from app.models import User, Mission
 from unittest.mock import MagicMock, patch
+
+import pytest
 from faker import Faker
 from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.engine import Connection
+
+from app import create_app
+from app import db as _db
+from app.models import Mission, User
 
 # Initialize Faker
 fake = Faker()

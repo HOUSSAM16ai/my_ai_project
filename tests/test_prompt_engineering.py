@@ -9,12 +9,11 @@ from unittest.mock import Mock, patch
 import pytest
 
 from app import db
-from app.models import GeneratedPrompt, PromptTemplate, User
+from app.models import GeneratedPrompt, PromptTemplate
 from app.services.prompt_engineering_service import (
     PromptEngineeringService,
     get_prompt_engineering_service,
 )
-
 
 # Remove local fixtures - use the ones from conftest.py instead
 # The conftest.py provides: app, db, session, client, admin_user

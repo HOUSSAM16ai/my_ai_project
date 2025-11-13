@@ -1,6 +1,4 @@
 # tests/test_sse_streaming.py
-import json
-import pytest
 
 
 def login_admin(client, admin_user):

@@ -1,6 +1,4 @@
 # tests/test_admin_chat_complex_questions.py
-import json
-import pytest
 
 
 def login_admin(client, admin_user):
