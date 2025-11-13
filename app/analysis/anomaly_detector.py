@@ -397,7 +397,7 @@ class AnomalyDetector:
                 expected_range=(0.0, 0.0),
                 context={"window_minutes": window_minutes, "anomalous_ratio": ratio},
                 recommended_action="INVESTIGATE_SYSTEM_WIDE_ISSUE",
-                description=f"Collective anomaly in {metric_name}: {ratio*100:.1f}% of recent data points are anomalous",
+                description=f"Collective anomaly in {metric_name}: {ratio * 100:.1f}% of recent data points are anomalous",
             )
 
             self.anomalies.append(anomaly)

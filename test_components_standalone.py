@@ -254,7 +254,7 @@ def run_all_tests():
     print("=" * 60)
     print(f"✅ Tests passed: {passed}/{len(tests)}")
     print(f"❌ Tests failed: {failed}/{len(tests)}")
-    print(f"🎯 Success rate: {(passed/len(tests)*100):.1f}%")
+    print(f"🎯 Success rate: {(passed / len(tests) * 100):.1f}%")
 
     if failed == 0:
         print("\n🏆 ALL COMPONENTS WORKING PERFECTLY!")

@@ -175,11 +175,11 @@ class DatabaseShardingManager:
         ]
 
         for i, (start, end) in enumerate(ranges):
-            shard_id = f"shard-range-{i+1}"
+            shard_id = f"shard-range-{i + 1}"
             shard = DatabaseShard(
                 shard_id=shard_id,
                 name=f"Range Shard {start}-{end}",
-                connection_string=f"postgresql://db-{i+1}:5432/shard_{i+1}",
+                connection_string=f"postgresql://db-{i + 1}:5432/shard_{i + 1}",
                 state=ShardState.ACTIVE,
                 role=ReplicationRole.MASTER,
                 range_start=start,
@@ -189,11 +189,11 @@ class DatabaseShardingManager:
             # إنشاء النسخ المتماثلة
             replica_ids = []
             for r in range(self.config.replicas_per_shard):
-                replica_id = f"{shard_id}-replica-{r+1}"
+                replica_id = f"{shard_id}-replica-{r + 1}"
                 replica = DatabaseShard(
                     shard_id=replica_id,
-                    name=f"Replica {r+1} of {shard.name}",
-                    connection_string=f"postgresql://db-{i+1}-replica-{r+1}:5432/shard_{i+1}",
+                    name=f"Replica {r + 1} of {shard.name}",
+                    connection_string=f"postgresql://db-{i + 1}-replica-{r + 1}:5432/shard_{i + 1}",
                     state=ShardState.ACTIVE,
                     role=ReplicationRole.REPLICA,
                     range_start=start,
@@ -208,11 +208,11 @@ class DatabaseShardingManager:
     def _init_hash_shards(self):
         """تهيئة Hash-based Shards"""
         for i in range(self.config.num_shards):
-            shard_id = f"shard-hash-{i+1}"
+            shard_id = f"shard-hash-{i + 1}"
             shard = DatabaseShard(
                 shard_id=shard_id,
-                name=f"Hash Shard {i+1}",
-                connection_string=f"postgresql://db-hash-{i+1}:5432/shard_{i+1}",
+                name=f"Hash Shard {i + 1}",
+                connection_string=f"postgresql://db-hash-{i + 1}:5432/shard_{i + 1}",
                 state=ShardState.ACTIVE,
                 role=ReplicationRole.MASTER,
             )
@@ -220,11 +220,11 @@ class DatabaseShardingManager:
             # إنشاء النسخ
             replica_ids = []
             for r in range(self.config.replicas_per_shard):
-                replica_id = f"{shard_id}-replica-{r+1}"
+                replica_id = f"{shard_id}-replica-{r + 1}"
                 replica = DatabaseShard(
                     shard_id=replica_id,
-                    name=f"Replica {r+1} of {shard.name}",
-                    connection_string=f"postgresql://db-hash-{i+1}-r{r+1}:5432/shard_{i+1}",
+                    name=f"Replica {r + 1} of {shard.name}",
+                    connection_string=f"postgresql://db-hash-{i + 1}-r{r + 1}:5432/shard_{i + 1}",
                     state=ShardState.ACTIVE,
                     role=ReplicationRole.REPLICA,
                 )
@@ -252,11 +252,11 @@ class DatabaseShardingManager:
             # نسخ متماثلة في نفس المنطقة
             replica_ids = []
             for r in range(self.config.replicas_per_shard):
-                replica_id = f"{shard_id}-replica-{r+1}"
+                replica_id = f"{shard_id}-replica-{r + 1}"
                 replica = DatabaseShard(
                     shard_id=replica_id,
-                    name=f"Replica {r+1} in {region}",
-                    connection_string=f"postgresql://db-{region}-r{r+1}:5432/{region}",
+                    name=f"Replica {r + 1} in {region}",
+                    connection_string=f"postgresql://db-{region}-r{r + 1}:5432/{region}",
                     state=ShardState.ACTIVE,
                     role=ReplicationRole.REPLICA,
                     region=region,
