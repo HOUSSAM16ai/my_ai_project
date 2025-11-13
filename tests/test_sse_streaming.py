@@ -2,10 +2,11 @@
 import json
 import pytest
 
-def login_admin(client):
+def login_admin(client, admin_user):
+    """Helper to login as admin user"""
     return client.post('/login', data=dict(
-        email='admin@test.com',
-        password='password'
+        email=admin_user.email,
+        password='1111'  # Match admin_user fixture password
     ), follow_redirects=True)
 
 def test_admin_chat_stream_requires_auth(client, init_database):
@@ -13,8 +14,12 @@ def test_admin_chat_stream_requires_auth(client, init_database):
     # Non-logged in users are redirected to login page by default from Flask-Login
     assert response.status_code == 302
 
-def test_admin_chat_stream_sse_format(client, init_database, mock_ai_gateway):
-    login_admin(client)
+def test_admin_chat_stream_sse_format(client, init_database, admin_user, mock_ai_gateway):
+    # Login with the admin user
+    login_response = login_admin(client, admin_user)
+    assert login_response.status_code == 200
+    
+    # Now make the actual request
     response = client.get("/admin/api/chat/stream?question=hello")
     assert response.status_code == 200
     assert 'text/event-stream' in response.content_type

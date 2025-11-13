@@ -29,35 +29,87 @@ def db(app):
 
 
 @pytest.fixture(scope='function')
-def session(db):
+def session(app, db):
     """
     Creates a new database session for a test.
-    - Uses SAVEPOINTs for nested transactions.
-    - Rolls back to the SAVEPOINT after the test.
-    - Closes the connection to release it back to the pool.
+    
+    CRITICAL FIX for Problem #1 (Inconsistent DB State):
+    - Ensures test and Flask app share the same database session
+    - Uses nested transactions for proper isolation
+    - Maintains app context throughout the test
     """
-    connection = db.engine.connect()
-    transaction = connection.begin()
+    with app.app_context():
+        # Start a connection
+        connection = db.engine.connect()
+        transaction = connection.begin()
 
-    # Use scoped_session to ensure the session is managed properly
-    options = dict(bind=connection, binds={})
-    session = scoped_session(sessionmaker(**options))
+        # Override the default session with one bound to our connection
+        # This is the KEY to ensuring both test code and app code see the same data
+        options = dict(bind=connection, binds={})
+        session_factory = sessionmaker(**options)
+        test_session = scoped_session(session_factory)
+        
+        # Replace db.session with our test session
+        # This ensures all queries in the app and tests use the same session
+        old_session = db.session
+        db.session = test_session
 
-    # The session is now bound to the connection, and the transaction has begun.
-    db.session = session
+        yield test_session
 
-    yield session
-
-    # Rollback the transaction and close the connection
-    transaction.rollback()
-    connection.close()
-    session.remove()
+        # Cleanup: rollback transaction and restore original session
+        test_session.remove()
+        transaction.rollback()
+        connection.close()
+        db.session = old_session
 
 
-@pytest.fixture(scope='module')
-def client(app):
-    """A test client for the app."""
+@pytest.fixture(scope='function')
+def client(app, session):
+    """
+    A test client for the app.
+    
+    CRITICAL FIX for Problem #2 (Authentication Persistence):
+    - Depends on session fixture to ensure shared database state
+    - Returns client directly without context manager to avoid nesting
+    - App context is maintained by the session fixture
+    """
     return app.test_client()
+
+@pytest.fixture(scope='function')
+def admin_user(app, session):
+    """
+    Create an admin user for testing.
+    
+    FIX for Problem #1 & #2:
+    - Creates admin user in the shared session
+    - Ensures user persists for authentication tests
+    """
+    user = User(
+        email='admin@test.com',
+        full_name='Admin User',
+        is_admin=True
+    )
+    user.set_password('1111')
+    session.add(user)
+    session.commit()
+    return user
+
+
+@pytest.fixture(scope='function')
+def init_database(app, db, session):
+    """
+    Initialize database with basic data.
+    
+    FIX for Problem #2:
+    - Ensures database is ready for authentication tests
+    - Creates tables if needed
+    - Provides clean state for each test
+    """
+    # Tables are already created by the db fixture
+    # This fixture just ensures they're ready
+    yield db
+    # Cleanup happens in session fixture
+
 
 @pytest.fixture
 def mock_ai_gateway():
@@ -85,7 +137,13 @@ def mock_ai_gateway():
 # -----------------------------------------------------------------------------
 @pytest.fixture
 def user_factory(session):
-    """Factory to create a user."""
+    """
+    Factory to create a user.
+    
+    FIX for Problem #1:
+    - Uses the shared session
+    - Commits to ensure data is visible to both test and app code
+    """
     def _user_factory(**kwargs):
         defaults = {
             'email': fake.email(),
@@ -100,13 +158,19 @@ def user_factory(session):
             user.set_password('password')
 
         session.add(user)
-        # We don't commit here; let the test decide when to commit.
+        session.commit()  # Commit to make visible to app code
         return user
     return _user_factory
 
 @pytest.fixture
 def mission_factory(session, user_factory):
-    """Factory to create a mission."""
+    """
+    Factory to create a mission.
+    
+    FIX for Problem #1:
+    - Uses the shared session
+    - Commits to ensure data is visible
+    """
     def _mission_factory(**kwargs):
         # Ensure there's an initiator for the mission
         if 'initiator' not in kwargs and 'initiator_id' not in kwargs:
@@ -120,5 +184,6 @@ def mission_factory(session, user_factory):
 
         mission = Mission(**defaults)
         session.add(mission)
+        session.commit()  # Commit to make visible to app code
         return mission
     return _mission_factory
