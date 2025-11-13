@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20251111_drop_cosmic_security"
-down_revision = "20251107_rename_metadata_columns"
+down_revision = None
 branch_labels = None
 depends_on = None
 
