@@ -9,6 +9,7 @@ from ai_service_standalone.main import ALGORITHM, SECRET_KEY, app
 
 client = TestClient(app)
 
+
 def test_stream_chat_endpoint():
     token = jwt.encode(
         {
@@ -27,13 +28,13 @@ def test_stream_chat_endpoint():
     assert response.status_code == 200
 
     # Collect and parse the streaming response
-    lines = response.text.strip().split('\n')
+    lines = response.text.strip().split("\n")
     chunks = [json.loads(line.replace("data: ", "")) for line in lines if line]
 
     assert len(chunks) > 0
 
     # Reconstruct the full response
-    full_content = "".join(c['payload']['content'] for c in chunks if c['type'] == 'data')
+    full_content = "".join(c["payload"]["content"] for c in chunks if c["type"] == "data")
 
     assert "Hello, world!" in full_content
-    assert chunks[-1]['type'] == 'end'
+    assert chunks[-1]["type"] == "end"

@@ -65,9 +65,9 @@ class TestHorizontalScalingOrchestrator:
         # Register servers
         for i in range(3):
             server = orchestrator.register_server(
-                server_id=f"server-{i+1}",
-                name=f"Server {i+1}",
-                ip_address=f"10.0.0.{i+1}",
+                server_id=f"server-{i + 1}",
+                name=f"Server {i + 1}",
+                ip_address=f"10.0.0.{i + 1}",
                 port=8000 + i,
                 region=RegionZone.US_EAST,
             )
@@ -164,7 +164,11 @@ class TestHorizontalScalingOrchestrator:
         # Register servers
         for i in range(3):
             server = orchestrator.register_server(
-                f"server-{i+1}", f"Server {i+1}", f"10.0.0.{i+1}", 8000 + i, RegionZone.US_EAST
+                f"server-{i + 1}",
+                f"Server {i + 1}",
+                f"10.0.0.{i + 1}",
+                8000 + i,
+                RegionZone.US_EAST,
             )
             lb.add_server(server)
 
@@ -214,7 +218,11 @@ class TestHorizontalScalingOrchestrator:
         # Register servers with high CPU usage
         for i in range(5):
             server = orchestrator.register_server(
-                f"server-{i+1}", f"Server {i+1}", f"10.0.0.{i+1}", 8000 + i, RegionZone.US_EAST
+                f"server-{i + 1}",
+                f"Server {i + 1}",
+                f"10.0.0.{i + 1}",
+                8000 + i,
+                RegionZone.US_EAST,
             )
             server.cpu_usage = 85.0  # High CPU!
             server.state = ServerState.HEALTHY
@@ -242,7 +250,11 @@ class TestHorizontalScalingOrchestrator:
         # Register some servers
         for i in range(3):
             orchestrator.register_server(
-                f"server-{i+1}", f"Server {i+1}", f"10.0.0.{i+1}", 8000 + i, RegionZone.US_EAST
+                f"server-{i + 1}",
+                f"Server {i + 1}",
+                f"10.0.0.{i + 1}",
+                8000 + i,
+                RegionZone.US_EAST,
             )
 
         # Run health checks
@@ -260,7 +272,11 @@ class TestHorizontalScalingOrchestrator:
         # Register servers
         for i in range(5):
             server = orchestrator.register_server(
-                f"server-{i+1}", f"Server {i+1}", f"10.0.0.{i+1}", 8000 + i, RegionZone.US_EAST
+                f"server-{i + 1}",
+                f"Server {i + 1}",
+                f"10.0.0.{i + 1}",
+                8000 + i,
+                RegionZone.US_EAST,
             )
             server.cpu_usage = 50.0
             server.memory_usage = 60.0
@@ -304,7 +320,11 @@ class TestChaosMonkey:
         # Register healthy servers
         for i in range(10):
             orchestrator.register_server(
-                f"server-{i+1}", f"Server {i+1}", f"10.0.0.{i+1}", 8000 + i, RegionZone.US_EAST
+                f"server-{i + 1}",
+                f"Server {i + 1}",
+                f"10.0.0.{i + 1}",
+                8000 + i,
+                RegionZone.US_EAST,
             )
 
         # Enable chaos with high probability

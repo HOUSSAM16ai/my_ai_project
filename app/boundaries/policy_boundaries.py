@@ -219,7 +219,7 @@ class PolicyEngine:
 
         # الرفض الافتراضي (Default Deny)
         logger.info(
-            f"⚠️ Access denied (no matching policy): " f"{principal.id} -> {action} on {resource}"
+            f"⚠️ Access denied (no matching policy): {principal.id} -> {action} on {resource}"
         )
         return False
 

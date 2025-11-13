@@ -231,7 +231,7 @@ def main():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"  {status} - {test}")
 
-    print(f"\n{passed}/{total} tests passed ({passed/total*100:.0f}%)")
+    print(f"\n{passed}/{total} tests passed ({passed / total * 100:.0f}%)")
 
     if passed == total:
         print("\n🎉 ALL TESTS PASSED! Streaming is properly configured!")

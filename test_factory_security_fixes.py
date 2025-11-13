@@ -74,9 +74,9 @@ def test_sandboxed_import_comment():
     import inspect
 
     source = inspect.getsource(factory._import_module_sandboxed)
-    assert (
-        "NOT sandboxed yet" in source or "not sandboxed" in source.lower()
-    ), "Comment should clarify import is not actually sandboxed"
+    assert "NOT sandboxed yet" in source or "not sandboxed" in source.lower(), (
+        "Comment should clarify import is not actually sandboxed"
+    )
 
     print("✓ Test P0-2: Sandboxed import comment updated")
 
@@ -96,9 +96,9 @@ def test_per_planner_locks():
 
     assert lock1 is not lock2, "Different planners should have different locks"
     assert lock1 is lock1_again, "Same planner should get same lock"
-    assert hasattr(lock1, "acquire") and hasattr(
-        lock1, "release"
-    ), "Should return a lock-like object"
+    assert hasattr(lock1, "acquire") and hasattr(lock1, "release"), (
+        "Should return a lock-like object"
+    )
 
     print("✓ Test P0-3: Per-planner locks prevent race conditions")
 
@@ -113,9 +113,9 @@ def test_shared_data_locking():
 
     assert result is None, "Should return None for failed import"
     with factory._STATE.lock:
-        assert (
-            test_module in factory._STATE.import_failures
-        ), "Failed import should be recorded in import_failures"
+        assert test_module in factory._STATE.import_failures, (
+            "Failed import should be recorded in import_failures"
+        )
 
     print("✓ Test P0-4: Shared data structures properly locked")
 
@@ -234,12 +234,12 @@ def test_ring_buffer_trimming():
     factory.refresh_metadata()
 
     # Verify buffers are trimmed
-    assert (
-        len(factory._STATE.selection_profile_samples) <= max_profiles
-    ), f"Selection profiles should be trimmed to {max_profiles}"
-    assert (
-        len(factory._STATE.instantiation_profile_samples) <= max_profiles
-    ), f"Instantiation profiles should be trimmed to {max_profiles}"
+    assert len(factory._STATE.selection_profile_samples) <= max_profiles, (
+        f"Selection profiles should be trimmed to {max_profiles}"
+    )
+    assert len(factory._STATE.instantiation_profile_samples) <= max_profiles, (
+        f"Instantiation profiles should be trimmed to {max_profiles}"
+    )
 
     print("✓ Test P3-11: Ring buffer trimming prevents memory growth")
 

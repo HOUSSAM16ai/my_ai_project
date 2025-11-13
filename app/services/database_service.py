@@ -387,7 +387,9 @@ def execute_query(sql: str) -> dict[str, Any]:
                     lambda v: (
                         v.isoformat()
                         if isinstance(v, datetime)
-                        else str(v) if v is not None else None
+                        else str(v)
+                        if v is not None
+                        else None
                     )
                 )(row[i])
                 for i, c in enumerate(columns)
