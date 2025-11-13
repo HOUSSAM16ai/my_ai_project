@@ -12,8 +12,9 @@
 #     `template_folder`.
 
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import wraps
+import jwt
 
 from flask import (
     Response,
@@ -28,7 +29,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app import db
+from app import db, socketio
 from app.admin import bp
 
 # --- [THE GRAND BLUEPRINT IMPORTS] ---
@@ -370,6 +371,22 @@ def _generate_chat_stream(question, conversation_id, use_deep_context):
         yield f'event: error\nid: {event_id}\ndata: {{"message": "{error_msg[:500]}", "type": "{type(e).__name__}"}}\n\n'
 
 
+@bp.route("/api/generate-token")
+@admin_required
+def generate_token():
+    """Generates a short-lived JWT for WebSocket authentication."""
+    token = jwt.encode(
+        {
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
+            "iat": datetime.now(timezone.utc),
+            "sub": current_user.id,
+        },
+        current_app.config["SECRET_KEY"],
+        algorithm="HS256",
+    )
+    return jsonify({"token": token})
+
+
 @bp.route("/api/chat/stream", methods=["GET", "POST"])
 @admin_required
 def handle_chat_stream():
@@ -402,6 +419,50 @@ def handle_chat_stream():
         "X-Accel-Buffering": "no",
     }
     return Response(stream_with_context(stream_generator), headers=headers)
+
+
+
+
+@socketio.on("connect", namespace="/chat")
+def handle_connect():
+    """Handles WebSocket connection."""
+    current_app.logger.info("Client connected to WebSocket")
+
+
+@socketio.on("disconnect", namespace="/chat")
+def handle_disconnect():
+    """Handles WebSocket disconnection."""
+    current_app.logger.info("Client disconnected from WebSocket")
+
+
+@socketio.on("chat_message", namespace="/chat")
+def handle_chat_message(data):
+    """Handles incoming chat messages and starts the AI response stream."""
+    question = data.get("question")
+    conversation_id = data.get("conversation_id")
+    current_app.logger.info(
+        f"Received chat message via WebSocket: {question}, conversation_id: {conversation_id}"
+    )
+
+    try:
+        from app.services.admin_ai_service import get_admin_ai_service
+        from flask_login import current_user
+
+        if not current_user.is_authenticated:
+            socketio.emit("error", {"error": "Authentication required"})
+            return
+
+        service = get_admin_ai_service()
+        # Run the streaming service in a background thread
+        socketio.start_background_task(
+            service.answer_question_ws,
+            question=question,
+            user=current_user,
+            conversation_id=conversation_id,
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error handling WebSocket message: {e}", exc_info=True)
+        socketio.emit("error", {"error": str(e)})
 
 
 @bp.route("/api/analyze-project", methods=["POST"])

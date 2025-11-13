@@ -34,7 +34,7 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from app import db
+from app import db, socketio
 from app.models import (
     AdminConversation,
     AdminMessage,
@@ -304,6 +304,96 @@ class AdminAIService:
         except Exception as e:
             self.logger.error(f"Failed to save analysis to conversation: {e}", exc_info=True)
 
+    def _prepare_chat_context(self, question, user, conversation_id, use_deep_context):
+        # This function is a direct copy of the context building logic
+        # from the original answer_question method.
+        conversation_history = []
+        deep_index_summary = None
+        context_summary = None
+
+        if conversation_id:
+            conversation = db.session.get(AdminConversation, conversation_id)
+            if conversation and conversation.user_id == user.id:
+                conversation_history = self._get_conversation_history(conversation_id)
+                deep_index_summary = conversation.deep_index_summary
+                if len(conversation_history) > MAX_CONTEXT_MESSAGES:
+                    context_summary = self._generate_conversation_summary(
+                        conversation, conversation_history
+                    )
+
+        related_context = []
+        if system_service and hasattr(system_service, "find_related_context"):
+            try:
+                ctx_result = system_service.find_related_context(
+                    question, limit=MAX_RELATED_CONTEXT_CHUNKS
+                )
+                if ctx_result.ok:
+                    related_context = ctx_result.data.get("results", [])
+            except Exception as e:
+                self.logger.warning(f"Failed to get related context: {e}")
+
+        system_prompt = self._build_super_system_prompt(
+            deep_index_summary=deep_index_summary if use_deep_context else None,
+            related_context=related_context,
+            conversation_summary=context_summary if conversation_id else None,
+        )
+
+        messages = [{"role": "system", "content": system_prompt}]
+        messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
+        messages.append({"role": "user", "content": question})
+
+        return messages, conversation_id
+
+    def answer_question_ws(
+        self,
+        question: str,
+        user: User,
+        conversation_id: int | None = None,
+        use_deep_context: bool = True,
+    ):
+        """
+        WebSocket version of answer_question that streams the response.
+        """
+        start_time = time.time()
+        full_response = ""
+        try:
+            messages, conversation_id = self._prepare_chat_context(
+                question, user, conversation_id, use_deep_context
+            )
+
+            client = get_llm_client()
+            if not client:
+                socketio.emit("error", {"error": "AI service not available"})
+                return
+
+            stream = client.chat.completions.create(
+                model=DEFAULT_MODEL or "openai/gpt-4o",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=4000,
+                stream=True,
+            )
+
+            for chunk in stream:
+                content = chunk.choices[0].delta.content or ""
+                if content:
+                    full_response += content
+                    socketio.emit("chat_response", {"data": content})
+
+            if conversation_id:
+                self._save_message(conversation_id, "user", question)
+                self._save_message(
+                    conversation_id,
+                    "assistant",
+                    full_response,
+                    model_used=DEFAULT_MODEL,
+                    latency_ms=(time.time() - start_time) * 1000,
+                )
+
+        except Exception as e:
+            self.logger.error(f"WebSocket chat failed: {e}", exc_info=True)
+            socketio.emit("error", {"error": str(e)})
+
     def answer_question(
         self,
         question: str,
@@ -311,216 +401,11 @@ class AdminAIService:
         conversation_id: int | None = None,
         use_deep_context: bool = True,
     ) -> dict[str, Any]:
-        """
-        الإجابة على سؤال باستخدام السياق الكامل للمشروع.
-
-        Args:
-            question: السؤال
-            user: المستخدم
-            conversation_id: معرف المحادثة
-            use_deep_context: استخدام السياق العميق
-
-        Returns:
-            Dict يحتوي على الإجابة والمعلومات الإضافية
-        """
         start_time = time.time()
-
         try:
-            # ============================================================
-            # SUPERHUMAN ERROR PREVENTION - Validate AI availability first
-            # ============================================================
-            if not get_llm_client:
-                error_msg = (
-                    "⚠️ خدمة الذكاء الاصطناعي غير متاحة حالياً.\n\n"
-                    "AI service is currently unavailable.\n\n"
-                    "**Possible reasons:**\n"
-                    "- LLM client service not loaded\n"
-                    "- Missing dependencies\n\n"
-                    "**Solution:** Please contact the administrator to configure the AI service."
-                )
-                return {
-                    "status": "error",
-                    "error": "AI service unavailable",
-                    "answer": error_msg,
-                    "elapsed_seconds": round(time.time() - start_time, 2),
-                }
-
-            # Check if API keys are configured
-            api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                error_msg = (
-                    "⚠️ لم يتم تكوين مفاتيح API للذكاء الاصطناعي.\n\n"
-                    "AI API keys are not configured.\n\n"
-                    "**Required Configuration:**\n"
-                    "Please set one of the following environment variables:\n"
-                    "- `OPENROUTER_API_KEY` (recommended)\n"
-                    "- `OPENAI_API_KEY`\n\n"
-                    "**How to fix:**\n"
-                    "1. Create a `.env` file in the project root\n"
-                    "2. Add: `OPENROUTER_API_KEY=sk-or-v1-your-key-here`\n"
-                    "3. Restart the application\n\n"
-                    "**Get your API key:**\n"
-                    "- OpenRouter: https://openrouter.ai/keys\n"
-                    "- OpenAI: https://platform.openai.com/api-keys"
-                )
-                self.logger.warning("AI API key not configured - cannot answer questions")
-                return {
-                    "status": "error",
-                    "error": "API key not configured",
-                    "answer": error_msg,
-                    "elapsed_seconds": round(time.time() - start_time, 2),
-                }
-
-            conversation_history = []
-            deep_index_summary = None
-            context_summary = None  # For long conversation summaries
-
-            # ============================================================
-            # SUPERHUMAN SECURITY - Validate conversation ownership
-            # ============================================================
-            if conversation_id:
-                conversation = db.session.get(AdminConversation, conversation_id)
-
-                # Security check: ensure conversation exists and belongs to user
-                if not conversation:
-                    error_msg = (
-                        f"⚠️ المحادثة #{conversation_id} غير موجودة.\n\n"
-                        f"Conversation #{conversation_id} not found.\n\n"
-                        f"**Possible reasons:**\n"
-                        f"- Conversation was deleted or archived\n"
-                        f"- Invalid conversation ID\n\n"
-                        f"**Solution:**\n"
-                        f"Start a new conversation or select an existing one from the sidebar."
-                    )
-                    self.logger.warning(
-                        f"User {user.id} tried to access non-existent conversation {conversation_id}"
-                    )
-                    return {
-                        "status": "error",
-                        "error": "Conversation not found",
-                        "answer": error_msg,
-                        "elapsed_seconds": round(time.time() - start_time, 2),
-                    }
-
-                if conversation.user_id != user.id:
-                    error_msg = (
-                        "⚠️ ليس لديك صلاحية للوصول إلى هذه المحادثة.\n\n"
-                        "You don't have permission to access this conversation.\n\n"
-                        "**Security Notice:**\n"
-                        "This conversation belongs to another user.\n\n"
-                        "**Solution:**\n"
-                        "Please use your own conversations or start a new one."
-                    )
-                    self.logger.warning(
-                        f"User {user.id} attempted unauthorized access to conversation {conversation_id} "
-                        f"(owner: {conversation.user_id})"
-                    )
-                    return {
-                        "status": "error",
-                        "error": "Unauthorized access",
-                        "answer": error_msg,
-                        "elapsed_seconds": round(time.time() - start_time, 2),
-                    }
-
-                # Load conversation history and context
-                conversation_history = self._get_conversation_history(conversation_id)
-                deep_index_summary = conversation.deep_index_summary
-
-                # SUPERHUMAN FEATURE: Smart context summarization for long conversations
-                # If conversation has many messages, provide a summary to the AI
-                context_summary = None
-                if len(conversation_history) > MAX_CONTEXT_MESSAGES:
-                    context_summary = self._generate_conversation_summary(
-                        conversation, conversation_history
-                    )
-                    self.logger.info(
-                        f"Generated context summary for long conversation #{conversation_id}"
-                    )
-
-                self.logger.info(
-                    f"Continuing conversation #{conversation_id} for user {user.id} "
-                    f"(history: {len(conversation_history)} messages, "
-                    f"summary: {'yes' if context_summary else 'no'})"
-                )
-
-            related_context = []
-            if system_service and hasattr(system_service, "find_related_context"):
-                try:
-                    ctx_result = system_service.find_related_context(
-                        question, limit=MAX_RELATED_CONTEXT_CHUNKS
-                    )
-                    if ctx_result.ok:
-                        related_context = ctx_result.data.get("results", [])
-                except Exception as e:
-                    self.logger.warning(f"Failed to get related context: {e}")
-
-            # Build system prompt with comprehensive error handling
-            try:
-                system_prompt = self._build_super_system_prompt(
-                    deep_index_summary=deep_index_summary if use_deep_context else None,
-                    related_context=related_context,
-                    conversation_summary=context_summary if conversation_id else None,
-                )
-            except Exception as e:
-                self.logger.error(f"Failed to build system prompt: {e}", exc_info=True)
-                # Use minimal fallback prompt
-                system_prompt = (
-                    "أنت مساعد ذكاء اصطناعي متخصص في مساعدة المستخدمين.\n"
-                    "You are an AI assistant specialized in helping users."
-                )
-
-            # ============================================================
-            # SUPERHUMAN VALIDATION - Check question length with EXTREME support
-            # ============================================================
-            question_length = len(question)
-            is_long_question = question_length > LONG_QUESTION_THRESHOLD
-            is_extreme_question = question_length > EXTREME_QUESTION_THRESHOLD
-
-            if question_length > MAX_QUESTION_LENGTH:
-                error_msg = (
-                    f"⚠️ السؤال طويل جداً ({question_length:,} حرف).\n\n"
-                    f"Question is too long ({question_length:,} characters).\n\n"
-                    f"**Maximum allowed:** {MAX_QUESTION_LENGTH:,} characters\n"
-                    f"**Your question:** {question_length:,} characters\n\n"
-                    f"**💡 للأسئلة الخارقة التعقيد (For Extremely Complex Questions):**\n"
-                    f"يمكنك تفعيل الوضع الخارق عن طريق:\n"
-                    f"You can enable extreme mode by:\n"
-                    f"1. Set `LLM_EXTREME_COMPLEXITY_MODE=1` in .env\n"
-                    f"2. Set `ADMIN_AI_MAX_QUESTION_LENGTH=200000` for very large inputs\n\n"
-                    f"**Possible solutions:**\n"
-                    f"1. Break your question into smaller parts\n"
-                    f"2. Summarize your question while keeping key details\n"
-                    f"3. Focus on the most important aspects first\n"
-                    f"4. Enable extreme complexity mode for unlimited processing\n\n"
-                    f"**Tip:** You can ask follow-up questions to explore specific details after getting an initial answer."
-                )
-                self.logger.warning(
-                    f"User {user.id} submitted question exceeding max length: {question_length} > {MAX_QUESTION_LENGTH}"
-                )
-                return {
-                    "status": "error",
-                    "error": "Question too long",
-                    "answer": error_msg,
-                    "elapsed_seconds": round(time.time() - start_time, 2),
-                }
-
-            if is_extreme_question:
-                self.logger.info(
-                    f"🚀 EXTREME COMPLEXITY QUESTION detected for user {user.id}: "
-                    f"{question_length} characters (extreme threshold: {EXTREME_QUESTION_THRESHOLD})"
-                )
-            elif is_long_question:
-                self.logger.info(
-                    f"Processing long question for user {user.id}: {question_length} characters (threshold: {LONG_QUESTION_THRESHOLD})"
-                )
-
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
-            messages.append({"role": "user", "content": question})
-
-            # ============================================================
-            # SUPERHUMAN AI INVOCATION - With comprehensive error handling
-            # ============================================================
+            messages, conversation_id = self._prepare_chat_context(
+                question, user, conversation_id, use_deep_context
+            )
             try:
                 client = get_llm_client()
 
