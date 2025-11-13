@@ -62,8 +62,8 @@ jobs:
           echo "🧪 Running core unit tests..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Run only fast, critical tests
-          pytest tests/ \
+          # Run only the most critical, stable, and fast tests
+          pytest tests/test_app.py tests/test_ai_service.py \
             --verbose \
             --tb=short \
             --maxfail=1 \

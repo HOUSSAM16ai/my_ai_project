@@ -1,0 +1,85 @@
+openapi: 3.0.3
+info:
+  title: AI Service API
+  version: 1.0.0
+  description: |
+    Superhuman, enterprise-grade API for the AI Service.
+    Provides a clear, robust, and scalable interface for all AI interactions,
+    facilitating seamless communication between the Flask frontend and the FastAPI AI service.
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/v1/chat/stream:
+    post:
+      summary: Request a streamed chat response
+      operationId: streamChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: A successful streaming response.
+          content:
+            application/x-ndjson:
+              schema:
+                $ref: '#/components/schemas/ChatStreamResponse'
+        '400':
+          description: Bad Request - Invalid input.
+        '401':
+          description: Unauthorized - Invalid or missing authentication.
+        '500':
+          description: Internal Server Error.
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The user's question.
+          example: "What is the project's architecture?"
+        conversation_id:
+          type: string
+          description: An optional ID to maintain conversation context.
+          example: "conv_12345"
+      required:
+        - question
+
+    ChatStreamResponse:
+      type: object
+      description: |
+        A single chunk of the streaming response, formatted as server-sent events (SSE)
+        or newline-delimited JSON (NDJSON). This contract uses NDJSON for simplicity.
+      properties:
+        type:
+          type: string
+          enum: [data, error, end]
+          description: The type of the stream chunk.
+        payload:
+          type: object
+          description: The data payload for the chunk.
+          properties:
+            content:
+              type: string
+              description: The text content of the chunk (for 'data' type).
+            error_message:
+              type: string
+              description: The error message (for 'error' type).
+            conversation_id:
+              type: string
+              description: The updated conversation ID (for 'end' type).
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
