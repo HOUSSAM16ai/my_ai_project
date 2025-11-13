@@ -1,8 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
-from ai_service_standalone.main import app, SECRET_KEY, ALGORITHM
+from datetime import UTC, datetime, timedelta
+
 import jwt
-from datetime import datetime, timedelta, timezone
+from fastapi.testclient import TestClient
+
+from ai_service_standalone.main import ALGORITHM, SECRET_KEY, app
 
 client = TestClient(app)
 
@@ -10,8 +11,8 @@ client = TestClient(app)
 def test_websocket_connection():
     token = jwt.encode(
         {
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(UTC) + timedelta(minutes=15),
+            "iat": datetime.now(UTC),
             "sub": "123",
         },
         SECRET_KEY,
