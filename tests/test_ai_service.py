@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 client = TestClient(app)
 
+
 def test_websocket_connection():
     token = jwt.encode(
         {

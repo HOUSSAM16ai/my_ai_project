@@ -342,7 +342,12 @@ class AdminAIService:
         messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
         messages.append({"role": "user", "content": question})
 
-        return messages, conversation_id
+        return {
+            "messages": messages,
+            "conversation_id": conversation_id,
+            "related_context": related_context,
+            "deep_index_summary": deep_index_summary,
+        }
 
     def answer_question_ws(
         self,
@@ -357,9 +362,11 @@ class AdminAIService:
         start_time = time.time()
         full_response = ""
         try:
-            messages, conversation_id = self._prepare_chat_context(
+            context = self._prepare_chat_context(
                 question, user, conversation_id, use_deep_context
             )
+            messages = context["messages"]
+            conversation_id = context["conversation_id"]
 
             client = get_llm_client()
             if not client:
@@ -403,9 +410,21 @@ class AdminAIService:
     ) -> dict[str, Any]:
         start_time = time.time()
         try:
-            messages, conversation_id = self._prepare_chat_context(
+            # ============================================================
+            # SUPERHUMAN PREPARATION - Calculate question metrics first
+            # ============================================================
+            question_length = len(question)
+            is_long_question = question_length > LONG_QUESTION_THRESHOLD
+            is_extreme_question = question_length > EXTREME_QUESTION_THRESHOLD
+
+            context = self._prepare_chat_context(
                 question, user, conversation_id, use_deep_context
             )
+            messages = context["messages"]
+            conversation_id = context["conversation_id"]
+            related_context = context["related_context"]
+            deep_index_summary = context["deep_index_summary"]
+
             try:
                 client = get_llm_client()
 
