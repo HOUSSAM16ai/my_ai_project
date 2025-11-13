@@ -362,9 +362,7 @@ class AdminAIService:
         start_time = time.time()
         full_response = ""
         try:
-            context = self._prepare_chat_context(
-                question, user, conversation_id, use_deep_context
-            )
+            context = self._prepare_chat_context(question, user, conversation_id, use_deep_context)
             messages = context["messages"]
             conversation_id = context["conversation_id"]
 
@@ -417,9 +415,7 @@ class AdminAIService:
             is_long_question = question_length > LONG_QUESTION_THRESHOLD
             is_extreme_question = question_length > EXTREME_QUESTION_THRESHOLD
 
-            context = self._prepare_chat_context(
-                question, user, conversation_id, use_deep_context
-            )
+            context = self._prepare_chat_context(question, user, conversation_id, use_deep_context)
             messages = context["messages"]
             conversation_id = context["conversation_id"]
             related_context = context["related_context"]
