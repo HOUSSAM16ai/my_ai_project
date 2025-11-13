@@ -48,24 +48,12 @@ class AIServiceGateway:
             # This can be enhanced later with actual streaming
             yield {
                 "type": "data",
-                "payload": {
-                    "content": f"Processing question: {question[:100]}..."
-                }
+                "payload": {"content": f"Processing question: {question[:100]}..."},
             }
-            yield {
-                "type": "end",
-                "payload": {
-                    "conversation_id": conversation_id or "temp"
-                }
-            }
+            yield {"type": "end", "payload": {"conversation_id": conversation_id or "temp"}}
         except Exception as e:
             self.logger.error(f"Error in stream_chat: {e}", exc_info=True)
-            yield {
-                "type": "error",
-                "payload": {
-                    "error": str(e)
-                }
-            }
+            yield {"type": "error", "payload": {"error": str(e)}}
 
     def chat(self, message: str, conversation_id: int | None = None, **kwargs) -> dict[str, Any]:
         """
@@ -85,14 +73,11 @@ class AIServiceGateway:
             return {
                 "status": "success",
                 "response": f"Processed: {message[:100]}",
-                "conversation_id": conversation_id
+                "conversation_id": conversation_id,
             }
         except Exception as e:
             self.logger.error(f"Error in chat: {e}", exc_info=True)
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
 
 def get_ai_service_gateway() -> AIServiceGateway:

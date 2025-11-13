@@ -180,7 +180,15 @@ def handle_chat():
     # This endpoint is now superseded by the streaming endpoint,
     # but we keep it for backward compatibility.
     # It will be removed in a future version.
-    return jsonify({"status": "error", "message": "This endpoint is deprecated. Please use /api/chat/stream."}), 410
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated. Please use /api/chat/stream.",
+            }
+        ),
+        410,
+    )
 
 
 def _get_stream_params(req):
@@ -226,8 +234,10 @@ def handle_chat_stream():
     question, conversation_id, _ = _get_stream_params(request)
 
     if not question:
+
         def error_stream():
             yield 'data: {"type": "error", "payload": {"error_message": "Question is required"}}\n\n'
+
         headers = {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",

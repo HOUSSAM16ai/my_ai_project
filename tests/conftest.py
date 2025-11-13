@@ -10,12 +10,14 @@ from sqlalchemy.engine import Connection
 # Initialize Faker
 fake = Faker()
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def app():
     """Create a Flask app instance for the test session."""
-    return create_app('testing')
+    return create_app("testing")
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def db(app):
     """Session-wide test database."""
     with app.app_context():
@@ -28,11 +30,11 @@ def db(app):
         _db.drop_all()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def session(app, db):
     """
     Creates a new database session for a test.
-    
+
     CRITICAL FIX for Problem #1 (Inconsistent DB State):
     - Ensures test and Flask app share the same database session
     - Uses nested transactions for proper isolation
@@ -48,7 +50,7 @@ def session(app, db):
         options = dict(bind=connection, binds={})
         session_factory = sessionmaker(**options)
         test_session = scoped_session(session_factory)
-        
+
         # Replace db.session with our test session
         # This ensures all queries in the app and tests use the same session
         old_session = db.session
@@ -63,11 +65,11 @@ def session(app, db):
         db.session = old_session
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def client(app, session):
     """
     A test client for the app.
-    
+
     CRITICAL FIX for Problem #2 (Authentication Persistence):
     - Depends on session fixture to ensure shared database state
     - Returns client directly without context manager to avoid nesting
@@ -75,31 +77,28 @@ def client(app, session):
     """
     return app.test_client()
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope="function")
 def admin_user(app, session):
     """
     Create an admin user for testing.
-    
+
     FIX for Problem #1 & #2:
     - Creates admin user in the shared session
     - Ensures user persists for authentication tests
     """
-    user = User(
-        email='admin@test.com',
-        full_name='Admin User',
-        is_admin=True
-    )
-    user.set_password('1111')
+    user = User(email="admin@test.com", full_name="Admin User", is_admin=True)
+    user.set_password("1111")
     session.add(user)
     session.commit()
     return user
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def init_database(app, db, session):
     """
     Initialize database with basic data.
-    
+
     FIX for Problem #2:
     - Ensures database is ready for authentication tests
     - Creates tables if needed
@@ -123,14 +122,15 @@ def mock_ai_gateway():
             {"type": "data", "payload": {"content": "a "}},
             {"type": "data", "payload": {"content": "mocked "}},
             {"type": "data", "payload": {"content": "response."}},
-            {"type": "end", "payload": {"conversation_id": "mock_conv_123"}}
+            {"type": "end", "payload": {"conversation_id": "mock_conv_123"}},
         ]
         yield from responses
 
     mock_gateway.stream_chat.side_effect = mock_stream_chat
 
-    with patch('app.admin.routes.get_ai_service_gateway', return_value=mock_gateway) as mock:
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_gateway) as mock:
         yield mock
+
 
 # -----------------------------------------------------------------------------
 # Factories
@@ -139,46 +139,50 @@ def mock_ai_gateway():
 def user_factory(session):
     """
     Factory to create a user.
-    
+
     FIX for Problem #1:
     - Uses the shared session
     - Commits to ensure data is visible to both test and app code
     """
+
     def _user_factory(**kwargs):
         defaults = {
-            'email': fake.email(),
-            'full_name': fake.name(),
+            "email": fake.email(),
+            "full_name": fake.name(),
         }
         defaults.update(kwargs)
 
         user = User(**defaults)
-        if 'password' in defaults:
-            user.set_password(defaults['password'])
+        if "password" in defaults:
+            user.set_password(defaults["password"])
         else:
-            user.set_password('password')
+            user.set_password("password")
 
         session.add(user)
         session.commit()  # Commit to make visible to app code
         return user
+
     return _user_factory
+
 
 @pytest.fixture
 def mission_factory(session, user_factory):
     """
     Factory to create a mission.
-    
+
     FIX for Problem #1:
     - Uses the shared session
     - Commits to ensure data is visible
     """
+
     def _mission_factory(**kwargs):
         # Ensure there's an initiator for the mission
-        if 'initiator' not in kwargs and 'initiator_id' not in kwargs:
-            kwargs['initiator'] = user_factory()
+        if "initiator" not in kwargs and "initiator_id" not in kwargs:
+            kwargs["initiator"] = user_factory()
 
         defaults = {
-            'objective': fake.sentence(),
-            'status': 'PENDING',
+            "objective": fake.sentence(),
+            "status": "PENDING",
         }
         defaults.update(kwargs)
 
@@ -186,4 +190,5 @@ def mission_factory(session, user_factory):
         session.add(mission)
         session.commit()  # Commit to make visible to app code
         return mission
+
     return _mission_factory
