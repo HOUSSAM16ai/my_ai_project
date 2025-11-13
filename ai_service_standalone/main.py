@@ -1,74 +1,38 @@
 # ai_service_standalone/main.py
-"""
-AI Service - FastAPI Implementation
-===================================
-Version: 1.0.0
-"""
-
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 import asyncio
 import json
-import logging
-import os
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-import jwt
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-
-
-# --- Models ---
-class ChatRequest(BaseModel):
-    question: str
-    conversation_id: str | None = None
-
-# --- JWT Configuration ---
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-super-secret-key")
-ALGORITHM = "HS256"
-
-# --- Logging ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# --- FastAPI App ---
 app = FastAPI()
 
-# --- Security ---
-def get_current_user(request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    token = auth_header.split(" ")[1]
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("sub")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-# --- AI Service Logic ---
-async def stream_ai_response(question: str):
-    """
-    A mock generator that streams a response.
-    """
-    words = f"This is a streamed response to your question: '{question}'".split()
-    for word in words:
-        yield {
-            "type": "data",
-            "payload": {"content": f"{word} "}
-        }
-        await asyncio.sleep(0.1)
-
-    yield {
-        "type": "end",
-        "payload": {"conversation_id": "conv_12345"}
-    }
-
-# --- API Endpoint ---
 @app.post("/api/v1/chat/stream")
-async def stream_chat(chat_request: ChatRequest, user_id: str = Depends(get_current_user)):
+async def chat_stream(request: Request):
+    body = await request.json()
+    question = body.get("question")
+    # conversation_id is not used in this simplified example, but is kept for compatibility
+    # conversation_id = body.get("conversation_id")
 
-    async def response_generator():
-        async for chunk in stream_ai_response(chat_request.question):
-            yield json.dumps(chunk) + "\n"
+    async def generate():
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a world class developer."),
+            ("user", "{input}")
+        ])
+        output_parser = StrOutputParser()
+        chain = prompt | llm | output_parser
 
-    return StreamingResponse(response_generator(), media_type="application/x-ndjson")
+        async for chunk in chain.astream({"input": question}):
+            yield f"data: {json.dumps({'type': 'data', 'payload': {'content': chunk}})}\n\n"
+
+        # Send an end-of-stream message
+        yield f"data: {json.dumps({'type': 'end', 'payload': {'conversation_id': 'mock_conv_123'}})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

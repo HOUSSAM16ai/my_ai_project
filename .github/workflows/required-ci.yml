@@ -63,18 +63,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Run only the most critical, stable, and fast tests
-          pytest tests/test_app.py tests/test_ai_service.py \
-            --verbose \
-            --tb=short \
-            --maxfail=1 \
-            --timeout=60 \
-            --timeout-method=thread \
-            --disable-warnings \
-            -q \
-            || {
-              echo "❌ Unit tests failed"
-              exit 1
-            }
+          make test-fast
 
           echo "✅ All core tests passed"
 

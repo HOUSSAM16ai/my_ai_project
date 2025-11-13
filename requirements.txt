@@ -36,6 +36,7 @@ rich>=13.7.0
 fastapi
 uvicorn
 httpx
+langchain-openai
 
 # --- API Enhancement & Validation ---
 marshmallow>=3.20.0
