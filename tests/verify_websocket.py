@@ -1,6 +1,6 @@
-
 import asyncio
 from playwright.async_api import async_playwright
+
 
 async def main():
     async with async_playwright() as p:
@@ -21,7 +21,10 @@ async def main():
             await page.click("#send-btn")
 
             # Wait for the response to start streaming in
-            await page.wait_for_selector(".message.assistant .message-content:has-text('This is a streamed response')", timeout=10000)
+            await page.wait_for_selector(
+                ".message.assistant .message-content:has-text('This is a streamed response')",
+                timeout=10000,
+            )
             print("✅ Received streamed response.")
 
             await page.screenshot(path="screenshot.png")
@@ -32,6 +35,7 @@ async def main():
             await page.screenshot(path="error.png")
         finally:
             await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

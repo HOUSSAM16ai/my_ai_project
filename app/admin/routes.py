@@ -421,8 +421,6 @@ def handle_chat_stream():
     return Response(stream_with_context(stream_generator), headers=headers)
 
 
-
-
 @socketio.on("connect", namespace="/chat")
 def handle_connect():
     """Handles WebSocket connection."""
