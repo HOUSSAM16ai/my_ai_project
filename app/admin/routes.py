@@ -14,8 +14,8 @@
 import time
 from datetime import UTC, datetime, timedelta
 from functools import wraps
-import jwt
 
+import jwt
 from flask import (
     Response,
     abort,
@@ -377,8 +377,8 @@ def generate_token():
     """Generates a short-lived JWT for WebSocket authentication."""
     token = jwt.encode(
         {
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(UTC) + timedelta(minutes=15),
+            "iat": datetime.now(UTC),
             "sub": current_user.id,
         },
         current_app.config["SECRET_KEY"],
@@ -443,8 +443,9 @@ def handle_chat_message(data):
     )
 
     try:
-        from app.services.admin_ai_service import get_admin_ai_service
         from flask_login import current_user
+
+        from app.services.admin_ai_service import get_admin_ai_service
 
         if not current_user.is_authenticated:
             socketio.emit("error", {"error": "Authentication required"})
