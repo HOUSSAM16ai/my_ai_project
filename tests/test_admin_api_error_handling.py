@@ -1,5 +1,4 @@
 # tests/test_admin_api_error_handling.py
-import json
 import pytest
 
 
