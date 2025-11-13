@@ -391,11 +391,12 @@ class TestAPIFirstPlatformService:
         is_valid = service.verify_webhook_signature(payload, signature)
         assert is_valid is True
 
-    def test_track_api_usage(self, service):
+    def test_track_api_usage(self, service, app):
         """اختبار تتبع استخدام API"""
-        usage = service.track_api_usage(
-            endpoint="/v1/accounts", method="GET", status_code=200, duration_ms=42.5
-        )
+        with app.app_context():
+            usage = service.track_api_usage(
+                endpoint="/v1/accounts", method="GET", status_code=200, duration_ms=42.5
+            )
 
         assert usage["endpoint"] == "/v1/accounts"
         assert usage["method"] == "GET"
