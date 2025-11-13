@@ -11,7 +11,7 @@
 #     "admin/admin_dashboard.html") to correctly leverage the blueprint's scoped
 #     `template_folder`.
 
-import time
+import json
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 
@@ -168,121 +168,19 @@ def list_users():
 # --------------------------------------------------------------------------------------
 
 try:
-    from app.services.admin_ai_service import get_admin_ai_service
+    from app.services.ai_service_gateway import get_ai_service_gateway
 except ImportError:
-    get_admin_ai_service = None
+    get_ai_service_gateway = None
 
 
 @bp.route("/api/chat", methods=["POST"])
 @admin_required
 def handle_chat():
     """API endpoint للمحادثة الذكية"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    # Handle JSON parsing errors
-    try:
-        data = request.get_json()
-        if data is None:
-            return jsonify({"status": "error", "message": "Invalid JSON in request body."}), 400
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
-
-    question = data.get("question", "").strip()
-    conversation_id = data.get("conversation_id")
-    use_deep_context = data.get("use_deep_context", True)
-
-    if not question:
-        return jsonify({"status": "error", "message": "Question is required."}), 400
-
-    # Validate question length before processing
-    max_question_length = 100000  # 100k characters max
-    if len(question) > max_question_length:
-        error_msg = (
-            f"⚠️ السؤال طويل جداً ({len(question):,} حرف).\n\n"
-            f"Question is too long ({len(question):,} characters).\n\n"
-            f"**Maximum allowed:** {max_question_length:,} characters\n\n"
-            f"**الحل (Solution):**\n"
-            f"1. اختصر السؤال (Shorten your question)\n"
-            f"2. قسّم السؤال إلى أجزاء أصغر (Break it into smaller parts)\n"
-            f"3. ركّز على النقاط الرئيسية (Focus on main points)"
-        )
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": "Question too long",
-                    "answer": error_msg,
-                    "conversation_id": conversation_id,
-                }
-            ),
-            200,
-        )
-
-    try:
-        service = get_admin_ai_service()
-
-        # Auto-create conversation if not provided
-        if not conversation_id:
-            try:
-                # Generate a smart title from the first question
-                title = question[:100] + "..." if len(question) > 100 else question
-                conversation = service.create_conversation(
-                    user=current_user._get_current_object(),
-                    title=title,
-                    conversation_type="general",
-                )
-                conversation_id = conversation.id
-                current_app.logger.info(
-                    f"Auto-created conversation #{conversation_id} for user {current_user.id}"
-                )
-            except Exception as e:
-                current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
-                # Continue without conversation - will be handled in service
-
-        result = service.answer_question(
-            question=question,
-            user=current_user._get_current_object(),
-            conversation_id=conversation_id,
-            use_deep_context=use_deep_context,
-        )
-
-        # Always return the conversation_id for client-side tracking
-        result["conversation_id"] = conversation_id
-
-        return jsonify(result)
-
-    except Exception as e:
-        current_app.logger.error(f"Chat API failed: {e}", exc_info=True)
-        # Return 200 with error details so frontend can display helpful message
-        error_msg = (
-            f"⚠️ حدث خطأ غير متوقع في معالجة السؤال.\n\n"
-            f"An unexpected error occurred while processing your question.\n\n"
-            f"**نوع الخطأ (Error type):** {type(e).__name__}\n"
-            f"**التفاصيل (Details):** {str(e)[:200]}\n\n"
-            f"**الأسباب المحتملة (Possible causes):**\n"
-            f"- انقطاع مؤقت في الخدمة (Temporary service interruption)\n"
-            f"- تكوين غير صحيح (Invalid configuration)\n"
-            f"- مشكلة في الاتصال بقاعدة البيانات (Database connection issue)\n"
-            f"- السؤال معقد جداً (Question too complex)\n\n"
-            f"**الحل (Solution):**\n"
-            f"1. حاول مرة أخرى (Try again)\n"
-            f"2. اطرح سؤالاً أبسط (Ask a simpler question)\n"
-            f"3. ابدأ محادثة جديدة (Start a new conversation)\n"
-            f"4. راجع سجلات التطبيق أو اتصل بالدعم الفني إذا استمرت المشكلة\n"
-            f"   (Check application logs or contact support if the problem persists)"
-        )
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": str(e),
-                    "answer": error_msg,
-                    "conversation_id": conversation_id,
-                }
-            ),
-            200,
-        )
+    # This endpoint is now superseded by the streaming endpoint,
+    # but we keep it for backward compatibility.
+    # It will be removed in a future version.
+    return jsonify({"status": "error", "message": "This endpoint is deprecated. Please use /api/chat/stream."}), 410
 
 
 def _get_stream_params(req):
@@ -297,78 +195,6 @@ def _get_stream_params(req):
         conversation_id = data.get("conversation_id")
         use_deep_context = data.get("use_deep_context", True)
     return question, conversation_id, use_deep_context
-
-
-def _generate_chat_stream(question, conversation_id, use_deep_context):
-    """Generator function for SSE streaming."""
-    start_time = time.time()
-    last_heartbeat = time.monotonic()
-    event_id = 0
-    conv_id = conversation_id
-
-    try:
-        service = get_admin_ai_service()
-        streaming_service = get_streaming_service()
-        perf_service = get_performance_service() if get_performance_service else None
-
-        yield f'event: start\nid: {event_id}\ndata: {{"status": "processing"}}\n\n'
-        event_id += 1
-
-        if not conv_id:
-            try:
-                title = question[:100] + "..." if len(question) > 100 else question
-                conversation = service.create_conversation(
-                    user=current_user._get_current_object(),
-                    title=title,
-                    conversation_type="general",
-                )
-                conv_id = conversation.id
-                yield f'event: conversation\nid: {event_id}\ndata: {{"id": {conv_id}}}\n\n'
-                event_id += 1
-            except Exception as e:
-                current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
-
-        result = service.answer_question(
-            question=question,
-            user=current_user._get_current_object(),
-            conversation_id=conv_id,
-            use_deep_context=use_deep_context,
-        )
-
-        if result.get("status") == "success":
-            answer_text = result.get("answer", "")
-            metadata = {
-                "model_used": result.get("model_used"),
-                "tokens_used": result.get("tokens_used"),
-                "elapsed_seconds": result.get("elapsed_seconds"),
-                "conversation_id": conv_id,
-            }
-
-            if perf_service:
-                total_latency_ms = (time.time() - start_time) * 1000
-                perf_service.record_metric(
-                    category="streaming",
-                    latency_ms=total_latency_ms,
-                    tokens=result.get("tokens_used", 0),
-                    model_used=result.get("model_used", "unknown"),
-                    user_id=current_user.id if current_user.is_authenticated else None,
-                )
-
-            for sse_event_chunk in streaming_service.stream_response(answer_text, metadata):
-                yield sse_event_chunk
-                now = time.monotonic()
-                if now - last_heartbeat > 20:
-                    yield f'event: ping\nid: {event_id}\ndata: "🔧"\n\n'
-                    event_id += 1
-                    last_heartbeat = now
-        else:
-            error_text = result.get("answer") or result.get("message") or "An error occurred"
-            yield from streaming_service.stream_response(error_text)
-
-    except Exception as e:
-        current_app.logger.error(f"Streaming error: {e}", exc_info=True)
-        error_msg = str(e).replace('"', '\\"')
-        yield f'event: error\nid: {event_id}\ndata: {{"message": "{error_msg[:500]}", "type": "{type(e).__name__}"}}\n\n'
 
 
 @bp.route("/api/generate-token")
@@ -394,31 +220,32 @@ def handle_chat_stream():
     SSE streaming endpoint for real-time AI responses.
     Refactored for clarity and reduced complexity.
     """
-    if not get_admin_ai_service or not get_streaming_service:
-        return jsonify({"status": "error", "message": "Streaming service not available."}), 503
+    if not get_ai_service_gateway:
+        return jsonify({"status": "error", "message": "AI service gateway not available."}), 503
 
-    question, conversation_id, use_deep_context = _get_stream_params(request)
+    question, conversation_id, _ = _get_stream_params(request)
 
     if not question:
-
         def error_stream():
-            yield 'event: error\ndata: {"message": "Question is required"}\n\n'
-
+            yield 'data: {"type": "error", "payload": {"error_message": "Question is required"}}\n\n'
         headers = {
-            "Cache-Control": "no-cache, no-transform",
-            "Content-Type": "text/event-stream; charset=utf-8",
-            "X-Accel-Buffering": "no",
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
         }
         return Response(stream_with_context(error_stream()), headers=headers)
 
-    stream_generator = _generate_chat_stream(question, conversation_id, use_deep_context)
+    def stream_response():
+        gateway = get_ai_service_gateway()
+        for chunk in gateway.stream_chat(question, conversation_id):
+            yield f"data: {json.dumps(chunk)}\n\n"
+
     headers = {
-        "Cache-Control": "no-cache, no-transform",
-        "Content-Type": "text/event-stream; charset=utf-8",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
     }
-    return Response(stream_with_context(stream_generator), headers=headers)
+    return Response(stream_with_context(stream_response()), headers=headers)
 
 
 @socketio.on("connect", namespace="/chat")
@@ -435,179 +262,47 @@ def handle_disconnect():
 
 @socketio.on("chat_message", namespace="/chat")
 def handle_chat_message(data):
-    """Handles incoming chat messages and starts the AI response stream."""
-    question = data.get("question")
-    conversation_id = data.get("conversation_id")
-    current_app.logger.info(
-        f"Received chat message via WebSocket: {question}, conversation_id: {conversation_id}"
+    """Handles incoming chat messages. This endpoint is deprecated."""
+    current_app.logger.warning(
+        "Received chat_message on a deprecated WebSocket endpoint. "
+        "The new architecture uses SSE."
     )
-
-    try:
-        from flask_login import current_user
-
-        from app.services.admin_ai_service import get_admin_ai_service
-
-        if not current_user.is_authenticated:
-            socketio.emit("error", {"error": "Authentication required"})
-            return
-
-        service = get_admin_ai_service()
-        # Run the streaming service in a background thread
-        socketio.start_background_task(
-            service.answer_question_ws,
-            question=question,
-            user=current_user,
-            conversation_id=conversation_id,
-        )
-    except Exception as e:
-        current_app.logger.error(f"Error handling WebSocket message: {e}", exc_info=True)
-        socketio.emit("error", {"error": str(e)})
+    socketio.emit(
+        "error",
+        {
+            "error": "This WebSocket endpoint is deprecated. Please use the SSE endpoint /api/chat/stream."
+        },
+    )
 
 
 @bp.route("/api/analyze-project", methods=["POST"])
 @admin_required
 def handle_analyze_project():
     """API endpoint لتحليل المشروع"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    # Handle JSON parsing errors
-    try:
-        data = request.get_json() or {}
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
-
-    conversation_id = data.get("conversation_id")
-
-    try:
-        service = get_admin_ai_service()
-
-        # Auto-create conversation if not provided
-        if not conversation_id:
-            conversation = service.create_conversation(
-                user=current_user._get_current_object(),
-                title="Project Analysis",
-                conversation_type="project_analysis",
-            )
-            conversation_id = conversation.id
-            current_app.logger.info(
-                f"Auto-created analysis conversation #{conversation_id} for user {current_user.id}"
-            )
-
-        result = service.analyze_project(
-            user=current_user._get_current_object(), conversation_id=conversation_id
-        )
-
-        # Always return the conversation_id for client-side tracking
-        result["conversation_id"] = conversation_id
-
-        return jsonify(result)
-
-    except Exception as e:
-        current_app.logger.error(f"Project analysis API failed: {e}", exc_info=True)
-        # Return 200 with error details so frontend can display helpful message
-        error_msg = (
-            f"⚠️ فشل تحليل المشروع.\n\n"
-            f"Project analysis failed.\n\n"
-            f"**Error details:** {str(e)}\n\n"
-            f"**Possible causes:**\n"
-            f"- Missing dependencies for deep analysis\n"
-            f"- File system access issue\n"
-            f"- Memory constraints\n\n"
-            f"**Solution:**\n"
-            f"Please try again. You can also use the regular chat to ask questions about the project."
-        )
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": str(e),
-                    "answer": error_msg,
-                    "conversation_id": conversation_id if "conversation_id" in locals() else None,
-                }
-            ),
-            200,
-        )
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated and will be removed in a future version.",
+            }
+        ),
+        410,
+    )
 
 
 @bp.route("/api/execute-modification", methods=["POST"])
 @admin_required
 def handle_execute_modification():
     """API endpoint لتنفيذ تعديلات على المشروع"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    # Handle JSON parsing errors
-    try:
-        data = request.get_json()
-        if data is None:
-            return jsonify({"status": "error", "message": "Invalid JSON in request body."}), 400
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Failed to parse JSON: {str(e)}"}), 400
-
-    objective = data.get("objective", "").strip()
-    conversation_id = data.get("conversation_id")
-
-    if not objective:
-        return jsonify({"status": "error", "message": "Objective is required."}), 400
-
-    try:
-        service = get_admin_ai_service()
-
-        # Auto-create conversation if not provided
-        if not conversation_id:
-            # Generate a smart title from the objective
-            title = (
-                f"Modification: {objective[:80]}..."
-                if len(objective) > 80
-                else f"Modification: {objective}"
-            )
-            conversation = service.create_conversation(
-                user=current_user._get_current_object(),
-                title=title,
-                conversation_type="modification",
-            )
-            conversation_id = conversation.id
-            current_app.logger.info(
-                f"Auto-created modification conversation #{conversation_id} for user {current_user.id}"
-            )
-
-        result = service.execute_modification(
-            objective=objective,
-            user=current_user._get_current_object(),
-            conversation_id=conversation_id,
-        )
-
-        # Always return the conversation_id for client-side tracking
-        result["conversation_id"] = conversation_id
-
-        return jsonify(result)
-
-    except Exception as e:
-        current_app.logger.error(f"Modification API failed: {e}", exc_info=True)
-        # Return 200 with error details so frontend can display helpful message
-        error_msg = (
-            f"⚠️ فشل تنفيذ التعديل.\n\n"
-            f"Failed to execute modification.\n\n"
-            f"**Error details:** {str(e)}\n\n"
-            f"**Possible causes:**\n"
-            f"- Invalid modification request\n"
-            f"- File system permissions\n"
-            f"- Overmind service unavailable\n\n"
-            f"**Solution:**\n"
-            f"Please try again with a clearer objective or contact support."
-        )
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": str(e),
-                    "answer": error_msg,
-                    "conversation_id": conversation_id if "conversation_id" in locals() else None,
-                }
-            ),
-            200,
-        )
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated and will be removed in a future version.",
+            }
+        ),
+        410,
+    )
 
 
 @bp.route("/api/conversations", methods=["GET"])
@@ -736,112 +431,45 @@ def handle_get_conversation_detail(conversation_id):
 @admin_required
 def handle_update_conversation_title(conversation_id):
     """API endpoint لتحديث عنوان المحادثة - SUPERHUMAN UX"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    try:
-        data = request.get_json() or {}
-        new_title = data.get("title")
-        auto_generate = data.get("auto_generate", False)
-
-        # Verify ownership
-        conversation = AdminConversation.query.filter_by(
-            id=conversation_id, user_id=current_user.id
-        ).first()
-
-        if not conversation:
-            return (
-                jsonify({"status": "error", "message": "Conversation not found or access denied."}),
-                404,
-            )
-
-        service = get_admin_ai_service()
-        success = service.update_conversation_title(
-            conversation_id=conversation_id, new_title=new_title, auto_generate=auto_generate
-        )
-
-        if success:
-            # Get updated conversation
-            conversation = db.session.get(AdminConversation, conversation_id)
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": "Title updated successfully",
-                    "title": conversation.title,
-                }
-            )
-        else:
-            return jsonify({"status": "error", "message": "Failed to update title"}), 500
-
-    except Exception as e:
-        current_app.logger.error(f"Update conversation title failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated and will be removed in a future version.",
+            }
+        ),
+        410,
+    )
 
 
 @bp.route("/api/conversation/<int:conversation_id>/export", methods=["GET"])
 @admin_required
 def handle_export_conversation(conversation_id):
     """API endpoint لتصدير المحادثة - SUPERHUMAN PORTABILITY"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    try:
-        # Verify ownership
-        conversation = AdminConversation.query.filter_by(
-            id=conversation_id, user_id=current_user.id
-        ).first()
-
-        if not conversation:
-            return (
-                jsonify({"status": "error", "message": "Conversation not found or access denied."}),
-                404,
-            )
-
-        export_format = request.args.get("format", "markdown")
-
-        service = get_admin_ai_service()
-        result = service.export_conversation(conversation_id=conversation_id, format=export_format)
-
-        if result.get("status") == "success":
-            return jsonify(result)
-        else:
-            return jsonify(result), 500
-
-    except Exception as e:
-        current_app.logger.error(f"Export conversation failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated and will be removed in a future version.",
+            }
+        ),
+        410,
+    )
 
 
 @bp.route("/api/conversation/<int:conversation_id>/archive", methods=["POST"])
 @admin_required
 def handle_archive_conversation(conversation_id):
     """API endpoint لأرشفة المحادثة - SUPERHUMAN ORGANIZATION"""
-    if not get_admin_ai_service:
-        return jsonify({"status": "error", "message": "AI service not available."}), 503
-
-    try:
-        # Verify ownership
-        conversation = AdminConversation.query.filter_by(
-            id=conversation_id, user_id=current_user.id
-        ).first()
-
-        if not conversation:
-            return (
-                jsonify({"status": "error", "message": "Conversation not found or access denied."}),
-                404,
-            )
-
-        service = get_admin_ai_service()
-        success = service.archive_conversation(conversation_id)
-
-        if success:
-            return jsonify({"status": "success", "message": "Conversation archived successfully"})
-        else:
-            return jsonify({"status": "error", "message": "Failed to archive conversation"}), 500
-
-    except Exception as e:
-        current_app.logger.error(f"Archive conversation failed: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "message": "This endpoint is deprecated and will be removed in a future version.",
+            }
+        ),
+        410,
+    )
 
 
 # --------------------------------------------------------------------------------------

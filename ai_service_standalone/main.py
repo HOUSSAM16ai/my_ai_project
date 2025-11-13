@@ -1,126 +1,74 @@
+# ai_service_standalone/main.py
+"""
+AI Service - FastAPI Implementation
+===================================
+Version: 1.0.0
+"""
 
 import asyncio
+import json
 import logging
 import os
 
 import jwt
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
-# This is now a self-contained FastAPI application.
-# All necessary components are included in this file.
 
-# --- Mock LLM Client ---
-class MockChoice:
-    def __init__(self, content):
-        self.delta = self
-        self.content = content
-
-class MockStream:
-    def __init__(self, text):
-        self.words = text.split()
-        self.index = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.index < len(self.words):
-            word = self.words[self.index]
-            self.index += 1
-            # Yield a choice object similar to the real API
-            return type('obj', (object,), {'choices': [MockChoice(word + " ")]})
-        else:
-            raise StopIteration
-
-class MockCompletions:
-    def create(self, model, messages, stream, temperature, max_tokens):
-        last_message = messages[-1]['content']
-        return MockStream(f"This is a streamed response to '{last_message}'")
-
-class MockChat:
-    def __init__(self):
-        self.completions = MockCompletions()
-
-class MockLLMClient:
-    def __init__(self):
-        self.chat = MockChat()
-
-def get_llm_client():
-    # In a real scenario, this would initialize a client like OpenAI's or a custom one
-    return MockLLMClient()
-
-# --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# --- Models ---
+class ChatRequest(BaseModel):
+    question: str
+    conversation_id: str | None = None
 
 # --- JWT Configuration ---
 SECRET_KEY = os.environ.get("SECRET_KEY", "your-super-secret-key")
 ALGORITHM = "HS256"
 
-# --- FastAPI Application ---
+# --- Logging ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# --- FastAPI App ---
 app = FastAPI()
 
-async def get_current_user(token: str):
-    """Decodes the JWT to get the user ID."""
+# --- Security ---
+def get_current_user(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        return user_id
-    except jwt.ExpiredSignatureError:
-        logger.warning("Authentication failed: Token has expired.")
-        return None
-    except jwt.PyJWTError as e:
-        logger.error(f"Authentication failed: {e}")
-        return None
+        return payload.get("sub")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-async def stream_ai_response(question: str, websocket: WebSocket):
-    """Streams the AI response over the WebSocket."""
-    try:
-        llm_client = get_llm_client()
-        messages = [{"role": "user", "content": question}]
+# --- AI Service Logic ---
+async def stream_ai_response(question: str):
+    """
+    A mock generator that streams a response.
+    """
+    words = f"This is a streamed response to your question: '{question}'".split()
+    for word in words:
+        yield {
+            "type": "data",
+            "payload": {"content": f"{word} "}
+        }
+        await asyncio.sleep(0.1)
 
-        stream = llm_client.chat.completions.create(
-            model="mock-model",
-            messages=messages,
-            stream=True,
-            temperature=0.7,
-            max_tokens=150
-        )
+    yield {
+        "type": "end",
+        "payload": {"conversation_id": "conv_12345"}
+    }
 
-        for chunk in stream:
-            content = chunk.choices[0].delta.content or ""
-            if content:
-                await websocket.send_text(content)
-                await asyncio.sleep(0.05) # Control the speed of streaming
-    except Exception as e:
-        logger.error(f"Error during AI streaming: {e}", exc_info=True)
-        await websocket.send_text("Error: Could not process your request.")
+# --- API Endpoint ---
+@app.post("/api/v1/chat/stream")
+async def stream_chat(chat_request: ChatRequest, user_id: str = Depends(get_current_user)):
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """Main WebSocket endpoint for handling chat."""
-    await websocket.accept()
+    async def response_generator():
+        async for chunk in stream_ai_response(chat_request.question):
+            yield json.dumps(chunk) + "\n"
 
-    # First message should be the auth token
-    token = await websocket.receive_text()
-    user = await get_current_user(token)
-
-    if not user:
-        await websocket.close(code=1008) # Policy Violation
-        return
-
-    logger.info(f"User {user} connected.")
-    await websocket.send_text("Authentication successful. Ready for questions.")
-
-    try:
-        while True:
-            # Wait for questions from the client
-            question = await websocket.receive_text()
-            logger.info(f"Received question from user {user}: {question}")
-
-            # Stream the response
-            await stream_ai_response(question, websocket)
-    except WebSocketDisconnect:
-        logger.info(f"Client {user} disconnected.")
-    except Exception as e:
-        logger.error(f"An unexpected error occurred for user {user}: {e}", exc_info=True)
+    return StreamingResponse(response_generator(), media_type="application/x-ndjson")
