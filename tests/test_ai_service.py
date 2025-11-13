@@ -1,23 +1,37 @@
-import pytest
+# tests/test_ai_service.py
 from fastapi.testclient import TestClient
 from ai_service_standalone.main import app, SECRET_KEY, ALGORITHM
 import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, UTC, timedelta
+import json
 
 client = TestClient(app)
 
-
-def test_websocket_connection():
+def test_stream_chat_endpoint():
     token = jwt.encode(
         {
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(UTC) + timedelta(minutes=15),
+            "iat": datetime.now(UTC),
             "sub": "123",
         },
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
-    with client.websocket_connect("/ws") as websocket:
-        websocket.send_text(token)
-        response = websocket.receive_text()
-        assert "Authentication successful" in response
+
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"question": "Hello, world!"}
+
+    response = client.post("/api/v1/chat/stream", headers=headers, json=payload)
+    assert response.status_code == 200
+
+    # Collect and parse the streaming response
+    lines = response.text.strip().split('\n')
+    chunks = [json.loads(line.replace("data: ", "")) for line in lines if line]
+
+    assert len(chunks) > 0
+
+    # Reconstruct the full response
+    full_content = "".join(c['payload']['content'] for c in chunks if c['type'] == 'data')
+
+    assert "Hello, world!" in full_content
+    assert chunks[-1]['type'] == 'end'

@@ -14,8 +14,8 @@
 import time
 from datetime import UTC, datetime, timedelta
 from functools import wraps
-import jwt
 
+import jwt
 from flask import (
     Response,
     abort,
@@ -168,9 +168,9 @@ def list_users():
 # --------------------------------------------------------------------------------------
 
 try:
-    from app.services.admin_ai_service import get_admin_ai_service
+    from app.services.ai_service_gateway import get_ai_service_gateway
 except ImportError:
-    get_admin_ai_service = None
+    get_ai_service_gateway = None
 
 
 @bp.route("/api/chat", methods=["POST"])
@@ -299,86 +299,14 @@ def _get_stream_params(req):
     return question, conversation_id, use_deep_context
 
 
-def _generate_chat_stream(question, conversation_id, use_deep_context):
-    """Generator function for SSE streaming."""
-    start_time = time.time()
-    last_heartbeat = time.monotonic()
-    event_id = 0
-    conv_id = conversation_id
-
-    try:
-        service = get_admin_ai_service()
-        streaming_service = get_streaming_service()
-        perf_service = get_performance_service() if get_performance_service else None
-
-        yield f'event: start\nid: {event_id}\ndata: {{"status": "processing"}}\n\n'
-        event_id += 1
-
-        if not conv_id:
-            try:
-                title = question[:100] + "..." if len(question) > 100 else question
-                conversation = service.create_conversation(
-                    user=current_user._get_current_object(),
-                    title=title,
-                    conversation_type="general",
-                )
-                conv_id = conversation.id
-                yield f'event: conversation\nid: {event_id}\ndata: {{"id": {conv_id}}}\n\n'
-                event_id += 1
-            except Exception as e:
-                current_app.logger.error(f"Failed to create conversation: {e}", exc_info=True)
-
-        result = service.answer_question(
-            question=question,
-            user=current_user._get_current_object(),
-            conversation_id=conv_id,
-            use_deep_context=use_deep_context,
-        )
-
-        if result.get("status") == "success":
-            answer_text = result.get("answer", "")
-            metadata = {
-                "model_used": result.get("model_used"),
-                "tokens_used": result.get("tokens_used"),
-                "elapsed_seconds": result.get("elapsed_seconds"),
-                "conversation_id": conv_id,
-            }
-
-            if perf_service:
-                total_latency_ms = (time.time() - start_time) * 1000
-                perf_service.record_metric(
-                    category="streaming",
-                    latency_ms=total_latency_ms,
-                    tokens=result.get("tokens_used", 0),
-                    model_used=result.get("model_used", "unknown"),
-                    user_id=current_user.id if current_user.is_authenticated else None,
-                )
-
-            for sse_event_chunk in streaming_service.stream_response(answer_text, metadata):
-                yield sse_event_chunk
-                now = time.monotonic()
-                if now - last_heartbeat > 20:
-                    yield f'event: ping\nid: {event_id}\ndata: "🔧"\n\n'
-                    event_id += 1
-                    last_heartbeat = now
-        else:
-            error_text = result.get("answer") or result.get("message") or "An error occurred"
-            yield from streaming_service.stream_response(error_text)
-
-    except Exception as e:
-        current_app.logger.error(f"Streaming error: {e}", exc_info=True)
-        error_msg = str(e).replace('"', '\\"')
-        yield f'event: error\nid: {event_id}\ndata: {{"message": "{error_msg[:500]}", "type": "{type(e).__name__}"}}\n\n'
-
-
 @bp.route("/api/generate-token")
 @admin_required
 def generate_token():
     """Generates a short-lived JWT for WebSocket authentication."""
     token = jwt.encode(
         {
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(UTC) + timedelta(minutes=15),
+            "iat": datetime.now(UTC),
             "sub": current_user.id,
         },
         current_app.config["SECRET_KEY"],
@@ -394,31 +322,32 @@ def handle_chat_stream():
     SSE streaming endpoint for real-time AI responses.
     Refactored for clarity and reduced complexity.
     """
-    if not get_admin_ai_service or not get_streaming_service:
-        return jsonify({"status": "error", "message": "Streaming service not available."}), 503
+    if not get_ai_service_gateway:
+        return jsonify({"status": "error", "message": "AI service gateway not available."}), 503
 
-    question, conversation_id, use_deep_context = _get_stream_params(request)
+    question, conversation_id, _ = _get_stream_params(request)
 
     if not question:
-
         def error_stream():
-            yield 'event: error\ndata: {"message": "Question is required"}\n\n'
-
+            yield 'data: {"type": "error", "payload": {"error_message": "Question is required"}}\n\n'
         headers = {
-            "Cache-Control": "no-cache, no-transform",
-            "Content-Type": "text/event-stream; charset=utf-8",
-            "X-Accel-Buffering": "no",
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
         }
         return Response(stream_with_context(error_stream()), headers=headers)
 
-    stream_generator = _generate_chat_stream(question, conversation_id, use_deep_context)
+    def stream_response():
+        gateway = get_ai_service_gateway()
+        for chunk in gateway.stream_chat(question, conversation_id):
+            yield f"data: {json.dumps(chunk)}\n\n"
+
     headers = {
-        "Cache-Control": "no-cache, no-transform",
-        "Content-Type": "text/event-stream; charset=utf-8",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
     }
-    return Response(stream_with_context(stream_generator), headers=headers)
+    return Response(stream_with_context(stream_response()), headers=headers)
 
 
 @socketio.on("connect", namespace="/chat")
@@ -443,8 +372,9 @@ def handle_chat_message(data):
     )
 
     try:
-        from app.services.admin_ai_service import get_admin_ai_service
         from flask_login import current_user
+
+        from app.services.admin_ai_service import get_admin_ai_service
 
         if not current_user.is_authenticated:
             socketio.emit("error", {"error": "Authentication required"})
