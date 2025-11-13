@@ -140,9 +140,15 @@ def _register_blueprints(app: Flask) -> None:
         app.register_blueprint(admin_routes.bp, url_prefix="/admin")
         app.logger.info("Admin routes registered successfully")
     except Exception as exc:
-        app.logger.warning(
-            "Failed to register admin routes: %s (continuing without admin panel)", exc
+        # FIX for Problem #3: Enhanced error logging for blueprint registration failures
+        app.logger.error(
+            "Failed to register admin routes: %s (continuing without admin panel)", 
+            exc, 
+            exc_info=True
         )
+        # Log the full traceback to help identify missing dependencies
+        import traceback
+        app.logger.error("Admin routes traceback: %s", traceback.format_exc())
 
     # API Gateway blueprints (required)
     try:

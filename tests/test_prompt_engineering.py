@@ -16,27 +16,12 @@ from app.services.prompt_engineering_service import (
 )
 
 
-@pytest.fixture
-def client(app):
-    """Create test client"""
-    return app.test_client()
+# Remove local fixtures - use the ones from conftest.py instead
+# The conftest.py provides: app, db, session, client, admin_user
 
 
 @pytest.fixture
-def admin_user(app):
-    """Create admin user for testing"""
-    # Check if user already exists
-    user = User.query.filter_by(email="admin@test.com").first()
-    if not user:
-        user = User(full_name="Admin Test", email="admin@test.com", is_admin=True)
-        user.set_password("testpass123")
-        db.session.add(user)
-        db.session.commit()
-    return user
-
-
-@pytest.fixture
-def sample_template(app, admin_user):
+def sample_template(app, admin_user, session):
     """Create a sample prompt template"""
     template = PromptTemplate(
         name="Test Template",
@@ -56,8 +41,8 @@ def sample_template(app, admin_user):
         ],
         created_by_id=admin_user.id,
     )
-    db.session.add(template)
-    db.session.commit()
+    session.add(template)
+    session.commit()
     return template
 
 
