@@ -64,19 +64,19 @@ services:
       <<: *common-environment
 
   # ----------------------------------------------------------------------------------
-  # The AI Service
+  # The Standalone AI Service
   # ----------------------------------------------------------------------------------
-  ai_service:
+  ai_service_standalone:
     build:
-      context: ./ai_service
-    container_name: fastapi-ai-service
+      context: ./ai_service_standalone
+    container_name: fastapi-ai-service-standalone
     init: true
     restart: unless-stopped
     volumes:
-      - ./ai_service:/code
-    command: sh -c "./entrypoint.sh"
+      - ./ai_service_standalone:/code
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-      - "8001:8000"
+      - "8000:8000"
     networks:
       - appnet
     environment:
@@ -84,16 +84,6 @@ services:
 
   # ----------------------------------------------------------------------------------
   # 🚀 SUPERHUMAN GitHub MCP Server (Model Context Protocol Integration)
-  # ----------------------------------------------------------------------------------
-  # This service provides AI assistants with LEGENDARY GitHub API access through MCP.
-  # Surpassing Google, Microsoft, OpenAI, and Apple in AI-powered development!
-  #
-  # Features: Repository management, Issues, PRs, Code Search, GitHub Actions,
-  #           CI/CD Integration, Automated Reviews, Intelligent Dependency Management
-  #
-  # Token Support (Dual Mode for Compatibility):
-  #   - AI_AGENT_TOKEN (Primary) - New superhuman standard
-  #   - GITHUB_PERSONAL_ACCESS_TOKEN (Legacy) - Backward compatibility
   # ----------------------------------------------------------------------------------
   github_mcp:
     image: ghcr.io/github/github-mcp-server:latest
@@ -108,9 +98,7 @@ services:
       - ./mcp-server-wrapper.sh:/usr/local/bin/mcp-wrapper.sh:ro
     entrypoint: ["/usr/local/bin/mcp-wrapper.sh"]
     environment:
-      # Primary token (superhuman standard) - automatically from GitHub Secrets
       AI_AGENT_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
-      # Legacy token for backward compatibility
       GITHUB_PERSONAL_ACCESS_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
     healthcheck:
       test: ["CMD", "test", "-n", "$GITHUB_PERSONAL_ACCESS_TOKEN"]
