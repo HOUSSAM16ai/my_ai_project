@@ -15,7 +15,7 @@ import pytest
 
 
 @pytest.fixture
-def mock_complex_ai_gateway():
+def mock_ai_gateway():
     """Mocks the AI gateway to simulate a detailed response for complex questions."""
     mock_gateway = MagicMock()
 
@@ -23,8 +23,11 @@ def mock_complex_ai_gateway():
         """Simulated stream that echoes parts of the complex question."""
         if "database system" in question:
             yield {"type": "data", "payload": {"content": "Acknowledged database query. "}}
-        if "project structure" in question:
+        elif "project structure" in question:
             yield {"type": "data", "payload": {"content": "Analyzing project structure."}}
+        else:
+            yield {"type": "data", "payload": {"content": "Understood long question. "}}
+
 
         yield {"type": "end", "payload": {"conversation_id": "conv_complex"}}
 
@@ -33,14 +36,14 @@ def mock_complex_ai_gateway():
 
 
 def test_chat_stream_handles_complex_question_via_post(
-    admin_user, test_client_with_user, mock_complex_ai_gateway
+    admin_user, test_client_with_user, mock_ai_gateway
 ):
     """
     Tests that a complex, multi-part question is handled correctly via a POST request.
     """
     complex_question = "Please explain the project structure, the different files, and how the database system works."
 
-    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_complex_ai_gateway):
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_ai_gateway):
         response = test_client_with_user.post(
             "/admin/api/chat/stream", json={"question": complex_question}
         )
@@ -52,7 +55,7 @@ def test_chat_stream_handles_complex_question_via_post(
     pass
 
     # Verify the gateway was called correctly
-    mock_complex_ai_gateway.stream_chat.assert_called_once_with(
+    mock_ai_gateway.stream_chat.assert_called_once_with(
         complex_question, None, admin_user.id
     )
 
