@@ -167,28 +167,7 @@ def list_users():
 # --------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------
 
-try:
-    from app.services.ai_service_gateway import get_ai_service_gateway
-except ImportError:
-    get_ai_service_gateway = None
-
-
-@bp.route("/api/chat", methods=["POST"])
-@admin_required
-def handle_chat():
-    """API endpoint للمحادثة الذكية"""
-    # This endpoint is now superseded by the streaming endpoint,
-    # but we keep it for backward compatibility.
-    # It will be removed in a future version.
-    return (
-        jsonify(
-            {
-                "status": "error",
-                "message": "This endpoint is deprecated. Please use /api/chat/stream.",
-            }
-        ),
-        410,
-    )
+from app.services.ai_service_gateway import get_ai_service_gateway
 
 
 def _get_stream_params(req):
@@ -196,122 +175,48 @@ def _get_stream_params(req):
     if req.method == "GET":
         question = req.args.get("question", "").strip()
         conversation_id = req.args.get("conversation_id")
-        use_deep_context = req.args.get("use_deep_context", "true").lower() == "true"
-    else:
-        data = req.get_json() or {}
+    else: # POST
+        data = req.get_json(silent=True) or {}
         question = data.get("question", "").strip()
         conversation_id = data.get("conversation_id")
-        use_deep_context = data.get("use_deep_context", True)
-    return question, conversation_id, use_deep_context
-
-
-@bp.route("/api/generate-token")
-@admin_required
-def generate_token():
-    """Generates a short-lived JWT for WebSocket authentication."""
-    token = jwt.encode(
-        {
-            "exp": datetime.now(UTC) + timedelta(minutes=15),
-            "iat": datetime.now(UTC),
-            "sub": current_user.id,
-        },
-        current_app.config["SECRET_KEY"],
-        algorithm="HS256",
-    )
-    return jsonify({"token": token})
-
+    return question, conversation_id
 
 @bp.route("/api/chat/stream", methods=["GET", "POST"])
 @admin_required
 def handle_chat_stream():
     """
-    SSE streaming endpoint for real-time AI responses.
-    Refactored for clarity and reduced complexity.
+    SSE streaming endpoint that gateways to the standalone AI service.
+    This architecture decouples the frontend from the AI service, allowing
+    independent scaling and development.
     """
-    if not get_ai_service_gateway:
-        return jsonify({"status": "error", "message": "AI service gateway not available."}), 503
-
-    question, conversation_id, _ = _get_stream_params(request)
+    question, conversation_id = _get_stream_params(request)
 
     if not question:
+        return jsonify({"status": "error", "message": "Question is required."}), 400
 
-        def error_stream():
-            yield 'data: {"type": "error", "payload": {"error_message": "Question is required"}}\n\n'
-
-        headers = {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        }
-        return Response(stream_with_context(error_stream()), headers=headers)
+    gateway = get_ai_service_gateway()
+    if not gateway:
+        current_app.logger.error("AI Service Gateway is not available.")
+        return jsonify({"status": "error", "message": "AI service is currently unavailable."}), 503
 
     def stream_response():
-        gateway = get_ai_service_gateway()
-        for chunk in gateway.stream_chat(question, conversation_id):
-            yield f"data: {json.dumps(chunk)}\n\n"
+        """Generator function to stream the response."""
+        try:
+            # The user_id is now required by the new gateway for authentication
+            for chunk in gateway.stream_chat(question, conversation_id, current_user.id):
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:
+            current_app.logger.error(f"Error during streaming: {e}", exc_info=True)
+            error_payload = json.dumps({"type": "error", "payload": {"error": str(e)}})
+            yield f"data: {error_payload}\n\n"
 
     headers = {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",  # Important for Nginx buffering
     }
     return Response(stream_with_context(stream_response()), headers=headers)
-
-
-@socketio.on("connect", namespace="/chat")
-def handle_connect():
-    """Handles WebSocket connection."""
-    current_app.logger.info("Client connected to WebSocket")
-
-
-@socketio.on("disconnect", namespace="/chat")
-def handle_disconnect():
-    """Handles WebSocket disconnection."""
-    current_app.logger.info("Client disconnected from WebSocket")
-
-
-@socketio.on("chat_message", namespace="/chat")
-def handle_chat_message(data):
-    """Handles incoming chat messages. This endpoint is deprecated."""
-    current_app.logger.warning(
-        "Received chat_message on a deprecated WebSocket endpoint. The new architecture uses SSE."
-    )
-    socketio.emit(
-        "error",
-        {
-            "error": "This WebSocket endpoint is deprecated. Please use the SSE endpoint /api/chat/stream."
-        },
-    )
-
-
-@bp.route("/api/analyze-project", methods=["POST"])
-@admin_required
-def handle_analyze_project():
-    """API endpoint لتحليل المشروع"""
-    return (
-        jsonify(
-            {
-                "status": "error",
-                "message": "This endpoint is deprecated and will be removed in a future version.",
-            }
-        ),
-        410,
-    )
-
-
-@bp.route("/api/execute-modification", methods=["POST"])
-@admin_required
-def handle_execute_modification():
-    """API endpoint لتنفيذ تعديلات على المشروع"""
-    return (
-        jsonify(
-            {
-                "status": "error",
-                "message": "This endpoint is deprecated and will be removed in a future version.",
-            }
-        ),
-        410,
-    )
 
 
 @bp.route("/api/conversations", methods=["GET"])

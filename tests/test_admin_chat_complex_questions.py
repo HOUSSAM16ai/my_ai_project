@@ -1,31 +1,100 @@
 # tests/test_admin_chat_complex_questions.py
+"""
+Tests for Handling Complex and Long Questions in Admin Chat
+============================================================
+Version: 2.0.0
+
+This test suite ensures the admin chat stream can handle complex, long, and
+potentially problematic questions gracefully by using the POST method.
+"""
+
+import json
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 
-def login_admin(client, admin_user):
-    return client.post(
-        "/login", data=dict(email=admin_user.email, password="1111"), follow_redirects=True
+@pytest.fixture
+def mock_complex_ai_gateway():
+    """Mocks the AI gateway to simulate a detailed response for complex questions."""
+    mock_gateway = MagicMock()
+
+    def mock_stream_chat(question, conversation_id, user_id):
+        """Simulated stream that echoes parts of the complex question."""
+        if "database system" in question:
+            yield {"type": "data", "payload": {"content": "Acknowledged database query. "}}
+        if "project structure" in question:
+            yield {"type": "data", "payload": {"content": "Analyzing project structure."}}
+
+        yield {"type": "end", "payload": {"conversation_id": "conv_complex"}}
+
+    mock_gateway.stream_chat.side_effect = mock_stream_chat
+    return mock_gateway
+
+
+def test_chat_stream_handles_complex_question_via_post(
+    admin_user, test_client_with_user, mock_complex_ai_gateway
+):
+    """
+    Tests that a complex, multi-part question is handled correctly via a POST request.
+    """
+    complex_question = (
+        "Please explain the project structure, the different files, and how the database system works."
+    )
+
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_complex_ai_gateway):
+        response = test_client_with_user.post(
+            "/admin/api/chat/stream",
+            json={"question": complex_question}
+        )
+
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["Content-Type"]
+
+    # Verify the response content
+    lines = response.data.decode("utf-8").strip().split("\n")
+    chunks = [json.loads(line[6:]) for line in lines]
+
+    reconstructed_response = "".join(
+        c["payload"]["content"] for c in chunks if c["type"] == "data"
+    )
+
+    assert "Acknowledged database query" in reconstructed_response
+    assert "Analyzing project structure" in reconstructed_response
+    assert chunks[-1]["type"] == "end"
+
+    # Verify the gateway was called correctly
+    mock_complex_ai_gateway.stream_chat.assert_called_once_with(
+        complex_question, None, admin_user.id
     )
 
 
-def test_chat_stream_handles_complex_question(client, init_database, mock_ai_gateway, admin_user):
-    login_admin(client, admin_user)
-    complex_question = "شرح بنية المشروع والملفات المختلفة واشرح لي كيف يعمل نظام قاعدة البيانات"
-    response = client.get(f"/admin/api/chat/stream?question={complex_question}")
+def test_chat_stream_handles_long_question_via_post(
+    admin_user, test_client_with_user, mock_ai_gateway
+):
+    """
+    Tests that a very long question is handled correctly without errors via a POST request.
+    """
+    # Create a long question that might cause issues in a GET request URL
+    long_question = "Explain " + ("the project " * 500)
+
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_ai_gateway):
+        response = test_client_with_user.post(
+            "/admin/api/chat/stream",
+            json={"question": long_question}
+        )
 
     assert response.status_code == 200
-    assert "text/event-stream" in response.content_type
+    assert "text/event-stream" in response.headers["Content-Type"]
 
-    response_text = response.get_data(as_text=True)
-    assert "data:" in response_text
+    # Check that we received a valid, multi-chunk stream
+    lines = response.data.decode("utf-8").strip().split("\n")
+    chunks = [json.loads(line[6:]) for line in lines]
 
+    assert len(chunks) > 1
+    assert chunks[-1]["type"] == "end"
 
-def test_chat_stream_handles_long_question(client, init_database, mock_ai_gateway, admin_user):
-    login_admin(client, admin_user)
-    long_question = "شرح " + ("المشروع " * 200)  # Roughly 1400 chars, well within limits
-    response = client.get(f"/admin/api/chat/stream?question={long_question}")
-
-    assert response.status_code == 200
-    assert "text/event-stream" in response.content_type
-
-    response_text = response.get_data(as_text=True)
-    assert "data:" in response_text
+    # Verify the gateway was called with the full, long question
+    mock_ai_gateway.stream_chat.assert_called_once_with(
+        long_question, None, admin_user.id
+    )
