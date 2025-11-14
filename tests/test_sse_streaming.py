@@ -1,31 +1,104 @@
 # tests/test_sse_streaming.py
+"""
+Tests for Server-Sent Events (SSE) Streaming
+=============================================
+Version: 2.0.0
+
+This test suite validates the SSE streaming functionality of the admin chat endpoint.
+It ensures that the endpoint correctly gateways to the AI service, handles
+authentication, and streams data in the correct format.
+"""
+
+import json
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from app.models import User
 
 
-def login_admin(client, admin_user):
-    """Helper to login as admin user"""
-    return client.post(
-        "/login",
-        data=dict(email=admin_user.email, password="1111"),  # Match admin_user fixture password
-        follow_redirects=True,
+@pytest.fixture
+def mock_ai_gateway():
+    """Mocks the AI Service Gateway to simulate a streaming response."""
+    mock_gateway = MagicMock()
+
+    def mock_stream_chat(question, conversation_id, user_id):
+        """Simulated streaming response."""
+        yield {"type": "data", "payload": {"content": "Response part 1."}}
+        yield {"type": "data", "payload": {"content": "Response part 2."}}
+        yield {"type": "end", "payload": {"conversation_id": "conv_xyz"}}
+
+    mock_gateway.stream_chat.side_effect = mock_stream_chat
+    return mock_gateway
+
+
+def test_chat_stream_authentication(test_client):
+    """
+    Ensures that unauthenticated requests to the streaming endpoint are rejected.
+    """
+    response = test_client.post("/admin/api/chat/stream", json={"question": "test"})
+    # Expect a redirect to the login page for unauthenticated users
+    assert response.status_code == 302
+    assert "/login" in response.headers["Location"]
+
+
+def test_chat_stream_success_and_format(admin_user, test_client_with_user, mock_ai_gateway):
+    """
+    Tests a successful streaming request, validating the SSE format,
+    the content of the stream, and the interaction with the mock gateway.
+    """
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_ai_gateway):
+        response = test_client_with_user.post(
+            "/admin/api/chat/stream",
+            json={"question": "Hello Gateway", "conversation_id": "conv_123"}
+        )
+
+    # 1. Validate the response headers and status
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["Content-Type"]
+
+    # 2. Validate the streamed content
+    lines = response.data.decode("utf-8").strip().split("\n")
+    # Expected format is "data: <json_string>"
+    assert all(line.startswith("data: ") for line in lines)
+
+    # Parse the JSON from each "data:" line
+    chunks = [json.loads(line[6:]) for line in lines]
+
+    assert len(chunks) == 3, "Expected exactly three chunks from the mock stream"
+
+    # 3. Verify the chunk structure and content
+    assert chunks[0] == {"type": "data", "payload": {"content": "Response part 1."}}
+    assert chunks[1] == {"type": "data", "payload": {"content": "Response part 2."}}
+    assert chunks[2] == {"type": "end", "payload": {"conversation_id": "conv_xyz"}}
+
+    reconstructed_message = "".join(c["payload"]["content"] for c in chunks if c["type"] == "data")
+    assert reconstructed_message == "Response part 1.Response part 2."
+
+    # 4. Verify that the gateway was called correctly
+    mock_ai_gateway.stream_chat.assert_called_once_with(
+        "Hello Gateway", "conv_123", admin_user.id
     )
 
 
-def test_admin_chat_stream_requires_auth(client, init_database):
-    response = client.get("/admin/api/chat/stream?question=test")
-    # Non-logged in users are redirected to login page by default from Flask-Login
-    assert response.status_code == 302
+def test_chat_stream_missing_question(admin_user, test_client_with_user):
+    """
+    Tests the endpoint's response when the 'question' field is missing.
+    """
+    response = test_client_with_user.post("/admin/api/chat/stream", json={})
+    assert response.status_code == 400
+    assert response.json == {"status": "error", "message": "Question is required."}
 
 
-def test_admin_chat_stream_sse_format(client, init_database, admin_user, mock_ai_gateway):
-    # Login with the admin user
-    login_response = login_admin(client, admin_user)
-    assert login_response.status_code == 200
+def test_chat_stream_gateway_unavailable(admin_user, test_client_with_user):
+    """
+    Tests the endpoint's response when the AI service gateway is not available.
+    """
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=None):
+        response = test_client_with_user.post(
+            "/admin/api/chat/stream",
+            json={"question": "This will fail."}
+        )
 
-    # Now make the actual request
-    response = client.get("/admin/api/chat/stream?question=hello")
-    assert response.status_code == 200
-    assert "text/event-stream" in response.content_type
-
-    # A simple check for SSE data format
-    response_text = response.get_data(as_text=True)
-    assert "data:" in response_text
+    assert response.status_code == 503
+    assert response.json == {"status": "error", "message": "AI service is currently unavailable."}
