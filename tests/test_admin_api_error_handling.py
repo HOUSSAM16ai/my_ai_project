@@ -35,8 +35,7 @@ def test_chat_stream_gateway_connection_error(
     """
     with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_failing_gateway):
         response = test_client_with_user.post(
-            "/admin/api/chat/stream",
-            json={"question": "This will cause a connection error."}
+            "/admin/api/chat/stream", json={"question": "This will cause a connection error."}
         )
 
     # The overall request is successful (200), but the stream contains an error
@@ -53,7 +52,7 @@ def test_chat_stream_gateway_connection_error(
     assert chunk["type"] == "error"
     assert "payload" in chunk
     assert "error" in chunk["payload"]
-    assert "Could not connect to the AI service" in chunk["payload"]["error"]
+    assert "Failed to connect to AI service" in chunk["payload"]["error"]
 
 
 def test_chat_stream_gateway_not_configured(admin_user, test_client_with_user):
@@ -64,8 +63,7 @@ def test_chat_stream_gateway_not_configured(admin_user, test_client_with_user):
     # Patch the factory function to return None
     with patch("app.admin.routes.get_ai_service_gateway", return_value=None):
         response = test_client_with_user.post(
-            "/admin/api/chat/stream",
-            json={"question": "Test question"}
+            "/admin/api/chat/stream", json={"question": "Test question"}
         )
 
     assert response.status_code == 503
@@ -92,10 +90,10 @@ def test_chat_stream_missing_question_payload(admin_user, test_client_with_user)
     assert response.get_json()["message"] == "Question is required."
 
 
-def test_unauthenticated_access_is_redirected(test_client):
+def test_unauthenticated_access_is_redirected(client):
     """
     Confirms that an unauthenticated user is redirected to the login page.
     """
-    response = test_client.post("/admin/api/chat/stream", json={"question": "test"})
+    response = client.post("/admin/api/chat/stream", json={"question": "test"})
     assert response.status_code == 302
     assert "login" in response.headers.get("Location", "")

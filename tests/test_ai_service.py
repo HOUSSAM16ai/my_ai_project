@@ -18,7 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 # Ensure the app is imported correctly
-from ai_service_standalone.main import ALGORITHM, SECRET_key, app
+from ai_service_standalone.main import ALGORITHM, SECRET_KEY, app
 
 client = TestClient(app)
 
@@ -34,6 +34,7 @@ def create_test_token(user_id: str, secret: str, expires_in_minutes: int = 15) -
 
 
 # --- Test Cases ---
+
 
 def test_stream_chat_success():
     """
@@ -56,9 +57,7 @@ def test_stream_chat_success():
     # Verify the content of the chunks
     assert chunks[0]["type"] == "data"
     assert "content" in chunks[0]["payload"]
-    reconstructed_message = "".join(
-        c["payload"]["content"] for c in chunks if c["type"] == "data"
-    )
+    reconstructed_message = "".join(c["payload"]["content"] for c in chunks if c["type"] == "data")
     assert "meaning of life" in reconstructed_message
 
     # Verify the end-of-stream message
@@ -101,11 +100,17 @@ def test_stream_chat_expired_token():
     assert response.json() == {"detail": "Invalid token"}
 
 
-@pytest.mark.parametrize("payload, expected_error", [
-    ({}, "Field required"),  # Missing 'question'
-    ({"question": "   "}, "String should have at least 1 character"),  # Empty question
-    ({"question": "Valid", "conversation_id": 123}, "Input should be a valid string"), # Invalid conv_id type
-])
+@pytest.mark.parametrize(
+    "payload, expected_error",
+    [
+        ({}, "Field required"),  # Missing 'question'
+        ({"question": "   "}, "String should have at least 1 character"),  # Empty question
+        (
+            {"question": "Valid", "conversation_id": 123},
+            "Input should be a valid string",
+        ),  # Invalid conv_id type
+    ],
+)
 def test_stream_chat_invalid_payload(payload, expected_error):
     """
     Tests the endpoint's response to various invalid payloads.

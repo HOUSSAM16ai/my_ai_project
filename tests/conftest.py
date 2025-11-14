@@ -120,11 +120,29 @@ def init_database(app, db, session):
 
 
 @pytest.fixture
+def test_client_with_user(client, admin_user, session):
+    """A test client authenticated as a regular user."""
+    # The 'client' fixture gives us a test client.
+    # The 'admin_user' fixture ensures an admin user exists in the database.
+    # Now, we simulate a login.
+    with client:
+        # To log in, we post to the login view.
+        response = client.post(
+            "/login",
+            data={"email": admin_user.email, "password": "1111"},
+            follow_redirects=True,
+        )
+        # Check that login was successful
+        assert response.status_code == 200
+        yield client
+
+
+@pytest.fixture
 def mock_ai_gateway():
     """Mock the AI service gateway."""
     mock_gateway = MagicMock()
 
-    def mock_stream_chat(question, conversation_id):
+    def mock_stream_chat(question, conversation_id, user_id):
         responses = [
             {"type": "data", "payload": {"content": "This "}},
             {"type": "data", "payload": {"content": "is "}},

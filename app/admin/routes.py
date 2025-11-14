@@ -175,11 +175,12 @@ def _get_stream_params(req):
     if req.method == "GET":
         question = req.args.get("question", "").strip()
         conversation_id = req.args.get("conversation_id")
-    else: # POST
+    else:  # POST
         data = req.get_json(silent=True) or {}
         question = data.get("question", "").strip()
         conversation_id = data.get("conversation_id")
     return question, conversation_id
+
 
 @bp.route("/api/chat/stream", methods=["GET", "POST"])
 @admin_required
@@ -207,8 +208,11 @@ def handle_chat_stream():
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
             current_app.logger.error(f"Error during streaming: {e}", exc_info=True)
-            error_payload = json.dumps({"type": "error", "payload": {"error": str(e)}})
+            error_payload = json.dumps(
+                {"type": "error", "payload": {"error": "Failed to connect to AI service"}}
+            )
             yield f"data: {error_payload}\n\n"
+            return
 
     headers = {
         "Content-Type": "text/event-stream",
