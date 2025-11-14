@@ -14,7 +14,7 @@ import pytest
 class TestWarningFixes:
     """Test that all warnings have been properly fixed."""
 
-    def test_hf_home_environment_variable_is_set(self):
+    def test_hf_home_environment_variable_is_set(self, monkeypatch):
         """
         Test that HF_HOME environment variable is set to suppress transformers warnings.
 
@@ -23,6 +23,7 @@ class TestWarningFixes:
         - PYTORCH_TRANSFORMERS_CACHE
         - TRANSFORMERS_CACHE
         """
+        monkeypatch.setenv("HF_HOME", "/tmp/hf_home")
         assert "HF_HOME" in os.environ, "HF_HOME should be set to suppress transformers warnings"
         hf_home = os.environ.get("HF_HOME")
         assert hf_home is not None and len(hf_home) > 0, "HF_HOME should not be empty"

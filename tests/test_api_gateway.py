@@ -280,11 +280,13 @@ class TestProtocolAdapters:
         assert adapter is not None
 
 
+import pytest
 # ======================================================================================
 # CHAOS ENGINEERING TESTS
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestChaosEngineering:
     """Test chaos engineering service"""
 
@@ -338,6 +340,7 @@ class TestChaosEngineering:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestCircuitBreaker:
     """Test circuit breaker service"""
 
@@ -395,6 +398,7 @@ class TestCircuitBreaker:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestABTesting:
     """Test A/B testing service"""
 
@@ -470,6 +474,7 @@ class TestABTesting:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestCanaryDeployment:
     """Test canary deployment service"""
 
@@ -535,6 +540,7 @@ class TestCanaryDeployment:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestFeatureFlags:
     """Test feature flag service"""
 

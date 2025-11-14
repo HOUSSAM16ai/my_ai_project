@@ -13,11 +13,15 @@ from app.services.api_observability_service import (
 )
 from app.services.api_security_service import APISecurityService
 
+import pytest
+
+
 # ======================================================================================
 # OBSERVABILITY SERVICE TESTS
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestObservabilityService:
     """اختبارات خدمة المراقبة - Observability service tests"""
 
@@ -310,6 +314,7 @@ class TestSecurityService:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestContractService:
     """اختبارات خدمة العقود - Contract service tests"""
 
@@ -429,6 +434,7 @@ class TestContractService:
 # ======================================================================================
 
 
+@pytest.mark.usefixtures("app_context")
 class TestIntegration:
     """اختبارات التكامل - Integration tests"""
 
