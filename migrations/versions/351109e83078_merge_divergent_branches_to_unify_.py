@@ -5,8 +5,6 @@ Revises: 20251111_drop_cosmic_security, 23c1d9e5dc65
 Create Date: 2025-11-14 17:54:54.018430
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
