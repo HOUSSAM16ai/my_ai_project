@@ -21,7 +21,7 @@ except ImportError:
 
 # revision identifiers, used by Alembic.
 revision = "0fe9bd3b1f3c"
-down_revision = None
+down_revision = "2d1df9e5dc03"
 branch_labels = None
 depends_on = None
 
