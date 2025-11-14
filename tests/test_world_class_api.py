@@ -7,14 +7,13 @@
 
 import time
 
+import pytest
+
 from app.services.api_contract_service import APIContractService
 from app.services.api_observability_service import (
     APIObservabilityService,
 )
 from app.services.api_security_service import APISecurityService
-
-import pytest
-
 
 # ======================================================================================
 # OBSERVABILITY SERVICE TESTS

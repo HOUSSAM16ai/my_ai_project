@@ -18,6 +18,8 @@ Tests cover:
 - Feature flags
 """
 
+import pytest
+
 from app.services.api_gateway_chaos import (
     ChaosEngineeringService,
     ChaosExperiment,
@@ -279,8 +281,6 @@ class TestProtocolAdapters:
         # Simplified test
         assert adapter is not None
 
-
-import pytest
 
 # ======================================================================================
 # CHAOS ENGINEERING TESTS

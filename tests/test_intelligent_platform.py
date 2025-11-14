@@ -5,6 +5,8 @@ Tests for Intelligent Service Platform
 
 from datetime import UTC, datetime
 
+import pytest
+
 from app.services.aiops_self_healing_service import (
     MetricType,
     TelemetryData,
@@ -37,9 +39,6 @@ from app.services.workflow_orchestration_service import (
     WorkflowDefinition,
     get_workflow_orchestration_service,
 )
-
-
-import pytest
 
 
 @pytest.mark.usefixtures("app_context")
