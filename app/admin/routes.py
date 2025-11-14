@@ -12,10 +12,9 @@
 #     `template_folder`.
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from functools import wraps
 
-import jwt
 from flask import (
     Response,
     abort,
@@ -29,7 +28,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app import db, socketio
+from app import db
 from app.admin import bp
 
 # --- [THE GRAND BLUEPRINT IMPORTS] ---
@@ -52,6 +51,10 @@ try:
     from app.services.admin_chat_performance_service import get_performance_service
 except ImportError:
     get_performance_service = None
+try:
+    from app.services.ai_service_gateway import get_ai_service_gateway
+except ImportError:
+    get_ai_service_gateway = None
 
 
 # --------------------------------------------------------------------------------------
@@ -166,8 +169,6 @@ def list_users():
 
 # --------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------
-
-from app.services.ai_service_gateway import get_ai_service_gateway
 
 
 def _get_stream_params(req):

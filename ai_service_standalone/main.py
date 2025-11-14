@@ -9,7 +9,6 @@ import asyncio
 import json
 import logging
 import os
-from typing import Optional
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -20,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator
 # --- Models ---
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
-    conversation_id: Optional[str] = None
+    conversation_id: str | None = None
 
     @field_validator("question", mode="before")
     def strip_whitespace(cls, v: str) -> str:
