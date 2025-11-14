@@ -904,7 +904,8 @@ body {
   </div>
 </div>
 
-<!-- Include adaptive typewriter for superhuman streaming -->
+<!-- Include Socket.IO and adaptive typewriter -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/adaptiveTypewriter.js') }}"></script>
 
 <script>
@@ -923,6 +924,102 @@ body {
   const conversationList = document.getElementById('conversation-list');
   const themeToggle = document.getElementById('theme-toggle');
   const themeLabel = document.getElementById('theme-label');
+  const streamingBadge = document.getElementById('streaming-badge');
+
+  // ============================================================================
+  // SUPERHUMAN WEBSOCKET IMPLEMENTATION
+  // ============================================================================
+  const socket = io();
+  let typewriter = null;
+  let currentResponseDiv = null;
+
+  socket.on('connect', () => {
+    console.log('🚀 WebSocket connected successfully.');
+    streamingBadge.textContent = '⚡ WebSocket Connected';
+    streamingBadge.className = 'perf-badge fast';
+  });
+
+  socket.on('disconnect', () => {
+    console.warn('🔌 WebSocket disconnected.');
+    streamingBadge.textContent = '❌ WebSocket Disconnected';
+    streamingBadge.className = 'perf-badge slow';
+  });
+
+  socket.on('connect_error', (error) => {
+    console.error('WebSocket Connection Error:', error);
+    addMessage('system', `❌ WebSocket Error. Could not connect.`);
+    streamingBadge.textContent = '❌ WebSocket Error';
+    streamingBadge.className = 'perf-badge slow';
+    hideLoading();
+  });
+
+  socket.on('error', (data) => {
+      console.error('WebSocket server error:', data.error);
+      addMessage('system', `❌ An error occurred: ${data.error}`);
+      hideLoading();
+      if(typewriter) typewriter.finish();
+      STATE.isLoading = false;
+      sendBtn.disabled = false;
+  });
+
+  socket.on('chat_response', (data) => {
+    if (STATE.isLoading && !currentResponseDiv) {
+        hideLoading();
+        const streamMsg = document.createElement('div');
+        streamMsg.className = 'message assistant';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = '🤖';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        streamMsg.appendChild(avatar);
+        streamMsg.appendChild(contentDiv);
+        messagesArea.appendChild(streamMsg);
+        currentResponseDiv = contentDiv;
+        typewriter = new AdaptiveTypewriter(currentResponseDiv);
+    }
+
+    if (data.data) {
+        typewriter.append(data.data);
+    }
+  });
+
+  socket.on('stream_end', () => {
+      if (typewriter) {
+          typewriter.waitForCompletion().then(() => {
+              currentResponseDiv = null;
+              typewriter = null;
+          });
+      }
+      STATE.isLoading = false;
+      sendBtn.disabled = false;
+  });
+
+  function sendMessageWithWebSocket(question) {
+    if (STATE.isLoading) return;
+    if (!socket.connected) {
+        addMessage('system', '❌ WebSocket not connected. Please wait or refresh.');
+        return;
+    }
+
+    showLoading();
+    addMessage('user', question);
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    chatInput.style.height = (chatInput.scrollHeight) + 'px';
+
+    const payload = {
+      question: question,
+      conversation_id: STATE.currentConversationId || null
+    };
+
+    socket.emit('start_chat', payload);
+  }
+
+  // --- End of WebSocket Implementation ---
 
   function showLoading() {
     STATE.isLoading = true;
@@ -999,125 +1096,10 @@ body {
     messagesArea.scrollTop = messagesArea.scrollHeight;
   }
 
-  function formatContent(text) {
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-    
-    return escaped
-      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
-  }
-
-  // ============================================================================
-  // SUPERHUMAN SERVER-SENT EVENTS (SSE) IMPLEMENTATION
-  // ============================================================================
-  let eventSource = null;
-  const streamingBadge = document.getElementById('streaming-badge');
-
-  function sendMessageWithStreaming(question) {
-    if (STATE.isLoading) return;
-
-    showLoading();
-    addMessage('user', question);
-    chatInput.value = '';
-
-    // Adjust textarea height
-    chatInput.style.height = 'auto';
-    chatInput.style.height = (chatInput.scrollHeight) + 'px';
-
-    const params = new URLSearchParams({
-      question: question,
-      conversation_id: STATE.currentConversationId || ''
-    });
-
-    const url = `/admin/api/chat/stream?${params.toString()}`;
-    eventSource = new EventSource(url);
-
-    let currentResponseDiv = null;
-    let fullResponse = "";
-    let typewriter = null;
-
-    streamingBadge.textContent = '⚡ Streaming...';
-    streamingBadge.className = 'perf-badge medium';
-
-    eventSource.onopen = () => {
-      console.log('🚀 SSE connection opened.');
-      hideLoading();
-
-      const streamMsg = document.createElement('div');
-      streamMsg.className = 'message assistant';
-
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      avatar.textContent = '🤖';
-
-      const contentDiv = document.createElement('div');
-      contentDiv.className = 'message-content';
-      contentDiv.id = 'current-response';
-
-      streamMsg.appendChild(avatar);
-      streamMsg.appendChild(contentDiv);
-      messagesArea.appendChild(streamMsg);
-      currentResponseDiv = contentDiv;
-      typewriter = new AdaptiveTypewriter(currentResponseDiv);
-    };
-
-    eventSource.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-
-            if (data.type === 'chunk' && data.payload && data.payload.content) {
-                typewriter.append(data.payload.content); // Use append for smooth typing
-                fullResponse += data.payload.content;
-            } else if (data.type === 'end') {
-                typewriter.waitForCompletion().then(() => {
-                    if (currentResponseDiv) {
-                        currentResponseDiv.id = ''; // Finalize the message
-                    }
-                });
-                eventSource.close();
-                STATE.isLoading = false;
-                sendBtn.disabled = false;
-                streamingBadge.textContent = '⚡ SSE Enabled';
-                streamingBadge.className = 'perf-badge fast';
-            } else if (data.type === 'error') {
-                typewriter.waitForCompletion().then(() => {
-                    addMessage('system', `❌ Error: ${data.payload.error}`);
-                });
-                eventSource.close();
-                STATE.isLoading = false;
-                sendBtn.disabled = false;
-            }
-        } catch(e) {
-            console.error("Failed to parse SSE message data:", event.data, e);
-        }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      addMessage('system', '❌ Streaming connection failed. Please try again.');
-      hideLoading();
-      if(typewriter) typewriter.finish();
-      streamingBadge.textContent = '❌ SSE Error';
-      streamingBadge.className = 'perf-badge slow';
-      if (eventSource) {
-        eventSource.close();
-      }
-      STATE.isLoading = false;
-      sendBtn.disabled = false;
-    };
-  }
-
   sendBtn.addEventListener('click', () => {
     const question = chatInput.value.trim();
     if (question && !STATE.isLoading) {
-      sendMessageWithStreaming(question);
+      sendMessageWithWebSocket(question);
     }
   });
 
@@ -1133,13 +1115,9 @@ body {
     chatInput.style.height = (chatInput.scrollHeight) + 'px';
   });
 
-  // Existing non-chat JS functions
   async function analyzeProject() {
-    // This is a placeholder for the analyze functionality.
     showLoading();
     addMessage('system', '🔍 Starting deep project analysis...');
-
-    // Simulate API call
     setTimeout(() => {
         hideLoading();
         addMessage('system', '✅ Project analysis complete. The AI now has full context of your project architecture, dependencies, and code structure.');
@@ -1150,7 +1128,7 @@ body {
 
   document.querySelector('[data-action="new-chat"]').addEventListener('click', () => {
     STATE.currentConversationId = null;
-    messagesArea.innerHTML = ''; // Clear messages
+    messagesArea.innerHTML = '';
     const welcomeMessage = `
         <div class="message system">
           <div class="message-avatar">🤖</div>
@@ -1160,7 +1138,6 @@ body {
           </div>
         </div>`;
     messagesArea.innerHTML = welcomeMessage;
-    // Visually deactivate other conversations
     document.querySelectorAll('.conversation-item.active').forEach(item => {
       item.classList.remove('active');
     });
@@ -1189,7 +1166,6 @@ body {
   }
 
   initTheme();
-  // loadConversations(); // This would be implemented to fetch and render conversations
 })();
 </script>
 {% endblock %}
