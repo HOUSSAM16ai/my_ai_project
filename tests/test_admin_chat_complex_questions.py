@@ -28,7 +28,6 @@ def mock_ai_gateway():
         else:
             yield {"type": "data", "payload": {"content": "Understood long question. "}}
 
-
         yield {"type": "end", "payload": {"conversation_id": "conv_complex"}}
 
     mock_gateway.stream_chat.side_effect = mock_stream_chat
@@ -55,9 +54,7 @@ def test_chat_stream_handles_complex_question_via_post(
     pass
 
     # Verify the gateway was called correctly
-    mock_ai_gateway.stream_chat.assert_called_once_with(
-        complex_question, None, admin_user.id
-    )
+    mock_ai_gateway.stream_chat.assert_called_once_with(complex_question, None, admin_user.id)
 
 
 def test_chat_stream_handles_long_question_via_post(
@@ -67,7 +64,7 @@ def test_chat_stream_handles_long_question_via_post(
     Tests that a very long question is handled correctly without errors via a POST request.
     """
     # Create a long question that might cause issues in a GET request URL
-    long_question = "Explain " + ("the project " * 500)
+    long_question = ("Explain " + ("the project " * 500)).strip()
 
     with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_ai_gateway):
         response = test_client_with_user.post(
