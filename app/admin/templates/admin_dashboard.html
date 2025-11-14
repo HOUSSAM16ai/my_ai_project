@@ -1122,54 +1122,14 @@ body {
 
   // Keep the rest of the non-chat JS functions as they were...
   // (analyzeProject, loadConversations, theme, etc.)
-  async function analyzeProject() {
-    showLoading();
-    addMessage('system', '🔍 Starting deep project analysis...');
-    
-    try {
-      const response = await fetch("{{ url_for('admin.handle_analyze_project') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: STATE.currentConversationId
-        })
-      });
-      
-      hideLoading();
-      
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {}
-        addMessage('system', `❌ ${errorMessage}`);
-        return;
-      }
-      
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        const stats = result.project_stats;
-        const arch = result.architecture;
-        const hotspots = result.hotspots;
-        const recommendations = result.recommendations;
-        
-        const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-        
-        let analysisHtml = `<h3>📊 Project Statistics</h3>...`; // Truncated for brevity
-        
-        addMessage('assistant', analysisHtml);
-      } else {
-        addMessage('system', `❌ Analysis failed: ${result.message || result.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      hideLoading();
-      addMessage('system', `❌ Network error: ${error.message}`);
-    }
-  }
+  // async function analyzeProject() {
+  //   showLoading();
+  //   addMessage('system', '🔍 Starting deep project analysis...');
+  //   hideLoading();
+  //   addMessage('system', '❌ Analysis feature is temporarily disabled.');
+  // }
 
-  analyzeBtn.addEventListener('click', analyzeProject);
+  // analyzeBtn.addEventListener('click', analyzeProject);
 
   clearBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to start a new conversation?')) {
