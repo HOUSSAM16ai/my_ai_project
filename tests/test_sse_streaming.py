@@ -9,12 +9,9 @@ It ensures that the endpoint correctly gateways to the AI service, handles
 authentication, and streams data in the correct format.
 """
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from app.models import User
 
 
 @pytest.fixture
