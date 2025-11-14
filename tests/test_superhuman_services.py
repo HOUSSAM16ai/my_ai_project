@@ -228,6 +228,7 @@ def test_dr_service_initialization():
     assert "api_dr" in dr.dr_plans
 
 
+@pytest.mark.usefixtures("app_context")
 def test_backup_registration():
     """Test backup registration and verification"""
     from app.services.api_disaster_recovery_service import (
@@ -255,6 +256,7 @@ def test_backup_registration():
     assert verification is True
 
 
+@pytest.mark.usefixtures("app_context")
 def test_incident_creation():
     """Test incident creation and tracking"""
     from app.services.api_disaster_recovery_service import (
@@ -345,6 +347,7 @@ def test_event_driven_service_initialization():
     assert "system_events" in events.streams
 
 
+@pytest.mark.usefixtures("app_context")
 def test_event_publishing():
     """Test event publishing"""
     from app.services.api_event_driven_service import EventPriority, get_event_driven_service
@@ -366,6 +369,7 @@ def test_event_publishing():
     assert event.event_type == "test.event"
 
 
+@pytest.mark.usefixtures("app_context")
 def test_event_subscription():
     """Test event subscription and handling"""
     from app.services.api_event_driven_service import get_event_driven_service
@@ -429,6 +433,7 @@ def test_slo_tracking_with_governance():
     assert status is not None
 
 
+@pytest.mark.usefixtures("app_context")
 def test_event_driven_with_incident_management():
     """Test integration between event-driven architecture and incident management"""
     from app.services.api_disaster_recovery_service import (

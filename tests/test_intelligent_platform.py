@@ -39,6 +39,10 @@ from app.services.workflow_orchestration_service import (
 )
 
 
+import pytest
+
+
+@pytest.mark.usefixtures("app_context")
 class TestDataMeshService:
     """Test Data Mesh service"""
 
@@ -125,6 +129,7 @@ class TestDataMeshService:
         assert summary["avg_completeness"] >= 0.9
 
 
+@pytest.mark.usefixtures("app_context")
 class TestAIOpsService:
     """Test AIOps service"""
 
@@ -165,6 +170,7 @@ class TestAIOpsService:
         assert health["service_name"] == "test-service"
 
 
+@pytest.mark.usefixtures("app_context")
 class TestGitOpsService:
     """Test GitOps service"""
 
@@ -207,6 +213,7 @@ class TestGitOpsService:
         assert not decision.allowed
 
 
+@pytest.mark.usefixtures("app_context")
 class TestWorkflowOrchestration:
     """Test Workflow Orchestration service"""
 
@@ -241,6 +248,7 @@ class TestWorkflowOrchestration:
         assert "total_workflows" in metrics
 
 
+@pytest.mark.usefixtures("app_context")
 class TestEdgeMultiCloud:
     """Test Edge & Multi-Cloud service"""
 
@@ -266,6 +274,7 @@ class TestEdgeMultiCloud:
         assert metrics["total_regions"] > 0
 
 
+@pytest.mark.usefixtures("app_context")
 class TestSREService:
     """Test SRE & Error Budget service"""
 

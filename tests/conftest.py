@@ -19,6 +19,13 @@ def app():
     return create_app("testing")
 
 
+@pytest.fixture
+def app_context(app):
+    """Pushes an application context to make 'current_app' available."""
+    with app.app_context():
+        yield
+
+
 @pytest.fixture(scope="session")
 def db(app):
     """Session-wide test database."""
@@ -148,6 +155,7 @@ def user_factory(session):
     """
 
     def _user_factory(**kwargs):
+        password = kwargs.pop("password", "password")
         defaults = {
             "email": fake.email(),
             "full_name": fake.name(),
@@ -155,10 +163,7 @@ def user_factory(session):
         defaults.update(kwargs)
 
         user = User(**defaults)
-        if "password" in defaults:
-            user.set_password(defaults["password"])
-        else:
-            user.set_password("password")
+        user.set_password(password)
 
         session.add(user)
         session.commit()  # Commit to make visible to app code
