@@ -14,6 +14,7 @@
 #   - نسخ احتياطي واستعادة تلقائية
 #   - تحسين الاستعلامات والفهرسة الذكية
 
+import enum
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -22,6 +23,17 @@ from sqlalchemy.orm import class_mapper
 
 from app import db
 from app.utils.model_registry import ModelRegistry
+
+
+def _serialize_value(value: Any) -> Any:
+    """Serializes values, correctly handling enums, datetimes, and other common types."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, enum.Enum):
+        return value.value
+    if isinstance(value, (bool, int, str, float)) or value is None:
+        return value
+    return str(value)
 
 # ==================================================================================
 # CONFIGURATION & MODEL REGISTRY 📋
@@ -36,6 +48,10 @@ def _get_all_models():
         "mission_plans": ModelRegistry.get_model("MissionPlan"),
         "tasks": ModelRegistry.get_model("Task"),
         "mission_events": ModelRegistry.get_model("MissionEvent"),
+        "admin_conversations": ModelRegistry.get_model("AdminConversation"),
+        "admin_messages": ModelRegistry.get_model("AdminMessage"),
+        "prompt_templates": ModelRegistry.get_model("PromptTemplate"),
+        "generated_prompts": ModelRegistry.get_model("GeneratedPrompt"),
     }
 
 
@@ -54,6 +70,26 @@ ALL_MODELS = get_all_models()
 
 MODEL_METADATA = {
     "users": {"icon": "👤", "category": "Core", "description": "User accounts and permissions"},
+    "admin_conversations": {
+        "icon": "💬",
+        "category": "Admin",
+        "description": "SUPERHUMAN admin conversations",
+    },
+    "admin_messages": {
+        "icon": "✉️",
+        "category": "Admin",
+        "description": "Individual admin messages",
+    },
+    "prompt_templates": {
+        "icon": "📜",
+        "category": "Prompt Engineering",
+        "description": "Reusable prompt templates",
+    },
+    "generated_prompts": {
+        "icon": "✨",
+        "category": "Prompt Engineering",
+        "description": "History of generated prompts",
+    },
     "missions": {"icon": "🎯", "category": "Overmind", "description": "AI missions"},
     "mission_plans": {
         "icon": "📋",
@@ -249,7 +285,7 @@ def get_table_data(
         return {"status": "error", "message": f"Table {table_name} not found"}
     model = ALL_MODELS[table_name]
     try:
-        query = db.session.query(model)
+        query = db.select(model)
         if search:
             from sqlalchemy import or_
 
@@ -266,20 +302,11 @@ def get_table_data(
                 order_col.desc() if order_dir.lower() == "desc" else order_col.asc()
             )
 
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
         columns = [c.key for c in class_mapper(model).columns]
 
-        def serialize_value(value):
-            if isinstance(value, datetime):
-                return value.isoformat()
-            if hasattr(value, "value"):  # Handle Enums
-                return value.value
-            if isinstance(value, (bool, int, str)) or value is None:
-                return value
-            return str(value)
-
         rows = [
-            {c: serialize_value(getattr(item, c)) for c in columns} for item in pagination.items
+            {c: _serialize_value(getattr(item, c)) for c in columns} for item in pagination.items
         ]
         return {
             "status": "success",
@@ -305,12 +332,7 @@ def get_record(table_name: str, record_id: int) -> dict[str, Any]:
         if not record:
             return {"status": "error", "message": "Record not found"}
         columns = [c.key for c in class_mapper(model).columns]
-        data = {
-            c: (lambda v: v.isoformat() if isinstance(v, datetime) else getattr(v, "value", v))(
-                getattr(record, c)
-            )
-            for c in columns
-        }
+        data = {c: _serialize_value(getattr(record, c)) for c in columns}
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -386,17 +408,8 @@ def execute_query(sql: str) -> dict[str, Any]:
         result = db.session.execute(text(sql))
         columns = list(result.keys())
         rows = [
-            {
-                c: (
-                    lambda v: (
-                        v.isoformat()
-                        if isinstance(v, datetime)
-                        else str(v) if v is not None else None
-                    )
-                )(row[i])
-                for i, c in enumerate(columns)
-            }
-            for row in result
+            {columns[i]: _serialize_value(value) for i, value in enumerate(row)}
+            for row in result.fetchall()
         ]
         return {"status": "success", "columns": columns, "rows": rows, "count": len(rows)}
     except Exception as e:
