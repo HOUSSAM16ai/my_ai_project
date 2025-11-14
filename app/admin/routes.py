@@ -274,8 +274,7 @@ def handle_disconnect():
 def handle_chat_message(data):
     """Handles incoming chat messages. This endpoint is deprecated."""
     current_app.logger.warning(
-        "Received chat_message on a deprecated WebSocket endpoint. "
-        "The new architecture uses SSE."
+        "Received chat_message on a deprecated WebSocket endpoint. The new architecture uses SSE."
     )
     socketio.emit(
         "error",
