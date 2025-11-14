@@ -31,7 +31,7 @@ def _serialize_value(value: Any) -> Any:
         return value.isoformat()
     if isinstance(value, enum.Enum):
         return value.value
-    if isinstance(value, (bool, int, str, float)) or value is None:
+    if isinstance(value, bool | int | str | float) or value is None:
         return value
     return str(value)
 
