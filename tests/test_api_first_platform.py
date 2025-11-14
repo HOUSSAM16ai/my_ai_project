@@ -435,59 +435,60 @@ class TestAPIFirstPlatformService:
 class TestIntegration:
     """اختبارات التكامل"""
 
-    def test_full_api_lifecycle(self):
+    def test_full_api_lifecycle(self, app):
         """اختبار دورة حياة API كاملة"""
         service = APIFirstPlatformService()
 
-        # 1. Register contract
-        spec = {
-            "openapi": "3.1.0",
-            "info": {"title": "Accounts API", "version": "1.0.0"},
-            "paths": {
-                "/accounts": {
-                    "post": {
-                        "operationId": "createAccount",
-                        "requestBody": {
-                            "content": {"application/json": {"schema": {"type": "object"}}}
-                        },
+        with app.app_context():
+            # 1. Register contract
+            spec = {
+                "openapi": "3.1.0",
+                "info": {"title": "Accounts API", "version": "1.0.0"},
+                "paths": {
+                    "/accounts": {
+                        "post": {
+                            "operationId": "createAccount",
+                            "requestBody": {
+                                "content": {"application/json": {"schema": {"type": "object"}}}
+                            },
+                        }
                     }
-                }
-            },
-        }
+                },
+            }
 
-        contract = service.register_contract(
-            name="accounts-api",
-            contract_type=ContractType.OPENAPI,
-            version="v1",
-            specification=spec,
-        )
+            contract = service.register_contract(
+                name="accounts-api",
+                contract_type=ContractType.OPENAPI,
+                version="v1",
+                specification=spec,
+            )
 
-        assert contract is not None
+            assert contract is not None
 
-        # 2. Generate API key
-        api_key = service.generate_api_key(
-            user_id="dev_001", name="Test Key", scopes=["accounts:read", "accounts:write"]
-        )
+            # 2. Generate API key
+            api_key = service.generate_api_key(
+                user_id="dev_001", name="Test Key", scopes=["accounts:read", "accounts:write"]
+            )
 
-        assert api_key["key"] is not None
+            assert api_key["key"] is not None
 
-        # 3. Track API usage
-        usage = service.track_api_usage(
-            endpoint="/v1/accounts", method="POST", status_code=201, duration_ms=85.3
-        )
+            # 3. Track API usage
+            usage = service.track_api_usage(
+                endpoint="/v1/accounts", method="POST", status_code=201, duration_ms=85.3
+            )
 
-        assert usage is not None
+            assert usage is not None
 
-        # 4. Create webhook
-        webhook = service.create_webhook_delivery(
-            url="https://client.com/webhook",
-            event_type="account.created",
-            payload={"id": "acc_123", "name": "Test Account"},
-        )
+            # 4. Create webhook
+            webhook = service.create_webhook_delivery(
+                url="https://client.com/webhook",
+                event_type="account.created",
+                payload={"id": "acc_123", "name": "Test Account"},
+            )
 
-        assert webhook is not None
-        assert "signature" in webhook
+            assert webhook is not None
+            assert "signature" in webhook
 
-        # 5. Verify webhook signature
-        is_valid = service.verify_webhook_signature(webhook["payload"], webhook["signature"])
-        assert is_valid is True
+            # 5. Verify webhook signature
+            is_valid = service.verify_webhook_signature(webhook["payload"], webhook["signature"])
+            assert is_valid is True
