@@ -268,6 +268,7 @@ def get_table_data(
 
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         columns = [c.key for c in class_mapper(model).columns]
+
         def serialize_value(value):
             if isinstance(value, datetime):
                 return value.isoformat()
@@ -278,8 +279,7 @@ def get_table_data(
             return str(value)
 
         rows = [
-            {c: serialize_value(getattr(item, c)) for c in columns}
-            for item in pagination.items
+            {c: serialize_value(getattr(item, c)) for c in columns} for item in pagination.items
         ]
         return {
             "status": "success",
