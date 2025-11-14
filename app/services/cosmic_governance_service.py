@@ -48,7 +48,7 @@ class CosmicGovernanceService:
             description=description,
             cosmic_rules=cosmic_rules,
             status=CosmicPolicyStatus.PROPOSED,
-            metadata={
+            metadata_json={
                 "created_by": "cosmic_governance_service",
                 "creation_method": "standard",
             },
@@ -291,7 +291,7 @@ class CosmicGovernanceService:
             council_purpose=purpose,
             member_signatures=founding_members,
             member_count=len(founding_members),
-            metadata={
+            metadata_json={
                 "created_by": "cosmic_governance_service",
                 "founding_date": datetime.now(UTC).isoformat(),
             },
@@ -578,7 +578,7 @@ class CosmicGovernanceService:
             affected_dimensions=[3],  # Default: 3D spacetime
             understanding_level_required=understanding_level,
             shared_consciousness_field=shared_field,
-            metadata={
+            metadata_json={
                 "logged_by": "cosmic_governance_service",
                 "version": "1.0.0",
             },

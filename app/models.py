@@ -249,6 +249,12 @@ class MissionEventType(enum.Enum):
     FINALIZED = "FINALIZED"
 
 
+class CosmicPolicyStatus(enum.Enum):
+    PROPOSED = "PROPOSED"
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"
+
+
 # ======================================================================================
 # MIXINS
 # ======================================================================================
@@ -570,6 +576,34 @@ class GeneratedPrompt(Timestamped, db.Model):
 # ======================================================================================
 
 
+class ExistentialProtocol(Timestamped, db.Model):
+    __tablename__ = "existential_protocols"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    protocol_name: Mapped[str] = mapped_column(db.String(200), nullable=False, index=True)
+    protocol_version: Mapped[str] = mapped_column(db.String(50), nullable=False, default="1.0.0")
+    description: Mapped[str | None] = mapped_column(db.Text)
+    cosmic_rules: Mapped[dict] = mapped_column(JSONB_or_JSON, nullable=False)
+    status: Mapped[CosmicPolicyStatus] = mapped_column(
+        db.Enum(CosmicPolicyStatus, native_enum=False), default=CosmicPolicyStatus.PROPOSED
+    )
+    adoption_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    violation_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    auto_realignment_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    activated_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
+
+
+class ConsciousnessSignature(Timestamped, db.Model):
+    __tablename__ = "consciousness_signatures"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_name: Mapped[str] = mapped_column(db.String(200), nullable=False)
+    signature_hash: Mapped[str] = mapped_column(db.String(256), unique=True, index=True)
+    consciousness_level: Mapped[float] = mapped_column(db.Float, default=1.0)
+    opted_protocols: Mapped[list | None] = mapped_column(JSONB_or_JSON)  # List of protocol IDs
+    auto_realignment_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
+
+
 class Mission(Timestamped, db.Model):
     __tablename__ = "missions"
 
@@ -800,6 +834,42 @@ class MissionEvent(Timestamped, db.Model):
 
     def __repr__(self):
         return f"<MissionEvent id={self.id} type={self.event_type.value}>"
+
+
+class CosmicGovernanceCouncil(Timestamped, db.Model):
+    __tablename__ = "cosmic_governance_councils"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    council_name: Mapped[str] = mapped_column(db.String(200), nullable=False, index=True)
+    council_purpose: Mapped[str | None] = mapped_column(db.Text)
+    member_signatures: Mapped[list | None] = mapped_column(JSONB_or_JSON)
+    member_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    pending_decisions: Mapped[list | None] = mapped_column(JSONB_or_JSON)
+    decision_history: Mapped[list | None] = mapped_column(JSONB_or_JSON)
+    total_decisions: Mapped[int] = mapped_column(db.Integer, default=0)
+    consensus_rate: Mapped[float] = mapped_column(db.Float, default=0.0)
+    last_meeting_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
+
+
+class ExistentialTransparencyLog(Timestamped, db.Model):
+    __tablename__ = "existential_transparency_logs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_hash: Mapped[str] = mapped_column(db.String(128), unique=True, index=True)
+    event_type: Mapped[str] = mapped_column(db.String(100), index=True)
+    decision_subject: Mapped[str] = mapped_column(db.Text)
+    decision_details: Mapped[dict] = mapped_column(JSONB_or_JSON)
+    underlying_motivations: Mapped[dict] = mapped_column(JSONB_or_JSON)
+    cosmic_reasoning: Mapped[str] = mapped_column(db.Text)
+    cosmic_fabric_impact: Mapped[dict] = mapped_column(JSONB_or_JSON)
+    affected_dimensions: Mapped[list | None] = mapped_column(JSONB_or_JSON)
+    understanding_level_required: Mapped[float] = mapped_column(db.Float, default=1.0)
+    shared_consciousness_field: Mapped[str] = mapped_column(db.String(100))
+    view_count: Mapped[int] = mapped_column(db.Integer, default=0)
+    recorded_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, server_default=func.now(), default=utc_now
+    )
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
 
 
 # ======================================================================================
