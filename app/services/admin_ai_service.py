@@ -304,25 +304,23 @@ class AdminAIService:
         except Exception as e:
             self.logger.error(f"Failed to save analysis to conversation: {e}", exc_info=True)
 
-    @socketio.on('start_chat')
+    @socketio.on("start_chat")
     def handle_start_chat(data):
         """Handles the start of a chat session from the client."""
-        question = data.get('question')
-        conversation_id = data.get('conversation_id')
+        question = data.get("question")
+        conversation_id = data.get("conversation_id")
 
         # Note: We need a way to get the current user here.
         # This is a placeholder. In a real app, you'd get this from the session.
         from flask_login import current_user
 
         if not current_user.is_authenticated:
-            socketio.emit('error', {'error': 'Authentication required.'})
+            socketio.emit("error", {"error": "Authentication required."})
             return
 
         service = get_admin_ai_service()
         service.answer_question_ws(
-            question=question,
-            user=current_user,
-            conversation_id=conversation_id
+            question=question, user=current_user, conversation_id=conversation_id
         )
 
     def answer_question_ws(
@@ -407,6 +405,62 @@ class AdminAIService:
         except Exception as e:
             self.logger.error(f"WebSocket chat failed: {e}", exc_info=True)
             socketio.emit("error", {"error": str(e)})
+
+    def _prepare_chat_context(
+        self,
+        question: str,
+        user: User,
+        conversation_id: int | None = None,
+        use_deep_context: bool = True,
+    ) -> dict[str, Any]:
+        """Prepares the full context for answering a question."""
+        conversation_history = []
+        deep_index_summary = None
+        context_summary = None
+
+        if not conversation_id:
+            # Create a new conversation if one doesn't exist
+            title = question[:150] + ("..." if len(question) > 150 else "")
+            conversation = self.create_conversation(user=user, title=title)
+            conversation_id = conversation.id
+            deep_index_summary = conversation.deep_index_summary
+        else:
+            conversation = db.session.get(AdminConversation, conversation_id)
+            if conversation and conversation.user_id == user.id:
+                conversation_history = self._get_conversation_history(conversation_id)
+                deep_index_summary = conversation.deep_index_summary
+                if len(conversation_history) > MAX_CONTEXT_MESSAGES:
+                    context_summary = self._generate_conversation_summary(
+                        conversation, conversation_history
+                    )
+
+        related_context = []
+        if system_service and hasattr(system_service, "find_related_context"):
+            try:
+                ctx_result = system_service.find_related_context(
+                    question, limit=MAX_RELATED_CONTEXT_CHUNKS
+                )
+                if ctx_result.ok:
+                    related_context = ctx_result.data.get("results", [])
+            except Exception as e:
+                self.logger.warning(f"Failed to get related context: {e}")
+
+        system_prompt = self._build_super_system_prompt(
+            deep_index_summary=deep_index_summary if use_deep_context else None,
+            related_context=related_context,
+            conversation_summary=context_summary,
+        )
+
+        messages = [{"role": "system", "content": system_prompt}]
+        messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
+        messages.append({"role": "user", "content": question})
+
+        return {
+            "messages": messages,
+            "conversation_id": conversation_id,
+            "related_context": related_context,
+            "deep_index_summary": deep_index_summary,
+        }
 
     def answer_question(
         self,

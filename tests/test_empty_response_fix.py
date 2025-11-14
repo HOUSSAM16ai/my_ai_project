@@ -43,7 +43,7 @@ def _run_test_with_mock_response(ai_service, mock_user, mock_response, question)
         )
 
 
-def test_empty_response_handling_none_content(ai_service, mock_user):
+def test_empty_response_handling_none_content(app_context, db, ai_service, mock_user):
     """
     Test that None content from AI is handled gracefully.
     """
@@ -67,7 +67,7 @@ def test_empty_response_handling_none_content(ai_service, mock_user):
     assert result["model_used"] == "anthropic/claude-3.7-sonnet:thinking"
 
 
-def test_empty_response_handling_empty_string(ai_service, mock_user):
+def test_empty_response_handling_empty_string(app_context, db, ai_service, mock_user):
     """
     Test that empty string content from AI is handled gracefully.
     """
@@ -91,7 +91,7 @@ def test_empty_response_handling_empty_string(ai_service, mock_user):
     )
 
 
-def test_empty_response_with_tool_calls(ai_service, mock_user):
+def test_empty_response_with_tool_calls(app_context, db, ai_service, mock_user):
     """
     Test handling of responses with tool calls but no content.
     """
@@ -110,7 +110,7 @@ def test_empty_response_with_tool_calls(ai_service, mock_user):
     assert "tool" in result["answer"].lower() or "أدوات" in result["answer"]
 
 
-def test_normal_response_still_works(ai_service, mock_user):
+def test_normal_response_still_works(app_context, db, ai_service, mock_user):
     """
     Test that normal responses with content still work correctly.
     """
