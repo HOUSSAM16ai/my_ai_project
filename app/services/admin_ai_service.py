@@ -34,7 +34,7 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from app import db, socketio
+from app import db
 from app.models import (
     AdminConversation,
     AdminMessage,
@@ -303,108 +303,6 @@ class AdminAIService:
                 db.session.commit()
         except Exception as e:
             self.logger.error(f"Failed to save analysis to conversation: {e}", exc_info=True)
-
-    @socketio.on("start_chat")
-    def handle_start_chat(data):
-        """Handles the start of a chat session from the client."""
-        question = data.get("question")
-        conversation_id = data.get("conversation_id")
-
-        # Note: We need a way to get the current user here.
-        # This is a placeholder. In a real app, you'd get this from the session.
-        from flask_login import current_user
-
-        if not current_user.is_authenticated:
-            socketio.emit("error", {"error": "Authentication required."})
-            return
-
-        service = get_admin_ai_service()
-        service.answer_question_ws(
-            question=question, user=current_user, conversation_id=conversation_id
-        )
-
-    def answer_question_ws(
-        self,
-        question: str,
-        user: User,
-        conversation_id: int | None = None,
-        use_deep_context: bool = True,
-    ):
-        """
-        WebSocket version of answer_question that streams the response.
-        """
-        start_time = time.time()
-        full_response = ""
-        try:
-            conversation_history = []
-            deep_index_summary = None
-            context_summary = None
-
-            if conversation_id:
-                conversation = db.session.get(AdminConversation, conversation_id)
-                if conversation and conversation.user_id == user.id:
-                    conversation_history = self._get_conversation_history(conversation_id)
-                    deep_index_summary = conversation.deep_index_summary
-                    if len(conversation_history) > MAX_CONTEXT_MESSAGES:
-                        context_summary = self._generate_conversation_summary(
-                            conversation, conversation_history
-                        )
-
-            related_context = []
-            if system_service and hasattr(system_service, "find_related_context"):
-                try:
-                    ctx_result = system_service.find_related_context(
-                        question, limit=MAX_RELATED_CONTEXT_CHUNKS
-                    )
-                    if ctx_result.ok:
-                        related_context = ctx_result.data.get("results", [])
-                except Exception as e:
-                    self.logger.warning(f"Failed to get related context: {e}")
-
-            system_prompt = self._build_super_system_prompt(
-                deep_index_summary=deep_index_summary if use_deep_context else None,
-                related_context=related_context,
-                conversation_summary=context_summary if conversation_id else None,
-            )
-
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(conversation_history[-MAX_CONTEXT_MESSAGES:])
-            messages.append({"role": "user", "content": question})
-
-            client = get_llm_client()
-            if not client:
-                socketio.emit("error", {"error": "AI service not available"})
-                return
-
-            stream = client.chat.completions.create(
-                model=DEFAULT_MODEL or "openai/gpt-4o",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=4000,
-                stream=True,
-            )
-
-            for chunk in stream:
-                content = chunk.choices[0].delta.content or ""
-                if content:
-                    full_response += content
-                    socketio.emit("chat_response", {"data": content})
-
-            socketio.emit("stream_end")
-
-            if conversation_id:
-                self._save_message(conversation_id, "user", question)
-                self._save_message(
-                    conversation_id,
-                    "assistant",
-                    full_response,
-                    model_used=DEFAULT_MODEL,
-                    latency_ms=(time.time() - start_time) * 1000,
-                )
-
-        except Exception as e:
-            self.logger.error(f"WebSocket chat failed: {e}", exc_info=True)
-            socketio.emit("error", {"error": str(e)})
 
     def _prepare_chat_context(
         self,

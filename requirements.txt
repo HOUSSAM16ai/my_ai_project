@@ -21,7 +21,6 @@ Flask-Login
 Werkzeug
 email-validator
 gunicorn
-Flask-SocketIO
 
 # --- Database Layer ---
 flask-sqlalchemy
