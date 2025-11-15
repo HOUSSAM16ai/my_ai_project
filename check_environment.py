@@ -24,9 +24,9 @@ if openrouter_key:
     
     # Validate format
     if openrouter_key.startswith('sk-or-v1-'):
-        print(f"   Format: ✅ Valid OpenRouter format")
+        print("   Format: ✅ Valid OpenRouter format")
     else:
-        print(f"   Format: ⚠️  Unexpected format (should start with 'sk-or-v1-')")
+        print("   Format: ⚠️  Unexpected format (should start with 'sk-or-v1-')")
 else:
     print("❌ OPENROUTER_API_KEY: NOT FOUND")
     print("\n⚠️  To fix this in GitHub Codespaces:")
