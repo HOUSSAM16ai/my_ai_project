@@ -952,7 +952,7 @@ body {
       eventSource.close();
     }
 
-    const url = new URL('{{ url_for("admin.handle_chat_stream") }}', window.location.origin);
+    const url = new URL('{{ url_for("stream_api.sse_chat") }}', window.location.origin);
     url.searchParams.append('question', question);
     if (STATE.currentConversationId) {
         url.searchParams.append('conversation_id', STATE.currentConversationId);
