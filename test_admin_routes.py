@@ -2,8 +2,8 @@
 """
 Test script to verify admin routes can be imported and initialized
 """
-import sys
 import os
+import sys
 
 # Set minimal environment
 os.environ['FLASK_ENV'] = 'development'
@@ -18,8 +18,6 @@ try:
     app = create_app()
     
     with app.app_context():
-        from app.admin import bp as admin_bp
-        
         # Check if our route is registered
         routes = [str(rule) for rule in app.url_map.iter_rules()]
         stream_route = '/admin/api/chat/stream'
@@ -27,7 +25,7 @@ try:
         if any(stream_route in route for route in routes):
             print(f"✓ Stream route found: {stream_route}")
         else:
-            print(f"✗ Stream route NOT found!")
+            print("✗ Stream route NOT found!")
             print("Available admin routes:")
             for route in routes:
                 if '/admin/' in route:
