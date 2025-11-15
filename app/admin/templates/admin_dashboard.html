@@ -981,28 +981,50 @@ body {
       typewriter = new AdaptiveTypewriter(currentResponseDiv);
     };
 
+    eventSource.addEventListener('delta', (e) => {
+      try {
+        const chunk = JSON.parse(e.data);
+        if (chunk && chunk.text) {
+          if (typewriter) typewriter.append(chunk.text);
+          else if (currentResponseDiv) currentResponseDiv.textContent += chunk.text;
+        }
+      } catch (err) {
+        console.error('Failed to parse delta chunk', e.data, err);
+      }
+    });
+
+    eventSource.addEventListener('metadata', (e) => {
+      try {
+        const meta = JSON.parse(e.data);
+        console.log('SSE metadata', meta);
+        // You can add logic to display metadata here if needed
+      } catch(_) {}
+    });
+
+    eventSource.addEventListener('complete', (e) => {
+      try {
+        const info = e.data ? JSON.parse(e.data) : {};
+        console.log('SSE complete', info);
+      } catch(_) {}
+      handleStreamEnd();
+    });
+
+    // Fallback for any unnamed messages
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'error') {
-          console.error('SSE Stream Error:', data.payload.error);
-          addMessage('system', `❌ An error occurred: ${data.payload.error}`);
-          handleStreamEnd();
-        } else if (data.data) { // Assuming chunks look like { "data": "..." }
-          if(typewriter) typewriter.append(data.data);
+        if (data && data.text) {
+          if (typewriter) typewriter.append(data.text);
+          else if (currentResponseDiv) currentResponseDiv.textContent += data.text;
         }
       } catch (e) {
-        console.error('Failed to parse SSE message data:', event.data, e);
+        console.error('onmessage parse error', e);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.log('SSE stream finished or encountered an error.');
-      // This event fires both on real errors and when the connection is cleanly closed by the server.
-      // We'll treat it as the end of the stream.
+      console.error('SSE Error:', error);
       handleStreamEnd();
-      // To differentiate, you might check if currentResponseDiv has content.
-      // If not, it was likely a connection error from the start.
       if (!currentResponseDiv || currentResponseDiv.textContent.length === 0) {
         addMessage('system', '❌ Could not connect to streaming service. Please try again.');
         streamingBadge.textContent = '❌ SSE Connection Error';
