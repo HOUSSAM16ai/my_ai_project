@@ -1,8 +1,8 @@
 # setup_environment.py
+import argparse
 import os
 import re
 import subprocess
-import argparse
 
 # Superhuman Edition: A dynamic, multi-mode environment setup script.
 # It can bootstrap from the system environment (for initial create)
@@ -27,7 +27,7 @@ def write_env_file(env_vars, mode):
         print("🔄 '.env' file exists. Merging/updating secrets...")
         # A simple merge: append new keys, update existing ones
         existing_vars = {}
-        with open(".env", "r") as f:
+        with open(".env") as f:
             for line in f:
                 if not line.strip().startswith('#'):
                     key, _, _ = line.partition('=')
@@ -52,7 +52,7 @@ def from_system_env():
 
     print(f"📄 Reading variable names from '{example_file}'...")
     env_lines = []
-    with open(example_file, 'r') as f:
+    with open(example_file) as f:
         for line in f:
             var_name = get_var_name_from_line(line)
             if var_name:
@@ -113,5 +113,5 @@ def main():
     print("\n🎉 Environment setup complete.")
 
 if __name__ == "__main__":
-    import json # Import json only when needed
+    import json  # Import json only when needed
     main()
