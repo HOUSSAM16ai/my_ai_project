@@ -1,114 +1,21 @@
 #!/usr/bin/env bash
 ###############################################################################
-# on-create.sh
+# on-create.sh (Superhuman Automation Edition)
 #
-# يُنفَّذ بعد إنشاء الحاوية مباشرة (postCreateCommand).
-# المسؤوليات:
-#   1. إنشاء ملف .env إن لم يكن موجوداً (من .env.example).
-#   2. تثبيت متطلبات بايثون (مرة واحدة فقط).
-#   3. (اختياري) تنفيذ الترحيلات + seeding إن تم تفعيلها هنا.
-#
-# قابلية التحكم عبر متغيرات بيئة (يمكن ضبطها في devcontainer.json أو .env):
-#   SKIP_ENV_BOOTSTRAP=true      -> تخطي إنشاء .env
-#   SKIP_PIP_INSTALL=true        -> تخطي تثبيت الحزم
-#   SKIP_MIGRATIONS=true         -> عدم تنفيذ flask db upgrade
-#   SKIP_SEED=true               -> عدم تنفيذ seeding
-#   RUN_MIGRATIONS_DURING_CREATE=true  -> نفّذ الترحيلات في هذه المرحلة
-#   RUN_SEED_DURING_CREATE=true        -> نفّذ seeding في هذه المرحلة
-#
-# ملاحظات:
-#  - لا نستخدم docker-compose داخل الحاوية.
-#  - أي تشغيل للتطبيق يفضّل نقله إلى on-start.sh.
+# Executed only once when the container is created.
+# Responsibilities:
+#   1. Build all Docker services defined in docker-compose.yml.
 ###############################################################################
 
 set -Eeuo pipefail
-
-# Source utility functions
 source .devcontainer/utils.sh
 
-trap 'err "حدث خطأ غير متوقع (Line $LINENO)."' ERR
+trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
 
-PROJECT_ROOT="/app"
-cd "$PROJECT_ROOT" || { err "لا يمكن الدخول إلى $PROJECT_ROOT"; exit 1; }
+log "🚀 On-Create: Building Docker images for a fresh start..."
 
-echo
-log "✅ On-Create: Bootstrapping foundational layers..."
+# Build all services. The --no-cache flag can be added for a cleaner build if needed.
+docker-compose build
 
-# (1) إنشاء .env إن لم يوجد
-if [ "${SKIP_ENV_BOOTSTRAP:-false}" = "true" ]; then
-  warn "تخطي إنشاء ملف .env (SKIP_ENV_BOOTSTRAP=true)"
-else
-  if [ ! -f ".env" ]; then
-    if [ -f ".env.example" ]; then
-      cp .env.example .env
-      ok "تم إنشاء .env من .env.example"
-      
-      if grep -q "your-password@your-host.supabase.co" .env 2>/dev/null; then
-        warn "⚠️  DATABASE_URL contains placeholder values!"
-        warn "   Please update .env with your actual Supabase connection string."
-        warn "   Get it from: https://supabase.com/dashboard/project/_/settings/database"
-      fi
-    else
-      warn "لا يوجد .env ولا .env.example — أنشئ .env يدويًا لاحقًا."
-    fi
-  else
-    log ".env موجود مسبقًا — لن يتم استبداله."
-  fi
-fi
-
-# (2) تثبيت الحزم (مرّة أولى فقط)
-SENTINEL=".devcontainer/.pip_installed"
-if [ "${SKIP_PIP_INSTALL:-false}" = "true" ]; then
-  warn "تخطي pip install (SKIP_PIP_INSTALL=true)"
-else
-  if [ -f "$SENTINEL" ]; then
-    log "الحزم مثبتة سابقًا (مؤشر $SENTINEL موجود)."
-  else
-    if [ -f "requirements.txt" ]; then
-      log "تثبيت اعتماديات بايثون..."
-      pip install --no-cache-dir -r requirements.txt
-      mkdir -p "$(dirname "$SENTINEL")"
-      touch "$SENTINEL"
-      ok "تم تثبيت الحزم."
-    else
-      warn "لا يوجد requirements.txt — تخطي التثبيت."
-    fi
-  fi
-fi
-
-load_env_file_if_needed ".env" || true
-
-# (4) الترحيلات أثناء on-create (اختياري)
-if [ "${RUN_MIGRATIONS_DURING_CREATE:-false}" = "true" ] && [ "${SKIP_MIGRATIONS:-false}" != "true" ]; then
-  if command -v flask >/dev/null 2>&1; then
-    log "تنفيذ الترحيلات الآن (on-create)..."
-    if FLASK_APP="${FLASK_APP:-app.py}" flask db upgrade; then
-      ok "اكتملت الترحيلات."
-    else
-      warn "فشل flask db upgrade (تحقق من FLASK_APP)."
-    fi
-  else
-    warn "أمر flask غير متوفر."
-  fi
-else
-  log "لن ننفذ الترحيلات الآن (يمكن تنفيذها لاحقًا في on-start)."
-fi
-
-# (5) seeding أثناء on-create (اختياري)
-if [ "${RUN_SEED_DURING_CREATE:-false}" = "true" ] && [ "${SKIP_SEED:-false}" != "true" ]; then
-  if command -v flask >/dev/null 2>&1 && flask --help 2>&1 | grep -q "users"; then
-    log "تشغيل seeding (init-admin)..."
-    if flask users init-admin; then
-      ok "اكتمل seeding."
-    else
-      warn "فشل seeding."
-    fi
-  else
-    warn "flask أو أمر users غير متوفر."
-  fi
-else
-  log "لن ننفذ seeding الآن."
-fi
-
-ok "انتهى on-create.sh. جاهز للخطوة التالية."
+ok "✅ Docker images built successfully. The environment is ready for the first start."
 echo
