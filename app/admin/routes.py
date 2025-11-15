@@ -188,7 +188,7 @@ def _get_stream_params(req):
 def handle_chat_stream():
     """
     SSE streaming endpoint with intelligent fallback.
-    
+
     Tries standalone AI service first, falls back to internal AdminAIService if unavailable.
     This ensures chat always works regardless of deployment configuration.
     """
@@ -200,7 +200,7 @@ def handle_chat_stream():
     # Try gateway first, but have fallback ready
     gateway = get_ai_service_gateway()
     use_gateway = gateway is not None
-    
+
     if not use_gateway:
         current_app.logger.warning(
             "AI Service Gateway not available, using internal AdminAIService fallback"
@@ -221,13 +221,13 @@ def handle_chat_stream():
                         f"Gateway streaming failed: {gateway_error}. Falling back to internal service."
                     )
                     # Fall through to internal service
-            
+
             # Fallback: Use internal AdminAIService
             current_app.logger.info("Streaming via internal AdminAIService")
             from app.services.admin_ai_service import AdminAIService
-            
+
             admin_ai = AdminAIService()
-            
+
             # Get or create conversation
             conv_id = None
             if conversation_id:
@@ -235,34 +235,34 @@ def handle_chat_stream():
                     conv_id = int(conversation_id)
                 except (ValueError, TypeError):
                     pass
-            
+
             # Call the internal service (non-streaming)
             result = admin_ai.answer_question(
                 question=question,
                 user=current_user._get_current_object(),
                 conversation_id=conv_id,
-                use_deep_context=True
+                use_deep_context=True,
             )
-            
+
             # Stream the response in chunks for better UX
             if result.get("status") == "success":
                 answer = result.get("answer", "")
-                
+
                 # Send answer in chunks (simulating streaming)
                 words = answer.split()
                 chunk_size = 5  # words per chunk
-                
+
                 for i in range(0, len(words), chunk_size):
-                    chunk_words = words[i:i + chunk_size]
+                    chunk_words = words[i : i + chunk_size]
                     chunk_text = " ".join(chunk_words) + " "
-                    
+
                     chunk_data = {
-                        "type": "data", 
+                        "type": "data",
                         "data": chunk_text,
-                        "payload": {"content": chunk_text}
+                        "payload": {"content": chunk_text},
                     }
                     yield f"data: {json.dumps(chunk_data)}\n\n"
-                
+
                 # Send completion
                 completion_data = {
                     "type": "end",
@@ -270,19 +270,16 @@ def handle_chat_stream():
                         "conversation_id": result.get("conversation_id"),
                         "tokens_used": result.get("tokens_used"),
                         "model_used": result.get("model_used"),
-                        "elapsed_seconds": result.get("elapsed_seconds")
-                    }
+                        "elapsed_seconds": result.get("elapsed_seconds"),
+                    },
                 }
                 yield f"data: {json.dumps(completion_data)}\n\n"
             else:
                 # Error case
                 error_msg = result.get("answer", result.get("error", "Unknown error"))
-                error_data = {
-                    "type": "error",
-                    "payload": {"error": error_msg}
-                }
+                error_data = {"type": "error", "payload": {"error": error_msg}}
                 yield f"data: {json.dumps(error_data)}\n\n"
-                
+
         except Exception as e:
             current_app.logger.error(f"Error during streaming: {e}", exc_info=True)
             error_payload = json.dumps(
