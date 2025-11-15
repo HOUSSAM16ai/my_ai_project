@@ -1,110 +1,68 @@
 #!/usr/bin/env bash
 ###############################################################################
-# on-start.sh
+# on-start.sh (Superhuman Automation Edition)
 #
-# يُنفَّذ عند بدء الحاوية (postStartCommand).
-# المسؤوليات:
-#   - انتظار قاعدة البيانات (ما لم يتم التخطي).
-#   - تنفيذ الترحيلات (إن لم تُنفَّذ سابقًا + غير متخطاة).
-#   - تنفيذ seeding (اختياري).
-#   - تشغيل التطبيق (اختياري).
-#
-# متغيرات تحكم:
-#   SKIP_DB_WAIT=true             -> لا تنتظر قاعدة البيانات
-#   SKIP_MIGRATIONS=true          -> لا تنفذ الترحيلات
-#   SKIP_SEED=true                -> لا تنفذ seeding
-#   RUN_APP_ON_START=true         -> شغّل التطبيق تلقائيًا
-#   APP_START_CMD="flask run ..." -> أمر التشغيل (افتراضي مقترح أدناه)
-#   DB_HOST / DB_PORT / POSTGRES_USER / POSTGRES_DB
+# Executed every time the container starts.
+# Responsibilities (Fully Automated & Idempotent):
+#   1. Start all Docker services in the background.
+#   2. Wait for the database to be fully ready.
+#   3. Run database migrations automatically.
+#   4. Create or update the admin user from environment variables safely.
+#   5. Display final status and instructions.
 ###############################################################################
 
 set -Eeuo pipefail
-
-# Source utility functions
 source .devcontainer/utils.sh
 
-trap 'err "حدث خطأ غير متوقع (Line $LINENO)."' ERR
+trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
 
-cd /app || { err "لا يمكن الدخول إلى /app"; exit 1; }
+log "🚀 On-Start: Launching the fully automated CogniForge ecosystem..."
+
+# 1. Start all services detached
+log "Step 1/4: Starting Docker services in the background..."
+docker-compose up -d
+ok "✅ Services are running."
+
+# 2. Wait for the database to be ready
+log "Step 2/4: Waiting for the database to become fully available..."
+# We use docker-compose exec to run the wait-for-it script inside the 'web' container's network
+MAX_TRIES=30
+i=0
+while ! docker-compose exec -T db pg_isready -U "postgres" -d "postgres" > /dev/null 2>&1; do
+    i=$((i+1))
+    if [ "$i" -ge "$MAX_TRIES" ]; then
+        err "Database did not become ready in time. Aborting."
+        exit 1
+    fi
+    echo "   - Waiting for database connection... ($i/$MAX_TRIES)"
+    sleep 2
+done
+ok "✅ Database is ready to accept connections."
+
+# 3. Run database migrations
+log "Step 3/4: Automatically applying database migrations..."
+docker-compose run --rm web flask db upgrade
+ok "✅ Database migrations are up to date."
+
+# 4. Create or update admin user (Idempotent and Safe)
+log "Step 4/4: Ensuring admin user exists..."
+if [ -z "${ADMIN_EMAIL:-}" ] || [ -z "${ADMIN_PASSWORD:-}" ]; then
+    warn "⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set in environment."
+    warn "   Skipping admin user creation. You can create one manually later:"
+    warn "   docker-compose run --rm web flask users create-admin"
+else
+    # This command is now designed to be safe to run multiple times.
+    # It will create the admin if it doesn't exist, or update the password if it does.
+    docker-compose run --rm \
+      -e ADMIN_EMAIL="${ADMIN_EMAIL}" \
+      -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+      -e ADMIN_NAME="${ADMIN_NAME:-Admin}" \
+      web flask users create-admin --update-if-exists
+    ok "✅ Admin user is configured."
+fi
 
 echo
-log "🚀 On-Start: Igniting the ecosystem..."
-
-load_env_file_if_needed ".env" || true
-
-DB_HOST="${DB_HOST:-${POSTGRES_HOST:-db}}"
-DB_PORT="${DB_PORT:-5432}"
-DB_USER="${POSTGRES_USER:-user}"
-DB_NAME="${POSTGRES_DB:-mydb}"
-
-# (1) انتظار قاعدة البيانات
-if [ "${SKIP_DB_WAIT:-false}" = "true" ]; then
-  warn "تخطي انتظار قاعدة البيانات."
-else
-  log "انتظار PostgreSQL على $DB_HOST:$DB_PORT ..."
-  if command -v pg_isready >/dev/null 2>&1; then
-    ATTEMPTS=0; MAX=60
-    until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; do
-      ATTEMPTS=$((ATTEMPTS+1))
-      if [ $ATTEMPTS -ge $MAX ]; then
-        err "PostgreSQL لم يصبح جاهزًا بعد $(($MAX*2)) ثانية."
-        exit 1
-      fi
-      echo "   - DB not ready yet..."
-      sleep 2
-    done
-    ok "قاعدة البيانات جاهزة."
-  else
-    warn "pg_isready غير متوفر. استخدام اختبار TCP."
-    until (echo > /dev/tcp/"$DB_HOST"/"$DB_PORT") >/dev/null 2>&1; do
-      echo "   - Waiting for $DB_HOST:$DB_PORT ..."
-      sleep 2
-    done
-    ok "المنفذ مفتوح."
-  fi
-fi
-
-# (2) الترحيلات
-if [ "${SKIP_MIGRATIONS:-false}" = "true" ]; then
-  warn "تخطي الترحيلات."
-else
-  if command -v flask >/dev/null 2>&1; then
-    log "تشغيل flask db upgrade ..."
-    if FLASK_APP="${FLASK_APP:-app.py}" flask db upgrade; then
-      ok "اكتملت الترحيلات."
-    else
-      warn "فشل flask db upgrade."
-    fi
-  else
-    warn "flask غير متوفر."
-  fi
-fi
-
-# (3) seeding
-if [ "${SKIP_SEED:-false}" = "true" ]; then
-  warn "تخطي seeding."
-else
-  if command -v flask >/dev/null 2>&1 && flask --help 2>&1 | grep -q "users"; then
-    log "Seeding (flask users init-admin)..."
-    if flask users init-admin; then
-      ok "تم seeding (أو كان موجودًا)."
-    else
-      warn "فشل seeding."
-    fi
-  else
-    warn "أمر seeding غير متوفر."
-  fi
-fi
-
-# (4) تشغيل التطبيق (اختياري)
-if [ "${RUN_APP_ON_START:-false}" = "true" ]; then
-  APP_START_CMD="${APP_START_CMD:-flask run --host=0.0.0.0 --port=8000}"
-  log "تشغيل التطبيق: $APP_START_CMD"
-  # يُشغَّل في المقدمة (يمكن تحويله لخلفية حسب حاجتك)
-  exec bash -lc "$APP_START_CMD"
-else
-  log "لن يتم تشغيل التطبيق تلقائيًا (اضبط RUN_APP_ON_START=true لتفعيله)."
-fi
-
-ok "انتهى on-start.sh."
+log "🎉 --- System is fully operational --- 🎉"
+log "Your application is running and accessible."
+log "Happy coding!"
 echo

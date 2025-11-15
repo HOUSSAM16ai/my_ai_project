@@ -11,11 +11,11 @@
   "containerUser": "root",
   "overrideCommand": true,
 
-  "initializeCommand": "bash -c 'echo \"🚀 Initializing CogniForge Dev Container...\" && [ ! -f .env ] && cp .env.example .env || true'",
+  "initializeCommand": "bash -c 'echo \"🚀 Initializing CogniForge Dev Container...\"'",
 
-  "postCreateCommand": "bash .devcontainer/on-create.sh",
+  "postCreateCommand": "python setup_environment.py && bash .devcontainer/on-create.sh",
   "postStartCommand": "bash .devcontainer/on-start.sh",
-  "postAttachCommand": "bash .devcontainer/on-attach.sh",
+  "postAttachCommand": "python setup_environment.py --live-sync && bash .devcontainer/on-attach.sh",
 
   "userEnvProbe": "loginInteractiveShell",
   "waitFor": "postCreateCommand",
