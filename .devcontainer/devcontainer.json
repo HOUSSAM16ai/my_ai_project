@@ -13,7 +13,7 @@
 
   "initializeCommand": "bash -c 'echo \"🚀 Initializing CogniForge Dev Container...\" && [ ! -f .env ] && cp .env.example .env || true'",
 
-  "postCreateCommand": "bash .devcontainer/on-create.sh",
+  "postCreateCommand": "python setup_environment.py && bash .devcontainer/on-create.sh",
   "postStartCommand": "bash .devcontainer/on-start.sh",
   "postAttachCommand": "bash .devcontainer/on-attach.sh",
 
