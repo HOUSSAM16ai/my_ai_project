@@ -45,28 +45,19 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from flask import Flask, current_app
-from flask_login import LoginManager
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
+
+from .extensions import db, login_manager, migrate
 
 # --------------------------------------------------------------------------------------
 # Load .env FIRST (env overrides must exist before config object import)
 # --------------------------------------------------------------------------------------
 load_dotenv()
 
-# --------------------------------------------------------------------------------------
-# Extensions (instantiated once; bound inside create_app)
-# --------------------------------------------------------------------------------------
-db = SQLAlchemy()
-migrate = Migrate()
-login_manager = LoginManager()
-login_manager.login_view = "main.login"
-login_manager.login_message_category = "info"
 
 # --------------------------------------------------------------------------------------
 # Configuration mapping (import late enough to allow env to load)
 # --------------------------------------------------------------------------------------
-from config import config_by_name  # noqa: E402
+from .config import config_by_name  # noqa: E402
 
 
 # --------------------------------------------------------------------------------------
@@ -84,8 +75,28 @@ def _choose_config_name(explicit: str | None) -> str:
 
 
 def _register_extensions(app: Flask) -> None:
-    db.init_app(app)
-    migrate.init_app(app, db)
+    # --- Database Initialization (Safe Mode) ---
+    # Initialize only if URI is present or in testing mode (where memory db is default).
+    # This prevents crashing on startup in CI/CD or environments without a DB.
+    uri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    testing = app.config.get("TESTING", False)
+
+    if not uri and not testing:
+        app.logger.warning(
+            "SQLALCHEMY_DATABASE_URI is not set and not in TESTING mode. "
+            "Database extensions (SQLAlchemy, Migrate) will NOT be initialized."
+        )
+    else:
+        try:
+            db.init_app(app)
+            migrate.init_app(app, db)
+            app.logger.info("Database extensions initialized successfully.")
+        except Exception as e:
+            app.logger.error(f"Failed to initialize database extensions: {e}", exc_info=True)
+            # Depending on strictness, you might want to raise here in production
+            # raise RuntimeError("Database initialization failed") from e
+
+    # --- Other Extensions ---
     login_manager.init_app(app)
 
     # Setup enterprise-grade middleware
