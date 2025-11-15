@@ -904,8 +904,7 @@ body {
   </div>
 </div>
 
-<!-- Include Socket.IO and adaptive typewriter -->
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<!-- Include adaptive typewriter -->
 <script src="{{ url_for('static', filename='js/adaptiveTypewriter.js') }}"></script>
 
 <script>
@@ -927,83 +926,93 @@ body {
   const streamingBadge = document.getElementById('streaming-badge');
 
   // ============================================================================
-  // SUPERHUMAN WEBSOCKET IMPLEMENTATION
+  // SUPERHUMAN SSE (SERVER-SENT EVENTS) IMPLEMENTATION
   // ============================================================================
-  const socket = io();
+  let eventSource = null;
   let typewriter = null;
   let currentResponseDiv = null;
 
-  socket.on('connect', () => {
-    console.log('🚀 WebSocket connected successfully.');
-    streamingBadge.textContent = '⚡ WebSocket Connected';
-    streamingBadge.className = 'perf-badge fast';
-  });
+  function handleStreamEnd() {
+    if (typewriter) {
+      typewriter.waitForCompletion().then(() => {
+        currentResponseDiv = null;
+        typewriter = null;
+      });
+    }
+    STATE.isLoading = false;
+    sendBtn.disabled = false;
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+  }
 
-  socket.on('disconnect', () => {
-    console.warn('🔌 WebSocket disconnected.');
-    streamingBadge.textContent = '❌ WebSocket Disconnected';
-    streamingBadge.className = 'perf-badge slow';
-  });
+  function initializeEventSource(question) {
+    if (eventSource) {
+      eventSource.close();
+    }
 
-  socket.on('connect_error', (error) => {
-    console.error('WebSocket Connection Error:', error);
-    addMessage('system', `❌ WebSocket Error. Could not connect.`);
-    streamingBadge.textContent = '❌ WebSocket Error';
-    streamingBadge.className = 'perf-badge slow';
-    hideLoading();
-  });
+    const url = new URL('{{ url_for("admin.handle_chat_stream") }}', window.location.origin);
+    url.searchParams.append('question', question);
+    if (STATE.currentConversationId) {
+        url.searchParams.append('conversation_id', STATE.currentConversationId);
+    }
 
-  socket.on('error', (data) => {
-      console.error('WebSocket server error:', data.error);
-      addMessage('system', `❌ An error occurred: ${data.error}`);
+    eventSource = new EventSource(url.toString());
+
+    eventSource.onopen = () => {
+      console.log('🚀 SSE connection established.');
+      streamingBadge.textContent = '⚡ SSE Streaming Active';
+      streamingBadge.className = 'perf-badge fast';
       hideLoading();
-      if(typewriter) typewriter.finish();
-      STATE.isLoading = false;
-      sendBtn.disabled = false;
-  });
 
-  socket.on('chat_response', (data) => {
-    if (STATE.isLoading && !currentResponseDiv) {
-        hideLoading();
-        const streamMsg = document.createElement('div');
-        streamMsg.className = 'message assistant';
+      // Create the message bubble immediately
+      const streamMsg = document.createElement('div');
+      streamMsg.className = 'message assistant';
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = '🤖';
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      streamMsg.appendChild(avatar);
+      streamMsg.appendChild(contentDiv);
+      messagesArea.appendChild(streamMsg);
+      currentResponseDiv = contentDiv;
+      typewriter = new AdaptiveTypewriter(currentResponseDiv);
+    };
 
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.textContent = '🤖';
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-
-        streamMsg.appendChild(avatar);
-        streamMsg.appendChild(contentDiv);
-        messagesArea.appendChild(streamMsg);
-        currentResponseDiv = contentDiv;
-        typewriter = new AdaptiveTypewriter(currentResponseDiv);
-    }
-
-    if (data.data) {
-        typewriter.append(data.data);
-    }
-  });
-
-  socket.on('stream_end', () => {
-      if (typewriter) {
-          typewriter.waitForCompletion().then(() => {
-              currentResponseDiv = null;
-              typewriter = null;
-          });
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'error') {
+          console.error('SSE Stream Error:', data.payload.error);
+          addMessage('system', `❌ An error occurred: ${data.payload.error}`);
+          handleStreamEnd();
+        } else if (data.data) { // Assuming chunks look like { "data": "..." }
+          if(typewriter) typewriter.append(data.data);
+        }
+      } catch (e) {
+        console.error('Failed to parse SSE message data:', event.data, e);
       }
-      STATE.isLoading = false;
-      sendBtn.disabled = false;
-  });
+    };
 
-  function sendMessageWithWebSocket(question) {
+    eventSource.onerror = (error) => {
+      console.log('SSE stream finished or encountered an error.');
+      // This event fires both on real errors and when the connection is cleanly closed by the server.
+      // We'll treat it as the end of the stream.
+      handleStreamEnd();
+      // To differentiate, you might check if currentResponseDiv has content.
+      // If not, it was likely a connection error from the start.
+      if (!currentResponseDiv || currentResponseDiv.textContent.length === 0) {
+        addMessage('system', '❌ Could not connect to streaming service. Please try again.');
+        streamingBadge.textContent = '❌ SSE Connection Error';
+        streamingBadge.className = 'perf-badge slow';
+      }
+    };
+  }
+
+  function sendMessageWithSSE(question) {
     if (STATE.isLoading) return;
-    if (!socket.connected) {
-        addMessage('system', '❌ WebSocket not connected. Please wait or refresh.');
-        return;
-    }
 
     showLoading();
     addMessage('user', question);
@@ -1011,15 +1020,10 @@ body {
     chatInput.style.height = 'auto';
     chatInput.style.height = (chatInput.scrollHeight) + 'px';
 
-    const payload = {
-      question: question,
-      conversation_id: STATE.currentConversationId || null
-    };
-
-    socket.emit('start_chat', payload);
+    initializeEventSource(question);
   }
 
-  // --- End of WebSocket Implementation ---
+  // --- End of SSE Implementation ---
 
   function showLoading() {
     STATE.isLoading = true;
@@ -1099,7 +1103,7 @@ body {
   sendBtn.addEventListener('click', () => {
     const question = chatInput.value.trim();
     if (question && !STATE.isLoading) {
-      sendMessageWithWebSocket(question);
+      sendMessageWithSSE(question);
     }
   });
 
