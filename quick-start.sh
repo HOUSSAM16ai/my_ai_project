@@ -61,14 +61,22 @@ echo ""
 step "1/6" "Setting up environment..."
 echo ""
 
+# This script is now primarily for local setup.
+# Codespaces setup is handled automatically by .devcontainer scripts.
+if [ "$PLATFORM" = "GitHub Codespaces" ]; then
+    warn "In Codespaces, setup is automatic. This script is for local use."
+    # Exit gracefully if in Codespaces
+    exit 0
+fi
+
+# --- Local .env setup ---
 if [ ! -f ".env" ]; then
   if [ -f ".env.example" ]; then
     cp .env.example .env
     success "Created .env from .env.example"
-    warn "⚠️  IMPORTANT: You need to configure DATABASE_URL in .env"
+    warn "⚠️  IMPORTANT: You must configure your .env file now."
     echo ""
-    info "Edit .env and set:"
-    info "DATABASE_URL=postgresql://postgres.YOUR_PROJECT:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require"
+    info "Please edit the .env file and set your DATABASE_URL and other secrets."
     echo ""
     
     if [ "$AUTO_MODE" = false ]; then
@@ -87,13 +95,13 @@ else
   # Check if DATABASE_URL is configured
   if grep -q "^DATABASE_URL=" .env 2>/dev/null; then
     DB_URL=$(grep "^DATABASE_URL=" .env | cut -d'=' -f2-)
-    if [[ "$DB_URL" == *"supabase.co"* ]]; then
-      success "DATABASE_URL configured with Supabase"
+    if [[ "$DB_URL" == *"pooler.supabase.com"* ]]; then
+      success "DATABASE_URL seems configured for Supabase"
     else
-      warn "DATABASE_URL found but might need updating"
+      warn "DATABASE_URL found but might not be a valid Supabase URL"
     fi
   else
-    warn "DATABASE_URL not found in .env - you'll need to add it"
+    warn "DATABASE_URL not found in .env - this may cause errors"
   fi
 fi
 
@@ -166,18 +174,44 @@ fi
 
 echo ""
 
-# Step 6: Create admin user
+# Step 6: Create admin user (Professional Edition)
 step "6/6" "Creating admin user..."
 echo ""
 
-if docker-compose run --rm web flask users create-admin; then
+# --- الحل الاحترافي: قراءة .env بشكل آمن وتمرير المتغيرات ---
+# This ensures the script is reliable and doesn't depend on implicit behavior.
+info "⚙️  Reading configuration from .env..."
+if [ -f .env ]; then
+    # نستخدم sed لإزالة التعليقات والأسطر الفارغة ثم نقوم بتصدير المتغيرات
+    export $(sed 's/#.*//g; /^$/d' .env | xargs)
+    info "✅ .env loaded successfully."
+else
+    warn ".env file not found. Using default credentials."
+fi
+
+# Set credentials with defaults if not found in .env
+ADMIN_EMAIL_FINAL=${ADMIN_EMAIL:-"benmerahhoussam16@gmail.com"}
+ADMIN_PASSWORD_FINAL=${ADMIN_PASSWORD:-"1111"}
+ADMIN_NAME_FINAL=${ADMIN_NAME:-"Houssam Benmerah"}
+
+info "👤 Admin email set to: ${BOLD}${ADMIN_EMAIL_FINAL}${RESET}"
+echo ""
+
+# Pass the variables explicitly to the docker-compose command
+if docker-compose run --rm \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL_FINAL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD_FINAL" \
+  -e ADMIN_NAME="$ADMIN_NAME_FINAL" \
+  web flask users create-admin; then
   success "Admin user created (or already exists)"
   echo ""
-  info "Default admin credentials:"
-  info "  Email: benmerahhoussam16@gmail.com"
-  info "  Password: 1111"
+  info "Credentials used:"
+  info "  Email: ${ADMIN_EMAIL_FINAL}"
+  info "  Password: [PROTECTED]"
 else
-  warn "Failed to create admin user (it might already exist)"
+  error "Failed to create admin user."
+  info "This can happen if the user already exists with a different password"
+  info "or if the database is not ready. Try running the script again."
 fi
 
 echo ""
