@@ -98,6 +98,14 @@ def _register_extensions(app: Flask) -> None:
 
     # --- Other Extensions ---
     login_manager.init_app(app)
+    login_manager.login_view = "routes.login"
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        from flask import jsonify, redirect, request, url_for
+        if "text/event-stream" in request.accept_mimetypes or request.is_json:
+            return jsonify(error="Unauthorized", message="Authentication required"), 401
+        return redirect(url_for("routes.login"))
 
     # Setup enterprise-grade middleware
     try:

@@ -262,7 +262,7 @@ async def _generate_sse_events(question: str, conversation_id: str | None) -> As
             event_id += 1
 
         # Send completion event
-        yield sse_event("done", {"reason": "stop", "tokens": token_count}, eid=str(event_id))
+        yield sse_event("complete", {"reason": "stop", "tokens": token_count}, eid=str(event_id))
 
     except Exception as e:
         logger.error(f"SSE streaming error: {e}", exc_info=True)
