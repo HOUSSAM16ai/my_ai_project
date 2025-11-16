@@ -161,10 +161,14 @@ async def ai_token_stream(prompt: str, model: str | None = None) -> AsyncIterato
             # Standard streaming
             logger.info(f"Using standard streaming with model: {model}")
             for chunk in invoke_chat_stream(model=model, messages=messages):
-                # Extract content from chunk
-                content = chunk.get("delta", {}).get("content", "")
-                if content:
-                    yield content
+                # SUPERHUMAN FIX: The stream returns dicts, some are 'delta' chunks,
+                # the final one is the full response envelope. We only care about deltas.
+                if "delta" in chunk and isinstance(chunk["delta"], dict):
+                    content = chunk["delta"].get("content", "")
+                    if content:
+                        yield content
+                elif isinstance(chunk.get("delta"), str):  # Handle simple string deltas
+                    yield chunk["delta"]
 
     except Exception as e:
         logger.error(f"Real LLM streaming failed: {e}", exc_info=True)

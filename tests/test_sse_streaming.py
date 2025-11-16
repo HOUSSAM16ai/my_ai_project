@@ -31,12 +31,13 @@ def mock_ai_gateway():
 
 def test_chat_stream_authentication(client):
     """
-    Ensures that unauthenticated requests to the streaming endpoint are rejected.
+    Ensures that unauthenticated requests to the streaming endpoint are rejected
+    with a 401 JSON error, not a redirect.
     """
     response = client.post("/admin/api/chat/stream", json={"question": "test"})
-    # Expect a redirect to the login page for unauthenticated users
-    assert response.status_code == 302
-    assert "/login" in response.headers["Location"]
+    # SUPERHUMAN FIX: API calls should return 401, not a 302 redirect.
+    assert response.status_code == 401
+    assert response.json == {"error": "Unauthorized", "message": "Authentication required"}
 
 
 def test_chat_stream_success_and_format(admin_user, test_client_with_user, mock_ai_gateway):
@@ -70,14 +71,26 @@ def test_chat_stream_missing_question(admin_user, test_client_with_user):
     assert response.json == {"status": "error", "message": "Question is required."}
 
 
-def test_chat_stream_gateway_unavailable(admin_user, test_client_with_user):
+def test_chat_stream_gateway_unavailable_fallback(admin_user, test_client_with_user):
     """
-    Tests the endpoint's response when the AI service gateway is not available.
+    Tests the fallback mechanism when the AI service gateway is not available.
+    The system should gracefully fall back to the internal AdminAIService.
     """
-    with patch("app.admin.routes.get_ai_service_gateway", return_value=None):
-        response = test_client_with_user.post(
-            "/admin/api/chat/stream", json={"question": "This will fail."}
-        )
+    with patch("app.admin.routes.get_ai_service_gateway", return_value=None) as mock_get_gateway:
+        with patch("app.services.admin_ai_service.AdminAIService") as mock_fallback_service:
+            # Configure the mock fallback service instance
+            mock_instance = mock_fallback_service.return_value
+            mock_instance.answer_question.return_value = {"status": "success", "answer": "Fallback response"}
 
-    assert response.status_code == 503
-    assert response.json == {"status": "error", "message": "AI service is currently unavailable."}
+            response = test_client_with_user.post(
+                "/admin/api/chat/stream", json={"question": "This will use fallback."}
+            )
+
+            # Expect 200 OK because the fallback should handle the request
+            assert response.status_code == 200
+            assert "text/event-stream" in response.headers["Content-Type"]
+
+            # Verify the fallback service was used
+            mock_get_gateway.assert_called_once()
+            mock_fallback_service.assert_called_once()
+            mock_instance.answer_question.assert_called_once()
