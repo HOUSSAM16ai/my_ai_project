@@ -166,18 +166,44 @@ fi
 
 echo ""
 
-# Step 6: Create admin user
+# Step 6: Create admin user (Professional Edition)
 step "6/6" "Creating admin user..."
 echo ""
 
-if docker-compose run --rm web flask users create-admin; then
+# --- الحل الاحترافي: قراءة .env بشكل آمن وتمرير المتغيرات ---
+# This ensures the script is reliable and doesn't depend on implicit behavior.
+info "⚙️  Reading configuration from .env..."
+if [ -f .env ]; then
+    # نستخدم sed لإزالة التعليقات والأسطر الفارغة ثم نقوم بتصدير المتغيرات
+    export $(sed 's/#.*//g; /^$/d' .env | xargs)
+    info "✅ .env loaded successfully."
+else
+    warn ".env file not found. Using default credentials."
+fi
+
+# Set credentials with defaults if not found in .env
+ADMIN_EMAIL_FINAL=${ADMIN_EMAIL:-"benmerahhoussam16@gmail.com"}
+ADMIN_PASSWORD_FINAL=${ADMIN_PASSWORD:-"1111"}
+ADMIN_NAME_FINAL=${ADMIN_NAME:-"Houssam Benmerah"}
+
+info "👤 Admin email set to: ${BOLD}${ADMIN_EMAIL_FINAL}${RESET}"
+echo ""
+
+# Pass the variables explicitly to the docker-compose command
+if docker-compose run --rm \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL_FINAL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD_FINAL" \
+  -e ADMIN_NAME="$ADMIN_NAME_FINAL" \
+  web flask users create-admin; then
   success "Admin user created (or already exists)"
   echo ""
-  info "Default admin credentials:"
-  info "  Email: benmerahhoussam16@gmail.com"
-  info "  Password: 1111"
+  info "Credentials used:"
+  info "  Email: ${ADMIN_EMAIL_FINAL}"
+  info "  Password: [PROTECTED]"
 else
-  warn "Failed to create admin user (it might already exist)"
+  error "Failed to create admin user."
+  info "This can happen if the user already exists with a different password"
+  info "or if the database is not ready. Try running the script again."
 fi
 
 echo ""
