@@ -103,8 +103,7 @@
     "RUN_SEED_DURING_CREATE": "true",
 
     "//": "Application Runtime",
-    "RUN_APP_ON_START": "true",
-    "APP_START_CMD": "flask run --host=0.0.0.0 --port=8000",
+    "//": "The application is now started by the command in docker-compose.yml",
 
     "//": "Database Connection (External Supabase)",
     "SHOW_MIGRATION_STATUS": "true",
