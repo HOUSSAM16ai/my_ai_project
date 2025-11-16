@@ -220,77 +220,74 @@ def _get_chat_params(req):
 
 
 async def _generate_sse_events(question: str, conversation_id: str | None) -> AsyncIterator[str]:
-    """Async generator for SSE events for the chat stream."""
+    """
+    Superhuman async generator for SSE events using true streaming.
+    - Yields events directly from the LLM service stream.
+    - Handles different event types from the stream ('delta', final envelope, 'error').
+    """
     event_id = 0
     last_heartbeat = time.monotonic()
+    token_count = 0
 
     try:
-        # Send hello event
+        from app.services.llm_client_service import invoke_chat_stream
+
+        # 1. Send a 'hello' event to confirm connection
         yield sse_event(
             "hello",
-            {"ts": time.time(), "model": "gpt-4", "conversation_id": conversation_id},
-            eid=str(event_id),
+            {"ts": time.time(), "model": "gpt-4-turbo", "conversation_id": conversation_id},
+            eid=str(event_id)
         )
         event_id += 1
 
-        # Stream tokens
-        buffer = ""
-        token_count = 0
+        # 2. Prepare the payload for the LLM
+        messages = [
+            {"role": "system", "content": "You are a superhuman AI assistant."},
+            {"role": "user", "content": question},
+        ]
 
-        async for token in ai_token_stream(question):
-            buffer += token
-            token_count += 1
+        # 3. Consume the true LLM stream
+        # The generator from invoke_chat_stream will yield delta chunks,
+        # and finally, the full response envelope.
+        async for part in invoke_chat_stream(model="openai/gpt-4o-mini", messages=messages):
 
-            # Send chunk every N tokens or at punctuation
-            should_send = token_count % 8 == 0 or (token and token[-1] in ".!?,;:\n")
-
-            if should_send and buffer:
-                yield sse_event("delta", {"text": buffer}, eid=str(event_id))
+            if "delta" in part:
+                # This is a token chunk
+                token_text = part["delta"]
+                token_count += 1
+                yield sse_event("delta", {"text": token_text}, eid=str(event_id))
                 event_id += 1
-                buffer = ""
 
-            # Send heartbeat every 20 seconds
+            elif "error" in part:
+                # An error occurred during streaming
+                yield sse_event("error", {"message": part["error"]}, eid=str(event_id))
+                return # Stop generation on error
+
+            elif "content" in part:
+                # This is the final envelope from the stream
+                final_usage = part.get("usage", {})
+                yield sse_event(
+                    "done",
+                    {"reason": "stop", "tokens": final_usage.get("completion_tokens", token_count)},
+                    eid=str(event_id)
+                )
+                return # End of stream
+
+            # Send heartbeat every 20 seconds to keep connection alive
             now = time.monotonic()
             if now - last_heartbeat > 20:
-                yield sse_event("ping", "🔧", eid=str(event_id))
+                yield sse_event("ping", "ping", eid=str(event_id))
                 event_id += 1
                 last_heartbeat = now
 
-        # Send remaining buffer
-        if buffer:
-            yield sse_event("delta", {"text": buffer}, eid=str(event_id))
-            event_id += 1
-
-        # Send completion event
-        yield sse_event("done", {"reason": "stop", "tokens": token_count}, eid=str(event_id))
-
     except Exception as e:
-        logger.error(f"SSE streaming error: {e}", exc_info=True)
-        # Send error event instead of crashing silently
+        logger.error(f"Superhuman SSE streaming error: {e}", exc_info=True)
+        # Send a final, detailed error event to the client
         yield sse_event(
             "error",
-            {"message": str(e)[:500], "type": type(e).__name__},
+            {"message": f"Critical error in stream generation: {str(e)}", "type": type(e).__name__},
             eid=str(event_id),
         )
-
-
-def _run_async_generator_in_sync(async_gen: AsyncIterator[str]):
-    """
-    Sync wrapper to run an async generator.
-    Creates a new event loop for the request.
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        while True:
-            try:
-                chunk = loop.run_until_complete(async_gen.__anext__())
-                yield chunk
-            except StopAsyncIteration:
-                break
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)
 
 
 @bp.route("/chat", methods=["GET", "POST"])
@@ -313,30 +310,26 @@ def sse_chat():
     question, conversation_id = _get_chat_params(request)
 
     if not question:
-
-        def error_gen():
+        # Simplified error response for clarity
+        def error_stream():
             yield sse_event("error", {"message": "Question is required"})
+        return Response(stream_with_context(error_stream()), mimetype="text/event-stream")
 
-        return Response(
-            stream_with_context(error_gen()),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache, no-transform",
-                "X-Accel-Buffering": "no",
-            },
-        )
-
+    # This is the modern, robust way to handle async generators in Flask.
+    # The async generator is directly passed to the Response object.
+    # Flask's `stream_with_context` handles the event loop management correctly.
     async_gen = _generate_sse_events(question, conversation_id)
-    sync_gen = _run_async_generator_in_sync(async_gen)
 
     headers = {
         "Cache-Control": "no-cache, no-transform",
         "Content-Type": "text/event-stream; charset=utf-8",
         "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",  # For NGINX
+        "X-Accel-Buffering": "no",  # Essential for NGINX/reverse proxies
     }
 
-    return Response(stream_with_context(sync_gen), headers=headers)
+    # The generator is wrapped in stream_with_context to ensure it runs
+    # within the application context, making it robust.
+    return Response(stream_with_context(async_gen), headers=headers)
 
 
 @bp.route("/progress/<task_id>", methods=["GET"])

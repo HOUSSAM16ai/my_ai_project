@@ -807,11 +807,6 @@ def _apply_force_model(payload: dict[str, Any]) -> None:
         payload["model"] = _LLM_FORCE_MODEL
 
 
-def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
-    for i in range(0, len(full_text), chunk_size):
-        yield full_text[i : i + chunk_size]
-
-
 def _circuit_allowed() -> bool:
     now = time.time()
     return not _BREAKER_STATE["open_until"] > now
@@ -1001,16 +996,116 @@ def invoke_chat(
         return result
 
     def _stream_gen() -> Generator[dict[str, Any], None, None]:
-        # Simulated streaming: first full call → break content into deltas.
-        # After simulation, we still produce a final envelope (fresh call or reuse).
-        envelope = _complete_once()
-        full = envelope["content"]
-        for chunk in _maybe_stream_simulated(full):
-            yield {"delta": _sanitize(chunk)}
-        # Produce final (mark stream)
-        envelope["meta"]["stream"] = True
-        _maybe_close_breaker()
-        yield envelope
+        """
+        True streaming generator.
+        - Directly calls the LLM in streaming mode.
+        - Yields delta chunks as they arrive.
+        - Constructs and yields the final envelope at the end.
+        """
+        nonlocal attempts, last_exc, backoff
+        completion_content = ""
+        final_envelope = {}
+        token_counts = {"prompt_tokens": 0, "completion_tokens": 0}
+
+        while attempts <= _LLM_MAX_RETRIES:
+            attempts += 1
+            t0 = time.perf_counter()
+            try:
+                # Enable streaming in the underlying API call
+                stream_payload = payload.copy()
+                stream_payload["stream"] = True
+
+                completion_stream = client.chat.completions.create(**stream_payload)
+
+                for chunk in completion_stream:
+                    # Yield delta chunks immediately
+                    delta = getattr(chunk.choices[0], "delta", None)
+                    if delta and delta.content:
+                        token = delta.content
+                        completion_content += token
+                        token_counts["completion_tokens"] += 1
+                        yield {"delta": _sanitize(token)}
+
+                # After the stream, build the final envelope
+                latency_ms = (time.perf_counter() - t0) * 1000.0
+
+                # Note: Usage statistics might not be available in all streaming scenarios.
+                # We'll use our own token count for completion.
+                # Prompt tokens would ideally come from a separate call or estimation.
+                usage = {
+                    "prompt_tokens": token_counts["prompt_tokens"], # Placeholder
+                    "completion_tokens": token_counts["completion_tokens"],
+                    "total_tokens": token_counts["prompt_tokens"] + token_counts["completion_tokens"],
+                }
+
+                _LLMTOTAL["calls"] += 1
+                _LLMTOTAL["completion_tokens"] += token_counts["completion_tokens"]
+                _LLMTOTAL["total_tokens"] += token_counts["completion_tokens"]
+                _LLMTOTAL["latencies_ms"].append(latency_ms)
+                if len(_LLMTOTAL["latencies_ms"]) > _LAT_WIN:
+                    _LLMTOTAL["latencies_ms"] = _LLMTOTAL["latencies_ms"][-_LAT_WIN:]
+
+                cost = _estimate_cost(payload["model"], usage["prompt_tokens"], usage["completion_tokens"])
+                _enforce_cost_budget(cost)
+                if cost:
+                    _LLMTOTAL["cost_usd"] += cost
+
+                final_envelope = {
+                    "content": _sanitize(completion_content),
+                    "tool_calls": None, # Tool calls are not typically sent in stream's final chunk
+                    "usage": usage,
+                    "model": payload["model"],
+                    "provider": _CLIENT_META.get("provider_actual"),
+                    "latency_ms": round(latency_ms, 2),
+                    "cost": cost,
+                    "raw": None, # Raw completion object is not available in streaming
+                    "meta": {
+                        "attempts": attempts,
+                        "forced_model": bool(_LLM_FORCE_MODEL),
+                        "http_fallback": _CLIENT_META.get("http_fallback_mode"),
+                        "build_seq": _CLIENT_META.get("build_seq"),
+                        "stream": True,
+                        "start_ts": start_build,
+                        "end_ts": time.time(),
+                        "circuit_breaker_open": False,
+                        "retry_schedule": retry_schedule,
+                    },
+                }
+
+                for hook in _POST_HOOKS:
+                    try:
+                        hook(payload, final_envelope)
+                    except Exception as e:
+                        _LOG.warning("LLM post_hook error on stream completion: %s", e)
+
+                yield final_envelope
+                return # End generator successfully
+
+            except Exception as exc:
+                kind = _classify_error(exc)
+                _LLMTOTAL["errors"] += 1
+                _LLMTOTAL["last_error_kind"] = kind
+                _note_error_for_breaker()
+                last_exc = exc
+                if attempts > _LLM_MAX_RETRIES or not _retry_allowed(kind):
+                    if _LOG_ATTEMPTS:
+                        _LOG.error("LLM streaming final failure attempt=%d kind=%s err=%s", attempts, kind, exc)
+                    break
+
+                sleep_for = backoff
+                if _LLM_RETRY_JITTER:
+                    sleep_for += random.random() * 0.25
+                retry_schedule.append(round(sleep_for, 3))
+                if _LOG_ATTEMPTS:
+                    _LOG.warning("LLM streaming retry #%d (kind=%s in %.2fs) err=%s", attempts, kind, sleep_for, exc)
+                time.sleep(sleep_for)
+                backoff *= _LLM_RETRY_BACKOFF_BASE
+
+        # If loop finishes due to retries, raise error and yield a final error message if possible
+        error_envelope = {"error": f"LLM streaming failed after {attempts} attempts: {last_exc}"}
+        yield error_envelope
+        raise RuntimeError(f"LLM streaming failed after {attempts} attempts: {last_exc}")
+
 
     return _stream_gen()
 
