@@ -57,18 +57,48 @@ fi
 success "Platform detected: ${BOLD}${PLATFORM}${RESET}"
 echo ""
 
-# Step 1: Environment Setup
+# Step 1: Environment Setup (SUPERHUMAN Edition)
 step "1/6" "Setting up environment..."
 echo ""
 
+# --- SUPERHUMAN: Auto-configure from Codespaces Secrets ---
+if [ "$PLATFORM" = "GitHub Codespaces" ] && [ ! -f ".env" ]; then
+  info "🚀 Codespaces detected. Attempting to auto-configure from secrets..."
+
+  # Check for the most critical secret to decide if auto-configuration is possible
+  if [ -n "${DATABASE_URL:-}" ]; then
+    success "Found DATABASE_URL secret. Generating .env file automatically..."
+
+    # Dynamically create the .env file from available secrets, providing defaults
+    {
+      echo "DATABASE_URL=${DATABASE_URL}"
+      echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}"
+      echo "SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}"
+      echo "ADMIN_EMAIL=${ADMIN_EMAIL:-benmerahhoussam16@gmail.com}"
+      echo "ADMIN_PASSWORD=${ADMIN_PASSWORD:-1111}"
+      echo "ADMIN_NAME=${ADMIN_NAME:-'Houssam Benmerah'}"
+      echo "SUPABASE_URL=${SUPABASE_URL:-}"
+      echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}"
+      echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}"
+    } > .env
+
+    success "✅ .env file automatically generated from Codespaces secrets!"
+    echo ""
+
+  else
+    warn "DATABASE_URL secret not found in Codespaces. Falling back to manual setup."
+    echo ""
+  fi
+fi
+
+# --- Standard .env setup (used as a fallback or for other platforms) ---
 if [ ! -f ".env" ]; then
   if [ -f ".env.example" ]; then
     cp .env.example .env
     success "Created .env from .env.example"
-    warn "⚠️  IMPORTANT: You need to configure DATABASE_URL in .env"
+    warn "⚠️  IMPORTANT: You must configure your .env file now."
     echo ""
-    info "Edit .env and set:"
-    info "DATABASE_URL=postgresql://postgres.YOUR_PROJECT:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require"
+    info "Please edit the .env file and set your DATABASE_URL and other secrets."
     echo ""
     
     if [ "$AUTO_MODE" = false ]; then
@@ -87,13 +117,13 @@ else
   # Check if DATABASE_URL is configured
   if grep -q "^DATABASE_URL=" .env 2>/dev/null; then
     DB_URL=$(grep "^DATABASE_URL=" .env | cut -d'=' -f2-)
-    if [[ "$DB_URL" == *"supabase.co"* ]]; then
-      success "DATABASE_URL configured with Supabase"
+    if [[ "$DB_URL" == *"pooler.supabase.com"* ]]; then
+      success "DATABASE_URL seems configured for Supabase"
     else
-      warn "DATABASE_URL found but might need updating"
+      warn "DATABASE_URL found but might not be a valid Supabase URL"
     fi
   else
-    warn "DATABASE_URL not found in .env - you'll need to add it"
+    warn "DATABASE_URL not found in .env - this may cause errors"
   fi
 fi
 
@@ -166,18 +196,44 @@ fi
 
 echo ""
 
-# Step 6: Create admin user
+# Step 6: Create admin user (Professional Edition)
 step "6/6" "Creating admin user..."
 echo ""
 
-if docker-compose run --rm web flask users create-admin; then
+# --- الحل الاحترافي: قراءة .env بشكل آمن وتمرير المتغيرات ---
+# This ensures the script is reliable and doesn't depend on implicit behavior.
+info "⚙️  Reading configuration from .env..."
+if [ -f .env ]; then
+    # نستخدم sed لإزالة التعليقات والأسطر الفارغة ثم نقوم بتصدير المتغيرات
+    export $(sed 's/#.*//g; /^$/d' .env | xargs)
+    info "✅ .env loaded successfully."
+else
+    warn ".env file not found. Using default credentials."
+fi
+
+# Set credentials with defaults if not found in .env
+ADMIN_EMAIL_FINAL=${ADMIN_EMAIL:-"benmerahhoussam16@gmail.com"}
+ADMIN_PASSWORD_FINAL=${ADMIN_PASSWORD:-"1111"}
+ADMIN_NAME_FINAL=${ADMIN_NAME:-"Houssam Benmerah"}
+
+info "👤 Admin email set to: ${BOLD}${ADMIN_EMAIL_FINAL}${RESET}"
+echo ""
+
+# Pass the variables explicitly to the docker-compose command
+if docker-compose run --rm \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL_FINAL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD_FINAL" \
+  -e ADMIN_NAME="$ADMIN_NAME_FINAL" \
+  web flask users create-admin; then
   success "Admin user created (or already exists)"
   echo ""
-  info "Default admin credentials:"
-  info "  Email: benmerahhoussam16@gmail.com"
-  info "  Password: 1111"
+  info "Credentials used:"
+  info "  Email: ${ADMIN_EMAIL_FINAL}"
+  info "  Password: [PROTECTED]"
 else
-  warn "Failed to create admin user (it might already exist)"
+  error "Failed to create admin user."
+  info "This can happen if the user already exists with a different password"
+  info "or if the database is not ready. Try running the script again."
 fi
 
 echo ""
