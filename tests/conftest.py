@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
+
 @pytest.fixture(scope="module")
 def client():
     """
@@ -10,6 +11,7 @@ def client():
     """
     with TestClient(app) as c:
         yield c
+
 
 # The following fixtures are commented out as they are based on the old Flask
 # application structure. They will need to be refactored to work with the

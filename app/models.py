@@ -74,7 +74,14 @@ from typing import Any
 
 # from flask_login import UserMixin # Removed Flask Dependency
 from sqlalchemy import (
-    JSON as SAJSON, DateTime, String, Integer, Boolean, Text, Float, Numeric,
+    JSON as SAJSON,
+    DateTime,
+    String,
+    Integer,
+    Boolean,
+    Text,
+    Float,
+    Numeric,
     ForeignKey,
     Index,
     TypeDecorator,
@@ -88,7 +95,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # from app import db, login_manager # Removed Flask Dependency
-from .extensions import db # Corrected import for SQLAlchemy
+from .extensions import db  # Corrected import for SQLAlchemy
 
 # ======================================================================================
 # CONFIG / CONSTANTS (اختياري — يعكس قيد الهجرة إذا كان مفعلاً)
@@ -899,7 +906,9 @@ event.listen(Task, "before_update", _coerce_task_datetime_fields)
 # ======================================================================================
 
 
-def update_mission_status(mission: Mission, new_status: MissionStatus, session, note: str | None = None):
+def update_mission_status(
+    mission: Mission, new_status: MissionStatus, session, note: str | None = None
+):
     """
     تغيير حالة المهمة مع تسجيل حدث STATUS_CHANGE (دون commit).
     """

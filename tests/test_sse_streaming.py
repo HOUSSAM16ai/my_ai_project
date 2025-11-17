@@ -80,7 +80,10 @@ def test_chat_stream_gateway_unavailable_fallback(admin_user, test_client_with_u
         with patch("app.services.admin_ai_service.AdminAIService") as mock_fallback_service:
             # Configure the mock fallback service instance
             mock_instance = mock_fallback_service.return_value
-            mock_instance.answer_question.return_value = {"status": "success", "answer": "Fallback response"}
+            mock_instance.answer_question.return_value = {
+                "status": "success",
+                "answer": "Fallback response",
+            }
 
             response = test_client_with_user.post(
                 "/admin/api/chat/stream", json={"question": "This will use fallback."}
