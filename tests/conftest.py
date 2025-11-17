@@ -1,219 +1,76 @@
 # tests/conftest.py
-from unittest.mock import MagicMock, patch
-
 import pytest
-from faker import Faker
-from sqlalchemy.orm import scoped_session, sessionmaker
+from fastapi.testclient import TestClient
+from app.main import app
 
-from app import create_app
-from app import db as _db
-from app.models import Mission, User
-
-# Initialize Faker
-fake = Faker()
-
-
-@pytest.fixture(scope="session")
-def app():
-    """Create a Flask app instance for the test session."""
-    return create_app("testing")
-
-
-@pytest.fixture
-def app_context(app):
-    """Pushes an application context to make 'current_app' available."""
-    with app.app_context():
-        yield
-
-
-@pytest.fixture(scope="session")
-def db(app):
-    """Session-wide test database."""
-    with app.app_context():
-        _db.app = app
-        _db.create_all()
-
-    yield _db
-
-    with app.app_context():
-        _db.drop_all()
-
-
-@pytest.fixture(scope="function")
-def session(app, db):
-    """
-    Creates a new database session for a test.
-
-    CRITICAL FIX for Problem #1 (Inconsistent DB State):
-    - Ensures test and Flask app share the same database session
-    - Uses nested transactions for proper isolation
-    - Maintains app context throughout the test
-    """
-    with app.app_context():
-        # Start a connection
-        connection = db.engine.connect()
-        transaction = connection.begin()
-
-        # Override the default session with one bound to our connection
-        # This is the KEY to ensuring both test code and app code see the same data
-        options = dict(bind=connection, binds={})
-        session_factory = sessionmaker(**options)
-        test_session = scoped_session(session_factory)
-
-        # Replace db.session with our test session
-        # This ensures all queries in the app and tests use the same session
-        old_session = db.session
-        db.session = test_session
-
-        yield test_session
-
-        # Cleanup: rollback transaction and restore original session
-        test_session.remove()
-        transaction.rollback()
-        connection.close()
-        db.session = old_session
-
-
-@pytest.fixture(scope="function")
-def client(app, session):
+@pytest.fixture(scope="module")
+def client():
     """
     A test client for the app.
-
-    CRITICAL FIX for Problem #2 (Authentication Persistence):
-    - Depends on session fixture to ensure shared database state
-    - Returns client directly without context manager to avoid nesting
-    - App context is maintained by the session fixture
     """
-    return app.test_client()
+    with TestClient(app) as c:
+        yield c
 
+# The following fixtures are commented out as they are based on the old Flask
+# application structure. They will need to be refactored to work with the
+# new FastAPI architecture and its dependency injection system.
 
-@pytest.fixture(scope="function")
-def admin_user(app, session):
-    """
-    Create an admin user for testing.
+# from unittest.mock import MagicMock, patch
+# from faker import Faker
+# from sqlalchemy.orm import scoped_session, sessionmaker
+# from app.models import Mission, User
+# from app import db as _db
 
-    FIX for Problem #1 & #2:
-    - Creates admin user in the shared session
-    - Ensures user persists for authentication tests
-    """
-    user = User(email="admin@test.com", full_name="Admin User", is_admin=True)
-    user.set_password("1111")
-    session.add(user)
-    session.commit()
-    return user
+# fake = Faker()
 
+# @pytest.fixture(scope="session")
+# def db(app):
+#     """Session-wide test database."""
+#     with app.app_context():
+#         _db.app = app
+#         _db.create_all()
+#     yield _db
+#     with app.app_context():
+#         _db.drop_all()
 
-@pytest.fixture(scope="function")
-def init_database(app, db, session):
-    """
-    Initialize database with basic data.
+# @pytest.fixture(scope="function")
+# def session(app, db):
+#     with app.app_context():
+#         connection = db.engine.connect()
+#         transaction = connection.begin()
+#         options = dict(bind=connection, binds={})
+#         session_factory = sessionmaker(**options)
+#         test_session = scoped_session(session_factory)
+#         old_session = db.session
+#         db.session = test_session
+#         yield test_session
+#         test_session.remove()
+#         transaction.rollback()
+#         connection.close()
+#         db.session = old_session
 
-    FIX for Problem #2:
-    - Ensures database is ready for authentication tests
-    - Creates tables if needed
-    - Provides clean state for each test
-    """
-    # Tables are already created by the db fixture
-    # This fixture just ensures they're ready
-    yield db
-    # Cleanup happens in session fixture
+# @pytest.fixture(scope="function")
+# def admin_user(app, session):
+#     user = User(email="admin@test.com", full_name="Admin User", is_admin=True)
+#     user.set_password("1111")
+#     session.add(user)
+#     session.commit()
+#     return user
 
-
-@pytest.fixture
-def test_client_with_user(client, admin_user, session):
-    """A test client authenticated as a regular user."""
-    # The 'client' fixture gives us a test client.
-    # The 'admin_user' fixture ensures an admin user exists in the database.
-    # Now, we simulate a login.
-    with client:
-        # To log in, we post to the login view.
-        response = client.post(
-            "/login",
-            data={"email": admin_user.email, "password": "1111"},
-            follow_redirects=True,
-        )
-        # Check that login was successful
-        assert response.status_code == 200
-        yield client
-
-
-@pytest.fixture
-def mock_ai_gateway():
-    """Mock the AI service gateway."""
-    mock_gateway = MagicMock()
-
-    def mock_stream_chat(question, conversation_id, user_id):
-        responses = [
-            {"type": "data", "payload": {"content": "This "}},
-            {"type": "data", "payload": {"content": "is "}},
-            {"type": "data", "payload": {"content": "a "}},
-            {"type": "data", "payload": {"content": "mocked "}},
-            {"type": "data", "payload": {"content": "response."}},
-            {"type": "end", "payload": {"conversation_id": "mock_conv_123"}},
-        ]
-        yield from responses
-
-    mock_gateway.stream_chat.side_effect = mock_stream_chat
-
-    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_gateway) as mock:
-        yield mock
-
-
-# -----------------------------------------------------------------------------
-# Factories
-# -----------------------------------------------------------------------------
-@pytest.fixture
-def user_factory(session):
-    """
-    Factory to create a user.
-
-    FIX for Problem #1:
-    - Uses the shared session
-    - Commits to ensure data is visible to both test and app code
-    """
-
-    def _user_factory(**kwargs):
-        password = kwargs.pop("password", "password")
-        defaults = {
-            "email": fake.email(),
-            "full_name": fake.name(),
-        }
-        defaults.update(kwargs)
-
-        user = User(**defaults)
-        user.set_password(password)
-
-        session.add(user)
-        session.commit()  # Commit to make visible to app code
-        return user
-
-    return _user_factory
-
-
-@pytest.fixture
-def mission_factory(session, user_factory):
-    """
-    Factory to create a mission.
-
-    FIX for Problem #1:
-    - Uses the shared session
-    - Commits to ensure data is visible
-    """
-
-    def _mission_factory(**kwargs):
-        # Ensure there's an initiator for the mission
-        if "initiator" not in kwargs and "initiator_id" not in kwargs:
-            kwargs["initiator"] = user_factory()
-
-        defaults = {
-            "objective": fake.sentence(),
-            "status": "PENDING",
-        }
-        defaults.update(kwargs)
-
-        mission = Mission(**defaults)
-        session.add(mission)
-        session.commit()  # Commit to make visible to app code
-        return mission
-
-    return _mission_factory
+# @pytest.fixture
+# def mock_ai_gateway():
+#     """Mock the AI service gateway."""
+#     mock_gateway = MagicMock()
+#     def mock_stream_chat(question, conversation_id, user_id):
+#         responses = [
+#             {"type": "data", "payload": {"content": "This "}},
+#             {"type": "data", "payload": {"content": "is "}},
+#             {"type": "data", "payload": {"content": "a "}},
+#             {"type": "data", "payload": {"content": "mocked "}},
+#             {"type": "data", "payload": {"content": "response."}},
+#             {"type": "end", "payload": {"conversation_id": "mock_conv_123"}},
+#         ]
+#         yield from responses
+#     mock_gateway.stream_chat.side_effect = mock_stream_chat
+#     with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_gateway) as mock:
+#         yield mock

@@ -57,7 +57,94 @@ async def chat_stream(request: Request):
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
 
+from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
+
 # The root endpoint can provide basic information or API documentation link
 @app.get("/", summary="Root Endpoint", tags=["System"])
 async def root():
     return {"message": "Welcome to the CogniForge ASGI service. See /docs for API documentation."}
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard(request: Request):
+    """Serves the admin dashboard page."""
+    # In a real app, you'd pass user data. For now, we pass a placeholder.
+    return templates.TemplateResponse("dashboard.html", {"request": request, "current_user": {"full_name": "Admin"}})
+
+
+import os
+import jwt
+import httpx
+from datetime import datetime, timedelta, timezone
+
+# --- AI Service Configuration ---
+AI_SERVICE_URL = os.environ.get("AI_SERVICE_URL", "http://ai_service_standalone:8000")
+SECRET_KEY = os.environ.get("SECRET_KEY", "a-super-secret-key-that-you-should-change")
+
+
+def _generate_service_token(user_id: str) -> str:
+    """Generates a short-lived JWT for authenticating with the AI service."""
+    payload = {
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        "iat": datetime.now(timezone.utc),
+        "sub": user_id,
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+
+@app.websocket("/ws/chat")
+async def chat_websocket(websocket: WebSocket):
+    """
+    The main WebSocket endpoint for the admin chat.
+    Handles the connection, receives messages, and streams back AI responses.
+    """
+    await websocket.accept()
+    # Note: In a real application, you'd get the user_id from the WebSocket's
+    # authentication context (e.g., a token passed on connection).
+    # For this implementation, we'll hardcode it as we don't have user sessions
+    # in this standalone service.
+    user_id = "admin_user_websocket"
+
+    try:
+        while True:
+            question = await websocket.receive_text()
+
+            service_token = _generate_service_token(user_id)
+            headers = {
+                "Authorization": f"Bearer {service_token}",
+                "Content-Type": "application/json",
+            }
+            payload = {"question": question, "conversation_id": None}
+            stream_url = f"{AI_SERVICE_URL}/api/v1/chat/stream"
+
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with client.stream("POST", stream_url, headers=headers, json=payload) as response:
+                        # Check for successful response
+                        if response.status_code != 200:
+                            error_body = await response.aread()
+                            await websocket.send_text(f"Error: Failed to connect to AI service. Status: {response.status_code}, Body: {error_body.decode()}")
+                            continue
+
+                        # Stream the response back to the client
+                        async for line in response.aiter_lines():
+                            if line:
+                                # Send the raw chunk to the client, let the frontend parse it
+                                await websocket.send_text(line)
+
+            except httpx.RequestError as e:
+                await websocket.send_text(f"Error: Could not connect to the AI service: {e}")
+            except Exception as e:
+                await websocket.send_text(f"Error: An unexpected error occurred during streaming: {e}")
+
+    except WebSocketDisconnect:
+        print("Client disconnected from chat WebSocket.")
+    except Exception as e:
+        print(f"An error occurred in the chat WebSocket: {e}")
+        await websocket.close(code=1011, reason="An internal error occurred.")

@@ -1,29 +1,23 @@
 # app/extensions.py
-"""Centralized extension management to avoid circular imports."""
+"""Centralized extension management for the FastAPI application."""
 
-from flask import jsonify, redirect, request, url_for
-from flask_login import LoginManager
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-db = SQLAlchemy()
-migrate = Migrate()
-login_manager = LoginManager()
-login_manager.login_view = "main.login"
-login_manager.login_message_category = "info"
+# In a real FastAPI application, you would typically use environment variables
+# for the database URL. For now, we'll use a placeholder.
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def custom_unauthorized_handler():
-    """
-    Redirects to the login page for unauthorized web requests, but returns a
-    JSON 401 error for unauthorized API requests. This prevents breaking SSE
-    connections which expect an event-stream response, not an HTML redirect.
-    """
-    # Check if the request path is for an API endpoint
-    if request.path.startswith("/api/"):
-        return jsonify(error="Unauthorized"), 401
-    # For all other unauthorized requests, redirect to the login page
-    return redirect(url_for("main.login"))
+Base = declarative_base()
 
+# Define db as a simple object to attach the model base, so that
+# 'db.Model' still works in the models file.
+class DB:
+    Model = Base
 
-login_manager.unauthorized_handler(custom_unauthorized_handler)
+db = DB()
