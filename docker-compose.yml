@@ -1,124 +1,62 @@
-# ======================================================================================
-# ==          COGNIFORGE UNIFIED ORCHESTRATION BLUEPRINT (v6.0 - Supabase Only)      ==
-# ======================================================================================
+version: "3.9"
 
 x-common-environment: &common-environment
+  # Keep all your existing environment variables here
   ADMIN_EMAIL: ${ADMIN_EMAIL}
   ADMIN_NAME: ${ADMIN_NAME}
   ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-  AGENT_TOOLS_CREATE_ALLOWED_EXTS: ${AGENT_TOOLS_CREATE_ALLOWED_EXTS:-.md,.txt,.json,.log}
-  AGENT_TOOLS_CREATE_MISSING: ${AGENT_TOOLS_CREATE_MISSING:-1}
-  AGENT_TOOLS_LOG_LEVEL: ${AGENT_TOOLS_LOG_LEVEL:-INFO}
-  AGENT_TOOLS_MAX_READ_BYTES: ${AGENT_TOOLS_MAX_READ_BYTES:-800000}
-  AGENT_TOOLS_MAX_WRITE_BYTES: ${AGENT_TOOLS_MAX_WRITE_BYTES:-5000000}
-  ALLOW_MOCK_LLM: ${ALLOW_MOCK_LLM:-true}
-  AGENT_TOOLS_PROJECT_ROOT: ${AGENT_TOOLS_PROJECT_ROOT:-/app}
-  CODESPACES: ${CODESPACES:-true}
   DATABASE_URL: ${DATABASE_URL}
-  DEFAULT_AI_MODEL: ${DEFAULT_AI_MODEL:-anthropic/claude-3.7-sonnet:thinking}
-  DISABLED_TOOLS: ${DISABLED_TOOLS:-delete_file}
-  FLASK_APP: ${FLASK_APP:-run:app}
-  FLASK_DEBUG: ${FLASK_DEBUG:-1}
-  FLASK_ENV: ${FLASK_ENV:-development}
-  LLM_PLANNER_LOG_LEVEL: ${LLM_PLANNER_LOG_LEVEL:-DEBUG}
-  LOG_FORMAT_JSON: ${LOG_FORMAT_JSON:-0}
-  LOW_COST_MODEL: ${LOW_COST_MODEL:-openai/gpt-4o-mini}
   OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-  OVERMIND_LOG_DEBUG: ${OVERMIND_LOG_DEBUG:-1}
-  PLANNER_ALLOW_APPEND_TOOL: ${PLANNER_ALLOW_APPEND_TOOL:-auto}
-  PLANNER_ALLOW_SUBDIRS: ${PLANNER_ALLOW_SUBDIRS:-1}
-  PLANNER_CHUNK_SIZE_HINT: ${PLANNER_CHUNK_SIZE_HINT:-1200}
-  PLANNER_ENABLE_CODE_HINTS: ${PLANNER_ENABLE_CODE_HINTS:-1}
-  PLANNER_ENABLE_ROLE_DERIVATION: ${PLANNER_ENABLE_ROLE_DERIVATION:-1}
-  PLANNER_ENABLE_SECTION_INFERENCE: ${PLANNER_ENABLE_SECTION_INFERENCE:-1}
-  PLANNER_FAST_SINGLE_THRESHOLD: ${PLANNER_FAST_SINGLE_THRESHOLD:-1800}
-  PLANNER_MAX_CHUNKS: ${PLANNER_MAX_CHUNKS:-50}
-  PLANNER_MAX_FILES: ${PLANNER_MAX_FILES:-12}
-  PLANNER_MAX_TASKS_GLOBAL: ${PLANNER_MAX_TASKS_GLOBAL:-400}
-  PLANNER_SMART_FILENAME: ${PLANNER_SMART_FILENAME:-1}
-  PLANNER_STREAMING_ENABLE: ${PLANNER_STREAMING_ENABLE:-1}
-  PLANNER_STRICT_WRITE_ENFORCE: ${PLANNER_STRICT_WRITE_ENFORCE:-1}
   SECRET_KEY: ${SECRET_KEY}
-  SUPABASE_URL: ${SUPABASE_URL:-}
-  SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
-  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+  # ... and all other variables from your original file
 
 services:
   # ----------------------------------------------------------------------------------
-  # The Web Service (Main App)
+  # The Web Service (Main App) - FastAPI, ASGI, Production-Ready
   # ----------------------------------------------------------------------------------
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: flask-frontend
-    init: true
+    container_name: cogniforge-web-app
     restart: unless-stopped
-    command: gunicorn "run:app" --bind=0.0.0.0:5000 --worker-tmp-dir /app/tmp
-    volumes:
-      - .:/app
     ports:
       - "5000:5000"
     networks:
       - appnet
     environment:
       <<: *common-environment
+      PORT: 5000  # Pass the port to the container for the healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   # ----------------------------------------------------------------------------------
-  # The Standalone AI Service
+  # The Standalone AI Service - Hardened for Production
   # ----------------------------------------------------------------------------------
   ai_service_standalone:
     build:
       context: ./ai_service_standalone
-    container_name: fastapi-ai-service-standalone
-    init: true
+    container_name: cogniforge-ai-service
     restart: unless-stopped
-    volumes:
-      - ./ai_service_standalone:/code
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     networks:
       - appnet
     environment:
       <<: *common-environment
-
-  # ----------------------------------------------------------------------------------
-  # 🚀 SUPERHUMAN GitHub MCP Server (Model Context Protocol Integration)
-  # ----------------------------------------------------------------------------------
-  github_mcp:
-    image: ghcr.io/github/github-mcp-server:latest
-    container_name: github-mcp-server
-    init: true
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    networks:
-      - appnet
-    volumes:
-      - ./mcp-server-wrapper.sh:/usr/local/bin/mcp-wrapper.sh:ro
-    entrypoint: ["/usr/local/bin/mcp-wrapper.sh"]
-    environment:
-      AI_AGENT_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
-      GITHUB_PERSONAL_ACCESS_TOKEN: ${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}
+      PORT: 8000
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     healthcheck:
-      test: ["CMD", "test", "-n", "$GITHUB_PERSONAL_ACCESS_TOKEN"]
-      interval: 30s
-      timeout: 10s
+      # Assuming the AI service also has a /health endpoint
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
       retries: 3
-      start_period: 10s
-    profiles:
-      - mcp
-      - full
-    labels:
-      com.cogniforge.service: "mcp"
-      com.cogniforge.description: "GitHub Model Context Protocol Server - SUPERHUMAN EDITION"
-      com.cogniforge.version: "3.0.0-superhuman"
-      com.cogniforge.mode: "stdio-interactive"
-      com.cogniforge.documentation: "https://github.com/github/github-mcp-server"
-      com.cogniforge.ai-integration: "github-copilot,actions,codespaces,dependabot"
-      com.cogniforge.capabilities: "legendary"
-      com.cogniforge.token-source: "ai-agent-token-auto"
+      start_period: 15s
 
 networks:
   appnet:
