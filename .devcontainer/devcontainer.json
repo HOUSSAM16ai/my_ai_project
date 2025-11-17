@@ -1,132 +1,73 @@
 {
-  "//": "Dev Container Configuration (Ultimate Optimized Edition)",
-  "name": "CogniForge – Multi-Platform Dev Env",
+  "name": "CogniForge - Production Dev Environment",
+
+  "// Use the docker-compose file to define the services for the dev environment.",
   "dockerComposeFile": [
     "../docker-compose.yml"
   ],
+
+  "// The primary service VS Code will attach to.",
   "service": "web",
-  "workspaceFolder": "/workspaces/my_ai_project",
 
+  "// Ensure both the web and AI services are started automatically.",
+  "runServices": ["web", "ai_service_standalone"],
+
+  "// The standard workspace folder for Codespaces, mounted automatically.",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  "// --- ARCHITECTURAL FIX: Unify Build & Runtime User Environment ---",
+  "// 1. Run the container as 'root'. This aligns the runtime user with the",
+  "//    build-time user, giving devcontainer features the correct permissions.",
   "remoteUser": "root",
-  "containerUser": "root",
-  "overrideCommand": true,
 
-  "initializeCommand": "bash -c 'echo \"🚀 Initializing CogniForge Dev Container...\"'",
+  "// 2. Force the HOME environment variable. This ensures all tools, including",
+  "//    features and VS Code, use '/root' as their home, preventing permission",
+  "//    errors on '/root/.config'.",
+  "remoteEnv": {
+    "HOME": "/root"
+  },
 
-  "postCreateCommand": "python setup_environment.py && bash .devcontainer/on-create.sh",
-  "postStartCommand": "bash .devcontainer/on-start.sh",
-  "postAttachCommand": "python setup_environment.py --live-sync && bash .devcontainer/on-attach.sh",
+  "// --- Service Command Configuration ---",
+  "// Set to 'false' to ensure the CMD from the Dockerfile (e.g., starting Gunicorn)",
+  "// is executed, rather than being overridden by the dev container's default.",
+  "overrideCommand": false,
 
-  "userEnvProbe": "loginInteractiveShell",
-  "waitFor": "postCreateCommand",
+  "// --- Post-Creation Setup ---",
+  "// Commands to run once after the container is created. Executes as 'root'.",
+  "postCreateCommand": "bash -c 'pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir ruff black pytest && chown -R root:root /root/.config || true'",
 
+  "// --- Networking ---",
+  "forwardPorts": [5000, 8000],
+  "portsAttributes": {
+      "5000": {"label": "Web App (FastAPI)"},
+      "8000": {"label": "AI Service"}
+  },
+
+  "// --- Dev Container Features ---",
+  "// These features will now initialize correctly under the unified 'root' user.",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "// --- VS Code Customizations ---",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "github.copilot",
-        "github.copilot-chat",
-        "ms-azuretools.vscode-docker",
-        "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "eamodio.gitlens",
-        "esbenp.prettier-vscode",
-        "ms-python.flake8",
         "ms-python.black-formatter",
-        "streetsidesoftware.code-spell-checker",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "humao.rest-client"
+        "ms-azuretools.vscode-docker",
+        "github.copilot"
       ],
       "settings": {
-        "editor.formatOnSave": true,
-        "files.autoSave": "onFocusChange",
-        "git.autofetch": true,
+        "terminal.integrated.shell.linux": "/bin/bash",
         "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "python.analysis.typeCheckingMode": "basic",
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "terminal.integrated.fontSize": 14,
-        "terminal.integrated.persistentSessionReviveProcess": "never",
+        "editor.formatOnSave": true,
         "[python]": {
           "editor.defaultFormatter": "ms-python.black-formatter"
         }
       }
     }
-  },
-
-  "forwardPorts": [5000, 8000, 8001],
-  "portsAttributes": {
-    "5000": { "label": "Flask Frontend (Web)" },
-    "8000": { "label": "FastAPI (AI Core)" },
-    "8001": { "label": "ChromaDB (Vector Memory)" }
-  },
-
-  "containerEnv": {
-    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
-    "PIP_NO_CACHE_DIR": "1",
-    "PYTHONDONTWRITEBYTECODE": "1",
-    "FORCE_COLOR": "1",
-
-    "//": "Environment Setup Flags",
-    "//": "SKIP_PIP_INSTALL: Packages already in Docker image via Dockerfile",
-    "//": "SUPERHUMAN AUTOMATION: Enabled. The system now configures itself automatically.",
-    "SKIP_ENV_BOOTSTRAP": "false",
-    "SKIP_PIP_INSTALL": "true",
-    "SKIP_DB_WAIT": "false",
-    "SKIP_MIGRATIONS": "false",
-    "SKIP_SEED": "false",
-
-    "//": "GitHub Codespaces & Gitpod Compatibility",
-    "CODESPACES": "true",
-    "GITPOD_WORKSPACE_ID": "${localEnv:GITPOD_WORKSPACE_ID}",
-
-    "//": "Codespaces Secrets Support - automatically load from repository/user secrets",
-    "//": "Set these in: Settings > Codespaces > Secrets",
-    "DATABASE_URL": "${localEnv:DATABASE_URL}",
-    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}",
-    "SECRET_KEY": "${localEnv:SECRET_KEY}",
-    "ADMIN_EMAIL": "${localEnv:ADMIN_EMAIL}",
-    "ADMIN_PASSWORD": "${localEnv:ADMIN_PASSWORD}",
-    "ADMIN_NAME": "${localEnv:ADMIN_NAME}",
-    "SUPABASE_URL": "${localEnv:SUPABASE_URL}",
-    "SUPABASE_ANON_KEY": "${localEnv:SUPABASE_ANON_KEY}",
-    "SUPABASE_SERVICE_ROLE_KEY": "${localEnv:SUPABASE_SERVICE_ROLE_KEY}",
-    
-    "//": "🚀 SUPERHUMAN AI AGENT TOKEN - MCP Server + GitHub Copilot Integration",
-    "//": "This token enables legendary AI capabilities in Codespaces",
-    "//": "Set in: Settings > Secrets > Codespaces > AI_AGENT_TOKEN",
-    "AI_AGENT_TOKEN": "${localEnv:AI_AGENT_TOKEN}",
-    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:AI_AGENT_TOKEN:-${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}}",
-
-    "//": "Migration Control",
-    "RUN_MIGRATIONS_DURING_CREATE": "true",
-    "RUN_SEED_DURING_CREATE": "true",
-
-    "//": "Application Runtime",
-    "//": "The application is now started by the command in docker-compose.yml",
-
-    "//": "Database Connection (External Supabase)",
-    "SHOW_MIGRATION_STATUS": "true",
-    "DB_CONNECTION_TIMEOUT": "30"
-  },
-
-  "mounts": [
-    "source=devcontainer-dind,target=/var/lib/docker,type=volume"
-  ],
-
-  "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
-      "moby": false
-    },
-    "ghcr.io/devcontainers/features/aws-cli:1": {},
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
-  },
-
-  "hostRequirements": {
-    "cpus": 2,
-    "memory": "4gb",
-    "storage": "16gb"
   }
 }
