@@ -7,6 +7,7 @@ from typing import AsyncIterator
 
 app = FastAPI(title="CogniForge - Unified ASGI Service")
 
+
 @app.get("/health", summary="Health Check Endpoint", tags=["System"])
 async def health():
     """
@@ -15,11 +16,13 @@ async def health():
     """
     return JSONResponse(content={"status": "ok", "timestamp": time.time()})
 
+
 async def sse_keepalive() -> AsyncIterator[str]:
     """A simple SSE generator that sends a keepalive ping every 15 seconds."""
     while True:
         yield "event: keepalive\ndata: \n\n"
         await asyncio.sleep(15)
+
 
 @app.get("/sse", summary="General Server-Sent Events Endpoint", tags=["Streaming"])
 async def sse():
@@ -31,7 +34,10 @@ async def sse():
     }
     return StreamingResponse(sse_keepalive(), headers=headers)
 
-@app.post("/admin/api/chat/stream", summary="Admin Chat Streaming Endpoint", tags=["Admin", "Streaming"])
+
+@app.post(
+    "/admin/api/chat/stream", summary="Admin Chat Streaming Endpoint", tags=["Admin", "Streaming"]
+)
 async def chat_stream(request: Request):
     """
     Handles POST requests to initiate a chat stream.
@@ -48,14 +54,17 @@ async def chat_stream(request: Request):
     async def response_generator():
         # Here you would typically connect to your LLM or other AI service
         # For demonstration, we'll stream back a simulated response.
-        for idx, part in enumerate(["Analyzing...", "Generating response...", f"Final answer for '{question}'."]):
+        for idx, part in enumerate(
+            ["Analyzing...", "Generating response...", f"Final answer for '{question}'."]
+        ):
             await asyncio.sleep(1)  # Simulate processing time
-            yield f"data: {{\"chunk\": \"{part}\", \"index\": {idx}}}\n\n"
+            yield f'data: {{"chunk": "{part}", "index": {idx}}}\n\n'
 
         # Signal the end of the stream
         yield "event: close\ndata: Stream ended\n\n"
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
+
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -64,6 +73,7 @@ from fastapi.staticfiles import StaticFiles
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
 
 # The root endpoint can provide basic information or API documentation link
 @app.get("/", summary="Root Endpoint", tags=["System"])
@@ -75,7 +85,9 @@ async def root():
 async def get_dashboard(request: Request):
     """Serves the admin dashboard page."""
     # In a real app, you'd pass user data. For now, we pass a placeholder.
-    return templates.TemplateResponse("dashboard.html", {"request": request, "current_user": {"full_name": "Admin"}})
+    return templates.TemplateResponse(
+        "dashboard.html", {"request": request, "current_user": {"full_name": "Admin"}}
+    )
 
 
 import os
@@ -125,11 +137,15 @@ async def chat_websocket(websocket: WebSocket):
 
             try:
                 async with httpx.AsyncClient(timeout=120.0) as client:
-                    async with client.stream("POST", stream_url, headers=headers, json=payload) as response:
+                    async with client.stream(
+                        "POST", stream_url, headers=headers, json=payload
+                    ) as response:
                         # Check for successful response
                         if response.status_code != 200:
                             error_body = await response.aread()
-                            await websocket.send_text(f"Error: Failed to connect to AI service. Status: {response.status_code}, Body: {error_body.decode()}")
+                            await websocket.send_text(
+                                f"Error: Failed to connect to AI service. Status: {response.status_code}, Body: {error_body.decode()}"
+                            )
                             continue
 
                         # Stream the response back to the client
@@ -141,7 +157,9 @@ async def chat_websocket(websocket: WebSocket):
             except httpx.RequestError as e:
                 await websocket.send_text(f"Error: Could not connect to the AI service: {e}")
             except Exception as e:
-                await websocket.send_text(f"Error: An unexpected error occurred during streaming: {e}")
+                await websocket.send_text(
+                    f"Error: An unexpected error occurred during streaming: {e}"
+                )
 
     except WebSocketDisconnect:
         print("Client disconnected from chat WebSocket.")
