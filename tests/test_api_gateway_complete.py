@@ -9,6 +9,7 @@
 # - Gateway control endpoints
 
 import pytest
+from tests._helpers import parse_response_json
 
 
 @pytest.fixture
@@ -47,7 +48,7 @@ class TestHealthCheck:
         response = client.get("/api/v1/health")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "data" in data
         assert data["data"]["status"] == "healthy"
@@ -59,7 +60,7 @@ class TestHealthCheck:
         response = client.get("/api/security/health")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert data["data"]["status"] == "healthy"
         assert "features" in data["data"]
@@ -69,7 +70,7 @@ class TestHealthCheck:
         response = client.get("/api/observability/health")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert data["data"]["status"] == "healthy"
 
@@ -93,7 +94,7 @@ class TestUsersCRUD:
         response = client.get("/api/v1/users")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "items" in data["data"]
         assert isinstance(data["data"]["items"], list)
@@ -103,7 +104,7 @@ class TestUsersCRUD:
         response = client.get("/api/v1/users")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert len(data["data"]["items"]) >= 1
         assert "pagination" in data["data"]
@@ -113,7 +114,7 @@ class TestUsersCRUD:
         response = client.get(f"/api/v1/users/{sample_user.id}")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert data["data"]["email"] == sample_user.email
 
@@ -127,7 +128,7 @@ class TestUsersCRUD:
         response = client.get("/api/v1/users?page=1&per_page=10")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert "pagination" in data["data"]
         assert data["data"]["pagination"]["page"] == 1
         assert data["data"]["pagination"]["per_page"] == 10
@@ -137,7 +138,7 @@ class TestUsersCRUD:
         response = client.get("/api/v1/users?sort_by=created_at&sort_order=desc")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
     def test_get_users_with_filter(self, client, sample_user):
@@ -145,7 +146,7 @@ class TestUsersCRUD:
         response = client.get(f"/api/v1/users?email={sample_user.email}")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
 
@@ -162,7 +163,7 @@ class TestMissionsCRUD:
         response = client.get("/api/v1/missions")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "items" in data["data"]
 
@@ -171,7 +172,7 @@ class TestMissionsCRUD:
         response = client.get("/api/v1/missions")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert len(data["data"]["items"]) >= 1
 
@@ -180,7 +181,7 @@ class TestMissionsCRUD:
         response = client.get(f"/api/v1/missions/{sample_mission.id}")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert data["data"]["objective"] == sample_mission.objective
 
@@ -189,7 +190,7 @@ class TestMissionsCRUD:
         response = client.get("/api/v1/missions?status=PENDING")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
 
@@ -206,7 +207,7 @@ class TestTasksCRUD:
         response = client.get("/api/v1/tasks")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "items" in data["data"]
 
@@ -215,7 +216,7 @@ class TestTasksCRUD:
         response = client.get(f"/api/v1/tasks?mission_id={sample_mission.id}")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
 
@@ -235,7 +236,7 @@ class TestSecurityAPI:
         )
 
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "access_token" in data["data"]
         assert "refresh_token" in data["data"]
@@ -248,7 +249,7 @@ class TestSecurityAPI:
         )
 
         assert response.status_code == 400
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "error"
 
     def test_verify_token_missing_token(self, client):
@@ -258,7 +259,7 @@ class TestSecurityAPI:
         )
 
         assert response.status_code == 400
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "error"
 
 
@@ -329,7 +330,7 @@ class TestResponseFormat:
         response = client.get("/api/v1/health")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         assert "status" in data
         assert "message" in data
         assert "data" in data
@@ -342,7 +343,7 @@ class TestResponseFormat:
         response = client.get("/api/v1/users/99999")
         assert response.status_code == 404
 
-        data = response.json()
+        data = parse_response_json(response)
         assert "status" in data
         assert "message" in data
         assert "timestamp" in data
@@ -363,7 +364,7 @@ class TestPagination:
         response = client.get("/api/v1/users?page=1&per_page=10")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         pagination = data["data"]["pagination"]
 
         assert "page" in pagination
@@ -378,7 +379,7 @@ class TestPagination:
         response = client.get("/api/v1/users")
         assert response.status_code == 200
 
-        data = response.json()
+        data = parse_response_json(response)
         pagination = data["data"]["pagination"]
 
         assert pagination["page"] == 1

@@ -12,6 +12,7 @@ authentication, and streams data in the correct format.
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests._helpers import parse_response_json
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def test_chat_stream_authentication(client):
     response = client.post("/admin/api/chat/stream", json={"question": "test"})
     # SUPERHUMAN FIX: API calls should return 401, not a 302 redirect.
     assert response.status_code == 401
-    assert response.json() == {"error": "Unauthorized", "message": "Authentication required"}
+    assert parse_response_json(response) == {"error": "Unauthorized", "message": "Authentication required"}
 
 
 def test_chat_stream_success_and_format(admin_user, client, mock_ai_gateway):
@@ -69,7 +70,7 @@ def test_chat_stream_missing_question(admin_user, client):
     """
     response = client.post("/admin/api/chat/stream", json={})
     assert response.status_code == 400
-    assert response.json() == {"status": "error", "message": "Question is required."}
+    assert parse_response_json(response) == {"status": "error", "message": "Question is required."}
 
 
 def test_chat_stream_gateway_unavailable_fallback(admin_user, client):

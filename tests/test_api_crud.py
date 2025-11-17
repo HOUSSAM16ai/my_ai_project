@@ -11,6 +11,7 @@
 
 
 from app.models import User
+from tests._helpers import parse_response_json
 
 
 class TestHealthEndpoints:
@@ -20,21 +21,21 @@ class TestHealthEndpoints:
         """Test database health check"""
         response = client.get("/admin/api/database/health")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] in ["healthy", "warning"]
 
     def test_database_stats(self, client, admin_user):
         """Test database statistics"""
         response = client.get("/admin/api/database/stats")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert "status" in data
 
     def test_database_tables(self, client, admin_user):
         """Test list all tables"""
         response = client.get("/admin/api/database/tables")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "tables" in data
         assert len(data["tables"]) > 0
@@ -53,7 +54,7 @@ class TestCRUDOperations:
 
         response = client.post("/admin/api/database/record/users", json=user_data)
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "id" in data
 
@@ -69,7 +70,7 @@ class TestCRUDOperations:
 
         response = client.get("/admin/api/database/table/users?page=1&per_page=10")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert "rows" in data
         assert len(data["rows"]) > 0
@@ -80,7 +81,7 @@ class TestCRUDOperations:
 
         response = client.get(f"/admin/api/database/record/users/{test_user.id}")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
         assert data["data"]["email"] == "testread@test.com"
 
@@ -93,7 +94,7 @@ class TestCRUDOperations:
             f"/admin/api/database/record/users/{test_user.id}", json=update_data
         )
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
         # Verify update
@@ -108,7 +109,7 @@ class TestCRUDOperations:
 
         response = client.delete(f"/admin/api/database/record/users/{user_id}")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
         # Verify deletion
@@ -146,13 +147,13 @@ class TestPaginationAndFiltering:
 
         response = client.get("/admin/api/database/table/users?page=1&per_page=10")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert len(data["rows"]) == 10
         assert data["page"] == 1
 
         response = client.get("/admin/api/database/table/users?page=2&per_page=10")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert len(data["rows"]) == 10
         assert data["page"] == 2
 
@@ -163,7 +164,7 @@ class TestPaginationAndFiltering:
 
         response = client.get("/admin/api/database/table/users?search=searchable")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert any("searchable" in str(row).lower() for row in data["rows"])
 
     def test_ordering(self, client, admin_user, user_factory):
@@ -173,14 +174,14 @@ class TestPaginationAndFiltering:
 
         response = client.get("/admin/api/database/table/users?order_by=full_name&order_dir=asc")
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
         response = client.get(
             "/admin/api/database/table/users?order_by=full_name&order_dir=desc"
         )
         assert response.status_code == 200
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "success"
 
 
@@ -191,14 +192,14 @@ class TestErrorHandling:
         """Test accessing non-existent table"""
         response = client.get("/admin/api/database/table/nonexistent")
         assert response.status_code in [404, 500]
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "error"
 
     def test_not_found_record(self, client, admin_user):
         """Test accessing non-existent record"""
         response = client.get("/admin/api/database/record/users/999999")
         assert response.status_code in [404, 500]
-        data = response.json()
+        data = parse_response_json(response)
         assert data["status"] == "error"
 
     def test_unauthorized_access(self, client):
