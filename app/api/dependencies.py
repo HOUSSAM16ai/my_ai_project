@@ -1,20 +1,12 @@
-# app/api/dependencies.py
-"""
-Dependencies for the FastAPI application.
-This module provides dependency injection providers for the API layer.
-"""
 from typing import Generator
-from sqlalchemy.orm import Session
-from app.extensions import SessionLocal
+# from app.db import SessionLocal  # Use the project's existing session if available
 
-def get_db() -> Generator[Session, None, None]:
-    """
-    Provides a database session for request handling.
-    This dependency provider creates a new database session for each request
-    and ensures it is closed afterward.
-    """
-    db = SessionLocal()
+def get_db() -> Generator:
+    # This is a placeholder. It will be replaced with the actual database session.
+    db = None
     try:
         yield db
     finally:
-        db.close()
+        # if db:
+        #     db.close()
+        pass
