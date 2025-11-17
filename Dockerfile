@@ -1,10 +1,11 @@
 # Stage 1: The Builder
-# Use the full bullseye image to build dependencies, ensuring all build tools are available.
-FROM python:3.12-bullseye AS builder
+# Use the full bookworm image to build dependencies, ensuring all build tools are available.
+FROM python:3.12-bookworm AS builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,12 +20,13 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Stage 2: The Final Image
-# Use the slim version of the bullseye image for a smaller final footprint.
-FROM python:3.12-slim-bullseye
+# Use the slim version of the bookworm image for a smaller final footprint.
+FROM python:3.12-slim-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install only necessary runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
