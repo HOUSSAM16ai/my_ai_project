@@ -23,11 +23,10 @@ import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import logging
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
-from flask import current_app
 
 
 # ======================================================================================
@@ -153,7 +152,7 @@ class CircuitBreaker:
                 if self._should_attempt_reset():
                     self.state = CircuitState.HALF_OPEN
                     self.success_count = 0
-                    current_app.logger.info("Circuit breaker entering HALF_OPEN state")
+                    logging.info("Circuit breaker entering HALF_OPEN state")
                 else:
                     raise Exception("Circuit breaker is OPEN")
 
@@ -176,7 +175,7 @@ class CircuitBreaker:
                 if self.success_count >= self.config.success_threshold:
                     self.state = CircuitState.CLOSED
                     self.failure_count = 0
-                    current_app.logger.info("Circuit breaker CLOSED")
+                    logging.info("Circuit breaker CLOSED")
 
     def _on_failure(self):
         """Handle failed request"""
@@ -187,13 +186,13 @@ class CircuitBreaker:
 
             if self.state == CircuitState.HALF_OPEN:
                 self.state = CircuitState.OPEN
-                current_app.logger.warning("Circuit breaker OPEN (failed during HALF_OPEN)")
+                logging.warning("Circuit breaker OPEN (failed during HALF_OPEN)")
 
             elif self.state == CircuitState.CLOSED:
                 # Check if we should open the circuit
                 if self._should_trip():
                     self.state = CircuitState.OPEN
-                    current_app.logger.warning(
+                    logging.warning(
                         f"Circuit breaker OPEN (failures: {self.failure_count})"
                     )
 
@@ -283,7 +282,7 @@ class ServiceMeshManager:
         with self.lock:
             self.services[service_name].append(endpoint)
 
-        current_app.logger.info(
+        logging.info(
             f"Service registered: {service_name} at {host}:{port} (version: {version})"
         )
 
@@ -296,7 +295,7 @@ class ServiceMeshManager:
                 for endpoint in endpoints:
                     if endpoint.endpoint_id == endpoint_id:
                         endpoints.remove(endpoint)
-                        current_app.logger.info(f"Service deregistered: {endpoint_id}")
+                        logging.info(f"Service deregistered: {endpoint_id}")
                         return True
         return False
 
@@ -309,7 +308,7 @@ class ServiceMeshManager:
         with self.lock:
             self.circuit_breakers[service_name] = CircuitBreaker(config)
 
-        current_app.logger.info(f"Circuit breaker configured for: {service_name}")
+        logging.info(f"Circuit breaker configured for: {service_name}")
 
     def configure_retry_policy(
         self,
@@ -320,7 +319,7 @@ class ServiceMeshManager:
         with self.lock:
             self.retry_policies[service_name] = policy or RetryPolicy()
 
-        current_app.logger.info(f"Retry policy configured for: {service_name}")
+        logging.info(f"Retry policy configured for: {service_name}")
 
     def configure_timeout_policy(
         self,
@@ -331,7 +330,7 @@ class ServiceMeshManager:
         with self.lock:
             self.timeout_policies[service_name] = policy or TimeoutPolicy()
 
-        current_app.logger.info(f"Timeout policy configured for: {service_name}")
+        logging.info(f"Timeout policy configured for: {service_name}")
 
     def configure_traffic_split(
         self,
@@ -362,7 +361,7 @@ class ServiceMeshManager:
         with self.lock:
             self.traffic_splits[service_name] = split
 
-        current_app.logger.info(f"Traffic split configured: {service_name} ({strategy.value})")
+        logging.info(f"Traffic split configured: {service_name} ({strategy.value})")
 
         return split_id
 
@@ -498,7 +497,7 @@ class ServiceMeshManager:
                     retry_policy.max_backoff_ms,
                 )
 
-                current_app.logger.warning(
+                logging.warning(
                     f"Request failed (attempt {attempt + 1}/{retry_policy.max_retries + 1}), "
                     f"retrying in {backoff_ms}ms: {e}"
                 )

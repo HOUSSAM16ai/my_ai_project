@@ -1,86 +1,94 @@
-# tests/conftest.py
+"""
+PyTest configuration and fixtures.
+"""
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app as fastapi_app
-from faker import Faker
+from app.main import app
+from app.dependencies import get_db
+from app.extensions import Base
+from tests.database import get_test_db, engine
 
-# Correctly import the db object from the extensions module
-from app.extensions import db as _db
-from app.models import Mission, User
-
-
-@pytest.fixture(scope="session")
-def app():
-    """Yields the FastAPI application instance for testing."""
-    yield fastapi_app
-
-
-@pytest.fixture(scope="module")
-def client(app):
-    """A test client for the app."""
-    with TestClient(app) as c:
-        yield c
-
-
-@pytest.fixture(scope="session")
-def db():
-    """
-    Session-wide test database.
-    Handles schema creation and teardown.
-    """
-    # Import models to ensure they are registered with the Base metadata
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    """Create test database schema once for all tests."""
+    # Import all models here so Base knows about them
     from app import models
-    _db.metadata.create_all(bind=_db.engine)
-    yield _db
-    _db.metadata.drop_all(bind=_db.engine)
-
-
-@pytest.fixture(scope="function")
-def session(db):
-    """
-    Creates a new database session for a test with transaction isolation.
-    """
-    connection = db.engine.connect()
-    transaction = connection.begin()
-
-    db.session.begin_nested()
-
-    yield db.session
-
-    db.session.rollback()
-    transaction.rollback()
-    connection.close()
-    db.session.remove()
-
-
-@pytest.fixture(scope="function")
-def admin_user(session):
-    user = User(email="admin@test.com", full_name="Admin User", is_admin=True)
-    user.set_password("1111")
-    session.add(user)
-    session.commit()
-    return user
-
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture
-def user_factory(session):
+def client():
+    """
+    FastAPI test client with overridden database dependency.
+    Each test gets a fresh database session.
+    """
+    app.dependency_overrides[get_db] = get_test_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+
+@pytest.fixture(scope="module")
+def db_session():
+    """
+    Direct database session for tests that need it.
+    Automatically rolls back after each test.
+    """
+    from tests.database import TestingSessionLocal
+    session = TestingSessionLocal()
+    try:
+        yield session
+        session.rollback()  # ضمان عدم التأثير على اختبارات أخرى
+    finally:
+        session.close()
+
+# Keep original factory fixtures, but they will now use the overridden db session implicitly
+# through the client or a direct db_session fixture.
+@pytest.fixture(scope="module")
+def user_factory(db_session):
     """A factory for creating users."""
+    from app.models import User
+    from faker import Faker
+    fake = Faker()
     def _create_user(**kwargs):
+        if 'email' not in kwargs:
+            kwargs['email'] = fake.email()
+        if 'full_name' not in kwargs:
+            kwargs['full_name'] = 'Test User'
         user = User(**kwargs)
-        session.add(user)
-        session.commit()
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
         return user
     return _create_user
 
+@pytest.fixture(scope="module")
+def admin_user(user_factory):
+    return user_factory(is_admin=True, email='admin@test.com')
+
+@pytest.fixture(scope="module")
+def admin_auth_headers(admin_user):
+    """
+    Provides authorization headers for the admin user.
+    """
+    # This is a simplified token generation for testing purposes.
+    # In a real application, you would generate a proper JWT token.
+    return {"Authorization": f"Bearer {admin_user.id}"}
 
 @pytest.fixture
-def mission_factory(session, admin_user):
+def mission_factory(db_session, admin_user):
     """A factory for creating missions."""
+    from app.models import Mission
     def _create_mission(**kwargs):
         if "initiator_id" not in kwargs:
             kwargs["initiator_id"] = admin_user.id
+        if "objective" not in kwargs:
+            kwargs['objective'] = 'Test Mission'
         mission = Mission(**kwargs)
-        session.add(mission)
-        session.commit()
+        db_session.add(mission)
+        db_session.commit()
+        db_session.refresh(mission)
         return mission
     return _create_mission

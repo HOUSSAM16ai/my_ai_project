@@ -228,7 +228,6 @@ def test_dr_service_initialization():
     assert "api_dr" in dr.dr_plans
 
 
-@pytest.mark.usefixtures("app_context")
 def test_backup_registration():
     """Test backup registration and verification"""
     from app.services.api_disaster_recovery_service import (
@@ -256,7 +255,6 @@ def test_backup_registration():
     assert verification is True
 
 
-@pytest.mark.usefixtures("app_context")
 def test_incident_creation():
     """Test incident creation and tracking"""
     from app.services.api_disaster_recovery_service import (
@@ -347,7 +345,6 @@ def test_event_driven_service_initialization():
     assert "system_events" in events.streams
 
 
-@pytest.mark.usefixtures("app_context")
 def test_event_publishing():
     """Test event publishing"""
     from app.services.api_event_driven_service import EventPriority, get_event_driven_service
@@ -369,7 +366,6 @@ def test_event_publishing():
     assert event.event_type == "test.event"
 
 
-@pytest.mark.usefixtures("app_context")
 def test_event_subscription():
     """Test event subscription and handling"""
     from app.services.api_event_driven_service import get_event_driven_service
@@ -433,7 +429,6 @@ def test_slo_tracking_with_governance():
     assert status is not None
 
 
-@pytest.mark.usefixtures("app_context")
 def test_event_driven_with_incident_management():
     """Test integration between event-driven architecture and incident management"""
     from app.services.api_disaster_recovery_service import (
@@ -470,14 +465,30 @@ def test_event_driven_with_incident_management():
 # ======================================================================================
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def clean_services():
     """Reset singleton services between tests"""
-    # Note: In a real implementation, you'd want to properly reset
-    # singleton instances or use dependency injection for testing
+    import importlib
+    import sys
+
+    # List of service modules to reload
+    service_modules = [
+        "app.services.api_governance_service",
+        "app.services.api_slo_sli_service",
+        "app.services.api_config_secrets_service",
+        "app.services.api_disaster_recovery_service",
+        "app.services.api_gateway_chaos",
+        "app.services.api_event_driven_service",
+    ]
+
+    # Force reload of modules to reset singletons before each test
+    for module_name in service_modules:
+        if module_name in sys.modules:
+            importlib.reload(sys.modules[module_name])
+
     yield
-    # Cleanup code would go here
 
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    # Optional: Cleanup after test if needed
+    for module_name in service_modules:
+        if module_name in sys.modules:
+            importlib.reload(sys.modules[module_name])

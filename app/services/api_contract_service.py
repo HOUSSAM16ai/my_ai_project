@@ -13,6 +13,7 @@
 #   - Contract compliance monitoring
 
 import hashlib
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -20,7 +21,6 @@ from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
 
-from flask import current_app, jsonify, request
 from jsonschema import Draft7Validator, ValidationError
 
 # ======================================================================================
@@ -338,7 +338,7 @@ class APIContractService:
 
         if validator_key not in self.schema_cache:
             # No schema defined - allow but log warning
-            current_app.logger.warning(f"No request schema defined for {method} {endpoint}")
+            logging.warning(f"No request schema defined for {method} {endpoint}")
             return True, None
 
         validator = self.schema_cache[validator_key]
@@ -442,31 +442,39 @@ class APIContractService:
     # API VERSIONING
     # ==================================================================================
 
-    def get_api_version(self) -> str:
+    def get_api_version(
+        self, headers: dict[str, Any], path: str
+    ) -> str:
         """Get API version from request headers or default"""
         # Check for version in Accept header
-        accept_header = request.headers.get("Accept", "")
+        accept_header = headers.get("Accept", "")
         if "version=" in accept_header:
             version = accept_header.split("version=")[1].split(";")[0].strip()
             if version in API_VERSIONS:
                 return version
 
         # Check for version in custom header
-        version_header = request.headers.get("X-API-Version")
+        version_header = headers.get("X-API-Version")
         if version_header and version_header in API_VERSIONS:
             return version_header
 
         # Check for version in URL
-        if "/v1/" in request.path:
+        if "/v1/" in path:
             return "v1"
-        elif "/v2/" in request.path:
+        elif "/v2/" in path:
             return "v2"
 
         return DEFAULT_API_VERSION
 
-    def check_version_compatibility(self, required_version: str) -> bool:
+    def check_version_compatibility(
+        self,
+        endpoint: str,
+        method: str,
+        headers: dict[str, Any],
+        path: str,
+    ) -> bool:
         """Check if requested API version is compatible"""
-        current_version = self.get_api_version()
+        current_version = self.get_api_version(headers, path)
 
         if current_version not in API_VERSIONS:
             return False
@@ -476,8 +484,8 @@ class APIContractService:
         # Check if version is sunset
         if version_info.status == "sunset":
             self._log_contract_violation(
-                endpoint=request.endpoint or "unknown",
-                method=request.method,
+                endpoint=endpoint,
+                method=method,
                 violation_type="version",
                 severity="critical",
                 details={
@@ -490,7 +498,7 @@ class APIContractService:
 
         # Warn if deprecated
         if version_info.status == "deprecated":
-            current_app.logger.warning(
+            logging.warning(
                 f"Using deprecated API version {current_version}. "
                 f"Deprecation date: {version_info.deprecation_date}. "
                 f"Sunset date: {version_info.sunset_date}"
@@ -534,7 +542,7 @@ class APIContractService:
             self.contract_violations = self.contract_violations[-1000:]
 
         # Log to application logger
-        current_app.logger.error(
+        logging.error(
             f"🔴 CONTRACT VIOLATION [{severity.upper()}]: {violation_type} in {method} {endpoint}"
         )
 
@@ -655,72 +663,3 @@ def get_contract_service() -> APIContractService:
     return _contract_service
 
 
-# ======================================================================================
-# VALIDATION DECORATORS
-# ======================================================================================
-
-
-def validate_contract(f: Callable) -> Callable:
-    """Decorator to validate request/response against API contract"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        service = get_contract_service()
-
-        # Validate API version
-        if not service.check_version_compatibility(DEFAULT_API_VERSION):
-            return (
-                jsonify(
-                    {
-                        "error": "API version not supported",
-                        "message": "The requested API version is no longer available",
-                    }
-                ),
-                410,
-            )  # Gone
-
-        # Validate request if JSON data present
-        if request.is_json and request.method in ["POST", "PUT", "PATCH"]:
-            is_valid, errors = service.validate_request(
-                endpoint=request.path, method=request.method, data=request.get_json()
-            )
-
-            if not is_valid:
-                return (
-                    jsonify(
-                        {
-                            "status": "error",
-                            "error": "Request validation failed",
-                            "validation_errors": errors,
-                        }
-                    ),
-                    400,
-                )
-
-        # Execute endpoint
-        response = f(*args, **kwargs)
-
-        # Validate response (only in development/testing)
-        if current_app.config.get("VALIDATE_RESPONSES", False):
-            try:
-                if hasattr(response, "get_json"):
-                    response_data = response.get_json()
-                    status_code = response.status_code
-
-                    is_valid, errors = service.validate_response(
-                        endpoint=request.path,
-                        method=request.method,
-                        status_code=status_code,
-                        data=response_data,
-                    )
-
-                    if not is_valid:
-                        current_app.logger.error(
-                            f"Response validation failed for {request.method} {request.path}: {errors}"
-                        )
-            except Exception as e:
-                current_app.logger.error(f"Error validating response: {e}")
-
-        return response
-
-    return decorated_function

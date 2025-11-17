@@ -41,7 +41,6 @@ from app.services.workflow_orchestration_service import (
 )
 
 
-@pytest.mark.usefixtures("app_context")
 class TestDataMeshService:
     """Test Data Mesh service"""
 
@@ -128,7 +127,6 @@ class TestDataMeshService:
         assert summary["avg_completeness"] >= 0.9
 
 
-@pytest.mark.usefixtures("app_context")
 class TestAIOpsService:
     """Test AIOps service"""
 
@@ -169,7 +167,6 @@ class TestAIOpsService:
         assert health["service_name"] == "test-service"
 
 
-@pytest.mark.usefixtures("app_context")
 class TestGitOpsService:
     """Test GitOps service"""
 

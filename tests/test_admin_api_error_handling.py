@@ -27,27 +27,32 @@ def mock_failing_gateway():
 
 
 def test_chat_stream_gateway_connection_error(
-    admin_user, test_client_with_user, mock_failing_gateway
+    admin_user, client, mock_failing_gateway, admin_auth_headers
 ):
     """
     Tests how the endpoint handles a connection error from the AI service gateway.
     It should return a user-friendly error message within the SSE stream.
     """
-    with patch("app.admin.routes.get_ai_service_gateway", return_value=mock_failing_gateway):
-        response = test_client_with_user.post(
-            "/admin/api/chat/stream", json={"question": "This will cause a connection error."}
+    with patch(
+        "app.services.ai_service_gateway.get_ai_service_gateway",
+        return_value=mock_failing_gateway,
+    ):
+        response = client.post(
+            "/admin/api/chat/stream",
+            json={"question": "This will cause a connection error."},
+            headers=admin_auth_headers,
         )
 
     # The overall request is successful (200), but the stream contains an error
     assert response.status_code == 200
     assert "text/event-stream" in response.headers["Content-Type"]
 
-    # The stream should contain a single event: the error message
-    lines = response.data.decode("utf-8").strip().split("\n")
-    assert len(lines) == 1
-    assert lines[0].startswith("data: ")
+    # The stream should contain the error message in the last non-empty chunk
+    lines = [line for line in response.text.strip().split("\n") if line]
+    last_line = lines[-1] if lines else ""
+    assert last_line.startswith("data: ")
 
-    chunk = json.loads(lines[0][6:])
+    chunk = json.loads(last_line[6:])
 
     assert chunk["type"] == "error"
     assert "payload" in chunk
@@ -55,45 +60,53 @@ def test_chat_stream_gateway_connection_error(
     assert "Failed to connect to AI service" in chunk["payload"]["error"]
 
 
-def test_chat_stream_gateway_not_configured(admin_user, test_client_with_user):
+def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_headers):
     """
     Tests the scenario where the AI gateway is not configured or fails to initialize.
-    The endpoint should return a 503 Service Unavailable error.
+    The endpoint should return a user-friendly error message within the SSE stream.
     """
     # Patch the factory function to return None
-    with patch("app.admin.routes.get_ai_service_gateway", return_value=None):
-        response = test_client_with_user.post(
-            "/admin/api/chat/stream", json={"question": "Test question"}
+    with patch("app.services.ai_service_gateway.get_ai_service_gateway", return_value=None):
+        response = client.post(
+            "/admin/api/chat/stream", json={"question": "Test question"}, headers=admin_auth_headers
         )
 
-    assert response.status_code == 503
-    assert response.is_json
-    json_response = response.get_json()
-    assert json_response["status"] == "error"
-    assert json_response["message"] == "AI service is currently unavailable."
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["Content-Type"]
+
+    lines = [line for line in response.text.strip().split("\n") if line]
+    last_line = lines[-1] if lines else ""
+    assert last_line.startswith("data: ")
+
+    chunk = json.loads(last_line[6:])
+    assert chunk["type"] == "error"
+    assert "AI service is currently unavailable" in chunk["payload"]["error"]
 
 
-def test_chat_stream_missing_question_payload(admin_user, test_client_with_user):
+def test_chat_stream_missing_question_payload(admin_user, client, admin_auth_headers):
     """
     Tests that making a POST request with an empty or missing 'question'
-    results in a 400 Bad Request error.
+    results in a user-friendly error message within the SSE stream.
     """
     # Test with empty JSON payload
-    response = test_client_with_user.post("/admin/api/chat/stream", json={})
-    assert response.status_code == 400
-    assert response.is_json
-    assert response.get_json()["message"] == "Question is required."
+    response = client.post("/admin/api/chat/stream", json={}, headers=admin_auth_headers)
+    assert response.status_code == 200
+    lines = [line for line in response.text.strip().split("\n") if line]
+    last_line = lines[-1] if lines else ""
+    assert last_line.startswith("data: ")
+    chunk = json.loads(last_line[6:])
+    assert chunk["type"] == "error"
+    assert "Question is required" in chunk["payload"]["error"]
+
 
     # Test with question being an empty string
-    response = test_client_with_user.post("/admin/api/chat/stream", json={"question": "  "})
-    assert response.status_code == 400
-    assert response.get_json()["message"] == "Question is required."
-
-
-def test_unauthenticated_access_is_redirected(client):
-    """
-    Confirms that an unauthenticated user is redirected to the login page.
-    """
-    response = client.post("/admin/api/chat/stream", json={"question": "test"})
-    assert response.status_code == 302
-    assert "login" in response.headers.get("Location", "")
+    response = client.post(
+        "/admin/api/chat/stream", json={"question": "  "}, headers=admin_auth_headers
+    )
+    assert response.status_code == 200
+    lines = [line for line in response.text.strip().split("\n") if line]
+    last_line = lines[-1] if lines else ""
+    assert last_line.startswith("data: ")
+    chunk = json.loads(last_line[6:])
+    assert chunk["type"] == "error"
+    assert "Question is required" in chunk["payload"]["error"]

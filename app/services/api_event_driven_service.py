@@ -27,9 +27,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+import logging
 from typing import Any
-
-from flask import current_app
 
 # Import new superhuman components
 try:
@@ -228,7 +227,7 @@ class InMemoryBroker(MessageBroker):
                     return
 
             except Exception as e:
-                current_app.logger.error(
+                logging.error(
                     f"Event handler error: {e} (retry {retry_count}/{max_retries})"
                 )
 
@@ -237,7 +236,7 @@ class InMemoryBroker(MessageBroker):
                 time.sleep(subscription.retry_delay_seconds)
 
         # Failed after all retries
-        current_app.logger.error(f"Event {message.event_id} failed after {max_retries} retries")
+        logging.error(f"Event {message.event_id} failed after {max_retries} retries")
 
     def subscribe(self, topic: str, handler: Callable[[Event], bool]) -> str:
         """Subscribe to topic"""
@@ -421,9 +420,9 @@ class EventDrivenService:
         success = self.broker.publish(event_type, event)
 
         if success:
-            current_app.logger.info(f"Event published: {event_type} ({event_id})")
+            logging.info(f"Event published: {event_type} ({event_id})")
         else:
-            current_app.logger.error(f"Failed to publish event: {event_type} ({event_id})")
+            logging.error(f"Failed to publish event: {event_type} ({event_id})")
             # Add to dead letter queue
             with self.lock:
                 self.dead_letter_queue.append(event)
@@ -440,7 +439,7 @@ class EventDrivenService:
 
         subscription_id = self.broker.subscribe(event_type, handler)
 
-        current_app.logger.info(f"Subscribed to event type: {event_type} ({subscription_id})")
+        logging.info(f"Subscribed to event type: {event_type} ({subscription_id})")
 
         return subscription_id
 
@@ -500,7 +499,7 @@ class EventDrivenService:
                     success = self.broker.publish(event_to_retry.event_type, event_to_retry)
 
                     if success:
-                        current_app.logger.info(f"Retried event from DLQ: {event_id}")
+                        logging.info(f"Retried event from DLQ: {event_id}")
                         return True
                     else:
                         # Put back in DLQ
@@ -613,7 +612,7 @@ class CQRSService:
             return True, result
 
         except Exception as e:
-            current_app.logger.error(f"Command execution failed: {e}")
+            logging.error(f"Command execution failed: {e}")
             return False, str(e)
 
     def execute_query(
@@ -638,7 +637,7 @@ class CQRSService:
             result = handler(query)
             return True, result
         except Exception as e:
-            current_app.logger.error(f"Query execution failed: {e}")
+            logging.error(f"Query execution failed: {e}")
             return False, str(e)
 
 

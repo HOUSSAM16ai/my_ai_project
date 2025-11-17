@@ -176,11 +176,6 @@ def coerce_datetime(value: Any) -> datetime | None:
     return None
 
 
-# @login_manager.user_loader
-# def load_user(user_id: str):
-#     return db.session.get(User, int(user_id))
-
-
 # ======================================================================================
 # ENUMS
 # ======================================================================================
@@ -951,6 +946,7 @@ def log_mission_event(
 def finalize_task(
     task: Task,
     status: TaskStatus,
+    session,
     *,
     result_text: str | None = None,
     error_text: str | None = None,
@@ -989,6 +985,7 @@ def finalize_task(
         task.mission,
         event_type,
         task=task,
+        session=session,
         payload={
             "status": status.value,
             "result_excerpt": (task.result_text or "")[:160],
