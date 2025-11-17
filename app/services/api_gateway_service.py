@@ -29,7 +29,10 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-from flask import current_app, g, jsonify, request
+import logging
+from flask import g, jsonify, request
+
+logger = logging.getLogger(__name__)
 
 # ======================================================================================
 # ENUMERATIONS AND CONSTANTS
@@ -678,7 +681,7 @@ class APIGatewayService:
         # Initialize default policies
         self._initialize_default_policies()
 
-        current_app.logger.info("API Gateway Service initialized successfully")
+        logger.info("API Gateway Service initialized successfully")
 
     def _initialize_default_policies(self):
         """Initialize default security policies"""

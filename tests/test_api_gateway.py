@@ -641,9 +641,9 @@ class TestAPIGatewayService:
 
     def test_gateway_initialization(self):
         """Test gateway initializes correctly"""
-        # This would require Flask app context
-        # Simplified test
-        pass
+        from app.services.api_gateway_service import APIGatewayService
+        service = APIGatewayService()
+        assert service is not None
 
     def test_register_route(self):
         """Test registering gateway routes"""
