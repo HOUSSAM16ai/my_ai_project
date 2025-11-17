@@ -1,84 +1,48 @@
-# requirements.txt - The Strict Compatibility & Optimized Resource Protocol (vFinal)
+# Core ASGI Framework
+fastapi>=0.100.0
+gunicorn>=21.2.0
+uvicorn[standard]>=0.22.0
 
-# --- [RESOURCE OPTIMIZATION & COMPATIBILITY PROTOCOL] ---
-# 1. We tell pip to find CPU-specific torch packages first.
---extra-index-url https://download.pytorch.org/whl/cpu
-
-# 2. We pin specific, known-to-be-compatible versions to prevent dependency conflicts.
-#    This is the key to solving the 'NoneType' error in SentenceTransformer.
-torch==2.3.1
-transformers==4.41.2
-sentence-transformers>=2.6.1 # This will now use the exact torch/transformers versions above.
-numpy>=1.26 # Explicitly required by the AI stack.
-openai>=1.40.0
-# --- نهاية البروتوكوك- ---
-
-
-# --- Core Web Framework & Extensions ---
-Flask
-Flask-WTF
-Flask-Login
-Werkzeug
-email-validator
-gunicorn
-
-# --- Database Layer ---
-flask-sqlalchemy
-flask-migrate
+# Database Layer (assuming continued use)
+# flask-sqlalchemy and flask-migrate will be replaced by SQLAlchemy 2.0 and Alembic
+sqlalchemy>=2.0
+alembic>=1.10
 psycopg2-binary
 
-# --- New Supercharged CLI ---
+# API & Data Validation
+pydantic>=2.0
+
+# Asynchronous HTTP requests
+httpx>=0.24.0
+
+# Environment Management
+python-dotenv>=1.0.0
+
+# --- Dependencies from original file to keep ---
+torch==2.3.1
+transformers==4.41.2
+sentence-transformers>=2.6.1
+numpy>=1.26
+openai>=1.40.0
 typer>=0.12.3
 rich>=13.7.0
-
-# --- Asynchronous Services (for ai_service) ---
-fastapi
-uvicorn
-httpx
-
-# --- API Enhancement & Validation ---
 marshmallow>=3.20.0
-flask-cors>=4.0.0
-flasgger>=0.9.7.1
 PyJWT>=2.7.0
 cryptography>=41.0.0
-
-# --- Monitoring & Metrics ---
-psutil>=5.9.0  # System and process monitoring
+psutil>=5.9.0
 
 # --- Development & Testing ---
-python-dotenv
 pytest
-pytest-flask
-pytest-cov
-pytest-timeout
 pytest-asyncio
 requests
 Faker
 
-# --- Code Quality & Linting (Superhuman Edition) ---
-# Formatters
+# --- Code Quality & Linting ---
 black>=24.1.1
 isort>=5.13.2
-
-# Linters
 ruff>=0.2.0
-pylint>=3.0.0
-flake8>=7.0.0
-pydocstyle>=6.3.0
-
-# Type Checking
 mypy>=1.8.0
 types-requests>=2.31.0
-
-# Security
 bandit[toml]>=1.7.6
 safety>=3.0.0
-
-# Complexity Analysis
-radon>=6.0.1
-xenon>=0.9.1
-mccabe>=0.7.0
-
-# Pre-commit Hooks
 pre-commit>=3.6.0
