@@ -2,7 +2,7 @@
 """
 Tests for Intelligent Service Platform
 """
-
+from tests._helpers import parse_response_json
 from datetime import UTC, datetime
 
 import pytest
@@ -325,7 +325,7 @@ class TestIntelligentPlatformAPI:
         """Test Data Mesh metrics endpoint"""
         response = client.get("/api/v1/platform/data-mesh/metrics")
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True
         assert "data" in data
 
@@ -333,21 +333,21 @@ class TestIntelligentPlatformAPI:
         """Test AIOps metrics endpoint"""
         response = client.get("/api/v1/platform/aiops/metrics")
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True
 
     def test_gitops_metrics_endpoint(self, client):
         """Test GitOps metrics endpoint"""
         response = client.get("/api/v1/platform/gitops/metrics")
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True
 
     def test_platform_overview_endpoint(self, client):
         """Test platform overview endpoint"""
         response = client.get("/api/v1/platform/overview")
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True
         assert "data_mesh" in data["data"]
         assert "aiops" in data["data"]
@@ -372,7 +372,7 @@ class TestIntelligentPlatformAPI:
             },
         )
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True
 
     def test_collect_telemetry_endpoint(self, client):
@@ -386,5 +386,5 @@ class TestIntelligentPlatformAPI:
             },
         )
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_response_json(response)
         assert data["ok"] is True

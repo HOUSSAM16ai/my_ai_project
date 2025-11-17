@@ -11,6 +11,7 @@ from unittest.mock import patch
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from tests._helpers import parse_response_json
 
 def test_chat_error_handling():
     """Test that chat errors return 200 with proper error details"""
@@ -50,7 +51,7 @@ def test_chat_error_handling():
         )
 
         print(f"   Status code: {response.status_code}")
-        data = json.loads(response.data)
+        data = parse_response_json(response)
         print(f"   Response status: {data.get('status')}")
         print(f"   Has answer field: {'answer' in data}")
 
@@ -70,7 +71,7 @@ def test_chat_error_handling():
             )
 
             print(f"   Status code: {response.status_code}")
-            data = json.loads(response.data)
+            data = parse_response_json(response)
             print(f"   Response status: {data.get('status')}")
             print(f"   Has answer field: {'answer' in data}")
 
@@ -87,7 +88,7 @@ def test_chat_error_handling():
             response = client.get("/admin/api/conversations")
 
             print(f"   Status code: {response.status_code}")
-            data = json.loads(response.data)
+            data = parse_response_json(response)
             print(f"   Response status: {data.get('status')}")
             print(f"   Conversations count: {data.get('count')}")
 
@@ -127,7 +128,7 @@ def test_error_message_format():
             "/admin/api/chat", json={"question": "Test question"}, content_type="application/json"
         )
 
-        data = response.get_json()
+        data = parse_response_json(response)
         answer = data.get("answer", "")
 
         print("   Checking bilingual support...")
