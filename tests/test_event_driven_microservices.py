@@ -106,7 +106,6 @@ class TestDomainEvents:
 # ======================================================================================
 # SAGA ORCHESTRATOR TESTS
 # ======================================================================================
-@pytest.mark.usefixtures("app_context")
 class TestSagaOrchestrator:
     """Test saga orchestrator"""
 
@@ -237,7 +236,6 @@ class TestSagaOrchestrator:
 # ======================================================================================
 # SERVICE MESH TESTS
 # ======================================================================================
-@pytest.mark.usefixtures("app_context")
 class TestServiceMesh:
     """Test service mesh manager"""
 
@@ -431,7 +429,6 @@ class TestDistributedTracing:
 # ======================================================================================
 # GRAPHQL FEDERATION TESTS
 # ======================================================================================
-@pytest.mark.usefixtures("app_context")
 class TestGraphQLFederation:
     """Test GraphQL federation"""
 
@@ -570,7 +567,6 @@ class TestGraphQLFederation:
 # ======================================================================================
 # INTEGRATION TESTS
 # ======================================================================================
-@pytest.mark.usefixtures("app_context")
 class TestMicroservicesIntegration:
     """Test integration between microservices components"""
 

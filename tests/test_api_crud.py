@@ -10,7 +10,6 @@
 #   - Test pagination and filtering
 
 
-from app import db
 from app.models import User
 
 
@@ -19,143 +18,102 @@ class TestHealthEndpoints:
 
     def test_database_health(self, client, admin_user):
         """Test database health check"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            response = client.get("/admin/api/database/health")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] in ["healthy", "warning"]
+        response = client.get("/admin/api/database/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ["healthy", "warning"]
 
     def test_database_stats(self, client, admin_user):
         """Test database statistics"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            response = client.get("/admin/api/database/stats")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert "status" in data
+        response = client.get("/admin/api/database/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
 
     def test_database_tables(self, client, admin_user):
         """Test list all tables"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            response = client.get("/admin/api/database/tables")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-            assert "tables" in data
-            assert len(data["tables"]) > 0
+        response = client.get("/admin/api/database/tables")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert "tables" in data
+        assert len(data["tables"]) > 0
 
 
 class TestCRUDOperations:
     """اختبارات عمليات CRUD - CRUD operations tests"""
 
-    def test_create_user(self, client, admin_user, session):
+    def test_create_user(self, client, admin_user, db_session):
         """Test creating a new user"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        user_data = {
+            "email": "newuser@example.com",
+            "full_name": "newuser",
+            "password": "password123",
+        }
 
-            # Create user
-            user_data = {
-                "email": "newuser@example.com",
-                "username": "newuser",
-                "password": "password123",
-            }
+        response = client.post("/admin/api/database/record/users", json=user_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert "id" in data
 
-            response = client.post("/admin/api/database/record/users", json=user_data)
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-            assert "id" in data
-
-            # Verify user was created
-            user = User.query.filter_by(email="newuser@example.com").first()
-            assert user is not None
-            assert user.full_name == "newuser"
+        # Verify user was created
+        user = db_session.query(User).filter_by(email="newuser@example.com").first()
+        assert user is not None
+        assert user.full_name == "newuser"
 
     def test_read_users(self, client, admin_user, user_factory):
         """Test reading users with pagination"""
-        with client:
-            # Create some test users
-            for i in range(5):
-                user_factory(email=f"user{i}@test.com")
+        for i in range(5):
+            user_factory(email=f"user{i}@test.com")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            # Read users
-            response = client.get("/admin/api/database/table/users?page=1&per_page=10")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-            assert "rows" in data
-            assert len(data["rows"]) > 0
+        response = client.get("/admin/api/database/table/users?page=1&per_page=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert "rows" in data
+        assert len(data["rows"]) > 0
 
     def test_read_single_user(self, client, admin_user, user_factory):
         """Test reading a single user"""
-        with client:
-            # Create test user
-            test_user = user_factory(email="testread@test.com")
+        test_user = user_factory(email="testread@test.com")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        response = client.get(f"/admin/api/database/record/users/{test_user.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["data"]["email"] == "testread@test.com"
 
-            # Read single user
-            response = client.get(f"/admin/api/database/record/users/{test_user.id}")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-            assert data["data"]["email"] == "testread@test.com"
-
-    def test_update_user(self, client, admin_user, user_factory):
+    def test_update_user(self, client, admin_user, user_factory, db_session):
         """Test updating a user"""
-        with client:
-            # Create test user
-            test_user = user_factory(email="testupdate@test.com")
+        test_user = user_factory(email="testupdate@test.com")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        update_data = {"full_name": "Updated Name"}
+        response = client.put(
+            f"/admin/api/database/record/users/{test_user.id}", json=update_data
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
 
-            # Update user
-            update_data = {"full_name": "Updated Name"}
-            response = client.put(
-                f"/admin/api/database/record/users/{test_user.id}", json=update_data
-            )
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
+        # Verify update
+        updated_user = db_session.get(User, test_user.id)
+        assert updated_user.full_name == "Updated Name"
 
-            # Verify update
-            updated_user = db.session.get(User, test_user.id)
-            assert updated_user.full_name == "Updated Name"
-
-    def test_delete_user(self, client, admin_user, user_factory, session):
+    def test_delete_user(self, client, admin_user, user_factory, db_session):
         """Test deleting a user"""
-        with client:
-            # Create test user
-            test_user = user_factory(email="testdelete@test.com")
-            user_id = test_user.id
-            session.commit()
+        test_user = user_factory(email="testdelete@test.com")
+        user_id = test_user.id
+        db_session.commit()
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        response = client.delete(f"/admin/api/database/record/users/{user_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
 
-            # Delete user
-            response = client.delete(f"/admin/api/database/record/users/{user_id}")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-
-            # Verify deletion
-            deleted_user = db.session.get(User, user_id)
-            assert deleted_user is None
+        # Verify deletion
+        deleted_user = db_session.get(User, user_id)
+        assert deleted_user is None
 
 
 class TestValidation:
@@ -163,32 +121,19 @@ class TestValidation:
 
     def test_create_user_invalid_email(self, client, admin_user):
         """Test creating user with invalid email"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        user_data = {"email": "not-an-email", "full_name": "testuser", "password": "password123"}
 
-            # Try to create user with invalid email
-            user_data = {"email": "not-an-email", "username": "testuser", "password": "password123"}
-
-            response = client.post("/admin/api/database/record/users", json=user_data)
-            # Should fail validation
-            assert response.status_code in [400, 500]  # Validation or database error
+        response = client.post("/admin/api/database/record/users", json=user_data)
+        assert response.status_code in [400, 422, 500]
 
     def test_create_user_missing_required_field(self, client, admin_user):
         """Test creating user without required fields"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        user_data = {
+            "email": "test@example.com"
+        }
 
-            # Try to create user without required fields
-            user_data = {
-                "email": "test@example.com"
-                # Missing username and password
-            }
-
-            response = client.post("/admin/api/database/record/users", json=user_data)
-            # Should fail
-            assert response.status_code in [400, 500]
+        response = client.post("/admin/api/database/record/users", json=user_data)
+        assert response.status_code in [400, 422, 500]
 
 
 class TestPaginationAndFiltering:
@@ -196,68 +141,47 @@ class TestPaginationAndFiltering:
 
     def test_pagination(self, client, admin_user, user_factory):
         """Test pagination"""
-        with client:
-            # Create many users
-            for i in range(25):
-                user_factory(email=f"page{i}@test.com")
+        for i in range(25):
+            user_factory(email=f"page{i}@test.com")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        response = client.get("/admin/api/database/table/users?page=1&per_page=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["rows"]) == 10
+        assert data["page"] == 1
 
-            # Get first page
-            response = client.get("/admin/api/database/table/users?page=1&per_page=10")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert len(data["rows"]) == 10
-            assert data["page"] == 1
-
-            # Get second page
-            response = client.get("/admin/api/database/table/users?page=2&per_page=10")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert len(data["rows"]) == 10
-            assert data["page"] == 2
+        response = client.get("/admin/api/database/table/users?page=2&per_page=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["rows"]) == 10
+        assert data["page"] == 2
 
     def test_search(self, client, admin_user, user_factory):
         """Test search functionality"""
-        with client:
-            # Create users with specific patterns
-            user_factory(email="search_test@test.com", full_name="Searchable User")
-            user_factory(email="other@test.com", full_name="Other User")
+        user_factory(email="search_test@test.com", full_name="Searchable User")
+        user_factory(email="other@test.com", full_name="Other User")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            # Search for 'searchable'
-            response = client.get("/admin/api/database/table/users?search=searchable")
-            assert response.status_code == 200
-            data = response.get_json()
-            # Should find at least the searchable user
-            assert any("searchable" in str(row).lower() for row in data["rows"])
+        response = client.get("/admin/api/database/table/users?search=searchable")
+        assert response.status_code == 200
+        data = response.json()
+        assert any("searchable" in str(row).lower() for row in data["rows"])
 
     def test_ordering(self, client, admin_user, user_factory):
         """Test ordering"""
-        with client:
-            # Create test users for ordering test
-            _ = user_factory(email="a@test.com")
-            _ = user_factory(email="b@test.com")
+        _ = user_factory(email="a@test.com")
+        _ = user_factory(email="b@test.com")
 
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
+        response = client.get("/admin/api/database/table/users?order_by=full_name&order_dir=asc")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
 
-            # Order by username ascending
-            response = client.get("/admin/api/database/table/users?order_by=username&order_dir=asc")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
-
-            # Order by username descending
-            response = client.get(
-                "/admin/api/database/table/users?order_by=username&order_dir=desc"
-            )
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["status"] == "success"
+        response = client.get(
+            "/admin/api/database/table/users?order_by=full_name&order_dir=desc"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
 
 
 class TestErrorHandling:
@@ -265,28 +189,19 @@ class TestErrorHandling:
 
     def test_not_found_table(self, client, admin_user):
         """Test accessing non-existent table"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            response = client.get("/admin/api/database/table/nonexistent")
-            assert response.status_code in [404, 500]
-            data = response.get_json()
-            assert data["status"] == "error"
+        response = client.get("/admin/api/database/table/nonexistent")
+        assert response.status_code in [404, 500]
+        data = response.json()
+        assert data["status"] == "error"
 
     def test_not_found_record(self, client, admin_user):
         """Test accessing non-existent record"""
-        with client:
-            # Login as admin
-            client.post("/login", data={"email": admin_user.email, "password": "1111"})
-
-            response = client.get("/admin/api/database/record/users/999999")
-            assert response.status_code in [404, 500]
-            data = response.get_json()
-            assert data["status"] == "error"
+        response = client.get("/admin/api/database/record/users/999999")
+        assert response.status_code in [404, 500]
+        data = response.json()
+        assert data["status"] == "error"
 
     def test_unauthorized_access(self, client):
         """Test accessing API without authentication"""
         response = client.get("/admin/api/database/tables")
-        # Should redirect to login or return 401
-        assert response.status_code in [302, 401]
+        assert response.status_code in [401, 403]

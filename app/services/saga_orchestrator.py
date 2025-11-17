@@ -21,11 +21,10 @@ import uuid
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import logging
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from flask import current_app
 
 
 # ======================================================================================
@@ -196,7 +195,7 @@ class SagaOrchestrator:
             },
         )
 
-        current_app.logger.info(
+        logging.info(
             f"Saga created: {saga_name} ({saga_id}) with {len(saga_steps)} steps"
         )
 
@@ -217,11 +216,11 @@ class SagaOrchestrator:
         """
         with self.lock:
             if saga_id not in self.sagas:
-                current_app.logger.error(f"Saga not found: {saga_id}")
+                logging.error(f"Saga not found: {saga_id}")
                 return False
 
             if saga_id in self._running_sagas:
-                current_app.logger.warning(f"Saga already running: {saga_id}")
+                logging.warning(f"Saga already running: {saga_id}")
                 return False
 
             saga = self.sagas[saga_id]
@@ -238,7 +237,7 @@ class SagaOrchestrator:
                 payload={"saga_name": saga.saga_name},
             )
 
-            current_app.logger.info(f"Executing saga: {saga.saga_name} ({saga_id})")
+            logging.info(f"Executing saga: {saga.saga_name} ({saga_id})")
 
             # Execute steps sequentially
             for step in saga.steps:
@@ -246,7 +245,7 @@ class SagaOrchestrator:
 
                 if not success:
                     # Step failed, start compensation
-                    current_app.logger.error(
+                    logging.error(
                         f"Saga step failed: {step.step_name}, starting compensation"
                     )
                     self._compensate_saga(saga_id)
@@ -263,7 +262,7 @@ class SagaOrchestrator:
                 payload={"saga_name": saga.saga_name},
             )
 
-            current_app.logger.info(f"Saga completed successfully: {saga_id}")
+            logging.info(f"Saga completed successfully: {saga_id}")
 
             with self.lock:
                 self.saga_history.append(saga)
@@ -271,7 +270,7 @@ class SagaOrchestrator:
             return True
 
         except Exception as e:
-            current_app.logger.error(f"Saga execution error: {e}")
+            logging.error(f"Saga execution error: {e}")
             saga.status = SagaStatus.FAILED
             saga.error = str(e)
             self._compensate_saga(saga_id)
@@ -312,7 +311,7 @@ class SagaOrchestrator:
                     },
                 )
 
-                current_app.logger.info(f"Saga step completed: {step.step_name} ({step.step_id})")
+                logging.info(f"Saga step completed: {step.step_name} ({step.step_id})")
 
                 return True
 
@@ -320,7 +319,7 @@ class SagaOrchestrator:
                 step.retry_count += 1
                 step.error = str(e)
 
-                current_app.logger.error(
+                logging.error(
                     f"Saga step error: {step.step_name} (retry {step.retry_count}/{step.max_retries}): {e}"
                 )
 
@@ -367,7 +366,7 @@ class SagaOrchestrator:
             payload={"saga_name": saga.saga_name},
         )
 
-        current_app.logger.info(f"Compensating saga: {saga_id}")
+        logging.info(f"Compensating saga: {saga_id}")
 
         # Compensate completed steps in reverse order
         completed_steps = [s for s in saga.steps if s.status == StepStatus.COMPLETED]
@@ -396,10 +395,10 @@ class SagaOrchestrator:
                     payload={"step_name": step.step_name},
                 )
 
-                current_app.logger.info(f"Step compensated: {step.step_name}")
+                logging.info(f"Step compensated: {step.step_name}")
 
             except Exception as e:
-                current_app.logger.error(f"Compensation error for step {step.step_name}: {e}")
+                logging.error(f"Compensation error for step {step.step_name}: {e}")
                 # Continue compensating other steps even if one fails
 
         saga.status = SagaStatus.COMPENSATED
@@ -412,7 +411,7 @@ class SagaOrchestrator:
             payload={"saga_name": saga.saga_name},
         )
 
-        current_app.logger.info(f"Saga compensated: {saga_id}")
+        logging.info(f"Saga compensated: {saga_id}")
 
     def _emit_event(
         self,

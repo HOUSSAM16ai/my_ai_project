@@ -1,92 +1,4 @@
-"""
-MAESTRO COGNITIVE ORCHESTRATOR & LLM GATEWAY
-Ultra Re‑Engineered Sovereign Edition
-=====================================
-File        : app/services/generation_service.py
-Version     : 18.0.0 • "SOVEREIGN-SYNC-FUSION++ / DEEP-AWARE"
-Status      : Production / Hardened / Deterministic + Adaptive / Deep-Index Context Aware
-Author      : Overmind System (Refactored Ultra Professional Build)
-
-MISSION
--------
-This module exposes a unified LLM + Tool orchestration gateway (generation_service)
-for multi-step intelligent task execution WITH optional Deep Structural Index
-context injection (hotspots, layers, services, entrypoints) previously generated
-by the orchestrator (master_agent_service).
-
-CORE CAPABILITIES
------------------
-1. Text completion (plain) + Structured JSON generation (robust parsing, soft recovery).
-2. Multi-step autonomous task execution with tool calls (read/write/etc).
-3. Deep Index Context injection (excerpt) into system prompt (configurable length).
-4. Guarded stagnation mitigation + optional hotspot hinting from deep index meta.
-5. Tool throttling (repeat pattern detection & optional enforcement).
-6. Usage telemetry aggregation + tokens-per-step + rate metrics.
-7. Safe fallback if LLM client / tools unavailable (no crash).
-8. JSON extraction tolerant to markdown fences, trailing commentary & partial braces.
-9. Event emission (optional) into mission event log (TASK_UPDATED, etc, if available).
-10. Hookable finalize callback & diagnostics endpoint.
-
-DEEP INDEX INTEGRATION
-----------------------
-If orchestrator stored:
-  mission.deep_index_summary (full summary string)
-  mission.deep_index_meta    (dict: files_scanned, hotspots_count, ...)
-We inject trimmed excerpt under _deep_index_excerpt in context blob (unless disabled).
-
-ENVIRONMENT FLAGS (MAIN)
-------------------------
-MAESTRO_ATTACH_DEEP_INDEX=1            Enable deep index excerpt injection.
-MAESTRO_DEEP_INDEX_MAX_EXCERPT=2000    Max characters of deep index summary excerpt.
-MAESTRO_HOTSPOT_HINT=1                 Add hotspot priority hint if hotspots exist.
-MAESTRO_TOOL_REPEAT_THRESHOLD=3        Detect repeated identical tool invocations (name+args hash).
-MAESTRO_TOOL_REPEAT_ABORT=0            If 1, abort on repeated pattern threshold (fail task).
-MAESTRO_STAGNATION_ENFORCE=1           Fail task on stagnation detection else mark success with reason.
-MAESTRO_TOOL_CALL_LIMIT (int)          Hard cap on total tool calls.
-MAESTRO_AUTO_CONTEXT=1                 Attempt auto Flask app context bootstrap.
-MAESTRO_DISABLE_AUTOTOOLS=1            Disable auto file tools injection.
-MAESTRO_EMIT_TASK_EVENTS=1             Emit per-step tool events (needs models & DB).
-MAESTRO_JSON_SOFT_RECOVER=1            Attempt bracket-balance recovery for structured_json.
-MAESTRO_SUPPRESS_CTX_ERRORS=1          Suppress noisy context fetch errors.
-MAESTRO_FORCE_MODEL                    Forced model name override.
-AI_MODEL_OVERRIDE                      Secondary model override.
-DEFAULT_AI_MODEL                       Base fallback model.
-AGENT_MAX_STEPS=5                      Max reasoning/tool steps before finalization.
-
-SAFETY / HARDENING
-------------------
-- All external integration calls behind try/except.
-- Tool execution sandboxed; unknown tool returns safe error.
-- Repetition & stagnation detection prevents loops.
-- Structured JSON tolerant extraction reduces failure noise.
-- Deep index injection strictly optional (graceful skip).
-- No DB schema assumptions beyond Mission / Task optional fields.
-
-EXTENSIBILITY
--------------
-- post_finalize_hook(task_id) for downstream indexing / analytics.
-- Replace _build_system_prompt for domain specializations.
-- Add custom tool gating via future policy injection layer (placeholder).
-- Extend deep index usage (e.g., risk weighting, targeted prompt LS).
-
-MIGRATION NOTES (17.x → 18.0.0)
--------------------------------
-- New env flags: MAESTRO_HOTSPOT_HINT, MAESTRO_TOOL_REPEAT_THRESHOLD,
-  MAESTRO_TOOL_REPEAT_ABORT, MAESTRO_JSON_SOFT_RECOVER.
-- Added deep index context path (non-breaking if absent).
-- Return shape of task.result extended with:
-    * "repeat_pattern_triggered" (bool)
-    * "usage_rate_tokens_per_step" (float)
-    * "hotspot_hint_used" (bool)
-    * "tool_repeat_warnings" (list)
-- Marked as minor breaking (!) only if external consumers expect old telemetry shape.
-
-DISCLAIMER
-----------
-This module does NOT perform deep indexing. It only consumes previously prepared
-context (if orchestrator supplies it). Absence of deep context is fully safe.
-"""
-
+# app/services/fastapi_generation_service.py
 from __future__ import annotations
 
 import hashlib
@@ -100,41 +12,12 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-# Text processing utilities (shared across services)
 from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
 from app.utils.text_processing import strip_markdown_fences as _strip_markdown_fences
 
-# -----------------------------------------------------------------------------
-# Flask (optional)
-# -----------------------------------------------------------------------------
 try:
-    from flask import current_app, has_app_context
-except Exception:  # pragma: no cover
-    current_app = None
-
-    def has_app_context() -> bool:
-        return False
-
-
-# -----------------------------------------------------------------------------
-# Optional automatic Flask context bootstrap
-# -----------------------------------------------------------------------------
-def _attempt_auto_context():
-    if not has_app_context() and os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1":
-        try:
-            from app import ensure_app_context
-
-            ensure_app_context()
-        except Exception:
-            pass
-
-
-# -----------------------------------------------------------------------------
-# Database / Models (best-effort)
-# -----------------------------------------------------------------------------
-try:
-    from app import db
-except Exception:  # pragma: no cover
+    from app.extensions import db
+except Exception:
     db = None
 try:
     from app.models import (
@@ -145,8 +28,8 @@ try:
         finalize_task,
         log_mission_event,
     )
-except Exception:  # pragma: no cover
-    Mission = Task = object  # type: ignore
+except Exception:
+    Mission = Task = object
 
     def log_mission_event(*_a, **_k):
         pass
@@ -154,34 +37,22 @@ except Exception:  # pragma: no cover
     def finalize_task(*_a, **_k):
         pass
 
-    class MissionEventType:  # type: ignore
+    class MissionEventType:
         TASK_STATUS_CHANGE = "TASK_STATUS_CHANGE"
         TASK_UPDATED = "TASK_UPDATED"
 
-    class TaskStatus:  # type: ignore
+    class TaskStatus:
         RUNNING = "RUNNING"
         SUCCESS = "SUCCESS"
         FAILED = "FAILED"
-
-
-# -----------------------------------------------------------------------------
-# LLM Client
-# -----------------------------------------------------------------------------
 try:
     from .llm_client_service import get_llm_client
-except Exception:  # pragma: no cover
-
+except Exception:
     def get_llm_client():
         raise RuntimeError("LLM client service not available (import failure).")
-
-
-# -----------------------------------------------------------------------------
-# Tools
-# -----------------------------------------------------------------------------
 try:
     from . import agent_tools
-except Exception:  # pragma: no cover
-
+except Exception:
     class _DummyToolResult:
         def __init__(self, ok: bool, result=None, error: str = ""):
             self.ok = ok
@@ -192,7 +63,7 @@ except Exception:  # pragma: no cover
         def to_dict(self):
             return {"ok": self.ok, "result": self.result, "error": self.error}
 
-    class agent_tools:  # type: ignore
+    class agent_tools:
         _TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
 
         @staticmethod
@@ -206,16 +77,10 @@ except Exception:  # pragma: no cover
         @staticmethod
         def resolve_tool_name(name: str):
             return name
-
-
-# -----------------------------------------------------------------------------
-# Optional system context (domain augmentation)
-# -----------------------------------------------------------------------------
 try:
     from . import system_service
-except Exception:  # pragma: no cover
-
-    class system_service:  # type: ignore
+except Exception:
+    class system_service:
         @staticmethod
         def find_related_context(_desc: str):
             class R:
@@ -227,14 +92,11 @@ except Exception:  # pragma: no cover
 __version__ = "18.0.0"
 
 
-# ======================================================================================
-# Data Contracts
-# ======================================================================================
 @dataclass
 class StepState:
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
-    decision: str = ""  # "tool" | "final"
+    decision: str = ""
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     duration_ms: float | None = None
 
@@ -265,15 +127,7 @@ class OrchestratorTelemetry:
         return asdict(self)
 
 
-# ======================================================================================
-# Logging & Config Helpers
-# ======================================================================================
 def _logger():
-    if has_app_context() and current_app:
-        try:
-            return current_app.logger
-        except Exception:
-            pass
     import logging
 
     log = logging.getLogger("maestro.generation_service")
@@ -292,15 +146,7 @@ def _logger():
 
 
 def _cfg(key: str, default: Any = None) -> Any:
-    if has_app_context() and current_app:
-        try:
-            val = current_app.config.get(key)
-            if val is not None:
-                return val
-        except Exception:
-            pass
-    env_val = os.getenv(key)
-    return env_val if env_val is not None else default
+    return os.getenv(key, default)
 
 
 def _safe_json(obj: Any) -> str:
@@ -312,25 +158,10 @@ def _safe_json(obj: Any) -> str:
         return repr(obj)
 
 
-# ======================================================================================
-# Text Utilities & JSON Extraction
-# ======================================================================================
-# NOTE: _strip_markdown_fences and _extract_first_json_object are now imported from
-# app.utils.text_processing to eliminate code duplication across services.
-
-
 def _soft_recover_json(raw: str) -> str | None:
-    """
-    Attempt to recover JSON if MAESTRO_JSON_SOFT_RECOVER=1 and parsing failed.
-    Strategy:
-      - Remove trailing backticks / fences.
-      - Trim after last '}' if extraneous text appended.
-      - Return shortest valid balanced substring.
-    """
     if os.getenv("MAESTRO_JSON_SOFT_RECOVER", "1") != "1":
         return None
     text = _strip_markdown_fences(raw)
-    # If there are multiple '{', attempt scanning each start.
     starts = [i for i, c in enumerate(text) if c == "{"]
     for st in starts:
         depth = 0
@@ -341,7 +172,6 @@ def _soft_recover_json(raw: str) -> str | None:
                 depth -= 1
                 if depth == 0:
                     candidate = text[st : j + 1]
-                    # Quick validation
                     try:
                         json.loads(candidate)
                         return candidate
@@ -372,9 +202,6 @@ def _is_stagnation(prev_list: list[str], current_list: list[str]) -> bool:
     return bool(prev_list) and prev_list == current_list and len(current_list) > 0
 
 
-# ======================================================================================
-# System Prompt
-# ======================================================================================
 def _build_system_prompt(task: Any, context_blob: Any) -> str:
     mission_obj = getattr(task, "mission", None)
     objective = getattr(mission_obj, "objective", "N/A")
@@ -425,9 +252,6 @@ EXECUTION RULES:
 """.strip()
 
 
-# ======================================================================================
-# Usage extraction
-# ======================================================================================
 def _normalize_assistant_message(raw_msg) -> dict[str, Any]:
     content = getattr(raw_msg, "content", "") or ""
     base = {"role": getattr(raw_msg, "role", "assistant"), "content": content}
@@ -473,9 +297,6 @@ def _extract_usage(resp) -> dict[str, Any]:
         return {}
 
 
-# ======================================================================================
-# Auto File Tools (Optional)
-# ======================================================================================
 def _ensure_file_tools():
     if os.getenv("MAESTRO_DISABLE_AUTOTOOLS", "0") == "1":
         return
@@ -549,14 +370,13 @@ def _ensure_file_tools():
             },
         }
 
-    # Patch get_tools_schema: append read/write if absent
     if not hasattr(agent_tools, "_original_get_tools_schema"):
-        agent_tools._original_get_tools_schema = agent_tools.get_tools_schema  # type: ignore
+        agent_tools._original_get_tools_schema = agent_tools.get_tools_schema
 
         def _patched_schema():
             base = []
             try:
-                base = agent_tools._original_get_tools_schema() or []  # type: ignore
+                base = agent_tools._original_get_tools_schema() or []
             except Exception:
                 base = []
             for tname in ("write_file", "read_file"):
@@ -581,15 +401,12 @@ def _ensure_file_tools():
                     )
             return base
 
-        agent_tools.get_tools_schema = _patched_schema  # type: ignore
+        agent_tools.get_tools_schema = _patched_schema
 
 
 _ensure_file_tools()
 
 
-# ======================================================================================
-# Model Selection
-# ======================================================================================
 def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     forced = os.getenv("MAESTRO_FORCE_MODEL")
     if forced and forced.strip():
@@ -609,18 +426,12 @@ def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     return "openai/gpt-4o"
 
 
-# ======================================================================================
-# Core Generation Service
-# ======================================================================================
 class MaestroGenerationService:
     def __init__(self):
         self.version = __version__
         self.log = _logger()
         self.post_finalize_hook: Callable[[Any], None] | None = None
 
-    # ------------------------------------------------------------------
-    # Plain Text Completion
-    # ------------------------------------------------------------------
     def text_completion(
         self,
         system_prompt: str,
@@ -631,7 +442,6 @@ class MaestroGenerationService:
         fail_hard: bool = False,
         model: str | None = None,
     ) -> str:
-        _attempt_auto_context()
         model_name = _select_model(explicit=model)
         backoff_base = 0.25
         last_err: Any = None
@@ -651,7 +461,6 @@ class MaestroGenerationService:
                 return content.strip()
             except Exception as e:
                 last_err = e
-                # Log with more context about the error type
                 error_msg = str(e).lower()
                 if "500" in error_msg or "server" in error_msg:
                     self._safe_log(
@@ -668,18 +477,12 @@ class MaestroGenerationService:
                     )
                 if attempt < max_retries:
                     time.sleep(backoff_base * math.pow(1.45, attempt))
-
-        # SUPERHUMAN FIX: Always raise the exception so forge_new_code can handle it properly
-        # with bilingual error messages
         if last_err:
             raise last_err
         if fail_hard:
             raise RuntimeError("text_completion_failed:unknown_error")
         return ""
 
-    # ------------------------------------------------------------------
-    # Structured JSON Generation (robust)
-    # ------------------------------------------------------------------
     def structured_json(
         self,
         system_prompt: str,
@@ -717,7 +520,6 @@ class MaestroGenerationService:
             else:
                 candidate = _extract_first_json_object(raw)
                 if not candidate:
-                    # Soft recovery
                     candidate = _soft_recover_json(raw)
                 if not candidate:
                     last_err = "no_json_found"
@@ -743,53 +545,38 @@ class MaestroGenerationService:
             raise RuntimeError(f"structured_json_failed:{last_err}")
         return None
 
-    # ------------------------------------------------------------------
-    # Backward-compatible code forging
-    # ------------------------------------------------------------------
     def forge_new_code(
         self,
         prompt: str,
         conversation_id: str | None = None,
         model: str | None = None,
     ) -> dict[str, Any]:
-        _attempt_auto_context()
         cid = conversation_id or f"forge-{uuid.uuid4()}"
         started = time.perf_counter()
-
-        # SUPERHUMAN ENHANCEMENT: Dynamic token allocation based on prompt length
-        # Support for ULTIMATE COMPLEXITY MODE (better than tech giants)
         prompt_length = len(prompt)
-
-        # Check if ULTIMATE or EXTREME mode is enabled via environment
         ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
         extreme_mode = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-
-        # Define complexity thresholds
         is_complex_question = prompt_length > 5000
         is_extreme_question = prompt_length > 20000
         is_ultimate_question = prompt_length > 50000 or ultimate_mode
 
-        # ULTIMATE MODE: Answer no matter what (like tech giants - Google, Microsoft, etc.)
         if is_ultimate_question or ultimate_mode:
-            max_tokens = 128000  # Maximum possible (Claude 3.7 Sonnet supports up to 200K)
-            max_retries = 10  # Many retries - we WILL answer this
+            max_tokens = 128000
+            max_retries = 10
             self._safe_log(
                 f"🚀 ULTIMATE COMPLEXITY MODE: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
                 level="warning",
             )
-        # EXTREME MODE: Very complex questions
         elif is_extreme_question or extreme_mode:
-            max_tokens = 64000  # Very high token limit
-            max_retries = 5  # More retries for extreme cases
+            max_tokens = 64000
+            max_retries = 5
             self._safe_log(
                 f"⚡ EXTREME COMPLEXITY: prompt_length={prompt_length:,}, max_tokens={max_tokens:,}, max_retries={max_retries}",
                 level="warning",
             )
-        # COMPLEX MODE: Long questions
         elif is_complex_question:
             max_tokens = 16000
             max_retries = 2
-        # NORMAL MODE: Standard questions
         else:
             max_tokens = 4000
             max_retries = 1
@@ -801,11 +588,10 @@ class MaestroGenerationService:
                 temperature=0.3,
                 max_tokens=max_tokens,
                 max_retries=max_retries,
-                fail_hard=False,  # Don't raise exceptions, return errors gracefully
+                fail_hard=False,
                 model=model,
             )
 
-            # Check if we got an empty response (indicates failure)
             if not answer:
                 error_msg = self._build_bilingual_error_message(
                     "no_response", prompt_length, max_tokens
@@ -839,7 +625,6 @@ class MaestroGenerationService:
             if os.getenv("MAESTRO_SUPPRESS_CTX_ERRORS", "0") != "1":
                 self._safe_log("[forge_new_code] Failure", level="error", exc_info=True)
 
-            # SUPERHUMAN ERROR HANDLING: Provide bilingual, user-friendly error messages
             error_msg = self._build_bilingual_error_message(str(exc), prompt_length, max_tokens)
 
             return {
@@ -858,10 +643,8 @@ class MaestroGenerationService:
     def _build_bilingual_error_message(
         self, error: str, prompt_length: int, max_tokens: int
     ) -> str:
-        """Build user-friendly bilingual error messages - SUPERHUMAN EDITION"""
         error_lower = error.lower()
 
-        # Timeout error
         if "timeout" in error_lower or "timed out" in error_lower:
             return (
                 f"⏱️ **انتهت مهلة الانتظار** (Timeout)\n\n"
@@ -892,8 +675,6 @@ class MaestroGenerationService:
                 f"- Max tokens: {max_tokens:,}\n"
                 f"- Error: {error}"
             )
-
-        # Rate limit error
         if "rate" in error_lower and "limit" in error_lower:
             return (
                 f"🚦 **تم تجاوز حد الطلبات** (Rate Limit)\n\n"
@@ -908,8 +689,6 @@ class MaestroGenerationService:
                 f"**Technical Details:**\n"
                 f"- Error: {error}"
             )
-
-        # Context length error
         if "context" in error_lower or ("length" in error_lower and "token" in error_lower):
             return (
                 f"📏 **السياق طويل جداً** (Context Length Error)\n\n"
@@ -936,8 +715,6 @@ class MaestroGenerationService:
                 f"- Max tokens: {max_tokens:,}\n"
                 f"- Error: {error}"
             )
-
-        # API key or authentication error
         if "api key" in error_lower or "auth" in error_lower or "unauthorized" in error_lower:
             return (
                 f"🔑 **خطأ في المصادقة** (Authentication Error)\n\n"
@@ -952,10 +729,7 @@ class MaestroGenerationService:
                 f"**Technical Details:**\n"
                 f"- Error: {error}"
             )
-
-        # Server error (500)
         if "500" in error_lower or "server" in error_lower or "server_error" in error_lower:
-            # Check if we're already in ultimate/extreme mode
             ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
             extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
 
@@ -1001,8 +775,6 @@ class MaestroGenerationService:
                 f"- Max tokens: {max_tokens:,}\n"
                 f"- Error: {error}"
             )
-
-        # Empty response or no response
         if error == "no_response":
             return (
                 f"❌ **لم يتم استلام رد** (No Response)\n\n"
@@ -1022,8 +794,6 @@ class MaestroGenerationService:
                 f"- Prompt length: {prompt_length:,} characters\n"
                 f"- Max tokens: {max_tokens:,}"
             )
-
-        # Generic error
         return (
             f"⚠️ **حدث خطأ** (Error Occurred)\n\n"
             f"**بالعربية:**\n"
@@ -1044,9 +814,6 @@ class MaestroGenerationService:
             f"- Error: {error}"
         )
 
-    # ------------------------------------------------------------------
-    # Convenience strict JSON wrapper
-    # ------------------------------------------------------------------
     def generate_json(
         self, prompt: str, conversation_id: str | None = None, model: str | None = None
     ) -> dict[str, Any]:
@@ -1056,7 +823,6 @@ class MaestroGenerationService:
     def generate_comprehensive_response(
         self, prompt: str, conversation_id: str | None = None, model: str | None = None
     ) -> dict[str, Any]:
-        """Generate a comprehensive single-file response with deep analysis."""
         try:
             comprehensive_prompt = self._build_comprehensive_prompt(prompt)
 
@@ -1076,14 +842,11 @@ class MaestroGenerationService:
                         "consolidated": True,
                     },
                 }
-            # SUPERHUMAN: Return the error with bilingual message already included
             return result
         except Exception as exc:
             self._safe_log(
                 "[generate_comprehensive_response] Failure", level="error", exc_info=True
             )
-            # SUPERHUMAN: Use the same bilingual error message builder
-            # For comprehensive responses, we allocate even more tokens
             ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
             max_tokens_for_error = 128000 if ultimate_mode else 32000
             error_msg = self._build_bilingual_error_message(
@@ -1097,7 +860,6 @@ class MaestroGenerationService:
             }
 
     def _build_comprehensive_prompt(self, user_prompt: str) -> str:
-        """Build a comprehensive prompt that includes all analysis types in one response - SUPERHUMAN EDITION."""
         return f"""أنت خبير ذكاء اصطناعي خارق متخصص في تحليل المشاريع البرمجية. قدم إجابة شاملة ومنظمة.
 
 ⚡ قدراتك الخارقة:
@@ -1127,9 +889,6 @@ class MaestroGenerationService:
 
 ⚠️ مهم: لا تجب من الذاكرة فقط - استخدم الأدوات لقراءة الملفات والحصول على معلومات دقيقة!"""
 
-    # ------------------------------------------------------------------
-    # Legacy single-shot wrapper (compat)
-    # ------------------------------------------------------------------
     def execute_task_legacy_wrapper(self, payload: dict[str, Any]) -> dict[str, Any]:
         started = time.perf_counter()
         desc = ""
@@ -1158,11 +917,7 @@ class MaestroGenerationService:
             "meta": res.get("meta", {}),
         }
 
-    # ------------------------------------------------------------------
-    # Multi-step Task Execution
-    # ------------------------------------------------------------------
     def execute_task(self, task: Task, model: str | None = None) -> None:
-        _attempt_auto_context()
         if not hasattr(task, "mission"):
             self._safe_log("Task missing 'mission' relation; aborting.", level="warning")
             return
@@ -1187,8 +942,6 @@ class MaestroGenerationService:
         final_answer = "(no answer produced)"
         tool_call_limit: int | None = None
         time.perf_counter()
-
-        # Tool invocation signature counts (name+args hash)
         repeat_counter: dict[str, int] = {}
 
         try:
@@ -1198,7 +951,6 @@ class MaestroGenerationService:
         except Exception:
             tool_call_limit = None
 
-        # Mark RUNNING
         try:
             task.status = TaskStatus.RUNNING
             if emit_events:
@@ -1211,7 +963,6 @@ class MaestroGenerationService:
         except Exception:
             self._safe_log("Could not persist RUNNING state.", level="warning")
 
-        # Acquire client
         try:
             client = get_llm_client()
         except Exception as exc:
@@ -1227,7 +978,6 @@ class MaestroGenerationService:
             self._finalize_task_safe(task, TaskStatus.FAILED, "LLM client initialization failed.")
             return
 
-        # Context assembly
         context_blob = self._build_context_blob(task, hotspot_hint_enabled, telemetry)
 
         system_prompt = _build_system_prompt(task, context_blob)
@@ -1311,7 +1061,6 @@ class MaestroGenerationService:
                             state.finish()
                             break
 
-                        # Repetition pattern detection (hash of name+sorted args)
                         sig = self._tool_signature(canonical, fn_args)
                         repeat_counter[sig] = repeat_counter.get(sig, 0) + 1
                         if repeat_counter[sig] == repeat_threshold:
@@ -1365,7 +1114,6 @@ class MaestroGenerationService:
                     state.finish()
                     continue
 
-                # Final output (no tool calls)
                 state.decision = "final"
                 final_answer = assistant_msg.get("content") or "(empty)"
                 telemetry.finalization_reason = telemetry.finalization_reason or "model_concluded"
@@ -1373,11 +1121,8 @@ class MaestroGenerationService:
                 break
 
             else:
-                # Loop exhausted
                 if not telemetry.finalization_reason:
                     telemetry.finalization_reason = "max_steps_exhausted"
-
-            # Final status logic
             status = TaskStatus.SUCCESS
             if telemetry.stagnation and stagnation_fail:
                 status = TaskStatus.FAILED
@@ -1387,8 +1132,6 @@ class MaestroGenerationService:
                 status = TaskStatus.FAILED
                 if not telemetry.finalization_reason:
                     telemetry.finalization_reason = "repeat_pattern_abort"
-
-            # Compute tokens per step usage_rate
             usage_rate_tokens_per_step = None
             total_tokens = cumulative_usage.get("total_tokens")
             if total_tokens and telemetry.steps_taken:
@@ -1422,20 +1165,15 @@ class MaestroGenerationService:
             }
             self._finalize_task_safe(task, TaskStatus.FAILED, f"Catastrophic failure: {exc}")
 
-    # ------------------------------------------------------------------
-    # Diagnostics
-    # ------------------------------------------------------------------
     def diagnostics(self) -> dict[str, Any]:
         return {
             "version": self.version,
-            "has_app_context": has_app_context(),
             "selected_default_model": _select_model(),
             "force_model": os.getenv("MAESTRO_FORCE_MODEL"),
             "override_model": os.getenv("AI_MODEL_OVERRIDE"),
             "default_ai_model_env": os.getenv("DEFAULT_AI_MODEL"),
             "max_steps": int(_cfg("AGENT_MAX_STEPS", 5)),
             "tools_registered": list(getattr(agent_tools, "_TOOL_REGISTRY", {}).keys()),
-            "auto_context": os.getenv("MAESTRO_AUTO_CONTEXT", "0") == "1",
             "emit_events": os.getenv("MAESTRO_EMIT_TASK_EVENTS", "0") == "1",
             "tool_call_limit": os.getenv("MAESTRO_TOOL_CALL_LIMIT"),
             "stagnation_enforce": os.getenv("MAESTRO_STAGNATION_ENFORCE", "0") == "1",
@@ -1447,15 +1185,9 @@ class MaestroGenerationService:
             "exposes_adapter_contract": True,
         }
 
-    # ------------------------------------------------------------------
-    # INTERNAL HELPERS
-    # ------------------------------------------------------------------
     def _build_context_blob(
         self, task: Task, hotspot_hint_enabled: bool, telemetry: OrchestratorTelemetry
     ) -> dict[str, Any]:
-        """
-        Combine system_service context + deep index excerpt (optional).
-        """
         try:
             context_res = system_service.find_related_context(getattr(task, "description", ""))
             base_ctx = getattr(context_res, "data", {}) or {}
@@ -1467,7 +1199,6 @@ class MaestroGenerationService:
         deep_summary = None
         deep_meta = None
         try:
-            # Expect orchestrator to stash these attributes (optional)
             deep_summary = getattr(task.mission, "deep_index_summary", None)
             deep_meta = getattr(task.mission, "deep_index_meta", None)
         except Exception:
@@ -1480,7 +1211,6 @@ class MaestroGenerationService:
             base_ctx["_deep_index_excerpt"] = trimmed
 
         if isinstance(deep_meta, dict):
-            # Copy selective metrics
             for k in ("files_scanned", "hotspots_count", "duplicate_groups", "layers_detected"):
                 if k in deep_meta:
                     base_ctx[f"_meta_{k}"] = deep_meta[k]
@@ -1521,7 +1251,6 @@ class MaestroGenerationService:
             if callable(finalize_task):
                 finalize_task(task, status=status, result_text=result_text)
             else:
-                # task.status = status
                 task.result_text = result_text
                 self._commit()
         except Exception:
@@ -1531,7 +1260,6 @@ class MaestroGenerationService:
                 self._commit()
             except Exception:
                 pass
-        # Post finalize hook
         try:
             if self.post_finalize_hook and callable(self.post_finalize_hook):
                 self.post_finalize_hook(getattr(task, "id", None))
@@ -1539,9 +1267,6 @@ class MaestroGenerationService:
             pass
 
 
-# ======================================================================================
-# Singleton & Facade
-# ======================================================================================
 _generation_service_singleton: MaestroGenerationService | None = None
 
 
@@ -1552,7 +1277,6 @@ def get_generation_service() -> MaestroGenerationService:
     return _generation_service_singleton
 
 
-# Public Facade (legacy convenience)
 def forge_new_code(*a, **k):
     return get_generation_service().forge_new_code(*a, **k)
 
@@ -1585,7 +1309,6 @@ def register_post_finalize_hook(func: Callable[[Any], None]):
     return True
 
 
-# Export instance
 generation_service = get_generation_service()
 
 __all__ = [
@@ -1600,10 +1323,7 @@ __all__ = [
     "register_post_finalize_hook",
 ]
 
-# ======================================================================================
-# Self-Test (manual invocation)
-# ======================================================================================
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     svc = generation_service
     print("=== Diagnostics ===")
     print(json.dumps(svc.diagnostics(), ensure_ascii=False, indent=2))

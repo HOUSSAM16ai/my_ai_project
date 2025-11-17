@@ -134,8 +134,13 @@ def test_stream_chat_internal_ai_error(mock_stream_ai):
     headers = {"Authorization": f"Bearer {token}"}
     payload = {"question": "This will trigger an error."}
 
-    with pytest.raises(Exception) as excinfo:
-        client.post("/api/v1/chat/stream", headers=headers, json=payload)
+    response = client.post("/api/v1/chat/stream", headers=headers, json=payload)
 
-    # Check that the exception raised is the one we configured
-    assert "A critical AI error occurred!" in str(excinfo.value)
+    assert response.status_code == 200
+    assert "application/x-ndjson" in response.headers["content-type"]
+    lines = response.text.strip().split("\n")
+    chunks = [json.loads(line) for line in lines if line]
+    assert len(chunks) == 1
+    error_chunk = chunks[0]
+    assert error_chunk["type"] == "error"
+    assert "An internal AI error occurred" in error_chunk["payload"]["error"]

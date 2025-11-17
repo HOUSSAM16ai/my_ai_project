@@ -43,25 +43,40 @@ async def chat_stream(request: Request):
     Handles POST requests to initiate a chat stream.
     Processes the incoming question and streams back the response chunk by chunk.
     """
+    from app.services.ai_service_gateway import get_ai_service_gateway
+    import json
+
     try:
         body = await request.json()
         question = body.get("question", "")
-        if not question:
-            raise HTTPException(status_code=400, detail="The 'question' field is required.")
+        if not question or not question.strip():
+            async def error_stream():
+                error_payload = {"type": "error", "payload": {"error": "Question is required."}}
+                yield f"data: {json.dumps(error_payload)}\n\n"
+            return StreamingResponse(error_stream(), media_type="text/event-stream")
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+        async def error_stream():
+            error_payload = {"type": "error", "payload": {"error": "Invalid JSON payload."}}
+            yield f"data: {json.dumps(error_payload)}\n\n"
+        return StreamingResponse(error_stream(), media_type="text/event-stream")
+
+    gateway = get_ai_service_gateway()
+    if not gateway:
+        async def error_stream():
+            error_payload = {
+                "type": "error",
+                "payload": {"error": "AI service is currently unavailable."},
+            }
+            yield f"data: {json.dumps(error_payload)}\n\n"
+        return StreamingResponse(error_stream(), media_type="text/event-stream")
 
     async def response_generator():
-        # Here you would typically connect to your LLM or other AI service
-        # For demonstration, we'll stream back a simulated response.
-        for idx, part in enumerate(
-            ["Analyzing...", "Generating response...", f"Final answer for '{question}'."]
-        ):
-            await asyncio.sleep(1)  # Simulate processing time
-            yield f'data: {{"chunk": "{part}", "index": {idx}}}\n\n'
-
-        # Signal the end of the stream
-        yield "event: close\ndata: Stream ended\n\n"
+        try:
+            async for chunk in gateway.stream_chat(question=question):
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:
+            error_payload = {"type": "error", "payload": {"error": f"Failed to connect to AI service: {e}"}}
+            yield f"data: {json.dumps(error_payload)}\n\n"
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
 

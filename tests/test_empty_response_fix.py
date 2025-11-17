@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from app.services.admin_ai_service import AdminAIService
+from app.extensions import db
 
 
 @pytest.fixture
@@ -33,6 +34,8 @@ def _run_test_with_mock_response(ai_service, mock_user, mock_response, question)
     with (
         patch("app.services.admin_ai_service.get_llm_client") as mock_get_client,
         patch("os.getenv") as mock_getenv,
+        patch.object(ai_service, "create_conversation", return_value=Mock()),
+        patch.object(ai_service, "_save_message", return_value=None),
     ):
         mock_getenv.return_value = "test-api-key"
         mock_client = Mock()
@@ -43,7 +46,7 @@ def _run_test_with_mock_response(ai_service, mock_user, mock_response, question)
         )
 
 
-def test_empty_response_handling_none_content(app_context, db, ai_service, mock_user):
+def test_empty_response_handling_none_content(ai_service, mock_user):
     """
     Test that None content from AI is handled gracefully.
     """
@@ -67,7 +70,7 @@ def test_empty_response_handling_none_content(app_context, db, ai_service, mock_
     assert result["model_used"] == "anthropic/claude-3.7-sonnet:thinking"
 
 
-def test_empty_response_handling_empty_string(app_context, db, ai_service, mock_user):
+def test_empty_response_handling_empty_string(ai_service, mock_user):
     """
     Test that empty string content from AI is handled gracefully.
     """
@@ -91,7 +94,7 @@ def test_empty_response_handling_empty_string(app_context, db, ai_service, mock_
     )
 
 
-def test_empty_response_with_tool_calls(app_context, db, ai_service, mock_user):
+def test_empty_response_with_tool_calls(ai_service, mock_user):
     """
     Test handling of responses with tool calls but no content.
     """
@@ -110,7 +113,7 @@ def test_empty_response_with_tool_calls(app_context, db, ai_service, mock_user):
     assert "tool" in result["answer"].lower() or "أدوات" in result["answer"]
 
 
-def test_normal_response_still_works(app_context, db, ai_service, mock_user):
+def test_normal_response_still_works(ai_service, mock_user):
     """
     Test that normal responses with content still work correctly.
     """

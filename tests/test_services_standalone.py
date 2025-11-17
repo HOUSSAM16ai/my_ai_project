@@ -17,7 +17,6 @@ def test_observability_service_import():
     assert service.sla_target_ms == 20.0
 
 
-@pytest.mark.usefixtures("app_context")
 def test_observability_metrics():
     """Test metrics recording without Flask"""
     from app.services.api_observability_service import APIObservabilityService
@@ -74,7 +73,6 @@ def test_contract_openapi_spec():
     assert "paths" in spec
 
 
-@pytest.mark.usefixtures("app_context")
 def test_all_services_integration():
     """Test that all services work together"""
     from app.services.api_contract_service import APIContractService

@@ -20,9 +20,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+import logging
 from typing import Any
-
-from flask import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -273,7 +272,7 @@ class DisasterRecoveryService:
         with self.lock:
             self.backups[backup.backup_id] = backup
 
-            current_app.logger.info(
+            logging.info(
                 f"Backup registered: {backup.backup_type} "
                 f"({backup.size_bytes} bytes) at {backup.location}"
             )
@@ -293,7 +292,7 @@ class DisasterRecoveryService:
             backup.verified = True
             backup.verification_date = datetime.now(UTC)
 
-            current_app.logger.info(f"Backup verified: {backup_id}")
+            logging.info(f"Backup verified: {backup_id}")
 
             return True
 
@@ -319,14 +318,14 @@ class DisasterRecoveryService:
                 "steps_failed": [],
             }
 
-            current_app.logger.critical(
+            logging.critical(
                 f"DISASTER RECOVERY INITIATED: {plan.name} by {initiated_by}"
             )
 
             # In production, this would execute the automated steps
             # For now, we log the plan
             for step in plan.automated_steps:
-                current_app.logger.info(
+                logging.info(
                     f"DR Step {step['step']}: {step['action']} "
                     f"(timeout: {step['timeout_seconds']}s)"
                 )
@@ -491,7 +490,7 @@ class OnCallIncidentService:
         # Trigger escalation
         self._trigger_escalation(incident)
 
-        current_app.logger.error(
+        logging.error(
             f"INCIDENT CREATED [{severity.value.upper()}]: {title} ({incident_id})"
         )
 
@@ -534,7 +533,7 @@ class OnCallIncidentService:
                 }
             )
 
-            current_app.logger.info(
+            logging.info(
                 f"Incident {incident_id} status: {old_status.value} -> {new_status.value}"
             )
 
@@ -566,13 +565,13 @@ class OnCallIncidentService:
 
         with self.lock:
             if policy_key not in self.escalation_policies:
-                current_app.logger.warning(f"No escalation policy for {incident.severity.value}")
+                logging.warning(f"No escalation policy for {incident.severity.value}")
                 return
 
             policy = self.escalation_policies[policy_key]
 
             # Log escalation
-            current_app.logger.info(
+            logging.info(
                 f"Escalation triggered for incident {incident.incident_id} "
                 f"using policy: {policy.name}"
             )
@@ -583,7 +582,7 @@ class OnCallIncidentService:
             # - Start escalation timer
 
             for level in policy.escalation_levels:
-                current_app.logger.info(
+                logging.info(
                     f"Escalation Level {level['level']}: {level['description']} "
                     f"(timeout: {level['timeout_minutes']} minutes)"
                 )
@@ -636,7 +635,7 @@ class OnCallIncidentService:
         with self.lock:
             self.post_incident_reviews[pir_id] = pir
 
-        current_app.logger.info(f"Post-incident review created: {pir_id}")
+        logging.info(f"Post-incident review created: {pir_id}")
 
         return pir_id
 

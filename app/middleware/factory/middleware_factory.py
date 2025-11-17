@@ -12,8 +12,8 @@ from typing import Any
 
 from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.error_handling import ErrorHandlerMiddleware, RecoveryMiddleware
+from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware
 from app.middleware.observability import (
-    ObservabilityMiddleware,
     PerformanceProfiler,
     RequestLoggerMiddleware,
 )
@@ -50,7 +50,7 @@ class MiddlewareFactory:
         middlewares = [
             PerformanceProfiler(config=config.get("performance", {})),
             TelemetryGuard(config=config.get("telemetry", {})),
-            ObservabilityMiddleware(config=config.get("observability", {})),
+            FastAPIObservabilityMiddleware(),
             RequestLoggerMiddleware(config=config.get("logging", {})),
             WAFMiddleware(config=config.get("waf", {})),
             AIThreatMiddleware(config=config.get("ai_threats", {})),
@@ -77,7 +77,7 @@ class MiddlewareFactory:
         config = config or {}
 
         middlewares = [
-            ObservabilityMiddleware(config=config.get("observability", {})),
+            FastAPIObservabilityMiddleware(),
             RequestLoggerMiddleware(config=config.get("logging", {})),
             ErrorHandlerMiddleware(config=config.get("error_handling", {})),
         ]

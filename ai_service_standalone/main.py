@@ -69,7 +69,15 @@ async def stream_ai_response(question: str):
 @app.post("/api/v1/chat/stream")
 async def stream_chat(chat_request: ChatRequest, user_id: str = Depends(get_current_user)):
     async def response_generator():
-        async for chunk in stream_ai_response(chat_request.question):
-            yield json.dumps(chunk) + "\n"
+        try:
+            async for chunk in stream_ai_response(chat_request.question):
+                yield f"{json.dumps(chunk)}\n"
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during streaming: {e}")
+            error_payload = {
+                "type": "error",
+                "payload": {"error": "An internal AI error occurred."},
+            }
+            yield f"{json.dumps(error_payload)}\n"
 
     return StreamingResponse(response_generator(), media_type="application/x-ndjson")

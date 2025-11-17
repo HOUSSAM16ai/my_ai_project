@@ -15,6 +15,7 @@
 import builtins
 import contextlib
 import hashlib
+import logging
 import statistics
 import threading
 import time
@@ -24,8 +25,6 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Any
-
-from flask import current_app, g, request
 
 # ======================================================================================
 # DATA STRUCTURES FOR OBSERVABILITY
@@ -122,14 +121,9 @@ class APIObservabilityService:
             f"{trace_id}{endpoint}{method}".encode(), usedforsecurity=False
         ).hexdigest()[:8]
 
-        # Store in Flask g context for access throughout request lifecycle
-        g.trace_id = trace_id
-        g.span_id = span_id
-        g.request_start_time = time.time()
-
         # Track active request
         with self.lock:
-            self.active_requests[trace_id] = g.request_start_time
+            self.active_requests[trace_id] = time.time()
 
         return {
             "trace_id": trace_id,
@@ -146,11 +140,10 @@ class APIObservabilityService:
         user_id: int | None = None,
         error: str | None = None,
         metadata: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
     ):
         """Record comprehensive request metrics"""
-        trace_id = getattr(g, "trace_id", None)
-        span_id = getattr(g, "span_id", None)
-
         metrics = RequestMetrics(
             request_id=hashlib.md5(
                 f"{trace_id}{time.time_ns()}".encode(), usedforsecurity=False
@@ -338,7 +331,7 @@ class APIObservabilityService:
 
         # Log to application logger
         with contextlib.suppress(builtins.BaseException):
-            current_app.logger.warning(f"🚨 ANOMALY DETECTED [{severity.upper()}]: {description}")
+            logging.warning(f"🚨 ANOMALY DETECTED [{severity.upper()}]: {description}")
 
     def get_endpoint_analytics(self, endpoint: str) -> dict[str, Any]:
         """Get detailed analytics for specific endpoint"""
@@ -421,76 +414,3 @@ def get_observability_service() -> APIObservabilityService:
     return _observability_service
 
 
-# ======================================================================================
-# DECORATOR FOR AUTOMATIC MONITORING
-# ======================================================================================
-
-
-def monitor_performance(f: Callable) -> Callable:
-    """
-    Decorator to automatically monitor API endpoint performance
-
-    Usage:
-        @bp.route('/api/endpoint')
-        @monitor_performance
-        def my_endpoint():
-            return jsonify({'data': 'value'})
-    """
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        service = get_observability_service()
-
-        # Start tracing
-        endpoint = request.endpoint or "unknown"
-        method = request.method
-        trace_info = service.start_request_trace(endpoint, method)
-
-        # Add trace headers to response
-        start_time = time.time()
-        error_msg = None
-        status_code = 200
-
-        try:
-            response = f(*args, **kwargs)
-
-            # Extract status code from response
-            if hasattr(response, "status_code"):
-                status_code = response.status_code
-            elif isinstance(response, tuple) and len(response) > 1:
-                status_code = response[1]
-
-            return response
-
-        except Exception as e:
-            status_code = 500
-            error_msg = str(e)
-            raise
-
-        finally:
-            # Record metrics
-            duration_ms = (time.time() - start_time) * 1000
-
-            try:
-                from flask_login import current_user
-
-                user_id = current_user.id if current_user.is_authenticated else None
-            except Exception:
-                user_id = None
-
-            service.record_request_metrics(
-                endpoint=endpoint,
-                method=method,
-                status_code=status_code,
-                duration_ms=duration_ms,
-                user_id=user_id,
-                error=error_msg,
-                metadata={
-                    "path": request.path,
-                    "args": dict(request.args),
-                    "trace_id": trace_info["trace_id"],
-                    "span_id": trace_info["span_id"],
-                },
-            )
-
-    return decorated_function

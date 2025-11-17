@@ -22,10 +22,9 @@ import uuid
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import logging
 from enum import Enum
 from typing import Any
-
-from flask import current_app
 
 
 # ======================================================================================
@@ -184,7 +183,7 @@ class GraphQLFederationManager:
         with self.lock:
             self.schemas[service_name] = schema
 
-        current_app.logger.info(f"GraphQL schema registered: {service_name} (version {version})")
+        logging.info(f"GraphQL schema registered: {service_name} (version {version})")
 
         # Recompose federated schema
         self._compose_federated_schema()
@@ -204,7 +203,7 @@ class GraphQLFederationManager:
         with self.lock:
             self.resolvers[service_name][key] = resolver
 
-        current_app.logger.info(f"Resolver registered: {service_name}.{type_name}.{field_name}")
+        logging.info(f"Resolver registered: {service_name}.{type_name}.{field_name}")
 
     def _compose_federated_schema(self):
         """
@@ -243,7 +242,7 @@ class GraphQLFederationManager:
 
             self.federated_schema = federated
 
-        current_app.logger.info(
+        logging.info(
             f"Federated schema composed: {len(federated.types)} types, "
             f"{len(federated.queries)} queries, {len(federated.mutations)} mutations"
         )
@@ -269,7 +268,7 @@ class GraphQLFederationManager:
         cache_key = self._get_cache_key(query, variables)
         cached = self.query_cache.get(cache_key)
         if cached:
-            current_app.logger.info(f"Query cache hit: {cache_key[:16]}...")
+            logging.info(f"Query cache hit: {cache_key[:16]}...")
             return cached
 
         # Parse query and create execution plan

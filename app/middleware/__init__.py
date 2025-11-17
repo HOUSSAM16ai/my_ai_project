@@ -40,6 +40,7 @@ from app.middleware.core import (
 
 # CORS
 from app.middleware.cors import CORSMiddleware
+from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware
 
 # ======================================================================================
 # BACKWARD COMPATIBILITY (Legacy v1.0)
@@ -62,7 +63,6 @@ from app.middleware.factory import MiddlewareFactory
 from app.middleware.observability import (
     AnalyticsAdapter,
     AnomalyInspector,
-    ObservabilityMiddleware,
     PerformanceProfiler,
     RequestLoggerMiddleware,
     TelemetryBridge,
@@ -104,7 +104,7 @@ __all__ = [
     "SecurityHeadersMiddleware",
     "TelemetryGuard",
     # Observability
-    "ObservabilityMiddleware",
+    "FastAPIObservabilityMiddleware",
     "RequestLoggerMiddleware",
     "TelemetryBridge",
     "AnomalyInspector",

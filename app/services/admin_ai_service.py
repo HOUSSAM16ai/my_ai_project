@@ -34,7 +34,7 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from app import db
+from app.extensions import db
 from app.models import (
     AdminConversation,
     AdminMessage,
