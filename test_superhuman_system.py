@@ -14,7 +14,7 @@ This demonstrates:
 """
 
 from flask import Flask, jsonify
-
+from tests._helpers import parse_response_json
 from app.middleware.superhuman_security import init_superhuman_security
 
 
@@ -60,7 +60,7 @@ def test_basic_request():
     response = client.get("/api/test")
 
     print(f"✅ Response status: {response.status_code}")
-    print(f"✅ Response data: {response.get_json()}")
+    print(f"✅ Response data: {parse_response_json(response)}")
 
     # Check statistics
     stats = superhuman.get_statistics()
