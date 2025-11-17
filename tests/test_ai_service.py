@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 # Ensure the app is imported correctly
 from ai_service_standalone.main import ALGORITHM, SECRET_KEY, app
+from tests._helpers import parse_response_json
 
 client = TestClient(app)
 
@@ -74,7 +75,7 @@ def test_stream_chat_no_auth_header():
     payload = {"question": "This should fail."}
     response = client.post("/api/v1/chat/stream", json=payload)
     assert response.status_code == 401
-    assert response.json() == {"detail": "Authorization header missing"}
+    assert parse_response_json(response) == {"detail": "Authorization header missing"}
 
 
 def test_stream_chat_invalid_token():
@@ -85,7 +86,7 @@ def test_stream_chat_invalid_token():
     payload = {"question": "This should also fail."}
     response = client.post("/api/v1/chat/stream", headers=headers, json=payload)
     assert response.status_code == 401
-    assert response.json() == {"detail": "Invalid token"}
+    assert parse_response_json(response) == {"detail": "Invalid token"}
 
 
 def test_stream_chat_expired_token():
@@ -97,7 +98,7 @@ def test_stream_chat_expired_token():
     payload = {"question": "Testing with an expired token."}
     response = client.post("/api/v1/chat/stream", headers=headers, json=payload)
     assert response.status_code == 401
-    assert response.json() == {"detail": "Invalid token"}
+    assert parse_response_json(response) == {"detail": "Invalid token"}
 
 
 @pytest.mark.parametrize(
