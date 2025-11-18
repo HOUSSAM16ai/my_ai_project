@@ -1,8 +1,9 @@
-# ai_service_standalone/main.py
+# app/api/routers/ai_service.py
 """
-AI Service - FastAPI Implementation
-===================================
-Version: 1.0.0
+The unified AI service router.
+
+This router integrates the logic from the former `ai_service_standalone`
+into the main application, enforcing the Law of Energetic Continuity.
 """
 
 import asyncio
@@ -11,10 +12,15 @@ import logging
 import os
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
+# Router setup
+router = APIRouter(
+    prefix="/api/v1/ai",
+    tags=["AI Service"],
+)
 
 # --- Models ---
 class ChatRequest(BaseModel):
@@ -34,11 +40,8 @@ ALGORITHM = "HS256"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- FastAPI App ---
-app = FastAPI()
 
-
-# --- Security ---
+# --- Security (to be replaced by IDENTITY-ENGINE) ---
 def get_current_user(request: Request):
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -66,7 +69,7 @@ async def stream_ai_response(question: str):
 
 
 # --- API Endpoint ---
-@app.post("/api/v1/chat/stream")
+@router.post("/chat/stream")
 async def stream_chat(chat_request: ChatRequest, user_id: str = Depends(get_current_user)):
     async def response_generator():
         try:
