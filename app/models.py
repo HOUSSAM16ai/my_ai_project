@@ -73,9 +73,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 # from flask_login import UserMixin # Removed Flask Dependency
-from sqlalchemy import (
-    JSON as SAJSON,
-)
+from sqlalchemy import JSON as SAJSON
 from sqlalchemy import (
     Boolean,
     DateTime,

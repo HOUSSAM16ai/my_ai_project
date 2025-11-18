@@ -45,14 +45,20 @@ except Exception:
         RUNNING = "RUNNING"
         SUCCESS = "SUCCESS"
         FAILED = "FAILED"
+
+
 try:
     from .llm_client_service import get_llm_client
 except Exception:
+
     def get_llm_client():
         raise RuntimeError("LLM client service not available (import failure).")
+
+
 try:
     from . import agent_tools
 except Exception:
+
     class _DummyToolResult:
         def __init__(self, ok: bool, result=None, error: str = ""):
             self.ok = ok
@@ -77,9 +83,12 @@ except Exception:
         @staticmethod
         def resolve_tool_name(name: str):
             return name
+
+
 try:
     from . import system_service
 except Exception:
+
     class system_service:
         @staticmethod
         def find_related_context(_desc: str):

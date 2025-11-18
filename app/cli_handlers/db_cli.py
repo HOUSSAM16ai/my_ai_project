@@ -1,12 +1,15 @@
 # app/cli_handlers/db_cli.py
-import click
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
+
+import click
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from app.extensions import db
+from sqlalchemy.orm import Session, sessionmaker
+
 from app import models  # Import models to register them
+from app.extensions import db
+
 
 def register_db_commands(root):
     @root.group("db")
@@ -24,7 +27,6 @@ def register_db_commands(root):
         logger.info("Creating all database tables...")
         db.Model.metadata.create_all(bind=engine)
         logger.info("All database tables created.")
-
 
     @db_group.command("seed")
     @click.option("--confirm", is_flag=True, default=False)
@@ -56,8 +58,11 @@ def register_db_commands(root):
                 logger.info(f"User with email {admin_email} already exists.")
             logger.info("seed: completed")
 
+
 @contextmanager
-def transactional_session(SessionFactory, logger, dry_run: bool = False) -> Generator[Session, None, None]:
+def transactional_session(
+    SessionFactory, logger, dry_run: bool = False
+) -> Generator[Session, None, None]:
     session = SessionFactory()
     try:
         yield session

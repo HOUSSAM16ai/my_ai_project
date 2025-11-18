@@ -8,12 +8,14 @@ import subprocess
 # It can bootstrap from the system environment (for initial create)
 # AND perform a live sync from GitHub secrets (for attach/reconnect).
 
+
 def get_var_name_from_line(line):
     line = line.strip()
-    if not line or line.startswith('#'):
+    if not line or line.startswith("#"):
         return None
-    match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)', line)
+    match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", line)
     return match.group(1) if match else None
+
 
 def write_env_file(env_vars, mode):
     if not os.path.exists(".env"):
@@ -29,11 +31,11 @@ def write_env_file(env_vars, mode):
         existing_vars = {}
         with open(".env") as f:
             for line in f:
-                if not line.strip().startswith('#'):
-                    key, _, _ = line.partition('=')
+                if not line.strip().startswith("#"):
+                    key, _, _ = line.partition("=")
                     existing_vars[key.strip()] = line
 
-        new_vars_dict = {key: line for key, line in (line.partition('=')[::2] for line in env_vars)}
+        new_vars_dict = {key: line for key, line in (line.partition("=")[::2] for line in env_vars)}
 
         # Update existing vars or append new ones
         for key, line in new_vars_dict.items():
@@ -42,6 +44,7 @@ def write_env_file(env_vars, mode):
         with open(".env", "w") as f:
             f.writelines(existing_vars.values())
         print("✅ '.env' file updated.")
+
 
 def from_system_env():
     print("⚙️  Mode: System Environment Bootstrap")
@@ -66,6 +69,7 @@ def from_system_env():
     else:
         print("- No relevant variables found in system environment.")
 
+
 def from_github_live():
     print("🚀 Mode: Live Sync from GitHub Secrets")
     try:
@@ -80,7 +84,9 @@ def from_github_live():
     try:
         result = subprocess.run(
             ["gh", "secret", "list", "--json", "name,value"],
-            capture_output=True, text=True, check=True
+            capture_output=True,
+            text=True,
+            check=True,
         )
         secrets = json.loads(result.stdout)
     except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
@@ -96,12 +102,13 @@ def from_github_live():
 
     write_env_file(env_lines, "live-sync")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Superhuman environment setup script.")
     parser.add_argument(
-        '--live-sync',
-        action='store_true',
-        help="Perform a live sync from GitHub secrets instead of using system env."
+        "--live-sync",
+        action="store_true",
+        help="Perform a live sync from GitHub secrets instead of using system env.",
     )
     args = parser.parse_args()
 
@@ -112,6 +119,8 @@ def main():
 
     print("\n🎉 Environment setup complete.")
 
+
 if __name__ == "__main__":
     import json  # Import json only when needed
+
     main()

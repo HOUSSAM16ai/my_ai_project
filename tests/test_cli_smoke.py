@@ -1,10 +1,13 @@
 # tests/test_cli_smoke.py
 import os
-import sys
 import subprocess
-from click.testing import CliRunner
-from app.cli import cli
+import sys
+
 import pytest
+from click.testing import CliRunner
+
+from app.cli import cli
+
 
 @pytest.fixture
 def test_db_path():
@@ -31,12 +34,13 @@ def setup_test_environment(db_url):
     env["LOG_LEVEL"] = "INFO"
     env["SECRET_KEY"] = "test-secret-key"
 
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    if 'PYTHONPATH' in env:
-        env['PYTHONPATH'] = f"{project_root}:{env['PYTHONPATH']}"
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if "PYTHONPATH" in env:
+        env["PYTHONPATH"] = f"{project_root}:{env['PYTHONPATH']}"
     else:
-        env['PYTHONPATH'] = project_root
+        env["PYTHONPATH"] = project_root
     return env
+
 
 def test_seed_dry_run_returns_zero_subprocess(test_db_path):
     """
@@ -47,7 +51,9 @@ def test_seed_dry_run_returns_zero_subprocess(test_db_path):
     # Create tables
     res_create = subprocess.run(
         [sys.executable, "-m", "app.cli", "db", "create-all"],
-        env=env, capture_output=True, text=True
+        env=env,
+        capture_output=True,
+        text=True,
     )
     print("STDOUT (create-all):", res_create.stdout)
     print("STDERR (create-all):", res_create.stderr)
@@ -56,7 +62,9 @@ def test_seed_dry_run_returns_zero_subprocess(test_db_path):
     # Seed data
     res_seed = subprocess.run(
         [sys.executable, "-m", "app.cli", "db", "seed", "--dry-run"],
-        env=env, capture_output=True, text=True
+        env=env,
+        capture_output=True,
+        text=True,
     )
 
     print("STDOUT (seed):", res_seed.stdout)
@@ -64,6 +72,7 @@ def test_seed_dry_run_returns_zero_subprocess(test_db_path):
 
     assert res_seed.returncode == 0
     assert "dry-run: rolling back" in res_seed.stdout
+
 
 def test_seed_dry_run_returns_zero_runner(test_db_path):
     """

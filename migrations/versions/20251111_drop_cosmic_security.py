@@ -7,8 +7,8 @@ Create Date: 2025-11-14 16:08:14.088745
 """
 
 # revision identifiers, used by Alembic.
-revision = '20251111_drop_cosmic_security'
-down_revision = '20251107_rename_metadata'
+revision = "20251111_drop_cosmic_security"
+down_revision = "20251107_rename_metadata"
 branch_labels = None
 depends_on = None
 

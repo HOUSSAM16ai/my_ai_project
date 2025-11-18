@@ -2,6 +2,7 @@
 FastAPI Dependencies
 Central location for all dependency injection functions.
 """
+
 from collections.abc import Generator
 
 from sqlalchemy.orm import Session

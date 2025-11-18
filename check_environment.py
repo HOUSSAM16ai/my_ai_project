@@ -2,6 +2,7 @@
 """
 Check environment configuration for OPENROUTER_API_KEY
 """
+
 import os
 import sys
 
@@ -10,20 +11,22 @@ print("🔍 ENVIRONMENT CONFIGURATION CHECK")
 print("=" * 70)
 
 # Check if we're in Codespaces
-is_codespaces = os.getenv('CODESPACES', 'false') == 'true'
+is_codespaces = os.getenv("CODESPACES", "false") == "true"
 print(f"\n📍 Environment: {'GitHub Codespaces' if is_codespaces else 'Local/Other'}")
 
 # Check for OPENROUTER_API_KEY
-openrouter_key = os.getenv('OPENROUTER_API_KEY')
+openrouter_key = os.getenv("OPENROUTER_API_KEY")
 
 if openrouter_key:
     # Show only first and last 4 characters for security
-    masked_key = f"{openrouter_key[:7]}...{openrouter_key[-4:]}" if len(openrouter_key) > 11 else "***"
+    masked_key = (
+        f"{openrouter_key[:7]}...{openrouter_key[-4:]}" if len(openrouter_key) > 11 else "***"
+    )
     print(f"✅ OPENROUTER_API_KEY: Found ({masked_key})")
     print(f"   Length: {len(openrouter_key)} characters")
-    
+
     # Validate format
-    if openrouter_key.startswith('sk-or-v1-'):
+    if openrouter_key.startswith("sk-or-v1-"):
         print("   Format: ✅ Valid OpenRouter format")
     else:
         print("   Format: ⚠️  Unexpected format (should start with 'sk-or-v1-')")
@@ -38,10 +41,10 @@ else:
 
 # Check other important variables
 print("\n📋 Other Configuration:")
-for key in ['SECRET_KEY', 'DATABASE_URL', 'DEFAULT_AI_MODEL']:
+for key in ["SECRET_KEY", "DATABASE_URL", "DEFAULT_AI_MODEL"]:
     value = os.getenv(key)
     if value:
-        if 'KEY' in key or 'PASSWORD' in key:
+        if "KEY" in key or "PASSWORD" in key:
             print(f"   ✅ {key}: Set (hidden)")
         else:
             preview = value[:50] + "..." if len(value) > 50 else value
