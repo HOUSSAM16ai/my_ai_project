@@ -6,13 +6,13 @@ This test suite verifies that the dependency-injected services are correctly
 integrated with the FastAPI application and that the key API endpoints
 function as expected.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.core.factories import get_db_service
+from app.main import app
 from app.services.database_service import DatabaseService
 
 
@@ -22,7 +22,8 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-def test_system_health_endpoint_healthy_integration(client: TestClient):
+@pytest.mark.asyncio
+async def test_system_health_endpoint_healthy_integration(client: TestClient):
     """
     GIVEN a running application with a healthy database connection
     WHEN the /system/health endpoint is called
@@ -31,10 +32,14 @@ def test_system_health_endpoint_healthy_integration(client: TestClient):
     # ARRANGE
     # Mock the DatabaseService to simulate a healthy database
     mock_db_service = MagicMock(spec=DatabaseService)
-    mock_db_service.get_database_health.return_value = {
-        "status": "healthy",
-        "checks": {"connection": {"status": "ok"}},
-    }
+
+    async def mock_get_database_health():
+        return {
+            "status": "healthy",
+            "checks": {"connection": {"status": "ok"}},
+        }
+
+    mock_db_service.get_database_health = mock_get_database_health
 
     # Override the dependency to use our mock
     app.dependency_overrides[get_db_service] = lambda: mock_db_service
@@ -52,7 +57,8 @@ def test_system_health_endpoint_healthy_integration(client: TestClient):
     app.dependency_overrides = {}
 
 
-def test_system_health_endpoint_unhealthy_integration(client: TestClient):
+@pytest.mark.asyncio
+async def test_system_health_endpoint_unhealthy_integration(client: TestClient):
     """
     GIVEN a running application with an unhealthy database connection
     WHEN the /system/health endpoint is called
@@ -61,10 +67,14 @@ def test_system_health_endpoint_unhealthy_integration(client: TestClient):
     # ARRANGE
     # Mock the DatabaseService to simulate an unhealthy database
     mock_db_service = MagicMock(spec=DatabaseService)
-    mock_db_service.get_database_health.return_value = {
-        "status": "error",
-        "errors": ["Database connection failed"],
-    }
+
+    async def mock_get_database_health():
+        return {
+            "status": "error",
+            "errors": ["Database connection failed"],
+        }
+
+    mock_db_service.get_database_health = mock_get_database_health
 
     # Override the dependency
     app.dependency_overrides[get_db_service] = lambda: mock_db_service

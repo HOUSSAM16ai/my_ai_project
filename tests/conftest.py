@@ -1,6 +1,6 @@
 # tests/conftest.py
 import os
-from typing import Generator
+from collections.abc import Generator
 
 # Set environment variables for testing BEFORE application imports
 # This is crucial for the settings model to validate correctly.
@@ -13,8 +13,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.dependencies import get_db
-from app.main import app
 from app.extensions import Base
+from app.main import app
 
 # Use a separate database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"

@@ -6,12 +6,22 @@ and other administrative tasks.
 """
 import json
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
-from app.core.factories import get_ai_gateway
+from app.core.factories import get_ai_gateway, get_db_service
 from app.gateways.ai_service_gateway import AIServiceGateway
+from app.services.database_service import DatabaseService
+
+
+class ChatRequest(BaseModel):
+    """Request model for the chat endpoint."""
+
+    question: str
+    conversation_id: str | None = None
+
 
 router = APIRouter(
     prefix="/admin",
@@ -33,7 +43,7 @@ async def get_dashboard(request: Request):
 
 @router.post("/api/chat/stream", summary="Admin Chat Streaming Endpoint")
 async def chat_stream(
-    request: Request,
+    chat_request: ChatRequest,
     gateway: AIServiceGateway = Depends(get_ai_gateway),
 ):
     """
@@ -41,29 +51,16 @@ async def chat_stream(
     Processes the incoming question and streams back the response chunk by chunk,
     using a dependency-injected AI Service Gateway.
     """
-    try:
-        body = await request.json()
-        question = body.get("question", "")
-        if not question or not question.strip():
-
-            async def error_stream():
-                error_payload = {"type": "error", "payload": {"error": "Question is required."}}
-                yield f"data: {json.dumps(error_payload)}\\n\\n"
-
-            return StreamingResponse(error_stream(), media_type="text/event-stream")
-    except json.JSONDecodeError:
-
-        async def error_stream():
-            error_payload = {"type": "error", "payload": {"error": "Invalid JSON payload."}}
-            yield f"data: {json.dumps(error_payload)}\\n\\n"
-
-        return StreamingResponse(error_stream(), media_type="text/event-stream")
+    question = chat_request.question
+    if not question or not question.strip():
+        # This is a simplified error handling. In a real app, you might want a more robust SSE error stream.
+        raise HTTPException(status_code=400, detail="Question is required.")
 
     async def response_generator():
         try:
             # In a real app, user_id and conversation_id would come from the session or request context.
             user_id = "admin_user_http_stream"  # Placeholder
-            conversation_id = body.get("conversation_id")
+            conversation_id = chat_request.conversation_id
             for chunk in gateway.stream_chat(question, conversation_id, user_id):
                 yield f"data: {json.dumps(chunk)}\\n\\n"
         except Exception as e:

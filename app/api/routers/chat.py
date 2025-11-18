@@ -3,7 +3,7 @@ import json
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from app.dependencies import get_ai_service_gateway_dependency
+from app.core.factories import get_ai_gateway
 from app.gateways.ai_service_gateway import AIServiceGateway
 
 router = APIRouter(
@@ -14,7 +14,7 @@ router = APIRouter(
 @router.websocket("/ws/chat")
 async def chat_websocket(
     websocket: WebSocket,
-    gateway: AIServiceGateway = Depends(get_ai_service_gateway_dependency),
+    gateway: AIServiceGateway = Depends(get_ai_gateway),
 ):
     """
     The main WebSocket endpoint for the admin chat.

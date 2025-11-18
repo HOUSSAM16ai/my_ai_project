@@ -31,7 +31,7 @@ async def health_check(db_service: DatabaseService = Depends(get_db_service)):
     - Returns a 200 OK status if all checks pass.
     - Returns a 503 Service Unavailable if a dependency is unhealthy.
     """
-    db_health = db_service.get_database_health()
+    db_health = await db_service.get_database_health()
 
     if db_health["status"] != "healthy":
         return JSONResponse(
