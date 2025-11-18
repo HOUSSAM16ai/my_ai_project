@@ -1,0 +1,9 @@
+Total matches: 345
+Total unique files: 114
+
+Top 5 files with the most matches:
+     16 ./app/main.py
+     14 ./app/services/data_mesh_service.py
+     14 ./app/security/secure_templates.py
+     13 ./app/services/chaos_engineering.py
+      9 ./app/services/gitops_policy_service.py
