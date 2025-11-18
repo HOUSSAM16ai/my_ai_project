@@ -95,7 +95,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # from app import db, login_manager # Removed Flask Dependency
-from .extensions import db  # Corrected import for SQLAlchemy
+from app.core.database import Base
 
 # ======================================================================================
 # CONFIG / CONSTANTS (اختياري — يعكس قيد الهجرة إذا كان مفعلاً)
@@ -278,7 +278,7 @@ class Timestamped:
 # ======================================================================================
 
 
-class User(Timestamped, db.Model):
+class User(Timestamped, Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -313,7 +313,7 @@ class User(Timestamped, db.Model):
 # ======================================================================================
 
 
-class AdminConversation(Timestamped, db.Model):
+class AdminConversation(Timestamped, Base):
     """
     محادثات الأدمن - نظام تسجيل خارق للمحادثات
     تصميم احترافي يتفوق على الشركات العملاقة مثل OpenAI و Microsoft و Google
@@ -382,7 +382,7 @@ class AdminConversation(Timestamped, db.Model):
                 self.last_message_at = max(message_times)
 
 
-class AdminMessage(Timestamped, db.Model):
+class AdminMessage(Timestamped, Base):
     """
     رسائل محادثات الأدمن - تسجيل دقيق لكل رسالة
     نظام تتبع متقدم يحفظ كل التفاصيل مع metadata كاملة
@@ -444,7 +444,7 @@ class AdminMessage(Timestamped, db.Model):
 # ======================================================================================
 
 
-class PromptTemplate(Timestamped, db.Model):
+class PromptTemplate(Timestamped, Base):
     """
     نموذج قوالب Prompt Engineering الخارقة (SUPERHUMAN PROMPT TEMPLATES)
 
@@ -501,7 +501,7 @@ class PromptTemplate(Timestamped, db.Model):
         return f"<PromptTemplate id={self.id} name={self.name!r} category={self.category}>"
 
 
-class GeneratedPrompt(Timestamped, db.Model):
+class GeneratedPrompt(Timestamped, Base):
     """
     سجل Prompts المولدة (GENERATED PROMPTS HISTORY)
 
@@ -578,7 +578,7 @@ class GeneratedPrompt(Timestamped, db.Model):
 # ======================================================================================
 
 
-class ExistentialProtocol(Timestamped, db.Model):
+class ExistentialProtocol(Timestamped, Base):
     __tablename__ = "existential_protocols"
     id: Mapped[int] = mapped_column(primary_key=True)
     protocol_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
@@ -595,7 +595,7 @@ class ExistentialProtocol(Timestamped, db.Model):
     metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
 
 
-class ConsciousnessSignature(Timestamped, db.Model):
+class ConsciousnessSignature(Timestamped, Base):
     __tablename__ = "consciousness_signatures"
     id: Mapped[int] = mapped_column(primary_key=True)
     entity_name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -606,7 +606,7 @@ class ConsciousnessSignature(Timestamped, db.Model):
     metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
 
 
-class Mission(Timestamped, db.Model):
+class Mission(Timestamped, Base):
     __tablename__ = "missions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -680,7 +680,7 @@ class Mission(Timestamped, db.Model):
         )
 
 
-class MissionPlan(Timestamped, db.Model):
+class MissionPlan(Timestamped, Base):
     __tablename__ = "mission_plans"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -713,7 +713,7 @@ class MissionPlan(Timestamped, db.Model):
         return f"<MissionPlan id={self.id} v={self.version} planner={self.planner_name} score={self.score}>"
 
 
-class Task(Timestamped, db.Model):
+class Task(Timestamped, Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -815,7 +815,7 @@ class Task(Timestamped, db.Model):
         return f"<Task id={self.id} key={self.task_key} status={self.status.value}>"
 
 
-class MissionEvent(Timestamped, db.Model):
+class MissionEvent(Timestamped, Base):
     __tablename__ = "mission_events"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -838,7 +838,7 @@ class MissionEvent(Timestamped, db.Model):
         return f"<MissionEvent id={self.id} type={self.event_type.value}>"
 
 
-class CosmicGovernanceCouncil(Timestamped, db.Model):
+class CosmicGovernanceCouncil(Timestamped, Base):
     __tablename__ = "cosmic_governance_councils"
     id: Mapped[int] = mapped_column(primary_key=True)
     council_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
@@ -854,7 +854,7 @@ class CosmicGovernanceCouncil(Timestamped, db.Model):
     metadata_json: Mapped[dict | None] = mapped_column(JSONB_or_JSON)
 
 
-class ExistentialTransparencyLog(Timestamped, db.Model):
+class ExistentialTransparencyLog(Timestamped, Base):
     __tablename__ = "existential_transparency_logs"
     id: Mapped[int] = mapped_column(primary_key=True)
     event_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)

@@ -12,13 +12,13 @@ x-common-environment: &common-environment
 
 services:
   # ----------------------------------------------------------------------------------
-  # The Web Service (Main App) - FastAPI, ASGI, Production-Ready
+  # The Unified Reality Kernel Service
   # ----------------------------------------------------------------------------------
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cogniforge-web-app
+    container_name: cogniforge-unified-reality
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -29,30 +29,6 @@ services:
       PORT: 5000  # Pass the port to the container for the healthcheck
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
-  # ----------------------------------------------------------------------------------
-  # The Standalone AI Service - Hardened for Production
-  # ----------------------------------------------------------------------------------
-  ai_service_standalone:
-    build:
-      context: ./ai_service_standalone
-    container_name: cogniforge-ai-service
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    networks:
-      - appnet
-    environment:
-      <<: *common-environment
-      PORT: 8000
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
-    healthcheck:
-      # Assuming the AI service also has a /health endpoint
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
       timeout: 5s
       retries: 3

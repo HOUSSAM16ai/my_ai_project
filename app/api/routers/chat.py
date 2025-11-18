@@ -3,8 +3,8 @@ import json
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from app.core.factories import get_ai_gateway
-from app.gateways.ai_service_gateway import AIServiceGateway
+from app.core.ai_gateway import AIClient, get_ai_client
+
 
 router = APIRouter(
     tags=["Chat"],
@@ -14,33 +14,30 @@ router = APIRouter(
 @router.websocket("/ws/chat")
 async def chat_websocket(
     websocket: WebSocket,
-    gateway: AIServiceGateway = Depends(get_ai_gateway),
+    ai_client: AIClient = Depends(get_ai_client),
 ):
     """
     The main WebSocket endpoint for the admin chat.
-    Handles the connection, receives messages, and streams back AI responses
-    using a dependency-injected AI Service Gateway.
+    This has been migrated to use the ENERGY-ENGINE for AI communication.
     """
     await websocket.accept()
-    user_id = "admin_user_websocket"  # Placeholder for authenticated user
 
     try:
         while True:
             question = await websocket.receive_text()
 
-            async def response_generator():
-                try:
-                    # Stream the response directly from the gateway
-                    for chunk in gateway.stream_chat(question, None, user_id):
-                        yield chunk
-                except Exception as e:
-                    yield {
-                        "type": "error",
-                        "payload": {"error": f"Failed to connect to AI service: {e}"},
-                    }
-
-            async for chunk in response_generator():
-                await websocket.send_text(json.dumps(chunk))
+            try:
+                async for chunk in ai_client.stream_chat([{"role": "user", "content": question}]):
+                    await websocket.send_text(json.dumps(chunk))
+            except Exception as e:
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "payload": {"error": f"Failed to connect to AI service: {e}"},
+                        }
+                    )
+                )
 
     except WebSocketDisconnect:
         print("Client disconnected from chat WebSocket.")

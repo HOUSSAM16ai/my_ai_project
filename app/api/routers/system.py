@@ -7,9 +7,10 @@ load balancers and uptime monitors.
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
-from app.core.factories import get_db_service
-from app.services.database_service import DatabaseService
+from app.core.database import get_db
 
 router = APIRouter(
     prefix="/system",
@@ -22,21 +23,25 @@ router = APIRouter(
     summary="Application Health Check",
     response_description="Returns the operational status of the application and its dependencies.",
 )
-async def health_check(db_service: DatabaseService = Depends(get_db_service)):
+async def health_check(db: AsyncSession = Depends(get_db)):
     """
     Provides a comprehensive health check endpoint.
 
     - Verifies the application is running.
-    - **Verifies connectivity and health of the database.**
+    - **Verifies connectivity to the database.**
     - Returns a 200 OK status if all checks pass.
     - Returns a 503 Service Unavailable if a dependency is unhealthy.
     """
-    db_health = await db_service.get_database_health()
+    try:
+        # A simple query to check database connectivity.
+        await db.execute(text("SELECT 1"))
+        db_status = "healthy"
+        status_code = status.HTTP_200_OK
+    except Exception:
+        db_status = "unhealthy"
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
-    if db_health["status"] != "healthy":
-        return JSONResponse(
-            content=db_health,
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
-
-    return JSONResponse(content=db_health, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        content={"application": "ok", "database": db_status},
+        status_code=status_code,
+    )
