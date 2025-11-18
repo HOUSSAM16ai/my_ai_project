@@ -26,7 +26,6 @@ from sqlalchemy import func, inspect, select, text
 from sqlalchemy.orm import Session, class_mapper
 
 from app.config.settings import AppSettings as Settings
-from app.core.di import get_logger, get_session, get_settings
 from app.utils.model_registry import ModelRegistry
 
 

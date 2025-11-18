@@ -7,15 +7,16 @@ It uses an in-memory SQLite database to ensure tests are fast, repeatable,
 and do not have external dependencies.
 """
 
+from logging import getLogger
+
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.services.database_service import DatabaseService
+from app.config.settings import AppSettings
 from app.extensions import Base  # Import the actual Base
 from app.models import User  # Import a representative model
-from app.config.settings import AppSettings
-from logging import getLogger
+from app.services.database_service import DatabaseService
 
 
 @pytest.fixture(scope="module")
