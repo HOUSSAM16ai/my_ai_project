@@ -1,0 +1,68 @@
+.github/dependabot.yml:77:      flask-ecosystem:
+.github/dependabot.yml:79:          - "flask*"
+.github/dependabot.yml:105:      # - dependency-name: "flask"
+.github/workflows/ultimate-ci.yml:204:          FLASK_ENV: testing
+.github/workflows/code-quality.yml:272:          pip install mypy types-requests types-PyYAML types-Flask
+.github/workflows/code-quality.yml:400:          FLASK_ENV: testing
+.github/workflows/ci.yml:40:          FLASK_ENV: testing
+.github/workflows/required-ci.yml:56:          FLASK_ENV: testing
+.github/workflows/migration-readiness.yml:32:      - name: Inventory: find flask/fastapi/websocket patterns
+.github/workflows/migration-readiness.yml:34:          mkdir -p artifacts/inventory-ws-flask/tmp
+.github/workflows/migration-readiness.yml:35:          HITS="artifacts/inventory-ws-flask/hits.txt"
+.github/workflows/migration-readiness.yml:38:          for p in "from flask" "import flask" "flask\." "current_app" "app_context" "flask_login" "flask_socketio" "socketio" "FastAPI" "uvicorn" "asgiref" "WebSocket" "websocket" "render_template"; do
+.github/workflows/migration-readiness.yml:41:          awk -F: '{print $1}' "$HITS" | sort -u > artifacts/inventory-ws-flask/files.txt || true
+.github/workflows/migration-readiness.yml:42:          mkdir -p artifacts/inventory-ws-flask/snippets
+.github/workflows/migration-readiness.yml:47:            sed -n '1,200p' "$f" > "artifacts/inventory-ws-flask/snippets/${safe}.snip" || true
+.github/workflows/migration-readiness.yml:48:          done < artifacts/inventory-ws-flask/files.txt || true
+.github/workflows/migration-readiness.yml:50:          TOTAL_FILES=$(wc -l < artifacts/inventory-ws-flask/files.txt || echo 0)
+.github/workflows/migration-readiness.yml:51:          awk -F: '{print $1}' "$HITS" | sort | uniq -c | sort -rn > artifacts/inventory-ws-flask/top_by_count.txt || true
+.github/workflows/migration-readiness.yml:52:          echo "Total matches: $TOTAL_HITS" > artifacts/inventory-ws-flask/summary.txt
+.github/workflows/migration-readiness.yml:53:          echo "Total unique files: $TOTAL_FILES" >> artifacts/inventory-ws-flask/summary.txt
+.github/workflows/migration-readiness.yml:54:          echo "" >> artifacts/inventory-ws-flask/summary.txt
+.github/workflows/migration-readiness.yml:55:          echo "Top files by matches (top 20):" >> artifacts/inventory-ws-flask/summary.txt
+.github/workflows/migration-readiness.yml:56:          head -n 20 artifacts/inventory-ws-flask/top_by_count.txt >> artifacts/inventory-ws-flask/summary.txt || true
+.github/workflows/migration-readiness.yml:57:          tar -czf flask-inventory-$(date +%s).tgz -C artifacts inventory-ws-flask || true
+.github/workflows/migration-readiness.yml:58:          ls -lh flask-inventory-*.tgz || true
+.github/workflows/migration-readiness.yml:60:      - name: Install lightweight dev deps for smoke (no Flask)
+.github/workflows/migration-readiness.yml:64:          # do not install Flask; we want to detect if it is required.
+.github/workflows/migration-readiness.yml:89:      - name: Check installed Flask packages (pip freeze)
+.github/workflows/migration-readiness.yml:91:          pip freeze | grep -i "flask" || true
+.github/workflows/migration-readiness.yml:92:          pip freeze | grep -i "flask_" || true
+.github/workflows/migration-readiness.yml:100:            artifacts/inventory-ws-flask/*
+.github/workflows/migration-readiness.yml:101:            flask-inventory-*.tgz
+.github/workflows/comprehensive-security-test.yml:56:          TESTING: "1"  # Prevent Flask app initialization during security scan
+.github/workflows/full-test-suite.yml:53:          FLASK_ENV: testing
+.github/workflows/professional-ci.yml:146:          FLASK_ENV: testing
+.github/workflows/docker-optimized.yml:62:          FLASK_ENV: testing
+.github/copilot-instructions.md:5:CogniForge is an advanced, AI-powered educational platform built with Flask that combines cutting-edge technology with intuitive design. The platform features:
+.github/copilot-instructions.md:15:- **Framework**: Flask (Python web framework)
+.github/copilot-instructions.md:19:- **Authentication**: Flask-Login with JWT support
+.github/copilot-instructions.md:25:- **Templates**: Jinja2 (Flask templating)
+.github/copilot-instructions.md:35:├── cli/                  # Flask CLI commands (users, database, overmind)
+.github/copilot-instructions.md:121:# Flask
+.github/copilot-instructions.md:122:FLASK_DEBUG=1
+.github/copilot-instructions.md:144:flask db migrate -m "description"
+.github/copilot-instructions.md:147:flask db upgrade
+.github/copilot-instructions.md:150:flask db downgrade
+.github/copilot-instructions.md:156:flask db health
+.github/copilot-instructions.md:157:flask db stats
+.github/copilot-instructions.md:158:flask db tables
+.github/copilot-instructions.md:159:flask db schema <table_name>
+.github/copilot-instructions.md:160:flask db optimize
+.github/copilot-instructions.md:163:flask users create-admin
+.github/copilot-instructions.md:164:flask users list
+.github/copilot-instructions.md:165:flask users create --email user@example.com --name "User Name"
+.github/copilot-instructions.md:168:flask overmind list
+.github/copilot-instructions.md:169:flask overmind create --objective "Task description"
+.github/copilot-instructions.md:170:flask overmind status <mission_id>
+.github/copilot-instructions.md:277:- Regular backups (use `flask db backup`)
+.github/copilot-instructions.md:291:- Run `flask db optimize` periodically
+.github/copilot-instructions.md:357:from flask import Blueprint, jsonify, request
+.github/copilot-instructions.md:399:5. Use `flask db health` to test connection
+.github/copilot-instructions.md:402:1. Check current migration status: `flask db current`
+.github/copilot-instructions.md:405:4. Try downgrade then upgrade: `flask db downgrade` → `flask db upgrade`
+.github/copilot-instructions.md:443:flask run
+.github/copilot-instructions.md:449:flask db upgrade
+.github/copilot-instructions.md:450:flask db health
+.github/copilot-instructions.md:451:flask users create-admin
+.github/copilot-instructions.md:461:flask shell
