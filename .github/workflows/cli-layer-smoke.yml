@@ -1,0 +1,40 @@
+name: CLI Layer Smoke
+on:
+  push:
+    paths:
+      - 'app/cli.py'
+      - 'app/cli_handlers/**'
+      - 'app/core/**'
+      - 'app/db/**'
+      - 'migrations/env.py'
+      - 'tests/test_cli_smoke.py'
+  pull_request:
+    paths:
+      - 'app/cli.py'
+      - 'app/cli_handlers/**'
+      - 'app/core/**'
+      - 'app/db/**'
+      - 'migrations/env.py'
+      - 'tests/test_cli_smoke.py'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check .
+      - name: Run smoke tests
+        run: |
+          pytest -q tests/test_cli_smoke.py

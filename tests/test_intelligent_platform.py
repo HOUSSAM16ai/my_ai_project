@@ -2,7 +2,6 @@
 """
 Tests for Intelligent Service Platform
 """
-from tests._helpers import parse_response_json
 from datetime import UTC, datetime
 
 import pytest
@@ -39,6 +38,7 @@ from app.services.workflow_orchestration_service import (
     WorkflowDefinition,
     get_workflow_orchestration_service,
 )
+from tests._helpers import parse_response_json
 
 
 class TestDataMeshService:

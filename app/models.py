@@ -75,21 +75,23 @@ from typing import Any
 # from flask_login import UserMixin # Removed Flask Dependency
 from sqlalchemy import (
     JSON as SAJSON,
-    DateTime,
-    String,
-    Integer,
+)
+from sqlalchemy import (
     Boolean,
-    Text,
+    DateTime,
+    Enum,
     Float,
-    Numeric,
     ForeignKey,
     Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
     TypeDecorator,
     UniqueConstraint,
     event,
     func,
     text,
-    Enum,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship

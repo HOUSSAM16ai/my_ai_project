@@ -2,8 +2,9 @@
 
 import os
 
-from app import create_app
 from app.cli.main import app as typer_app
+
+from app import create_app
 
 # --- [THE WORLD-AWAKENING PROTOCOL] ---
 # STEP 1: We forge a minimal instance of our Flask application.

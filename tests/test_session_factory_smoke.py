@@ -1,6 +1,7 @@
 # tests/test_session_factory_smoke.py
 
 import os
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session

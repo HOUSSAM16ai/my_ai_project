@@ -18,6 +18,7 @@
 
 import hashlib
 import json
+import logging
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -29,7 +30,6 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-import logging
 from flask import g, jsonify, request
 
 logger = logging.getLogger(__name__)

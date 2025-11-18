@@ -1,30 +1,28 @@
 # app/core/di.py
-import logging
-from typing import cast
+from typing import Optional
+from app.config.settings import get_settings as _get_settings
+from app.core.cli_session import get_session_factory
+from app.core.cli_logging import create_logger
 
-from sqlalchemy.orm import Session
+_settings_singleton = None
+_session_factory_singleton = None
 
-from app.config.settings import AppSettings, get_settings as get_app_settings
-from app.core.logging import create_logger
-from app.db.session_factory import create_session
+def get_settings(env: Optional[str] = None):
+    global _settings_singleton
+    if _settings_singleton is None:
+        if env:
+            _settings_singleton = _get_settings()
+        else:
+            _settings_singleton = _get_settings()
+    return _settings_singleton
 
+def get_session():
+    global _session_factory_singleton
+    if _session_factory_singleton is None:
+        settings = get_settings()
+        _session_factory_singleton = get_session_factory(settings.DATABASE_URL)
+    return _session_factory_singleton
 
-def get_settings() -> AppSettings:
-    """
-    Returns the application settings.
-    """
-    return get_app_settings()
-
-
-def get_session() -> Session:
-    """
-    Returns a new SQLAlchemy session.
-    """
-    return create_session()
-
-
-def get_logger(name: str) -> logging.Logger:
-    """
-    Returns a configured logger instance.
-    """
-    return create_logger(name)
+def get_logger(settings=None):
+    settings = settings or get_settings()
+    return create_logger(settings)

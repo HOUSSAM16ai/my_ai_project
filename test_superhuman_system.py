@@ -14,8 +14,9 @@ This demonstrates:
 """
 
 from flask import Flask, jsonify
-from tests._helpers import parse_response_json
+
 from app.middleware.superhuman_security import init_superhuman_security
+from tests._helpers import parse_response_json
 
 
 def create_test_app():

@@ -1,7 +1,8 @@
 # tests/test_fastapi_health.py
-import pytest
 from fastapi.testclient import TestClient
+
 from app.api.main import create_app
+
 
 def test_health():
     app = create_app()

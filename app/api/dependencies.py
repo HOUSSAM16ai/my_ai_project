@@ -1,4 +1,5 @@
-from typing import Generator
+from collections.abc import Generator
+
 # from app.db import SessionLocal  # Use the project's existing session if available
 
 def get_db() -> Generator:

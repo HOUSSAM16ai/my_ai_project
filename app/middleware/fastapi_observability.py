@@ -1,12 +1,14 @@
 # app/middleware/fastapi_observability.py
+import time
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
-import time
+
 from app.telemetry.unified_observability import (
     TraceContext,
     get_unified_observability,
 )
+
 
 class FastAPIObservabilityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

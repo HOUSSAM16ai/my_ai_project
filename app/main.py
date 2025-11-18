@@ -1,9 +1,10 @@
 # app/main.py
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
 import asyncio
 import time
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 app = FastAPI(title="CogniForge - Unified ASGI Service")
 
@@ -43,8 +44,9 @@ async def chat_stream(request: Request):
     Handles POST requests to initiate a chat stream.
     Processes the incoming question and streams back the response chunk by chunk.
     """
-    from app.services.ai_service_gateway import get_ai_service_gateway
     import json
+
+    from app.services.ai_service_gateway import get_ai_service_gateway
 
     try:
         body = await request.json()
@@ -83,8 +85,8 @@ async def chat_stream(request: Request):
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
@@ -106,9 +108,10 @@ async def get_dashboard(request: Request):
 
 
 import os
-import jwt
+from datetime import UTC, datetime, timedelta
+
 import httpx
-from datetime import datetime, timedelta, timezone
+import jwt
 
 # --- AI Service Configuration ---
 AI_SERVICE_URL = os.environ.get("AI_SERVICE_URL", "http://ai_service_standalone:8000")
@@ -118,8 +121,8 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "a-super-secret-key-that-you-should-ch
 def _generate_service_token(user_id: str) -> str:
     """Generates a short-lived JWT for authenticating with the AI service."""
     payload = {
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
-        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "iat": datetime.now(UTC),
         "sub": user_id,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")

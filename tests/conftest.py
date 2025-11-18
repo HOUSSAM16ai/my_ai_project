@@ -3,16 +3,17 @@ PyTest configuration and fixtures.
 """
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.dependencies import get_db
 from app.extensions import Base
-from tests.database import get_test_db, engine
+from app.main import app
+from tests.database import engine, get_test_db
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
     """Create test database schema once for all tests."""
     # Import all models here so Base knows about them
-    from app import models
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -49,8 +50,9 @@ def db_session():
 @pytest.fixture(scope="module")
 def user_factory(db_session):
     """A factory for creating users."""
-    from app.models import User
     from faker import Faker
+
+    from app.models import User
     fake = Faker()
     def _create_user(**kwargs):
         if 'email' not in kwargs:

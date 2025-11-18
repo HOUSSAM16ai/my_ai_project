@@ -10,7 +10,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from app.services.admin_ai_service import AdminAIService
-from app.extensions import db
 
 
 @pytest.fixture

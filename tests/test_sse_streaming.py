@@ -12,6 +12,7 @@ authentication, and streams data in the correct format.
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from tests._helpers import parse_response_json
 
 
