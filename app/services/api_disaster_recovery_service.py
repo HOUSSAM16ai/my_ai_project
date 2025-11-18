@@ -318,9 +318,7 @@ class DisasterRecoveryService:
                 "steps_failed": [],
             }
 
-            logging.critical(
-                f"DISASTER RECOVERY INITIATED: {plan.name} by {initiated_by}"
-            )
+            logging.critical(f"DISASTER RECOVERY INITIATED: {plan.name} by {initiated_by}")
 
             # In production, this would execute the automated steps
             # For now, we log the plan
@@ -490,9 +488,7 @@ class OnCallIncidentService:
         # Trigger escalation
         self._trigger_escalation(incident)
 
-        logging.error(
-            f"INCIDENT CREATED [{severity.value.upper()}]: {title} ({incident_id})"
-        )
+        logging.error(f"INCIDENT CREATED [{severity.value.upper()}]: {title} ({incident_id})")
 
         return incident_id
 
@@ -533,9 +529,7 @@ class OnCallIncidentService:
                 }
             )
 
-            logging.info(
-                f"Incident {incident_id} status: {old_status.value} -> {new_status.value}"
-            )
+            logging.info(f"Incident {incident_id} status: {old_status.value} -> {new_status.value}")
 
             return True
 

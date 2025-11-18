@@ -39,7 +39,10 @@ def test_chat_stream_authentication(client):
     response = client.post("/admin/api/chat/stream", json={"question": "test"})
     # SUPERHUMAN FIX: API calls should return 401, not a 302 redirect.
     assert response.status_code == 401
-    assert parse_response_json(response) == {"error": "Unauthorized", "message": "Authentication required"}
+    assert parse_response_json(response) == {
+        "error": "Unauthorized",
+        "message": "Authentication required",
+    }
 
 
 def test_chat_stream_success_and_format(admin_user, client, mock_ai_gateway):
@@ -79,7 +82,9 @@ def test_chat_stream_gateway_unavailable_fallback(admin_user, client):
     Tests the fallback mechanism when the AI service gateway is not available.
     The system should gracefully fall back to the internal AdminAIService.
     """
-    with patch("app.services.ai_service_gateway.AIServiceGateway", return_value=None) as mock_get_gateway:
+    with patch(
+        "app.services.ai_service_gateway.AIServiceGateway", return_value=None
+    ) as mock_get_gateway:
         with patch("app.services.admin_ai_service.AdminAIService") as mock_fallback_service:
             # Configure the mock fallback service instance
             mock_instance = mock_fallback_service.return_value

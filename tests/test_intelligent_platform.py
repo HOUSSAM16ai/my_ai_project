@@ -2,6 +2,7 @@
 """
 Tests for Intelligent Service Platform
 """
+
 from datetime import UTC, datetime
 
 import pytest

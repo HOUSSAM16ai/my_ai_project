@@ -410,5 +410,3 @@ def get_observability_service() -> APIObservabilityService:
     if _observability_service is None:
         _observability_service = APIObservabilityService(sla_target_ms=20.0)
     return _observability_service
-
-

@@ -246,7 +246,8 @@ class TestSecurityAPI:
     def test_generate_token_missing_user_id(self, client):
         """Test token generation with missing user_id"""
         response = client.post(
-            "/api/security/token/generate", json={},
+            "/api/security/token/generate",
+            json={},
         )
 
         assert response.status_code == 400
@@ -256,7 +257,8 @@ class TestSecurityAPI:
     def test_verify_token_missing_token(self, client):
         """Test token verification with missing token"""
         response = client.post(
-            "/api/security/token/verify", json={},
+            "/api/security/token/verify",
+            json={},
         )
 
         assert response.status_code == 400

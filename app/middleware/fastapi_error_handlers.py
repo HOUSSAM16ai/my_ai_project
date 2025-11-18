@@ -16,9 +16,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 async def validation_error_handler(request: Request, exc: ValidationError):
-    response = ErrorResponseFactory.create_validation_error_response(
-        validation_errors=exc.messages
-    )
+    response = ErrorResponseFactory.create_validation_error_response(validation_errors=exc.messages)
     return JSONResponse(status_code=400, content=response)
 
 

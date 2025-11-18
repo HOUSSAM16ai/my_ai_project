@@ -440,9 +440,7 @@ class APIContractService:
     # API VERSIONING
     # ==================================================================================
 
-    def get_api_version(
-        self, headers: dict[str, Any], path: str
-    ) -> str:
+    def get_api_version(self, headers: dict[str, Any], path: str) -> str:
         """Get API version from request headers or default"""
         # Check for version in Accept header
         accept_header = headers.get("Accept", "")
@@ -659,5 +657,3 @@ def get_contract_service() -> APIContractService:
     if _contract_service is None:
         _contract_service = APIContractService()
     return _contract_service
-
-

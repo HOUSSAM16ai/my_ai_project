@@ -1,12 +1,24 @@
 # app/main.py
 import asyncio
+import json
+import os
 import time
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+import httpx
+import jwt
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+from app.gateways.ai_service_gateway import get_ai_service_gateway
 
 app = FastAPI(title="CogniForge - Unified ASGI Service")
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
 
 @app.get("/health", summary="Health Check Endpoint", tags=["System"])
@@ -44,52 +56,51 @@ async def chat_stream(request: Request):
     Handles POST requests to initiate a chat stream.
     Processes the incoming question and streams back the response chunk by chunk.
     """
-    import json
-
-    from app.services.ai_service_gateway import get_ai_service_gateway
-
     try:
         body = await request.json()
         question = body.get("question", "")
         if not question or not question.strip():
+
             async def error_stream():
                 error_payload = {"type": "error", "payload": {"error": "Question is required."}}
                 yield f"data: {json.dumps(error_payload)}\n\n"
+
             return StreamingResponse(error_stream(), media_type="text/event-stream")
     except Exception:
+
         async def error_stream():
             error_payload = {"type": "error", "payload": {"error": "Invalid JSON payload."}}
             yield f"data: {json.dumps(error_payload)}\n\n"
+
         return StreamingResponse(error_stream(), media_type="text/event-stream")
 
     gateway = get_ai_service_gateway()
     if not gateway:
+
         async def error_stream():
             error_payload = {
                 "type": "error",
                 "payload": {"error": "AI service is currently unavailable."},
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
+
         return StreamingResponse(error_stream(), media_type="text/event-stream")
 
     async def response_generator():
         try:
-            async for chunk in gateway.stream_chat(question=question):
+            # In a real app, you'd get the user_id and conversation_id from the session or request context
+            user_id = "admin_user_http_stream"  # Placeholder
+            conversation_id = body.get("conversation_id")
+            for chunk in gateway.stream_chat(question, conversation_id, user_id):
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
-            error_payload = {"type": "error", "payload": {"error": f"Failed to connect to AI service: {e}"}}
+            error_payload = {
+                "type": "error",
+                "payload": {"error": f"Failed to connect to AI service: {e}"},
+            }
             yield f"data: {json.dumps(error_payload)}\n\n"
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
-
-
-from fastapi import WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
 
 
 # The root endpoint can provide basic information or API documentation link
@@ -106,12 +117,6 @@ async def get_dashboard(request: Request):
         "dashboard.html", {"request": request, "current_user": {"full_name": "Admin"}}
     )
 
-
-import os
-from datetime import UTC, datetime, timedelta
-
-import httpx
-import jwt
 
 # --- AI Service Configuration ---
 AI_SERVICE_URL = os.environ.get("AI_SERVICE_URL", "http://ai_service_standalone:8000")

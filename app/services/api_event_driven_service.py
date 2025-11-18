@@ -227,9 +227,7 @@ class InMemoryBroker(MessageBroker):
                     return
 
             except Exception as e:
-                logging.error(
-                    f"Event handler error: {e} (retry {retry_count}/{max_retries})"
-                )
+                logging.error(f"Event handler error: {e} (retry {retry_count}/{max_retries})")
 
             retry_count += 1
             if retry_count <= max_retries:

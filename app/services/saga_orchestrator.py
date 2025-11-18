@@ -195,9 +195,7 @@ class SagaOrchestrator:
             },
         )
 
-        logging.info(
-            f"Saga created: {saga_name} ({saga_id}) with {len(saga_steps)} steps"
-        )
+        logging.info(f"Saga created: {saga_name} ({saga_id}) with {len(saga_steps)} steps")
 
         return saga_id
 
@@ -245,9 +243,7 @@ class SagaOrchestrator:
 
                 if not success:
                     # Step failed, start compensation
-                    logging.error(
-                        f"Saga step failed: {step.step_name}, starting compensation"
-                    )
+                    logging.error(f"Saga step failed: {step.step_name}, starting compensation")
                     self._compensate_saga(saga_id)
                     return False
 

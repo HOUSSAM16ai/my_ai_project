@@ -90,9 +90,7 @@ class TestCRUDOperations:
         test_user = user_factory(email="testupdate@test.com")
 
         update_data = {"full_name": "Updated Name"}
-        response = client.put(
-            f"/admin/api/database/record/users/{test_user.id}", json=update_data
-        )
+        response = client.put(f"/admin/api/database/record/users/{test_user.id}", json=update_data)
         assert response.status_code == 200
         data = parse_response_json(response)
         assert data["status"] == "success"
@@ -129,9 +127,7 @@ class TestValidation:
 
     def test_create_user_missing_required_field(self, client, admin_user):
         """Test creating user without required fields"""
-        user_data = {
-            "email": "test@example.com"
-        }
+        user_data = {"email": "test@example.com"}
 
         response = client.post("/admin/api/database/record/users", json=user_data)
         assert response.status_code in [400, 422, 500]
@@ -177,9 +173,7 @@ class TestPaginationAndFiltering:
         data = parse_response_json(response)
         assert data["status"] == "success"
 
-        response = client.get(
-            "/admin/api/database/table/users?order_by=full_name&order_dir=desc"
-        )
+        response = client.get("/admin/api/database/table/users?order_by=full_name&order_dir=desc")
         assert response.status_code == 200
         data = parse_response_json(response)
         assert data["status"] == "success"

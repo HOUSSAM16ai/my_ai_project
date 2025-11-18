@@ -642,6 +642,7 @@ class TestAPIGatewayService:
     def test_gateway_initialization(self):
         """Test gateway initializes correctly"""
         from app.services.api_gateway_service import APIGatewayService
+
         service = APIGatewayService()
         assert service is not None
 

@@ -98,7 +98,6 @@ def test_chat_stream_missing_question_payload(admin_user, client, admin_auth_hea
     assert chunk["type"] == "error"
     assert "Question is required" in chunk["payload"]["error"]
 
-
     # Test with question being an empty string
     response = client.post(
         "/admin/api/chat/stream", json={"question": "  "}, headers=admin_auth_headers

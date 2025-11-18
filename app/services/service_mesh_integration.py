@@ -192,9 +192,7 @@ class CircuitBreaker:
                 # Check if we should open the circuit
                 if self._should_trip():
                     self.state = CircuitState.OPEN
-                    logging.warning(
-                        f"Circuit breaker OPEN (failures: {self.failure_count})"
-                    )
+                    logging.warning(f"Circuit breaker OPEN (failures: {self.failure_count})")
 
     def _should_trip(self) -> bool:
         """Check if circuit should trip to OPEN"""
@@ -282,9 +280,7 @@ class ServiceMeshManager:
         with self.lock:
             self.services[service_name].append(endpoint)
 
-        logging.info(
-            f"Service registered: {service_name} at {host}:{port} (version: {version})"
-        )
+        logging.info(f"Service registered: {service_name} at {host}:{port} (version: {version})")
 
         return endpoint_id
 
