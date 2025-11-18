@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from app.core.factories import get_ai_gateway
 from app.gateways.ai_service_gateway import AIServiceGateway
-from app.dependencies import get_ai_service_gateway_dependency
 
 router = APIRouter(
     prefix="/admin",
@@ -34,7 +34,7 @@ async def get_dashboard(request: Request):
 @router.post("/api/chat/stream", summary="Admin Chat Streaming Endpoint")
 async def chat_stream(
     request: Request,
-    gateway: AIServiceGateway = Depends(get_ai_service_gateway_dependency),
+    gateway: AIServiceGateway = Depends(get_ai_gateway),
 ):
     """
     Handles POST requests to initiate a chat stream.
