@@ -1,0 +1,105 @@
+name: Migration Readiness - Inventory & Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    name: Inventory & Smoke imports
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Prepare workspace
+        run: |
+          python -V
+          python -m pip install --upgrade pip setuptools wheel
+
+      - name: Inventory: find flask/fastapi/websocket patterns
+        run: |
+          mkdir -p artifacts/inventory-ws-flask/tmp
+          HITS="artifacts/inventory-ws-flask/hits.txt"
+          : > "$HITS"
+          # patterns
+          for p in "from flask" "import flask" "flask\." "current_app" "app_context" "flask_login" "flask_socketio" "socketio" "FastAPI" "uvicorn" "asgiref" "WebSocket" "websocket" "render_template"; do
+            grep -R --line-number -I -E "$p" . 2>/dev/null || true
+          done | sed 's/^\.\///' > "$HITS" || true
+          awk -F: '{print $1}' "$HITS" | sort -u > artifacts/inventory-ws-flask/files.txt || true
+          mkdir -p artifacts/inventory-ws-flask/snippets
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            [ -f "$f" ] || continue
+            safe="$(echo "$f" | sed 's#[/ ]#_##g')"
+            sed -n '1,200p' "$f" > "artifacts/inventory-ws-flask/snippets/${safe}.snip" || true
+          done < artifacts/inventory-ws-flask/files.txt || true
+          TOTAL_HITS=$(wc -l < "$HITS" || echo 0)
+          TOTAL_FILES=$(wc -l < artifacts/inventory-ws-flask/files.txt || echo 0)
+          awk -F: '{print $1}' "$HITS" | sort | uniq -c | sort -rn > artifacts/inventory-ws-flask/top_by_count.txt || true
+          echo "Total matches: $TOTAL_HITS" > artifacts/inventory-ws-flask/summary.txt
+          echo "Total unique files: $TOTAL_FILES" >> artifacts/inventory-ws-flask/summary.txt
+          echo "" >> artifacts/inventory-ws-flask/summary.txt
+          echo "Top files by matches (top 20):" >> artifacts/inventory-ws-flask/summary.txt
+          head -n 20 artifacts/inventory-ws-flask/top_by_count.txt >> artifacts/inventory-ws-flask/summary.txt || true
+          tar -czf flask-inventory-$(date +%s).tgz -C artifacts inventory-ws-flask || true
+          ls -lh flask-inventory-*.tgz || true
+
+      - name: Install lightweight dev deps for smoke (no Flask)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install httpx || true
+          # do not install Flask; we want to detect if it is required.
+          pip freeze > artifacts/pip_freeze_pre.txt || true
+
+      - name: Smoke imports (critical modules)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo "SMOKE_RUN" > artifacts/smoke_results.txt
+          python - <<'PY' 2>&1 | tee artifacts/smoke_raw.log || true
+import sys
+checks = [
+    ("app.main","import app.main"),
+    ("app.services.data_mesh_service","import app.services.data_mesh_service as d"),
+    ("app.security.secure_templates","import app.security.secure_templates as s"),
+    ("app.middleware.superhuman_security","import app.middleware.superhuman_security as m"),
+]
+for name, cmd in checks:
+    try:
+        __import__(name)
+        print(name, "OK")
+    except Exception as e:
+        print(name, "ERROR:", repr(e))
+PY
+          tail -n +1 artifacts/smoke_raw.log >> artifacts/smoke_results.txt || true
+
+      - name: Check installed Flask packages (pip freeze)
+        run: |
+          pip freeze | grep -i "flask" || true
+          pip freeze | grep -i "flask_" || true
+          pip freeze > artifacts/pip_freeze_post.txt || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-readiness-artifacts
+          path: |
+            artifacts/inventory-ws-flask/*
+            flask-inventory-*.tgz
+            artifacts/pip_freeze_pre.txt
+            artifacts/pip_freeze_post.txt
+            artifacts/smoke_results.txt
+            artifacts/smoke_raw.log
