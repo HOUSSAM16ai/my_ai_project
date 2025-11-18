@@ -1,0 +1,44 @@
+# .github/workflows/settings-smoke.yml
+name: "Smoke Test: Pydantic Settings Layer"
+
+on:
+  push:
+    branches:
+      - "chore/config-pydantic-settings"
+      - "main"
+    paths:
+      - "app/config/**"
+      - "tests/test_settings_smoke.py"
+      - ".github/workflows/settings-smoke.yml"
+  pull_request:
+    paths:
+      - "app/config/**"
+      - "tests/test_settings_smoke.py"
+      - ".github/workflows/settings-smoke.yml"
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Install dependencies"
+        run: |
+          pip install -r requirements.txt
+          pip install pydantic-settings
+
+      - name: "Run Ruff linter"
+        run: ruff check app/config/ tests/test_settings_smoke.py
+
+      - name: "Run MyPy static type checker"
+        run: mypy app/config/ tests/test_settings_smoke.py --ignore-missing-imports
+
+      - name: "Run Pytest smoke test"
+        run: pytest tests/test_settings_smoke.py
