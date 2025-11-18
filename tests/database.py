@@ -3,7 +3,6 @@ Test database configuration.
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.extensions import Base
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 

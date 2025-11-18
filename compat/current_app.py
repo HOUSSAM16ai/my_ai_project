@@ -4,9 +4,9 @@ This file is intentionally minimal: it provides a `current_app` object with
 .config and .logger to avoid AttributeError when Flask is not present.
 Replace / remove this shim when full migration is done.
 """
-from types import SimpleNamespace
 import logging
 import os
+from types import SimpleNamespace
 
 # Basic logger used when Flask is not available
 _logger = logging.getLogger("compat.current_app")

@@ -3,11 +3,11 @@ import logging
 import os
 
 import pytest
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.config.settings import AppSettings
-from app.core.di import get_logger, get_settings, get_session
+from app.core.di import get_logger, get_session, get_settings
 
 
 @pytest.fixture(scope="module")

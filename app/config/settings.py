@@ -1,6 +1,5 @@
 # app/config/settings.py
 import functools
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,7 +20,7 @@ class AppSettings(BaseSettings):
         ...,
         description="The primary database connection string (e.g., 'postgresql://user:pass@host:port/db').",
     )
-    REDIS_URL: Optional[str] = Field(
+    REDIS_URL: str | None = Field(
         default=None,
         description="The Redis connection string, if used for caching or queues.",
     )
@@ -33,7 +32,7 @@ class AppSettings(BaseSettings):
     )
 
     # --- Service Integration Settings ---
-    AI_SERVICE_URL: Optional[str] = Field(
+    AI_SERVICE_URL: str | None = Field(
         default=None, description="The URL for the external AI inference service."
     )
     DEFAULT_AI_MODEL: str = Field(
@@ -58,7 +57,7 @@ class AppSettings(BaseSettings):
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_settings() -> AppSettings:
     """
     Global singleton accessor for the AppSettings instance.

@@ -1,7 +1,7 @@
 
 # app/settings.py
-import os
 from pydantic import BaseSettings
+
 
 class Settings(BaseSettings):
     SECRET_KEY: str = "a-super-secret-key-that-you-should-change"

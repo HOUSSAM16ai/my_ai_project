@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+
 def parse_response_json(response: Any) -> Any:
     """
     Unified JSON parsing helper to normalize TestClient responses across Flask, FastAPI, and Starlette.

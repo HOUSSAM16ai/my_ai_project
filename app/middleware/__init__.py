@@ -40,7 +40,6 @@ from app.middleware.core import (
 
 # CORS
 from app.middleware.cors import CORSMiddleware
-from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware
 
 # ======================================================================================
 # BACKWARD COMPATIBILITY (Legacy v1.0)
@@ -58,6 +57,7 @@ from app.middleware.error_handling import (
 
 # Factory
 from app.middleware.factory import MiddlewareFactory
+from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware
 
 # Observability mesh
 from app.middleware.observability import (

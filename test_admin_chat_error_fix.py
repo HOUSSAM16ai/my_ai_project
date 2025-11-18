@@ -13,12 +13,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tests._helpers import parse_response_json
 
+
 def test_chat_error_handling():
     """Test that chat errors return 200 with proper error details"""
     print("🧪 Testing chat error handling...")
 
     # Import here to avoid issues with Flask context
-    from flask import json
 
     from app import create_app
 

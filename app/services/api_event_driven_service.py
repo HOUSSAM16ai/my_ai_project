@@ -19,6 +19,7 @@
 #   - Event versioning and schema evolution
 
 import hashlib
+import logging
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -27,7 +28,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-import logging
 from typing import Any
 
 # Import new superhuman components

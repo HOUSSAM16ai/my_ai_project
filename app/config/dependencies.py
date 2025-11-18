@@ -1,5 +1,6 @@
 # app/config/dependencies.py
-from .settings import AppSettings, get_settings as get_cached_settings
+from .settings import AppSettings
+from .settings import get_settings as get_cached_settings
 
 
 def get_settings() -> AppSettings:

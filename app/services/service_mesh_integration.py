@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import threading
 import time
@@ -23,7 +24,6 @@ import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
-import logging
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any

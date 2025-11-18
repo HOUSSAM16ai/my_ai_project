@@ -2,9 +2,12 @@
 FastAPI Dependencies
 Central location for all dependency injection functions.
 """
-from typing import Generator
+from collections.abc import Generator
+
 from sqlalchemy.orm import Session
+
 from app.extensions import db
+
 
 def get_db() -> Generator[Session, None, None]:
     """
