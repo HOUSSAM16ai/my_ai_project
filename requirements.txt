@@ -47,3 +47,5 @@ bandit[toml]>=1.7.6
 safety>=3.0.0
 pre-commit>=3.6.0
 pydantic-settings
+python-json-logger
+aiosqlite
