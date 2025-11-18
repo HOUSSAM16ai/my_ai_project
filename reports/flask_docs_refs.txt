@@ -1,0 +1,1052 @@
+./FIX_CONSUMER_ONCOMPLETE_ERROR_AR.md:169:1. تشغيل تطبيق Flask
+./FIX_CONSUMER_ONCOMPLETE_ERROR_AR.md:171:   flask run
+./FIX_CONSUMER_ONCOMPLETE_ERROR_AR.md:261:- **Flask Streaming**: https://flask.palletsprojects.com/en/2.3.x/patterns/streaming/
+./FIX_500_ERROR_README.md:22:flask run
+./PROMPT_ENGINEERING_ARCHITECTURE.md:217:- **Backend**: Python 3.12 + Flask
+./MASSIVE_FUNCTIONS_README.md:214:   - Flask integration
+./MASSIVE_FUNCTIONS_README.md:230:from flask import Flask
+./MASSIVE_FUNCTIONS_README.md:233:app = Flask(__name__)
+./SQLALCHEMY_METADATA_FIX_COMPLETE.md:178:flask db upgrade
+./SQLALCHEMY_METADATA_FIX_COMPLETE.md:181:flask db current
+./SQLALCHEMY_METADATA_FIX_COMPLETE.md:191:flask db downgrade
+./VISUAL_SUCCESS_SUMMARY.md:71:        │     Flask Admin Routes                          │
+./VISUAL_SUCCESS_SUMMARY.md:193:║      flask run → Open /admin/dashboard                         ║
+./SUPERHUMAN_ERROR_HANDLING_FIX.md:190:# If using Flask development server
+./SUPERHUMAN_ERROR_HANDLING_FIX.md:191:flask run
+./SUPERHUMAN_ERROR_HANDLING_FIX.md:196:# If using Gunicorn
+./SUPERHUMAN_ERROR_HANDLING_FIX.md:197:pkill gunicorn && gunicorn run:app
+./CONTRIBUTING.md:44:- Basic understanding of Flask and SQLAlchemy
+./CONTRIBUTING.md:470:- [Flask Documentation](https://flask.palletsprojects.com/)
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:66:from flask import Flask
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:68:from app.middleware.adapters import FlaskAdapter
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:70:app = Flask(__name__)
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:75:# التكامل مع Flask
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:76:adapter = FlaskAdapter(app, pipeline)
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:82:from flask import Flask
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:85:app = Flask(__name__)
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:114:# التكامل مع Flask
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:115:from app.middleware.adapters import FlaskAdapter
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:116:adapter = FlaskAdapter(app, pipeline)
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:290:from app.middleware.adapters import FlaskAdapter
+./SUPERHUMAN_MIDDLEWARE_QUICK_REF_AR.md:293:adapter = FlaskAdapter(app, pipeline)
+./ADMIN_CHAT_FIX_VISUAL_SUMMARY.md:107:│     ✓ Never let exceptions reach Flask                         │
+./MISSION_ACCOMPLISHED_STREAMING_FIX.md:172:   python run.py
+./FIX_SUMMARY_AR.md:220:flask run
+./FIX_SUMMARY_AR.md:236:flask run
+./START_HERE_SUPABASE_NEW.md:40:python3 run.py
+./START_HERE_SUPABASE_NEW.md:81:python3 run.py
+./GITHUB_ACTIONS_QUICK_FIX.md:56:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./GITHUB_ACTIONS_QUICK_FIX.md:60:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./GITHUB_ACTIONS_QUICK_FIX.md:96:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./GITHUB_ACTIONS_QUICK_FIX.md:167:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret pytest -x --tb=short
+./GITHUB_ACTIONS_QUICK_FIX.md:171:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret pytest
+./OBSERVABILITY_ARCHITECTURE_VISUAL.md:28:│    ├─ Store in Flask g context                                            │
+./OBSERVABILITY_ARCHITECTURE_VISUAL.md:46:│                   (Your Flask Route Handler)                                │
+./OBSERVABILITY_ARCHITECTURE_VISUAL.md:206:       │ 2. Enriched context in Flask g
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:12:-e ADMIdocker-compose run --rm web flask db upgradeN_PASSWORD="1111" \
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:13:web flask users init-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:35:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:41:docker compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:54:  web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:88:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:93:docker compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:102:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:105:docker-compose run --rm web flask users init-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:114:  web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:140:flask-frontend      my_ai_project_web  Up 2 minutes  0.0.0.0:5000->5000/tcp
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:186:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:199:web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:206:  web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:229:docker-compse run --rm web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:235:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:276:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_VISUAL_GUIDE.md:280:docker-compose run --rm web flask users create-admin
+./COSMIC_IMPLEMENTATION_SUMMARY.md:68:flask cosmic security encrypt <content> [--dimension N] [--meta N]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:69:flask cosmic security verify <node_id>
+./COSMIC_IMPLEMENTATION_SUMMARY.md:70:flask cosmic security harmonize <node_id>
+./COSMIC_IMPLEMENTATION_SUMMARY.md:71:flask cosmic security create-sece <name> [--level N] [--iq N]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:72:flask cosmic security list-nodes [--limit N]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:73:flask cosmic security ledger [--limit N] [--event-type TYPE]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:74:flask cosmic security verify-ledger
+./COSMIC_IMPLEMENTATION_SUMMARY.md:79:flask cosmic governance create-protocol <name> <description> [--version V]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:80:flask cosmic governance activate-protocol <protocol_id>
+./COSMIC_IMPLEMENTATION_SUMMARY.md:81:flask cosmic governance create-council <name> <purpose>
+./COSMIC_IMPLEMENTATION_SUMMARY.md:82:flask cosmic governance list-protocols [--status STATUS]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:83:flask cosmic governance list-councils
+./COSMIC_IMPLEMENTATION_SUMMARY.md:88:flask cosmic transparency query [--event-type TYPE] [--limit N]
+./COSMIC_IMPLEMENTATION_SUMMARY.md:89:flask cosmic transparency stats
+./COSMIC_IMPLEMENTATION_SUMMARY.md:282:flask db upgrade
+./COSMIC_IMPLEMENTATION_SUMMARY.md:285:flask cosmic transparency stats
+./COSMIC_IMPLEMENTATION_SUMMARY.md:288:flask cosmic security encrypt "My cosmic secret" --dimension 3
+./COSMIC_IMPLEMENTATION_SUMMARY.md:291:flask cosmic governance create-protocol "Ethics First" "Ethical AI"
+./CODE_FORMATTING_GUIDE.md:133:from flask import Flask, jsonify
+./CODE_FORMATTING_GUIDE.md:154:from flask import Flask
+./ARCHITECTURE_VISUAL.md:15:│                    FLASK ROUTES LAYER                            │
+./DOCKER_FIX_VISUALIZATION.md:15:│           web flask users init-admin                                    │
+./DOCKER_FIX_VISUALIZATION.md:177:│  ║  docker-compose run --rm web flask db upgrade             ║        │
+./DOCKER_FIX_VISUALIZATION.md:178:│  ║  docker-compose run --rm web flask users create-admin     ║        │
+./CLI_COMMANDS_MIGRATION_GUIDE.md:5:The custom database management CLI commands have been moved from the `db` group to the `database` group to avoid conflicts with Flask-Migrate's built-in database migration commands.
+./CLI_COMMANDS_MIGRATION_GUIDE.md:7:تم نقل أوامر إدارة قاعدة البيانات المخصصة من مجموعة `db` إلى مجموعة `database` لتجنب التعارض مع أوامر الترحيل المدمجة في Flask-Migrate.
+./CLI_COMMANDS_MIGRATION_GUIDE.md:13:flask db health      ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:14:flask db stats       ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:15:flask db tables      ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:16:flask db schema      ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:17:flask db optimize    ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:18:flask db backup      ❌ No longer available
+./CLI_COMMANDS_MIGRATION_GUIDE.md:23:flask database health    ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:24:flask database stats     ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:25:flask database tables    ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:26:flask database schema    ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:27:flask database optimize  ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:28:flask database backup    ✅ Use this
+./CLI_COMMANDS_MIGRATION_GUIDE.md:31:## 🎯 Flask-Migrate Commands | أوامر Flask-Migrate
+./CLI_COMMANDS_MIGRATION_GUIDE.md:33:The `flask db` group is now reserved for Flask-Migrate migration commands:
+./CLI_COMMANDS_MIGRATION_GUIDE.md:35:مجموعة `flask db` محجوزة الآن لأوامر الترحيل الخاصة بـ Flask-Migrate:
+./CLI_COMMANDS_MIGRATION_GUIDE.md:39:flask db migrate -m "Migration message"
+./CLI_COMMANDS_MIGRATION_GUIDE.md:42:flask db upgrade
+./CLI_COMMANDS_MIGRATION_GUIDE.md:45:flask db downgrade
+./CLI_COMMANDS_MIGRATION_GUIDE.md:48:flask db current
+./CLI_COMMANDS_MIGRATION_GUIDE.md:51:flask db history
+./CLI_COMMANDS_MIGRATION_GUIDE.md:54:flask db init
+./CLI_COMMANDS_MIGRATION_GUIDE.md:60:Use `flask database <command>` for database management operations:
+./CLI_COMMANDS_MIGRATION_GUIDE.md:62:flask database health     # Check database health
+./CLI_COMMANDS_MIGRATION_GUIDE.md:63:flask database stats      # Show database statistics
+./CLI_COMMANDS_MIGRATION_GUIDE.md:64:flask database tables     # List all tables
+./CLI_COMMANDS_MIGRATION_GUIDE.md:65:flask database schema users  # Show table schema
+./CLI_COMMANDS_MIGRATION_GUIDE.md:66:flask database optimize   # Optimize database
+./CLI_COMMANDS_MIGRATION_GUIDE.md:67:flask database backup     # Create backup
+./CLI_COMMANDS_MIGRATION_GUIDE.md:71:Use `flask db <command>` for database migrations:
+./CLI_COMMANDS_MIGRATION_GUIDE.md:73:flask db migrate -m "Add new column"  # Create migration
+./CLI_COMMANDS_MIGRATION_GUIDE.md:74:flask db upgrade                       # Apply migrations
+./CLI_COMMANDS_MIGRATION_GUIDE.md:75:flask db downgrade                     # Rollback migrations
+./CLI_COMMANDS_MIGRATION_GUIDE.md:76:flask db current                       # Show current version
+./CLI_COMMANDS_MIGRATION_GUIDE.md:77:flask db history                       # Show migration history
+./CLI_COMMANDS_MIGRATION_GUIDE.md:83:- Both Flask-Migrate and custom database commands were using the same `db` CLI group
+./CLI_COMMANDS_MIGRATION_GUIDE.md:84:- This caused Flask-Migrate commands to be hidden/overridden
+./CLI_COMMANDS_MIGRATION_GUIDE.md:85:- Users couldn't run `flask db migrate` or `flask db upgrade`
+./CLI_COMMANDS_MIGRATION_GUIDE.md:89:- Flask-Migrate commands now work properly under `db` group
+./CLI_COMMANDS_MIGRATION_GUIDE.md:101:If you have any scripts or automation that use the old commands, update them to use the new `flask database` commands instead of `flask db`.
+./CLI_COMMANDS_MIGRATION_GUIDE.md:103:إذا كان لديك أي سكريبتات أو أتمتة تستخدم الأوامر القديمة، قم بتحديثها لاستخدام أوامر `flask database` الجديدة بدلاً من `flask db`.
+./ZERO_WARNINGS_ACHIEVEMENT.md:40:#### Pattern 1: get_or_404 (Flask-SQLAlchemy 3.x)
+./ZERO_WARNINGS_ACHIEVEMENT.md:155:   - Follows Flask-SQLAlchemy 3.x conventions
+./ZERO_WARNINGS_ACHIEVEMENT.md:191:- ✅ Flask-SQLAlchemy 3.x compliance
+./ZERO_WARNINGS_ACHIEVEMENT.md:234:   - Flask-SQLAlchemy 3.x provides compatibility layer
+./ZERO_WARNINGS_ACHIEVEMENT.md:263:- [Flask-SQLAlchemy 3.x Upgrade Guide](https://flask-sqlalchemy.palletsprojects.com/en/3.1.x/changes/)
+./SUPABASE_VERIFICATION_README.md:159:flask db upgrade
+./SUPABASE_VERIFICATION_FINAL_REPORT.md:199:python3 run.py
+./SUPABASE_VERIFICATION_FINAL_REPORT.md:295:python3 run.py
+./SUPABASE_VERIFICATION_FINAL_REPORT.md:358:3. **Production Use**: Start application with `python3 run.py`
+./SUPABASE_VERIFICATION_FINAL_REPORT.md:372:python3 run.py
+./SUPABASE_VERIFICATION_GUIDE_AR.md:269:flask db upgrade
+./SUPABASE_VERIFICATION_GUIDE_AR.md:277:flask create-admin
+./SUPABASE_VERIFICATION_GUIDE_AR.md:341:flask db migrate -m "وصف التغيير"
+./SUPABASE_VERIFICATION_GUIDE_AR.md:344:flask db upgrade
+./SUPABASE_VERIFICATION_GUIDE_AR.md:347:flask db downgrade
+./SUPABASE_VERIFICATION_GUIDE_AR.md:350:flask db history
+./SUPABASE_VERIFICATION_GUIDE_AR.md:353:flask db current
+./START_HERE_SUPABASE_VERIFICATION.md:34:flask db upgrade
+./START_HERE_SUPABASE_VERIFICATION.md:169:flask db upgrade
+./QUICK_FIX_GUIDE_500_AR.md:66:flask run
+./DATABASE_SYSTEM_SUPREME_AR.md:108:flask db health
+./DATABASE_SYSTEM_SUPREME_AR.md:120:flask db stats
+./DATABASE_SYSTEM_SUPREME_AR.md:129:flask db optimize
+./DATABASE_SYSTEM_SUPREME_AR.md:138:flask db schema users
+./DATABASE_SYSTEM_SUPREME_AR.md:139:flask db schema missions
+./DATABASE_SYSTEM_SUPREME_AR.md:140:flask db schema tasks
+./DATABASE_SYSTEM_SUPREME_AR.md:150:flask db tables
+./DATABASE_SYSTEM_SUPREME_AR.md:160:flask db backup
+./DATABASE_SYSTEM_SUPREME_AR.md:161:flask db backup --output=/path/to/backup
+./DATABASE_SYSTEM_SUPREME_AR.md:287:flask db health
+./DATABASE_SYSTEM_SUPREME_AR.md:290:flask db stats
+./DATABASE_SYSTEM_SUPREME_AR.md:291:flask db optimize
+./DATABASE_SYSTEM_SUPREME_AR.md:294:flask db backup
+./DATABASE_SYSTEM_SUPREME_AR.md:300:flask db health | grep latency
+./DATABASE_SYSTEM_SUPREME_AR.md:303:flask db health | grep size
+./DATABASE_SYSTEM_SUPREME_AR.md:306:flask db tables
+./DATABASE_SYSTEM_SUPREME_AR.md:378:flask db upgrade
+./DATABASE_SYSTEM_SUPREME_AR.md:383:flask users create-admin
+./SUPERHUMAN_500_ERROR_FIX_AR.md:247:   flask run
+./API_ENHANCEMENTS_SUMMARY.md:182:- `flask-cors>=4.0.0` - CORS support
+./API_ENHANCEMENTS_SUMMARY.md:188:flask run
+./API_ENHANCEMENTS_SUMMARY.md:265:1. **Authentication** - Flask-Login session-based auth
+./API_ENHANCEMENTS_SUMMARY.md:321:- Production setup with Gunicorn
+./QUICK_REFERENCE.md:32:docker-compose run --rm web flask db upgrade
+./QUICK_REFERENCE.md:33:docker-compose run --rm web flask users create-admin
+./QUICK_REFERENCE.md:66:docker-compose run --rm web flask db upgrade     # Run migrations
+./QUICK_REFERENCE.md:67:docker-compose run --rm web flask db current     # Show current version
+./QUICK_REFERENCE.md:68:docker-compose run --rm web flask db health      # Check health
+./QUICK_REFERENCE.md:69:docker-compose run --rm web flask db stats       # Show statistics
+./QUICK_REFERENCE.md:70:docker-compose run --rm web flask db tables      # List tables
+./QUICK_REFERENCE.md:75:docker-compose run --rm web flask users create-admin    # Create admin
+./QUICK_REFERENCE.md:76:docker-compose run --rm web flask users list            # List users
+./QUICK_REFERENCE.md:114:| 5000 | Flask Web | Main application |
+./QUICK_REFERENCE.md:145:docker-compose run --rm web flask db upgrade
+./QUICK_REFERENCE.md:175:docker-compose run --rm web flask db downgrade base
+./QUICK_REFERENCE.md:176:docker-compose run --rm web flask db upgrade
+./QUICK_REFERENCE.md:177:docker-compose run --rm web flask users create-admin
+./QUICK_REFERENCE.md:217:- Changes auto-reload (Flask debug mode)
+./QUICK_REFERENCE.md:231:docker-compose run --rm web flask db migrate -m "Description"
+./QUICK_REFERENCE.md:234:docker-compose run --rm web flask db upgrade
+./QUICK_REFERENCE.md:273:├── app/                          # Flask application
+./PLATFORM_ARCHITECTURE.md:31:        │ Flask App   │◄────────┤ AI Service  │
+./PLATFORM_ARCHITECTURE.md:127:│   │   ├── flask db upgrade
+./PLATFORM_ARCHITECTURE.md:133:│   ├── web (Flask)
+./FIX_500_ERRORS_GUIDE.md:45:flask run
+./FIX_500_ERRORS_GUIDE.md:54:flask run
+./FIX_500_ERRORS_GUIDE.md:93:flask run
+./PYTEST_FREEZE_FIX_SUMMARY.md:12:plugins: anyio-4.11.0, flask-1.3.0
+./PYTEST_FREEZE_FIX_SUMMARY.md:135:plugins: anyio-4.11.0, flask-1.3.0
+./ULTIMATE_MODE_SOLUTION_SUMMARY.md:230:flask mindgate ask "ما هو هذا المشروع؟"
+./ULTIMATE_MODE_SOLUTION_SUMMARY.md:239:flask mindgate ask "قم بتحليل شامل لكل ملفات المشروع مع توضيح العلاقات بين المكونات والتبعيات..."
+./ULTIMATE_MODE_SOLUTION_SUMMARY.md:248:flask mindgate ask "$(cat README.md ARCHITECTURE.md) قم بتحليل كل هذا المحتوى بالتفصيل..."
+./ULTIMATE_MODE_SOLUTION_SUMMARY.md:354:flask mindgate ask "Your complex question..."
+./houssam.md:13:1. **حاوية الويب الرئيسية (Flask Frontend)** - خدمة الواجهة الأمامية
+./houssam.md:21:- **Flask** - إطار عمل الويب الرئيسي
+./houssam.md:32:- **حاويات الواجهة الأمامية**: 1 حاوية (Flask Web)
+./houssam.md:63:│  │ Container   │ ◄─── Flask Frontend                       │
+./houssam.md:64:│  │ (Flask)     │                                           │
+./houssam.md:89:- **التوازن**: Load Balancing عبر Gunicorn
+./houssam.md:95:2. **حاوية الويب (Flask)** تستقبل الطلب وتعالجه
+./houssam.md:110:### 1. حاوية الويب الرئيسية (flask-frontend)
+./houssam.md:113:- **الخدمة**: Flask + Gunicorn
+./houssam.md:162:- `FLASK_ENV`: بيئة Flask
+./houssam.md:283:| 5000 | Flask Web | الواجهة الأمامية |
+./houssam.md:298:- [Flask Documentation](https://flask.palletsprojects.com/)
+./README.md:139:flask run
+./README.md:344:docker-compose run --rm web flask db upgrade
+./README.md:347:docker-compose run --rm web flask users create-admin
+./README.md:375:  flask db health      # Check database health
+./README.md:376:  flask db stats       # Show statistics
+./README.md:377:  flask db tables      # List all tables
+./README.md:378:  flask db schema      # Show table schema
+./README.md:379:  flask db optimize    # Optimize database
+./README.md:380:  flask db backup      # Create backup
+./README.md:389:flask db health
+./README.md:401:flask db stats
+./README.md:410:flask db optimize
+./README.md:419:flask db schema users
+./README.md:420:flask db schema missions
+./README.md:430:flask db tables
+./README.md:440:flask db backup
+./README.md:441:flask db backup --output=/path/to/backup
+./README.md:494:- **Flask** - Web framework
+./README.md:535:├── run.py                    # Application entry
+./README.md:650:- 📊 Health Check: `flask db health`
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:1:# 🔧 Fix Summary: Flask DB Commands Issue Resolution
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:4:When running `flask db migrate` or `flask db upgrade` commands in Docker, the following error occurred:
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:16:1. **Flask-Migrate** (database migration library) registers its commands under the `db` CLI group by default
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:18:3. When both blueprints registered commands under the same group name, the custom commands **overrode** Flask-Migrate's commands
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:19:4. This made Flask-Migrate commands (`migrate`, `upgrade`, `downgrade`, etc.) inaccessible
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:25:- This separates custom database management commands from Flask-Migrate commands
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:38:### Database Migrations (Flask-Migrate)
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:39:Use `flask db` for database migrations:
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:41:flask db migrate -m "Migration message"  # Create new migration
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:42:flask db upgrade                          # Apply migrations
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:43:flask db downgrade                        # Rollback migrations
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:44:flask db current                          # Show current version
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:45:flask db history                          # Show migration history
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:49:Use `flask database` for database management:
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:51:flask database health      # Check database health
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:52:flask database stats       # Show database statistics
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:53:flask database tables      # List all tables
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:54:flask database schema <table>  # Show table schema
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:55:flask database optimize    # Optimize database
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:56:flask database backup      # Create backup
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:65:| `flask db migrate` available | ✅ PASS |
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:66:| `flask db upgrade` available | ✅ PASS |
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:67:| All Flask-Migrate commands present | ✅ PASS |
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:75:$ flask db migrate -m "Test"
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:78:$ flask db upgrade
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:84:$ flask db migrate -m "Test"
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:87:$ flask db upgrade
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:90:$ flask database health
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:107:flask db health
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:108:flask db stats
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:109:flask db tables
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:114:flask database health
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:115:flask database stats
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:116:flask database tables
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:121:flask db migrate    # Still works (now properly!)
+./FIX_SUMMARY_FLASK_DB_COMMANDS.md:122:flask db upgrade    # Still works (now properly!)
+./FIX_ANALYZE_PROJECT_500_ERROR.md:96:   # إذا كنت تستخدم Flask مباشرة
+./FIX_ANALYZE_PROJECT_500_ERROR.md:97:   flask run
+./FIX_ANALYZE_PROJECT_500_ERROR.md:137:   # If using Flask directly
+./FIX_ANALYZE_PROJECT_500_ERROR.md:138:   flask run
+./FINAL_MISSION_ACCOMPLISHED.md:150:flask run
+./FINAL_MISSION_ACCOMPLISHED.md:182:│         FLASK BACKEND                │
+./FINAL_MISSION_ACCOMPLISHED.md:263:flask run
+./QUICK_FIX_OVERMIND_500.md:47:flask run
+./QUICK_FIX_OVERMIND_500.md:54:flask mindgate ask "Hello, are you working now?"
+./WORLD_CLASS_API_QUICKSTART.md:79:python run.py
+./WORLD_CLASS_API_QUICKSTART.md:82:gunicorn -w 4 -b 0.0.0.0:5000 run:app
+./ENV_LOADING_FIX.md:131:flask --version
+./PURIFICATION_SUMMARY.md:119:flask db upgrade
+./PROMPT_ENGINEERING_GUIDE.md:65:flask db upgrade
+./PROMPT_ENGINEERING_GUIDE.md:71:flask mindgate prompt-templates
+./PROMPT_ENGINEERING_GUIDE.md:89:flask mindgate prompt-generate "create a REST API endpoint for user authentication"
+./PROMPT_ENGINEERING_GUIDE.md:92:flask mindgate prompt-generate "write tests for database service" --type testing
+./PROMPT_ENGINEERING_GUIDE.md:95:flask mindgate prompt-generate "document the admin panel API" --type documentation
+./PROMPT_ENGINEERING_GUIDE.md:98:flask mindgate prompt-generate "simple prompt" --no-rag
+./PROMPT_ENGINEERING_GUIDE.md:216:flask mindgate prompt-rate 123 --rating 5 --feedback "Excellent prompt!"
+./PROMPT_ENGINEERING_GUIDE.md:321:  "description": "Create a Flask route for user login",
+./PROMPT_ENGINEERING_GUIDE.md:334:  "generated_prompt": "You are a senior Flask developer...",
+./PROMPT_ENGINEERING_GUIDE.md:439:- "Create a Flask route that handles user registration with email validation and password hashing"
+./PROMPT_ENGINEERING_GUIDE.md:485:- Run migrations: `flask db upgrade`
+./PROMPT_ENGINEERING_GUIDE.md:512:- Flask & SQLAlchemy
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:29:- The CI workflow tried to run pytest with coverage options (`--cov=app`)
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:56:   - Environment variables (FLASK_ENV=testing) were set in conftest.py
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:74:pytest-flask
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:90:    FLASK_ENV: testing          # ← ADDED
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:125:    if os.getenv("TESTING") == "1" or os.getenv("FLASK_ENV") == "testing":
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:157:os.environ.setdefault("FLASK_ENV", "testing")
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:164:os.environ.setdefault("FLASK_ENV", "testing")
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:221:# BEFORE: Fallback still required flask_wtf
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:225:    from flask_wtf import FlaskForm  # ← This line fails!
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:226:    class LoginForm(FlaskForm): pass
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:227:    class RegistrationForm(FlaskForm): pass
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:238:        """Placeholder for LoginForm when flask_wtf is not available"""
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:242:        """Placeholder for RegistrationForm when flask_wtf is not available"""
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:247:- Allows tests to run without flask_wtf installed
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:259:def _register_blueprints(app: Flask) -> None:
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:274:def _register_blueprints(app: Flask) -> None:
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:349:- ❌ 5 errors - Due to missing flask_wtf features
+./CI_TEST_FIX_SUPERHUMAN_SOLUTION.md:369:os.environ['FLASK_ENV'] = 'testing'
+./MIGRATION_SCHEMA_FIX_COMPLETE_REPORT.md:219:flask db migrate -m "Your migration"
+./MIGRATION_SCHEMA_FIX_COMPLETE_REPORT.md:222:flask db upgrade
+./MIGRATION_SCHEMA_FIX_COMPLETE_REPORT.md:325:  run: flask db upgrade
+./MIGRATION_SCHEMA_FIX_COMPLETE_REPORT.md:335:alias sync-migrations="flask db upgrade && python3 fix_supabase_migration_schema.py"
+./PR32_FIX_SUMMARY.md:20:4. **FLASK_APP global environment variable** - Should be passed to subprocesses, not set globally
+./PR32_FIX_SUMMARY.md:34:   - Changed FLASK_APP to be subprocess-scoped using `subprocess.run(env=...)`
+./PR32_FIX_SUMMARY.md:38:   - Removed unnecessary `os.environ['FLASK_APP'] = 'app.py'`
+./PR32_FIX_SUMMARY.md:42:   - Removed `os.environ['FLASK_APP'] = 'app.py'`
+./PR32_FIX_SUMMARY.md:73:os.environ['FLASK_APP'] = 'app.py'
+./PR32_FIX_SUMMARY.md:75:result = os.system('flask db upgrade')
+./PR32_FIX_SUMMARY.md:86:env['FLASK_APP'] = 'app.py'
+./PR32_FIX_SUMMARY.md:88:    ['flask', 'db', 'upgrade'],
+./PR32_FIX_SUMMARY.md:96:os.environ['FLASK_APP'] = 'app.py'
+./PR32_FIX_SUMMARY.md:101:- FLASK_APP is only needed for Flask CLI commands, not for programmatic app creation
+./PR32_FIX_SUMMARY.md:106:- The app is created programmatically, not via Flask CLI
+./PR32_FIX_SUMMARY.md:116:| apply_migrations.py | 2 lines | sys.path + FLASK_APP scope |
+./PR32_FIX_SUMMARY.md:117:| setup_supabase_connection.py | 3 lines | sys.path + FLASK_APP removal |
+./PR32_FIX_SUMMARY.md:118:| check_migrations_status.py | 3 lines | sys.path + FLASK_APP removal |
+./PR32_FIX_SUMMARY.md:123:2. ✅ Fixed FLASK_APP handling in apply_migrations.py (subprocess-scoped)
+./PR32_FIX_SUMMARY.md:125:4. ✅ Removed unnecessary FLASK_APP from setup_supabase_connection.py
+./PR32_FIX_SUMMARY.md:127:6. ✅ Removed unnecessary FLASK_APP from check_migrations_status.py
+./MIGRATION_TO_SUPABASE.md:81:docker-compose run --rm web flask db upgrade
+./MIGRATION_TO_SUPABASE.md:140:docker-compose run --rm web flask db current
+./MIGRATION_TO_SUPABASE.md:143:docker-compose run --rm web flask db stamp head
+./MIGRATION_TO_SUPABASE.md:146:docker-compose run --rm web flask db upgrade
+./MIGRATION_TO_SUPABASE.md:182:- [ ] Database connection works: `docker-compose run --rm web flask db current`
+./DATABASE_PURIFICATION_REPORT_v14.md:142:flask db upgrade
+./DATABASE_PURIFICATION_REPORT_v14.md:169:3. 🔄 يمكن العودة باستخدام `flask db downgrade` (ستعيد الجداول فارغة)
+./SUPERHUMAN_IMPLEMENTATION_GUIDE.md:676:# Integrate with Flask app
+./SUPERHUMAN_IMPLEMENTATION_GUIDE.md:677:from flask import Flask
+./SUPERHUMAN_IMPLEMENTATION_GUIDE.md:680:app = Flask(__name__)
+./SUPABASE_COMPLETE_SETUP.md:145:python3 run.py
+./SUPABASE_COMPLETE_SETUP.md:148:Or with Flask:
+./SUPABASE_COMPLETE_SETUP.md:151:flask run
+./SUPABASE_COMPLETE_SETUP.md:341:1. Start the app: `python3 run.py`
+./SUPABASE_COMPLETE_SETUP.md:386:├── run.py                                # Application entry point
+./SUPABASE_COMPLETE_SETUP.md:477:3. Start application: `python3 run.py`
+./SECURITY_FIX_SUMMARY.md:4:Fix the GitHub Actions security scan failure caused by Flask app initialization and eliminate all critical OWASP security issues.
+./SECURITY_FIX_SUMMARY.md:12:This occurred because importing `app.security.owasp_validator` triggered Flask app initialization, which required database configuration that wasn't available in the CI environment.
+./SECURITY_FIX_SUMMARY.md:19:Added `TESTING=1` environment variable to prevent Flask app initialization during security scan:
+./SECURITY_FIX_SUMMARY.md:24:    TESTING: "1"  # Prevent Flask app initialization during security scan
+./SECURITY_FIX_SUMMARY.md:150:✓ Security scan runs without Flask app initialization
+./OVERMIND_500_FIX_VISUAL.md:84:│              flask mindgate ask "question"                       │
+./OVERMIND_500_FIX_VISUAL.md:252:flask mindgate ask "Are you working?"
+./README_COMPLEXITY_SOLUTION.md:299:flask run
+./FINAL_DIAGNOSIS_SUMMARY.md:78:flask run
+./FINAL_DIAGNOSIS_SUMMARY.md:168:flask run
+./FINAL_DIAGNOSIS_SUMMARY.md:227:   - ✅ معلومات البيئة: `python3 --version`, `flask --version`
+./FIXES_APPLIED.md:13:3. **FLASK_APP environment variable** - Should be passed to subprocesses, not set globally
+./FIXES_APPLIED.md:47:#### Issue #2: FLASK_APP environment variable
+./FIXES_APPLIED.md:50:# Set Flask app
+./FIXES_APPLIED.md:51:os.environ['FLASK_APP'] = 'app.py'
+./FIXES_APPLIED.md:54:result = os.system('flask db upgrade')
+./FIXES_APPLIED.md:59:# Run flask db upgrade with FLASK_APP in environment
+./FIXES_APPLIED.md:61:env['FLASK_APP'] = 'app.py'
+./FIXES_APPLIED.md:63:    ['flask', 'db', 'upgrade'],
+./FIXES_APPLIED.md:72:- Pass FLASK_APP via subprocess environment instead of modifying global `os.environ`
+./FIXES_APPLIED.md:106:#### Issue #2: FLASK_APP environment variable
+./FIXES_APPLIED.md:109:# Set Flask app environment
+./FIXES_APPLIED.md:110:os.environ['FLASK_APP'] = 'app.py'
+./FIXES_APPLIED.md:112:from app import create_app, db as flask_db
+./FIXES_APPLIED.md:117:from app import create_app, db as flask_db
+./FIXES_APPLIED.md:121:- Removed unnecessary `os.environ['FLASK_APP']` modification
+./FIXES_APPLIED.md:122:- Flask's factory pattern (`create_app`) doesn't require FLASK_APP environment variable
+./FIXES_APPLIED.md:123:- The app is created programmatically, not via Flask CLI
+./FIXES_APPLIED.md:139:os.environ['FLASK_APP'] = 'app.py'
+./FIXES_APPLIED.md:153:**Rationale:** Same as apply_migrations.py and setup_supabase_connection.py - removed unnecessary `sys.path.insert()` manipulation and global `os.environ['FLASK_APP']` modification. The Flask app is created programmatically using `create_app()`, so FLASK_APP environment variable is not needed.
+./FIXES_APPLIED.md:227:  4. Fixed FLASK_APP handling in apply_migrations.py
+./FIXES_APPLIED.md:228:  5. Removed unnecessary FLASK_APP in setup_supabase_connection.py
+./FIXES_APPLIED.md:229:  6. Removed unnecessary FLASK_APP in check_migrations_status.py
+./CRUD_API_QUICK_START.md:31:flask db upgrade
+./CRUD_API_QUICK_START.md:37:flask users create-admin admin@example.com admin_password
+./CRUD_API_QUICK_START.md:43:flask run
+./SECURITY_CHECKLIST.md:91:  # ✅ Use Jinja2 auto-escaping (enabled by default in Flask)
+./SECURITY_CHECKLIST.md:190:  from flask_limiter import Limiter
+./SECURITY_CHECKLIST.md:316:  from flask_limiter import Limiter
+./SECURITY_CHECKLIST.md:317:  from flask_limiter.util import get_remote_address
+./SECURITY_CHECKLIST.md:335:  from flask_cors import CORS
+./POOLER_UPDATE_SUMMARY.md:118:flask db upgrade
+./PROMPT_ENGINEERING_V2_README.md:228:  "generated_prompt": "You are an expert Flask developer...",
+./GITHUB_ACTIONS_QUICK_REFERENCE_AR.md:115:export FLASK_ENV=testing
+./FIX_EMPTY_RESPONSES_VISUAL.md:289:│  │ (Flask)      │                                 │
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:1:# Flask Dependency & Blocker Mapping Report
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:5:This report provides a detailed analysis of the hybrid Flask and FastAPI application, focusing on the deep-rooted dependencies on Flask's application context. The production runtime is an ASGI environment serving a FastAPI application (`app/main:app`), but the core business logic, services, and tooling are still tightly coupled to Flask's global objects (`current_app`, `db.session`). This creates a significant architectural conflict, making it impossible to run services in a pure ASGI context (like a WebSocket handler) without encountering "working outside of application context" errors. The test suite is also a hybrid, with a mix of FastAPI and Flask context-dependent tests, further complicating the migration path. This document outlines the key blockers, their severity, and a prioritized list of atomic tasks to begin the decoupling process.
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:12:| `app/services/history_service.py` | 3 | `from flask import current_app` | **High** |
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:14:| `app/services/api_security_service.py`| 31 | `from flask_login import current_user` | **High** |
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:15:| `cli.py` | 35 | `with flask_app.app_context():` | **Medium** |
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:18:| `run.py` | 11 | `app.run()` | **Low** |
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:23:    *   **Task:** Introduce a SQLAlchemy `Session` dependency injection system for FastAPI. Refactor a single service (e.g., `history_service`) and its corresponding model to use the injected session instead of the global `db` object. Create a unit test to verify the service works without a Flask app context.
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:29:    *   **Task:** Refactor a single test file (e.g., `test_admin_routes.py`) that uses `with app.app_context():` to use the FastAPI `TestClient` fixture instead. This will involve adapting the tests to make HTTP requests to the FastAPI app rather than calling Flask functions directly.
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:32:    *   **Task:** Refactor the database-related CLI commands to use a standalone SQLAlchemy session created from the application's configuration, bypassing the need for a full Flask app context for those specific commands.
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:34:5.  **Deprecate the Flask Development Server:**
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:35:    *   **Task:** Update the project's `README.md` and developer documentation to clearly state that `uvicorn app.main:app --reload` is the preferred method for local development, and deprecate the use of `python run.py`.
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:40:# Scan for Flask imports
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:41:grep -R --line-number --include="*.py" -E "from flask|import flask" || true
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:43:# Scan for Flask API usage
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:44:grep -R --line-number --include="*.py" -E "current_app|app_context|has_app_context|g\\b|flask_login|flask_migrate|flask_sqlalchemy|flask_wtf" || true
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:49:# Scan for Flask dependencies in tests
+./WEB_SOCKET_FLASK_CONFLICT_REPORT.md:50:grep -R --line-number --include="tests/*.py" -E "app.app_context|app_context|flask_client|client_fixture|test_client" || true
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:126:Start the Flask server:
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:128:flask run
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:399:- ✅ CSP headers (Flask integration)
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:422:# 2. Start Flask server
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:423:flask run
+./SUPERHUMAN_UI_IMPLEMENTATION_COMPLETE.md:425:# 3. Serve from Flask
+./POOLER_README.md:133:flask db upgrade
+./POOLER_README.md:174:flask db upgrade
+./OVERMIND_500_FIX_SUMMARY.md:183:flask mindgate ask "Are you working?"
+./OVERMIND_500_FIX_SUMMARY.md:238:flask mindgate ask "Hello"
+./.github/copilot-instructions.md:5:CogniForge is an advanced, AI-powered educational platform built with Flask that combines cutting-edge technology with intuitive design. The platform features:
+./.github/copilot-instructions.md:15:- **Framework**: Flask (Python web framework)
+./.github/copilot-instructions.md:19:- **Authentication**: Flask-Login with JWT support
+./.github/copilot-instructions.md:25:- **Templates**: Jinja2 (Flask templating)
+./.github/copilot-instructions.md:35:├── cli/                  # Flask CLI commands (users, database, overmind)
+./.github/copilot-instructions.md:121:# Flask
+./.github/copilot-instructions.md:122:FLASK_DEBUG=1
+./.github/copilot-instructions.md:144:flask db migrate -m "description"
+./.github/copilot-instructions.md:147:flask db upgrade
+./.github/copilot-instructions.md:150:flask db downgrade
+./.github/copilot-instructions.md:156:flask db health
+./.github/copilot-instructions.md:157:flask db stats
+./.github/copilot-instructions.md:158:flask db tables
+./.github/copilot-instructions.md:159:flask db schema <table_name>
+./.github/copilot-instructions.md:160:flask db optimize
+./.github/copilot-instructions.md:163:flask users create-admin
+./.github/copilot-instructions.md:164:flask users list
+./.github/copilot-instructions.md:165:flask users create --email user@example.com --name "User Name"
+./.github/copilot-instructions.md:168:flask overmind list
+./.github/copilot-instructions.md:169:flask overmind create --objective "Task description"
+./.github/copilot-instructions.md:170:flask overmind status <mission_id>
+./.github/copilot-instructions.md:277:- Regular backups (use `flask db backup`)
+./.github/copilot-instructions.md:291:- Run `flask db optimize` periodically
+./.github/copilot-instructions.md:357:from flask import Blueprint, jsonify, request
+./.github/copilot-instructions.md:399:5. Use `flask db health` to test connection
+./.github/copilot-instructions.md:402:1. Check current migration status: `flask db current`
+./.github/copilot-instructions.md:405:4. Try downgrade then upgrade: `flask db downgrade` → `flask db upgrade`
+./.github/copilot-instructions.md:443:flask run
+./.github/copilot-instructions.md:449:flask db upgrade
+./.github/copilot-instructions.md:450:flask db health
+./.github/copilot-instructions.md:451:flask users create-admin
+./.github/copilot-instructions.md:461:flask shell
+./SUPERHUMAN_SECURITY_AR.md:48:│       تطبيق Flask                   │
+./SUPERHUMAN_SECURITY_AR.md:204:from flask import Flask
+./SUPERHUMAN_SECURITY_AR.md:207:app = Flask(__name__)
+./SUCCESS_REPORT_AR.md:68:python3 run.py
+./POOLER_QUICK_START.md:50:flask db upgrade
+./POOLER_QUICK_START.md:133:flask db current
+./SSE_STREAMING_QUICK_REF_AR.md:115:flask run
+./API_GATEWAY_QUICKSTART.md:28:from flask import current_app
+./DOCKER_COMPOSE_FIX_SUMMARY.md:12:-e ADMIdocker-compose run --rm web flask db upgradeN_PASSWORD="1111" \
+./DOCKER_COMPOSE_FIX_SUMMARY.md:14:web flask users init-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:40:- `flask users create-admin` ✅
+./DOCKER_COMPOSE_FIX_SUMMARY.md:41:- `flask users init-admin` ✅
+./DOCKER_COMPOSE_FIX_SUMMARY.md:109:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:116:  web flask users create-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:131:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_FIX_SUMMARY.md:134:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:160:   docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_FIX_SUMMARY.md:165:   docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:194:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_FIX_SUMMARY.md:197:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_FIX_SUMMARY.md:226:docker-compose run --rm web flask users --help
+./DOCKER_COMPOSE_FIX_SUMMARY.md:240:# flask-frontend    Up    0.0.0.0:5000->5000/tcp
+./API_GATEWAY_README.md:55:export FLASK_APP=app
+./API_GATEWAY_README.md:56:flask db upgrade
+./API_GATEWAY_README.md:59:python run.py
+./CODE_ARCHITECTURE_VISUAL.md:236:│  │  │ (SQLAlch)│  │(Postgres)│  │ (Flask)  │      │ │
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:1:# Flask vs FastAPI WebSocket Conflict Report
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:5:After a thorough analysis, there are **no existing WebSocket or ASGI entry points** in the current codebase. The application is a pure Flask application started via `app.run()`. The conflict is therefore a future architectural risk, not a current runtime issue.
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:7:## 2. Flask Dependencies
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:9:The codebase is heavily reliant on Flask and its extensions.
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:26:### `flask_login`
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:30:  from flask_login import current_user
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:33:### `flask_migrate` & `flask_sqlalchemy`
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:34:- **Core of the database layer:** Used for migrations and session management. The `db` object is a `Flask-SQLAlchemy` instance.
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:42:A hypothetical WebSocket handler (running in an async, non-Flask context) would face the following critical issues:
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:45:- **DB Session Unavailability:** Database operations would be impossible as `db.session` is bound to the Flask context.
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:50:**Nearly 100% of the test suite would be affected.** The test framework is built on the assumption that a Flask app context can be pushed for every test. Without Flask, the tests cannot run.
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:56:| **HIGH** | Flask-SQLAlchemy Dependency             | Prevents all database access from outside the Flask context, blocking most business logic.              |
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:57:| **HIGH** | `current_app` Usage in Services         | Tightly couples all services to the Flask application context for logging and configuration.            |
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:59:| **MEDIUM** | Flask-Login Dependency                  | Prevents a clear path to authenticating and authorizing users in a WebSocket context.                   |
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:60:| **LOW**  | Flask-Migrate Dependency                | Primarily a developer/deployment tool; does not block runtime, but complicates a full migration.        |
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:64:- **Flask-SQLAlchemy Dependency:**
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:73:- **Flask-Login Dependency:**
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:76:- **Flask-Migrate Dependency:**
+./WEBSOCKET_FLASK_CONFLICT_REPORT.md:82:**No.** The deep integration of the service and data layers with Flask's application context makes it impossible to run any meaningful business logic in a separate, non-Flask process like an ASGI WebSocket server without significant refactoring or the introduction of a compatibility layer.
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:133:flask db upgrade
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:368:flask db current
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:371:flask db upgrade
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:374:flask db current
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:382:flask db downgrade
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:428:flask db current
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:431:flask db history
+./SUPERHUMAN_ADMIN_CHAT_GUIDE.md:434:flask db stamp 20251011_admin_chat
+./PLATFORM_ACCESS_GUIDE.md:113:flask db upgrade
+./PLATFORM_ACCESS_GUIDE.md:116:flask users create-admin
+./PLATFORM_ACCESS_GUIDE.md:119:flask run --host=0.0.0.0 --port=5000
+./PLATFORM_ACCESS_GUIDE.md:175:docker-compose run --rm web flask db upgrade
+./PLATFORM_ACCESS_GUIDE.md:176:docker-compose run --rm web flask users create-admin
+./PLATFORM_ACCESS_GUIDE.md:244:- Test: `docker-compose run --rm web flask db health`
+./DEVCONTAINER_FIX_SUMMARY.md:34:- `flask db` migrations failing due to missing dependencies
+./DEVCONTAINER_FIX_SUMMARY.md:252:   flask --version         # ✅ Should work
+./DEVCONTAINER_FIX_SUMMARY.md:257:   echo $FLASK_ENV         # Should show: development
+./MULTI_PLATFORM_SETUP.md:35:docker-compose run --rm web flask db upgrade
+./MULTI_PLATFORM_SETUP.md:36:docker-compose run --rm web flask users create-admin
+./MULTI_PLATFORM_SETUP.md:65:docker-compose run --rm web flask db upgrade
+./MULTI_PLATFORM_SETUP.md:66:docker-compose run --rm web flask users create-admin
+./MULTI_PLATFORM_SETUP.md:97:docker-compose run --rm web flask db upgrade
+./MULTI_PLATFORM_SETUP.md:121:flask db upgrade
+./MULTI_PLATFORM_SETUP.md:122:flask users create-admin
+./MULTI_PLATFORM_SETUP.md:125:flask run --host=0.0.0.0 --port=5000
+./MULTI_PLATFORM_SETUP.md:229:docker-compose run --rm web flask db upgrade
+./MULTI_PLATFORM_SETUP.md:238:| 5000 | Flask Web | Main application |
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:99:flask db health
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:108:3. تطبيق الهجرات: `flask db upgrade`
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:119:- ✅ `SECRET_KEY` - مفتاح سري لـ Flask
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:203:echo "2. أعد تشغيل التطبيق: flask run"
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:240:# FLASK CONFIGURATION
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:243:FLASK_DEBUG=1
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:256:flask db upgrade
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:262:flask users create-admin
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:272:flask db health
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:275:flask db tables
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:282:flask run
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:313:  flask db health
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:318:  flask db current
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:323:  flask users list | grep -q "admin@" && echo "✅ موجود" || echo "❌ غير موجود"
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:340:  flask db query --sql "SELECT COUNT(*) FROM admin_conversations;"
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:398:   flask run
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:436:   # إذا كنت تستخدم Flask مباشرة
+./COMPREHENSIVE_PROJECT_DIAGNOSIS_AR.md:438:   flask run
+./DATABASE_TABLES_OUTPUT_EXAMPLE.md:141:   flask db upgrade
+./DATABASE_TABLES_OUTPUT_EXAMPLE.md:181:flask db upgrade
+./DATABASE_TABLES_OUTPUT_EXAMPLE.md:192:   pip install flask sqlalchemy python-dotenv psycopg2-binary flask-sqlalchemy
+./DATABASE_TABLES_OUTPUT_EXAMPLE.md:210:flask db upgrade
+./GITHUB_ACTIONS_FIX_FINAL_VERIFICATION.md:183:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key pytest --cov=app --cov-fail-under=30
+./GITHUB_ACTIONS_TROUBLESHOOTING_AR.md:255:    FLASK_ENV: testing
+./ARCHITECTURAL_PURITY_FINAL_REPORT.md:252:flask db upgrade
+./AI_SUPERHUMAN_UPGRADE_GUIDE.md:230:flask mindgate ask "ما هي بنية المشروع؟" --mode comprehensive
+./AI_SUPERHUMAN_UPGRADE_GUIDE.md:238:flask mindgate mission-create "تحليل شامل للمشروع"
+./DATABASE_QUICK_REFERENCE.md:8:flask database health
+./DATABASE_QUICK_REFERENCE.md:11:flask database stats
+./DATABASE_QUICK_REFERENCE.md:14:flask database tables
+./DATABASE_QUICK_REFERENCE.md:17:flask database schema <table_name>
+./DATABASE_QUICK_REFERENCE.md:20:flask database optimize
+./DATABASE_QUICK_REFERENCE.md:23:flask database backup
+./DATABASE_QUICK_REFERENCE.md:24:flask database backup --output=/path/to/backup
+./DATABASE_QUICK_REFERENCE.md:27:### Database Migration CLI Commands (Flask-Migrate)
+./DATABASE_QUICK_REFERENCE.md:30:flask db migrate -m "migration message"
+./DATABASE_QUICK_REFERENCE.md:33:flask db upgrade
+./DATABASE_QUICK_REFERENCE.md:36:flask db downgrade
+./DATABASE_QUICK_REFERENCE.md:39:flask db current
+./DATABASE_QUICK_REFERENCE.md:42:flask db history
+./DATABASE_QUICK_REFERENCE.md:132:flask database health
+./DATABASE_QUICK_REFERENCE.md:137:flask database tables
+./DATABASE_QUICK_REFERENCE.md:142:flask database schema users
+./DATABASE_QUICK_REFERENCE.md:143:flask database schema missions
+./DATABASE_QUICK_REFERENCE.md:148:flask database optimize
+./DATABASE_QUICK_REFERENCE.md:153:flask database backup
+./DATABASE_QUICK_REFERENCE.md:159:flask db migrate -m "Add new column"
+./DATABASE_QUICK_REFERENCE.md:162:flask db upgrade
+./DATABASE_QUICK_REFERENCE.md:165:flask db downgrade
+./DATABASE_QUICK_REFERENCE.md:204:2. **Optimize regularly**: `flask db optimize` weekly
+./DATABASE_QUICK_REFERENCE.md:205:3. **Monitor health**: `flask db health` daily
+./DATABASE_QUICK_REFERENCE.md:206:4. **Backup often**: `flask db backup` before major changes
+./DATABASE_QUICK_REFERENCE.md:234:flask db upgrade
+./DATABASE_QUICK_REFERENCE.md:239:flask users create-admin
+./FINAL_IMPLEMENTATION_SUMMARY.md:193:export FLASK_APP=app
+./FINAL_IMPLEMENTATION_SUMMARY.md:194:flask db upgrade
+./FINAL_IMPLEMENTATION_SUMMARY.md:197:python run.py
+./OVERMIND_README_v14.md:101:flask db upgrade
+./GITHUB_ACTIONS_IMPLEMENTATION_COMPLETE.md:353:export FLASK_ENV=testing
+./OVERMIND_500_ERROR_SUPERHUMAN_FIX.md:62:flask run
+./OVERMIND_500_ERROR_SUPERHUMAN_FIX.md:215:flask mindgate ask "ما هي مشاكل المشروع؟"
+./OVERMIND_500_ERROR_SUPERHUMAN_FIX.md:228:flask mindgate ask "What are the issues?"
+./OVERMIND_500_ERROR_SUPERHUMAN_FIX.md:241:flask mindgate ask "How are you?"
+./OVERMIND_500_ERROR_SUPERHUMAN_FIX.md:297:flask mindgate ask "Hello, are you working?"
+./SUPERHUMAN_UI_FINAL_SUMMARY.md:76:### 3. Flask Integration
+./SUPERHUMAN_UI_FINAL_SUMMARY.md:370:# 3. Start Flask
+./SUPERHUMAN_UI_FINAL_SUMMARY.md:371:flask run
+./SUPERHUMAN_UI_FINAL_SUMMARY.md:485:3. **Start Flask**: `flask run`
+./ZERO_WARNINGS_ACHIEVEMENT_AR.md:40:#### النمط 1: get_or_404 (Flask-SQLAlchemy 3.x)
+./ZERO_WARNINGS_ACHIEVEMENT_AR.md:155:   - يتبع اتفاقيات Flask-SQLAlchemy 3.x
+./ZERO_WARNINGS_ACHIEVEMENT_AR.md:191:- ✅ امتثال Flask-SQLAlchemy 3.x
+./ZERO_WARNINGS_ACHIEVEMENT_AR.md:234:   - Flask-SQLAlchemy 3.x توفر طبقة توافق
+./OVERMIND_CLI_COMPLEX_QUESTIONS_FIX.md:296:flask mindgate ask --mode comprehensive "يرجى فحص المشروع بعمق خارق"
+./OVERMIND_CLI_COMPLEX_QUESTIONS_FIX.md:388:- ✅ Flask CLI (`flask mindgate ask`)
+./GITPOD_PORT_5432_FIX.md:127:docker-compose run --rm web flask db upgrade
+./GITPOD_PORT_5432_FIX.md:163:docker-compose run --rm web flask db upgrade
+./DATABASE_COMPLETION_REPORT.md:52:flask db health
+./DATABASE_COMPLETION_REPORT.md:59:flask db stats
+./DATABASE_COMPLETION_REPORT.md:65:flask db tables
+./DATABASE_COMPLETION_REPORT.md:72:flask db schema <table_name>
+./DATABASE_COMPLETION_REPORT.md:78:flask db optimize
+./DATABASE_COMPLETION_REPORT.md:83:flask db backup [--output=path]
+./DATABASE_COMPLETION_REPORT.md:188:✓ flask db health - CLI يعمل
+./DATABASE_COMPLETION_REPORT.md:189:✓ flask db stats - CLI يعمل
+./DATABASE_COMPLETION_REPORT.md:190:✓ flask db tables - CLI يعمل
+./DATABASE_COMPLETION_REPORT.md:191:✓ flask db schema - CLI يعمل
+./DATABASE_COMPLETION_REPORT.md:287:flask db health    # فحص الصحة
+./DATABASE_COMPLETION_REPORT.md:288:flask db stats     # الإحصائيات
+./DATABASE_COMPLETION_REPORT.md:289:flask db tables    # قائمة الجداول
+./DATABASE_COMPLETION_REPORT.md:290:flask db optimize  # التحسين
+./DATABASE_COMPLETION_REPORT.md:291:flask db backup    # نسخ احتياطي
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:112:- **Flask Adapter**: Native Flask integration
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:122:from flask import Flask
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:124:from app.middleware.adapters import FlaskAdapter
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:126:app = Flask(__name__)
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:131:# Integrate with Flask
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:132:adapter = FlaskAdapter(app, pipeline)
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:138:from flask import Flask
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:141:app = Flask(__name__)
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:170:# Integrate with Flask
+./SUPERHUMAN_MIDDLEWARE_ARCHITECTURE_COMPLETE.md:171:adapter = FlaskAdapter(app, pipeline)
+./CHANGELOG.md:12:- Decoupled `AIServiceGateway` from Flask and the `requests` library by introducing an `HttpClientProtocol`.
+./ARCHITECTURAL_PURITY_VERIFICATION_AR.md:125:flask db upgrade
+./ARCHITECTURAL_PURITY_VERIFICATION_AR.md:181:flask db upgrade
+./ARCHITECTURAL_PURITY_VERIFICATION_AR.md:264:2. شغّل `flask db upgrade`
+./PLATFORM_FIX_REPORT_AR.md:41:    name: "Flask Web App"
+./PLATFORM_FIX_REPORT_AR.md:162:| 5000 | Flask Web | جميع المنصات |
+./PLATFORM_FIX_REPORT_AR.md:210:docker-compose run --rm web flask db upgrade
+./PLATFORM_FIX_REPORT_AR.md:310:docker-compose run --rm web flask db upgrade
+./FINAL_IMPLEMENTATION_REPORT_AR.md:228:flask mindgate ask "سؤالك المعقد هنا..."
+./MERGE_RESOLUTION_SUPERHUMAN.md:60:- ✅ Better handling of missing flask_wtf
+./MERGE_RESOLUTION_SUPERHUMAN.md:75:- ✅ `TESTING=1` and `FLASK_ENV=testing` set early
+./DEVELOPER_ONBOARDING.md:132:      FLASK_DEBUG=1 python run.py
+./DEVELOPER_ONBOARDING.md:309:   - Run: `FLASK_ENV=testing TESTING=1 pytest -vv`
+./GITHUB_ACTIONS_الحل_النهائي_AR.md:339:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./DATABASE_GUIDE_AR.md:6:> - 🔧 أوامر CLI لإدارة قاعدة البيانات: `flask database health`, `flask database stats`, `flask database optimize`, إلخ.
+./DATABASE_GUIDE_AR.md:7:> - 🔄 أوامر الترحيلات (Flask-Migrate): `flask db migrate`, `flask db upgrade`, `flask db downgrade`, إلخ.
+./DATABASE_GUIDE_AR.md:189:FLASK_DEBUG=1
+./CHANGES_SUMMARY_v14.md:166:flask db upgrade
+./CHANGES_SUMMARY_v14.md:173:# 2. flask db upgrade
+./CHANGES_SUMMARY_v14.md:232:   flask db upgrade
+./CHANGES_SUMMARY_v14.md:249:   flask db upgrade
+./GITHUB_ACTIONS_FIX_COMPLETE_FINAL.md:345:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./GITHUB_ACTIONS_FIX_COMPLETE_FINAL.md:388:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret \
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:16:This project uses **Alembic** for migration management (via Flask-Migrate), while the Supabase Dashboard expects its own table called `supabase_migrations.schema_migrations` to display migration history.
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:52:flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:116:flask db migrate -m "Your migration message"
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:119:flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:217:   - Integrated with Flask-Migrate
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:241:  run: flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_EN.md:251:alias sync-migrations="flask db upgrade && python3 fix_supabase_migration_schema.py"
+./SECURITY_FIX_VISUAL_SUMMARY.md:28:✅ Security scan runs without Flask app initialization
+./SECURITY_FIX_VISUAL_SUMMARY.md:90:+     TESTING: "1"  # Prevent Flask app initialization
+./SECURITY_FIX_VISUAL_SUMMARY.md:112:+     if os.environ.get("FLASK_ENV") == "production":
+./SECURITY_FIX_VISUAL_SUMMARY.md:178:🔍 Flask app initializing during security scan
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:12:web flask users init-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:27:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:29:docker compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:36:  web flask users create-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:97:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:100:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:203:## 🔧 أوامر Flask المفيدة
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:204:## 🔧 Useful Flask Commands
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:209:docker-compose run --rm web flask db upgrade
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:212:docker-compose run --rm web flask db migrate -m "Description"
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:215:docker-compose run --rm web flask db downgrade
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:218:docker-compose run --rm web flask db health
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:221:docker-compose run --rm web flask db stats
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:227:docker-compose run --rm web flask users create-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:230:docker-compose run --rm web flask users init-admin
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:233:docker-compose run --rm web flask users list
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:236:docker-compose run --rm web flask users create --email user@example.com --name "User Name"
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:242:docker-compose run --rm web flask overmind list
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:245:docker-compose run --rm web flask overmind create --objective "Task description"
+./DOCKER_COMPOSE_TROUBLESHOOTING.md:248:docker-compose run --rm web flask overmind status <mission_id>
+./START_HERE_AR.md:85:# إذا كنت تستخدم Flask مباشرة
+./START_HERE_AR.md:86:flask run
+./START_HERE_AR.md:118:flask db health
+./START_HERE_AR.md:133:flask db upgrade
+./START_HERE_AR.md:139:flask users create-admin
+./START_HERE_AR.md:163:flask db health
+./START_HERE_AR.md:168:flask db tables
+./START_HERE_AR.md:207:flask users create-admin
+./START_HERE_AR.md:236:flask db health
+./START_HERE_AR.md:266:flask db upgrade
+./START_HERE_AR.md:269:flask users create-admin
+./START_HERE_AR.md:272:flask run
+./START_HERE_AR.md:355:   flask --version
+./START_HERE_AR.md:358:   flask db health
+./SECURITY_FIX_FINAL_REPORT.md:5:This fix successfully resolves **100% of critical OWASP security issues** (13 → 0) and prevents GitHub Actions security scan failures by implementing a clean separation between security scanning and Flask application initialization.
+./SECURITY_FIX_FINAL_REPORT.md:10:1. ✅ **Fix CI/CD Pipeline** - Security scan now runs without Flask app initialization errors
+./SECURITY_FIX_FINAL_REPORT.md:47:    TESTING: "1"  # ← NEW: Prevents Flask app initialization
+./SECURITY_FIX_FINAL_REPORT.md:96:    if os.environ.get("FLASK_ENV") == "production":
+./SECURITY_FIX_FINAL_REPORT.md:130:✓ Security scan runs without Flask app initialization
+./FIX_SUMMARY_DATABASE_CONNECTION.md:8:docker-compose run --rm web flask db upgrade
+./FIX_SUMMARY_DATABASE_CONNECTION.md:10:docker-compose run --rm web flask db migrate -m "Migration message"
+./FIX_SUMMARY_DATABASE_CONNECTION.md:118:docker-compose run --rm web flask db upgrade
+./FIX_SUMMARY_DATABASE_CONNECTION.md:121:docker-compose run --rm web flask users create-admin
+./FIX_SUMMARY_DATABASE_CONNECTION.md:140:docker-compose run --rm web flask db upgrade
+./FIX_SUMMARY_DATABASE_CONNECTION.md:194:docker-compose run --rm web flask db health
+./FIX_SUMMARY_DATABASE_CONNECTION.md:197:docker-compose run --rm web flask db upgrade
+./DEPLOYMENT_GUIDE.md:36:  -e FLASK_ENV="production" \
+./DEPLOYMENT_GUIDE.md:55:      - FLASK_ENV=production
+./DEPLOYMENT_GUIDE.md:85:### 1. Install Production Server (Gunicorn)
+./DEPLOYMENT_GUIDE.md:88:pip install gunicorn
+./DEPLOYMENT_GUIDE.md:91:### 2. Create Gunicorn Configuration
+./DEPLOYMENT_GUIDE.md:93:Create `gunicorn.conf.py`:
+./DEPLOYMENT_GUIDE.md:96:# Gunicorn configuration
+./DEPLOYMENT_GUIDE.md:107:accesslog = "logs/gunicorn-access.log"
+./DEPLOYMENT_GUIDE.md:108:errorlog = "logs/gunicorn-error.log"
+./DEPLOYMENT_GUIDE.md:132:### 3. Run with Gunicorn
+./DEPLOYMENT_GUIDE.md:135:gunicorn -c gunicorn.conf.py "app:create_app()"
+./DEPLOYMENT_GUIDE.md:155:Environment="FLASK_ENV=production"
+./DEPLOYMENT_GUIDE.md:156:ExecStart=/var/www/cogniforge/venv/bin/gunicorn -c gunicorn.conf.py "app:create_app()"
+./DEPLOYMENT_GUIDE.md:183:# Flask Configuration
+./DEPLOYMENT_GUIDE.md:184:FLASK_ENV=production
+./DEPLOYMENT_GUIDE.md:186:FLASK_APP=app
+./DEPLOYMENT_GUIDE.md:261:    # Proxy to Gunicorn
+./DEPLOYMENT_GUIDE.md:270:        # CORS headers (if not handled by Flask)
+./DEPLOYMENT_GUIDE.md:324:- `gunicorn-access.log` - Access logs
+./DEPLOYMENT_GUIDE.md:325:- `gunicorn-error.log` - Error logs
+./DEPLOYMENT_GUIDE.md:425:          flask db upgrade
+./docs/config/SETTINGS_LAYER.md:5:This document outlines the architecture of the new, framework-independent settings layer introduced as part of the progressive decoupling of the application from the Flask framework. The primary objective is to establish a single, reliable, and validated source of truth for all configuration parameters across the application, including the future FastAPI services, CLI tools, and background workers.
+./docs/config/SETTINGS_LAYER.md:7:## 2. The Problem: Configuration Coupled to Flask
+./docs/config/SETTINGS_LAYER.md:9:Previously, the application's configuration was tightly coupled to Flask's global `current_app.config` object. This presented several architectural challenges:
+./docs/config/SETTINGS_LAYER.md:11:- **Framework Dependency:** Accessing configuration required an active Flask application context, making it impossible to import and use configuration in framework-agnostic modules, such as service layers, utility functions, or standalone scripts.
+./docs/config/SETTINGS_LAYER.md:12:- **Testing Complexity:** Unit tests for services that needed configuration values had to create a full Flask application context, slowing down tests and introducing unnecessary dependencies.
+./docs/config/SETTINGS_LAYER.md:13:- **Lack of Validation:** Flask's configuration system is a simple dictionary. There was no built-in mechanism for type validation, presence checks, or default value management, leading to potential runtime errors if environment variables were missing or malformed.
+./docs/config/SETTINGS_LAYER.md:14:- **Blocked FastAPI Migration:** A clean migration to FastAPI depends on having components (like a settings module) that can be imported and used without pulling in the entire Flask application.
+./docs/config/SETTINGS_LAYER.md:23:- **Framework-Independent:** The module is pure Python and has no dependency on Flask or FastAPI. It can be safely imported and used anywhere.
+./docs/db/SESSION_FACTORY.md:7:The primary goal of this module is to provide a **robust, configurable, and independent SQLAlchemy session factory**. This is a foundational step in the strategic migration from a tightly-coupled Flask application to a more modern, decoupled architecture using FastAPI/ASGI.
+./docs/db/SESSION_FACTORY.md:10:- **Independence:** It has zero dependencies on the Flask application context (`current_app`, `g`, etc.). This allows it to be used in any part of the application, including FastAPI endpoints, WebSocket handlers, CLI commands, and standalone scripts.
+./docs/db/SESSION_FACTORY.md:11:- **Safety:** It is an *additive* component. It does not modify or interfere with the existing Flask-SQLAlchemy setup (`db.session`). Both systems can coexist, ensuring the current application continues to function without any changes.
+./docs/db/SESSION_FACTORY.md:12:- **Testability:** Its independence makes services that use it easier to test in isolation, without needing to construct a full Flask application context.
+./docs/db/SESSION_FACTORY.md:77:This component is completely parallel to the existing `Flask-SQLAlchemy` integration. It does not replace or modify it. Therefore, it can be safely removed by reverting the commit that added it without affecting the existing application's functionality.
+./docs/migration/STEP7_PLAYBOOK.md:8:- **Action:** An audit of the existing service architecture was performed. The dualistic Flask/FastAPI reality was identified as the primary source of architectural corruption.
+./docs/migration/STEP7_PLAYBOOK.md:18:- **Action:** The application entrypoints (`app/main.py`, `cli.py`) and API routers (`system`, `admin`, `chat`) were migrated to the new reality. All dependencies are now resolved through the Reality Kernel's engines. The legacy Flask entrypoint (`run.py`) and database extensions (`app/extensions.py`) have been removed. The `ai_service_standalone` has been integrated into the main application.
+./docs/core/DEPENDENCY_LAYER.md:5:The legacy application architecture is tightly coupled to Flask's global context objects, primarily `current_app`. This creates several significant challenges:
+./docs/core/DEPENDENCY_LAYER.md:7:- **Framework Lock-in:** Business logic cannot be reused or tested outside of a Flask application context, making a migration to a modern framework like FastAPI difficult and risky.
+./docs/core/DEPENDENCY_LAYER.md:8:- **Testability:** Unit testing services requires instantiating a full Flask application, which is slow and brittle.
+./docs/core/DEPENDENCY_LAYER.md:17:This layer is **100% additive** and does not modify any existing Flask code. It prepares our services for a safe, incremental migration to a decoupled architecture.
+./docs/core/DEPENDENCY_LAYER.md:53:from flask import current_app
+./docs/architecture/REALITY_KERNEL.md:7:The heart of the system is the **Reality Kernel**, located in `app/kernel.py`. It is the single source of truth for the application's existence. It establishes a unified FastAPI application object that bridges the legacy Flask world with the modern ASGI reality.
+./docs/cli/CLI_GUIDELINES.md:7:- **No Flask Imports**: CLI handlers in `app/cli_handlers` must not import `current_app` or any other Flask-specific context variables. This ensures that the CLI is decoupled from the web application.
+./CODE_QUALITY_FIX_SUMMARY.md:52:- Added comprehensive type stubs (`types-Flask`, `types-requests`, `types-PyYAML`)
+./DOCKER_FIX_COMPLETE_AR.md:11:-e ADMIdocker-compose run --rm web flask db upgradeN_PASSWORD="1111" \
+./DOCKER_FIX_COMPLETE_AR.md:13:web flask users init-admin
+./DOCKER_FIX_COMPLETE_AR.md:44:  - `flask users create-admin` ✅
+./DOCKER_FIX_COMPLETE_AR.md:45:  - `flask users init-admin` ✅
+./DOCKER_FIX_COMPLETE_AR.md:127:web flask users init-admin
+./DOCKER_FIX_COMPLETE_AR.md:130:docker-compose run --rm web flask users create-admin
+./DOCKER_FIX_COMPLETE_AR.md:165:-e ADMIdocker-compose run --rm web flask db upgradeN_PASSWORD="..." \
+./DOCKER_FIX_COMPLETE_AR.md:166:web flask users init-admin
+./DOCKER_FIX_COMPLETE_AR.md:173:docker-compose run --rm web flask users create-admin
+./DOCKER_FIX_COMPLETE_AR.md:180:  web flask users create-admin
+./DOCKER_FIX_COMPLETE_AR.md:233:docker-compose run --rm web flask db upgrade
+./DOCKER_FIX_COMPLETE_AR.md:236:docker-compose run --rm web flask users create-admin
+./DOCKER_FIX_COMPLETE_AR.md:253:docker-compose run --rm web flask users --help
+./DOCKER_FIX_COMPLETE_AR.md:266:# flask-frontend    Up    0.0.0.0:5000->5000/tcp ✅
+./DOCKER_FIX_COMPLETE_AR.md:306:docker-compose run --rm web flask users create-admin
+./DOCKER_FIX_COMPLETE_AR.md:309:docker compose run --rm web flask users create-admin
+./MASSIVE_FUNCTIONS_REFACTORING_REPORT.md:136:- ✅ Integration tests with Flask app
+./ADMIN_CHAT_ERROR_HANDLING_FIX.md:98:    from flask import request
+./ADMIN_CHAT_ERROR_HANDLING_FIX.md:107:    # For non-API routes, re-raise the error to be handled by Flask's default handler
+./VISUAL_DIAGNOSIS_SUMMARY.md:87:│  │  flask run                   │                                  │
+./VISUAL_DIAGNOSIS_SUMMARY.md:180:│  ┃  2. Restart: flask run                                      ┃  │
+./COMPREHENSIVE_FIX_SUMMARY.md:200:- **Industry Standard:** Used by Django, Flask, SQLAlchemy core components
+./COMPREHENSIVE_FIX_SUMMARY.md:239:FLASK_ENV=testing pytest tests/ --timeout=30
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:74:python3 run.py
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:77:أو باستخدام Flask:
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:80:flask run
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:156:export FLASK_APP=app.py
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:157:flask db upgrade
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:230:### ❌ خطأ: "flask db upgrade failed"
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:234:# تأكد من أن FLASK_APP معرفة
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:235:export FLASK_APP=app.py
+./SUPABASE_NEW_PROJECT_SETUP_AR.md:238:flask db upgrade
+./DISTRIBUTED_RESILIENCE_FINAL_REPORT.md:355:2. **Zero External Dependencies** - Only uses Python stdlib + Flask
+./PLATFORM_STATUS_AR.md:82:    name: "Flask Web App"
+./PLATFORM_STATUS_AR.md:162:6. شغّل الترحيلات: `flask db upgrade`
+./PLATFORM_STATUS_AR.md:163:7. شغّل التطبيق: `flask run`
+./ADMIN_CHAT_PERSISTENCE_FIX_README.md:200:flask db upgrade
+./ADMIN_CHAT_PERSISTENCE_FIX_README.md:205:flask db upgrade 20251011_admin_chat
+./ADMIN_CHAT_PERSISTENCE_FIX_README.md:333:flask db upgrade
+./ADMIN_CHAT_PERSISTENCE_FIX_README.md:342:flask run
+./ADMIN_CHAT_PERSISTENCE_FIX_README.md:351:flask db upgrade
+./الحل_الخارق_للدوال_الضخمة_AR.md:336:   - اختبار 404 في Flask
+./SSE_FIX_GUIDE_AR.md:112:flask run
+./SSE_FIX_GUIDE_AR.md:118:python run.py
+./SSE_FIX_GUIDE_AR.md:222:│             (Flask Admin Routes)                         │
+./SUPERHUMAN_SECURITY_TELEMETRY_GUIDE.md:53:│                   Flask Application                          │
+./SUPERHUMAN_SECURITY_TELEMETRY_GUIDE.md:373:### 2. Initialize in Flask App
+./SUPERHUMAN_SECURITY_TELEMETRY_GUIDE.md:376:from flask import Flask
+./SUPERHUMAN_SECURITY_TELEMETRY_GUIDE.md:379:app = Flask(__name__)
+./STREAMING_SUCCESS_SUMMARY.md:86:│           FLASK BACKEND (Python)                │
+./STREAMING_SUCCESS_SUMMARY.md:269:flask run
+./QUALITY_IMPLEMENTATION_COMPLETE.md:86:- ✅ Type stubs: requests, PyYAML, Flask
+./SUPERHUMAN_STREAMING_GUIDE.md:91:flask run
+./SUPERHUMAN_STREAMING_GUIDE.md:286:   flask shell
+./SUPERHUMAN_STREAMING_GUIDE.md:399:3. Test LLM health: `flask shell` → `llm_health()`
+./QUALITY_DASHBOARD.md:84:| CSRF | ✅ Yes | Flask-WTF protection |
+./QUALITY_DASHBOARD.md:85:| Auth Bypass | ✅ Yes | Flask-Login, JWT validation |
+./DATABASE_TABLES_README_AR.md:105:flask db upgrade
+./DATABASE_TABLES_README_AR.md:151:flask db upgrade
+./SSE_STREAMING_VISUAL_SUMMARY.md:8:Client (Browser)          Server (Flask)          Issues
+./SSE_STREAMING_VISUAL_SUMMARY.md:33:Client (Browser)          Server (Flask)          Features
+./SSE_STREAMING_VISUAL_SUMMARY.md:113:│  │  Flask Application                                       │  │
+./SSE_STREAMING_VISUAL_SUMMARY.md:300:- Local development (Flask dev server)
+./IMPLEMENTATION_COMPLETE_STREAMING.md:419:- **Flask** - Web framework
+./SSE_FIX_GUIDE_EN.md:112:flask run
+./SSE_FIX_GUIDE_EN.md:118:python run.py
+./SSE_FIX_GUIDE_EN.md:222:│             (Flask Admin Routes)                         │
+./MIGRATION_REVISION_FIX_GUIDE.md:73:# في بيئة بها Flask و Alembic مثبتة
+./MIGRATION_REVISION_FIX_GUIDE.md:77:export FLASK_APP=run:app
+./MIGRATION_REVISION_FIX_GUIDE.md:78:flask db heads
+./MIGRATION_REVISION_FIX_GUIDE.md:82:flask db history
+./MIGRATION_REVISION_FIX_GUIDE.md:93:docker-compose run --rm web flask db upgrade
+./MIGRATION_REVISION_FIX_GUIDE.md:96:docker-compose run --rm web flask db current
+./MIGRATION_REVISION_FIX_GUIDE.md:105:export FLASK_APP=run:app
+./MIGRATION_REVISION_FIX_GUIDE.md:106:flask db upgrade
+./MIGRATION_REVISION_FIX_GUIDE.md:109:flask db current
+./MIGRATION_REVISION_FIX_GUIDE.md:139:### 1. استخدام `flask db migrate` دائماً
+./MIGRATION_REVISION_FIX_GUIDE.md:142:flask db migrate -m "وصف الترحيل"
+./MIGRATION_REVISION_FIX_GUIDE.md:144:Flask-Migrate سيختار `down_revision` الصحيح تلقائياً.
+./MIGRATION_REVISION_FIX_GUIDE.md:151:export FLASK_APP=run:app
+./MIGRATION_REVISION_FIX_GUIDE.md:152:flask db heads
+./MIGRATION_REVISION_FIX_GUIDE.md:153:flask db history --verbose
+./MIGRATION_REVISION_FIX_GUIDE.md:198:flask db migrate -m "add user preferences table"
+./MIGRATION_REVISION_FIX_GUIDE.md:207:flask db history -v
+./MIGRATION_REVISION_FIX_GUIDE.md:210:flask db upgrade --sql > migration.sql
+./MIGRATION_REVISION_FIX_GUIDE.md:217:flask db upgrade
+./MIGRATION_REVISION_FIX_GUIDE.md:219:flask db tables
+./MIGRATION_REVISION_FIX_GUIDE.md:232:### Flask-Migrate Documentation
+./MIGRATION_REVISION_FIX_GUIDE.md:233:- [Flask-Migrate Commands](https://flask-migrate.readthedocs.io/en/latest/)
+./PORT_5432_FIX_DIAGRAM.md:19:│  │ Flask App    │                                          │
+./PORT_5432_FIX_DIAGRAM.md:79:    name: "Flask Web App"
+./PORT_5432_FIX_DIAGRAM.md:87:    name: "Flask Web App"
+./PORT_5432_FIX_DIAGRAM.md:111:│  │ Flask App    │                                          │
+./PORT_5432_FIX_DIAGRAM.md:188:   # If using Flask directly
+./PORT_5432_FIX_DIAGRAM.md:189:   flask run
+./PORT_5432_FIX_DIAGRAM.md:236:✅ Flask app ready to run!
+./PORT_5432_FIX_DIAGRAM.md:265:flask db upgrade
+./SUPABASE_SETUP_GUIDE.md:123:docker compose exec web flask db upgrade
+./SUPABASE_SETUP_GUIDE.md:188:### ❌ خطأ: "flask db غير متاح" | "flask db not available"
+./SUPABASE_SETUP_GUIDE.md:192:export FLASK_APP=run:app
+./SUPABASE_SETUP_GUIDE.md:194:flask db upgrade
+./SUPABASE_SETUP_GUIDE.md:226:FLASK_ENV: development
+./SUPABASE_SETUP_GUIDE.md:227:FLASK_DEBUG: 1
+./COMPREHENSIVE_FIX_SUMMARY_AR.md:52:- معيار صناعي مستخدم في Django، Flask، SQLAlchemy
+./COMPREHENSIVE_FIX_SUMMARY_AR.md:190:FLASK_ENV=testing pytest tests/ --timeout=30
+./SUPERHUMAN_STREAMING_FIX.md:256:│                   FLASK BACKEND                          │
+./SUPERHUMAN_STREAMING_FIX.md:285:   flask run
+./SUPERHUMAN_ERROR_HANDLING_FIX_AR.md:77:# إذا كنت تستخدم Flask مباشرة
+./SUPERHUMAN_ERROR_HANDLING_FIX_AR.md:78:flask run
+./SUPERHUMAN_ERROR_HANDLING_FIX_AR.md:80:# إذا كنت تستخدم Gunicorn
+./SUPERHUMAN_ERROR_HANDLING_FIX_AR.md:81:pkill gunicorn && gunicorn run:app
+./FIX_CONFIRMATION.md:120:flask run
+./FIX_CONFIRMATION.md:123:python run.py
+./COSMIC_SECURITY_GUIDE_AR.md:57:flask cosmic security encrypt "بياناتي السرية" --dimension 5 --meta 1
+./COSMIC_SECURITY_GUIDE_AR.md:60:flask cosmic security verify 123
+./COSMIC_SECURITY_GUIDE_AR.md:63:flask cosmic security harmonize 123
+./COSMIC_SECURITY_GUIDE_AR.md:66:flask cosmic security list-nodes --limit 20
+./COSMIC_SECURITY_GUIDE_AR.md:113:flask cosmic security ledger --limit 50 --event-type ENCRYPTION
+./COSMIC_SECURITY_GUIDE_AR.md:116:flask cosmic security verify-ledger
+./COSMIC_SECURITY_GUIDE_AR.md:148:flask cosmic security create-sece "الحارس-ألفا" --level 1 --iq 100
+./COSMIC_SECURITY_GUIDE_AR.md:195:flask cosmic governance create-protocol "الأخلاق أولاً" "عمليات الذكاء الاصطناعي الأخلاقية"
+./COSMIC_SECURITY_GUIDE_AR.md:198:flask cosmic governance activate-protocol 1
+./COSMIC_SECURITY_GUIDE_AR.md:201:flask cosmic governance list-protocols --status ACTIVE
+./COSMIC_SECURITY_GUIDE_AR.md:248:flask cosmic governance create-council "مجلس السلامة" "ضمان السلامة الكونية"
+./COSMIC_SECURITY_GUIDE_AR.md:268:flask cosmic transparency query --event-type PROTOCOL_CREATED --limit 20
+./COSMIC_SECURITY_GUIDE_AR.md:271:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE_AR.md:296:flask db upgrade
+./COSMIC_SECURITY_GUIDE_AR.md:299:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE_AR.md:321:flask cosmic governance create-protocol \
+./COSMIC_SECURITY_GUIDE_AR.md:325:flask cosmic governance activate-protocol 1
+./COSMIC_SECURITY_GUIDE_AR.md:331:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE_AR.md:430:flask cosmic security encrypt "البيانات" --dimension 3
+./COSMIC_SECURITY_GUIDE_AR.md:431:flask cosmic security verify <id>
+./COSMIC_SECURITY_GUIDE_AR.md:432:flask cosmic security ledger --limit 50
+./COSMIC_SECURITY_GUIDE_AR.md:435:flask cosmic governance create-protocol "الاسم" "الوصف"
+./COSMIC_SECURITY_GUIDE_AR.md:436:flask cosmic governance list-protocols
+./COSMIC_SECURITY_GUIDE_AR.md:437:flask cosmic governance create-council "الاسم" "الغرض"
+./COSMIC_SECURITY_GUIDE_AR.md:440:flask cosmic transparency query --limit 50
+./COSMIC_SECURITY_GUIDE_AR.md:441:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE.md:71:flask cosmic security encrypt "My secret data" --dimension 5 --meta 1
+./COSMIC_SECURITY_GUIDE.md:74:flask cosmic security verify 123
+./COSMIC_SECURITY_GUIDE.md:77:flask cosmic security harmonize 123
+./COSMIC_SECURITY_GUIDE.md:80:flask cosmic security list-nodes --limit 20
+./COSMIC_SECURITY_GUIDE.md:140:flask cosmic security create-sece "Guardian-Alpha" --level 1 --iq 100
+./COSMIC_SECURITY_GUIDE.md:143:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE.md:183:flask cosmic security ledger --limit 50 --event-type ENCRYPTION
+./COSMIC_SECURITY_GUIDE.md:186:flask cosmic security verify-ledger
+./COSMIC_SECURITY_GUIDE.md:294:flask cosmic governance create-protocol "Ethics First" "Ethical AI operations"
+./COSMIC_SECURITY_GUIDE.md:297:flask cosmic governance activate-protocol 1
+./COSMIC_SECURITY_GUIDE.md:300:flask cosmic governance list-protocols --status ACTIVE
+./COSMIC_SECURITY_GUIDE.md:381:flask cosmic governance create-council "Safety Council" "Ensure cosmic safety"
+./COSMIC_SECURITY_GUIDE.md:384:flask cosmic governance list-councils
+./COSMIC_SECURITY_GUIDE.md:435:flask cosmic transparency query --event-type PROTOCOL_CREATED --limit 20
+./COSMIC_SECURITY_GUIDE.md:438:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE.md:482:flask db upgrade
+./COSMIC_SECURITY_GUIDE.md:485:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE.md:507:flask cosmic governance create-protocol \
+./COSMIC_SECURITY_GUIDE.md:511:flask cosmic governance activate-protocol 1
+./COSMIC_SECURITY_GUIDE.md:517:flask cosmic transparency stats
+./COSMIC_SECURITY_GUIDE.md:676:flask cosmic security encrypt "data" --dimension 3
+./COSMIC_SECURITY_GUIDE.md:677:flask cosmic security verify <id>
+./COSMIC_SECURITY_GUIDE.md:678:flask cosmic security ledger --limit 50
+./COSMIC_SECURITY_GUIDE.md:681:flask cosmic governance create-protocol "name" "desc"
+./COSMIC_SECURITY_GUIDE.md:682:flask cosmic governance list-protocols
+./COSMIC_SECURITY_GUIDE.md:683:flask cosmic governance create-council "name" "purpose"
+./COSMIC_SECURITY_GUIDE.md:686:flask cosmic transparency query --limit 50
+./COSMIC_SECURITY_GUIDE.md:687:flask cosmic transparency stats
+./SUPERHUMAN_500_ERROR_FIX_EN.md:184:   flask run
+./MIGRATION_FIX_QUICKSTART.md:21:docker-compose run --rm web flask db upgrade
+./MIGRATION_FIX_QUICKSTART.md:26:export FLASK_APP=run:app
+./MIGRATION_FIX_QUICKSTART.md:27:flask db upgrade
+./MIGRATION_FIX_QUICKSTART.md:37:docker-compose run --rm web flask db current
+./MIGRATION_FIX_QUICKSTART.md:114:export FLASK_APP=run:app
+./MIGRATION_FIX_QUICKSTART.md:115:flask db heads
+./MIGRATION_FIX_QUICKSTART.md:118:flask db history
+./MIGRATION_FIX_QUICKSTART.md:121:docker-compose run --rm web flask db upgrade
+./MIGRATION_FIX_QUICKSTART.md:124:docker-compose run --rm web flask db current
+./MIGRATION_FIX_QUICKSTART.md:127:docker-compose run --rm web flask db tables
+./MIGRATION_FIX_QUICKSTART.md:144:# دائماً استخدم flask db migrate (لا تنشئ يدوياً)
+./MIGRATION_FIX_QUICKSTART.md:145:flask db migrate -m "وصف الترحيل"
+./GITHUB_ACTIONS_PROFESSIONAL_GUIDE_AR.md:386:  FLASK_ENV: testing
+./SETUP_GUIDE.md:78:docker-compose run --rm web flask db upgrade
+./SETUP_GUIDE.md:81:docker-compose run --rm web flask db migrate -m "Your migration message"
+./SETUP_GUIDE.md:87:docker-compose run --rm web flask users create-admin
+./SETUP_GUIDE.md:120:flask-frontend      my_ai_project-web           Up
+./SETUP_GUIDE.md:177:docker-compose run --rm web flask db upgrade
+./SETUP_GUIDE.md:195:# Flask Configuration
+./SETUP_GUIDE.md:196:FLASK_DEBUG=1
+./SETUP_GUIDE.md:236:   docker-compose run --rm web flask db health
+./SETUP_GUIDE.md:237:   docker-compose run --rm web flask db stats
+./SETUP_GUIDE.md:238:   docker-compose run --rm web flask db tables
+./SUPERHUMAN_CHAT_IMPLEMENTATION.md:330:- **Flask**: Web framework
+./SUPERHUMAN_CHAT_IMPLEMENTATION.md:476:- Debug mode: Set `FLASK_DEBUG=1` in `.env`
+./SUPERHUMAN_STREAMING_QUICK_REF_AR.md:99:flask run
+./SUPERHUMAN_STREAMING_QUICK_REF_AR.md:248:   flask shell
+./SUPERHUMAN_STREAMING_FIX_AR.md:300:python run.py
+./SUPERHUMAN_STREAMING_FIX_AR.md:302:# أو باستخدام Flask
+./SUPERHUMAN_STREAMING_FIX_AR.md:303:# Or using Flask
+./SUPERHUMAN_STREAMING_FIX_AR.md:304:flask run
+./MEASURE_EVERYTHING_README.md:182:- **Framework**: Flask
+./IMPLEMENTATION_SUMMARY_FINAL.md:164:FLASK_APP=run.py
+./IMPLEMENTATION_SUMMARY_FINAL.md:165:FLASK_ENV=development
+./IMPLEMENTATION_SUMMARY_FINAL.md:179:| 5000 | Flask Web | ✅ Auto-forwarded |
+./IMPLEMENTATION_SUMMARY_FINAL.md:186:  web:           # Flask frontend (port 5000)
+./IMPLEMENTATION_SUMMARY_FINAL.md:222:3. Test: docker-compose run --rm web flask db upgrade
+./WORKFLOW_FIX_STATUS_FINAL.md:175:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret pytest
+./WORKFLOW_FIX_STATUS_FINAL.md:292:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-secret pytest
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:113:flask db migrate -m "وصف"
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:117:flask db upgrade
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:146:# أو باستخدام Flask
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:147:flask db current
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:148:flask db history
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:217:   flask db upgrade
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:246:flask db upgrade
+./SUPABASE_IMPLEMENTATION_SUMMARY.md:316:flask db upgrade
+./QUICK_START_ULTIMATE_MODE.md:52:flask mindgate ask "ما هو هذا المشروع؟"
+./QUICK_START_ULTIMATE_MODE.md:55:flask mindgate ask "قم بتحليل شامل لكل ملفات المشروع..."
+./QUICK_START_ULTIMATE_MODE.md:124:# Test with: flask mindgate ask "your question"
+./QUICK_START_ULTIMATE_MODE.md:136:flask mindgate ask "قم بتحليل البنية المعمارية للمشروع"
+./DATABASE_TABLES_UPDATE_SUMMARY_AR.md:199:pip install flask sqlalchemy python-dotenv psycopg2-binary flask-sqlalchemy
+./DATABASE_TABLES_UPDATE_SUMMARY_AR.md:213:flask db upgrade
+./VISUAL_500_ERROR_FIX.md:22:│                    BACKEND (Flask Route)                         │
+./VISUAL_500_ERROR_FIX.md:72:│                    BACKEND (Flask Route)                         │
+./VISUAL_500_ERROR_FIX.md:246:│  • Flask routes always return 200 for app errors         │
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:69:flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:129:flask db migrate -m "Your migration message"
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:132:flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:244:   - مدمج مع Flask-Migrate
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:268:  run: flask db upgrade
+./SUPABASE_MIGRATION_SCHEMA_FIX_AR.md:279:alias sync-migrations="flask db upgrade && python3 fix_supabase_migration_schema.py"
+./POOLER_MIGRATION_GUIDE.md:149:flask db upgrade
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:75:export FLASK_APP=app.py
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:76:flask db upgrade
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:156:export FLASK_APP=app.py
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:157:flask db upgrade
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:236:### ❌ Error: "flask db upgrade failed"
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:240:# Ensure FLASK_APP is set
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:241:export FLASK_APP=app.py
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:244:flask db upgrade
+./SUPABASE_NEW_PROJECT_SETUP_EN.md:310:python3 run.py
+./ULTIMATE_MODE_GUIDE.md:140:flask mindgate ask "قم بتحليل شامل للمشروع بالكامل مع جميع التفاصيل..."
+./ULTIMATE_MODE_GUIDE.md:143:flask overmind create "Analyze the entire project architecture and provide detailed recommendations..."
+./OBSERVABILITY_IMPLEMENTATION_COMPLETE.md:74:- Automatically instruments ALL Flask requests
+./OBSERVABILITY_IMPLEMENTATION_COMPLETE.md:95:- `user_id` from Flask-Login
+./OBSERVABILITY_IMPLEMENTATION_COMPLETE.md:146:### 4. Integration with Flask Application
+./OBSERVABILITY_IMPLEMENTATION_COMPLETE.md:339:# Just run your Flask app!
+./OBSERVABILITY_IMPLEMENTATION_COMPLETE.md:346:flask run
+./MEASURE_EVERYTHING_ARCHITECTURE.md:279:│  Web Framework:   Flask                                         │
+./SSE_STREAMING_IMPLEMENTATION_REPORT.md:29:Frontend (Browser) → NGINX Proxy → Flask Backend → LLM API
+./SSE_STREAMING_IMPLEMENTATION_REPORT.md:162:- Local development (Flask dev server)
+./SSE_STREAMING_IMPLEMENTATION_REPORT.md:294:3. **Flask Application**:
+./SSE_STREAMING_IMPLEMENTATION_REPORT.md:296:   gunicorn -w 4 -b 127.0.0.1:5000 "app:create_app()"
+./SSE_STREAMING_GUIDE.md:138:1. **Start Flask app:**
+./SSE_STREAMING_GUIDE.md:141:flask run
+./SSE_STREAMING_GUIDE.md:162:2. **Configure Flask backend:**
+./SSE_STREAMING_GUIDE.md:164:gunicorn -w 4 -b 127.0.0.1:5000 "app:create_app()"
+./SSE_STREAMING_GUIDE.md:313:2. ✅ **Scale workers:** `gunicorn -w 8`
+./SSE_STREAMING_GUIDE.md:442:from flask_limiter import Limiter
+./SECURITY_ENHANCEMENT_SUMMARY.md:210:- Flask-Login for session management
+./QUALITY_SYSTEM_SUPERHUMAN.md:439:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key pytest -vv
+./DATABASE_PURITY_STATUS.md:112:flask db upgrade
+./SUPERHUMAN_EXTREME_MODE_GUIDE_AR.md:140:استخدام Redis للتخزين المؤقت، تطبيق Flask للواجهة الخلفية، React للواجهة الأمامية،
+./IMPLEMENTATION_SUMMARY_GREEN_CHECKMARK.md:78:  - Run pytest
+./IMPLEMENTATION_SUMMARY_GREEN_CHECKMARK.md:85:  - Run pytest (only this!)
+./IMPLEMENTATION_SUMMARY_OLD.md:370:# Flask
+./IMPLEMENTATION_SUMMARY_OLD.md:371:FLASK_DEBUG=1
+./CRUD_API_GUIDE_AR.md:104:- مصادقة المستخدم (Flask-Login)
+./CRUD_API_GUIDE_AR.md:154:│              (Flask-Login + Admin Check)                     │
+./CRUD_API_GUIDE_AR.md:242:FLASK_ENV=development
+./CRUD_API_GUIDE_AR.md:249:flask db upgrade
+./CRUD_API_GUIDE_AR.md:255:flask shell
+./CRUD_API_GUIDE_AR.md:268:flask run
+./CRUD_API_GUIDE_AR.md:270:python run.py
+./CRUD_API_GUIDE_AR.md:661:- استخدام Flask-Login للمصادقة
+./CRUD_API_GUIDE_AR.md:666:from flask_login import login_required
+./CRUD_API_GUIDE_AR.md:802:1. استخدم Gunicorn كخادم WSGI
+./SUPERHUMAN_UI_GUIDE_AR.md:145:# تشغيل Flask
+./SUPERHUMAN_UI_GUIDE_AR.md:146:flask run
+./MIGRATION_FIX_VISUAL_SUMMARY.md:220:docker-compose run --rm web flask db upgrade
+./MIGRATION_FIX_VISUAL_SUMMARY.md:223:docker-compose run --rm web flask db current
+./QUICK_FIX_SUMMARY.md:48:flask run
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:90:flask mindgate prompt-generate "description" [options]
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:93:flask mindgate prompt-templates [--category] [--all]
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:96:flask mindgate prompt-rate <id> --rating <1-5> [--feedback]
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:277:$ flask mindgate prompt-generate "create a Flask route for user authentication"
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:279:🚀 Generating prompt for: create a Flask route for user authentication...
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:288:You are a world-class Flask developer working on CogniForge.
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:291:- Architecture: Flask + SQLAlchemy + Supabase + OpenRouter
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:292:- Tech Stack: Flask, PostgreSQL, Bootstrap 5
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:297:3. Session management with Flask-Login
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:314:💡 Rate this prompt: flask mindgate prompt-rate 1 --rating 5
+./PROMPT_ENGINEERING_IMPLEMENTATION_SUMMARY.md:356:flask db upgrade
+./GITHUB_ACTIONS_ALL_FIXED.md:271:FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key pytest --verbose --cov=app
+./OBSERVABILITY_SUPERHUMAN_GUIDE.md:123:The middleware is **automatically enabled** for all Flask requests!
+./API_GATEWAY_COMPLETE_GUIDE.md:110:- **Framework**: Flask (Python)
+./API_GATEWAY_COMPLETE_GUIDE.md:421:flask db upgrade
+./API_GATEWAY_COMPLETE_GUIDE.md:424:python run.py
+./TEST_INFRASTRUCTURE_FIX_SUMMARY.md:15:- Test code session and Flask app session were separate
+./TEST_INFRASTRUCTURE_FIX_SUMMARY.md:54:    - Ensures test and Flask app share the same database session
+./TEST_INFRASTRUCTURE_FIX_SUMMARY.md:81:- Session is now shared between test code and Flask app
+./TEST_INFRASTRUCTURE_FIX_SUMMARY.md:293:The test infrastructure is now robust, maintainable, and follows Flask testing best practices.
