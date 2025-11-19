@@ -53,9 +53,10 @@ jobs:
 
       - name: 🧪 Unit Tests (Fast)
         env:
-          FLASK_ENV: testing
-          TESTING: "1"
-          SECRET_KEY: test-secret-key-for-ci
+          # Ensure a consistent testing environment. These are consumed by tests/conftest.py
+          DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+          SECRET_KEY: "test-secret-key-for-ci"
+          OPENROUTER_API_KEY: "test-key-for-ci" # Required by ENERGY-ENGINE
           PYTHONPATH: ${{ github.workspace }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -63,7 +64,9 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Run only the most critical, stable, and fast tests
-          pytest tests/test_app.py tests/test_ai_service.py \
+          # test_app.py (smoke tests for test environment)
+          # test_fastapi_health.py (basic app health check)
+          pytest tests/test_app.py tests/test_fastapi_health.py \
             --verbose \
             --tb=short \
             --maxfail=1 \

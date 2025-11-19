@@ -35,7 +35,7 @@ class AdminConversation(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
-    user: User = Relationship(back_populates="admin_conversations")
+    user: "User" = Relationship(back_populates="admin_conversations")
     messages: List["AdminMessage"] = Relationship(back_populates="conversation")
 
 class AdminMessage(SQLModel, table=True):
@@ -44,14 +44,14 @@ class AdminMessage(SQLModel, table=True):
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole
     content: str = Field(sa_column=Column(Text))
-    conversation: AdminConversation = Relationship(back_populates="messages")
+    conversation: "AdminConversation" = Relationship(back_populates="messages")
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
     id: Optional[int] = Field(default=None, primary_key=True)
     objective: str
     user_id: int = Field(foreign_key="users.id", index=True)
-    user: User = Relationship(back_populates="missions")
+    user: "User" = Relationship(back_populates="missions")
     tasks: List["Task"] = Relationship(back_populates="mission")
     mission_plans: List["MissionPlan"] = Relationship(back_populates="mission")
     mission_events: List["MissionEvent"] = Relationship(back_populates="mission")
@@ -61,21 +61,21 @@ class MissionEvent(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     event: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: Mission = Relationship(back_populates="mission_events")
+    mission: "Mission" = Relationship(back_populates="mission_events")
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
     id: Optional[int] = Field(default=None, primary_key=True)
     plan: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: Mission = Relationship(back_populates="mission_plans")
+    mission: "Mission" = Relationship(back_populates="mission_plans")
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: Mission = Relationship(back_populates="tasks")
+    mission: "Mission" = Relationship(back_populates="tasks")
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
@@ -89,3 +89,11 @@ class GeneratedPrompt(SQLModel, table=True):
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
+# Manually update forward references to resolve relationship errors
+User.update_forward_refs()
+AdminConversation.update_forward_refs()
+AdminMessage.update_forward_refs()
+Mission.update_forward_refs()
+MissionEvent.update_forward_refs()
+MissionPlan.update_forward_refs()
+Task.update_forward_refs()
