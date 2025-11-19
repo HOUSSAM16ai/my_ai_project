@@ -80,7 +80,7 @@ jobs:
 
       - name: 📊 Path filter analysis
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             py:
@@ -156,7 +156,7 @@ jobs:
             requirements-dev.txt
 
       - name: 📦 Install dependencies (with retry)
-        uses: nick-invision/retry@v3
+        uses: nick-invision/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
