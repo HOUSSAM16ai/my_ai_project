@@ -23,9 +23,10 @@ def get_session():
     if _session_factory_singleton is None:
         settings = get_settings()
         _session_factory_singleton = get_session_factory(settings.DATABASE_URL)
-    return _session_factory_singleton
+    # Return an actual session instance, not the factory
+    return _session_factory_singleton()
 
 
-def get_logger(settings=None):
-    settings = settings or get_settings()
+def get_logger():
+    settings = get_settings()
     return create_logger(settings)
