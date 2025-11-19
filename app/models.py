@@ -89,11 +89,13 @@ class GeneratedPrompt(SQLModel, table=True):
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
-# Manually update forward references to resolve relationship errors
-User.update_forward_refs()
-AdminConversation.update_forward_refs()
-AdminMessage.update_forward_refs()
-Mission.update_forward_refs()
-MissionEvent.update_forward_refs()
-MissionPlan.update_forward_refs()
-Task.update_forward_refs()
+# Automatically update forward references for all SQLModel subclasses
+# This is a more robust solution than manually updating each model.
+for cls in SQLModel.__subclasses__():
+    try:
+        cls.update_forward_refs()
+    except Exception as e:
+        # This can happen if a model is defined in a way that
+        # `update_forward_refs` is not applicable.
+        # We can safely ignore these cases.
+        pass

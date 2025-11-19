@@ -1,17 +1,13 @@
 ---
 # ======================================================================================
-# REQUIRED CI - Fast & Blocking Checks Only
+# REQUIRED CI - The Single Source of Truth for Tests
 # ======================================================================================
-# Following architectural patterns from: Google, Facebook, Microsoft, OpenAI, Meta
 #
 # Purpose:
-#   - Provide FAST feedback (< 3 minutes)
-#   - Block PRs only on critical issues (lint, type errors, basic tests)
-#   - Ensure green checkmark ✓ appears quickly
+#   - Provide FAST and RELIABLE feedback (< 5 minutes).
+#   - Block PRs on any test, lint, or type failure.
+#   - This is the one and only required check for PRs.
 #
-# Philosophy:
-#   This is the REQUIRED gate. Heavy operations (Docker builds, integration tests,
-#   deployments) run in separate non-blocking workflows for observability.
 # ======================================================================================
 
 name: Required CI
@@ -31,7 +27,7 @@ jobs:
   required-ci:
     name: required-ci
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout code
@@ -49,37 +45,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-timeout
+          pip install pytest pytest-asyncio pytest-timeout
 
-      - name: 🧪 Unit Tests (Fast)
+      - name: 🧪 Run Full Test Suite
         env:
-          # Ensure a consistent testing environment. These are consumed by tests/conftest.py
+          # Ensure a consistent testing environment.
           DATABASE_URL: "sqlite+aiosqlite:///./test.db"
           SECRET_KEY: "test-secret-key-for-ci"
-          OPENROUTER_API_KEY: "test-key-for-ci" # Required by ENERGY-ENGINE
+          OPENROUTER_API_KEY: "test-key-for-ci"
           PYTHONPATH: ${{ github.workspace }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🧪 Running core unit tests..."
+          echo "🧪 Running full test suite..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Run only the most critical, stable, and fast tests
-          # test_app.py (smoke tests for test environment)
-          # test_fastapi_health.py (basic app health check)
-          pytest tests/test_app.py tests/test_fastapi_health.py \
-            --verbose \
-            --tb=short \
-            --maxfail=1 \
-            --timeout=60 \
-            --timeout-method=thread \
-            --disable-warnings \
-            -q \
-            || {
-              echo "❌ Unit tests failed"
-              exit 1
-            }
-
-          echo "✅ All core tests passed"
+          python -m pytest tests/ -q --maxfail=1 --timeout=60 --timeout-method=thread 2>&1 | tee reports/pytest.log
 
       - name: 📊 Summary
         if: always()
@@ -90,3 +70,11 @@ jobs:
           echo "✅ Core validation passed for ${GITHUB_SHA:0:8}"
           echo "🎯 This check is REQUIRED - must pass to merge"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: 📤 Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: |
+            reports/pytest.log

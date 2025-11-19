@@ -39,6 +39,7 @@ pytest
 pytest-asyncio
 requests
 Faker
+factory-boy>=3.2.0
 
 # --- Code Quality & Linting ---
 black>=24.1.1
