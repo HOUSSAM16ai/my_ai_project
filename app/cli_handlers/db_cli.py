@@ -4,11 +4,11 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 import click
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
+from sqlmodel import SQLModel
 
 from app import models  # Import models to register them
-from app.extensions import db
+from app.db.session import SessionLocal, engine
 
 
 def register_db_commands(root):
@@ -22,10 +22,8 @@ def register_db_commands(root):
     def create_all(ctx):
         """Creates all database tables."""
         logger = ctx.obj["logger"]
-        settings = ctx.obj["settings"]
-        engine = create_engine(settings.DATABASE_URL)
         logger.info("Creating all database tables...")
-        db.Model.metadata.create_all(bind=engine)
+        SQLModel.metadata.create_all(bind=engine)
         logger.info("All database tables created.")
 
     @db_group.command("seed")
@@ -34,7 +32,6 @@ def register_db_commands(root):
     @click.pass_context
     def seed(ctx, confirm, dry_run):
         logger = ctx.obj["logger"]
-        settings = ctx.obj["settings"]
         admin_email = os.getenv("ADMIN_EMAIL")
 
         if not admin_email:
@@ -45,10 +42,7 @@ def register_db_commands(root):
             logger.warning("Seeding requires --confirm")
             raise click.UsageError("Add --confirm to proceed")
 
-        engine = create_engine(settings.DATABASE_URL)
-        SessionFactory = sessionmaker(bind=engine)
-
-        with transactional_session(SessionFactory, logger, dry_run=dry_run) as session:
+        with transactional_session(SessionLocal, logger, dry_run=dry_run) as session:
             user = session.query(models.User).filter_by(email=admin_email).one_or_none()
             if not user:
                 user = models.User(email=admin_email, is_admin=True, full_name="Admin User")

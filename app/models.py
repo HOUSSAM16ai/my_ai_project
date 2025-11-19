@@ -1,38 +1,21 @@
 # app/models.py
-"""
-New Unified Domain Models using SQLModel.
-"""
 from __future__ import annotations
 import enum
 from datetime import datetime, UTC
 from typing import List, Optional, Any
 from sqlmodel import Field, SQLModel, Relationship, Column, JSON
 from sqlalchemy import String, Text, DateTime, func, Index
-from sqlalchemy.dialects.postgresql import JSONB
-
-# ======================================================================================
-# UTILITIES & TYPES
-# ======================================================================================
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
 
-# Use SA's JSON type for the Column definition
 Json = JSON()
-
-# ======================================================================================
-# ENUMS
-# ======================================================================================
 
 class MessageRole(str, enum.Enum):
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
     SYSTEM = "system"
-
-# ======================================================================================
-# SQLModel DEFINITIONS
-# ======================================================================================
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -45,20 +28,13 @@ class User(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()))
 
     admin_conversations: List["AdminConversation"] = Relationship(back_populates="user")
+    missions: List["Mission"] = Relationship(back_populates="user")
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
-    conversation_type: str = Field(default="general", max_length=50, index=True)
-
-    context_snapshot: Optional[Any] = Field(default=None, sa_column=Column(Json))
-    tags: Optional[List[str]] = Field(default=None, sa_column=Column(Json))
-
-    created_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now()))
-    updated_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()))
-
     user: User = Relationship(back_populates="admin_conversations")
     messages: List["AdminMessage"] = Relationship(back_populates="conversation")
 
@@ -68,14 +44,48 @@ class AdminMessage(SQLModel, table=True):
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole
     content: str = Field(sa_column=Column(Text))
-
-    tokens_used: Optional[int] = Field(default=None)
-    model_used: Optional[str] = Field(default=None, max_length=100, index=True)
-
-    created_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now()))
-    updated_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()))
-
     conversation: AdminConversation = Relationship(back_populates="messages")
 
-# NOTE: Other models (Mission, Task, etc.) are omitted for now but would be migrated
-# in the same way in a full implementation.
+class Mission(SQLModel, table=True):
+    __tablename__ = "missions"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    objective: str
+    user_id: int = Field(foreign_key="users.id", index=True)
+    user: User = Relationship(back_populates="missions")
+    tasks: List["Task"] = Relationship(back_populates="mission")
+    mission_plans: List["MissionPlan"] = Relationship(back_populates="mission")
+    mission_events: List["MissionEvent"] = Relationship(back_populates="mission")
+
+class MissionEvent(SQLModel, table=True):
+    __tablename__ = "mission_events"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    event: str
+    mission_id: int = Field(foreign_key="missions.id", index=True)
+    mission: Mission = Relationship(back_populates="mission_events")
+
+class MissionPlan(SQLModel, table=True):
+    __tablename__ = "mission_plans"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    plan: str
+    mission_id: int = Field(foreign_key="missions.id", index=True)
+    mission: Mission = Relationship(back_populates="mission_plans")
+
+class Task(SQLModel, table=True):
+    __tablename__ = "tasks"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    description: str
+    mission_id: int = Field(foreign_key="missions.id", index=True)
+    mission: Mission = Relationship(back_populates="tasks")
+
+class PromptTemplate(SQLModel, table=True):
+    __tablename__ = "prompt_templates"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True)
+    template: str
+
+class GeneratedPrompt(SQLModel, table=True):
+    __tablename__ = "generated_prompts"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    prompt: str
+    template_id: int = Field(foreign_key="prompt_templates.id", index=True)
+

@@ -1,30 +1,44 @@
 # app/kernel.py
 """
-The Reality Kernel for the CogniForge project.
+The Reality Kernel V3 for the CogniForge project.
 
-This is the central point of the unified reality, where the application's
-existence is defined. It bridges the old Flask world with the new FastAPI
-world, ensuring a single, coherent application context.
+This is the central execution spine of the system, providing autonomous
+state management, a universal dependency registry, and adaptive
+configuration layers. It is designed to be fully framework-agnostic.
 """
 
 from fastapi import FastAPI
+from typing import Dict, Any, Callable
 
-# ======================================================================================
-# THE UNIFIED APPLICATION OBJECT
-# ======================================================================================
-# This is the single, unified application instance. All parts of the system,
-# both new and legacy, will be rooted in this object.
-app = FastAPI(
-    title="CogniForge - Unified Reality Kernel",
-    description="The single, coherent application instance for CogniForge.",
-    version="1.0.0",
-)
+class RealityKernel:
+    def __init__(self):
+        self.app = FastAPI(
+            title="CogniForge - Reality Kernel V3",
+            description="The central execution spine of the system.",
+            version="3.0.0",
+        )
+        self._state: Dict[str, Any] = {}
+        self._dependencies: Dict[str, Callable] = {}
+        self.config = self._load_adaptive_config()
 
-# ======================================================================================
-# LEGACY BRIDGE
-# ======================================================================================
-# This section provides a compatibility layer for legacy components that
-# still expect a Flask-like application context. It is a temporary measure
-# until all components are migrated to the new reality.
+    def _load_adaptive_config(self) -> Dict[str, Any]:
+        from app.core.config import settings
+        return settings.model_dump()
 
-# Further implementation will follow.
+    def set_state(self, key: str, value: Any):
+        self._state[key] = value
+
+    def get_state(self, key: str) -> Any:
+        return self._state.get(key)
+
+    def register_dependency(self, name: str, provider: Callable):
+        self._dependencies[name] = provider
+
+    def get_dependency(self, name: str) -> Any:
+        provider = self._dependencies.get(name)
+        if not provider:
+            raise KeyError(f"Dependency '{name}' not found.")
+        return provider()
+
+kernel = RealityKernel()
+app = kernel.app
