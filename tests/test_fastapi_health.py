@@ -1,9 +1,17 @@
 # tests/test_fastapi_health.py
 from fastapi.testclient import TestClient
 
-from app.kernel import app
+def test_health(client: TestClient):
+    """
+    GIVEN a running FastAPI application with a test client
+    WHEN a GET request is made to the /system/health endpoint
+    THEN the response status code should be 200 OK, indicating a healthy database connection.
+    """
+    response = client.get("/system/health")
+    # In a test environment with an in-memory SQLite DB, the connection should always be healthy.
+    assert response.status_code == 200
 
-def test_health():
-    with TestClient(app) as client:
-        r = client.get("/system/health")
-    assert r.status_code in [200, 503]
+    # Also verify the content of the response
+    data = response.json()
+    assert data["application"] == "ok"
+    assert data["database"] == "healthy"
