@@ -12,7 +12,7 @@
 from collections.abc import Callable
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request
+from app.core.kernel_v2.compat_collapse import current_app, jsonify, request
 
 
 class APIVersion:

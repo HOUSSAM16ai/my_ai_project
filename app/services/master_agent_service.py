@@ -68,7 +68,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from flask import current_app, has_app_context
+from app.core.kernel_v2.compat_collapse import current_app
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import joinedload
 

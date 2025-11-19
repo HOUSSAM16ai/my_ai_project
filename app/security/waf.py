@@ -22,7 +22,7 @@ from re import Pattern
 from typing import Any
 from urllib.parse import unquote
 
-from flask import Request, g
+from app.core.kernel_v2.compat_collapse import g
 
 
 @dataclass

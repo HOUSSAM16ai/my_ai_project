@@ -19,7 +19,7 @@ across the entire application. Follows Single Responsibility Principle (SRP).
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import Flask, current_app
+from app.core.kernel_v2.compat_collapse import current_app
 
 
 class ErrorResponseFactory:

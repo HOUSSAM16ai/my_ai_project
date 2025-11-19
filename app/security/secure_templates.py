@@ -19,7 +19,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from flask import Request, current_app, g, jsonify, request
+from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request
 from werkzeug.security import generate_password_hash
 
 # ======================================================================================

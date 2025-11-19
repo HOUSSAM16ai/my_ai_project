@@ -133,7 +133,7 @@ try:
 except Exception:  # pragma: no cover
     requests = None
 try:
-    from flask import current_app, has_app_context
+from app.core.kernel_v2.compat_collapse import current_app
 except Exception:  # pragma: no cover
     current_app = None
 

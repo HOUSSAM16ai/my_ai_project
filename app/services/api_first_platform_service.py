@@ -23,7 +23,7 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
 
-from flask import g, jsonify, request
+from app.core.kernel_v2.compat_collapse import g, jsonify, request
 
 # =============================================================================
 # API CONTRACT VALIDATION

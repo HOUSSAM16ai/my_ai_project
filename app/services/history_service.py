@@ -1,7 +1,6 @@
 # app/services/history_service.py - The Akashic Records Ministry
 
-from flask import current_app
-from flask_login import current_user
+from app.core.kernel_v2.compat_collapse import current_app, current_user
 from sqlalchemy import exc as sqlalchemy_exc
 
 from app import db

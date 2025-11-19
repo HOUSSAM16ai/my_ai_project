@@ -14,7 +14,7 @@ Architecture: Layered Defense with AI Adaptation
 
 from typing import Any
 
-from flask import Flask, g
+from app.core.kernel_v2.compat_collapse import g, jsonify, request
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
@@ -141,7 +141,6 @@ class SuperhumanSecurityOrchestrator:
         @app.route("/api/security/stats")
         def security_stats():
             """Get security statistics"""
-            from flask import jsonify
 
             return jsonify(self.get_statistics())
 
@@ -149,7 +148,6 @@ class SuperhumanSecurityOrchestrator:
         @app.route("/api/security/events")
         def security_events():
             """Get recent security events"""
-            from flask import jsonify, request
 
             limit = request.args.get("limit", 100, type=int)
             telemetry = self._get_telemetry_guard()
@@ -164,7 +162,6 @@ class SuperhumanSecurityOrchestrator:
         @app.route("/api/security/audit")
         def security_audit():
             """Get audit trail"""
-            from flask import jsonify, request
 
             limit = request.args.get("limit", 100, type=int)
             telemetry = self._get_telemetry_guard()
@@ -186,7 +183,6 @@ class SuperhumanSecurityOrchestrator:
         Returns:
             Flask response if blocked, None if allowed
         """
-        from flask import request
 
         self.stats["total_requests"] += 1
 

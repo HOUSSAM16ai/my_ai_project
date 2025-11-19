@@ -13,7 +13,7 @@ import json
 import time
 from datetime import UTC, datetime
 
-from flask import Flask, g, request
+from app.core.kernel_v2.compat_collapse import g, request
 
 
 def setup_request_logging(app: Flask):

@@ -24,7 +24,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-from flask import current_app, jsonify, request
+from app.core.kernel_v2.compat_collapse import current_app, current_user, jsonify, request
 
 # ======================================================================================
 # ENUMERATIONS
@@ -546,7 +546,6 @@ def enforce_rate_limit_policy(f: Callable) -> Callable:
 
         # Determine client type
         # This is simplified - should integrate with your auth system
-        from flask_login import current_user
 
         try:
             if current_user.is_authenticated:

@@ -27,8 +27,7 @@ from functools import wraps
 from typing import Any
 
 import jwt
-from flask import current_app, g, jsonify, request
-from flask_login import current_user
+from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request, current_user
 
 # ======================================================================================
 # CONFIGURATION & CONSTANTS

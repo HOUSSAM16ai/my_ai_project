@@ -44,7 +44,7 @@ class ResponseFactory:
         headers = headers or {}
 
         if framework == "flask":
-            from flask import jsonify
+from app.core.kernel_v2.compat_collapse import jsonify
 
             response = jsonify(data)
             response.status_code = status_code
