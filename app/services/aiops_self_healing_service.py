@@ -24,7 +24,7 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from flask import current_app
+from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS

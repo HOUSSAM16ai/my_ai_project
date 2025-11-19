@@ -18,7 +18,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from flask import Flask, g, jsonify, request
+from app.core.kernel_v2.compat_collapse import g, jsonify, request
 
 from app.analysis.anomaly_detector import AnomalyDetector
 from app.analysis.pattern_recognizer import PatternRecognizer

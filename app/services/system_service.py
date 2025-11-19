@@ -38,7 +38,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from flask import current_app
+from app.core.kernel_v2.compat_collapse import current_app
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 

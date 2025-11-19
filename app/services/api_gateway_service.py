@@ -30,7 +30,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-from flask import g, jsonify, request
+from app.core.kernel_v2.compat_collapse import g, jsonify, request
 
 logger = logging.getLogger(__name__)
 
