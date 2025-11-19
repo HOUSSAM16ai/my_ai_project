@@ -8,9 +8,12 @@ uvicorn[standard]>=0.22.0
 sqlalchemy>=2.0
 alembic>=1.10
 psycopg2-binary
+aiosqlite>=0.17.0
 
 # API & Data Validation
 pydantic>=2.0
+sqlmodel>=0.0.12
+jsonschema>=4.0.0
 
 # Asynchronous HTTP requests
 httpx>=0.24.0
