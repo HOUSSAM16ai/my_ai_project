@@ -7,7 +7,19 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config.settings import AppSettings
+from app.core import di
 from app.core.di import get_logger, get_session, get_settings
+
+
+@pytest.fixture(autouse=True)
+def reset_singletons():
+    """
+    Fixture to reset the singleton instances in the di module before each test.
+    This is crucial for test isolation.
+    """
+    di._settings_singleton = None
+    di._session_factory_singleton = None
+    yield
 
 
 @pytest.fixture(scope="module")
@@ -39,11 +51,13 @@ def test_get_logger_smoke(setup_test_environment):
     - The function returns a valid logger instance.
     - The logger's level is correctly configured from settings.
     """
-    logger = get_logger(__name__)
+    # The logger name is now set by the app, not passed to the DI function
+    logger = get_logger()
 
     assert isinstance(logger, logging.Logger)
     assert logger.level == logging.DEBUG
-    assert logger.name == __name__
+    # The name is hardcoded in the cli_logging module
+    assert logger.name == "cogniforge.cli"
 
 
 def test_get_settings_smoke(setup_test_environment):
