@@ -1,14 +1,18 @@
 {
-  "name": "CogniForge - Enterprise AI Cluster",
-
-  // --- التصحيح هنا: أعدنا (../) لأن الملف خارج مجلد .devcontainer ---
+  "name": "CogniForge - Ultimate Edition",
+  
+  // المسار النسبي الصحيح لملف الدوكر (كما اكتشفنا سابقاً)
   "dockerComposeFile": ["../docker-compose.yml"],
-
+  
   "service": "web",
-
+  
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
+  // --- القوة المطلقة ---
+  // العمل بصلاحيات الروت داخل بيئة التطوير فقط
+  // هذا يحل مشكلة (failed to solve) ومشكلة (permission denied) نهائياً
   "remoteUser": "root",
+
   "remoteEnv": {
     "HOME": "/root",
     "PYTHONUNBUFFERED": "1"
@@ -16,32 +20,39 @@
 
   "overrideCommand": false,
 
+  // التثبيت الذكي: يفحص الملفات ثم يثبت
   "postCreateCommand": "pip install --no-cache-dir --upgrade pip && if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi && pip install --no-cache-dir ruff pytest",
 
-  "forwardPorts": [5000, 8000],
+  // إعدادات المنافذ الذكية
+  "forwardPorts": [8000],
   "portsAttributes": {
-      "5000": { "label": "Core API", "onAutoForward": "notify" },
-      "8000": { "label": "AI Service", "onAutoForward": "silent" }
+      "8000": { 
+        "label": "Unified AI Interface", 
+        "onAutoForward": "notify" 
+      }
   },
 
+  // الميزات الإضافية (بدون Docker-in-Docker لتجنب التعقيد حالياً)
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
-      "configureZshAsDefaultShell": true
+      "configureZshAsDefaultShell": true,
+      "username": "root"
     }
   },
 
+  // تخصيصات VS Code الاحترافية
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff",
-        "usernamehw.errorlens",
-        "eamodio.gitlens",
-        "humao.rest-client"
+        "charliermarsh.ruff",       // السرعة
+        "usernamehw.errorlens",     // الرؤية
+        "eamodio.gitlens",          // التاريخ
+        "humao.rest-client",        // الاختبار
+        "mechatroner.rainbow-csv"   // قراءة البيانات
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
