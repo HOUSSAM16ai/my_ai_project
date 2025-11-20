@@ -4,12 +4,8 @@ Test script to verify the admin chat 500 error fix
 Tests that errors return 200 with proper error details instead of 500
 """
 
-import os
 import sys
 from unittest.mock import patch
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tests._helpers import parse_response_json
 
