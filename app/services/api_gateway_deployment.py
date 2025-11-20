@@ -234,7 +234,7 @@ class ABTestingService:
             if winning_variant:
                 experiment.winning_variant = winning_variant
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Ended A/B test: {experiment.name}, winner: {winning_variant or 'undecided'}"
             )
             return True

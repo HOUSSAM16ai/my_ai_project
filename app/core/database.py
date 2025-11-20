@@ -1,51 +1,38 @@
-# app/core/database.py
-"""
-The SPACE-ENGINE.
-
-This engine enforces the Law of Spatial Determinism, ensuring that all
-parts of the system see a consistent and correct database state. It is the
-single source of truth for database connections and sessions.
-"""
-
-import os
-from collections.abc import AsyncGenerator
-
+from typing import AsyncGenerator
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
 
-# ======================================================================================
-# DATABASE CONFIGURATION
-# ======================================================================================
-# The DATABASE_URL is retrieved from the environment. This decouples the
-# engine from the application configuration.
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+from app.core.config import settings
 
-# ======================================================================================
-# THE CORE DATABASE OBJECTS
-# ======================================================================================
-# The engine is the core interface to the database.
-engine = create_async_engine(DATABASE_URL, echo=True)
-
-# The session factory is used to create new database sessions.
-# The `expire_on_commit=False` setting is important for FastAPI, as it
-# allows objects to be accessed even after the session is closed.
-AsyncSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
+# Async Engine (Primary for FastAPI)
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=settings.DEBUG,
+    future=True,
 )
 
-# The declarative base is used to define database models.
-Base = declarative_base()
+async_session_factory = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 
+# Sync Engine (For Background Threads/Legacy Compatibility)
+# Convert async sqlite url to sync for fallback
+SYNC_DATABASE_URL = settings.DATABASE_URL.replace("+aiosqlite", "")
+sync_engine = create_engine(
+    SYNC_DATABASE_URL,
+    echo=settings.DEBUG,
+    future=True,
+    connect_args={"check_same_thread": False} if "sqlite" in SYNC_DATABASE_URL else {},
+)
 
-# ======================================================================================
-# THE UNIFIED SESSION PROTOCOL
-# ======================================================================================
-# This dependency-injectable function is the ONLY way to get a database session.
-# It ensures that every request has a single, consistent session that is
-# properly closed after the request is complete.
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Provides a database session to the application.
-    """
-    async with AsyncSessionLocal() as session:
+    async with async_session_factory() as session:
         yield session

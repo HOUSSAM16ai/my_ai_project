@@ -28,9 +28,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
-from app.core.kernel_v2.compat_collapse import g, jsonify, request
+from fastapi import Request, HTTPException, status, Depends
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -166,12 +167,12 @@ class ProtocolAdapter(ABC):
     """Abstract protocol adapter interface"""
 
     @abstractmethod
-    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
+    async def validate_request(self, request: Request) -> tuple[bool, str | None]:
         """Validate request format"""
         pass
 
     @abstractmethod
-    def transform_request(self, request_data: Any) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform request to internal format"""
         pass
 
@@ -184,39 +185,47 @@ class ProtocolAdapter(ABC):
 class RESTAdapter(ProtocolAdapter):
     """REST protocol adapter"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
+    async def validate_request(self, request: Request) -> tuple[bool, str | None]:
         """Validate REST request"""
-        # REST requests are already validated by Flask
         return True, None
 
-    def transform_request(self, request_data: Any) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform REST request"""
+        body = {}
+        try:
+            body = await request.json()
+        except Exception:
+            pass
+
         return {
             "method": request.method,
-            "path": request.path,
+            "path": request.url.path,
             "headers": dict(request.headers),
-            "query": request.args.to_dict(),
-            "body": request.get_json(silent=True) or {},
+            "query": dict(request.query_params),
+            "body": body,
         }
 
     def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to REST response"""
-        return jsonify(response_data)
+        return JSONResponse(content=response_data)
 
 
 class GraphQLAdapter(ProtocolAdapter):
     """GraphQL protocol adapter"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
+    async def validate_request(self, request: Request) -> tuple[bool, str | None]:
         """Validate GraphQL request"""
-        data = request.get_json(silent=True)
-        if not data or "query" not in data:
-            return False, "Missing 'query' field in GraphQL request"
-        return True, None
+        try:
+            data = await request.json()
+            if not data or "query" not in data:
+                return False, "Missing 'query' field in GraphQL request"
+            return True, None
+        except Exception:
+             return False, "Invalid JSON body"
 
-    def transform_request(self, request_data: Any) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform GraphQL request"""
-        data = request.get_json()
+        data = await request.json()
         return {
             "query": data.get("query"),
             "variables": data.get("variables", {}),
@@ -226,25 +235,22 @@ class GraphQLAdapter(ProtocolAdapter):
 
     def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to GraphQL response"""
-        return jsonify({"data": response_data, "errors": None})
+        return JSONResponse(content={"data": response_data, "errors": None})
 
 
 class GRPCAdapter(ProtocolAdapter):
     """gRPC protocol adapter (placeholder for future implementation)"""
 
-    def validate_request(self, request_data: Any) -> tuple[bool, str | None]:
+    async def validate_request(self, request: Request) -> tuple[bool, str | None]:
         """Validate gRPC request"""
-        # TODO: Implement gRPC validation
         return True, None
 
-    def transform_request(self, request_data: Any) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform gRPC request"""
-        # TODO: Implement gRPC transformation
         return {"metadata": {"protocol": "grpc"}}
 
     def transform_response(self, response_data: dict[str, Any]) -> Any:
         """Transform to gRPC response"""
-        # TODO: Implement gRPC transformation
         return response_data
 
 
@@ -286,7 +292,6 @@ class OpenAIAdapter(ModelProviderAdapter):
 
     def estimate_cost(self, model: str, tokens: int) -> float:
         """Estimate OpenAI cost"""
-        # Simplified cost estimation
         cost_per_1k = 0.002 if "gpt-4" in model else 0.0002
         return (tokens / 1000) * cost_per_1k
 
@@ -417,12 +422,12 @@ class IntelligentRouter:
         best = max(candidates, key=lambda x: x["score"])
 
         decision = RoutingDecision(
-            service_id=best["provider"],
+            service_id=str(best["provider"]),
             base_url=f"https://api.{best['provider']}.com",  # Placeholder
             protocol=ProtocolType.REST,
-            estimated_latency_ms=best["latency"],
-            estimated_cost=best["cost"],
-            confidence_score=best["score"],
+            estimated_latency_ms=float(best["latency"]),
+            estimated_cost=float(best["cost"]),
+            confidence_score=float(best["score"]),
             reasoning=f"Selected {best['provider']} based on {strategy.value} strategy",
             metadata={"all_candidates": len(candidates)},
         )
@@ -488,7 +493,12 @@ class IntelligentCache:
     def _generate_key(self, request_data: dict[str, Any]) -> str:
         """Generate cache key from request data"""
         # Create deterministic hash of request
-        key_data = json.dumps(request_data, sort_keys=True)
+        try:
+            key_data = json.dumps(request_data, sort_keys=True)
+        except Exception:
+            # Fallback for non-serializable data
+            key_data = str(request_data)
+
         return hashlib.sha256(key_data.encode()).hexdigest()
 
     def get(self, request_data: dict[str, Any]) -> dict[str, Any] | None:
@@ -707,8 +717,8 @@ class APIGatewayService:
         self.upstream_services[service.service_id] = service
         logger.info(f"Registered upstream service: {service.service_id}")
 
-    def process_request(
-        self, protocol: ProtocolType = ProtocolType.REST, route_id: str | None = None
+    async def process_request(
+        self, request: Request, protocol: ProtocolType = ProtocolType.REST, route_id: str | None = None
     ) -> tuple[dict[str, Any], int]:
         """
         معالجة الطلب عبر البوابة - Process request through gateway
@@ -725,19 +735,22 @@ class APIGatewayService:
                 return {"error": f"Unsupported protocol: {protocol.value}"}, 400
 
             # Validate request
-            is_valid, error_msg = adapter.validate_request(request)
+            is_valid, error_msg = await adapter.validate_request(request)
             if not is_valid:
                 return {"error": error_msg}, 400
 
             # Transform request
-            request_data = adapter.transform_request(request)
+            request_data = await adapter.transform_request(request)
 
             # 2. Policy Enforcement
+            # In FastAPI we might use dependency injection for user, here we try to extract it from request state if available
+            user_id = getattr(request.state, "user_id", None)
+
             request_context = {
-                "user_id": getattr(g, "user_id", None),
-                "endpoint": request.path,
+                "user_id": user_id,
+                "endpoint": request.url.path,
                 "method": request.method,
-                "authenticated": hasattr(g, "user_id"),
+                "authenticated": user_id is not None,
             }
 
             allowed, deny_reason = self.policy_engine.evaluate(request_context)
@@ -809,32 +822,34 @@ def get_gateway_service() -> APIGatewayService:
 
 def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool = False):
     """
-    Decorator to process requests through API Gateway
+    Decorator to process requests through API Gateway (FastAPI Dependency Injection Friendly)
 
     Usage:
+        @router.get("/my-endpoint")
         @gateway_process(protocol=ProtocolType.REST, cacheable=True)
-        def my_endpoint():
-            return {'data': 'response'}
+        async def my_endpoint(request: Request):
+            ...
     """
-
+    # Note: In FastAPI, decorators that wrap route handlers need to match the signature or use dependencies.
+    # This is a simplified adaptation.
     def decorator(f: Callable) -> Callable:
         @wraps(f)
-        def decorated_function(*args, **kwargs):
+        async def decorated_function(request: Request, *args, **kwargs):
             gateway = get_gateway_service()
 
             # Process through gateway
-            response_data, status_code = gateway.process_request(protocol=protocol)
+            response_data, status_code = await gateway.process_request(request, protocol=protocol)
 
             if status_code != 200:
-                return jsonify(response_data), status_code
+                return JSONResponse(content=response_data, status_code=status_code)
 
             # Call original function
             try:
-                result = f(*args, **kwargs)
+                result = await f(request, *args, **kwargs)
                 return result
             except Exception as e:
                 logger.error(f"Endpoint error: {e}", exc_info=True)
-                return {"error": "Internal error", "message": str(e)}, 500
+                return JSONResponse(content={"error": "Internal error", "message": str(e)}, status_code=500)
 
         return decorated_function
 
