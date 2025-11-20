@@ -1,37 +1,29 @@
 {
   "name": "CogniForge - Enterprise AI Cluster",
 
-  // --- التعديل الحاسم هنا ---
-  // المسار أصبح مباشراً لأن الملف بجانبنا
-  "dockerComposeFile": ["docker-compose.yml"],
+  // --- التصحيح هنا: أعدنا (../) لأن الملف خارج مجلد .devcontainer ---
+  "dockerComposeFile": ["../docker-compose.yml"],
 
-  // اسم الخدمة مطابق لما رأيناه في الصورة (web)
   "service": "web",
 
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
-  // --- إعدادات البنية التحتية ---
   "remoteUser": "root",
   "remoteEnv": {
     "HOME": "/root",
-    "PYTHONUNBUFFERED": "1" // لطباعة سجلات الذكاء الاصطناعي فوراً
+    "PYTHONUNBUFFERED": "1"
   },
 
-  // نمنع تجاوز أمر التشغيل لنضمن عمل الحاوية كما صممتها في Dockerfile
   "overrideCommand": false,
 
-  // --- أوامر التجهيز (تعمل مرة واحدة) ---
-  // يقوم بتثبيت المكتبات و Ruff مباشرة
   "postCreateCommand": "pip install --no-cache-dir --upgrade pip && if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi && pip install --no-cache-dir ruff pytest",
 
-  // --- الشبكات والمنافذ ---
   "forwardPorts": [5000, 8000],
   "portsAttributes": {
-      "5000": { "label": "Core API (FastAPI)", "onAutoForward": "notify" },
+      "5000": { "label": "Core API", "onAutoForward": "notify" },
       "8000": { "label": "AI Service", "onAutoForward": "silent" }
   },
 
-  // --- أدوات المطور الخارقة ---
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
@@ -41,14 +33,13 @@
     }
   },
 
-  // --- تخصيص VS Code ---
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff",       // المدقق الصاروخي
-        "usernamehw.errorlens",     // لإظهار الأخطاء داخل السطر
+        "charliermarsh.ruff",
+        "usernamehw.errorlens",
         "eamodio.gitlens",
         "humao.rest-client"
       ],
