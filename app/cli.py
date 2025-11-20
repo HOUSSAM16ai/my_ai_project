@@ -12,8 +12,12 @@ from app.core.di import get_logger, get_session, get_settings
 @click.pass_context
 def cli(ctx, env):
     """A CLI tool for CogniForge."""
+    # Initialize settings
     settings = get_settings(env)
-    logger = get_logger(settings)
+
+    # Initialize logger - get_logger() in app/core/di.py does NOT accept arguments
+    logger = get_logger()
+
     ctx.obj = {
         "settings": settings,
         "logger": logger,

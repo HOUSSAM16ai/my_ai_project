@@ -14,6 +14,7 @@
 
 import builtins
 import contextlib
+import functools
 import hashlib
 import logging
 import statistics
@@ -22,7 +23,9 @@ import time
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Callable, TypeVar
+
+from fastapi import Request, Response
 
 # ======================================================================================
 # DATA STRUCTURES FOR OBSERVABILITY
@@ -410,3 +413,53 @@ def get_observability_service() -> APIObservabilityService:
     if _observability_service is None:
         _observability_service = APIObservabilityService(sla_target_ms=20.0)
     return _observability_service
+
+
+# ======================================================================================
+# DECORATORS (Moved from legacy/flask or added for completeness)
+# ======================================================================================
+F = TypeVar("F", bound=Callable[..., Any])
+
+def monitor_performance(func: F) -> F:
+    """
+    Decorator to monitor the performance of an endpoint.
+    Records metrics to the global observability service.
+    """
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        service = get_observability_service()
+        endpoint = func.__name__
+        method = "UNKNOWN"
+
+        # Try to extract request info if available in kwargs
+        # This is a best-effort heuristic for FastAPI endpoints
+        for arg in kwargs.values():
+            if isinstance(arg, Request):
+                endpoint = str(arg.url.path)
+                method = arg.method
+                break
+
+        start_time = time.time()
+        status_code = 200
+        error = None
+
+        try:
+            result = await func(*args, **kwargs)
+            if isinstance(result, Response):
+                status_code = result.status_code
+            return result
+        except Exception as e:
+            status_code = 500
+            error = str(e)
+            raise e
+        finally:
+            duration_ms = (time.time() - start_time) * 1000
+            service.record_request_metrics(
+                endpoint=endpoint,
+                method=method,
+                status_code=status_code,
+                duration_ms=duration_ms,
+                error=error
+            )
+
+    return wrapper  # type: ignore

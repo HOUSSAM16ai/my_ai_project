@@ -30,11 +30,12 @@ def mock_user():
 
 def _run_test_with_mock_response(ai_service, mock_user, mock_response, question):
     """Helper function to run a test with a mocked AI response."""
+    # Use patch.object on 'save_message' which is the public method we added as an alias/real method
     with (
         patch("app.services.admin_ai_service.get_llm_client") as mock_get_client,
         patch("os.getenv") as mock_getenv,
         patch.object(ai_service, "create_conversation", return_value=Mock()),
-        patch.object(ai_service, "_save_message", return_value=None),
+        patch.object(ai_service, "save_message", return_value=None),
     ):
         mock_getenv.return_value = "test-api-key"
         mock_client = Mock()

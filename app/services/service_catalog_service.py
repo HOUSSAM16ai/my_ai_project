@@ -154,18 +154,18 @@ class ServiceCatalogService:
 
     def _initialize_templates(self):
         """Initialize default service templates"""
-        # Python Flask Microservice
+        # Python FastAPI Microservice (Replaced Flask)
         self.register_template(
             ServiceTemplate(
-                template_id="python-flask-microservice",
-                name="Python Flask Microservice",
-                description="Production-ready Flask microservice",
+                template_id="python-fastapi-microservice",
+                name="Python FastAPI Microservice",
+                description="High-performance FastAPI microservice",
                 service_type=ServiceType.MICROSERVICE,
-                tech_stack=["Python", "Flask", "SQLAlchemy", "PostgreSQL"],
+                tech_stack=["Python", "FastAPI", "SQLModel", "PostgreSQL"],
                 files={
-                    "app.py": "# Flask application\nfrom flask import Flask\napp = Flask(__name__)",
-                    "requirements.txt": "Flask\nSQLAlchemy\npsycopg2-binary",
-                    "Dockerfile": "FROM python:3.11\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt",
+                    "app.py": "# FastAPI application\nfrom fastapi import FastAPI\napp = FastAPI()",
+                    "requirements.txt": "fastapi\nuvicorn\nsqlmodel",
+                    "Dockerfile": "FROM python:3.12\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt",
                 },
                 parameters={"service_name": "string", "port": "integer"},
             )

@@ -1,2 +1,3 @@
-# This file is intentionally left blank to mark the 'app' directory as a Python package.
-# The FastAPI application is created and run from app.main.
+# app/__init__.py
+"""App package initializer."""
+__all__ = ["models", "api", "services", "kernel"]

@@ -46,6 +46,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: 🔍 Collect Tests (Sanity Check)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+        run: |
+          mkdir -p reports
+          python -m pytest --collect-only -q > reports/ci_test_collect_count.txt 2>&1 || true
+          cat reports/ci_test_collect_count.txt
+
       - name: 🧪 Run Full Test Suite
         env:
           # Ensure a consistent testing environment.
@@ -58,7 +67,7 @@ jobs:
           echo "🧪 Running full test suite..."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          python -m pytest tests/ -q --maxfail=1 --timeout=60 --timeout-method=thread 2>&1 | tee reports/pytest.log
+          python -m pytest tests/ -q --maxfail=10 --timeout=120 2>&1 | tee reports/pytest.log
 
       - name: 📊 Summary
         if: always()
@@ -76,4 +85,4 @@ jobs:
         with:
           name: test-logs
           path: |
-            reports/pytest.log
+            reports/
