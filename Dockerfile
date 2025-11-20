@@ -53,7 +53,5 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://127.0.0.1:${PORT}/health || exit 1
 
-# Command to run the application using Gunicorn with Uvicorn workers
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", \
-     "-w", "4", "--threads", "2", "--bind", "0.0.0.0:5000", \
-     "--timeout", "120", "--keep-alive", "5"]
+# Command to run the application using Uvicorn directly for ASGI performance
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4"]

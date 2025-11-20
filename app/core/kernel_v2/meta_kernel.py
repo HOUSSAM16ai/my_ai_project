@@ -3,10 +3,11 @@
 The Meta-Kernel, the central nervous system of Reality Kernel v2.
 """
 
-from .state_engine import StateEngine
+from . import compat_collapse  # Import the module itself
 from .config_v2 import ConfigV2, get_settings
 from .logging_spine import get_logger, setup_logging
-from . import compat_collapse  # Import the module itself
+from .state_engine import StateEngine
+
 
 class MetaKernel:
     """

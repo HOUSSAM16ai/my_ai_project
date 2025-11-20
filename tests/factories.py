@@ -1,7 +1,8 @@
 # tests/factories.py
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
-from app.models import User, Mission
+
+from app.models import Mission, User
 
 # Factories are now session-agnostic. The session is injected at test runtime via a fixture.
 

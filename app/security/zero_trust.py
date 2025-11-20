@@ -1,5 +1,6 @@
 # app/security/zero_trust.py
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
+
 
 class ZeroTrustAuthenticator:
     def __init__(self):

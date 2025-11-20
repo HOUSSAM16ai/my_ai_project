@@ -2,9 +2,10 @@
 """
 The Compatibility Collapse Layer for Reality Kernel v2.
 """
-import uuid
 import json
+import uuid
 from unittest.mock import MagicMock
+
 
 class _MockUser:
     """A mock user object."""

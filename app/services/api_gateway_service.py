@@ -407,7 +407,7 @@ class IntelligentRouter:
                 )
 
             except Exception as e:
-                current_app.logger.warning(f"Error evaluating provider {provider_name}: {e}")
+                logger.warning(f"Error evaluating provider {provider_name}: {e}")
                 continue
 
         if not candidates:
@@ -617,7 +617,7 @@ class PolicyEngine:
                         return False, f"Policy violation: {policy.name}"
 
                 except Exception as e:
-                    current_app.logger.error(f"Policy evaluation error: {e}")
+                    logger.error(f"Policy evaluation error: {e}")
                     continue
 
             return True, None
@@ -700,12 +700,12 @@ class APIGatewayService:
     def register_route(self, route: GatewayRoute):
         """Register a gateway route"""
         self.routes[route.route_id] = route
-        current_app.logger.info(f"Registered route: {route.route_id} -> {route.path_pattern}")
+        logger.info(f"Registered route: {route.route_id} -> {route.path_pattern}")
 
     def register_upstream_service(self, service: UpstreamService):
         """Register an upstream service"""
         self.upstream_services[service.service_id] = service
-        current_app.logger.info(f"Registered upstream service: {service.service_id}")
+        logger.info(f"Registered upstream service: {service.service_id}")
 
     def process_request(
         self, protocol: ProtocolType = ProtocolType.REST, route_id: str | None = None
@@ -768,7 +768,7 @@ class APIGatewayService:
             return response_data, 200
 
         except Exception as e:
-            current_app.logger.error(f"Gateway processing error: {e}", exc_info=True)
+            logger.error(f"Gateway processing error: {e}", exc_info=True)
             return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
 
     def get_gateway_stats(self) -> dict[str, Any]:
@@ -833,8 +833,8 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool 
                 result = f(*args, **kwargs)
                 return result
             except Exception as e:
-                current_app.logger.error(f"Endpoint error: {e}", exc_info=True)
-                return jsonify({"error": "Internal error", "message": str(e)}), 500
+                logger.error(f"Endpoint error: {e}", exc_info=True)
+                return {"error": "Internal error", "message": str(e)}, 500
 
         return decorated_function
 

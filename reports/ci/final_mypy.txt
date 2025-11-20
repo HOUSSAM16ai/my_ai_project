@@ -1,0 +1,5 @@
+app/middleware/core/response_factory.py:47:1: error: Expected an indented block
+after 'if' statement on line 46  [syntax]
+    from app.core.kernel_v2.compat_collapse import jsonify
+    ^
+Found 1 error in 1 file (errors prevented further checking)

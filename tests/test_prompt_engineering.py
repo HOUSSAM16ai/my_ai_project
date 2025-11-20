@@ -1,9 +1,10 @@
 # tests/test_prompt_engineering.py
 import pytest
 from sqlalchemy.orm import Session
-from sqlmodel import create_engine
-from app.models import GeneratedPrompt, PromptTemplate, User
+
+from app.models import User
 from app.services.prompt_engineering_service import PromptEngineeringService
+
 
 @pytest.fixture
 def service() -> PromptEngineeringService:

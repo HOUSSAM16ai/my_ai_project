@@ -7,8 +7,11 @@ state management, a universal dependency registry, and adaptive
 configuration layers. It is designed to be fully framework-agnostic.
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from fastapi import FastAPI
-from typing import Dict, Any, Callable
+
 
 class RealityKernel:
     def __init__(self):
@@ -17,11 +20,11 @@ class RealityKernel:
             description="The central execution spine of the system.",
             version="3.0.0",
         )
-        self._state: Dict[str, Any] = {}
-        self._dependencies: Dict[str, Callable] = {}
+        self._state: dict[str, Any] = {}
+        self._dependencies: dict[str, Callable] = {}
         self.config = self._load_adaptive_config()
 
-    def _load_adaptive_config(self) -> Dict[str, Any]:
+    def _load_adaptive_config(self) -> dict[str, Any]:
         from app.core.config import settings
         return settings.model_dump()
 

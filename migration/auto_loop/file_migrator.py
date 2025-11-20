@@ -7,6 +7,7 @@ applying a generated patch, and writing the changes back.
 """
 import os
 
+
 class FileMigrator:
     @staticmethod
     def apply_patch(file_path: str, patch_content: str) -> bool:
@@ -32,7 +33,7 @@ class FileMigrator:
 
             print(f"Successfully applied patch to {file_path}")
             return True
-        except IOError as e:
+        except OSError as e:
             print(f"Error applying patch to {file_path}: {e}")
             # Attempt to restore from backup
             if os.path.exists(backup_path):
@@ -43,5 +44,5 @@ class FileMigrator:
     @staticmethod
     def read_file(file_path: str) -> str:
         """Reads the content of a file."""
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             return f.read()

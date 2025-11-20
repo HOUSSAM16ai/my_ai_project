@@ -1,7 +1,9 @@
 # app/security/waf.py
 import re
 from typing import Any
-from fastapi import Request, HTTPException, status
+
+from fastapi import HTTPException, Request, status
+
 
 class WebApplicationFirewall:
     def __init__(self):

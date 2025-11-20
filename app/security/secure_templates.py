@@ -19,8 +19,9 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request
 from werkzeug.security import generate_password_hash
+
+from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request
 
 # ======================================================================================
 # SECURE AUTHENTICATION TEMPLATES

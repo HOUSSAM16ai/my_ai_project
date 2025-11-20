@@ -19,7 +19,7 @@ across the entire application. Follows Single Responsibility Principle (SRP).
 from datetime import UTC, datetime
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app
+from fastapi import FastAPI
 
 
 class ErrorResponseFactory:
@@ -82,22 +82,23 @@ class ErrorResponseFactory:
         )
 
     @staticmethod
-    def create_database_error_response(error: Exception, app: Flask = None) -> dict:
+    def create_database_error_response(error: Exception, app: FastAPI | None = None) -> dict:
         """
         Create a database error response.
 
         Args:
             error: The database exception
-            app: Flask application instance (optional)
+            app: FastAPI application instance (optional)
 
         Returns:
             Standardized database error response
         """
-        is_debug = (
-            (app or current_app).config.get("DEBUG", False)
-            if app or hasattr(current_app, "config")
-            else False
-        )
+        # Simplified debug check: assume debug if not explicitly known, or check env
+        is_debug = True # Default to safe verbose for now or check app.debug if available
+        if app:
+            # FastAPI doesn't store debug config exactly like Flask, using a safe default or attribute check
+            is_debug = getattr(app, "debug", False)
+
         details = str(error) if is_debug else "A database error occurred."
 
         return ErrorResponseFactory.create_error_response(
@@ -106,14 +107,14 @@ class ErrorResponseFactory:
 
     @staticmethod
     def create_internal_error_response(
-        error: Exception, app: Flask = None, include_traceback: bool = False
+        error: Exception, app: FastAPI | None = None, include_traceback: bool = False
     ) -> dict:
         """
         Create an internal server error response.
 
         Args:
             error: The exception that occurred
-            app: Flask application instance (optional)
+            app: FastAPI application instance (optional)
             include_traceback: Whether to include full traceback
 
         Returns:
@@ -121,11 +122,7 @@ class ErrorResponseFactory:
         """
         import traceback
 
-        is_debug = (
-            (app or current_app).config.get("DEBUG", False)
-            if app or hasattr(current_app, "config")
-            else False
-        )
+        is_debug = getattr(app, "debug", False) if app else True
 
         if is_debug:
             error_details = {
@@ -141,24 +138,20 @@ class ErrorResponseFactory:
         )
 
     @staticmethod
-    def create_unexpected_error_response(error: Exception, app: Flask = None) -> dict:
+    def create_unexpected_error_response(error: Exception, app: FastAPI | None = None) -> dict:
         """
         Create an unexpected error response.
 
         Args:
             error: The unexpected exception
-            app: Flask application instance (optional)
+            app: FastAPI application instance (optional)
 
         Returns:
             Standardized unexpected error response
         """
         import traceback
 
-        is_debug = (
-            (app or current_app).config.get("DEBUG", False)
-            if app or hasattr(current_app, "config")
-            else False
-        )
+        is_debug = getattr(app, "debug", False) if app else True
 
         if is_debug:
             error_details = {

@@ -133,7 +133,7 @@ try:
 except Exception:  # pragma: no cover
     requests = None
 try:
-from app.core.kernel_v2.compat_collapse import current_app
+    from app.core.kernel_v2.compat_collapse import current_app
 except Exception:  # pragma: no cover
     current_app = None
 

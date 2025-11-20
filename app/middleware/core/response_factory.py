@@ -44,7 +44,13 @@ class ResponseFactory:
         headers = headers or {}
 
         if framework == "flask":
-from app.core.kernel_v2.compat_collapse import jsonify
+            # Legacy Flask support
+            try:
+                from flask import jsonify
+            except ImportError:
+                # Fallback for migration environment
+                import json
+                return json.dumps(data), status_code, headers
 
             response = jsonify(data)
             response.status_code = status_code

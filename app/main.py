@@ -6,11 +6,14 @@ Reality Kernel V3.
 
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import admin, chat, system, ai_service
+from app.api.routers import admin, ai_service, chat, system
 from app.kernel import kernel
+from app.middleware.fastapi_error_handlers import add_error_handlers
 
 # SERVICE ORCHESTRATION
 kernel.app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+add_error_handlers(kernel.app)
 
 kernel.app.include_router(system.router)
 kernel.app.include_router(admin.router)

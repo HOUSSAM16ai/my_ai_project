@@ -2,8 +2,9 @@
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+
 from app.security.waf import waf
-from app.security.rate_limiter import rate_limiter
+
 
 class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(

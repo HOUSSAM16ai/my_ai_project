@@ -8,6 +8,7 @@ that expects a Flask-like application context.
 """
 
 from contextlib import contextmanager
+
 from app.core.database import AsyncSessionLocal
 
 # ======================================================================================

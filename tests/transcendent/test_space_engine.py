@@ -6,9 +6,10 @@ These tests verify the Law of Spatial Determinism.
 """
 
 import pytest
-from sqlalchemy.orm import declarative_base
+
 from app.core.database import Base, get_db
 from app.models import User  # Import a model to check its base
+
 
 def test_models_use_correct_base():
     """

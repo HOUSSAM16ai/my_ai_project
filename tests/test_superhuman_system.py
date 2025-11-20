@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.middleware.superhuman_security import SuperhumanSecurityMiddleware
 
+
 @pytest.fixture
 def client():
     app = FastAPI()

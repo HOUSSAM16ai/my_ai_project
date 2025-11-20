@@ -8,10 +8,12 @@ gateway abstracts the complexities of communicating with external AI
 services.
 """
 
-import os
-from typing import Protocol, runtime_checkable, AsyncGenerator
-import httpx
 import json
+import os
+from collections.abc import AsyncGenerator
+from typing import Protocol, runtime_checkable
+
+import httpx
 
 # --- Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

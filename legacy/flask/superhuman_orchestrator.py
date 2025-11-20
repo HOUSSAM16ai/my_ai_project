@@ -15,7 +15,6 @@ Architecture: Layered Defense with AI Adaptation
 from typing import Any
 
 from app.core.kernel_v2.compat_collapse import g, jsonify, request
-
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.pipeline import SmartPipeline

@@ -3,6 +3,7 @@
 The new asynchronous session maker and dependency provider for Reality Kernel v2.
 """
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from .engine_v2 import get_async_engine
 
 # Create a configured "AsyncSession" class.

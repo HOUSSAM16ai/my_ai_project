@@ -1,11 +1,9 @@
 # app/security/threat_detector.py
-import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import Request
+
 
 @dataclass
 class ThreatDetection:

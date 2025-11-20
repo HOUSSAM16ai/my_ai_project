@@ -6,11 +6,11 @@ This provides a framework-agnostic way to manage request-scoped or
 context-scoped state, replacing the need for Flask's `g` object.
 """
 import contextvars
-from typing import Any, Dict
+from typing import Any
 
 # Use contextvars to ensure state is isolated between concurrent requests
 # in an async environment.
-_state: contextvars.ContextVar[Dict[str, Any]] = contextvars.ContextVar("kernel_state", default={})
+_state: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("kernel_state", default={})
 
 class StateEngine:
     """

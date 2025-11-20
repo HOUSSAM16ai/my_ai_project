@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+
 class TestHistoryServiceMigration(unittest.TestCase):
 
     @patch('app.services.history_service.Conversation', MagicMock())

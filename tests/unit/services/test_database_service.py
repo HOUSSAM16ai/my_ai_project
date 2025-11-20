@@ -1,11 +1,11 @@
 # tests/unit/services/test_database_service.py
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 from app.models import User
 from app.services.database_service import DatabaseService
+
 
 @pytest.fixture(name="session")
 def session_fixture():

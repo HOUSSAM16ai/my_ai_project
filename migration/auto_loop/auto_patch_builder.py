@@ -1,6 +1,7 @@
 # migration/auto_loop/auto_patch_builder.py
 import re
 
+
 class AutoPatchBuilder:
     @staticmethod
     def generate_patch(original_content: str) -> str:
