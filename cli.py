@@ -1,31 +1,33 @@
-# cli.py - The Unified Reality Command Line Interface
-"""
-This is the single entry point for all command-line operations in the
-CogniForge project. It uses the Typer library for a clean, modern CLI
-experience.
+#!/usr/bin/env python3
+import click
 
-The application context required for database access and other services
-is provided by the Reality Kernel and its engines, not by a legacy
-Flask context.
-"""
-
-from app.cli.main import app as typer_app
-
-# ======================================================================================
-# UNIFIED CLI ENTRYPOINT
-# ======================================================================================
-# The main execution block is now clean and framework-agnostic. It directly
-# invokes the Typer application. The necessary application context will be
-# established by the engines when commands are executed.
+from app.cli_handlers.db_cli import register_db_commands
+from app.cli_handlers.maintenance_cli import register_maintenance_commands
+from app.cli_handlers.migrate_cli import register_migrate_commands
+from app.core.di import get_logger, get_session, get_settings
 
 
-@typer_app.callback()
-def callback():
-    """
-    CogniForge Unified Reality CLI.
-    """
-    pass
+@click.group()
+@click.option("--env", default=None, help="Optional env file or label")
+@click.pass_context
+def cli(ctx, env):
+    """A CLI tool for CogniForge."""
+    # Initialize settings
+    settings = get_settings(env)
 
+    # Initialize logger - get_logger() in app/core/di.py does NOT accept arguments
+    logger = get_logger()
+
+    ctx.obj = {
+        "settings": settings,
+        "logger": logger,
+        "get_session": get_session,
+    }
+
+
+register_db_commands(cli)
+register_migrate_commands(cli)
+register_maintenance_commands(cli)
 
 if __name__ == "__main__":
-    typer_app()
+    cli()

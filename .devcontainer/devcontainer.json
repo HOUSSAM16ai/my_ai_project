@@ -1,16 +1,11 @@
 {
   "name": "CogniForge - Ultimate Edition",
-  
-  // المسار النسبي الصحيح لملف الدوكر (كما اكتشفنا سابقاً)
   "dockerComposeFile": ["../docker-compose.yml"],
-  
   "service": "web",
-  
-  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceFolder": "/app",
 
   // --- القوة المطلقة ---
   // العمل بصلاحيات الروت داخل بيئة التطوير فقط
-  // هذا يحل مشكلة (failed to solve) ومشكلة (permission denied) نهائياً
   "remoteUser": "root",
 
   "remoteEnv": {
@@ -18,12 +13,18 @@
     "PYTHONUNBUFFERED": "1"
   },
 
+  // Ensure Dockerfile CMD/ENTRYPOINT is used
   "overrideCommand": false,
 
-  // التثبيت الذكي: يفحص الملفات ثم يثبت
-  "postCreateCommand": "pip install --no-cache-dir --upgrade pip && if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi && pip install --no-cache-dir ruff pytest",
+  // 1. Initialize: Local setup (Optional, usually implicit)
+  // "initializeCommand": "bash .devcontainer/local-setup.sh",
 
-  // إعدادات المنافذ الذكية
+  // 2. Post Create: Dependencies & DB Migrations
+  "postCreateCommand": "bash .devcontainer/on-create.sh",
+
+  // 3. Post Start: Launch background services
+  "postStartCommand": "bash .devcontainer/on-start.sh",
+
   "forwardPorts": [8000],
   "portsAttributes": {
       "8000": { 
@@ -32,7 +33,6 @@
       }
   },
 
-  // الميزات الإضافية (بدون Docker-in-Docker لتجنب التعقيد حالياً)
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {
@@ -42,17 +42,16 @@
     }
   },
 
-  // تخصيصات VS Code الاحترافية
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff",       // السرعة
-        "usernamehw.errorlens",     // الرؤية
-        "eamodio.gitlens",          // التاريخ
-        "humao.rest-client",        // الاختبار
-        "mechatroner.rainbow-csv"   // قراءة البيانات
+        "charliermarsh.ruff",
+        "usernamehw.errorlens",
+        "eamodio.gitlens",
+        "humao.rest-client",
+        "mechatroner.rainbow-csv"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",

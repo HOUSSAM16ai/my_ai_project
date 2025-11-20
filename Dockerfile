@@ -25,16 +25,18 @@ FROM python:3.12-slim
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/venv/bin:$PATH"
+# Ensure /app is in PYTHONPATH so absolute imports work
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # --- الإضافة الحاسمة ---
 # تثبيت أدوات النظام التي يحتاجها VS Code والـ Healthchecks
-# بدون هذه الأدوات، ينهار الـ DevContainer
+# إضافة libpq-dev لدعم psycopg2/asyncpg في وقت التشغيل
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     procps \
     iproute2 \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # إنشاء مستخدم للتطبيق (للأمان في الإنتاج)
