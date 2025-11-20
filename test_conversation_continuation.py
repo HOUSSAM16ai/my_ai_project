@@ -17,11 +17,7 @@ Author: CogniForge System
 Version: 2.0.0 - Superhuman Edition
 """
 
-import os
 import sys
-
-# Add the app directory to the path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from dotenv import load_dotenv
 

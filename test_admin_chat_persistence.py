@@ -17,16 +17,13 @@ Version: 1.0.0
 import os
 import sys
 
-# Add the app directory to the path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
 from dotenv import load_dotenv
 
-load_dotenv()
+from app import create_app, db
+from app.models import AdminConversation, AdminMessage, User
+from app.services.admin_ai_service import AdminAIService
 
-from app import create_app, db  # noqa: E402
-from app.models import AdminConversation, AdminMessage, User  # noqa: E402
-from app.services.admin_ai_service import AdminAIService  # noqa: E402
+load_dotenv()
 
 # Colors for output
 G = "\033[92m"  # Green

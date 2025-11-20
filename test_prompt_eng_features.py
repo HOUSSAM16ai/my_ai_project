@@ -4,11 +4,7 @@ Quick test script for superhuman prompt engineering features
 Tests the new v2.0 features without requiring full test suite
 """
 
-import os
 import sys
-
-# Add app to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.services.prompt_engineering_service import PromptEngineeringService
 
