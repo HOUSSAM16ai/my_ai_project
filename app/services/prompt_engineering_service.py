@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class PromptEngineeringService:
     async def generate_prompt(
         self,
@@ -13,9 +14,11 @@ class PromptEngineeringService:
         user: User,
         template_name: str,
         variables: dict,
-        user_description: str | None = None
+        user_description: str | None = None,
     ) -> str:
-        result = await db.execute(select(PromptTemplate).where(PromptTemplate.name == template_name))
+        result = await db.execute(
+            select(PromptTemplate).where(PromptTemplate.name == template_name)
+        )
         template = result.scalars().first()
 
         if not template:
@@ -26,14 +29,12 @@ class PromptEngineeringService:
 
         prompt_text = template.template.format(**variables)
 
-        generated_record = GeneratedPrompt(
-            prompt=prompt_text,
-            template_id=template.id
-        )
+        generated_record = GeneratedPrompt(prompt=prompt_text, template_id=template.id)
         db.add(generated_record)
         await db.commit()
         await db.refresh(generated_record)
 
         return prompt_text
+
 
 prompt_engineering_service = PromptEngineeringService()

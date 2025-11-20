@@ -49,6 +49,7 @@ _CLIENT_BUILD_SEQ = 0
 # MOCK CLIENT
 # ======================================================================================
 
+
 class MockLLMClient:
     """
     Mock client with minimal compatibility.
@@ -127,9 +128,11 @@ class MockLLMClient:
             "id": self._id,
         }
 
+
 # ======================================================================================
 # FALLBACK HTTP CLIENT
 # ======================================================================================
+
 
 class _HttpFallbackClient:
     """
@@ -257,9 +260,11 @@ class _HttpFallbackClient:
             "base_url": self._base,
         }
 
+
 # ======================================================================================
 # INTERNAL CONFIG HELPERS
 # ======================================================================================
+
 
 def _read_config_key(key: str) -> str | None:
     """
@@ -267,6 +272,7 @@ def _read_config_key(key: str) -> str | None:
     Previously fell back to Flask config; now strictly environment or Pydantic settings.
     """
     return os.environ.get(key)
+
 
 def _resolve_api_credentials() -> dict[str, Any]:
     openrouter_key = _read_config_key("OPENROUTER_API_KEY")
@@ -283,15 +289,19 @@ def _resolve_api_credentials() -> dict[str, Any]:
         return {"provider": "openai", "api_key": openai_key, "base_url": base_url_env or None}
     return {"provider": None, "api_key": None, "base_url": None}
 
+
 def _should_force_mock() -> bool:
     return any(os.getenv(flag, "0") == "1" for flag in ("LLM_FORCE_MOCK", "LLM_MOCK_MODE"))
+
 
 def _bool_env(name: str) -> bool:
     return os.getenv(name, "0") == "1"
 
+
 # ======================================================================================
 # REAL CLIENT BUILDERS
 # ======================================================================================
+
 
 def _build_openai_modern_client(creds: dict[str, Any], timeout: float) -> Any:
     if openai is None:
@@ -305,6 +315,7 @@ def _build_openai_modern_client(creds: dict[str, Any], timeout: float) -> Any:
     except Exception as e:
         _LOG.warning("Failed to build modern OpenAI client: %s", e)
         return None
+
 
 def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float) -> Any:
     if openai is None:
@@ -378,6 +389,7 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float) -> Any:
         pass
     return _LegacyClientWrapper()
 
+
 def _build_real_client(creds: dict[str, Any], timeout: float) -> Any:
     provider = creds["provider"]
     if provider not in ("openrouter", "openai"):
@@ -400,9 +412,11 @@ def _build_real_client(creds: dict[str, Any], timeout: float) -> Any:
 
     return None
 
+
 # ======================================================================================
 # BUILD / FACTORY
 # ======================================================================================
+
 
 def _build_client() -> Any:
     global _CLIENT_BUILD_SEQ
@@ -473,9 +487,11 @@ def _build_client() -> Any:
     _LOG.info("[LLM] No API key detected; mock client in use.")
     return client
 
+
 # ======================================================================================
 # PUBLIC CORE ACCESS
 # ======================================================================================
+
 
 def get_llm_client() -> Any:
     global _CLIENT_SINGLETON
@@ -492,15 +508,18 @@ def get_llm_client() -> Any:
             _CLIENT_SINGLETON = _build_client()
         return _CLIENT_SINGLETON
 
+
 def reset_llm_client() -> None:
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
         _CLIENT_META.clear()
 
+
 def is_mock_client(client: Any | None = None) -> bool:
     c = client or _CLIENT_SINGLETON
     return isinstance(c, MockLLMClient)
+
 
 # ======================================================================================
 # METRICS / STATE / COST / HOOKS / BREAKER
@@ -529,11 +548,14 @@ _BREAKER_STATE: dict[str, Any] = {
     "open_events": 0,
 }
 
+
 def register_llm_pre_hook(fn: Callable[[dict[str, Any]], None]) -> None:
     _PRE_HOOKS.append(fn)
 
+
 def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None]) -> None:
     _POST_HOOKS.append(fn)
+
 
 def _classify_error(exc: Exception) -> str:
     msg = str(exc).lower()
@@ -558,6 +580,7 @@ def _classify_error(exc: Exception) -> str:
         return "parse"
     return "unknown"
 
+
 def _retry_allowed(kind: str) -> bool:
     _LLM_RETRY_ON_AUTH = os.getenv("LLM_RETRY_ON_AUTH", "0") == "1"
     _LLM_RETRY_ON_PARSE = os.getenv("LLM_RETRY_ON_PARSE", "0") == "1"
@@ -567,6 +590,7 @@ def _retry_allowed(kind: str) -> bool:
     if kind == "parse" and not _LLM_RETRY_ON_PARSE:
         return False
     return kind in ("rate_limit", "network", "timeout", "parse") or True
+
 
 def _estimate_cost(
     model: str, prompt_tokens: int | None, completion_tokens: int | None
@@ -590,6 +614,7 @@ def _estimate_cost(
     ct = completion_tokens or 0
     return round(pt * p_rate + ct * c_rate, 6)
 
+
 def _sanitize(text: str) -> str:
     _LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
     if not _LLM_SANITIZE_OUTPUT or not isinstance(text, str):
@@ -610,18 +635,22 @@ def _sanitize(text: str) -> str:
             sanitized = re.sub(pattern, "[REDACTED_PATTERN]", sanitized)
     return sanitized
 
+
 def _apply_force_model(payload: dict[str, Any]) -> None:
     _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
     if _LLM_FORCE_MODEL:
         payload["model"] = _LLM_FORCE_MODEL
 
+
 def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
     for i in range(0, len(full_text), chunk_size):
         yield full_text[i : i + chunk_size]
 
+
 def _circuit_allowed() -> bool:
     now = time.time()
     return not _BREAKER_STATE["open_until"] > now
+
 
 def _note_error_for_breaker() -> None:
     now = time.time()
@@ -642,10 +671,12 @@ def _note_error_for_breaker() -> None:
             _BREAKER_COOLDOWN,
         )
 
+
 def _maybe_close_breaker() -> None:
     now = time.time()
     if _BREAKER_STATE["open_until"] and _BREAKER_STATE["open_until"] <= now:
         pass
+
 
 def _enforce_cost_budget(new_cost: float | None) -> None:
     if not new_cost:
@@ -665,9 +696,11 @@ def _enforce_cost_budget(new_cost: float | None) -> None:
             raise RuntimeError(msg)
         _LOG.warning("[LLM] %s (soft warn).", msg)
 
+
 # ======================================================================================
 # HIGH LEVEL INVOCATION
 # ======================================================================================
+
 
 def invoke_chat(
     model: str,
@@ -838,12 +871,14 @@ def invoke_chat(
 
     return _stream_gen()
 
+
 def invoke_chat_stream(*args: Any, **kwargs: Any) -> Generator[dict[str, Any], None, None]:
     kwargs["stream"] = True
     result = invoke_chat(*args, **kwargs)
     if not isinstance(result, Generator):
         raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
     return result
+
 
 def llm_health() -> dict[str, Any]:
     client = _CLIENT_SINGLETON
@@ -921,6 +956,7 @@ def llm_health() -> dict[str, Any]:
         "cost_budget_hard_fail": _COST_BUDGET_HARD_FAIL,
     }
     return base
+
 
 __all__ = [
     "get_llm_client",

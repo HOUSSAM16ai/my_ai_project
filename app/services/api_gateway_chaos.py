@@ -261,7 +261,9 @@ class CircuitBreakerService:
                         # Move to half-open
                         state.state = CircuitState.HALF_OPEN
                         state.success_count = 0
-                        logging.getLogger(__name__).info(f"Circuit breaker {service_id}: OPEN -> HALF_OPEN")
+                        logging.getLogger(__name__).info(
+                            f"Circuit breaker {service_id}: OPEN -> HALF_OPEN"
+                        )
                     else:
                         return False, None, "Circuit breaker is OPEN"
                 else:
@@ -315,7 +317,9 @@ class CircuitBreakerService:
             state.state = CircuitState.CLOSED
             state.failure_count = 0
             state.success_count = 0
-            logging.getLogger(__name__).info(f"Circuit breaker {service_id}: manually reset to CLOSED")
+            logging.getLogger(__name__).info(
+                f"Circuit breaker {service_id}: manually reset to CLOSED"
+            )
 
     def get_all_states(self) -> dict[str, dict[str, Any]]:
         """Get states of all circuit breakers"""

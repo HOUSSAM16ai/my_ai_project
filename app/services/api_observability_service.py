@@ -420,11 +420,13 @@ def get_observability_service() -> APIObservabilityService:
 # ======================================================================================
 F = TypeVar("F", bound=Callable[..., Any])
 
+
 def monitor_performance(func: F) -> F:
     """
     Decorator to monitor the performance of an endpoint.
     Records metrics to the global observability service.
     """
+
     @functools.wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         service = get_observability_service()
@@ -459,7 +461,7 @@ def monitor_performance(func: F) -> F:
                 method=method,
                 status_code=status_code,
                 duration_ms=duration_ms,
-                error=error
+                error=error,
             )
 
     return wrapper  # type: ignore

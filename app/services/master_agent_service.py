@@ -53,9 +53,11 @@ from app.models import (
     # Helpers that were likely in app.models or utils
 )
 
+
 # We need to recreate/import these helpers if they were tied to Flask-SQLAlchemy
 def utc_now():
     return datetime.now(UTC)
+
 
 # Factory returns planner INSTANCES
 from app.overmind.planning.factory import get_all_planners
@@ -67,8 +69,11 @@ from app.overmind.planning.schemas import MissionPlanSchema
 try:
     from app.overmind.planning.base_planner import PlannerError, PlanValidationError
 except Exception:
+
     class PlannerError(Exception): ...
+
     class PlanValidationError(Exception): ...
+
 
 # -------------------------------------------------------------------------------------------------
 # Optional generation backend
@@ -76,6 +81,7 @@ except Exception:
 try:
     from app.services import generation_service as maestro
 except Exception:
+
     class maestro:  # type: ignore
         @staticmethod
         def execute_task(task: Task):
@@ -84,6 +90,7 @@ except Exception:
             task.result_text = f"[MOCK EXECUTION] {task.description or ''}"
             task.status = TaskStatus.SUCCESS
             task.finished_at = utc_now()
+
 
 # -------------------------------------------------------------------------------------------------
 # Agent tools registry
@@ -104,6 +111,7 @@ except Exception:
 
 logger = logging.getLogger(__name__)
 
+
 # =================================================================================================
 # Policy & Verification Hooks
 # =================================================================================================
@@ -111,19 +119,24 @@ class ToolPolicyEngine:
     def authorize(self, tool_name: str, mission: Mission, task: Task) -> bool:
         return True
 
+
 tool_policy_engine = ToolPolicyEngine()
+
 
 class VerificationService:
     def verify(self, task: Task) -> bool:
         return True
 
+
 verification_service = VerificationService()
+
 
 # =================================================================================================
 # Metrics Stubs
 # =================================================================================================
 def increment_counter(name: str, labels: dict[str, str] | None = None):
     pass
+
 
 # =================================================================================================
 # Configuration
@@ -152,12 +165,16 @@ GUARD_FILE_AUTOFIX = os.getenv("OVERMIND_GUARD_FILE_AUTOFIX", "1") == "1"
 GUARD_ACCEPT_DOTTED = os.getenv("OVERMIND_GUARD_ACCEPT_DOTTED", "1") == "1"
 GUARD_FORCE_FILE_INTENT = os.getenv("OVERMIND_GUARD_FORCE_FILE_INTENT", "1") == "1"
 GUARD_FILE_DEFAULT_EXT = os.getenv("OVERMIND_GUARD_FILE_DEFAULT_EXT", ".md")
-GUARD_FILE_DEFAULT_CONTENT = os.getenv("OVERMIND_GUARD_FILE_DEFAULT_CONTENT", "Auto-generated content placeholder.")
+GUARD_FILE_DEFAULT_CONTENT = os.getenv(
+    "OVERMIND_GUARD_FILE_DEFAULT_CONTENT", "Auto-generated content placeholder."
+)
 INTERPOLATION_ENABLED = os.getenv("OVERMIND_INTERPOLATION_ENABLED", "1") == "1"
 ALLOW_TEMPLATE_FAILURE = os.getenv("OVERMIND_ALLOW_TEMPLATE_FAILURE", "1") == "1"
 L4_SOFT_MISSING_FILES = os.getenv("OVERMIND_L4_SOFT_MISSING_FILES", "1") == "1"
 L4_MISSING_FILE_MARKER = os.getenv("OVERMIND_L4_MISSING_FILE_MARKER", "[MISSING]")
-L4_EXPECT_ARCH_FILE = os.getenv("OVERMIND_L4_EXPECT_ARCH_FILE", "ARCHITECTURE_PRINCIPLES.md").strip()
+L4_EXPECT_ARCH_FILE = os.getenv(
+    "OVERMIND_L4_EXPECT_ARCH_FILE", "ARCHITECTURE_PRINCIPLES.md"
+).strip()
 DIFF_ENABLED = os.getenv("OVERMIND_DIFF_ENABLED", "1") == "1"
 DIFF_MAX_LINES = int(os.getenv("OVERMIND_DIFF_MAX_LINES", "400"))
 BACKUP_ON_WRITE = os.getenv("OVERMIND_BACKUP_ON_WRITE", "0") == "1"
@@ -175,16 +192,33 @@ READ_SUFFIXES = {"read", "open", "load", "view", "show"}
 WRITE_KEYWORDS = {"write", "create", "generate", "append", "produce", "persist", "save"}
 READ_KEYWORDS = {"read", "inspect", "load", "open", "view", "show", "display"}
 WRITE_ALIASES = {
-    "write_file", "file_writer", "file_system", "file_system_tool", "file_writer_tool",
-    "file_system_write", "file_system.write", "writer", "create_file", "make_file",
+    "write_file",
+    "file_writer",
+    "file_system",
+    "file_system_tool",
+    "file_writer_tool",
+    "file_system_write",
+    "file_system.write",
+    "writer",
+    "create_file",
+    "make_file",
 }
 READ_ALIASES = {
-    "read_file", "file_reader", "file_reader_tool", "file_system_read", "file_system.read",
-    "reader", "open_file", "load_file", "view_file", "show_file",
+    "read_file",
+    "file_reader",
+    "file_reader_tool",
+    "file_system_read",
+    "file_system.read",
+    "reader",
+    "open_file",
+    "load_file",
+    "view_file",
+    "show_file",
 }
 FILE_REQUIRED = {CANON_WRITE: ["path", "content"], CANON_READ: ["path"], CANON_ENSURE: ["path"]}
 PLACEHOLDER_PATTERN = re.compile(r"\{\{(t\d{2})\.(content|answer)\}\}", re.IGNORECASE)
 PLANNING_FAILURE_MAX = 50
+
 
 # =================================================================================================
 # Logging Helpers
@@ -202,24 +236,37 @@ def _log(level: str, mission: Mission | None, message: str, **extra):
     # In production structured logging, we would pass payload as extra or structured
     fn(json.dumps(payload, ensure_ascii=False))
 
-def log_info(mission: Mission | None, message: str, **extra): _log("info", mission, message, **extra)
-def log_warn(mission: Mission | None, message: str, **extra): _log("warning", mission, message, **extra)
-def log_error(mission: Mission | None, message: str, **extra): _log("error", mission, message, **extra)
+
+def log_info(mission: Mission | None, message: str, **extra):
+    _log("info", mission, message, **extra)
+
+
+def log_warn(mission: Mission | None, message: str, **extra):
+    _log("warning", mission, message, **extra)
+
+
+def log_error(mission: Mission | None, message: str, **extra):
+    _log("error", mission, message, **extra)
+
+
 def log_debug(mission: Mission | None, message: str, **extra):
-    if VERBOSE_DEBUG: _log("debug", mission, f"[DEBUG] {message}", **extra)
+    if VERBOSE_DEBUG:
+        _log("debug", mission, f"[DEBUG] {message}", **extra)
+
 
 # =================================================================================================
 # DB Helpers
 # =================================================================================================
 
-def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict[str, Any], session=None):
+
+def log_mission_event(
+    mission: Mission, event_type: MissionEventType, payload: dict[str, Any], session=None
+):
     # Helper to log event if it's not already in models or needs session handling
     from app.models import MissionEvent
+
     evt = MissionEvent(
-        mission_id=mission.id,
-        event_type=event_type,
-        payload_json=payload,
-        created_at=utc_now()
+        mission_id=mission.id, event_type=event_type, payload_json=payload, created_at=utc_now()
     )
     if session:
         session.add(evt)
@@ -228,11 +275,15 @@ def log_mission_event(mission: Mission, event_type: MissionEventType, payload: d
         # or we are in a context where we can't easily add.
         pass
 
-def update_mission_status(mission: Mission, status: MissionStatus, note: str | None = None, session=None):
+
+def update_mission_status(
+    mission: Mission, status: MissionStatus, note: str | None = None, session=None
+):
     mission.status = status
     mission.updated_at = utc_now()
     # Note is not a standard field on Mission model in all versions, check model definition
     # For now assuming it's handled elsewhere or logged
+
 
 # =================================================================================================
 # Mission Lock
@@ -241,15 +292,27 @@ def update_mission_status(mission: Mission, status: MissionStatus, note: str | N
 def mission_lock(mission_id: int):
     yield
 
+
 # =================================================================================================
 # Exceptions
 # =================================================================================================
 class OrchestratorError(Exception): ...
+
+
 class PlannerSelectionError(OrchestratorError): ...
+
+
 class PlanPersistenceError(OrchestratorError): ...
+
+
 class TaskExecutionError(OrchestratorError): ...
+
+
 class PolicyDeniedError(OrchestratorError): ...
+
+
 class AdaptiveReplanError(OrchestratorError): ...
+
 
 # =================================================================================================
 # Data Structures
@@ -262,37 +325,53 @@ class CandidatePlan:
     rationale: str
     telemetry: dict[str, Any]
 
+
 # =================================================================================================
 # Utility Functions
 # =================================================================================================
-def _l(s: Any) -> str: return str(s or "").strip().lower()
+def _l(s: Any) -> str:
+    return str(s or "").strip().lower()
+
 
 def _looks_like_write(text: str) -> bool:
     lt = text.lower()
     return any(k in lt for k in WRITE_KEYWORDS)
 
+
 def _looks_like_read(text: str) -> bool:
     lt = text.lower()
     return any(k in lt for k in READ_KEYWORDS)
 
+
 def _sha256_text(txt: str) -> str:
     return hashlib.sha256(txt.encode("utf-8", errors="ignore")).hexdigest()
 
+
 def _read_file_safe(path: str) -> tuple[bool, str]:
     try:
-        if not os.path.isfile(path): return False, ""
-        with open(path, encoding="utf-8", errors="ignore") as f: return True, f.read()
-    except Exception: return False, ""
+        if not os.path.isfile(path):
+            return False, ""
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            return True, f.read()
+    except Exception:
+        return False, ""
+
 
 def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
-    diff_lines = list(difflib.unified_diff(old.splitlines(), new.splitlines(), fromfile="original", tofile="modified", lineterm=""))
+    diff_lines = list(
+        difflib.unified_diff(
+            old.splitlines(), new.splitlines(), fromfile="original", tofile="modified", lineterm=""
+        )
+    )
     truncated = len(diff_lines) > max_lines
     diff_display = diff_lines[:max_lines] + ["... (diff truncated)"] if truncated else diff_lines
     added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
     removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
     first_changed = 0
     for i, l in enumerate(diff_lines):
-        if (l.startswith("+") and not l.startswith("+++")) or (l.startswith("-") and not l.startswith("---")):
+        if (l.startswith("+") and not l.startswith("+++")) or (
+            l.startswith("-") and not l.startswith("---")
+        ):
             first_changed = i + 1
             break
     old_sz = len(old)
@@ -300,10 +379,14 @@ def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
     change_ratio = 0.0
     if old != new:
         denom = max(old_sz, 1)
-        change_ratio = min(1.0, (abs(new_sz - old_sz) + added + removed) / (denom + added + removed))
+        change_ratio = min(
+            1.0, (abs(new_sz - old_sz) + added + removed) / (denom + added + removed)
+        )
     ratio_class = "stable"
-    if change_ratio > 0.40: ratio_class = "burst"
-    elif change_ratio > 0.10: ratio_class = "moderate"
+    if change_ratio > 0.40:
+        ratio_class = "burst"
+    elif change_ratio > 0.10:
+        ratio_class = "moderate"
     return {
         "diff": "\n".join(diff_display),
         "diff_truncated": truncated,
@@ -316,25 +399,37 @@ def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
         "change_ratio_class": ratio_class,
     }
 
+
 def _extract_answer_from_data(data: Any) -> str | None:
     if isinstance(data, dict):
         for k in ("answer", "output", "result", "text", "content"):
             v = data.get(k)
-            if isinstance(v, str) and v.strip(): return v.strip()
-    if isinstance(data, str) and data.strip(): return data.strip()
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+    if isinstance(data, str) and data.strip():
+        return data.strip()
     return None
 
+
 def _ensure_dict(v: Any) -> dict[str, Any]:
-    if isinstance(v, dict): return v
+    if isinstance(v, dict):
+        return v
     if isinstance(v, str):
-        try: return json.loads(v)
-        except Exception: return {"raw": v}
+        try:
+            return json.loads(v)
+        except Exception:
+            return {"raw": v}
     return {}
 
+
 def _tool_exists(name: str) -> bool:
-    if agent_tools is None: return False
-    try: return name in getattr(agent_tools, "_TOOL_REGISTRY", {})
-    except Exception: return False
+    if agent_tools is None:
+        return False
+    try:
+        return name in getattr(agent_tools, "_TOOL_REGISTRY", {})
+    except Exception:
+        return False
+
 
 def _canonicalize_tool_name(raw_name: str, description: str) -> tuple[str, list[str]]:
     notes: list[str] = []
@@ -378,8 +473,12 @@ def _canonicalize_tool_name(raw_name: str, description: str) -> tuple[str, list[
             return CANON_READ, notes
     return raw_name, notes
 
-def _autofill_file_args(tool: str, tool_args: dict[str, Any], mission: Mission, task: Task, notes: list[str]):
-    if tool not in FILE_REQUIRED: return
+
+def _autofill_file_args(
+    tool: str, tool_args: dict[str, Any], mission: Mission, task: Task, notes: list[str]
+):
+    if tool not in FILE_REQUIRED:
+        return
     req = FILE_REQUIRED[tool]
     changed = False
     if "path" in req and not tool_args.get("path"):
@@ -393,7 +492,9 @@ def _autofill_file_args(tool: str, tool_args: dict[str, Any], mission: Mission, 
             tool_args["content"] = GUARD_FILE_DEFAULT_CONTENT
             notes.append("autofill_content:default")
             changed = True
-    if changed: notes.append("mandatory_args_filled")
+    if changed:
+        notes.append("mandatory_args_filled")
+
 
 def _collect_prior_outputs(mission_id: int, session) -> dict[str, dict[str, str]]:
     rows: list[Task] = (
@@ -416,8 +517,12 @@ def _collect_prior_outputs(mission_id: int, session) -> dict[str, dict[str, str]
             out[t.task_key] = bucket
     return out
 
-def _render_template_in_args(args: dict[str, Any], mission_id: int, session) -> tuple[dict[str, Any], list[str]]:
-    if not INTERPOLATION_ENABLED: return args, []
+
+def _render_template_in_args(
+    args: dict[str, Any], mission_id: int, session
+) -> tuple[dict[str, Any], list[str]]:
+    if not INTERPOLATION_ENABLED:
+        return args, []
     notes: list[str] = []
     prior = _collect_prior_outputs(mission_id, session)
 
@@ -447,6 +552,7 @@ def _render_template_in_args(args: dict[str, Any], mission_id: int, session) -> 
     new_args = process(args)
     return new_args, notes
 
+
 # =================================================================================================
 # Overmind Service
 # =================================================================================================
@@ -458,13 +564,19 @@ class OvermindService:
         self._tool_success_map: dict[str, int] = {}
         self._tool_fail_map: dict[str, int] = {}
         self._task_exec_metrics: dict[str, Any] = {
-            "start_ts": time.time(), "total_tasks": 0, "success": 0, "failed": 0, "retry": 0
+            "start_ts": time.time(),
+            "total_tasks": 0,
+            "success": 0,
+            "failed": 0,
+            "retry": 0,
         }
 
     def start_new_mission(self, objective: str, initiator: User) -> Mission:
         session = SessionLocal()
         try:
-            mission = Mission(objective=objective, initiator_id=initiator.id, status=MissionStatus.PENDING)
+            mission = Mission(
+                objective=objective, initiator_id=initiator.id, status=MissionStatus.PENDING
+            )
             session.add(mission)
             session.commit()
             session.refresh(mission)
@@ -472,14 +584,20 @@ class OvermindService:
             log_mission_event(
                 mission,
                 MissionEventType.CREATED,
-                payload={"objective": objective, "version": OVERMIND_VERSION, "iso_ts": datetime.now(UTC).isoformat() + "Z"},
-                session=session
+                payload={
+                    "objective": objective,
+                    "version": OVERMIND_VERSION,
+                    "iso_ts": datetime.now(UTC).isoformat() + "Z",
+                },
+                session=session,
             )
             session.commit()
 
             # Launch lifecycle in thread or background task
             # For simplicity in this migration, we launch a thread
-            threading.Thread(target=self.run_mission_lifecycle, args=(mission.id,), daemon=True).start()
+            threading.Thread(
+                target=self.run_mission_lifecycle, args=(mission.id,), daemon=True
+            ).start()
 
             return mission
         finally:
@@ -498,9 +616,17 @@ class OvermindService:
         except Exception as e:
             log_error(mission, "Lifecycle catastrophic failure", error=str(e))
             if mission:
-                update_mission_status(mission, MissionStatus.FAILED, note=f"Fatal: {e}", session=session)
+                update_mission_status(
+                    mission, MissionStatus.FAILED, note=f"Fatal: {e}", session=session
+                )
                 session.commit()
-                self._emit_terminal_events(mission, success=False, reason="catastrophic_failure", error=str(e), session=session)
+                self._emit_terminal_events(
+                    mission,
+                    success=False,
+                    reason="catastrophic_failure",
+                    error=str(e),
+                    session=session,
+                )
         finally:
             session.close()
 
@@ -509,9 +635,16 @@ class OvermindService:
         while loops < MAX_LIFECYCLE_TICKS:
             loops += 1
             if (time.perf_counter() - overall_start_perf) > MAX_TOTAL_RUNTIME_SECONDS:
-                update_mission_status(mission, MissionStatus.FAILED, note="Total runtime limit exceeded.", session=session)
+                update_mission_status(
+                    mission,
+                    MissionStatus.FAILED,
+                    note="Total runtime limit exceeded.",
+                    session=session,
+                )
                 session.commit()
-                self._emit_terminal_events(mission, success=False, reason="runtime_limit", session=session)
+                self._emit_terminal_events(
+                    mission, success=False, reason="runtime_limit", session=session
+                )
                 break
 
             # Refresh mission state
@@ -527,25 +660,35 @@ class OvermindService:
             elif state == MissionStatus.RUNNING:
                 self._execution_phase(mission, session)
                 self._check_terminal(mission, session)
-                if mission.status == MissionStatus.RUNNING and self._has_open_tasks(mission, session):
+                if mission.status == MissionStatus.RUNNING and self._has_open_tasks(
+                    mission, session
+                ):
                     time.sleep(DEFAULT_POLL_INTERVAL)
             elif state == MissionStatus.ADAPTING:
                 self._adaptive_replan(mission, session)
             elif state in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
                 break
 
-            if mission.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+            if mission.status in (
+                MissionStatus.SUCCESS,
+                MissionStatus.FAILED,
+                MissionStatus.CANCELED,
+            ):
                 break
 
     def _plan_phase(self, mission: Mission, session):
-        update_mission_status(mission, MissionStatus.PLANNING, note="Planning started.", session=session)
+        update_mission_status(
+            mission, MissionStatus.PLANNING, note="Planning started.", session=session
+        )
         session.commit()
 
         deep_context = self._build_deep_index_context()
 
         planners = get_all_planners()
         if not planners:
-            update_mission_status(mission, MissionStatus.FAILED, note="No planners available.", session=session)
+            update_mission_status(
+                mission, MissionStatus.FAILED, note="No planners available.", session=session
+            )
             session.commit()
             return
 
@@ -555,18 +698,32 @@ class OvermindService:
         candidates: list[CandidatePlan] = []
         for planner in planners:
             try:
-                result_dict = planner.instrumented_generate(mission.objective, context=None, deep_context=deep_context)
+                result_dict = planner.instrumented_generate(
+                    mission.objective, context=None, deep_context=deep_context
+                )
                 plan_obj: MissionPlanSchema = result_dict["plan"]
                 meta: dict[str, Any] = result_dict["meta"]
                 planner_name = meta.get("planner") or getattr(planner, "name", "unknown")
                 score = self._score_plan(plan_obj, meta)
                 rationale = self._build_plan_rationale(plan_obj, score, meta)
-                candidates.append(CandidatePlan(raw=plan_obj, planner_name=planner_name, score=score, rationale=rationale, telemetry=meta))
+                candidates.append(
+                    CandidatePlan(
+                        raw=plan_obj,
+                        planner_name=planner_name,
+                        score=score,
+                        rationale=rationale,
+                        telemetry=meta,
+                    )
+                )
             except Exception as e:
-                log_warn(mission, f"Planner {getattr(planner, 'name', 'unknown')} failed", error=str(e))
+                log_warn(
+                    mission, f"Planner {getattr(planner, 'name', 'unknown')} failed", error=str(e)
+                )
 
         if not candidates:
-            update_mission_status(mission, MissionStatus.FAILED, note="All planners failed.", session=session)
+            update_mission_status(
+                mission, MissionStatus.FAILED, note="All planners failed.", session=session
+            )
             session.commit()
             return
 
@@ -575,17 +732,31 @@ class OvermindService:
 
         self._persist_plan(mission, best, version, session)
 
-        update_mission_status(mission, MissionStatus.PLANNED, note=f"Plan v{version} selected.", session=session)
+        update_mission_status(
+            mission, MissionStatus.PLANNED, note=f"Plan v{version} selected.", session=session
+        )
         log_mission_event(
-            mission, MissionEventType.PLAN_SELECTED,
-            payload={"version": version, "planner": best.planner_name, "score": best.score, "iso_ts": datetime.now(UTC).isoformat() + "Z"},
-            session=session
+            mission,
+            MissionEventType.PLAN_SELECTED,
+            payload={
+                "version": version,
+                "planner": best.planner_name,
+                "score": best.score,
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
+            },
+            session=session,
         )
         session.commit()
 
     def _persist_plan(self, mission: Mission, candidate: CandidatePlan, version: int, session):
         schema = candidate.raw
-        raw_json = json.dumps({"objective": getattr(schema, "objective", ""), "tasks_meta": len(getattr(schema, "tasks", []))}, ensure_ascii=False)
+        raw_json = json.dumps(
+            {
+                "objective": getattr(schema, "objective", ""),
+                "tasks_meta": len(getattr(schema, "tasks", [])),
+            },
+            ensure_ascii=False,
+        )
 
         mp = MissionPlan(
             mission_id=mission.id,
@@ -596,7 +767,7 @@ class OvermindService:
             rationale=candidate.rationale,
             raw_json=raw_json,
             stats_json="{}",
-            warnings_json="[]"
+            warnings_json="[]",
         )
         session.add(mp)
         session.flush()
@@ -621,11 +792,18 @@ class OvermindService:
         session.commit()
 
     def _prepare_execution(self, mission: Mission, session):
-        update_mission_status(mission, MissionStatus.RUNNING, note="Execution started.", session=session)
+        update_mission_status(
+            mission, MissionStatus.RUNNING, note="Execution started.", session=session
+        )
         log_mission_event(
-            mission, MissionEventType.EXECUTION_STARTED,
-            payload={"plan_id": mission.active_plan_id, "strategy": EXECUTION_STRATEGY, "iso_ts": datetime.now(UTC).isoformat() + "Z"},
-            session=session
+            mission,
+            MissionEventType.EXECUTION_STARTED,
+            payload={
+                "plan_id": mission.active_plan_id,
+                "strategy": EXECUTION_STRATEGY,
+                "iso_ts": datetime.now(UTC).isoformat() + "Z",
+            },
+            session=session,
         )
         session.commit()
 
@@ -633,7 +811,9 @@ class OvermindService:
         # Simplified topological sort execution in same thread
         plan = session.get(MissionPlan, mission.active_plan_id)
         if not plan:
-            update_mission_status(mission, MissionStatus.FAILED, note="No active plan", session=session)
+            update_mission_status(
+                mission, MissionStatus.FAILED, note="No active plan", session=session
+            )
             session.commit()
             return
 
@@ -650,7 +830,7 @@ class OvermindService:
 
         # Execute one batch
         for t in ready[:TOPO_MAX_PARALLEL]:
-             self._execute_single_task(mission, t, session)
+            self._execute_single_task(mission, t, session)
 
     def _execute_single_task(self, mission: Mission, task: Task, session):
         # Refresh task
@@ -685,35 +865,61 @@ class OvermindService:
     def _execute_tool(self, task: Task) -> dict[str, Any]:
         # Re-implement tool execution logic using agent_tools
         if agent_tools is None:
-             return {"status": "error", "result_text": "Agent tools not available"}
+            return {"status": "error", "result_text": "Agent tools not available"}
 
         # ... (Tool execution logic same as before)
         return {"status": "success", "result_text": f"Executed {task.tool_name}"}
 
     def _check_terminal(self, mission: Mission, session):
-        pending = session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
-        retry = session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
-        running = session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.RUNNING).count()
-        failed = session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.FAILED).count()
+        pending = (
+            session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.PENDING).count()
+        )
+        retry = (
+            session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.RETRY).count()
+        )
+        running = (
+            session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.RUNNING).count()
+        )
+        failed = (
+            session.query(Task).filter_by(mission_id=mission.id, status=TaskStatus.FAILED).count()
+        )
 
         if pending == 0 and retry == 0 and running == 0:
             if failed == 0:
-                update_mission_status(mission, MissionStatus.SUCCESS, note="All tasks completed.", session=session)
-                self._emit_terminal_events(mission, success=True, reason="all_tasks_success", session=session)
+                update_mission_status(
+                    mission, MissionStatus.SUCCESS, note="All tasks completed.", session=session
+                )
+                self._emit_terminal_events(
+                    mission, success=True, reason="all_tasks_success", session=session
+                )
             else:
-                update_mission_status(mission, MissionStatus.FAILED, note=f"{failed} tasks failed.", session=session)
-                self._emit_terminal_events(mission, success=False, reason="tasks_failed", session=session)
+                update_mission_status(
+                    mission, MissionStatus.FAILED, note=f"{failed} tasks failed.", session=session
+                )
+                self._emit_terminal_events(
+                    mission, success=False, reason="tasks_failed", session=session
+                )
             session.commit()
 
-    def _emit_terminal_events(self, mission: Mission, success: bool, reason: str, error: str | None = None, session=None):
-        evt_type = MissionEventType.MISSION_COMPLETED if success else MissionEventType.MISSION_FAILED
-        log_mission_event(mission, evt_type, payload={"reason": reason, "error": error}, session=session)
+    def _emit_terminal_events(
+        self, mission: Mission, success: bool, reason: str, error: str | None = None, session=None
+    ):
+        evt_type = (
+            MissionEventType.MISSION_COMPLETED if success else MissionEventType.MISSION_FAILED
+        )
+        log_mission_event(
+            mission, evt_type, payload={"reason": reason, "error": error}, session=session
+        )
 
     def _has_open_tasks(self, mission: Mission, session) -> bool:
-        return session.query(exists().where(Task.mission_id == mission.id).where(Task.status.in_([TaskStatus.PENDING, TaskStatus.RETRY, TaskStatus.RUNNING]))).scalar()
+        return session.query(
+            exists()
+            .where(Task.mission_id == mission.id)
+            .where(Task.status.in_([TaskStatus.PENDING, TaskStatus.RETRY, TaskStatus.RUNNING]))
+        ).scalar()
 
     def _build_deep_index_context(self):
-        return None # Simplified for now
+        return None  # Simplified for now
 
     def _score_plan(self, plan: MissionPlanSchema, meta: dict) -> float:
         return 100.0
@@ -722,18 +928,30 @@ class OvermindService:
         return f"Score: {score}"
 
     def _next_plan_version(self, mission_id, session):
-        return (session.scalar(select(func.max(MissionPlan.version)).where(MissionPlan.mission_id == mission_id)) or 0) + 1
+        return (
+            session.scalar(
+                select(func.max(MissionPlan.version)).where(MissionPlan.mission_id == mission_id)
+            )
+            or 0
+        ) + 1
 
     def _adaptive_replan(self, mission, session):
         # Simplified stub
-        update_mission_status(mission, MissionStatus.FAILED, note="Adaptive replan not implemented in simplified version", session=session)
+        update_mission_status(
+            mission,
+            MissionStatus.FAILED,
+            note="Adaptive replan not implemented in simplified version",
+            session=session,
+        )
         session.commit()
 
 
 _overmind_service_singleton = OvermindService()
 
+
 def start_mission(objective: str, initiator: User) -> Mission:
     return _overmind_service_singleton.start_new_mission(objective, initiator)
+
 
 def run_mission_lifecycle(mission_id: int):
     return _overmind_service_singleton.run_mission_lifecycle(mission_id)

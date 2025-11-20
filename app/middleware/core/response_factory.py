@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 if TYPE_CHECKING:
     from app.middleware.core.result import MiddlewareResult
 
+
 class ResponseFactory:
     """
     Factory for creating HTTP responses for FastAPI

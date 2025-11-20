@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 # We no longer need to patch the models themselves, as they can be imported safely.
 # However, the service still uses `db.session.get`, so we mock the `db` object.
-@patch('app.services.history_service.db')
+@patch("app.services.history_service.db")
 def test_rate_message_success(mock_db):
     """
     Tests the successful rating of a message.
@@ -31,11 +31,12 @@ def test_rate_message_success(mock_db):
     result = rate_message_in_db(message_id, rating, user_id=user_id)
 
     # Assert
-    assert result['status'] == 'success'
+    assert result["status"] == "success"
     mock_db.session.commit.assert_called_once()
     assert mock_message.rating == rating
 
-@patch('app.services.history_service.db')
+
+@patch("app.services.history_service.db")
 def test_rate_message_permission_denied(mock_db):
     """
     Tests that a user cannot rate a message they don't own.
@@ -56,6 +57,6 @@ def test_rate_message_permission_denied(mock_db):
     result = rate_message_in_db(message_id, "bad", user_id=attacker_id)
 
     # Assert
-    assert result['status'] == 'error'
-    assert "Permission denied" in result['message']
+    assert result["status"] == "error"
+    assert "Permission denied" in result["message"]
     mock_db.session.commit.assert_not_called()

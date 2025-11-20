@@ -14,6 +14,7 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 async def get_session() -> AsyncSession:
     """
     FastAPI dependency provider for getting an async database session.

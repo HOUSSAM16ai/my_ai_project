@@ -9,12 +9,15 @@ from unittest.mock import MagicMock
 
 class _MockUser:
     """A mock user object."""
+
     def __init__(self):
         self.id = uuid.uuid4()
-        self.is_authenticated = True # Mimic flask_login behavior
+        self.is_authenticated = True  # Mimic flask_login behavior
+
 
 class _CompatG:
     """Mimics `flask.g`."""
+
     def __init__(self, kernel):
         self._kernel = kernel
 
@@ -27,8 +30,10 @@ class _CompatG:
         else:
             self._kernel.state.set(name, value)
 
+
 class _CompatCurrentApp:
     """Mimics `flask.current_app`."""
+
     def __init__(self, kernel):
         self._kernel = kernel
 
@@ -40,14 +45,18 @@ class _CompatCurrentApp:
     def logger(self):
         return self._kernel.logger
 
+
 # --- New Mock Objects for Request and Jsonify ---
+
 
 class _CompatRequest(MagicMock):
     """
     A MagicMock that can stand in for the Flask request object.
     It can be configured in tests to provide headers, args, etc.
     """
+
     pass
+
 
 def _compat_jsonify(*args, **kwargs):
     """
@@ -67,6 +76,7 @@ current_app = None
 current_user = _MockUser()
 request = _CompatRequest()
 jsonify = _compat_jsonify
+
 
 def initialize_compat_layer(kernel):
     """Initializes the compatibility layer with the kernel instance."""

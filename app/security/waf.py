@@ -11,7 +11,10 @@ class WebApplicationFirewall:
 
     def _init_threat_signatures(self) -> list[dict[str, Any]]:
         return [
-            {"name": "SQL_INJECTION", "pattern": re.compile(r"(union\s+select|--|;)", re.IGNORECASE)},
+            {
+                "name": "SQL_INJECTION",
+                "pattern": re.compile(r"(union\s+select|--|;)", re.IGNORECASE),
+            },
             {"name": "XSS", "pattern": re.compile(r"<script>", re.IGNORECASE)},
         ]
 
@@ -36,5 +39,6 @@ class WebApplicationFirewall:
             except Exception:
                 pass
         return params
+
 
 waf = WebApplicationFirewall()

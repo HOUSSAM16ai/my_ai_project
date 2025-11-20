@@ -5,9 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
 from app.services.prompt_engineering_service import PromptEngineeringService
 
+
 @pytest.fixture
 def service() -> PromptEngineeringService:
     return PromptEngineeringService()
+
 
 @pytest.mark.asyncio
 async def test_generate_prompt_success(service: PromptEngineeringService, session: AsyncSession):

@@ -2,9 +2,10 @@
 import pytest
 from starlette import status
 
+
 class TestHealthEndpoints:
     def test_database_health(self, client):
-        response = client.get("/system/health") # Updated path
+        response = client.get("/system/health")  # Updated path
         assert response.status_code == 200
 
     def test_database_stats(self, client):
@@ -16,6 +17,7 @@ class TestHealthEndpoints:
         # Assuming /system/health covers tables or similar
         response = client.get("/system/health")
         assert response.status_code == 200
+
 
 class TestCRUDOperations:
     def test_create_user(self, client):
@@ -40,12 +42,14 @@ class TestCRUDOperations:
     def test_delete_user(self, client):
         pass
 
+
 class TestValidation:
     def test_create_user_invalid_email(self, client):
         pass
 
     def test_create_user_missing_required_field(self, client):
         pass
+
 
 class TestPaginationAndFiltering:
     def test_pagination(self, client):
@@ -57,6 +61,7 @@ class TestPaginationAndFiltering:
 
     def test_ordering(self, client):
         pass
+
 
 class TestErrorHandling:
     def test_not_found_table(self, client):

@@ -238,7 +238,9 @@ class WorkflowOrchestrationService:
                     if handler:
                         handler(activity.result)
                 except Exception as e:
-                    logging.getLogger(__name__).error(f"Compensation failed for {activity.name}: {e}")
+                    logging.getLogger(__name__).error(
+                        f"Compensation failed for {activity.name}: {e}"
+                    )
 
         workflow.status = WorkflowStatus.COMPENSATED
 

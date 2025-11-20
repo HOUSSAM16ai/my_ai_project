@@ -1,4 +1,3 @@
-
 def test_placeholder():
     """
     This is a placeholder test for the transcendent test suite.

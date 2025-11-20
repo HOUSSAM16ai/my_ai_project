@@ -1,6 +1,6 @@
-
 import pytest
 from sqlalchemy.orm import configure_mappers
+
 
 def test_sqlalchemy_mapper_configuration():
     """
@@ -11,6 +11,7 @@ def test_sqlalchemy_mapper_configuration():
     # If the bug exists, importing or configuring mappers will raise ArgumentError.
     try:
         import app.models
+
         # Force mapper configuration to catch deferred errors
         configure_mappers()
     except Exception as e:

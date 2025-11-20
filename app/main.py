@@ -36,6 +36,7 @@ async def root():
         "message": "Welcome to the CogniForge Reality Kernel V3. See /docs for API documentation."
     }
 
+
 # Health check aliases
 @kernel.app.get("/api/v1/health", tags=["System"])
 @kernel.app.get("/health", tags=["System"])
@@ -44,12 +45,8 @@ async def api_v1_health():
         content={
             "status": "success",
             "message": "System operational",
-            "data": {
-                "status": "healthy",
-                "database": "connected",
-                "version": "v1.0"
-            },
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "data": {"status": "healthy", "database": "connected", "version": "v1.0"},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
-        status_code=200
+        status_code=200,
     )

@@ -12,6 +12,7 @@ router = APIRouter(
     tags=["System"],
 )
 
+
 @router.get(
     "/health",
     summary="Application Health Check",
@@ -20,9 +21,7 @@ router = APIRouter(
 async def health_check(db: AsyncSession = Depends(get_db)):
     db_status = await system_service.check_database_status(db)
     status_code = (
-        status.HTTP_200_OK
-        if db_status == "healthy"
-        else status.HTTP_503_SERVICE_UNAVAILABLE
+        status.HTTP_200_OK if db_status == "healthy" else status.HTTP_503_SERVICE_UNAVAILABLE
     )
 
     return JSONResponse(
@@ -47,5 +46,5 @@ async def healthz(db: AsyncSession = Depends(get_db)):
     except Exception:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "error", "detail": "Database unavailable"}
+            content={"status": "error", "detail": "Database unavailable"},
         )

@@ -13,15 +13,13 @@ class ConfigV2(BaseSettings):
     Defines the application's configuration settings.
     Settings are loaded from environment variables and a .env file.
     """
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding='utf-8',
-        extra='ignore'
-    )
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     DATABASE_URL: str = "sqlite:///./default.db"
     SECRET_KEY: str = "a_default_secret_key"
     # Add other settings as needed...
+
 
 # Use lru_cache as a simple singleton pattern to ensure settings are loaded only once
 @lru_cache

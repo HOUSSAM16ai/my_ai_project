@@ -233,7 +233,9 @@ class ServiceCatalogService:
         """Register API specification"""
         with self.lock:
             self.api_specs[spec.service_id].append(spec)
-            logging.getLogger(__name__).info(f"Registered API spec for {spec.service_id}: {spec.version}")
+            logging.getLogger(__name__).info(
+                f"Registered API spec for {spec.service_id}: {spec.version}"
+            )
             return True
 
     def get_api_specs(self, service_id: str) -> list[APISpec]:

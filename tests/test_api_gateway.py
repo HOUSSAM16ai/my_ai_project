@@ -44,6 +44,7 @@ class TestIntelligentRouter:
         assert decision.estimated_cost > 0
         assert decision.confidence_score > 0
 
+
 class TestIntelligentCache:
     def test_cache_initialization(self):
         cache = IntelligentCache(max_size_mb=10)
@@ -60,6 +61,7 @@ class TestIntelligentCache:
         assert result is not None
         assert result["status"] == "success"
         assert cache.hit_count == 1
+
 
 class TestPolicyEngine:
     def test_policy_engine_initialization(self):
@@ -79,6 +81,7 @@ class TestPolicyEngine:
         engine.add_policy(policy)
         assert "test_policy" in engine.policies
 
+
 class TestProtocolAdapters:
     def test_rest_adapter(self):
         adapter = RESTAdapter()
@@ -88,6 +91,7 @@ class TestProtocolAdapters:
     def test_graphql_adapter(self):
         adapter = GraphQLAdapter()
         assert adapter is not None
+
 
 class TestChaosEngineering:
     def test_chaos_service_initialization(self):
@@ -110,6 +114,7 @@ class TestChaosEngineering:
         assert result is True
         assert experiment.experiment_id in service.active_experiments
 
+
 class TestCircuitBreaker:
     def test_circuit_breaker_initialization(self):
         cb = CircuitBreakerService()
@@ -118,12 +123,15 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_success(self):
         cb = CircuitBreakerService()
+
         def successful_operation():
             return "success"
+
         success, result, error = cb.call("test_service", successful_operation)
         assert success is True
         assert result == "success"
         assert error is None
+
 
 class TestABTesting:
     def test_ab_testing_initialization(self):
@@ -143,6 +151,7 @@ class TestABTesting:
         result = service.create_experiment(experiment)
         assert result is True
 
+
 class TestCanaryDeployment:
     def test_canary_service_initialization(self):
         service = CanaryDeploymentService()
@@ -160,6 +169,7 @@ class TestCanaryDeployment:
         result = service.start_deployment(deployment)
         assert result is True
 
+
 class TestFeatureFlags:
     def test_feature_flag_initialization(self):
         service = FeatureFlagService()
@@ -176,8 +186,10 @@ class TestFeatureFlags:
         result = service.create_flag(flag)
         assert result is True
 
+
 class TestAPIGatewayService:
     def test_gateway_initialization(self):
         from app.services.api_gateway_service import APIGatewayService
+
         service = APIGatewayService()
         assert service is not None

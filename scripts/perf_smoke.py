@@ -10,6 +10,7 @@ import json
 BASE_URL = "http://localhost:8000"
 HEALTH_URL = f"{BASE_URL}/health"
 
+
 def test_latency(url, n=50):
     latencies = []
     errors = 0
@@ -33,8 +34,9 @@ def test_latency(url, n=50):
         "avg_ms": statistics.mean(latencies),
         "p95_ms": sorted(latencies)[int(len(latencies) * 0.95)],
         "requests": n,
-        "errors": errors
+        "errors": errors,
     }
+
 
 if __name__ == "__main__":
     print(f"Running Performance Smoke Test against {HEALTH_URL}")
