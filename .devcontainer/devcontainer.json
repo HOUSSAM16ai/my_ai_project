@@ -1,107 +1,68 @@
 {
   "name": "CogniForge - Enterprise AI Cluster",
-  
-  // --- Infrastructure Configuration ---
-  // Using Docker Compose allows us to simulate the full microservices mesh.
-  "dockerComposeFile": ["../docker-compose.yml"],
+
+  // --- التعديل الحاسم هنا ---
+  // المسار أصبح مباشراً لأن الملف بجانبنا
+  "dockerComposeFile": ["docker-compose.yml"],
+
+  // اسم الخدمة مطابق لما رأيناه في الصورة (web)
   "service": "web",
-  "runServices": ["web", "ai_service_standalone"],
+
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
-  // --- SECURITY & PERMISSIONS ARCHITECTURE ---
-  // Running as root is acceptable in DevContainers for DIND (Docker-in-Docker),
-  // but we enforce explicit HOME mapping to avoid config drift.
+  // --- إعدادات البنية التحتية ---
   "remoteUser": "root",
   "remoteEnv": {
     "HOME": "/root",
-    "PYTHONUNBUFFERED": "1", // Essential for AI logs to appear instantly
-    "PIP_DISABLE_PIP_VERSION_CHECK": "1"
+    "PYTHONUNBUFFERED": "1" // لطباعة سجلات الذكاء الاصطناعي فوراً
   },
 
-  // --- KERNEL TUNING ---
-  // Preventing the container from overriding the Entrypoint ensures 
-  // process supervisors (like Gunicorn/Uvicorn) start correctly.
+  // نمنع تجاوز أمر التشغيل لنضمن عمل الحاوية كما صممتها في Dockerfile
   "overrideCommand": false,
 
-  // --- HIGH-PERFORMANCE FEATURES ---
-  // We use 'features' instead of raw commands where possible for caching.
+  // --- أوامر التجهيز (تعمل مرة واحدة) ---
+  // يقوم بتثبيت المكتبات و Ruff مباشرة
+  "postCreateCommand": "pip install --no-cache-dir --upgrade pip && if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi && pip install --no-cache-dir ruff pytest",
+
+  // --- الشبكات والمنافذ ---
+  "forwardPorts": [5000, 8000],
+  "portsAttributes": {
+      "5000": { "label": "Core API (FastAPI)", "onAutoForward": "notify" },
+      "8000": { "label": "AI Service", "onAutoForward": "silent" }
+  },
+
+  // --- أدوات المطور الخارقة ---
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "moby": true,
-      "azureDnsAutoDetection": true
-    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    // ZSH + Oh My Zsh: The standard for high-productivity terminals
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
-      "configureZshAsDefaultShell": true,
-      "upgradePackages": false
+      "configureZshAsDefaultShell": true
     }
   },
 
-  // --- ORCHESTRATION & BOOTSTRAP ---
-  // We use a logical operator chain to ensure resilience.
-  // 1. Install deps. 2. Install Dev Tools. 3. Fix Permissions.
-  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir ruff pytest pre-commit && chown -R root:root /root/.config || echo 'Perms warning ignored'",
-
-  // --- NETWORK TOPOLOGY ---
-  "forwardPorts": [5000, 8000],
-  "portsAttributes": {
-      "5000": {
-        "label": "Core API (FastAPI)",
-        "onAutoForward": "notify"
-      },
-      "8000": {
-        "label": "AI Inference Engine",
-        "onAutoForward": "silent" // Don't distract dev with popup
-      }
-  },
-
-  // --- IDE ENGINEERING (VS Code) ---
+  // --- تخصيص VS Code ---
   "customizations": {
     "vscode": {
       "extensions": [
-        // Core Python
         "ms-python.python",
         "ms-python.vscode-pylance",
-        
-        // Linter & Formatter (The New Standard)
-        "charliermarsh.ruff", // Replaces Black & Flake8 (10-100x faster)
-        
-        // Developer Productivity
-        "usernamehw.errorlens", // SHOWS ERRORS INLINE (Huge productivity boost)
-        "eamodio.gitlens",      // Enterprise-grade Git history
-        "njpwerner.autodocstring", // Enforces documentation standards
-        "humao.rest-client",    // API Testing inside VS Code
-        
-        // AI & Data Specific
-        "ms-toolsai.jupyter",
-        "github.copilot"
+        "charliermarsh.ruff",       // المدقق الصاروخي
+        "usernamehw.errorlens",     // لإظهار الأخطاء داخل السطر
+        "eamodio.gitlens",
+        "humao.rest-client"
       ],
-      
       "settings": {
-        // Terminal & Shell
         "terminal.integrated.defaultProfile.linux": "zsh",
-        
-        // Python Engine
         "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "python.analysis.typeCheckingMode": "basic", // Or 'strict' for maximum safety
-        "python.analysis.autoImportCompletions": true,
-        
-        // RUFF CONFIGURATION (The Enterprise Standard)
-        // Enforces strict formatting and import sorting on every save.
+        "editor.formatOnSave": true,
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.codeActionsOnSave": {
-            "source.fixAll": "explicit",
-            "source.organizeImports": "explicit"
+             "source.fixAll": "explicit",
+             "source.organizeImports": "explicit"
           }
-        },
-        
-        // UI/UX Cleanliness
-        "editor.rulers": [88], // Visual guide for line length (Ruff default)
-        "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true
+        }
       }
     }
   }
