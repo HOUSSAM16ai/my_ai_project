@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app
+import logging
 
 # ======================================================================================
 # ENUMERATIONS
@@ -145,7 +145,7 @@ class ABTestingService:
             experiment.started_at = datetime.now(UTC)
             self.experiments[experiment.experiment_id] = experiment
 
-            current_app.logger.info(f"Created A/B test: {experiment.name}")
+            logging.getLogger(__name__).info(f"Created A/B test: {experiment.name}")
             return True
 
     def assign_variant(self, experiment_id: str, user_id: str) -> str | None:
@@ -270,7 +270,7 @@ class CanaryDeploymentService:
             deployment.current_stage = "initial"
             self.deployments[deployment.deployment_id] = deployment
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Started canary deployment: {deployment.service_id} -> {deployment.canary_version}"
             )
             return True
@@ -362,7 +362,7 @@ class CanaryDeploymentService:
             )
             deployment.canary_traffic_percent = new_percent
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Incremented canary traffic for {deployment.service_id}: {new_percent}%"
             )
 
@@ -381,7 +381,7 @@ class CanaryDeploymentService:
             deployment.canary_traffic_percent = 0.0
             deployment.current_stage = "rolled_back"
 
-            current_app.logger.warning(f"Rolled back canary deployment: {deployment.service_id}")
+            logging.getLogger(__name__).warning(f"Rolled back canary deployment: {deployment.service_id}")
             return True
 
 
@@ -412,7 +412,7 @@ class FeatureFlagService:
                 return False
 
             self.flags[flag.flag_id] = flag
-            current_app.logger.info(f"Created feature flag: {flag.name}")
+            logging.getLogger(__name__).info(f"Created feature flag: {flag.name}")
             return True
 
     def is_enabled(

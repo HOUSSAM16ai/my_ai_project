@@ -14,14 +14,13 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -142,7 +141,7 @@ class EdgeMultiCloudService:
         # Initialize default regions
         self._initialize_regions()
 
-        current_app.logger.info("Edge & Multi-Cloud Service initialized")
+        logging.getLogger(__name__).info("Edge & Multi-Cloud Service initialized")
 
     def _initialize_regions(self):
         """Initialize default cloud regions and edge locations"""
@@ -255,7 +254,7 @@ class EdgeMultiCloudService:
         with self.lock:
             self.workload_placements[workload_name] = placement
 
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"Placed workload {workload_name} in {primary_region.name} with {len(replica_regions)} replicas"
         )
 
@@ -314,7 +313,7 @@ class EdgeMultiCloudService:
             placement.primary_region = to_region
             placement.replica_regions = [r for r in placement.replica_regions if r != to_region]
 
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"Failover executed: {workload_name} from {from_region} to {to_region}"
         )
 

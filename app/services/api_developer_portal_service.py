@@ -15,6 +15,7 @@
 #   - Developer analytics
 
 import hashlib
+import logging
 import secrets
 import threading
 from collections import defaultdict
@@ -22,8 +23,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -309,7 +308,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             self.api_keys[key_id] = api_key
 
-            current_app.logger.info(f"Created API key {key_id} for developer {developer_id}")
+            logging.getLogger(__name__).info(f"Created API key {key_id} for developer {developer_id}")
 
             return api_key
 
@@ -344,7 +343,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
             api_key.revoked_at = datetime.now(UTC)
             api_key.revocation_reason = reason
 
-            current_app.logger.info(f"Revoked API key {key_id}: {reason}")
+            logging.getLogger(__name__).info(f"Revoked API key {key_id}: {reason}")
 
             return True
 
@@ -387,7 +386,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             self.tickets[ticket_id] = ticket
 
-            current_app.logger.info(f"Created ticket {ticket_id} for developer {developer_id}")
+            logging.getLogger(__name__).info(f"Created ticket {ticket_id} for developer {developer_id}")
 
             return ticket
 
@@ -455,7 +454,7 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             self.sdks[sdk_id] = sdk
 
-            current_app.logger.info(f"Generated {language.value} SDK version {version}")
+            logging.getLogger(__name__).info(f"Generated {language.value} SDK version {version}")
 
             return sdk
 

@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import uuid
 from collections import defaultdict, deque
@@ -23,8 +24,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -208,7 +207,7 @@ class DataMeshService:
         # Initialize default governance policies
         self._initialize_governance()
 
-        current_app.logger.info("Data Mesh Service initialized successfully")
+        logging.getLogger(__name__).info("Data Mesh Service initialized successfully")
 
     def _initialize_governance(self):
         """Initialize default governance policies"""
@@ -253,11 +252,11 @@ class DataMeshService:
         """Register a new bounded context"""
         with self.lock:
             if context.context_id in self.bounded_contexts:
-                current_app.logger.warning(f"Bounded context already exists: {context.context_id}")
+                logging.getLogger(__name__).warning(f"Bounded context already exists: {context.context_id}")
                 return False
 
             self.bounded_contexts[context.context_id] = context
-            current_app.logger.info(f"Registered bounded context: {context.name}")
+            logging.getLogger(__name__).info(f"Registered bounded context: {context.name}")
             return True
 
     def get_bounded_context(self, context_id: str) -> BoundedContext | None:
@@ -273,16 +272,16 @@ class DataMeshService:
         with self.lock:
             # Validate schema compatibility
             if not self._validate_schema_compatibility(contract):
-                current_app.logger.error(f"Schema compatibility validation failed: {contract.name}")
+                logging.getLogger(__name__).error(f"Schema compatibility validation failed: {contract.name}")
                 return False
 
             # Check governance policies
             if not self._check_governance_compliance(contract):
-                current_app.logger.error(f"Governance compliance check failed: {contract.name}")
+                logging.getLogger(__name__).error(f"Governance compliance check failed: {contract.name}")
                 return False
 
             self.data_contracts[contract.contract_id] = contract
-            current_app.logger.info(f"Created data contract: {contract.name}")
+            logging.getLogger(__name__).info(f"Created data contract: {contract.name}")
 
             # Publish contract creation event
             self._publish_event(
@@ -318,7 +317,7 @@ class DataMeshService:
         if compatibility == SchemaCompatibility.BREAKING:
             policy = self.governance_policies.get("schema-compatibility")
             if policy and policy.enabled:
-                current_app.logger.error("Breaking schema changes not allowed")
+                logging.getLogger(__name__).error("Breaking schema changes not allowed")
                 return None
 
         evolution = SchemaEvolution(
@@ -340,7 +339,7 @@ class DataMeshService:
             contract.schema_version = new_version
             contract.updated_at = datetime.now(UTC)
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Schema evolved: {contract.name} v{new_version} ({compatibility.value})"
             )
 
@@ -387,7 +386,7 @@ class DataMeshService:
                 return False
 
             self.data_products[product.product_id] = product
-            current_app.logger.info(f"Registered data product: {product.name}")
+            logging.getLogger(__name__).info(f"Registered data product: {product.name}")
 
             # Publish event
             self._publish_event(
@@ -413,7 +412,7 @@ class DataMeshService:
         """Add governance policy"""
         with self.lock:
             self.governance_policies[policy.policy_id] = policy
-            current_app.logger.info(f"Added governance policy: {policy.name}")
+            logging.getLogger(__name__).info(f"Added governance policy: {policy.name}")
             return True
 
     def _check_governance_compliance(self, contract: DataContract) -> bool:
@@ -428,7 +427,7 @@ class DataMeshService:
             if policy.level == GovernanceLevel.MANDATORY:
                 for rule in policy.rules:
                     if not self._evaluate_governance_rule(contract, rule):
-                        current_app.logger.error(f"Governance violation: {policy.name} - {rule}")
+                        logging.getLogger(__name__).error(f"Governance violation: {policy.name} - {rule}")
                         return False
 
         return True
@@ -480,7 +479,7 @@ class DataMeshService:
 
     def _trigger_governance_action(self, policy: GovernancePolicy, reason: str):
         """Trigger governance enforcement action"""
-        current_app.logger.warning(f"Governance action: {policy.name} - {reason}")
+        logging.getLogger(__name__).warning(f"Governance action: {policy.name} - {reason}")
 
         for action in policy.enforcement_actions:
             if action == "alert":
@@ -533,7 +532,7 @@ class DataMeshService:
         """Subscribe to data mesh events"""
         subscription_id = str(uuid.uuid4())
         # In production, integrate with message broker
-        current_app.logger.info(f"Subscribed to {event_type}: {subscription_id}")
+        logging.getLogger(__name__).info(f"Subscribed to {event_type}: {subscription_id}")
         return subscription_id
 
     def get_event_stream(self, event_type: str, limit: int = 100) -> list[dict[str, Any]]:

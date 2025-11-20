@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app
+import logging
 
 # ======================================================================================
 # ENUMERATIONS
@@ -119,7 +119,7 @@ class ChaosEngineeringService:
             experiment.started_at = datetime.now(UTC)
             self.active_experiments[experiment.experiment_id] = experiment
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Started chaos experiment: {experiment.name} ({experiment.fault_type.value})"
             )
             return True
@@ -137,7 +137,7 @@ class ChaosEngineeringService:
             self.experiment_history.append(experiment)
             del self.active_experiments[experiment_id]
 
-            current_app.logger.info(f"Stopped chaos experiment: {experiment.name}")
+            logging.getLogger(__name__).info(f"Stopped chaos experiment: {experiment.name}")
             return True
 
     def inject_fault(
@@ -261,7 +261,7 @@ class CircuitBreakerService:
                         # Move to half-open
                         state.state = CircuitState.HALF_OPEN
                         state.success_count = 0
-                        current_app.logger.info(f"Circuit breaker {service_id}: OPEN -> HALF_OPEN")
+                        logging.getLogger(__name__).info(f"Circuit breaker {service_id}: OPEN -> HALF_OPEN")
                     else:
                         return False, None, "Circuit breaker is OPEN"
                 else:
@@ -278,7 +278,7 @@ class CircuitBreakerService:
                         # Close circuit
                         state.state = CircuitState.CLOSED
                         state.failure_count = 0
-                        current_app.logger.info(
+                        logging.getLogger(__name__).info(
                             f"Circuit breaker {service_id}: HALF_OPEN -> CLOSED"
                         )
                 else:
@@ -315,7 +315,7 @@ class CircuitBreakerService:
             state.state = CircuitState.CLOSED
             state.failure_count = 0
             state.success_count = 0
-            current_app.logger.info(f"Circuit breaker {service_id}: manually reset to CLOSED")
+            logging.getLogger(__name__).info(f"Circuit breaker {service_id}: manually reset to CLOSED")
 
     def get_all_states(self) -> dict[str, dict[str, Any]]:
         """Get states of all circuit breakers"""

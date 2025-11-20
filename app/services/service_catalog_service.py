@@ -14,14 +14,13 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -151,7 +150,7 @@ class ServiceCatalogService:
         # Initialize default templates
         self._initialize_templates()
 
-        current_app.logger.info("Service Catalog initialized successfully")
+        logging.getLogger(__name__).info("Service Catalog initialized successfully")
 
     def _initialize_templates(self):
         """Initialize default service templates"""
@@ -190,7 +189,7 @@ class ServiceCatalogService:
                 metrics={},
             )
 
-            current_app.logger.info(f"Registered service: {service.name}")
+            logging.getLogger(__name__).info(f"Registered service: {service.name}")
             return True
 
     def get_service(self, service_id: str) -> ServiceMetadata | None:
@@ -234,7 +233,7 @@ class ServiceCatalogService:
         """Register API specification"""
         with self.lock:
             self.api_specs[spec.service_id].append(spec)
-            current_app.logger.info(f"Registered API spec for {spec.service_id}: {spec.version}")
+            logging.getLogger(__name__).info(f"Registered API spec for {spec.service_id}: {spec.version}")
             return True
 
     def get_api_specs(self, service_id: str) -> list[APISpec]:

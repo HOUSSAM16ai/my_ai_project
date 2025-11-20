@@ -27,6 +27,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import threading
 import time
@@ -38,8 +39,6 @@ from datetime import UTC, datetime
 from enum import Enum
 from functools import wraps
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -740,8 +739,7 @@ class FallbackChain:
                 return result, level, degraded
             except Exception as e:
                 # Log and continue to next level
-                if current_app:
-                    current_app.logger.warning(f"Fallback level {level.value} failed: {e}")
+                logging.getLogger(__name__).warning(f"Fallback level {level.value} failed: {e}")
                 continue
 
         # If all fail, raise

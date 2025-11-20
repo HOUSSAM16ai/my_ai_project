@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import uuid
 from collections import defaultdict, deque
@@ -20,8 +21,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -149,7 +148,7 @@ class SREErrorBudgetService:
         self.canary_deployments: dict[str, CanaryDeployment] = {}
         self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
-        current_app.logger.info("SRE & Error Budget Service initialized")
+        logging.getLogger(__name__).info("SRE & Error Budget Service initialized")
 
     # ==================================================================================
     # SLO/SLI MANAGEMENT
@@ -163,7 +162,7 @@ class SREErrorBudgetService:
             # Initialize error budget
             self._calculate_error_budget(slo.slo_id)
 
-            current_app.logger.info(f"Created SLO: {slo.name} ({slo.target_percentage}%)")
+            logging.getLogger(__name__).info(f"Created SLO: {slo.name} ({slo.target_percentage}%)")
             return True
 
     def record_sli(self, sli: SLI):
@@ -305,7 +304,7 @@ class SREErrorBudgetService:
         with self.lock:
             self.deployment_risks[deployment_id] = risk
 
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"Deployment risk assessed: {service_name} - Risk: {risk_score:.2f}"
         )
 
@@ -335,7 +334,7 @@ class SREErrorBudgetService:
         with self.lock:
             self.canary_deployments[deployment.deployment_id] = deployment
 
-        current_app.logger.info(f"Started canary deployment: {service_name} ({canary_percentage}%)")
+        logging.getLogger(__name__).info(f"Started canary deployment: {service_name} ({canary_percentage}%)")
 
         return deployment
 

@@ -15,6 +15,7 @@
 #   - API monetization and marketplace
 
 import hashlib
+import logging
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -22,8 +23,6 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -283,7 +282,7 @@ class APISubscriptionService:
 
             self.subscriptions[subscription_id] = subscription
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Created subscription {subscription_id} for customer {customer_id} "
                 f"on plan {plan.name}"
             )
@@ -311,7 +310,7 @@ class APISubscriptionService:
             if quota_key in subscription.quota_remaining:
                 remaining = subscription.quota_remaining[quota_key]
                 if remaining <= 0 and not subscription.plan.overage_allowed:
-                    current_app.logger.warning(
+                    logging.getLogger(__name__).warning(
                         f"Quota exceeded for {subscription_id}: {metric_name}"
                     )
                     return False
@@ -386,7 +385,7 @@ class APISubscriptionService:
             subscription.plan = new_plan
             subscription.last_updated = datetime.now(UTC)
 
-            current_app.logger.info(f"Upgraded subscription {subscription_id} to {new_plan.name}")
+            logging.getLogger(__name__).info(f"Upgraded subscription {subscription_id} to {new_plan.name}")
 
             return True
 

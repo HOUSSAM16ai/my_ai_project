@@ -16,6 +16,7 @@
 
 import hashlib
 import hmac
+import os
 import secrets
 import threading
 import time
@@ -28,7 +29,7 @@ from typing import Any
 
 import jwt
 
-from app.core.kernel_v2.compat_collapse import current_app, current_user, g, jsonify, request
+from app.core.kernel_v2.compat_collapse import current_user, g, jsonify, request
 
 # ======================================================================================
 # CONFIGURATION & CONSTANTS
@@ -551,17 +552,11 @@ class APISecurityService:
 
     def _get_jwt_secret(self) -> str:
         """Get JWT secret from app config"""
-        try:
-            return current_app.config.get("SECRET_KEY", "dev-secret-change-in-production")
-        except Exception:
-            return "dev-secret-change-in-production"
+        return os.getenv("SECRET_KEY", "dev-secret-change-in-production")
 
     def _get_request_signing_secret(self) -> str:
         """Get request signing secret"""
-        try:
-            return current_app.config.get("API_SIGNING_SECRET", self._get_jwt_secret())
-        except Exception:
-            return "dev-signing-secret"
+        return os.getenv("API_SIGNING_SECRET", self._get_jwt_secret())
 
     def apply_security_headers(self, response):
         """Apply security headers to response"""

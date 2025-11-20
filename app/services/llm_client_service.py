@@ -132,17 +132,14 @@ try:
     import requests  # For HTTP fallback
 except Exception:  # pragma: no cover
     requests = None
-try:
-    from app.core.kernel_v2.compat_collapse import current_app
-except Exception:  # pragma: no cover
-    current_app = None
-
-    def has_app_context() -> bool:
-        return False
-
 
 import contextlib
 import logging
+
+current_app = None
+
+def has_app_context() -> bool:
+    return False
 
 # --------------------------------------------------------------------------------------
 # Logging

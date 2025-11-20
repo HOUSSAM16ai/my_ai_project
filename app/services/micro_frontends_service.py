@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app
+import logging
 
 # ======================================================================================
 # ENUMERATIONS
@@ -115,7 +115,7 @@ class MicroFrontendsService:
         self.module_versions: dict[str, list[str]] = defaultdict(list)
         self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
-        current_app.logger.info("Micro Frontends Service initialized")
+        logging.getLogger(__name__).info("Micro Frontends Service initialized")
 
     # ==================================================================================
     # MODULE MANAGEMENT
@@ -127,7 +127,7 @@ class MicroFrontendsService:
             self.modules[module.module_id] = module
             self.module_versions[module.name].append(module.version)
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Registered micro frontend: {module.name} ({module.framework.value})"
             )
             return True
@@ -149,7 +149,7 @@ class MicroFrontendsService:
         with self.lock:
             self.federations[federation.federation_id] = federation
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Created module federation with {len(federation.remote_modules)} remotes"
             )
             return True

@@ -6,7 +6,8 @@
 مصنع الاستجابات - Response Factory
 
 Creates HTTP responses in a framework-agnostic manner.
-Supports Flask, FastAPI, Django, and raw ASGI.
+Supports FastAPI, Django, and raw ASGI.
+Flask support has been removed.
 
 Design Pattern: Abstract Factory Pattern
 """
@@ -19,7 +20,7 @@ class ResponseFactory:
     Factory for creating HTTP responses across different frameworks
 
     Provides a unified interface for creating responses that work
-    with Flask, FastAPI, Django, and ASGI applications.
+    with FastAPI, Django, and ASGI applications.
     """
 
     @staticmethod
@@ -27,7 +28,7 @@ class ResponseFactory:
         data: dict[str, Any],
         status_code: int = 200,
         headers: dict[str, str] | None = None,
-        framework: str = "flask",
+        framework: str = "fastapi",
     ) -> Any:
         """
         Create a JSON response
@@ -36,7 +37,7 @@ class ResponseFactory:
             data: Response data
             status_code: HTTP status code
             headers: Optional headers
-            framework: Target framework ('flask', 'fastapi', 'django', 'asgi')
+            framework: Target framework ('fastapi', 'django', 'asgi')
 
         Returns:
             Framework-specific response object
@@ -44,19 +45,7 @@ class ResponseFactory:
         headers = headers or {}
 
         if framework == "flask":
-            # Legacy Flask support
-            try:
-                from flask import jsonify
-            except ImportError:
-                # Fallback for migration environment
-                import json
-                return json.dumps(data), status_code, headers
-
-            response = jsonify(data)
-            response.status_code = status_code
-            for key, value in headers.items():
-                response.headers[key] = value
-            return response
+             raise NotImplementedError("Flask is no longer supported.")
 
         elif framework == "fastapi":
             from fastapi.responses import JSONResponse
@@ -90,7 +79,7 @@ class ResponseFactory:
         status_code: int = 500,
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
-        framework: str = "flask",
+        framework: str = "fastapi",
     ) -> Any:
         """
         Create an error response
@@ -124,7 +113,7 @@ class ResponseFactory:
         data: Any = None,
         message: str = "Success",
         status_code: int = 200,
-        framework: str = "flask",
+        framework: str = "fastapi",
     ) -> Any:
         """
         Create a success response
@@ -151,7 +140,7 @@ class ResponseFactory:
     @staticmethod
     def from_middleware_result(
         result: "MiddlewareResult",  # type: ignore # noqa: F821
-        framework: str = "flask",
+        framework: str = "fastapi",
     ) -> Any:
         """
         Create response from MiddlewareResult

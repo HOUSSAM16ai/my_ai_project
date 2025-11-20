@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import threading
 import time
@@ -26,8 +27,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 
 # ======================================================================================
@@ -198,7 +197,7 @@ class ChaosMonkey:
         with self.lock:
             self.active_faults[fault.fault_id] = fault
 
-        current_app.logger.warning(
+        logging.getLogger(__name__).warning(
             f"🐒 Chaos Monkey injected {fault_type.value} fault into {service_name}.{operation}"
         )
 
@@ -271,7 +270,7 @@ class ChaosEngineer:
         self.chaos_monkey.probability = probability
         self.chaos_monkey.blast_radius = blast_radius
 
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"🐒 Chaos Monkey enabled (probability: {probability}, "
             f"blast_radius: {blast_radius.value})"
         )
@@ -279,7 +278,7 @@ class ChaosEngineer:
     def disable_chaos_monkey(self):
         """Disable Chaos Monkey"""
         self.chaos_monkey.enabled = False
-        current_app.logger.info("🐒 Chaos Monkey disabled")
+        logging.getLogger(__name__).info("🐒 Chaos Monkey disabled")
 
     def create_experiment(
         self,
@@ -304,7 +303,7 @@ class ChaosEngineer:
         with self.lock:
             self.experiments[experiment_id] = experiment
 
-        current_app.logger.info(f"Chaos experiment created: {name} ({experiment_id})")
+        logging.getLogger(__name__).info(f"Chaos experiment created: {name} ({experiment_id})")
 
         return experiment_id
 
@@ -329,12 +328,12 @@ class ChaosEngineer:
 
         try:
             # 1. Validate steady state before experiment
-            current_app.logger.info(f"Validating steady state for experiment: {experiment.name}")
+            logging.getLogger(__name__).info(f"Validating steady state for experiment: {experiment.name}")
 
             steady_state_before = experiment.steady_state_hypothesis.validation_function()
 
             if not steady_state_before:
-                current_app.logger.error(
+                logging.getLogger(__name__).error(
                     "Steady state validation failed before experiment - aborting"
                 )
                 experiment.status = ExperimentStatus.ABORTED
@@ -349,7 +348,7 @@ class ChaosEngineer:
             )
 
             # 2. Inject faults
-            current_app.logger.info(f"Injecting {len(experiment.fault_injections)} faults")
+            logging.getLogger(__name__).info(f"Injecting {len(experiment.fault_injections)} faults")
 
             for fault in experiment.fault_injections:
                 self._activate_fault(fault)
@@ -397,12 +396,12 @@ class ChaosEngineer:
                 self.experiment_history.append(experiment)
 
             result = "✅ SUCCESS" if experiment.hypothesis_validated else "❌ FAILED"
-            current_app.logger.info(f"Experiment completed: {experiment.name} - {result}")
+            logging.getLogger(__name__).info(f"Experiment completed: {experiment.name} - {result}")
 
             return experiment.hypothesis_validated
 
         except Exception as e:
-            current_app.logger.error(f"Experiment error: {e}")
+            logging.getLogger(__name__).error(f"Experiment error: {e}")
             experiment.status = ExperimentStatus.FAILED
 
             if experiment.auto_rollback:
@@ -413,13 +412,13 @@ class ChaosEngineer:
     def _activate_fault(self, fault: FaultInjection):
         """Activate a fault injection"""
         # In production, this would integrate with service mesh or infrastructure
-        current_app.logger.warning(
+        logging.getLogger(__name__).warning(
             f"Activating fault: {fault.fault_type.value} on {fault.target_service}"
         )
 
     def _rollback_faults(self, experiment: ChaosExperiment):
         """Rollback all faults in experiment"""
-        current_app.logger.info(f"Rolling back faults for experiment: {experiment.name}")
+        logging.getLogger(__name__).info(f"Rolling back faults for experiment: {experiment.name}")
 
         for _fault in experiment.fault_injections:
             # Deactivate fault
@@ -450,7 +449,7 @@ class ChaosEngineer:
         with self.lock:
             self.game_days[game_day_id] = game_day
 
-        current_app.logger.info(f"Game Day scheduled: {name} at {scheduled_at.isoformat()}")
+        logging.getLogger(__name__).info(f"Game Day scheduled: {name} at {scheduled_at.isoformat()}")
 
         return game_day_id
 

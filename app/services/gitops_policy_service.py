@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 import uuid
 from collections import defaultdict, deque
@@ -22,8 +23,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -195,7 +194,7 @@ class GitOpsService:
         # Initialize default policies
         self._initialize_default_policies()
 
-        current_app.logger.info("GitOps Service initialized successfully")
+        logging.getLogger(__name__).info("GitOps Service initialized successfully")
 
     def _initialize_default_policies(self):
         """Initialize default security and compliance policies"""
@@ -249,11 +248,11 @@ class GitOpsService:
         """Register GitOps application"""
         with self.lock:
             if app.app_id in self.applications:
-                current_app.logger.warning(f"Application already exists: {app.name}")
+                logging.getLogger(__name__).warning(f"Application already exists: {app.name}")
                 return False
 
             self.applications[app.app_id] = app
-            current_app.logger.info(f"Registered GitOps application: {app.name}")
+            logging.getLogger(__name__).info(f"Registered GitOps application: {app.name}")
 
             # Trigger initial sync
             self._sync_application(app.app_id)
@@ -299,7 +298,7 @@ class GitOpsService:
 
             app.last_sync = datetime.now(UTC)
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"Synced application {app.name}: {operation.resources_synced} resources"
             )
 
@@ -307,7 +306,7 @@ class GitOpsService:
             operation.status = SyncStatus.FAILED
             operation.error_message = str(e)
             operation.completed_at = datetime.now(UTC)
-            current_app.logger.error(f"Sync failed for {app.name}: {e}")
+            logging.getLogger(__name__).error(f"Sync failed for {app.name}: {e}")
 
         return operation
 
@@ -349,7 +348,7 @@ class GitOpsService:
         """Add policy rule"""
         with self.lock:
             self.policies[policy.rule_id] = policy
-            current_app.logger.info(f"Added policy: {policy.name}")
+            logging.getLogger(__name__).info(f"Added policy: {policy.name}")
             return True
 
     def evaluate_policy(
@@ -419,7 +418,7 @@ class GitOpsService:
             decision = self.admit_resource(resource)
             if not decision.allowed:
                 all_allowed = False
-                current_app.logger.warning(
+                logging.getLogger(__name__).warning(
                     f"Admission denied for {resource.get('metadata', {}).get('name')}: {decision.reason}"
                 )
 
@@ -529,7 +528,7 @@ class GitOpsService:
 
     def _remediate_drift(self, drift: DriftDetection):
         """Auto-remediate configuration drift"""
-        current_app.logger.info(f"Auto-remediating drift for {drift.resource_name}")
+        logging.getLogger(__name__).info(f"Auto-remediating drift for {drift.resource_name}")
 
         # Apply Git state to live state
         with self.lock:
