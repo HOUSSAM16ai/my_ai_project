@@ -1,0 +1,2234 @@
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/api/main.py:1:1
+  |
+1 | / from app.api.routers import system
+2 | | from fastapi import FastAPI
+  | |___________________________^
+  |
+help: Organize imports
+
+F401 [*] `fastapi.Request` imported but unused
+  --> app/api/routers/admin.py:8:56
+   |
+ 6 | import json
+ 7 |
+ 8 | from fastapi import APIRouter, Depends, HTTPException, Request
+   |                                                        ^^^^^^^
+ 9 | from fastapi.responses import StreamingResponse
+10 | from pydantic import BaseModel
+   |
+help: Remove unused import: `fastapi.Request`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/api/routers/chat.py:2:1
+  |
+1 |   # app/api/routers/chat.py
+2 | / import json
+3 | |
+4 | | from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+5 | |
+6 | | from app.core.ai_gateway import AIClient, get_ai_client
+  | |_______________________________________________________^
+  |
+help: Organize imports
+
+F821 Undefined name `Blueprint`
+   --> app/api_versioning.py:106:67
+    |
+106 | def create_versioned_blueprint(name: str, version: str = "v2") -> Blueprint:
+    |                                                                   ^^^^^^^^^
+107 |     """
+108 |     إنشاء blueprint بإصدار محدد - Create versioned blueprint
+    |
+
+F821 Undefined name `Blueprint`
+   --> app/api_versioning.py:117:10
+    |
+115 |         Versioned blueprint
+116 |     """
+117 |     bp = Blueprint(f"{name}_{version}", __name__, url_prefix=f"/api/{version}")
+    |          ^^^^^^^^^
+118 |
+119 |     return bp
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/compat/flask_adapter.py:1:1
+  |
+1 | / from fastapi import FastAPI
+2 | | from fastapi.middleware.wsgi import WSGIMiddleware
+3 | | from flask import Flask
+  | |_______________________^
+4 |
+5 |   def create_flask_adapter(fastapi_app: FastAPI, flask_app: Flask, mount_path: str = "/flask"):
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/ai_gateway.py:11:1
+   |
+ 9 |   """
+10 |
+11 | / import os
+12 | | from typing import Protocol, runtime_checkable, AsyncGenerator
+13 | | import httpx
+14 | | import json
+   | |___________^
+15 |
+16 |   # --- Configuration ---
+   |
+help: Organize imports
+
+UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`
+  --> app/core/ai_gateway.py:12:1
+   |
+11 | import os
+12 | from typing import Protocol, runtime_checkable, AsyncGenerator
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | import httpx
+14 | import json
+   |
+help: Import from `collections.abc`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/core/config.py:2:1
+  |
+1 | # app/core/config.py
+2 | from pydantic_settings import BaseSettings, SettingsConfigDict
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | class Settings(BaseSettings):
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/database.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / import os
+11 | | from typing import AsyncGenerator
+12 | |
+13 | | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+14 | | from sqlalchemy.orm import sessionmaker, declarative_base
+   | |_________________________________________________________^
+15 |
+16 |   # ======================================================================================
+   |
+help: Organize imports
+
+UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`
+  --> app/core/database.py:11:1
+   |
+10 | import os
+11 | from typing import AsyncGenerator
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+   |
+help: Import from `collections.abc`
+
+E402 Module level import not at top of file
+  --> app/core/factories.py:52:1
+   |
+52 | from app.gateways.ai_service_gateway import AIServiceGateway
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+53 | from app.protocols.http_client import HttpClient, RequestsAdapter
+   |
+
+E402 Module level import not at top of file
+  --> app/core/factories.py:53:1
+   |
+52 | from app.gateways.ai_service_gateway import AIServiceGateway
+53 | from app.protocols.http_client import HttpClient, RequestsAdapter
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/core/kernel_v2/compat_collapse.py:5:1
+  |
+3 |   The Compatibility Collapse Layer for Reality Kernel v2.
+4 |   """
+5 | / import uuid
+6 | | import json
+7 | | from unittest.mock import MagicMock
+  | |___________________________________^
+8 |
+9 |   class _MockUser:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/kernel_v2/config_v2.py:6:1
+   |
+ 4 |   """
+ 5 |
+ 6 | / from pydantic_settings import BaseSettings, SettingsConfigDict
+ 7 | | import os
+ 8 | | from functools import lru_cache
+   | |_______________________________^
+ 9 |
+10 |   class ConfigV2(BaseSettings):
+   |
+help: Organize imports
+
+F401 [*] `os` imported but unused
+ --> app/core/kernel_v2/config_v2.py:7:8
+  |
+6 | from pydantic_settings import BaseSettings, SettingsConfigDict
+7 | import os
+  |        ^^
+8 | from functools import lru_cache
+  |
+help: Remove unused import: `os`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/kernel_v2/meta_kernel.py:6:1
+   |
+ 4 |   """
+ 5 |
+ 6 | / from .state_engine import StateEngine
+ 7 | | from .config_v2 import ConfigV2, get_settings
+ 8 | | from .logging_spine import get_logger, setup_logging
+ 9 | | from . import compat_collapse  # Import the module itself
+   | |_____________________________^
+10 |
+11 |   class MetaKernel:
+   |
+help: Organize imports
+
+UP035 `typing.Dict` is deprecated, use `dict` instead
+  --> app/core/kernel_v2/state_engine.py:9:1
+   |
+ 7 | """
+ 8 | import contextvars
+ 9 | from typing import Any, Dict
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | # Use contextvars to ensure state is isolated between concurrent requests
+   |
+
+UP006 [*] Use `dict` instead of `Dict` for type annotation
+  --> app/core/kernel_v2/state_engine.py:13:32
+   |
+11 | # Use contextvars to ensure state is isolated between concurrent requests
+12 | # in an async environment.
+13 | _state: contextvars.ContextVar[Dict[str, Any]] = contextvars.ContextVar("kernel_state", default={})
+   |                                ^^^^
+14 |
+15 | class StateEngine:
+   |
+help: Replace with `dict`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/time.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / from contextlib import contextmanager
+11 | | from app.core.database import AsyncSessionLocal
+   | |_______________________________________________^
+12 |
+13 |   # ======================================================================================
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/db/engine_v2.py:5:1
+  |
+3 |   The new asynchronous SQLAlchemy engine for Reality Kernel v2.
+4 |   """
+5 | / from sqlalchemy.ext.asyncio import create_async_engine
+6 | | from app.core.kernel_v2.config_v2 import get_settings
+  | |_____________________________________________________^
+7 |
+8 |   # Get the database URL from the central configuration
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/db/session_v2.py:5:1
+  |
+3 |   The new asynchronous session maker and dependency provider for Reality Kernel v2.
+4 |   """
+5 | / from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+6 | | from .engine_v2 import get_async_engine
+  | |_______________________________________^
+7 |
+8 |   # Create a configured "AsyncSession" class.
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/kernel.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / from fastapi import FastAPI
+11 | | from typing import Dict, Any, Callable
+   | |______________________________________^
+12 |
+13 |   class RealityKernel:
+   |
+help: Organize imports
+
+UP035 [*] Import from `collections.abc` instead: `Callable`
+  --> app/kernel.py:11:1
+   |
+10 | from fastapi import FastAPI
+11 | from typing import Dict, Any, Callable
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | class RealityKernel:
+   |
+help: Import from `collections.abc`
+
+UP035 `typing.Dict` is deprecated, use `dict` instead
+  --> app/kernel.py:11:1
+   |
+10 | from fastapi import FastAPI
+11 | from typing import Dict, Any, Callable
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | class RealityKernel:
+   |
+
+UP006 [*] Use `dict` instead of `Dict` for type annotation
+  --> app/kernel.py:20:22
+   |
+18 |             version="3.0.0",
+19 |         )
+20 |         self._state: Dict[str, Any] = {}
+   |                      ^^^^
+21 |         self._dependencies: Dict[str, Callable] = {}
+22 |         self.config = self._load_adaptive_config()
+   |
+help: Replace with `dict`
+
+UP006 [*] Use `dict` instead of `Dict` for type annotation
+  --> app/kernel.py:21:29
+   |
+19 |         )
+20 |         self._state: Dict[str, Any] = {}
+21 |         self._dependencies: Dict[str, Callable] = {}
+   |                             ^^^^
+22 |         self.config = self._load_adaptive_config()
+   |
+help: Replace with `dict`
+
+UP006 [*] Use `dict` instead of `Dict` for type annotation
+  --> app/kernel.py:24:40
+   |
+22 |         self.config = self._load_adaptive_config()
+23 |
+24 |     def _load_adaptive_config(self) -> Dict[str, Any]:
+   |                                        ^^^^
+25 |         from app.core.config import settings
+26 |         return settings.model_dump()
+   |
+help: Replace with `dict`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/main.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / from fastapi.staticfiles import StaticFiles
+ 8 | |
+ 9 | | from app.api.routers import admin, chat, system, ai_service
+10 | | from app.kernel import kernel
+11 | | from app.middleware.fastapi_error_handlers import add_error_handlers
+   | |____________________________________________________________________^
+12 |
+13 |   # SERVICE ORCHESTRATION
+   |
+help: Organize imports
+
+invalid-syntax: Expected an indented block after `if` statement
+  --> app/middleware/core/response_factory.py:46:33
+   |
+44 |         headers = headers or {}
+45 |
+46 |         if framework == "flask":
+   |                                 ^
+47 | from app.core.kernel_v2.compat_collapse import jsonify
+   |
+
+invalid-syntax: Unexpected indentation
+  --> app/middleware/core/response_factory.py:49:1
+   |
+47 | from app.core.kernel_v2.compat_collapse import jsonify
+48 |
+49 |             response = jsonify(data)
+   | ^^^^^^^^^^^^
+50 |             response.status_code = status_code
+51 |             for key, value in headers.items():
+   |
+
+invalid-syntax: unindent does not match any outer indentation level
+  --> app/middleware/core/response_factory.py:55:1
+   |
+53 |             return response
+54 |
+55 |         elif framework == "fastapi":
+   | ^^^^^^^^
+56 |             from fastapi.responses import JSONResponse
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:55:9
+   |
+53 |             return response
+54 |
+55 |         elif framework == "fastapi":
+   |         ^^^^
+56 |             from fastapi.responses import JSONResponse
+   |
+
+invalid-syntax: Invalid annotated assignment target
+  --> app/middleware/core/response_factory.py:55:14
+   |
+53 |             return response
+54 |
+55 |         elif framework == "fastapi":
+   |              ^^^^^^^^^^^^^^^^^^^^^^
+56 |             from fastapi.responses import JSONResponse
+   |
+
+invalid-syntax: Expected an expression
+  --> app/middleware/core/response_factory.py:55:37
+   |
+53 |             return response
+54 |
+55 |         elif framework == "fastapi":
+   |                                     ^
+56 |             from fastapi.responses import JSONResponse
+   |
+
+invalid-syntax: Unexpected indentation
+  --> app/middleware/core/response_factory.py:56:1
+   |
+55 |         elif framework == "fastapi":
+56 |             from fastapi.responses import JSONResponse
+   | ^^^^^^^^^^^^
+57 |
+58 |             return JSONResponse(content=data, status_code=status_code, headers=headers)
+   |
+
+invalid-syntax: unindent does not match any outer indentation level
+  --> app/middleware/core/response_factory.py:60:1
+   |
+58 |             return JSONResponse(content=data, status_code=status_code, headers=headers)
+59 |
+60 |         elif framework == "django":
+   | ^^^^^^^^
+61 |             from django.http import JsonResponse
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:60:9
+   |
+58 |             return JSONResponse(content=data, status_code=status_code, headers=headers)
+59 |
+60 |         elif framework == "django":
+   |         ^^^^
+61 |             from django.http import JsonResponse
+   |
+
+invalid-syntax: Invalid annotated assignment target
+  --> app/middleware/core/response_factory.py:60:14
+   |
+58 |             return JSONResponse(content=data, status_code=status_code, headers=headers)
+59 |
+60 |         elif framework == "django":
+   |              ^^^^^^^^^^^^^^^^^^^^^
+61 |             from django.http import JsonResponse
+   |
+
+invalid-syntax: Expected an expression
+  --> app/middleware/core/response_factory.py:60:36
+   |
+58 |             return JSONResponse(content=data, status_code=status_code, headers=headers)
+59 |
+60 |         elif framework == "django":
+   |                                    ^
+61 |             from django.http import JsonResponse
+   |
+
+invalid-syntax: Unexpected indentation
+  --> app/middleware/core/response_factory.py:61:1
+   |
+60 |         elif framework == "django":
+61 |             from django.http import JsonResponse
+   | ^^^^^^^^^^^^
+62 |
+63 |             response = JsonResponse(data, status=status_code)
+   |
+
+invalid-syntax: unindent does not match any outer indentation level
+  --> app/middleware/core/response_factory.py:68:1
+   |
+66 |             return response
+67 |
+68 |         elif framework == "asgi":
+   | ^^^^^^^^
+69 |             import json
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:68:9
+   |
+66 |             return response
+67 |
+68 |         elif framework == "asgi":
+   |         ^^^^
+69 |             import json
+   |
+
+invalid-syntax: Invalid annotated assignment target
+  --> app/middleware/core/response_factory.py:68:14
+   |
+66 |             return response
+67 |
+68 |         elif framework == "asgi":
+   |              ^^^^^^^^^^^^^^^^^^^
+69 |             import json
+   |
+
+invalid-syntax: Expected an expression
+  --> app/middleware/core/response_factory.py:68:34
+   |
+66 |             return response
+67 |
+68 |         elif framework == "asgi":
+   |                                  ^
+69 |             import json
+   |
+
+invalid-syntax: Unexpected indentation
+  --> app/middleware/core/response_factory.py:69:1
+   |
+68 |         elif framework == "asgi":
+69 |             import json
+   | ^^^^^^^^^^^^
+70 |
+71 |             body = json.dumps(data).encode("utf-8")
+   |
+
+invalid-syntax: unindent does not match any outer indentation level
+  --> app/middleware/core/response_factory.py:78:1
+   |
+76 |             }, {"type": "http.response.body", "body": body}
+77 |
+78 |         else:
+   | ^^^^^^^^
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:78:9
+   |
+76 |             }, {"type": "http.response.body", "body": body}
+77 |
+78 |         else:
+   |         ^^^^
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:78:13
+   |
+76 |             }, {"type": "http.response.body", "body": body}
+77 |
+78 |         else:
+   |             ^
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+   |
+
+invalid-syntax: Expected a statement
+  --> app/middleware/core/response_factory.py:78:14
+   |
+76 |             }, {"type": "http.response.body", "body": body}
+77 |
+78 |         else:
+   |              ^
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+   |
+
+invalid-syntax: Unexpected indentation
+  --> app/middleware/core/response_factory.py:79:1
+   |
+78 |         else:
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+   | ^^^^^^^^^^^^
+80 |
+81 |     @staticmethod
+   |
+
+invalid-syntax: unindent does not match any outer indentation level
+  --> app/middleware/core/response_factory.py:81:1
+   |
+79 |             raise ValueError(f"Unsupported framework: {framework}")
+80 |
+81 |     @staticmethod
+   | ^^^^
+82 |     def make_error_response(
+83 |         message: str,
+   |
+
+invalid-syntax: Expected class, function definition or async function definition after decorator
+  --> app/middleware/core/response_factory.py:82:1
+   |
+81 |     @staticmethod
+82 |     def make_error_response(
+   | ^^^^
+83 |         message: str,
+84 |         status_code: int = 500,
+   |
+
+invalid-syntax: Expected a statement
+   --> app/middleware/core/response_factory.py:176:1
+    |
+174 |                 framework=framework,
+175 |             )
+    |              ^
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/middleware/error_response_factory.py:19:1
+   |
+17 |   """
+18 |
+19 | / from datetime import UTC, datetime
+20 | | from typing import Any, Optional
+21 | | from fastapi import FastAPI
+   | |___________________________^
+   |
+help: Organize imports
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/middleware/error_response_factory.py:84:63
+   |
+83 |     @staticmethod
+84 |     def create_database_error_response(error: Exception, app: Optional[FastAPI] = None) -> dict:
+   |                                                               ^^^^^^^^^^^^^^^^^
+85 |         """
+86 |         Create a database error response.
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/middleware/error_response_factory.py:109:32
+    |
+107 |     @staticmethod
+108 |     def create_internal_error_response(
+109 |         error: Exception, app: Optional[FastAPI] = None, include_traceback: bool = False
+    |                                ^^^^^^^^^^^^^^^^^
+110 |     ) -> dict:
+111 |         """
+    |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/middleware/error_response_factory.py:140:65
+    |
+139 |     @staticmethod
+140 |     def create_unexpected_error_response(error: Exception, app: Optional[FastAPI] = None) -> dict:
+    |                                                                 ^^^^^^^^^^^^^^^^^
+141 |         """
+142 |         Create an unexpected error response.
+    |
+help: Convert to `X | None`
+
+F821 Undefined name `Flask`
+  --> app/middleware/request_logger.py:19:32
+   |
+19 | def setup_request_logging(app: Flask):
+   |                                ^^^^^
+20 |     """
+21 |     إعداد تسجيل الطلبات - Setup request logging for the Flask app
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/middleware/security/superhuman_orchestrator.py:15:1
+   |
+13 |   """
+14 |
+15 | / from typing import Any
+16 | |
+17 | | from app.core.kernel_v2.compat_collapse import g, jsonify, request
+18 | |
+19 | | from app.middleware.core.base_middleware import BaseMiddleware
+20 | | from app.middleware.core.context import RequestContext
+21 | | from app.middleware.core.pipeline import SmartPipeline
+22 | | from app.middleware.core.response_factory import ResponseFactory
+23 | |
+24 | | from .ai_threat_middleware import AIThreatMiddleware
+25 | | from .policy_enforcer import PolicyEnforcer
+26 | | from .rate_limit_middleware import RateLimitMiddleware
+27 | | from .security_headers import SecurityHeadersMiddleware
+28 | | from .telemetry_guard import TelemetryGuard
+29 | | from .waf_middleware import WAFMiddleware
+30 | | from .zero_trust_middleware import ZeroTrustMiddleware
+   | |______________________________________________________^
+   |
+help: Organize imports
+
+F821 Undefined name `Flask`
+  --> app/middleware/security/superhuman_orchestrator.py:51:14
+   |
+49 |     def __init__(
+50 |         self,
+51 |         app: Flask | None = None,
+   |              ^^^^^
+52 |         config: dict[str, Any] | None = None,
+53 |     ):
+   |
+
+F821 Undefined name `Flask`
+   --> app/middleware/security/superhuman_orchestrator.py:122:29
+    |
+120 |         return SmartPipeline(middlewares)
+121 |
+122 |     def init_app(self, app: Flask):
+    |                             ^^^^^
+123 |         """
+124 |         Initialize orchestrator with Flask application
+    |
+
+F821 Undefined name `Flask`
+   --> app/middleware/security/superhuman_orchestrator.py:279:10
+    |
+277 | # Convenience function for easy initialization
+278 | def create_security_orchestrator(
+279 |     app: Flask | None = None,
+    |          ^^^^^
+280 |     secret_key: str | None = None,
+281 |     **kwargs,
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/middleware/superhuman_security.py:2:1
+  |
+1 |   # app/middleware/superhuman_security.py
+2 | / from fastapi import Request, Response
+3 | | from fastapi.responses import JSONResponse
+4 | | from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+5 | | from app.security.waf import waf
+6 | | from app.security.rate_limiter import rate_limiter
+  | |__________________________________________________^
+7 |
+8 |   class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
+  |
+help: Organize imports
+
+F401 [*] `app.security.rate_limiter.rate_limiter` imported but unused
+ --> app/middleware/superhuman_security.py:6:39
+  |
+4 | from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+5 | from app.security.waf import waf
+6 | from app.security.rate_limiter import rate_limiter
+  |                                       ^^^^^^^^^^^^
+7 |
+8 | class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
+  |
+help: Remove unused import: `app.security.rate_limiter.rate_limiter`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/models.py:2:1
+   |
+ 1 |   # app/models.py
+ 2 | / from __future__ import annotations
+ 3 | | import enum
+ 4 | | from datetime import datetime, timezone
+ 5 | | from typing import List, Optional, TYPE_CHECKING
+ 6 | |
+ 7 | | from sqlalchemy import Column, DateTime, String, Text, func
+ 8 | | from sqlalchemy import Enum as SAEnum
+ 9 | | from sqlalchemy.orm import relationship
+10 | | from sqlmodel import Field, SQLModel, Relationship, JSON
+11 | | from passlib.context import CryptContext
+   | |________________________________________^
+12 |
+13 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+
+UP035 `typing.List` is deprecated, use `list` instead
+ --> app/models.py:5:1
+  |
+3 | import enum
+4 | from datetime import datetime, timezone
+5 | from typing import List, Optional, TYPE_CHECKING
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 |
+7 | from sqlalchemy import Column, DateTime, String, Text, func
+  |
+
+F401 [*] `sqlalchemy.String` imported but unused
+ --> app/models.py:7:42
+  |
+5 | from typing import List, Optional, TYPE_CHECKING
+6 |
+7 | from sqlalchemy import Column, DateTime, String, Text, func
+  |                                          ^^^^^^
+8 | from sqlalchemy import Enum as SAEnum
+9 | from sqlalchemy.orm import relationship
+  |
+help: Remove unused import: `sqlalchemy.String`
+
+F401 [*] `sqlmodel.JSON` imported but unused
+  --> app/models.py:10:53
+   |
+ 8 | from sqlalchemy import Enum as SAEnum
+ 9 | from sqlalchemy.orm import relationship
+10 | from sqlmodel import Field, SQLModel, Relationship, JSON
+   |                                                     ^^^^
+11 | from passlib.context import CryptContext
+   |
+help: Remove unused import: `sqlmodel.JSON`
+
+UP017 [*] Use `datetime.UTC` alias
+  --> app/models.py:22:25
+   |
+21 | def utc_now() -> datetime:
+22 |     return datetime.now(timezone.utc)
+   |                         ^^^^^^^^^^^^
+23 |
+24 | class MessageRole(str, enum.Enum):
+   |
+help: Convert to `datetime.UTC` alias
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/models.py:32:9
+   |
+30 | class User(SQLModel, table=True):
+31 |     __tablename__ = "users"
+32 |     id: Optional[int] = Field(default=None, primary_key=True)
+   |         ^^^^^^^^^^^^^
+33 |     full_name: str = Field(max_length=150)
+34 |     email: str = Field(max_length=150, unique=True, index=True)
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/models.py:35:20
+   |
+33 |     full_name: str = Field(max_length=150)
+34 |     email: str = Field(max_length=150, unique=True, index=True)
+35 |     password_hash: Optional[str] = Field(default=None, max_length=256)
+   |                    ^^^^^^^^^^^^^
+36 |     is_admin: bool = Field(default=False)
+37 |     created_at: datetime = Field(
+   |
+help: Convert to `X | None`
+
+UP006 [*] Use `list` instead of `List` for type annotation
+  --> app/models.py:49:26
+   |
+47 |     # We use sa_relationship to explicitly define the relationship for SQLAlchemy,
+48 |     # bypassing SQLModel's inference which fails with List['String'] forward refs.
+49 |     admin_conversations: List["AdminConversation"] = Relationship(
+   |                          ^^^^
+50 |         sa_relationship=relationship("AdminConversation", back_populates="user")
+51 |     )
+   |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+  --> app/models.py:49:31
+   |
+47 |     # We use sa_relationship to explicitly define the relationship for SQLAlchemy,
+48 |     # bypassing SQLModel's inference which fails with List['String'] forward refs.
+49 |     admin_conversations: List["AdminConversation"] = Relationship(
+   |                               ^^^^^^^^^^^^^^^^^^^
+50 |         sa_relationship=relationship("AdminConversation", back_populates="user")
+51 |     )
+   |
+help: Remove quotes
+
+UP006 [*] Use `list` instead of `List` for type annotation
+  --> app/models.py:52:15
+   |
+50 |         sa_relationship=relationship("AdminConversation", back_populates="user")
+51 |     )
+52 |     missions: List["Mission"] = Relationship(
+   |               ^^^^
+53 |         sa_relationship=relationship("Mission", back_populates="user")
+54 |     )
+   |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+  --> app/models.py:52:20
+   |
+50 |         sa_relationship=relationship("AdminConversation", back_populates="user")
+51 |     )
+52 |     missions: List["Mission"] = Relationship(
+   |                    ^^^^^^^^^
+53 |         sa_relationship=relationship("Mission", back_populates="user")
+54 |     )
+   |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/models.py:69:9
+   |
+67 | class AdminConversation(SQLModel, table=True):
+68 |     __tablename__ = "admin_conversations"
+69 |     id: Optional[int] = Field(default=None, primary_key=True)
+   |         ^^^^^^^^^^^^^
+70 |     title: str = Field(max_length=500)
+71 |     user_id: int = Field(foreign_key="users.id", index=True)
+   |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+  --> app/models.py:74:11
+   |
+73 |     # Relationships
+74 |     user: "User" = Relationship(
+   |           ^^^^^^
+75 |         sa_relationship=relationship("User", back_populates="admin_conversations")
+76 |     )
+   |
+help: Remove quotes
+
+UP006 [*] Use `list` instead of `List` for type annotation
+  --> app/models.py:77:15
+   |
+75 |         sa_relationship=relationship("User", back_populates="admin_conversations")
+76 |     )
+77 |     messages: List["AdminMessage"] = Relationship(
+   |               ^^^^
+78 |         sa_relationship=relationship("AdminMessage", back_populates="conversation")
+79 |     )
+   |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+  --> app/models.py:77:20
+   |
+75 |         sa_relationship=relationship("User", back_populates="admin_conversations")
+76 |     )
+77 |     messages: List["AdminMessage"] = Relationship(
+   |                    ^^^^^^^^^^^^^^
+78 |         sa_relationship=relationship("AdminMessage", back_populates="conversation")
+79 |     )
+   |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/models.py:83:9
+   |
+81 | class AdminMessage(SQLModel, table=True):
+82 |     __tablename__ = "admin_messages"
+83 |     id: Optional[int] = Field(default=None, primary_key=True)
+   |         ^^^^^^^^^^^^^
+84 |     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
+85 |     role: MessageRole = Field(
+   |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+  --> app/models.py:93:19
+   |
+92 |     # Relationships
+93 |     conversation: "AdminConversation" = Relationship(
+   |                   ^^^^^^^^^^^^^^^^^^^
+94 |         sa_relationship=relationship("AdminConversation", back_populates="messages")
+95 |     )
+   |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:99:9
+    |
+ 97 | class Mission(SQLModel, table=True):
+ 98 |     __tablename__ = "missions"
+ 99 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+100 |     objective: str
+101 |     user_id: int = Field(foreign_key="users.id", index=True)
+    |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:104:11
+    |
+103 |     # Relationships
+104 |     user: "User" = Relationship(
+    |           ^^^^^^
+105 |         sa_relationship=relationship("User", back_populates="missions")
+106 |     )
+    |
+help: Remove quotes
+
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> app/models.py:107:12
+    |
+105 |         sa_relationship=relationship("User", back_populates="missions")
+106 |     )
+107 |     tasks: List["Task"] = Relationship(
+    |            ^^^^
+108 |         sa_relationship=relationship("Task", back_populates="mission")
+109 |     )
+    |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:107:17
+    |
+105 |         sa_relationship=relationship("User", back_populates="missions")
+106 |     )
+107 |     tasks: List["Task"] = Relationship(
+    |                 ^^^^^^
+108 |         sa_relationship=relationship("Task", back_populates="mission")
+109 |     )
+    |
+help: Remove quotes
+
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> app/models.py:110:20
+    |
+108 |         sa_relationship=relationship("Task", back_populates="mission")
+109 |     )
+110 |     mission_plans: List["MissionPlan"] = Relationship(
+    |                    ^^^^
+111 |         sa_relationship=relationship("MissionPlan", back_populates="mission")
+112 |     )
+    |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:110:25
+    |
+108 |         sa_relationship=relationship("Task", back_populates="mission")
+109 |     )
+110 |     mission_plans: List["MissionPlan"] = Relationship(
+    |                         ^^^^^^^^^^^^^
+111 |         sa_relationship=relationship("MissionPlan", back_populates="mission")
+112 |     )
+    |
+help: Remove quotes
+
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> app/models.py:113:21
+    |
+111 |         sa_relationship=relationship("MissionPlan", back_populates="mission")
+112 |     )
+113 |     mission_events: List["MissionEvent"] = Relationship(
+    |                     ^^^^
+114 |         sa_relationship=relationship("MissionEvent", back_populates="mission")
+115 |     )
+    |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:113:26
+    |
+111 |         sa_relationship=relationship("MissionPlan", back_populates="mission")
+112 |     )
+113 |     mission_events: List["MissionEvent"] = Relationship(
+    |                          ^^^^^^^^^^^^^^
+114 |         sa_relationship=relationship("MissionEvent", back_populates="mission")
+115 |     )
+    |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:119:9
+    |
+117 | class MissionEvent(SQLModel, table=True):
+118 |     __tablename__ = "mission_events"
+119 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+120 |     event: str
+121 |     mission_id: int = Field(foreign_key="missions.id", index=True)
+    |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:124:14
+    |
+123 |     # Relationships
+124 |     mission: "Mission" = Relationship(
+    |              ^^^^^^^^^
+125 |         sa_relationship=relationship("Mission", back_populates="mission_events")
+126 |     )
+    |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:130:9
+    |
+128 | class MissionPlan(SQLModel, table=True):
+129 |     __tablename__ = "mission_plans"
+130 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+131 |     plan: str
+132 |     mission_id: int = Field(foreign_key="missions.id", index=True)
+    |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:135:14
+    |
+134 |     # Relationships
+135 |     mission: "Mission" = Relationship(
+    |              ^^^^^^^^^
+136 |         sa_relationship=relationship("Mission", back_populates="mission_plans")
+137 |     )
+    |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:141:9
+    |
+139 | class Task(SQLModel, table=True):
+140 |     __tablename__ = "tasks"
+141 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+142 |     description: str
+143 |     mission_id: int = Field(foreign_key="missions.id", index=True)
+    |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:146:14
+    |
+145 |     # Relationships
+146 |     mission: "Mission" = Relationship(
+    |              ^^^^^^^^^
+147 |         sa_relationship=relationship("Mission", back_populates="tasks")
+148 |     )
+    |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:152:9
+    |
+150 | class PromptTemplate(SQLModel, table=True):
+151 |     __tablename__ = "prompt_templates"
+152 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+153 |     name: str = Field(unique=True)
+154 |     template: str
+    |
+help: Convert to `X | None`
+
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> app/models.py:156:24
+    |
+154 |     template: str
+155 |
+156 |     generated_prompts: List["GeneratedPrompt"] = Relationship(
+    |                        ^^^^
+157 |         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
+158 |     )
+    |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:156:29
+    |
+154 |     template: str
+155 |
+156 |     generated_prompts: List["GeneratedPrompt"] = Relationship(
+    |                             ^^^^^^^^^^^^^^^^^
+157 |         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
+158 |     )
+    |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+   --> app/models.py:162:9
+    |
+160 | class GeneratedPrompt(SQLModel, table=True):
+161 |     __tablename__ = "generated_prompts"
+162 |     id: Optional[int] = Field(default=None, primary_key=True)
+    |         ^^^^^^^^^^^^^
+163 |     prompt: str
+164 |     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
+    |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+   --> app/models.py:167:15
+    |
+166 |     # Relationships
+167 |     template: "PromptTemplate" = Relationship(
+    |               ^^^^^^^^^^^^^^^^
+168 |         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
+169 |     )
+    |
+help: Remove quotes
+
+E402 Module level import not at top of file
+   --> app/models.py:175:1
+    |
+173 | # Model Rebuild & Validation
+174 | # ------------------------------------------------------------------------------
+175 | import os
+    | ^^^^^^^^^
+176 | import logging
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> app/models.py:175:1
+    |
+173 |   # Model Rebuild & Validation
+174 |   # ------------------------------------------------------------------------------
+175 | / import os
+176 | | import logging
+    | |______________^
+177 |
+178 |   # Ensure reports directory exists
+    |
+help: Organize imports
+
+E402 Module level import not at top of file
+   --> app/models.py:176:1
+    |
+174 | # ------------------------------------------------------------------------------
+175 | import os
+176 | import logging
+    | ^^^^^^^^^^^^^^
+177 |
+178 | # Ensure reports directory exists
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/security/rate_limiter.py:2:1
+  |
+1 |   # app/security/rate_limiter.py
+2 | / import time
+3 | | from collections import defaultdict
+4 | | from fastapi import Request, HTTPException, status
+  | |__________________________________________________^
+5 |
+6 |   class RateLimiter:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/security/secure_auth.py:2:1
+  |
+1 |   # app/security/secure_auth.py
+2 | / from fastapi import Request
+3 | | from typing import Any
+4 | | from app.models import pwd_context
+  | |__________________________________^
+5 |
+6 |   class SecureAuthenticationService:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/security/secure_templates.py:18:1
+   |
+16 |   """
+17 |
+18 | / from collections.abc import Callable
+19 | | from functools import wraps
+20 | | from typing import Any
+21 | |
+22 | | from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request
+23 | | from werkzeug.security import generate_password_hash
+   | |____________________________________________________^
+24 |
+25 |   # ======================================================================================
+   |
+help: Organize imports
+
+F821 Undefined name `Request`
+   --> app/security/secure_templates.py:105:18
+    |
+103 |     email: str,
+104 |     password: str,
+105 |     request_obj: Request,
+    |                  ^^^^^^^
+106 |     db_session: Any,
+107 |     captcha_token: str | None = None,
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/security/threat_detector.py:2:1
+   |
+ 1 |   # app/security/threat_detector.py
+ 2 | / import time
+ 3 | | from collections import deque
+ 4 | | from dataclasses import dataclass
+ 5 | | from datetime import UTC, datetime
+ 6 | | from typing import Any
+ 7 | |
+ 8 | | from fastapi import Request
+   | |___________________________^
+ 9 |
+10 |   @dataclass
+   |
+help: Organize imports
+
+F401 [*] `time` imported but unused
+ --> app/security/threat_detector.py:2:8
+  |
+1 | # app/security/threat_detector.py
+2 | import time
+  |        ^^^^
+3 | from collections import deque
+4 | from dataclasses import dataclass
+  |
+help: Remove unused import: `time`
+
+F401 [*] `datetime.UTC` imported but unused
+ --> app/security/threat_detector.py:5:22
+  |
+3 | from collections import deque
+4 | from dataclasses import dataclass
+5 | from datetime import UTC, datetime
+  |                      ^^^
+6 | from typing import Any
+  |
+help: Remove unused import
+
+F401 [*] `datetime.datetime` imported but unused
+ --> app/security/threat_detector.py:5:27
+  |
+3 | from collections import deque
+4 | from dataclasses import dataclass
+5 | from datetime import UTC, datetime
+  |                           ^^^^^^^^
+6 | from typing import Any
+  |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+ --> app/security/threat_detector.py:6:20
+  |
+4 | from dataclasses import dataclass
+5 | from datetime import UTC, datetime
+6 | from typing import Any
+  |                    ^^^
+7 |
+8 | from fastapi import Request
+  |
+help: Remove unused import: `typing.Any`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/security/waf.py:2:1
+  |
+1 |   # app/security/waf.py
+2 | / import re
+3 | | from typing import Any
+4 | | from fastapi import Request, HTTPException, status
+  | |__________________________________________________^
+5 |
+6 |   class WebApplicationFirewall:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/security/zero_trust.py:2:1
+  |
+1 | # app/security/zero_trust.py
+2 | from fastapi import Request, HTTPException, status
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | class ZeroTrustAuthenticator:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/services/admin_ai_service.py:2:1
+  |
+1 |   # app/services/admin_ai_service.py
+2 | / import logging
+3 | | from sqlalchemy.orm import Session
+4 | | from app.models import AdminConversation, AdminMessage, User
+  | |____________________________________________________________^
+5 |
+6 |   logger = logging.getLogger(__name__)
+  |
+help: Organize imports
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:410:17
+    |
+409 |             except Exception as e:
+410 |                 current_app.logger.warning(f"Error evaluating provider {provider_name}: {e}")
+    |                 ^^^^^^^^^^^
+411 |                 continue
+    |
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:620:21
+    |
+619 |                 except Exception as e:
+620 |                     current_app.logger.error(f"Policy evaluation error: {e}")
+    |                     ^^^^^^^^^^^
+621 |                     continue
+    |
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:703:9
+    |
+701 |         """Register a gateway route"""
+702 |         self.routes[route.route_id] = route
+703 |         current_app.logger.info(f"Registered route: {route.route_id} -> {route.path_pattern}")
+    |         ^^^^^^^^^^^
+704 |
+705 |     def register_upstream_service(self, service: UpstreamService):
+    |
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:708:9
+    |
+706 |         """Register an upstream service"""
+707 |         self.upstream_services[service.service_id] = service
+708 |         current_app.logger.info(f"Registered upstream service: {service.service_id}")
+    |         ^^^^^^^^^^^
+709 |
+710 |     def process_request(
+    |
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:771:13
+    |
+770 |         except Exception as e:
+771 |             current_app.logger.error(f"Gateway processing error: {e}", exc_info=True)
+    |             ^^^^^^^^^^^
+772 |             return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
+    |
+
+F821 Undefined name `current_app`
+   --> app/services/api_gateway_service.py:836:17
+    |
+834 |                 return result
+835 |             except Exception as e:
+836 |                 current_app.logger.error(f"Endpoint error: {e}", exc_info=True)
+    |                 ^^^^^^^^^^^
+837 |                 return jsonify({"error": "Internal error", "message": str(e)}), 500
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/services/api_security_service.py:17:1
+   |
+15 |   #   - IP whitelist/blacklist management
+16 |
+17 | / import hashlib
+18 | | import hmac
+19 | | import secrets
+20 | | import threading
+21 | | import time
+22 | | from collections import deque
+23 | | from collections.abc import Callable
+24 | | from dataclasses import dataclass, field
+25 | | from datetime import UTC, datetime, timedelta
+26 | | from functools import wraps
+27 | | from typing import Any
+28 | |
+29 | | import jwt
+30 | | from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request, current_user
+   | |_____________________________________________________________________________________________^
+31 |
+32 |   # ======================================================================================
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/services/history_service.py:3:1
+  |
+1 |   # app/services/history_service.py - The Akashic Records Ministry
+2 |
+3 | / from app.core.kernel_v2.compat_collapse import current_app, current_user
+4 | | from sqlalchemy import exc as sqlalchemy_exc
+5 | |
+6 | | from app import db
+7 | | from app.models import Conversation, Message
+  | |____________________________________________^
+  |
+help: Organize imports
+
+invalid-syntax: Expected an indented block after `try` statement
+   --> app/services/llm_client_service.py:136:1
+    |
+134 |     requests = None
+135 | try:
+136 | from app.core.kernel_v2.compat_collapse import current_app
+    | ^^^^
+137 | except Exception:  # pragma: no cover
+138 |     current_app = None
+    |
+
+invalid-syntax: Expected a statement
+   --> app/services/llm_client_service.py:137:1
+    |
+135 | try:
+136 | from app.core.kernel_v2.compat_collapse import current_app
+137 | except Exception:  # pragma: no cover
+    | ^^^^^^
+138 |     current_app = None
+    |
+
+invalid-syntax: Expected an expression
+   --> app/services/llm_client_service.py:137:38
+    |
+135 | try:
+136 | from app.core.kernel_v2.compat_collapse import current_app
+137 | except Exception:  # pragma: no cover
+    |                                      ^
+138 |     current_app = None
+    |
+
+invalid-syntax: Unexpected indentation
+   --> app/services/llm_client_service.py:138:1
+    |
+136 | from app.core.kernel_v2.compat_collapse import current_app
+137 | except Exception:  # pragma: no cover
+138 |     current_app = None
+    | ^^^^
+139 |
+140 |     def has_app_context() -> bool:
+    |
+
+invalid-syntax: Expected a statement
+   --> app/services/llm_client_service.py:144:1
+    |
+144 | import contextlib
+    | ^
+145 | import logging
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/services/master_agent_service.py:56:1
+   |
+54 |   # =================================================================================================
+55 |
+56 | / from __future__ import annotations
+57 | |
+58 | | import difflib
+59 | | import hashlib
+60 | | import json
+61 | | import os
+62 | | import random
+63 | | import re
+64 | | import threading
+65 | | import time
+66 | | from contextlib import contextmanager, suppress
+67 | | from dataclasses import dataclass
+68 | | from datetime import UTC, datetime, timedelta
+69 | | from typing import Any
+70 | |
+71 | | from app.core.kernel_v2.compat_collapse import current_app
+72 | | from sqlalchemy import exists, func, select
+73 | | from sqlalchemy.orm import joinedload
+74 | |
+75 | | from app import db
+76 | | from app.models import (
+77 | |     Mission,
+78 | |     MissionEventType,
+79 | |     MissionPlan,
+80 | |     MissionStatus,
+81 | |     PlanStatus,
+82 | |     Task,
+83 | |     TaskStatus,
+84 | |     User,
+85 | |     log_mission_event,
+86 | |     update_mission_status,
+87 | |     utc_now,
+88 | | )
+89 | |
+90 | | # Factory returns planner INSTANCES (legacy shim updated there)
+91 | | from app.overmind.planning.factory import get_all_planners
+92 | | from app.overmind.planning.schemas import MissionPlanSchema
+   | |___________________________________________________________^
+93 |
+94 |   # -------------------------------------------------------------------------------------------------
+   |
+help: Organize imports
+
+F821 Undefined name `has_app_context`
+   --> app/services/master_agent_service.py:277:8
+    |
+275 | # =================================================================================================
+276 | def _emit(level: str, line: str):
+277 |     if has_app_context():
+    |        ^^^^^^^^^^^^^^^
+278 |         logger = current_app.logger
+279 |         fn = getattr(
+    |
+
+F821 Undefined name `has_app_context`
+    --> app/services/master_agent_service.py:1968:20
+     |
+1966 |     def _ensure_app_ref(self):
+1967 |         if self._app_ref is None:
+1968 |             if not has_app_context():
+     |                    ^^^^^^^^^^^^^^^
+1969 |                 raise RuntimeError("No application context; call inside Flask app context.")
+1970 |             self._app_ref = current_app._get_current_object()
+     |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/services/prompt_engineering_service.py:2:1
+  |
+1 |   # app/services/prompt_engineering_service.py
+2 | / from sqlalchemy.orm import Session
+3 | | from app.models import GeneratedPrompt, PromptTemplate, User
+  | |____________________________________________________________^
+4 |
+5 |   class PromptEngineeringService:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/services/system_service.py:2:1
+  |
+1 |   # app/services/system_service.py
+2 | / from sqlalchemy.ext.asyncio import AsyncSession
+3 | | from sqlalchemy import text
+  | |___________________________^
+4 |
+5 |   class SystemService:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> debug_model.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | | from typing import List, Optional, TYPE_CHECKING
+3 | | from sqlmodel import SQLModel, Field
+4 | | from sqlalchemy.orm import Mapped, relationship
+  | |_______________________________________________^
+5 |
+6 |   class User(SQLModel, table=True):
+  |
+help: Organize imports
+
+UP035 `typing.List` is deprecated, use `list` instead
+ --> debug_model.py:2:1
+  |
+1 | from __future__ import annotations
+2 | from typing import List, Optional, TYPE_CHECKING
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 | from sqlmodel import SQLModel, Field
+4 | from sqlalchemy.orm import Mapped, relationship
+  |
+
+F401 [*] `typing.TYPE_CHECKING` imported but unused
+ --> debug_model.py:2:36
+  |
+1 | from __future__ import annotations
+2 | from typing import List, Optional, TYPE_CHECKING
+  |                                    ^^^^^^^^^^^^^
+3 | from sqlmodel import SQLModel, Field
+4 | from sqlalchemy.orm import Mapped, relationship
+  |
+help: Remove unused import: `typing.TYPE_CHECKING`
+
+UP045 [*] Use `X | None` for type annotations
+ --> debug_model.py:7:9
+  |
+6 | class User(SQLModel, table=True):
+7 |     id: Optional[int] = Field(default=None, primary_key=True)
+  |         ^^^^^^^^^^^^^
+8 |     missions: Mapped[List["Mission"]] = relationship(back_populates="user")
+  |
+help: Convert to `X | None`
+
+UP006 [*] Use `list` instead of `List` for type annotation
+  --> debug_model.py:8:22
+   |
+ 6 | class User(SQLModel, table=True):
+ 7 |     id: Optional[int] = Field(default=None, primary_key=True)
+ 8 |     missions: Mapped[List["Mission"]] = relationship(back_populates="user")
+   |                      ^^^^
+ 9 |
+10 | class Mission(SQLModel, table=True):
+   |
+help: Replace with `list`
+
+UP037 [*] Remove quotes from type annotation
+  --> debug_model.py:8:27
+   |
+ 6 | class User(SQLModel, table=True):
+ 7 |     id: Optional[int] = Field(default=None, primary_key=True)
+ 8 |     missions: Mapped[List["Mission"]] = relationship(back_populates="user")
+   |                           ^^^^^^^^^
+ 9 |
+10 | class Mission(SQLModel, table=True):
+   |
+help: Remove quotes
+
+UP045 [*] Use `X | None` for type annotations
+  --> debug_model.py:11:9
+   |
+10 | class Mission(SQLModel, table=True):
+11 |     id: Optional[int] = Field(default=None, primary_key=True)
+   |         ^^^^^^^^^^^^^
+12 |     user_id: int = Field(foreign_key="user.id")
+13 |     user: Mapped["User"] = relationship(back_populates="missions")
+   |
+help: Convert to `X | None`
+
+UP037 [*] Remove quotes from type annotation
+  --> debug_model.py:13:18
+   |
+11 |     id: Optional[int] = Field(default=None, primary_key=True)
+12 |     user_id: int = Field(foreign_key="user.id")
+13 |     user: Mapped["User"] = relationship(back_populates="missions")
+   |                  ^^^^^^
+14 |
+15 | print("Models defined successfully")
+   |
+help: Remove quotes
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> migration/auto_loop/auto_patch_builder.py:2:1
+  |
+1 | # migration/auto_loop/auto_patch_builder.py
+2 | import re
+  | ^^^^^^^^^
+3 |
+4 | class AutoPatchBuilder:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> migration/auto_loop/file_migrator.py:8:1
+   |
+ 6 | applying a generated patch, and writing the changes back.
+ 7 | """
+ 8 | import os
+   | ^^^^^^^^^
+ 9 |
+10 | class FileMigrator:
+   |
+help: Organize imports
+
+UP024 [*] Replace aliased errors with `OSError`
+  --> migration/auto_loop/file_migrator.py:35:16
+   |
+33 |             print(f"Successfully applied patch to {file_path}")
+34 |             return True
+35 |         except IOError as e:
+   |                ^^^^^^^
+36 |             print(f"Error applying patch to {file_path}: {e}")
+37 |             # Attempt to restore from backup
+   |
+help: Replace `IOError` with builtin `OSError`
+
+UP015 [*] Unnecessary mode argument
+  --> migration/auto_loop/file_migrator.py:46:30
+   |
+44 |     def read_file(file_path: str) -> str:
+45 |         """Reads the content of a file."""
+46 |         with open(file_path, "r") as f:
+   |                              ^^^
+47 |             return f.read()
+   |
+help: Remove mode argument
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> migration/auto_loop/loop_driver.py:2:1
+  |
+1 |   # migration/auto_loop/loop_driver.py
+2 | / import os
+3 | | import subprocess
+4 | | from .auto_patch_builder import AutoPatchBuilder
+5 | | from .file_migrator import FileMigrator
+  | |_______________________________________^
+6 |
+7 |   class LoopDriver:
+  |
+help: Organize imports
+
+F401 [*] `os` imported but unused
+ --> migration/auto_loop/loop_driver.py:2:8
+  |
+1 | # migration/auto_loop/loop_driver.py
+2 | import os
+  |        ^^
+3 | import subprocess
+4 | from .auto_patch_builder import AutoPatchBuilder
+  |
+help: Remove unused import: `os`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/_helpers.py:2:1
+  |
+1 |   # tests/_helpers.py
+2 | / import json
+3 | | from typing import Any
+  | |______________________^
+4 |
+5 |   def parse_response_json(response: Any) -> Any:
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/conftest.py:2:1
+  |
+1 |   # tests/conftest.py
+2 | / import os
+3 | | import asyncio
+4 | | from typing import AsyncGenerator, Generator
+  | |____________________________________________^
+5 |
+6 |   # Set environment variables for testing BEFORE application imports
+  |
+help: Organize imports
+
+UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`, `Generator`
+ --> tests/conftest.py:4:1
+  |
+2 | import os
+3 | import asyncio
+4 | from typing import AsyncGenerator, Generator
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |
+6 | # Set environment variables for testing BEFORE application imports
+  |
+help: Import from `collections.abc`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/conftest.py:11:1
+   |
+ 9 |   os.environ["OPENROUTER_API_KEY"] = "test-key" # Required by ENERGY-ENGINE
+10 |
+11 | / import pytest
+12 | | import pytest_asyncio
+13 | | from fastapi.testclient import TestClient
+14 | | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+15 | | from sqlalchemy.orm import sessionmaker
+16 | | from sqlmodel import SQLModel
+17 | |
+18 | | from app.core.database import get_db
+19 | | from app.main import kernel # Import from main to ensure routers are included
+20 | | from tests.factories import UserFactory, MissionFactory
+   | |_______________________________________________________^
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/factories.py:2:1
+  |
+1 |   # tests/factories.py
+2 | / import factory
+3 | | from factory.alchemy import SQLAlchemyModelFactory
+4 | | from app.models import User, Mission
+  | |____________________________________^
+5 |
+6 |   # Factories are now session-agnostic. The session is injected at test runtime via a fixture.
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/smoke/test_service_integration.py:2:1
+   |
+ 1 |   # tests/smoke/test_service_integration.py
+ 2 | / from unittest.mock import MagicMock
+ 3 | | import pytest
+ 4 | | from fastapi.testclient import TestClient
+ 5 | |
+ 6 | | from app.core.factories import get_db_service
+ 7 | | from app.kernel import app
+ 8 | | from app.services.database_service import DatabaseService
+   | |_________________________________________________________^
+ 9 |
+10 |   @pytest.fixture
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_api_gateway.py:2:1
+   |
+ 1 |   # tests/test_api_gateway.py
+ 2 | / import pytest
+ 3 | |
+ 4 | | from app.services.api_gateway_chaos import (
+ 5 | |     ChaosEngineeringService,
+ 6 | |     ChaosExperiment,
+ 7 | |     CircuitBreakerConfig,
+ 8 | |     CircuitBreakerService,
+ 9 | |     CircuitState,
+10 | |     FaultType,
+11 | | )
+12 | | from app.services.api_gateway_deployment import (
+13 | |     ABTestExperiment,
+14 | |     ABTestingService,
+15 | |     CanaryDeployment,
+16 | |     CanaryDeploymentService,
+17 | |     FeatureFlag,
+18 | |     FeatureFlagService,
+19 | |     FeatureFlagStatus,
+20 | | )
+21 | | from app.services.api_gateway_service import (
+22 | |     GraphQLAdapter,
+23 | |     IntelligentCache,
+24 | |     IntelligentRouter,
+25 | |     PolicyEngine,
+26 | |     PolicyRule,
+27 | |     RESTAdapter,
+28 | |     RoutingStrategy,
+29 | | )
+   | |_^
+30 |
+31 |   class TestIntelligentRouter:
+   |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_api_gateway.py:2:8
+  |
+1 | # tests/test_api_gateway.py
+2 | import pytest
+  |        ^^^^^^
+3 |
+4 | from app.services.api_gateway_chaos import (
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `app.services.api_gateway_chaos.CircuitBreakerConfig` imported but unused
+ --> tests/test_api_gateway.py:7:5
+  |
+5 |     ChaosEngineeringService,
+6 |     ChaosExperiment,
+7 |     CircuitBreakerConfig,
+  |     ^^^^^^^^^^^^^^^^^^^^
+8 |     CircuitBreakerService,
+9 |     CircuitState,
+  |
+help: Remove unused import
+
+F401 [*] `app.services.api_gateway_chaos.CircuitState` imported but unused
+  --> tests/test_api_gateway.py:9:5
+   |
+ 7 |     CircuitBreakerConfig,
+ 8 |     CircuitBreakerService,
+ 9 |     CircuitState,
+   |     ^^^^^^^^^^^^
+10 |     FaultType,
+11 | )
+   |
+help: Remove unused import
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_app.py:2:1
+  |
+1 |   # tests/test_app.py
+2 | / import pytest
+3 | | from app.models import User
+  | |___________________________^
+4 |
+5 |   def test_app_fixture_loads_correctly(client):
+  |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_app.py:2:8
+  |
+1 | # tests/test_app.py
+2 | import pytest
+  |        ^^^^^^
+3 | from app.models import User
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `app.models.User` imported but unused
+ --> tests/test_app.py:3:24
+  |
+1 | # tests/test_app.py
+2 | import pytest
+3 | from app.models import User
+  |                        ^^^^
+4 |
+5 | def test_app_fixture_loads_correctly(client):
+  |
+help: Remove unused import: `app.models.User`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_fastapi_health.py:2:1
+  |
+1 | # tests/test_fastapi_health.py
+2 | from fastapi.testclient import TestClient
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | def test_health(client: TestClient):
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_prompt_engineering.py:2:1
+  |
+1 |   # tests/test_prompt_engineering.py
+2 | / import pytest
+3 | | from sqlalchemy.orm import Session
+4 | | from sqlmodel import create_engine
+5 | | from app.models import GeneratedPrompt, PromptTemplate, User
+6 | | from app.services.prompt_engineering_service import PromptEngineeringService
+  | |____________________________________________________________________________^
+7 |
+8 |   @pytest.fixture
+  |
+help: Organize imports
+
+F401 [*] `sqlmodel.create_engine` imported but unused
+ --> tests/test_prompt_engineering.py:4:22
+  |
+2 | import pytest
+3 | from sqlalchemy.orm import Session
+4 | from sqlmodel import create_engine
+  |                      ^^^^^^^^^^^^^
+5 | from app.models import GeneratedPrompt, PromptTemplate, User
+6 | from app.services.prompt_engineering_service import PromptEngineeringService
+  |
+help: Remove unused import: `sqlmodel.create_engine`
+
+F401 [*] `app.models.GeneratedPrompt` imported but unused
+ --> tests/test_prompt_engineering.py:5:24
+  |
+3 | from sqlalchemy.orm import Session
+4 | from sqlmodel import create_engine
+5 | from app.models import GeneratedPrompt, PromptTemplate, User
+  |                        ^^^^^^^^^^^^^^^
+6 | from app.services.prompt_engineering_service import PromptEngineeringService
+  |
+help: Remove unused import
+
+F401 [*] `app.models.PromptTemplate` imported but unused
+ --> tests/test_prompt_engineering.py:5:41
+  |
+3 | from sqlalchemy.orm import Session
+4 | from sqlmodel import create_engine
+5 | from app.models import GeneratedPrompt, PromptTemplate, User
+  |                                         ^^^^^^^^^^^^^^
+6 | from app.services.prompt_engineering_service import PromptEngineeringService
+  |
+help: Remove unused import
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_security_enterprise.py:2:1
+  |
+1 |   # tests/test_security_enterprise.py
+2 | / from unittest.mock import Mock
+3 | | import pytest
+4 | |
+5 | | from app.security.secure_auth import SecureAuthenticationService
+  | |________________________________________________________________^
+6 |
+7 |   class TestSecureAuthentication:
+  |
+help: Organize imports
+
+F401 [*] `unittest.mock.Mock` imported but unused
+ --> tests/test_security_enterprise.py:2:27
+  |
+1 | # tests/test_security_enterprise.py
+2 | from unittest.mock import Mock
+  |                           ^^^^
+3 | import pytest
+  |
+help: Remove unused import: `unittest.mock.Mock`
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_security_enterprise.py:3:8
+  |
+1 | # tests/test_security_enterprise.py
+2 | from unittest.mock import Mock
+3 | import pytest
+  |        ^^^^^^
+4 |
+5 | from app.security.secure_auth import SecureAuthenticationService
+  |
+help: Remove unused import: `pytest`
+
+F841 Local variable `f` is assigned to but never used
+  --> tests/test_settings_smoke.py:54:39
+   |
+52 |     # Create an empty temporary .env file
+53 |     empty_env_path = os.path.join(os.path.dirname(__file__), "empty.env")
+54 |     with open(empty_env_path, "w") as f:
+   |                                       ^
+55 |         pass
+   |
+help: Remove assignment to unused variable `f`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_superhuman_system.py:2:1
+  |
+1 |   # tests/test_superhuman_system.py
+2 | / import pytest
+3 | | from fastapi import FastAPI
+4 | | from fastapi.testclient import TestClient
+5 | |
+6 | | from app.middleware.superhuman_security import SuperhumanSecurityMiddleware
+  | |___________________________________________________________________________^
+7 |
+8 |   @pytest.fixture
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/transcendent/test_energy_engine.py:7:1
+   |
+ 5 |   These tests verify the Law of Energetic Continuity.
+ 6 |   """
+ 7 | / import pytest
+ 8 | | from httpx import AsyncClient
+ 9 | | from app.kernel import app  # Use the unified app
+10 | | from unittest.mock import MagicMock, AsyncMock
+11 | |
+12 | | from app.core.ai_gateway import get_ai_client
+   | |_____________________________________________^
+13 |
+14 |   @pytest.mark.skip(reason="Skipping due to persistent issues with AsyncClient and dependency overrides.")
+   |
+help: Organize imports
+
+F401 [*] `unittest.mock.AsyncMock` imported but unused
+  --> tests/transcendent/test_energy_engine.py:10:38
+   |
+ 8 | from httpx import AsyncClient
+ 9 | from app.kernel import app  # Use the unified app
+10 | from unittest.mock import MagicMock, AsyncMock
+   |                                      ^^^^^^^^^
+11 |
+12 | from app.core.ai_gateway import get_ai_client
+   |
+help: Remove unused import: `unittest.mock.AsyncMock`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/transcendent/test_space_engine.py:8:1
+   |
+ 6 |   """
+ 7 |
+ 8 | / import pytest
+ 9 | | from sqlalchemy.orm import declarative_base
+10 | | from app.core.database import Base, get_db
+11 | | from app.models import User  # Import a model to check its base
+   | |___________________________^
+12 |
+13 |   def test_models_use_correct_base():
+   |
+help: Organize imports
+
+F401 [*] `sqlalchemy.orm.declarative_base` imported but unused
+  --> tests/transcendent/test_space_engine.py:9:28
+   |
+ 8 | import pytest
+ 9 | from sqlalchemy.orm import declarative_base
+   |                            ^^^^^^^^^^^^^^^^
+10 | from app.core.database import Base, get_db
+11 | from app.models import User  # Import a model to check its base
+   |
+help: Remove unused import: `sqlalchemy.orm.declarative_base`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/transcendent/test_time_engine.py:7:1
+   |
+ 5 |   These tests verify the Law of Temporal Coherence.
+ 6 |   """
+ 7 | / import pytest
+ 8 | | from app.core.time import legacy_context
+ 9 | | from sqlalchemy.ext.asyncio import AsyncSession
+   | |_______________________________________________^
+10 |
+11 |   def test_legacy_context_provides_db_session(client):
+   |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/transcendent/test_time_engine.py:7:8
+  |
+5 | These tests verify the Law of Temporal Coherence.
+6 | """
+7 | import pytest
+  |        ^^^^^^
+8 | from app.core.time import legacy_context
+9 | from sqlalchemy.ext.asyncio import AsyncSession
+  |
+help: Remove unused import: `pytest`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/transcendent_v2/test_history_service_post_migration.py:6:1
+  |
+4 |   This test confirms the service logic works with the new SQLModel backend.
+5 |   """
+6 | / import pytest
+7 | | from unittest.mock import MagicMock, patch
+  | |__________________________________________^
+8 |
+9 |   # We no longer need to patch the models themselves, as they can be imported safely.
+  |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/transcendent_v2/test_history_service_post_migration.py:6:8
+  |
+4 | This test confirms the service logic works with the new SQLModel backend.
+5 | """
+6 | import pytest
+  |        ^^^^^^
+7 | from unittest.mock import MagicMock, patch
+  |
+help: Remove unused import: `pytest`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/services/test_database_service.py:2:1
+   |
+ 1 |   # tests/unit/services/test_database_service.py
+ 2 | / import pytest
+ 3 | | from sqlalchemy import create_engine
+ 4 | | from sqlalchemy.orm import sessionmaker
+ 5 | | from sqlmodel import SQLModel, Session, create_engine
+ 6 | |
+ 7 | | from app.models import User
+ 8 | | from app.services.database_service import DatabaseService
+   | |_________________________________________________________^
+ 9 |
+10 |   @pytest.fixture(name="session")
+   |
+help: Organize imports
+
+F401 [*] `sqlalchemy.orm.sessionmaker` imported but unused
+ --> tests/unit/services/test_database_service.py:4:28
+  |
+2 | import pytest
+3 | from sqlalchemy import create_engine
+4 | from sqlalchemy.orm import sessionmaker
+  |                            ^^^^^^^^^^^^
+5 | from sqlmodel import SQLModel, Session, create_engine
+  |
+help: Remove unused import: `sqlalchemy.orm.sessionmaker`
+
+F811 Redefinition of unused `create_engine` from line 3
+ --> tests/unit/services/test_database_service.py:3:24
+  |
+1 | # tests/unit/services/test_database_service.py
+2 | import pytest
+3 | from sqlalchemy import create_engine
+  |                        ------------- previous definition of `create_engine` here
+4 | from sqlalchemy.orm import sessionmaker
+5 | from sqlmodel import SQLModel, Session, create_engine
+  |                                         ^^^^^^^^^^^^^ `create_engine` redefined here
+6 |
+7 | from app.models import User
+  |
+help: Remove definition: `create_engine`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> verify_history_service.py:2:1
+  |
+1 |   # verify_history_service.py
+2 | / import unittest
+3 | | from unittest.mock import MagicMock, patch
+  | |__________________________________________^
+4 |
+5 |   class TestHistoryServiceMigration(unittest.TestCase):
+  |
+help: Organize imports
+
+Found 183 errors.
+[*] 128 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

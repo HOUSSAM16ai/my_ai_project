@@ -3,9 +3,10 @@
 The Unified Configuration System (ConfigV2) for Reality Kernel v2.
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-import os
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class ConfigV2(BaseSettings):
     """

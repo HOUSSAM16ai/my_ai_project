@@ -4,9 +4,10 @@ Transcendent tests for the TIME-ENGINE.
 
 These tests verify the Law of Temporal Coherence.
 """
-import pytest
-from app.core.time import legacy_context
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.time import legacy_context
+
 
 def test_legacy_context_provides_db_session(client):
     """

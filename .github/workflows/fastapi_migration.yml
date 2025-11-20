@@ -1,0 +1,36 @@
+name: Fast API Migration CI
+
+on:
+  push:
+    branches: [ "chore/migrate-flask-to-fastapi/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  migration-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx ruff mypy
+
+      - name: Linting
+        run: |
+          ruff check .
+          # mypy --config-file mypy.ini app/ # Uncomment when types are strict
+
+      - name: Smoke Tests
+        run: |
+          # Run specific smoke tests relevant to migration
+          pytest tests/test_models.py -v
+          # Add more specific router tests here as they are verified

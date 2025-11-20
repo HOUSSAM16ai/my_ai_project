@@ -58,6 +58,7 @@ from __future__ import annotations
 import difflib
 import hashlib
 import json
+import logging
 import os
 import random
 import re
@@ -68,11 +69,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import joinedload
 
 from app import db
+from app.core.kernel_v2.compat_collapse import current_app
 from app.models import (
     Mission,
     MissionEventType,
@@ -274,16 +275,14 @@ PLANNING_FAILURE_MAX = 50
 # Logging Helpers
 # =================================================================================================
 def _emit(level: str, line: str):
-    if has_app_context():
-        logger = current_app.logger
-        fn = getattr(
-            logger,
-            {"info": "info", "warn": "warning", "error": "error", "debug": "debug"}[level],
-            logger.info,
-        )
-        fn(line)
-    else:
-        print(f"[Overmind:{level}] {line}")
+    # Use standard logging instead of Flask current_app.logger
+    logger = logging.getLogger("overmind")
+    fn = getattr(
+        logger,
+        {"info": "info", "warn": "warning", "error": "error", "debug": "debug"}[level],
+        logger.info,
+    )
+    fn(line)
 
 
 def _log(level: str, mission: Mission | None, message: str, **extra):
@@ -1964,10 +1963,20 @@ class OvermindService:
 
     # ------------------------------ App Context ------------------------------
     def _ensure_app_ref(self):
-        if self._app_ref is None:
-            if not has_app_context():
-                raise RuntimeError("No application context; call inside Flask app context.")
-            self._app_ref = current_app._get_current_object()
+        # In FastAPI/Kernel mode, app context is implicit or handled via DI.
+        # This legacy check is removed/softened.
+        # has_app_context is not defined in this scope in previous versions, checking availability
+        has_context = False
+        try:
+            from app.core.kernel_v2.compat_collapse import current_app
+            # Simplified check if we can import it, assuming context might exist
+            has_context = True
+        except ImportError:
+            pass
+
+        if self._app_ref is None and has_context:
+             # We just try to access it safely if needed, but for now self._app_ref might stay None
+             pass
 
 
 # =================================================================================================

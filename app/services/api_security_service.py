@@ -27,7 +27,8 @@ from functools import wraps
 from typing import Any
 
 import jwt
-from app.core.kernel_v2.compat_collapse import current_app, g, jsonify, request, current_user
+
+from app.core.kernel_v2.compat_collapse import current_app, current_user, g, jsonify, request
 
 # ======================================================================================
 # CONFIGURATION & CONSTANTS

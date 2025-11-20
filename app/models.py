@@ -1,14 +1,15 @@
 # app/models.py
 from __future__ import annotations
-import enum
-from datetime import datetime, timezone
-from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, String, Text, func
+import enum
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from passlib.context import CryptContext
+from sqlalchemy import Column, DateTime, Text, func
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
-from sqlmodel import Field, SQLModel, Relationship, JSON
-from passlib.context import CryptContext
+from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     # This block prevents circular imports during runtime
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 class MessageRole(str, enum.Enum):
     USER = "user"
@@ -29,10 +30,10 @@ class MessageRole(str, enum.Enum):
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     full_name: str = Field(max_length=150)
     email: str = Field(max_length=150, unique=True, index=True)
-    password_hash: Optional[str] = Field(default=None, max_length=256)
+    password_hash: str | None = Field(default=None, max_length=256)
     is_admin: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -46,10 +47,10 @@ class User(SQLModel, table=True):
     # Relationships
     # We use sa_relationship to explicitly define the relationship for SQLAlchemy,
     # bypassing SQLModel's inference which fails with List['String'] forward refs.
-    admin_conversations: List["AdminConversation"] = Relationship(
+    admin_conversations: list[AdminConversation] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
-    missions: List["Mission"] = Relationship(
+    missions: list[Mission] = Relationship(
         sa_relationship=relationship("Mission", back_populates="user")
     )
 
@@ -66,21 +67,21 @@ class User(SQLModel, table=True):
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
 
     # Relationships
-    user: "User" = Relationship(
+    user: User = Relationship(
         sa_relationship=relationship("User", back_populates="admin_conversations")
     )
-    messages: List["AdminMessage"] = Relationship(
+    messages: list[AdminMessage] = Relationship(
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole = Field(
         sa_column=Column(
@@ -90,81 +91,81 @@ class AdminMessage(SQLModel, table=True):
     content: str = Field(sa_column=Column(Text))
 
     # Relationships
-    conversation: "AdminConversation" = Relationship(
+    conversation: AdminConversation = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="messages")
     )
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     objective: str
     user_id: int = Field(foreign_key="users.id", index=True)
 
     # Relationships
-    user: "User" = Relationship(
+    user: User = Relationship(
         sa_relationship=relationship("User", back_populates="missions")
     )
-    tasks: List["Task"] = Relationship(
+    tasks: list[Task] = Relationship(
         sa_relationship=relationship("Task", back_populates="mission")
     )
-    mission_plans: List["MissionPlan"] = Relationship(
+    mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship("MissionPlan", back_populates="mission")
     )
-    mission_events: List["MissionEvent"] = Relationship(
+    mission_events: list[MissionEvent] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     event: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship("Mission", back_populates="mission_events")
     )
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     plan: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship("Mission", back_populates="mission_plans")
     )
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     description: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship("Mission", back_populates="tasks")
     )
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
     template: str
 
-    generated_prompts: List["GeneratedPrompt"] = Relationship(
+    generated_prompts: list[GeneratedPrompt] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
     # Relationships
-    template: "PromptTemplate" = Relationship(
+    template: PromptTemplate = Relationship(
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
@@ -172,8 +173,8 @@ class GeneratedPrompt(SQLModel, table=True):
 # ------------------------------------------------------------------------------
 # Model Rebuild & Validation
 # ------------------------------------------------------------------------------
-import os
 import logging
+import os
 
 # Ensure reports directory exists
 os.makedirs("reports", exist_ok=True)

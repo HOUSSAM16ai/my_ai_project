@@ -3,8 +3,8 @@
 Unit test for the History Service after its migration to Reality Kernel v2.
 This test confirms the service logic works with the new SQLModel backend.
 """
-import pytest
 from unittest.mock import MagicMock, patch
+
 
 # We no longer need to patch the models themselves, as they can be imported safely.
 # However, the service still uses `db.session.get`, so we mock the `db` object.

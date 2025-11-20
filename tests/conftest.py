@@ -1,7 +1,7 @@
 # tests/conftest.py
-import os
 import asyncio
-from typing import AsyncGenerator, Generator
+import os
+from collections.abc import AsyncGenerator, Generator
 
 # Set environment variables for testing BEFORE application imports
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
@@ -11,13 +11,13 @@ os.environ["OPENROUTER_API_KEY"] = "test-key" # Required by ENERGY-ENGINE
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.core.database import get_db
-from app.main import kernel # Import from main to ensure routers are included
-from tests.factories import UserFactory, MissionFactory
+from app.main import kernel  # Import from main to ensure routers are included
+from tests.factories import MissionFactory, UserFactory
 
 
 @pytest.fixture(scope="session")

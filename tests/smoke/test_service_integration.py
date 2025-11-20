@@ -1,11 +1,13 @@
 # tests/smoke/test_service_integration.py
 from unittest.mock import MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.factories import get_db_service
 from app.kernel import app
 from app.services.database_service import DatabaseService
+
 
 @pytest.fixture
 def client() -> TestClient:

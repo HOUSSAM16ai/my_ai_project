@@ -4,12 +4,14 @@ Transcendent tests for the ENERGY-ENGINE.
 
 These tests verify the Law of Energetic Continuity.
 """
+from unittest.mock import MagicMock
+
 import pytest
 from httpx import AsyncClient
-from app.kernel import app  # Use the unified app
-from unittest.mock import MagicMock, AsyncMock
 
 from app.core.ai_gateway import get_ai_client
+from app.kernel import app  # Use the unified app
+
 
 @pytest.mark.skip(reason="Skipping due to persistent issues with AsyncClient and dependency overrides.")
 @pytest.mark.asyncio

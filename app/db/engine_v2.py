@@ -3,6 +3,7 @@
 The new asynchronous SQLAlchemy engine for Reality Kernel v2.
 """
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from app.core.kernel_v2.config_v2 import get_settings
 
 # Get the database URL from the central configuration

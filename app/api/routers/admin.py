@@ -5,7 +5,7 @@ This has been migrated to use the new Reality Kernel engines.
 """
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 

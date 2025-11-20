@@ -1,7 +1,9 @@
 # app/security/rate_limiter.py
 import time
 from collections import defaultdict
-from fastapi import Request, HTTPException, status
+
+from fastapi import HTTPException, Request, status
+
 
 class RateLimiter:
     def __init__(self, requests_per_minute: int):

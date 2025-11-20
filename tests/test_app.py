@@ -1,6 +1,4 @@
 # tests/test_app.py
-import pytest
-from app.models import User
 
 def test_app_fixture_loads_correctly(client):
     """

@@ -1,9 +1,9 @@
 # app/services/history_service.py - The Akashic Records Ministry
 
-from app.core.kernel_v2.compat_collapse import current_app, current_user
 from sqlalchemy import exc as sqlalchemy_exc
 
 from app import db
+from app.core.kernel_v2.compat_collapse import current_app, current_user
 from app.models import Conversation, Message
 
 

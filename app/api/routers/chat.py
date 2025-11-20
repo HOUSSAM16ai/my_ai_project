@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from app.core.ai_gateway import AIClient, get_ai_client
 
-
 router = APIRouter(
     tags=["Chat"],
 )

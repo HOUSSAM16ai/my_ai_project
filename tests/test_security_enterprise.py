@@ -1,8 +1,7 @@
 # tests/test_security_enterprise.py
-from unittest.mock import Mock
-import pytest
 
 from app.security.secure_auth import SecureAuthenticationService
+
 
 class TestSecureAuthentication:
     def test_password_hashing(self):
