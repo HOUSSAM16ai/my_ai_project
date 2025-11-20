@@ -289,9 +289,13 @@ class DatabaseShardingManager:
     def _get_range_shard(self, key_value: int) -> DatabaseShard | None:
         """الحصول على Range-based Shard"""
         for shard in self.shards.values():
-            if shard.role == ReplicationRole.MASTER and shard.range_start and shard.range_end:
-                if shard.range_start <= key_value <= shard.range_end:
-                    return shard
+            if (
+                shard.role == ReplicationRole.MASTER
+                and shard.range_start
+                and shard.range_end
+                and shard.range_start <= key_value <= shard.range_end
+            ):
+                return shard
         return None
 
     def _get_hash_shard(self, key_value: Any) -> DatabaseShard | None:

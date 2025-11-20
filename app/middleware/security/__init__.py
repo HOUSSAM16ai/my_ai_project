@@ -28,14 +28,14 @@ from .waf_middleware import WAFMiddleware
 from .zero_trust_middleware import ZeroTrustMiddleware
 
 __all__ = [
-    "WAFMiddleware",
-    "RateLimitMiddleware",
-    "ZeroTrustMiddleware",
     "AIThreatMiddleware",
     "PolicyEnforcer",
+    "RateLimitMiddleware",
     "SecurityHeadersMiddleware",
-    "TelemetryGuard",
     "SuperhumanSecurityOrchestrator",
+    "TelemetryGuard",
+    "WAFMiddleware",
+    "ZeroTrustMiddleware",
 ]
 
 __version__ = "1.0.0-aurora"

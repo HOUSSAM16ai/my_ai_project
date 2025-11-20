@@ -27,12 +27,12 @@ from .result import MiddlewareResult
 
 __all__ = [
     "BaseMiddleware",
-    "RequestContext",
-    "MiddlewareResult",
-    "SmartPipeline",
-    "MiddlewareRegistry",
     "LifecycleHooks",
+    "MiddlewareRegistry",
+    "MiddlewareResult",
+    "RequestContext",
     "ResponseFactory",
+    "SmartPipeline",
 ]
 
 __version__ = "1.0.0-aurora"

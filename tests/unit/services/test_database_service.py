@@ -1,11 +1,12 @@
 # tests/unit/services/test_database_service.py
+from unittest.mock import MagicMock
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
+from app.config.settings import AppSettings
 from app.models import User
 from app.services.database_service import DatabaseService
-from app.config.settings import AppSettings
-from unittest.mock import MagicMock
 
 
 @pytest.fixture(name="session")

@@ -95,7 +95,7 @@ class QuantumSafeEncryption:
         """Simple XOR encryption (placeholder for post-quantum algorithm)"""
         # Extend key to match data length
         extended_key = (key * (len(data) // len(key) + 1))[: len(data)]
-        return bytes(a ^ b for a, b in zip(data, extended_key))
+        return bytes(a ^ b for a, b in zip(data, extended_key, strict=False))
 
     def _xor_decrypt(self, data: bytes, key: bytes) -> bytes:
         """Simple XOR decryption"""

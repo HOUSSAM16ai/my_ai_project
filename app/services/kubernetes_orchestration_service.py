@@ -230,7 +230,7 @@ class KubernetesOrchestrator:
     def _check_pod_health(self):
         """فحص صحة البودات والإصلاح التلقائي"""
         with self._lock:
-            for pod_id, pod in list(self._pods.items()):
+            for _pod_id, pod in list(self._pods.items()):
                 # محاكاة احتمال فشل البود
                 if random.random() < 0.01:  # 1% احتمالية الفشل
                     self._heal_failed_pod(pod)
@@ -310,12 +310,11 @@ class KubernetesOrchestrator:
                 # التحقق من آخر نبضة قلب
                 time_since_heartbeat = (current_time - node.last_heartbeat).total_seconds()
 
-                if time_since_heartbeat > 60:  # دقيقة واحدة بدون نبضة
-                    if node.state == NodeState.READY:
-                        node.state = NodeState.NOT_READY
+                if time_since_heartbeat > 60 and node.state == NodeState.READY:
+                    node.state = NodeState.NOT_READY
 
-                        # إعادة جدولة جميع البودات على هذه العقدة
-                        self._evacuate_node(node)
+                    # إعادة جدولة جميع البودات على هذه العقدة
+                    self._evacuate_node(node)
 
     def _evacuate_node(self, node: Node):
         """إخلاء جميع البودات من عقدة معطلة"""

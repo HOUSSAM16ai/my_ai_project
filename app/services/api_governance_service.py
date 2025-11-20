@@ -14,6 +14,7 @@
 #   - Breaking change detection and migration support
 
 import hashlib
+import logging
 import re
 import threading
 from collections import defaultdict, deque
@@ -520,17 +521,16 @@ def check_api_version(f: Callable) -> Callable:
         # Add deprecation warnings to response headers
         response = f(*args, **kwargs)
 
-        if hasattr(response, "headers"):
-            if version_info.status == APIVersionStatus.DEPRECATED:
-                response.headers["Deprecation"] = "true"
-                if version_info.sunset_date:
-                    response.headers["Sunset"] = version_info.sunset_date.strftime(
-                        "%a, %d %b %Y %H:%M:%S GMT"
-                    )
-                if version_info.migration_guide_url:
-                    response.headers["Link"] = (
-                        f'<{version_info.migration_guide_url}>; rel="deprecation"'
-                    )
+        if hasattr(response, "headers") and version_info.status == APIVersionStatus.DEPRECATED:
+            response.headers["Deprecation"] = "true"
+            if version_info.sunset_date:
+                response.headers["Sunset"] = version_info.sunset_date.strftime(
+                    "%a, %d %b %Y %H:%M:%S GMT"
+                )
+            if version_info.migration_guide_url:
+                response.headers["Link"] = (
+                    f'<{version_info.migration_guide_url}>; rel="deprecation"'
+                )
 
         return response
 

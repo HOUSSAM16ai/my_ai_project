@@ -336,7 +336,7 @@ async def create_embeddings(request: EmbeddingRequest):
 
     except Exception as e:
         embedding_requests.labels(model=request.model, status="error").inc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/v1/embeddings/batch")

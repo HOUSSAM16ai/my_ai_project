@@ -253,7 +253,7 @@ def main():
         try:
             results[test_name] = test_func()
         except Exception as e:
-            print_error(f"Test '{test_name}' failed with exception: {str(e)}")
+            print_error(f"Test '{test_name}' failed with exception: {e!s}")
             results[test_name] = False
 
     # Summary

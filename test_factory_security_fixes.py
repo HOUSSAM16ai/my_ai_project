@@ -137,7 +137,7 @@ def test_safe_integer_conversion():
 
     # Test with invalid hotspots_count
     deep_context = {"hotspots_count": "ten"}
-    boost, breakdown = factory._compute_deep_boosts(rec, set(), deep_context)
+    boost, _breakdown = factory._compute_deep_boosts(rec, set(), deep_context)
     assert isinstance(boost, int | float), "Should not crash on invalid hotspots_count"
 
     print("✓ Test P0-5: Safe integer conversion prevents ValueError")
@@ -201,15 +201,17 @@ def test_self_heal_non_blocking():
         # Reload to pick up env variable
         factory = load_factory_module()
 
-        with unittest.mock.patch.object(factory, "_active_planner_names", return_value=[]):
-            with unittest.mock.patch.object(factory, "discover"):
-                start = time.time()
-                result = factory.self_heal(force=True, max_attempts=3)
-                elapsed = time.time() - start
+        with (
+            unittest.mock.patch.object(factory, "_active_planner_names", return_value=[]),
+            unittest.mock.patch.object(factory, "discover"),
+        ):
+            start = time.time()
+            result = factory.self_heal(force=True, max_attempts=3)
+            elapsed = time.time() - start
 
-                # In non-blocking mode, should not sleep
-                assert elapsed < 0.5, f"Non-blocking mode should be fast, took {elapsed}s"
-                assert result["attempts"] >= 1, "Should have attempted at least once"
+            # In non-blocking mode, should not sleep
+            assert elapsed < 0.5, f"Non-blocking mode should be fast, took {elapsed}s"
+            assert result["attempts"] >= 1, "Should have attempted at least once"
 
     print("✓ Test P2-9: self_heal non-blocking mode works")
 

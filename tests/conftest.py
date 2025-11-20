@@ -1,6 +1,5 @@
 import asyncio
-import os
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,8 +9,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.main import kernel  # Use kernel to get app
-from app.models import User, Mission  # Import models to register them
-from app.core.config import settings
 
 # Ensure we use an in-memory SQLite DB for tests
 # Using shared cache to allow multiple connections to same memory db

@@ -177,7 +177,7 @@ def example_read_operations():
 # ======================================================================================
 
 
-def example_update_operations(user_id: int = None):
+def example_update_operations(user_id: int | None = None):
     """Example: Updating records"""
     print_section("EXAMPLE 4: Update Operations (PUT)")
 
@@ -203,7 +203,7 @@ def example_update_operations(user_id: int = None):
 # ======================================================================================
 
 
-def example_delete_operations(user_id: int = None):
+def example_delete_operations(user_id: int | None = None):
     """Example: Deleting records"""
     print_section("EXAMPLE 5: Delete Operations (DELETE)")
 

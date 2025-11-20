@@ -276,7 +276,7 @@ def test_conversation_continuation():
 
     except Exception as e:
         print(f"\n{R}❌ Test failed with error:{E}")
-        print(f"{R}{str(e)}{E}")
+        print(f"{R}{e!s}{E}")
         import traceback
 
         traceback.print_exc()

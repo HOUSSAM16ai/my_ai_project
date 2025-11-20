@@ -117,7 +117,7 @@ def check_migrations():
                         result = db.session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                         count = result.scalar()
                         print(f"   {G}✅{E} {table:<25} ({count} سجل)")
-                    except:
+                    except Exception:
                         print(f"   {Y}⚠️{E}  {table:<25} (موجود لكن حدث خطأ)")
                 else:
                     print(f"   {R}❌{E} {table:<25} (غير موجود!)")
@@ -185,7 +185,7 @@ def check_migrations():
                 print(f"{R}❌ العديد من الجداول مفقودة!{E}\n")
 
         except Exception as e:
-            print(f"{R}❌ حدث خطأ: {str(e)}{E}")
+            print(f"{R}❌ حدث خطأ: {e!s}{E}")
             import traceback
 
             traceback.print_exc()
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         print(f"\n{Y}👋 تم الإلغاء{E}")
         sys.exit(1)
     except Exception as e:
-        print(f"{R}❌ خطأ غير متوقع: {str(e)}{E}")
+        print(f"{R}❌ خطأ غير متوقع: {e!s}{E}")
         import traceback
 
         traceback.print_exc()

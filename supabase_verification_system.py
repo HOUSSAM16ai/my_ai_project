@@ -150,7 +150,7 @@ class SupabaseVerificationSystem:
             return True
 
         except Exception as e:
-            print_error(f"فشل الاتصال: {str(e)}")
+            print_error(f"فشل الاتصال: {e!s}")
             self.test_results["errors"].append(
                 {"step": "connection", "error": str(e), "traceback": traceback.format_exc()}
             )
@@ -201,7 +201,7 @@ class SupabaseVerificationSystem:
                         print_success(f"✅ {table}: موجود ({count} سجل)")
                         self.test_results["tables"][table] = {"exists": True, "count": count}
                     except Exception as e:
-                        print_warning(f"{table}: موجود لكن حدث خطأ في العد: {str(e)}")
+                        print_warning(f"{table}: موجود لكن حدث خطأ في العد: {e!s}")
                         self.test_results["tables"][table] = {
                             "exists": True,
                             "count": None,
@@ -242,7 +242,7 @@ class SupabaseVerificationSystem:
                 return False
 
         except Exception as e:
-            print_error(f"فشل التحقق من الجداول: {str(e)}")
+            print_error(f"فشل التحقق من الجداول: {e!s}")
             self.test_results["errors"].append(
                 {"step": "tables", "error": str(e), "traceback": traceback.format_exc()}
             )
@@ -288,7 +288,7 @@ class SupabaseVerificationSystem:
                 return False
 
         except Exception as e:
-            print_error(f"فشل التحقق من الهجرات: {str(e)}")
+            print_error(f"فشل التحقق من الهجرات: {e!s}")
             self.test_results["errors"].append(
                 {"step": "migrations", "error": str(e), "traceback": traceback.format_exc()}
             )
@@ -348,7 +348,7 @@ class SupabaseVerificationSystem:
             return True
 
         except Exception as e:
-            print_error(f"فشل اختبار Overmind: {str(e)}")
+            print_error(f"فشل اختبار Overmind: {e!s}")
             self.test_results["errors"].append(
                 {
                     "step": "overmind_operations",
@@ -458,7 +458,7 @@ class SupabaseVerificationSystem:
             return test_passed
 
         except Exception as e:
-            print_error(f"فشل اختبار CRUD: {str(e)}")
+            print_error(f"فشل اختبار CRUD: {e!s}")
             self.test_results["errors"].append(
                 {"step": "crud", "error": str(e), "traceback": traceback.format_exc()}
             )
@@ -574,7 +574,7 @@ def main():
         print_error("\n\n❌ تم إلغاء التحقق من قبل المستخدم")
         sys.exit(1)
     except Exception as e:
-        print_error(f"\n\n❌ خطأ غير متوقع: {str(e)}")
+        print_error(f"\n\n❌ خطأ غير متوقع: {e!s}")
         traceback.print_exc()
         sys.exit(1)
     finally:

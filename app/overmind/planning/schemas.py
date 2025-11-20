@@ -270,7 +270,7 @@ class PlannedTask(BaseModel):
             try:
                 return TOOL_REGISTRY.validate(tool_name, v)
             except Exception as ex:
-                raise ValueError(f"tool_args validation failed for tool '{tool_name}': {ex}")
+                raise ValueError(f"tool_args validation failed for tool '{tool_name}': {ex}") from ex
         return v
 
     @field_validator("risk_level")
@@ -752,24 +752,24 @@ register_policy_hook(_policy_structural_sanity)
 # =============================================================================
 
 __all__ = [
-    "__schema_version__",
-    "PlanSettings",
     "SETTINGS",
-    "TaskType",
-    "Criticality",
-    "RiskLevel",
-    "WarningSeverity",
-    "PlanValidationIssue",
-    "PlanWarning",
-    "PlanValidationError",
-    "ToolRegistryInterface",
     "TOOL_REGISTRY",
-    "register_policy_hook",
-    "PolicyHook",
-    "PlanMeta",
-    "PlannedTask",
-    "PlanningContext",
+    "Criticality",
     "MissionPlanSchema",
     "PlanGenerationResult",
+    "PlanMeta",
+    "PlanSettings",
+    "PlanValidationError",
+    "PlanValidationIssue",
+    "PlanWarning",
+    "PlannedTask",
+    "PlanningContext",
+    "PolicyHook",
+    "RiskLevel",
+    "TaskType",
+    "ToolRegistryInterface",
+    "WarningSeverity",
+    "__schema_version__",
+    "register_policy_hook",
     "validate_plan",
 ]

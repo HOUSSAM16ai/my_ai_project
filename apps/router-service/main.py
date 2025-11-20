@@ -253,7 +253,7 @@ class AIRouter:
         for model in self.models.values():
             if model.tier == ModelTier.BALANCED and model.enabled:
                 return model
-        return list(self.models.values())[0]
+        return next(iter(self.models.values()))
 
     async def _ab_test_selection(self, user_id: str) -> ModelConfig:
         """A/B test based selection using consistent hashing"""
@@ -269,7 +269,7 @@ class AIRouter:
             if normalized <= cumulative and model_name in self.models:
                 return self.models[model_name]
 
-        return list(self.models.values())[0]
+        return next(iter(self.models.values()))
 
     async def _canary_selection(self) -> ModelConfig:
         """Canary deployment selection"""
@@ -278,7 +278,7 @@ class AIRouter:
         # Simple canary: 5% to new model, 95% to stable
         if random.random() < 0.05 and "new-model" in self.models:
             return self.models["new-model"]
-        return self.models.get("gpt-3.5-turbo", list(self.models.values())[0])
+        return self.models.get("gpt-3.5-turbo", next(iter(self.models.values())))
 
     async def _bandit_selection(self, trace_id: str) -> ModelConfig:
         """Multi-armed bandit selection (Thompson Sampling)"""
@@ -460,7 +460,7 @@ async def chat_completions(request: CompletionRequest, x_trace_id: str | None = 
             span.set_attribute("error", True)
             span.set_attribute("error.message", str(e))
 
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/v1/models")

@@ -13,7 +13,7 @@ Benefits:
 - Facilitates lazy loading
 """
 
-from typing import TypeVar
+from typing import Any, ClassVar, TypeVar
 
 # Type variable for generic model types
 T = TypeVar("T")
@@ -27,7 +27,7 @@ class ModelRegistry:
     import issues and coupling between modules.
     """
 
-    _models_cache = {}
+    _models_cache: ClassVar[dict[str, Any]] = {}
 
     @classmethod
     def get_model(cls, model_name: str) -> type:
@@ -59,7 +59,7 @@ class ModelRegistry:
             return model_class
 
         except ImportError as e:
-            raise ValueError(f"Cannot import models module: {e}")
+            raise ValueError(f"Cannot import models module: {e}") from e
 
     @classmethod
     def clear_cache(cls):

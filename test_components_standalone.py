@@ -67,9 +67,9 @@ def test_rate_limiter():
     allowed_count = 0
     blocked_count = 0
 
-    for i in range(25):
+    for _i in range(25):
         req = FakeRequest("10.0.0.1")
-        is_allowed, info = limiter.check_rate_limit(req, tier=UserTier.FREE)
+        is_allowed, _info = limiter.check_rate_limit(req, tier=UserTier.FREE)
 
         if is_allowed:
             allowed_count += 1
@@ -129,7 +129,7 @@ def test_pattern_recognizer():
     recognizer = PatternRecognizer()
 
     # Simulate normal traffic
-    for i in range(20):
+    for _i in range(20):
         recognizer.analyze_traffic_pattern("requests_per_min", 100.0)
 
     # Simulate spike
@@ -242,7 +242,7 @@ def run_all_tests():
                 passed += 1
                 print("✅ PASSED\n")
         except Exception as e:
-            print(f"\n❌ FAILED: {str(e)}\n")
+            print(f"\n❌ FAILED: {e!s}\n")
             import traceback
 
             traceback.print_exc()

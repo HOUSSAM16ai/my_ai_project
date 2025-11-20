@@ -16,13 +16,12 @@ import hashlib
 import json
 import logging
 import os
-import random
 import re
 import threading
 import time
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import exists, func, select
@@ -34,11 +33,9 @@ from sqlalchemy.orm import joinedload
 # In FastAPI/SQLModel, we usually inject sessions.
 # However, for this "Master Agent Service" which seems to run background threads,
 # we need to manage sessions carefully.
-
 # We will use the project's new DI system if available, or fallback to manual session creation.
 # Based on instructions, we must use AsyncSession for tests, but here it seems to be sync code?
 # The original code was sync (threading). We will keep it sync for now but use proper session handling.
-
 # Assuming 'app.core.database' has a SessionLocal
 from app.core.database import SessionLocal
 from app.models import (
@@ -53,15 +50,15 @@ from app.models import (
     # Helpers that were likely in app.models or utils
 )
 
+# Factory returns planner INSTANCES
+from app.overmind.planning.factory import get_all_planners
+from app.overmind.planning.schemas import MissionPlanSchema
+
 
 # We need to recreate/import these helpers if they were tied to Flask-SQLAlchemy
 def utc_now():
     return datetime.now(UTC)
 
-
-# Factory returns planner INSTANCES
-from app.overmind.planning.factory import get_all_planners
-from app.overmind.planning.schemas import MissionPlanSchema
 
 # -------------------------------------------------------------------------------------------------
 # Planner base errors (graceful fallback)
@@ -364,13 +361,13 @@ def _compute_diff(old: str, new: str, max_lines: int) -> dict[str, Any]:
         )
     )
     truncated = len(diff_lines) > max_lines
-    diff_display = diff_lines[:max_lines] + ["... (diff truncated)"] if truncated else diff_lines
-    added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
-    removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
+    diff_display = [*diff_lines[:max_lines], "... (diff truncated)"] if truncated else diff_lines
+    added = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
+    removed = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
     first_changed = 0
-    for i, l in enumerate(diff_lines):
-        if (l.startswith("+") and not l.startswith("+++")) or (
-            l.startswith("-") and not l.startswith("---")
+    for i, line in enumerate(diff_lines):
+        if (line.startswith("+") and not line.startswith("+++")) or (
+            line.startswith("-") and not line.startswith("---")
         ):
             first_changed = i + 1
             break

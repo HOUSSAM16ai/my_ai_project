@@ -4,6 +4,8 @@
 Tests for Blue-Green, Canary, Rolling deployments, Circuit Breaker, Health Checks
 """
 
+import builtins
+import contextlib
 import time
 
 import pytest
@@ -224,13 +226,11 @@ class TestDeploymentOrchestrator:
 
         # محاولة عدة مرات حتى يفتح القاطع
         for _ in range(6):
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 orchestrator.execute_with_circuit_breaker(
                     "failing-service",
                     failing_operation,
                 )
-            except:
-                pass
 
         circuit = orchestrator.get_circuit_breaker_status("failing-service")
         assert circuit.state == CircuitState.OPEN
@@ -247,13 +247,11 @@ class TestDeploymentOrchestrator:
 
         # إجبار فتح الدائرة
         for _ in range(6):
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 orchestrator.execute_with_circuit_breaker(
                     "service-with-fallback",
                     failing_operation,
                 )
-            except:
-                pass
 
         # الآن يجب أن يستخدم البديل
         result = orchestrator.execute_with_circuit_breaker(

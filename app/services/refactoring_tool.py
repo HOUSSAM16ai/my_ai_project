@@ -92,7 +92,7 @@ class RefactorTool:
             return RefactorResult(file_path, False, False, None, "", f"File not found: {file_path}")
 
         try:
-            original, enc = self._read_text_safely(p)
+            original, _enc = self._read_text_safely(p)
         except Exception as e:
             return RefactorResult(file_path, False, False, None, "", f"Read error: {e}")
 

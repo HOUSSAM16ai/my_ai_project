@@ -59,7 +59,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
@@ -204,21 +203,21 @@ def __dir__() -> list[str]:  # pragma: no cover
 # --------------------------------------------------------------------------------------
 if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only)
     # Optional module (may not always be present)
-    from app.overmind.planning import llm_planner  # noqa: F401
-    from app.overmind.planning.base_planner import (  # noqa: F401
+    from app.overmind.planning import llm_planner
+    from app.overmind.planning.base_planner import (
         BasePlanner,
         PlannerAdmissionError,
         PlannerError,
         PlannerTimeoutError,
         PlanValidationError,
     )
-    from app.overmind.planning.factory import (  # noqa: F401
+    from app.overmind.planning.factory import (
         discover,
         get_all_planners,
         get_planner,
         list_planner_metadata,
     )
-    from app.overmind.planning.schemas import (  # noqa: F401
+    from app.overmind.planning.schemas import (
         MissionPlanSchema,
         PlanGenerationResult,
         PlannedTask,
@@ -232,31 +231,31 @@ if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only
 # CANONICAL __all__
 # --------------------------------------------------------------------------------------
 __all__ = [
-    # Version / Metadata
-    "__version__",
-    # Core Modules (advanced direct use)
-    "factory",
-    "schemas",
-    "base_planner",
-    "llm_planner",
-    # Schemas & Data Contracts
-    "MissionPlanSchema",
-    "PlannedTask",
-    "PlanningContext",
-    "PlanGenerationResult",
-    "PlanWarning",
-    "PlanValidationIssue",
     # Abstractions & Errors
     "BasePlanner",
-    "PlannerError",
+    # Schemas & Data Contracts
+    "MissionPlanSchema",
+    "PlanGenerationResult",
     "PlanValidationError",
-    "PlannerTimeoutError",
+    "PlanValidationIssue",
+    "PlanWarning",
+    "PlannedTask",
     "PlannerAdmissionError",
+    "PlannerError",
+    "PlannerTimeoutError",
+    "PlanningContext",
+    # Version / Metadata
+    "__version__",
+    "base_planner",
+    "discover",
+    # Core Modules (advanced direct use)
+    "factory",
+    "get_all_planners",
     # Factory Functions
     "get_planner",
-    "get_all_planners",
-    "discover",
     "list_planner_metadata",
+    "llm_planner",
+    "schemas",
 ]
 
 # --------------------------------------------------------------------------------------

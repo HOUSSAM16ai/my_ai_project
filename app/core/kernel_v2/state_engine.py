@@ -10,7 +10,9 @@ from typing import Any
 
 # Use contextvars to ensure state is isolated between concurrent requests
 # in an async environment.
-_state: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("kernel_state", default={})
+_state: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "kernel_state", default=None
+)
 
 
 class StateEngine:
@@ -18,17 +20,25 @@ class StateEngine:
     Manages a dictionary-like state that is safe for concurrent use.
     """
 
+    @staticmethod
+    def _ensure_state() -> dict[str, Any]:
+        s = _state.get()
+        if s is None:
+            s = {}
+            _state.set(s)
+        return s
+
     def set(self, key: str, value: Any) -> None:
         """
         Sets a value in the current context's state.
         """
-        _state.get()[key] = value
+        self._ensure_state()[key] = value
 
     def get(self, key: str, default: Any = None) -> Any:
         """
         Gets a value from the current context's state.
         """
-        return _state.get().get(key, default)
+        return self._ensure_state().get(key, default)
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Allows for attribute-style access, e.g., state.user = 'admin'

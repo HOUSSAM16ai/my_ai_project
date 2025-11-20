@@ -260,11 +260,10 @@ class CircuitBreaker:
 
     def _get_state(self) -> CircuitState:
         """Determine current state with timeout transitions"""
-        if self.state.state == CircuitState.OPEN:
-            if self.state.last_failure_time:
-                elapsed = (datetime.now(UTC) - self.state.last_failure_time).total_seconds()
-                if elapsed >= self.config.timeout_seconds:
-                    self._transition_to_half_open()
+        if self.state.state == CircuitState.OPEN and self.state.last_failure_time:
+            elapsed = (datetime.now(UTC) - self.state.last_failure_time).total_seconds()
+            if elapsed >= self.config.timeout_seconds:
+                self._transition_to_half_open()
         return self.state.state
 
     def _on_success(self) -> None:

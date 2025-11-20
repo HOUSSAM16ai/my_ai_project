@@ -60,7 +60,7 @@ class TestCircuitBreaker:
 
         # Fail 3 times
         for _ in range(3):
-            with pytest.raises(Exception):
+            with pytest.raises(Exception):  # noqa: B017
                 cb.call(failing_func)
 
         assert cb.state.state == CircuitState.OPEN
@@ -74,7 +74,7 @@ class TestCircuitBreaker:
             raise Exception("Test error")
 
         # Open the circuit
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             cb.call(failing_func)
 
         # Should reject immediately
@@ -90,7 +90,7 @@ class TestCircuitBreaker:
             raise Exception("Test error")
 
         # Open the circuit
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             cb.call(failing_func)
 
         assert cb.state.state == CircuitState.OPEN
@@ -113,7 +113,7 @@ class TestCircuitBreaker:
             return "success"
 
         # Open the circuit
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             cb.call(failing_func)
 
         # Wait for HALF_OPEN
@@ -407,7 +407,7 @@ class TestFallbackChain:
         chain.register_handler(FallbackLevel.DISTRIBUTED_CACHE, fail)
         chain.register_handler(FallbackLevel.DEFAULT, lambda: "default")
 
-        result, level, degraded = chain.execute()
+        result, level, _degraded = chain.execute()
         assert result == "default"
         assert level == FallbackLevel.DEFAULT
 

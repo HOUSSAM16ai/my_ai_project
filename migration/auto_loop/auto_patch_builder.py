@@ -40,11 +40,10 @@ class AutoPatchBuilder:
 
             # Also handle flask_login imports
             match_login = re.search(r"^\s*from\s+flask_login\s+import\s+(.*)", line)
-            if match_login:
-                if "current_user" in match_login.group(1):
-                    flask_imports_found.add("current_user")
-                    lines_to_remove.append(i)
-                    modified = True
+            if match_login and "current_user" in match_login.group(1):
+                flask_imports_found.add("current_user")
+                lines_to_remove.append(i)
+                modified = True
 
         if not modified:
             print("No replaceable Flask imports found.")
@@ -52,7 +51,7 @@ class AutoPatchBuilder:
 
         # --- Construct the new file content ---
         # 1. Create the new compat import line
-        sorted_imports = sorted(list(flask_imports_found))
+        sorted_imports = sorted(flask_imports_found)
         compat_import_line = (
             f"from app.core.kernel_v2.compat_collapse import {', '.join(sorted_imports)}"
         )

@@ -9,7 +9,9 @@ Uses `pydantic-settings` for configuration via `app.core.config`.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import logging
 import os
 import random
 import re
@@ -17,9 +19,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable, Generator
-from typing import Any, Optional
-import contextlib
-import logging
+from typing import Any
 
 # Use requests for HTTP fallback if available
 try:
@@ -63,11 +63,11 @@ class MockLLMClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: "MockLLMClient"):
+        def __init__(self, parent: MockLLMClient):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: "MockLLMClient"):
+            def __init__(self, parent: MockLLMClient):
                 self._parent = parent
 
             def create(
@@ -148,11 +148,11 @@ class _HttpFallbackClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: "_HttpFallbackClient"):
+        def __init__(self, parent: _HttpFallbackClient):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: "_HttpFallbackClient"):
+            def __init__(self, parent: _HttpFallbackClient):
                 self._parent = parent
 
             def create(
@@ -189,7 +189,7 @@ class _HttpFallbackClient:
                         url, json=payload, headers=headers, timeout=self._parent._timeout
                     )
                 except Exception as e:
-                    raise RuntimeError(f"HTTP fallback request error: {e}")
+                    raise RuntimeError(f"HTTP fallback request error: {e}") from e
 
                 if resp.status_code >= 400:
                     error_text = resp.text[:400] if resp.text else "No error details"
@@ -344,7 +344,7 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float) -> Any:
                         max_tokens=max_tokens,
                     )
                 except Exception as e:
-                    raise RuntimeError(f"Legacy OpenAI call failed: {e}")
+                    raise RuntimeError(f"Legacy OpenAI call failed: {e}") from e
 
                 class _Msg:
                     def __init__(self, content: str):
@@ -403,12 +403,16 @@ def _build_real_client(creds: dict[str, Any], timeout: float) -> Any:
     if client:
         return client
 
-    if provider == "openrouter" and _bool_env("LLM_HTTP_FALLBACK"):
-        if requests is not None and creds.get("api_key"):
-            try:
-                return _HttpFallbackClient(creds["api_key"], creds["base_url"], timeout)
-            except Exception as e:
-                _LOG.warning("HTTP fallback init failed: %s", e)
+    if (
+        provider == "openrouter"
+        and _bool_env("LLM_HTTP_FALLBACK")
+        and requests is not None
+        and creds.get("api_key")
+    ):
+        try:
+            return _HttpFallbackClient(creds["api_key"], creds["base_url"], timeout)
+        except Exception as e:
+            _LOG.warning("HTTP fallback init failed: %s", e)
 
     return None
 
@@ -960,11 +964,11 @@ def llm_health() -> dict[str, Any]:
 
 __all__ = [
     "get_llm_client",
-    "reset_llm_client",
-    "is_mock_client",
-    "llm_health",
     "invoke_chat",
     "invoke_chat_stream",
-    "register_llm_pre_hook",
+    "is_mock_client",
+    "llm_health",
     "register_llm_post_hook",
+    "register_llm_pre_hook",
+    "reset_llm_client",
 ]

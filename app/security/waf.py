@@ -1,4 +1,5 @@
 # app/security/waf.py
+import contextlib
 import re
 from typing import Any
 
@@ -20,7 +21,7 @@ class WebApplicationFirewall:
 
     async def check_request(self, request: Request):
         all_params = await self._extract_all_params(request)
-        for param_name, param_value in all_params.items():
+        for _param_name, param_value in all_params.items():
             if not isinstance(param_value, str):
                 continue
             for signature in self.threat_signatures:
@@ -34,10 +35,8 @@ class WebApplicationFirewall:
         params = {}
         params.update(request.query_params)
         if request.method in ["POST", "PUT"]:
-            try:
+            with contextlib.suppress(Exception):
                 params.update(await request.json())
-            except Exception:
-                pass
         return params
 
 

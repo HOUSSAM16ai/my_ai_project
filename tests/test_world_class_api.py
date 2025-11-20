@@ -253,7 +253,7 @@ class TestSecurityService:
 
         # First requests should be allowed
         for _ in range(10):
-            allowed, info = service.check_rate_limit(client_id)
+            allowed, _info = service.check_rate_limit(client_id)
             assert allowed is True
 
         # Get current state

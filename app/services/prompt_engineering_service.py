@@ -1,8 +1,10 @@
 # app/services/prompt_engineering_service.py
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from app.models import PromptTemplate, GeneratedPrompt, User
-import logging
+
+from app.models import GeneratedPrompt, PromptTemplate, User
 
 logger = logging.getLogger(__name__)
 

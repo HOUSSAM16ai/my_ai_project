@@ -18,7 +18,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 
 class VitalType(Enum):
@@ -96,7 +96,7 @@ class PerformanceMonitor:
     """
 
     # Web Vitals thresholds (from Google)
-    THRESHOLDS = {
+    THRESHOLDS: ClassVar[dict[VitalType, dict[str, float]]] = {
         VitalType.LCP: {"good": 2500, "poor": 4000},  # ms
         VitalType.FID: {"good": 100, "poor": 300},  # ms
         VitalType.CLS: {"good": 0.1, "poor": 0.25},  # score
@@ -249,13 +249,15 @@ class PerformanceMonitor:
             return "poor"
 
     def get_vital_percentiles(
-        self, vital_type: VitalType, percentiles: list[int] = [50, 75, 90, 95, 99]
+        self, vital_type: VitalType, percentiles: list[int] | None = None
     ) -> dict[int, float]:
         """Get percentiles for a specific vital"""
+        if percentiles is None:
+            percentiles = [50, 75, 90, 95, 99]
         values = [v.value for v in self.vitals if v.vital_type == vital_type]
 
         if not values:
-            return {p: 0.0 for p in percentiles}
+            return dict.fromkeys(percentiles, 0.0)
 
         sorted_values = sorted(values)
         result = {}

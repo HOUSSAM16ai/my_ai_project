@@ -245,8 +245,8 @@ def rank_planners(
 
 __all__ = [
     "capabilities_match_ratio",
-    "compute_rank_hint",
     "compute_deep_boosts",
+    "compute_rank_hint",
     "create_sort_key",
     "rank_planners",
 ]

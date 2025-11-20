@@ -1,11 +1,11 @@
 # app/services/admin_ai_service.py
 import logging
-from typing import AsyncGenerator, Any
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models import AdminConversation, AdminMessage, User
 from app.core.ai_gateway import get_ai_client
+from app.models import AdminConversation, AdminMessage, User
 
 logger = logging.getLogger(__name__)
 

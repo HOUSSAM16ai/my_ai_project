@@ -18,6 +18,7 @@ maintain and modify without touching code logic.
 """
 
 from decimal import Decimal
+from typing import Any, ClassVar
 
 from ..api.subscription_routes import (
     BillingCycle,
@@ -35,7 +36,7 @@ class SubscriptionPlanFactory:
     """
 
     # Plan configurations as data
-    PLAN_CONFIGS = {
+    PLAN_CONFIGS: ClassVar[dict[str, dict[str, Any]]] = {
         "free": {
             "plan_id": "plan_free_001",
             "tier": SubscriptionTier.FREE,

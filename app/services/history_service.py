@@ -1,13 +1,11 @@
 # app/services/history_service.py - The Akashic Records Ministry
 
 import logging
-from typing import Optional, Any
 
 from sqlalchemy import exc as sqlalchemy_exc
 from sqlmodel import select
 
 # Compatibility imports - removed Flask dependencies
-from app.core.database import get_session as get_db_session
 
 
 def get_db():
@@ -85,7 +83,7 @@ def rate_message_in_db(message_id: int, rating: str, user_id: int):
             session.commit()
         else:
             logging.getLogger(__name__).warning(
-                f"Message model has no rating field. Skipping update."
+                "Message model has no rating field. Skipping update."
             )
 
         logging.getLogger(__name__).info(

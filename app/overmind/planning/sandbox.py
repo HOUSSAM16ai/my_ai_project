@@ -35,10 +35,7 @@ def _validate_module_safety(module_name: str) -> bool:
         "$",  # Variable expansion
         "`",  # Command substitution
     ]
-    for pattern in dangerous_patterns:
-        if pattern in module_name:
-            return False
-    return True
+    return all(pattern not in module_name for pattern in dangerous_patterns)
 
 
 def import_in_sandbox(
@@ -90,7 +87,7 @@ def _direct_import(module_name: str) -> ModuleType:
         return importlib.import_module(module_name)
     except Exception as exc:
         _logger.error(f"Direct import failed for {module_name}: {exc}")
-        raise SandboxImportError(module_name, str(exc))
+        raise SandboxImportError(module_name, str(exc)) from exc
 
 
 def _subprocess_validated_import(module_name: str, timeout_s: float) -> ModuleType:
@@ -106,7 +103,7 @@ def _subprocess_validated_import(module_name: str, timeout_s: float) -> ModuleTy
         return importlib.import_module(module_name)
     except Exception as exc:
         _logger.error(f"Main process import failed after subprocess validation: {exc}")
-        raise SandboxImportError(module_name, str(exc))
+        raise SandboxImportError(module_name, str(exc)) from exc
 
 
 def _validate_import_in_subprocess(module_name: str, timeout_s: float):
@@ -135,13 +132,13 @@ def _validate_import_in_subprocess(module_name: str, timeout_s: float):
         # Subprocess succeeded
         _logger.debug(f"Subprocess validation passed for {module_name}")
 
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         _logger.error(f"Subprocess import validation timed out for {module_name}")
-        raise SandboxTimeout(module_name, timeout_s)
+        raise SandboxTimeout(module_name, timeout_s) from exc
 
     except Exception as exc:
         _logger.error(f"Subprocess validation error for {module_name}: {exc}")
-        raise SandboxImportError(module_name, str(exc))
+        raise SandboxImportError(module_name, str(exc)) from exc
 
 
 def safe_import(module_name: str, fallback: ModuleType | None = None) -> ModuleType | None:

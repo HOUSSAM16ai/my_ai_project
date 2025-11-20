@@ -11,10 +11,7 @@ _session_factory_singleton = None
 def get_settings(env: str | None = None):
     global _settings_singleton
     if _settings_singleton is None:
-        if env:
-            _settings_singleton = _get_settings()
-        else:
-            _settings_singleton = _get_settings()
+        _settings_singleton = _get_settings()
     return _settings_singleton
 
 

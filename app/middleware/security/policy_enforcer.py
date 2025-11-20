@@ -117,9 +117,8 @@ class PolicyEnforcer(BaseMiddleware):
                 return False
 
         # Check authentication requirement
-        if policy.get("require_authentication", False):
-            if not ctx.user_id:
-                return False
+        if policy.get("require_authentication", False) and not ctx.user_id:
+            return False
 
         # Check allowed methods
         allowed_methods = policy.get("allowed_methods", [])
@@ -133,10 +132,7 @@ class PolicyEnforcer(BaseMiddleware):
 
         # Check IP blacklist
         ip_blacklist = policy.get("ip_blacklist", [])
-        if ip_blacklist and ctx.ip_address in ip_blacklist:
-            return False
-
-        return True
+        return not (ip_blacklist and ctx.ip_address in ip_blacklist)
 
     def add_policy(self, path: str, policy: dict[str, Any]):
         """

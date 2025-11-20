@@ -333,26 +333,29 @@ class BehavioralAnalyzer:
         user_id = event.user_id
 
         # Check if user is accessing unusual endpoint
-        if profile.typical_endpoints and event.endpoint not in profile.typical_endpoints:
-            # New endpoint - check if it's sensitive
-            if any(
+        if (
+            profile.typical_endpoints
+            and event.endpoint not in profile.typical_endpoints
+            and any(
                 sensitive in event.endpoint.lower()
                 for sensitive in ["admin", "config", "secret", "key"]
-            ):
-                anomalies.append(
-                    ThreatDetection(
-                        detection_id=f"unusual_endpoint_{event.event_id}",
-                        threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
-                        threat_level=ThreatLevel.HIGH,
-                        description=f"User accessing unusual sensitive endpoint: {event.endpoint}",
-                        source_ip=event.source_ip,
-                        user_id=user_id,
-                        confidence=0.75,
-                        evidence=[f"Never accessed {event.endpoint} before"],
-                        recommended_action="Require additional authentication",
-                        auto_blocked=False,
-                    )
+            )
+        ):
+            # New endpoint - check if it's sensitive
+            anomalies.append(
+                ThreatDetection(
+                    detection_id=f"unusual_endpoint_{event.event_id}",
+                    threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
+                    threat_level=ThreatLevel.HIGH,
+                    description=f"User accessing unusual sensitive endpoint: {event.endpoint}",
+                    source_ip=event.source_ip,
+                    user_id=user_id,
+                    confidence=0.75,
+                    evidence=[f"Never accessed {event.endpoint} before"],
+                    recommended_action="Require additional authentication",
+                    auto_blocked=False,
                 )
+            )
 
         # Check for unusual time access
         current_hour = event.timestamp.hour
@@ -511,7 +514,7 @@ class SuperhumanSecuritySystem:
         Returns: (allowed, threats)
         """
         # Check if blocked
-        blocked, reason = self.response_system.is_blocked(event.source_ip, event.user_id)
+        blocked, _reason = self.response_system.is_blocked(event.source_ip, event.user_id)
         if blocked:
             return False, []
 

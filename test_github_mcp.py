@@ -90,7 +90,7 @@ class GitHubMCPTester:
                 self.print_error(f"Unexpected status code: {response.status_code}")
                 return False
         except Exception as e:
-            self.print_error(f"Exception: {str(e)}")
+            self.print_error(f"Exception: {e!s}")
             return False
 
     def test_rate_limit(self) -> bool:
@@ -122,7 +122,7 @@ class GitHubMCPTester:
                 self.print_error(f"Failed to get rate limit: {response.status_code}")
                 return False
         except Exception as e:
-            self.print_error(f"Exception: {str(e)}")
+            self.print_error(f"Exception: {e!s}")
             return False
 
     def test_list_repositories(self, max_repos: int = 5) -> bool:
@@ -161,7 +161,7 @@ class GitHubMCPTester:
                 self.print_error(f"Failed to list repositories: {response.status_code}")
                 return False
         except Exception as e:
-            self.print_error(f"Exception: {str(e)}")
+            self.print_error(f"Exception: {e!s}")
             return False
 
     def test_search_repositories(
@@ -197,7 +197,7 @@ class GitHubMCPTester:
                 self.print_error(f"Search failed: {response.status_code}")
                 return False
         except Exception as e:
-            self.print_error(f"Exception: {str(e)}")
+            self.print_error(f"Exception: {e!s}")
             return False
 
     def test_get_repository_info(self, owner: str, repo: str) -> bool:
@@ -233,7 +233,7 @@ class GitHubMCPTester:
                 self.print_error(f"Failed to get repository: {response.status_code}")
                 return False
         except Exception as e:
-            self.print_error(f"Exception: {str(e)}")
+            self.print_error(f"Exception: {e!s}")
             return False
 
     def run_all_tests(self):

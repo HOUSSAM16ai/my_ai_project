@@ -125,7 +125,7 @@ def test_connection():
         return engine
 
     except Exception as e:
-        print_error(f"Connection failed: {str(e)}")
+        print_error(f"Connection failed: {e!s}")
         print_info("Traceback:")
         traceback.print_exc()
         return None
@@ -151,7 +151,7 @@ def check_tables(engine):
         return tables
 
     except Exception as e:
-        print_error(f"Failed to check tables: {str(e)}")
+        print_error(f"Failed to check tables: {e!s}")
         return []
 
 
@@ -220,7 +220,7 @@ def apply_migrations(engine):
         return True
 
     except Exception as e:
-        print_error(f"Failed to apply migrations: {str(e)}")
+        print_error(f"Failed to apply migrations: {e!s}")
         print_info("You can manually apply migrations with:")
         print(f"   {B}flask db upgrade{E}")
         traceback.print_exc()
@@ -249,7 +249,7 @@ def test_crud_operations(engine):
         return True
 
     except Exception as e:
-        print_error(f"CRUD test failed: {str(e)}")
+        print_error(f"CRUD test failed: {e!s}")
         return False
 
 

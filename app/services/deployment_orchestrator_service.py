@@ -702,19 +702,18 @@ class DeploymentOrchestrator:
             circuit.total_requests += 1
 
             # التحقق من حالة الدائرة
-            if circuit.state == CircuitState.OPEN:
+            if circuit.state == CircuitState.OPEN and circuit.last_failure_time:
                 # التحقق من انتهاء المهلة الزمنية
-                if circuit.last_failure_time:
-                    elapsed = (datetime.now(UTC) - circuit.last_failure_time).total_seconds()
-                    if elapsed >= circuit.timeout_seconds:
-                        # الانتقال لحالة HALF_OPEN
-                        circuit.state = CircuitState.HALF_OPEN
-                        circuit.last_state_change = datetime.now(UTC)
-                    else:
-                        # الدائرة ما زالت مفتوحة - استخدام البديل
-                        if fallback:
-                            return fallback()
-                        raise Exception(f"Circuit breaker is OPEN for {service_name}")
+                elapsed = (datetime.now(UTC) - circuit.last_failure_time).total_seconds()
+                if elapsed >= circuit.timeout_seconds:
+                    # الانتقال لحالة HALF_OPEN
+                    circuit.state = CircuitState.HALF_OPEN
+                    circuit.last_state_change = datetime.now(UTC)
+                else:
+                    # الدائرة ما زالت مفتوحة - استخدام البديل
+                    if fallback:
+                        return fallback()
+                    raise Exception(f"Circuit breaker is OPEN for {service_name}")
 
         # محاولة التنفيذ
         try:
@@ -725,12 +724,14 @@ class DeploymentOrchestrator:
                 circuit.success_count += 1
 
                 # إذا كانت الدائرة HALF_OPEN وتم النجاح
-                if circuit.state == CircuitState.HALF_OPEN:
-                    if circuit.success_count >= circuit.success_threshold:
-                        # إغلاق الدائرة
-                        circuit.state = CircuitState.CLOSED
-                        circuit.last_state_change = datetime.now(UTC)
-                        circuit.success_count = 0
+                if (
+                    circuit.state == CircuitState.HALF_OPEN
+                    and circuit.success_count >= circuit.success_threshold
+                ):
+                    # إغلاق الدائرة
+                    circuit.state = CircuitState.CLOSED
+                    circuit.last_state_change = datetime.now(UTC)
+                    circuit.success_count = 0
 
             return result
 

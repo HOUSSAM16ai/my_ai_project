@@ -26,6 +26,7 @@ Features:
 """
 
 import hashlib
+import itertools
 import math
 import statistics
 import threading
@@ -333,7 +334,7 @@ class AIModelMetricsService:
 
         tp = fp = tn = fn = 0
 
-        for pred, truth in zip(predictions, ground_truths):
+        for pred, truth in zip(predictions, ground_truths, strict=False):
             if pred == positive_class and truth == positive_class:
                 tp += 1
             elif pred == positive_class and truth != positive_class:
@@ -422,8 +423,8 @@ class AIModelMetricsService:
         rouge_1 = overlapping / len(ref_unigrams) if ref_unigrams else 0.0
 
         # ROUGE-2 (bigram overlap)
-        ref_bigrams = set(zip(ref_tokens[:-1], ref_tokens[1:]))
-        cand_bigrams = set(zip(cand_tokens[:-1], cand_tokens[1:]))
+        ref_bigrams = set(itertools.pairwise(ref_tokens))
+        cand_bigrams = set(itertools.pairwise(cand_tokens))
         overlapping = len(ref_bigrams & cand_bigrams)
         rouge_2 = overlapping / len(ref_bigrams) if ref_bigrams else 0.0
 
@@ -643,7 +644,7 @@ class AIModelMetricsService:
         # Group by sensitive attribute
         groups: dict[Any, dict[str, list[Any]]] = defaultdict(lambda: {"pred": [], "truth": []})
 
-        for pred, truth, attr in zip(predictions, ground_truths, sensitive_attributes):
+        for pred, truth, attr in zip(predictions, ground_truths, sensitive_attributes, strict=False):
             groups[attr]["pred"].append(pred)
             groups[attr]["truth"].append(truth)
 
@@ -658,14 +659,14 @@ class AIModelMetricsService:
 
             # True positive rate (TPR)
             tp = sum(
-                1 for p, t in zip(preds, truths) if p == positive_class and t == positive_class
+                1 for p, t in zip(preds, truths, strict=False) if p == positive_class and t == positive_class
             )
             actual_positives = sum(1 for t in truths if t == positive_class)
             tpr = tp / actual_positives if actual_positives > 0 else 0.0
 
             # False positive rate (FPR)
             fp = sum(
-                1 for p, t in zip(preds, truths) if p == positive_class and t != positive_class
+                1 for p, t in zip(preds, truths, strict=False) if p == positive_class and t != positive_class
             )
             actual_negatives = sum(1 for t in truths if t != positive_class)
             fpr = fp / actual_negatives if actual_negatives > 0 else 0.0

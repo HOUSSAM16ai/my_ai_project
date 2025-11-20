@@ -148,7 +148,7 @@ class TraceContextPropagator:
             if len(parts) != 4:
                 return None
 
-            version, trace_id, span_id, flags = parts
+            _version, trace_id, span_id, _flags = parts
 
             # Parse tracestate (baggage)
             baggage = {}
@@ -410,10 +410,11 @@ class DistributedTracer:
                     if span.parent_span_id:
                         # Find parent span
                         for parent_span in trace.spans:
-                            if parent_span.span_id == span.parent_span_id:
-                                # Parent service -> child service dependency
-                                if parent_span.service_name != span.service_name:
-                                    dependencies[parent_span.service_name].add(span.service_name)
+                            if (
+                                parent_span.span_id == span.parent_span_id
+                                and parent_span.service_name != span.service_name
+                            ):
+                                dependencies[parent_span.service_name].add(span.service_name)
 
         return {k: list(v) for k, v in dependencies.items()}
 

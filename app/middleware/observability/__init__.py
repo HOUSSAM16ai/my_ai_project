@@ -26,12 +26,12 @@ from .request_logger import RequestLoggerMiddleware
 from .telemetry_bridge import TelemetryBridge
 
 __all__ = [
+    "AnalyticsAdapter",
+    "AnomalyInspector",
     "ObservabilityMiddleware",
+    "PerformanceProfiler",
     "RequestLoggerMiddleware",
     "TelemetryBridge",
-    "AnomalyInspector",
-    "PerformanceProfiler",
-    "AnalyticsAdapter",
 ]
 
 __version__ = "1.0.0-aurora"

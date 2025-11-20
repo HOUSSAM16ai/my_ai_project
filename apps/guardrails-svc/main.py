@@ -14,7 +14,7 @@ Features:
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -136,7 +136,7 @@ class GuardrailsEngine:
     """Content safety and compliance engine"""
 
     # PII patterns (simplified - in production use Presidio)
-    PII_PATTERNS = {
+    PII_PATTERNS: ClassVar[dict[str, re.Pattern]] = {
         "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
         "phone": re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
         "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
@@ -145,13 +145,13 @@ class GuardrailsEngine:
     }
 
     # Toxic/offensive patterns (simplified)
-    TOXIC_PATTERNS = [
+    TOXIC_PATTERNS: ClassVar[list[str]] = [
         r"\b(hate|racist|discriminat|offensive)\b",
         r"\b(violence|threat|harm)\b",
     ]
 
     # Prompt injection patterns
-    INJECTION_PATTERNS = [
+    INJECTION_PATTERNS: ClassVar[list[str]] = [
         r"ignore (previous|above) (instructions|prompts?)",
         r"system:?\s*you are",
         r"<\|.*?\|>",  # Special tokens
@@ -159,7 +159,7 @@ class GuardrailsEngine:
     ]
 
     # Profanity list (simplified)
-    PROFANITY_LIST = [
+    PROFANITY_LIST: ClassVar[list[str]] = [
         # Add actual profanity words here
     ]
 
@@ -379,7 +379,7 @@ async def check_content(request: GuardrailCheck):
         result = engine.run_checks(request)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/v1/guardrails/pii")
@@ -391,7 +391,7 @@ async def detect_pii(text: str):
 
         return {"entities": entities, "redacted_text": redacted, "entity_count": len(entities)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/metrics")

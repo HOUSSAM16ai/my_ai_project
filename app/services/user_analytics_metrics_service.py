@@ -439,8 +439,8 @@ class UserAnalyticsMetricsService:
 
             # Count conversions
             conversions = [e for e in recent_events if e.event_name == conversion_event]
-            unique_visitors = len(set(e.user_id for e in recent_events))
-            unique_converters = len(set(e.user_id for e in conversions))
+            unique_visitors = len({e.user_id for e in recent_events})
+            unique_converters = len({e.user_id for e in conversions})
 
             conversion_rate = unique_converters / unique_visitors if unique_visitors > 0 else 0.0
 
@@ -604,7 +604,7 @@ class UserAnalyticsMetricsService:
         if traffic_split is None:
             # Equal split
             split = 1.0 / len(variants)
-            traffic_split = {variant: split for variant in variants}
+            traffic_split = dict.fromkeys(variants, split)
 
         with self.lock:
             self.ab_tests[test_id] = {
@@ -655,7 +655,7 @@ class UserAnalyticsMetricsService:
             test = self.ab_tests[test_id]
 
             # Find user's variant
-            for variant, data in test["results"].items():
+            for _variant, data in test["results"].items():
                 if user_id in data["users"]:
                     data["conversions"] += 1
                     break

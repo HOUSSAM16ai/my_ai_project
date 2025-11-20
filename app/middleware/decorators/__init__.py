@@ -41,9 +41,9 @@ from app.services.api_security_service import (
 
 # Export all decorators for clean imports
 __all__ = [
-    "require_jwt_auth",
-    "rate_limit",
     "monitor_performance",
+    "rate_limit",
+    "require_jwt_auth",
 ]
 
 __version__ = "1.0.0-aurora"

@@ -144,7 +144,7 @@ def test_bulkhead_service():
     def test_op():
         return "success"
 
-    success, result, error = bulkhead.call("database", test_op)
+    success, result, _error = bulkhead.call("database", test_op)
     assert success is True, "Operation should succeed"
     assert result == "success", "Should return correct result"
     print("✅ Bulkheads Pattern Service: PASS")

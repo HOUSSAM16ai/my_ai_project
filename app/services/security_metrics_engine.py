@@ -113,7 +113,7 @@ class SecurityMetricsEngine:
     # --------------------------------------------------------
 
     def calculate_advanced_risk_score(
-        self, findings: list[SecurityFinding], code_metrics: dict = None
+        self, findings: list[SecurityFinding], code_metrics: dict | None = None
     ) -> float:
         """
         خوارزمية متقدمة لحساب درجة المخاطر
@@ -217,10 +217,7 @@ class SecurityMetricsEngine:
         numerator = sum((x[i] - x_mean) * (y[i] - y_mean) for i in range(n))
         denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
 
-        if denominator == 0:
-            slope = 0
-        else:
-            slope = numerator / denominator
+        slope = 0 if denominator == 0 else numerator / denominator
 
         intercept = y_mean - slope * x_mean
 
@@ -233,10 +230,7 @@ class SecurityMetricsEngine:
         ss_total = sum((y[i] - y_mean) ** 2 for i in range(n))
         ss_residual = sum((y[i] - (slope * x[i] + intercept)) ** 2 for i in range(n))
 
-        if ss_total == 0:
-            r_squared = 0
-        else:
-            r_squared = 1 - (ss_residual / ss_total)
+        r_squared = 0 if ss_total == 0 else 1 - ss_residual / ss_total
 
         confidence = max(0, min(100, r_squared * 100))
 
@@ -516,7 +510,7 @@ class SecurityMetricsEngine:
     # --------------------------------------------------------
 
     def generate_comprehensive_report(
-        self, findings: list[SecurityFinding], code_metrics: dict = None, hourly_rate: float = 100.0
+        self, findings: list[SecurityFinding], code_metrics: dict | None = None, hourly_rate: float = 100.0
     ) -> dict:
         """
         توليد تقرير شامل بكل المقاييس والخوارزميات
@@ -527,7 +521,7 @@ class SecurityMetricsEngine:
         security_debt = self.calculate_security_debt(findings, hourly_rate)
 
         # Get unique developers
-        developers = list(set(f.developer_id for f in findings if f.developer_id))
+        developers = list({f.developer_id for f in findings if f.developer_id})
         developer_scores = {
             dev: self.calculate_developer_security_score(findings, dev) for dev in developers
         }

@@ -16,6 +16,7 @@
 #   - Data governance and compliance
 #   - Chaos engineering and resilience testing
 
+import contextlib
 import hashlib
 import json
 import logging
@@ -28,9 +29,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any, cast
+from typing import Any
 
-from fastapi import Request, HTTPException, status, Depends
+from fastapi import Request
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
@@ -192,10 +193,8 @@ class RESTAdapter(ProtocolAdapter):
     async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform REST request"""
         body = {}
-        try:
+        with contextlib.suppress(Exception):
             body = await request.json()
-        except Exception:
-            pass
 
         return {
             "method": request.method,

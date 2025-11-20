@@ -254,11 +254,10 @@ class AITestGenerator:
                     risks.append("File I/O: Verify file path validation")
 
             # Check for SQL-like strings
-            if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if any(
-                    kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]
-                ):
-                    risks.append("SQL Injection Risk: Raw SQL query detected")
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and any(
+                kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]
+            ):
+                risks.append("SQL Injection Risk: Raw SQL query detected")
 
         return risks
 
@@ -369,7 +368,7 @@ class AITestGenerator:
                     test_code = f"""def test_{func_name}_edge_{param["name"]}_{edge_val}():
     \"\"\"Test {func_name} with edge case: {param["name"]}={edge_val}\"\"\"
     # Arrange
-    {param["name"]} = {repr(edge_val)}
+    {param["name"]} = {edge_val!r}
 
     # Act & Assert
     try:
@@ -472,7 +471,7 @@ class AITestGenerator:
         """تنسيق inputs للكود"""
         lines = []
         for key, value in inputs.items():
-            lines.append(f"    {key} = {repr(value)}")
+            lines.append(f"    {key} = {value!r}")
         return "\n".join(lines)
 
 

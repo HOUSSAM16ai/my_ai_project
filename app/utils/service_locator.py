@@ -14,7 +14,7 @@ Benefits:
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class ServiceLocator:
     coupling and circular import issues.
     """
 
-    _services_cache = {}
+    _services_cache: ClassVar[dict[str, Any]] = {}
 
     @classmethod
     def get_service(cls, service_name: str) -> Any | None:

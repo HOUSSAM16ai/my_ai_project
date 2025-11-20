@@ -85,7 +85,7 @@ class TestPolicyEngine:
 class TestProtocolAdapters:
     def test_rest_adapter(self):
         adapter = RESTAdapter()
-        is_valid, error = adapter.validate_request(None)
+        is_valid, _error = adapter.validate_request(None)
         assert is_valid is True
 
     def test_graphql_adapter(self):
