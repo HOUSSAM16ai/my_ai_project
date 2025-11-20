@@ -30,18 +30,19 @@ def test_settings_load_from_env_file():
     assert os.path.exists(test_env_path), "Test .env file must exist"
 
     # Patch the model_config to use our specific test .env file
-    # This ensures we are isolated from any real .env file in the root directory.
-    with patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": test_env_path, "extra": "ignore"},
-    ):
-        settings = get_settings()
+    # AND patch os.environ to avoid interference from conftest.py
+    with patch.dict(os.environ, {}, clear=True):
+        with patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": test_env_path, "extra": "ignore"},
+        ):
+            settings = get_settings()
 
-        assert settings.DATABASE_URL == "postgresql://test:test@localhost:5432/test"
-        assert settings.SECRET_KEY == "test-secret-key"
-        assert settings.AI_SERVICE_URL == "http://localhost:8080"
-        assert settings.LOG_LEVEL == "DEBUG"
-        assert settings.DEFAULT_AI_MODEL == "test/model"
+            assert settings.DATABASE_URL == "postgresql://test:test@localhost:5432/test"
+            assert settings.SECRET_KEY == "test-secret-key"
+            assert settings.AI_SERVICE_URL == "http://localhost:8080"
+            assert settings.LOG_LEVEL == "DEBUG"
+            assert settings.DEFAULT_AI_MODEL == "test/model"
 
 
 def test_settings_validation_error_on_missing_required_fields():
@@ -53,19 +54,21 @@ def test_settings_validation_error_on_missing_required_fields():
     with open(empty_env_path, "w") as f:
         pass
 
-    with patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": empty_env_path, "extra": "ignore"},
-    ):
-        with pytest.raises(ValidationError) as excinfo:
-            # The validation error should be triggered here
-            get_settings()
+    # Patch os.environ to be empty to ensure no env vars are picked up
+    with patch.dict(os.environ, {}, clear=True):
+        with patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": empty_env_path, "extra": "ignore"},
+        ):
+            with pytest.raises(ValidationError) as excinfo:
+                # The validation error should be triggered here
+                get_settings()
 
-        # Check that the error message contains the names of the missing required fields
-        error_str = str(excinfo.value)
-        assert "DATABASE_URL" in error_str
-        assert "Field required" in error_str
-        assert "SECRET_KEY" in error_str
+            # Check that the error message contains the names of the missing required fields
+            error_str = str(excinfo.value)
+            assert "DATABASE_URL" in error_str
+            assert "Field required" in error_str
+            assert "SECRET_KEY" in error_str
 
     os.remove(empty_env_path)  # Clean up the empty .env file
 
@@ -76,12 +79,15 @@ def test_get_settings_is_a_singleton():
     """
     test_env_path = os.path.join(os.path.dirname(__file__), "temp.env")
 
-    with patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": test_env_path, "extra": "ignore"},
-    ):
-        settings1 = get_settings()
-        settings2 = get_settings()
+    # Just verify singleton behavior, env doesn't matter much as long as it's valid
+    # We use temp.env so it loads valid settings
+    with patch.dict(os.environ, {}, clear=True):
+        with patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": test_env_path, "extra": "ignore"},
+        ):
+            settings1 = get_settings()
+            settings2 = get_settings()
 
-        assert settings1 is settings2
-        assert id(settings1) == id(settings2)
+            assert settings1 is settings2
+            assert id(settings1) == id(settings2)

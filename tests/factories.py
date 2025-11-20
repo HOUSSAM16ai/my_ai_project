@@ -14,7 +14,7 @@ class UserFactory(SQLAlchemyModelFactory):
     id = factory.Sequence(lambda n: n + 1)
     email = factory.LazyAttribute(lambda obj: f'user{obj.id}@example.com')
     full_name = factory.Faker('name')
-    # password hash will be set by the model's default setter
+    # password hash will be set by the model's default setter or method
 
 class MissionFactory(SQLAlchemyModelFactory):
     class Meta:
@@ -23,5 +23,6 @@ class MissionFactory(SQLAlchemyModelFactory):
 
     id = factory.Sequence(lambda n: n + 1)
     objective = factory.Faker('sentence')
-    initiator_id = factory.SelfAttribute('initiator.id') # Link via id
-    initiator = factory.SubFactory(UserFactory)
+    # Corrected to match 'user' relationship and 'user_id' foreign key in Mission model
+    user_id = factory.SelfAttribute('user.id')
+    user = factory.SubFactory(UserFactory)
