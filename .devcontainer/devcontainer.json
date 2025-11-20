@@ -13,14 +13,15 @@
     "PYTHONUNBUFFERED": "1"
   },
 
-  // Ensure Dockerfile CMD/ENTRYPOINT is used
-  "overrideCommand": false,
+  // Ensure Dockerfile CMD/ENTRYPOINT is overridden to keep container alive
+  "overrideCommand": true,
+  "command": ["sleep", "infinity"],
 
   // 1. Initialize: Local setup (Optional, usually implicit)
   // "initializeCommand": "bash .devcontainer/local-setup.sh",
 
   // 2. Post Create: Dependencies & DB Migrations
-  "postCreateCommand": "bash .devcontainer/on-create.sh",
+  "postCreateCommand": "chmod +x .devcontainer/*.sh && /bin/bash .devcontainer/on-create.sh",
 
   // 3. Post Start: Launch background services
   "postStartCommand": "bash .devcontainer/on-start.sh",
