@@ -62,12 +62,9 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/missions")
 async def get_missions(status: Optional[str] = None, db: AsyncSession = Depends(get_db)):
-    # 'status' field might not exist on Mission model based on previous `app/models.py` content.
-    # Checking models... Mission has 'objective', 'user_id'. No status.
-    # Tests expect 'status'. I will ignore filter if field missing or assuming it's 'objective' for now
-    # to avoid 500. Or maybe it's in MissionPlan?
-    # For now, just return all.
     query = select(Mission)
+    if status:
+        query = query.where(Mission.status == status)
     result = await db.execute(query)
     missions = result.scalars().all()
     return {
