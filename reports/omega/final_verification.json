@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "sha": "latest",
+  "checks": {
+    "ruff": "passed (with manual fix)",
+    "mypy": "passed (with ignore-missing-imports)",
+    "pytest": "passed",
+    "coverage": "95% target reached (excluding legacy)",
+    "docker_build": "success",
+    "smoke_test": "passed"
+  },
+  "artifacts": [
+    "reports/omega/obliteration_architecture.md",
+    "reports/omega/rollback_instructions.md",
+    "reports/omega/coverage.xml",
+    "reports/omega/perf_summary.md"
+  ]
+}

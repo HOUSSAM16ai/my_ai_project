@@ -1,26 +1,23 @@
 # app/middleware/core/response_factory.py
 # ======================================================================================
-# ==                    FRAMEWORK-AGNOSTIC RESPONSE FACTORY (v∞)                    ==
+# ==                    FASTAPI RESPONSE FACTORY                                    ==
 # ======================================================================================
 """
-مصنع الاستجابات - Response Factory
+Response Factory - FastAPI Optimized
 
-Creates HTTP responses in a framework-agnostic manner.
-Supports FastAPI, Django, and raw ASGI.
-Flask support has been removed.
-
-Design Pattern: Abstract Factory Pattern
+Creates HTTP responses for FastAPI.
+Refactored to remove Django/Flask/ASGI fallback complexity.
 """
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
+from fastapi.responses import JSONResponse
 
+if TYPE_CHECKING:
+    from app.middleware.core.result import MiddlewareResult
 
 class ResponseFactory:
     """
-    Factory for creating HTTP responses across different frameworks
-
-    Provides a unified interface for creating responses that work
-    with FastAPI, Django, and ASGI applications.
+    Factory for creating HTTP responses for FastAPI
     """
 
     @staticmethod
@@ -28,50 +25,12 @@ class ResponseFactory:
         data: dict[str, Any],
         status_code: int = 200,
         headers: dict[str, str] | None = None,
-        framework: str = "fastapi",
-    ) -> Any:
+    ) -> JSONResponse:
         """
-        Create a JSON response
-
-        Args:
-            data: Response data
-            status_code: HTTP status code
-            headers: Optional headers
-            framework: Target framework ('fastapi', 'django', 'asgi')
-
-        Returns:
-            Framework-specific response object
+        Create a JSON response for FastAPI
         """
         headers = headers or {}
-
-        if framework == "flask":
-             raise NotImplementedError("Flask is no longer supported.")
-
-        elif framework == "fastapi":
-            from fastapi.responses import JSONResponse
-
-            return JSONResponse(content=data, status_code=status_code, headers=headers)
-
-        elif framework == "django":
-            from django.http import JsonResponse
-
-            response = JsonResponse(data, status=status_code)
-            for key, value in headers.items():
-                response[key] = value
-            return response
-
-        elif framework == "asgi":
-            import json
-
-            body = json.dumps(data).encode("utf-8")
-            return {
-                "type": "http.response.start",
-                "status": status_code,
-                "headers": [(k.encode(), v.encode()) for k, v in headers.items()],
-            }, {"type": "http.response.body", "body": body}
-
-        else:
-            raise ValueError(f"Unsupported framework: {framework}")
+        return JSONResponse(content=data, status_code=status_code, headers=headers)
 
     @staticmethod
     def make_error_response(
@@ -79,22 +38,11 @@ class ResponseFactory:
         status_code: int = 500,
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
-        framework: str = "fastapi",
-    ) -> Any:
+    ) -> JSONResponse:
         """
         Create an error response
-
-        Args:
-            message: Error message
-            status_code: HTTP status code
-            error_code: Machine-readable error code
-            details: Additional error details
-            framework: Target framework
-
-        Returns:
-            Framework-specific error response
         """
-        data = {
+        data: dict[str, Any] = {
             "error": True,
             "message": message,
             "status_code": status_code,
@@ -106,28 +54,18 @@ class ResponseFactory:
         if details:
             data["details"] = details
 
-        return ResponseFactory.make_json_response(data, status_code, framework=framework)
+        return ResponseFactory.make_json_response(data, status_code)
 
     @staticmethod
     def make_success_response(
         data: Any = None,
         message: str = "Success",
         status_code: int = 200,
-        framework: str = "fastapi",
-    ) -> Any:
+    ) -> JSONResponse:
         """
         Create a success response
-
-        Args:
-            data: Response data
-            message: Success message
-            status_code: HTTP status code
-            framework: Target framework
-
-        Returns:
-            Framework-specific success response
         """
-        response_data = {
+        response_data: dict[str, Any] = {
             "success": True,
             "message": message,
         }
@@ -135,30 +73,20 @@ class ResponseFactory:
         if data is not None:
             response_data["data"] = data
 
-        return ResponseFactory.make_json_response(response_data, status_code, framework=framework)
+        return ResponseFactory.make_json_response(response_data, status_code)
 
     @staticmethod
     def from_middleware_result(
-        result: "MiddlewareResult",  # type: ignore # noqa: F821
-        framework: str = "fastapi",
-    ) -> Any:
+        result: "MiddlewareResult",
+    ) -> JSONResponse:
         """
         Create response from MiddlewareResult
-
-        Args:
-            result: Middleware result object
-            framework: Target framework
-
-        Returns:
-            Framework-specific response
         """
-
         if result.is_success:
             return ResponseFactory.make_success_response(
                 data=result.response_data,
                 message=result.message or "Success",
                 status_code=result.status_code,
-                framework=framework,
             )
         else:
             return ResponseFactory.make_error_response(
@@ -166,5 +94,4 @@ class ResponseFactory:
                 status_code=result.status_code,
                 error_code=result.error_code,
                 details=result.details,
-                framework=framework,
             )

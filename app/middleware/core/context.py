@@ -1,16 +1,15 @@
 # app/middleware/core/context.py
 # ======================================================================================
-# ==                    UNIFIED REQUEST CONTEXT (v∞)                                ==
+# ==                    UNIFIED REQUEST CONTEXT (FASTAPI EDITION)                   ==
 # ======================================================================================
 """
-سياق الطلب الموحد - Unified Request Context
+Unified Request Context
 
-A framework-agnostic container for request data and metadata.
-Provides a consistent interface across different web frameworks
-(Flask, FastAPI, Django, ASGI).
+A standardized container for request data and metadata, optimized for FastAPI.
+Refactored to remove Flask/Django support.
 
 Design Pattern: Context Object Pattern
-Architecture: Immutable data structure with copy-on-write semantics
+Architecture: Immutable data structure
 """
 
 from dataclasses import dataclass, field
@@ -18,15 +17,13 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
+from fastapi import Request
+
 
 @dataclass
 class RequestContext:
     """
-    Unified request context shared across all middleware layers
-
-    This object encapsulates all request-related information in a
-    framework-agnostic manner, enabling middleware to work across
-    Flask, FastAPI, Django, and raw ASGI applications.
+    Unified request context for FastAPI applications.
 
     Attributes:
         request_id: Unique identifier for this request
@@ -74,32 +71,10 @@ class RequestContext:
     session_id: str | None = None
 
     # Framework-specific request object (for advanced use cases)
-    _raw_request: Any = None
+    _raw_request: Request | None = None
 
     @classmethod
-    def from_flask_request(cls, request) -> "RequestContext":
-        """
-        Create context from Flask request object
-
-        Args:
-            request: Flask request object
-
-        Returns:
-            RequestContext instance
-        """
-        return cls(
-            method=request.method,
-            path=request.path,
-            headers=dict(request.headers),
-            query_params=dict(request.args),
-            body=request.get_json(silent=True) if request.is_json else None,
-            ip_address=request.remote_addr or "unknown",
-            user_agent=request.headers.get("User-Agent", ""),
-            _raw_request=request,
-        )
-
-    @classmethod
-    def from_fastapi_request(cls, request) -> "RequestContext":
+    async def from_fastapi_request(cls, request: Request) -> "RequestContext":
         """
         Create context from FastAPI request object
 
@@ -109,6 +84,9 @@ class RequestContext:
         Returns:
             RequestContext instance
         """
+        # Attempt to read body if possible, but usually middleware consumes it carefully
+        # For now we default body to None to avoid consuming stream unless necessary
+
         return cls(
             method=request.method,
             path=request.url.path,
@@ -119,39 +97,17 @@ class RequestContext:
             _raw_request=request,
         )
 
-    @classmethod
-    def from_django_request(cls, request) -> "RequestContext":
-        """
-        Create context from Django request object
-
-        Args:
-            request: Django request object
-
-        Returns:
-            RequestContext instance
-        """
-        return cls(
-            method=request.method,
-            path=request.path,
-            headers=dict(request.headers),
-            query_params=dict(request.GET),
-            body=request.body,
-            ip_address=request.META.get("REMOTE_ADDR", "unknown"),
-            user_agent=request.META.get("HTTP_USER_AGENT", ""),
-            _raw_request=request,
-        )
-
-    def set_trace_context(self, trace_id: str, span_id: str):
+    def set_trace_context(self, trace_id: str, span_id: str) -> None:
         """Set distributed tracing context"""
         self.trace_id = trace_id
         self.span_id = span_id
 
-    def set_user_context(self, user_id: str, session_id: str | None = None):
+    def set_user_context(self, user_id: str, session_id: str | None = None) -> None:
         """Set authenticated user context"""
         self.user_id = user_id
         self.session_id = session_id
 
-    def add_metadata(self, key: str, value: Any):
+    def add_metadata(self, key: str, value: Any) -> None:
         """Add arbitrary metadata to context"""
         self.metadata[key] = value
 

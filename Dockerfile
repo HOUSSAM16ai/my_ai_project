@@ -1,57 +1,41 @@
-# Stage 1: The Builder
-# Use the full bookworm image to build dependencies, ensuring all build tools are available.
-FROM python:3.12-bookworm AS builder
+FROM python:3.12-slim as builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-# Install system build dependencies
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Create a wheelhouse for the Python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
-
-# Stage 2: The Final Image
-# Use the slim version of the bookworm image for a smaller final footprint.
-FROM python:3.12-slim-bookworm
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/app/venv/bin:$PATH"
 
-# Install only necessary runtime system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-# Copy the pre-built wheels from the builder stage and install them
-COPY --from=builder /app/wheels /wheels
-COPY requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
-
-# Copy the application code
 COPY . .
 
-# Set the port the application will run on
-ENV PORT=8000
+# Ensure proper ownership
+RUN chown -R appuser:appuser /app
 
-# Expose the port
-EXPOSE ${PORT}
+USER appuser
 
-# Healthcheck to ensure the application is running correctly
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://127.0.0.1:${PORT}/system/health || exit 1
+EXPOSE 8000
 
-# Command to run the application using Uvicorn directly for ASGI performance
-CMD ["uvicorn", "app.main:kernel.app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Run via uvicorn directly as per Omega spec
+CMD ["uvicorn", "app.main:root", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

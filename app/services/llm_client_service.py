@@ -1,113 +1,11 @@
-# app/services/llm_client_service.py - The Central Communications Ministry
-# =================================================================================================
-#  LLM CLIENT SERVICE – HYPER PRO EDITION
-#  Version: 4.7.0  •  Codename: "RESILIENT-COMMS-ULTRA / RETRY+STREAM / COST / CIRCUIT / HOOKS"
-# =================================================================================================
-#  PURPOSE
-#    Single Authoritative Gateway for all LLM invocations across the Overmind stack:
-#      - Unified construction & reuse (lazy singleton; optional cache disable).
-#      - Automatic multi-provider credential detection (OpenRouter → OpenAI).
-#      - Modern + legacy OpenAI SDK compatibility + lightweight HTTP fallback.
-#      - Resilient high-level interface invoke_chat() + optional streaming.
-#      - Structured response envelope (content / usage / latency / cost / meta).
-#      - Retries with exponential backoff + jitter + error taxonomy.
-#      - Circuit breaker for repeated transient failures.
-#      - Cumulative usage & (optional) cost estimation (per model rate table).
-#      - Hooks (pre / post) for dynamic policy injection, tracing, sanitization.
-#      - Output sanitization (sensitive marker redaction).
-#      - Force-model override, configurable timeouts, mock fallback modes.
-#      - Health diagnostics (llm_health) enriched with latency & breaker state.
-#
-#  COMPATIBILITY
-#    - Backward compatible with legacy direct usage: client.chat.completions.create(...)
-#    - New advanced consumers should prefer invoke_chat() or invoke_chat_stream().
-#
-#  NEW vs 4.6.0
-#    + Dedicated invoke_chat_stream() helper.
-#    + Circuit Breaker (configurable window / threshold / cooldown).
-#    + Budget Guard (session cost ceiling).
-#    + Smart Retry Policy (skip retry for auth_error / parse unless configured).
-#    + Selective Retry Error Classes.
-#    + Cost Budget Hard-Fail vs Soft Warn.
-#    + Model alias normalization (optional mapping).
-#    + Expanded Sanitization patterns + optional regex redaction.
-#    + Fine-grained logging levels for attempts & breaker events.
-#    + Minimal internal stats snapshot (for external orchestrators).
-#
-#  ENV VARS (Key Subset)
-#    OPENROUTER_API_KEY                Primary key (priority #1)
-#    OPENAI_API_KEY                    Secondary key
-#    LLM_BASE_URL                      Override base URL
-#    LLM_TIMEOUT_SECONDS=180            # Default timeout (auto-adjusts in extreme/ultimate modes)
-#    LLM_FORCE_MOCK=0|1
-#    LLM_MOCK_MODE=0|1                 (alias)
-#    LLM_DISABLE_CACHE=0|1
-#    LLM_HTTP_FALLBACK=0|1
-#
-#    LLM_MAX_RETRIES=2                  # Default retries (auto-increases in extreme/ultimate modes)
-#    LLM_RETRY_BACKOFF_BASE=1.3
-#    LLM_RETRY_JITTER=1
-#    LLM_RETRY_ON_AUTH=0              (auth_error normally not retried)
-#    LLM_RETRY_ON_PARSE=0
-#    LLM_EXTREME_COMPLEXITY_MODE=0    # When 1: 8 retries, 600s timeout, backoff 1.5
-#    LLM_ULTIMATE_COMPLEXITY_MODE=0   # When 1: 20 retries, 1800s timeout, backoff 1.8 (SUPERHUMAN MODE)
-#
-#    LLM_ENABLE_STREAM=0
-#    LLM_FORCE_MODEL=""               Force override model name
-#    LLM_SANITIZE_OUTPUT=0
-#    LLM_SANITIZE_REGEXES_JSON='["OPENAI_API_KEY=[A-Za-z0-9_-]+"]'
-#
-#    MODEL_COST_TABLE_JSON='{"openai/gpt-4o":{"prompt":0.000002,"completion":0.000006}}'
-#    MODEL_ALIAS_MAP_JSON='{"gpt-4o":"openai/gpt-4o"}'
-#
-#    LLM_COST_BUDGET_SESSION=0        (0 => disabled; else numeric USD upper limit)
-#    LLM_COST_BUDGET_HARD_FAIL=0      (if 1 and budget exceeded → raise error)
-#
-#    # Circuit Breaker
-#    LLM_BREAKER_WINDOW=60            (seconds)
-#    LLM_BREAKER_ERROR_THRESHOLD=6
-#    LLM_BREAKER_COOLDOWN=30
-#
-#    # Logging
-#    LLM_LOG_LEVEL=INFO
-#    LLM_LOG_ATTEMPTS=1
-#
-#  PUBLIC API
-#    get_llm_client()
-#    reset_llm_client()
-#    is_mock_client(client=None)
-#    llm_health()
-#    invoke_chat(...)
-#    invoke_chat_stream(... generator ...)
-#    register_llm_pre_hook(fn)
-#    register_llm_post_hook(fn)
-#
-#  RESPONSE ENVELOPE (invoke_chat)
-#    {
-#      "content": str,
-#      "tool_calls": list|None,
-#      "usage": {prompt_tokens, completion_tokens, total_tokens},
-#      "model": str,
-#      "provider": str|None,
-#      "latency_ms": float,
-#      "cost": float|None,
-#      "raw": <original completion object>,
-#      "meta": {
-#          "attempts": int,
-#          "forced_model": bool,
-#          "http_fallback": bool|None,
-#          "build_seq": int,
-#          "stream": bool,
-#          "start_ts": float,
-#          "end_ts": float,
-#          "circuit_breaker_open": bool,
-#          "retry_schedule": [<floats>]
-#      }
-#    }
-#
-#  LICENSE / NOTE
-#    Internal proprietary orchestration layer snippet – adapt carefully.
-# =================================================================================================
+# app/services/llm_client_service.py
+"""
+LLM Client Service - Pure FastAPI/Python Edition
+================================================
+Central authoritative gateway for all LLM invocations.
+Refactored to be completely independent of Flask globals.
+Uses `pydantic-settings` for configuration via `app.core.config`.
+"""
 
 from __future__ import annotations
 
@@ -119,43 +17,25 @@ import threading
 import time
 import uuid
 from collections.abc import Callable, Generator
-from typing import Any
-
-# --------------------------------------------------------------------------------------
-# Optional dependencies
-# --------------------------------------------------------------------------------------
-try:
-    import openai  # Modern SDK (v1.x with class OpenAI) OR legacy structure
-except Exception:  # pragma: no cover
-    openai = None
-try:
-    import requests  # For HTTP fallback
-except Exception:  # pragma: no cover
-    requests = None
-
+from typing import Any, Optional
 import contextlib
 import logging
 
-current_app = None
+# Use requests for HTTP fallback if available
+try:
+    import requests  # type: ignore
+except ImportError:
+    requests = None  # type: ignore
 
-def has_app_context() -> bool:
-    return False
+try:
+    import openai
+except ImportError:
+    openai = None  # type: ignore
 
 # --------------------------------------------------------------------------------------
 # Logging
 # --------------------------------------------------------------------------------------
-_LOG = logging.getLogger("llm.client.service")
-_level = os.getenv("LLM_LOG_LEVEL", "INFO").upper()
-try:
-    _LOG.setLevel(getattr(logging, _level, logging.INFO))
-except Exception:
-    _LOG.setLevel(logging.INFO)
-if not _LOG.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][llm.client] %(message)s"))
-    _LOG.addHandler(_h)
-
-_LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
+_LOG = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------------------
 # GLOBAL SINGLETON STATE
@@ -168,7 +48,6 @@ _CLIENT_BUILD_SEQ = 0
 # ======================================================================================
 # MOCK CLIENT
 # ======================================================================================
-
 
 class MockLLMClient:
     """
@@ -183,21 +62,21 @@ class MockLLMClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: MockLLMClient):
+        def __init__(self, parent: "MockLLMClient"):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: MockLLMClient):
+            def __init__(self, parent: "MockLLMClient"):
                 self._parent = parent
 
             def create(
                 self,
                 model: str,
                 messages: list[dict[str, str]],
-                tools=None,
-                tool_choice=None,
-                **kwargs,
-            ):
+                tools: Any = None,
+                tool_choice: Any = None,
+                **kwargs: Any,
+            ) -> Any:
                 self._parent._calls += 1
                 last_user = ""
                 for m in reversed(messages):
@@ -216,7 +95,7 @@ class MockLLMClient:
                         self.tool_calls = None
 
                 class _Choice:
-                    def __init__(self, msg):
+                    def __init__(self, msg: _Msg):
                         self.message = msg
 
                 prompt_tokens = max(1, sum(len(m.get("content", "")) for m in messages) // 16)
@@ -231,11 +110,11 @@ class MockLLMClient:
                 return type("MockCompletion", (), {"choices": [_Choice(msg)], "usage": usage})()
 
         @property
-        def completions(self):
+        def completions(self) -> _CompletionsWrapper:
             return MockLLMClient._ChatWrapper._CompletionsWrapper(self._parent)
 
     @property
-    def chat(self):
+    def chat(self) -> _ChatWrapper:
         return MockLLMClient._ChatWrapper(self)
 
     def meta(self) -> dict[str, Any]:
@@ -248,11 +127,9 @@ class MockLLMClient:
             "id": self._id,
         }
 
-
 # ======================================================================================
 # FALLBACK HTTP CLIENT
 # ======================================================================================
-
 
 class _HttpFallbackClient:
     """
@@ -268,28 +145,28 @@ class _HttpFallbackClient:
         self._id = str(uuid.uuid4())
 
     class _ChatWrapper:
-        def __init__(self, parent: _HttpFallbackClient):
+        def __init__(self, parent: "_HttpFallbackClient"):
             self._parent = parent
 
         class _CompletionsWrapper:
-            def __init__(self, parent: _HttpFallbackClient):
+            def __init__(self, parent: "_HttpFallbackClient"):
                 self._parent = parent
 
             def create(
                 self,
                 model: str,
                 messages: list[dict[str, str]],
-                tools=None,
-                tool_choice=None,
+                tools: Any = None,
+                tool_choice: Any = None,
                 temperature: float = 0.7,
                 max_tokens: int | None = None,
-                **kwargs,
-            ):
+                **kwargs: Any,
+            ) -> Any:
                 self._parent._calls += 1
                 if requests is None:
                     raise RuntimeError("requests not available for HTTP fallback.")
                 url = f"{self._parent._base}/chat/completions"
-                payload = {
+                payload: dict[str, Any] = {
                     "model": model,
                     "messages": messages,
                 }
@@ -312,15 +189,13 @@ class _HttpFallbackClient:
                     raise RuntimeError(f"HTTP fallback request error: {e}")
 
                 if resp.status_code >= 400:
-                    # Enhanced error handling with better context
                     error_text = resp.text[:400] if resp.text else "No error details"
                     if resp.status_code == 500:
                         raise RuntimeError(
                             f"server_error_500: OpenRouter API returned internal server error. "
-                            f"This may be due to invalid API key, service issues, or request problems. "
                             f"Details: {error_text}"
                         )
-                    elif resp.status_code == 401 or resp.status_code == 403:
+                    elif resp.status_code in (401, 403):
                         raise RuntimeError(
                             f"authentication_error: Invalid or missing API key. "
                             f"Status {resp.status_code}: {error_text}"
@@ -344,12 +219,12 @@ class _HttpFallbackClient:
                 content = message.get("content", "")
 
                 class _Msg:
-                    def __init__(self, c):
+                    def __init__(self, c: str):
                         self.content = c
                         self.tool_calls = None
 
                 class _Choice:
-                    def __init__(self, msg):
+                    def __init__(self, msg: _Msg):
                         self.message = msg
 
                 usage_obj = data.get("usage") or {}
@@ -365,11 +240,11 @@ class _HttpFallbackClient:
                 )()
 
         @property
-        def completions(self):
+        def completions(self) -> _CompletionsWrapper:
             return _HttpFallbackClient._ChatWrapper._CompletionsWrapper(self._parent)
 
     @property
-    def chat(self):
+    def chat(self) -> _ChatWrapper:
         return _HttpFallbackClient._ChatWrapper(self)
 
     def meta(self) -> dict[str, Any]:
@@ -382,29 +257,18 @@ class _HttpFallbackClient:
             "base_url": self._base,
         }
 
-
 # ======================================================================================
 # INTERNAL CONFIG HELPERS
 # ======================================================================================
 
-
 def _read_config_key(key: str) -> str | None:
-    if has_app_context() and current_app:
-        try:
-            val = current_app.config.get(key)
-            if val is not None:
-                return str(val)
-        except Exception:
-            pass
+    """
+    Reads configuration from environment variables.
+    Previously fell back to Flask config; now strictly environment or Pydantic settings.
+    """
     return os.environ.get(key)
 
-
 def _resolve_api_credentials() -> dict[str, Any]:
-    """
-    Priority:
-      1) OPENROUTER_API_KEY (base default: https://openrouter.ai/api/v1)
-      2) OPENAI_API_KEY
-    """
     openrouter_key = _read_config_key("OPENROUTER_API_KEY")
     openai_key = _read_config_key("OPENAI_API_KEY")
     base_url_env = _read_config_key("LLM_BASE_URL")
@@ -419,21 +283,17 @@ def _resolve_api_credentials() -> dict[str, Any]:
         return {"provider": "openai", "api_key": openai_key, "base_url": base_url_env or None}
     return {"provider": None, "api_key": None, "base_url": None}
 
-
 def _should_force_mock() -> bool:
     return any(os.getenv(flag, "0") == "1" for flag in ("LLM_FORCE_MOCK", "LLM_MOCK_MODE"))
 
-
 def _bool_env(name: str) -> bool:
     return os.getenv(name, "0") == "1"
-
 
 # ======================================================================================
 # REAL CLIENT BUILDERS
 # ======================================================================================
 
-
-def _build_openai_modern_client(creds: dict[str, Any], timeout: float):
+def _build_openai_modern_client(creds: dict[str, Any], timeout: float) -> Any:
     if openai is None:
         return None
     try:
@@ -446,8 +306,7 @@ def _build_openai_modern_client(creds: dict[str, Any], timeout: float):
         _LOG.warning("Failed to build modern OpenAI client: %s", e)
         return None
 
-
-def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
+def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float) -> Any:
     if openai is None:
         return None
     if not hasattr(openai, "ChatCompletion"):
@@ -458,15 +317,16 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
             def create(
                 self,
                 model: str,
-                messages,
-                tools=None,
-                tool_choice=None,
-                temperature=0.7,
-                max_tokens=None,
-                **kwargs,
-            ):
+                messages: list[dict[str, str]],
+                tools: Any = None,
+                tool_choice: Any = None,
+                temperature: float = 0.7,
+                max_tokens: int | None = None,
+                **kwargs: Any,
+            ) -> Any:
                 try:
-                    resp = openai.ChatCompletion.create(
+                    # Legacy OpenAI usage (hypothetical if using very old lib version)
+                    resp = openai.ChatCompletion.create(  # type: ignore
                         model=model,
                         messages=messages,
                         temperature=temperature,
@@ -481,7 +341,7 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
                         self.tool_calls = None
 
                 class _Choice:
-                    def __init__(self, msg):
+                    def __init__(self, msg: _Msg):
                         self.message = msg
 
                 first = resp["choices"][0]["message"]["content"]
@@ -497,16 +357,16 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
                 )()
 
         @property
-        def completions(self):
+        def completions(self) -> _CompletionsWrapper:
             return _LegacyChatWrapper._CompletionsWrapper()
 
     class _LegacyClientWrapper:
-        def __init__(self):
+        def __init__(self) -> None:
             self.chat = _LegacyChatWrapper()
             self._created_at = time.time()
             self._id = str(uuid.uuid4())
 
-        def meta(self):
+        def meta(self) -> dict[str, Any]:
             return {"legacy": True, "created_at": self._created_at, "id": self._id}
 
     try:
@@ -518,8 +378,7 @@ def _build_openai_legacy_wrapper(creds: dict[str, Any], timeout: float):
         pass
     return _LegacyClientWrapper()
 
-
-def _build_real_client(creds: dict[str, Any], timeout: float):
+def _build_real_client(creds: dict[str, Any], timeout: float) -> Any:
     provider = creds["provider"]
     if provider not in ("openrouter", "openai"):
         return None
@@ -541,11 +400,9 @@ def _build_real_client(creds: dict[str, Any], timeout: float):
 
     return None
 
-
 # ======================================================================================
 # BUILD / FACTORY
 # ======================================================================================
-
 
 def _build_client() -> Any:
     global _CLIENT_BUILD_SEQ
@@ -553,15 +410,12 @@ def _build_client() -> Any:
     build_id = _CLIENT_BUILD_SEQ
 
     creds = _resolve_api_credentials()
-    # SUPERHUMAN TIMEOUT - Extreme mode allows up to 10 minutes for very complex questions
-    # SUPERHUMAN TIMEOUT CONFIGURATION
-    # Ultimate mode: 1800s (30 minutes) - for questions that MUST be answered
-    # Extreme mode: 600s (10 minutes) - for very complex questions
-    # Normal mode: 180s (3 minutes) - for typical questions
+    _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+    _LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+
     default_timeout = 1800.0 if _LLM_ULTIMATE_MODE else (600.0 if _LLM_EXTREME_MODE else 180.0)
-    timeout_s = float(
-        _read_config_key("LLM_TIMEOUT_SECONDS") or default_timeout
-    )  # Adaptive timeout based on complexity mode
+    timeout_s = float(_read_config_key("LLM_TIMEOUT_SECONDS") or default_timeout)
+
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
     forced_mock = _should_force_mock()
 
@@ -619,11 +473,9 @@ def _build_client() -> Any:
     _LOG.info("[LLM] No API key detected; mock client in use.")
     return client
 
-
 # ======================================================================================
 # PUBLIC CORE ACCESS
 # ======================================================================================
-
 
 def get_llm_client() -> Any:
     global _CLIENT_SINGLETON
@@ -640,87 +492,20 @@ def get_llm_client() -> Any:
             _CLIENT_SINGLETON = _build_client()
         return _CLIENT_SINGLETON
 
-
 def reset_llm_client() -> None:
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
         _CLIENT_META.clear()
 
-
 def is_mock_client(client: Any | None = None) -> bool:
     c = client or _CLIENT_SINGLETON
     return isinstance(c, MockLLMClient)
-
 
 # ======================================================================================
 # METRICS / STATE / COST / HOOKS / BREAKER
 # ======================================================================================
 
-# SUPERHUMAN RETRY CONFIGURATION - For extremely complex questions
-_LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-# ULTIMATE MODE: For questions that MUST be answered no matter what (like tech giants)
-_LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
-_LLM_MAX_RETRIES = int(
-    os.getenv(
-        "LLM_MAX_RETRIES", "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
-    )
-)
-_LLM_RETRY_BACKOFF_BASE = float(
-    os.getenv(
-        "LLM_RETRY_BACKOFF_BASE",
-        "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3"),
-    )
-)
-_LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
-_LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
-_LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
-_LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
-_LLM_RETRY_ON_AUTH = os.getenv("LLM_RETRY_ON_AUTH", "0") == "1"
-_LLM_RETRY_ON_PARSE = os.getenv("LLM_RETRY_ON_PARSE", "0") == "1"
-
-try:
-    _MODEL_COST_TABLE = json.loads(os.getenv("MODEL_COST_TABLE_JSON", "{}"))
-except Exception:
-    _MODEL_COST_TABLE = {}
-
-try:
-    _MODEL_ALIAS_MAP = json.loads(os.getenv("MODEL_ALIAS_MAP_JSON", "{}"))
-except Exception:
-    _MODEL_ALIAS_MAP = {}
-
-_COST_BUDGET_SESSION = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
-_COST_BUDGET_HARD_FAIL = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
-
-# Circuit Breaker
-_BREAKER_WINDOW = float(os.getenv("LLM_BREAKER_WINDOW", "60") or 60.0)
-_BREAKER_THRESHOLD = int(os.getenv("LLM_BREAKER_ERROR_THRESHOLD", "6") or 6)
-_BREAKER_COOLDOWN = float(os.getenv("LLM_BREAKER_COOLDOWN", "30") or 30.0)
-_BREAKER_STATE = {
-    "errors": [],  # list[timestamps]
-    "open_until": 0.0,  # timestamp if open
-    "open_events": 0,
-}
-
-# Sanitization regex list
-try:
-    _SANITIZE_REGEXES = json.loads(os.getenv("LLM_SANITIZE_REGEXES_JSON", "[]"))
-except Exception:
-    _SANITIZE_REGEXES = []
-
-_PRE_HOOKS: list[Callable[[dict[str, Any]], None]] = []
-_POST_HOOKS: list[Callable[[dict[str, Any], dict[str, Any]], None]] = []
-
-
-def register_llm_pre_hook(fn: Callable[[dict[str, Any]], None]) -> None:
-    _PRE_HOOKS.append(fn)
-
-
-def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None]) -> None:
-    _POST_HOOKS.append(fn)
-
-
-# Cumulative stats
 _LLMTOTAL = {
     "prompt_tokens": 0,
     "completion_tokens": 0,
@@ -732,13 +517,26 @@ _LLMTOTAL = {
     "cost_usd": 0.0,
 }
 _LAT_WIN = 300
-
 _SENSITIVE_MARKERS = ("OPENAI_API_KEY=", "sk-or-", "sk-")
 
+_PRE_HOOKS: list[Callable[[dict[str, Any]], None]] = []
+_POST_HOOKS: list[Callable[[dict[str, Any], dict[str, Any]], None]] = []
+
+# Circuit Breaker State
+_BREAKER_STATE: dict[str, Any] = {
+    "errors": [],  # list[timestamps]
+    "open_until": 0.0,  # timestamp if open
+    "open_events": 0,
+}
+
+def register_llm_pre_hook(fn: Callable[[dict[str, Any]], None]) -> None:
+    _PRE_HOOKS.append(fn)
+
+def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None]) -> None:
+    _POST_HOOKS.append(fn)
 
 def _classify_error(exc: Exception) -> str:
     msg = str(exc).lower()
-    # Check for specific error patterns (order matters - most specific first)
     if "server_error_500" in msg or "500" in msg or "internal server error" in msg:
         return "server_error"
     if "rate" in msg and "limit" in msg:
@@ -760,18 +558,26 @@ def _classify_error(exc: Exception) -> str:
         return "parse"
     return "unknown"
 
-
 def _retry_allowed(kind: str) -> bool:
+    _LLM_RETRY_ON_AUTH = os.getenv("LLM_RETRY_ON_AUTH", "0") == "1"
+    _LLM_RETRY_ON_PARSE = os.getenv("LLM_RETRY_ON_PARSE", "0") == "1"
+
     if kind == "auth_error" and not _LLM_RETRY_ON_AUTH:
         return False
     if kind == "parse" and not _LLM_RETRY_ON_PARSE:
         return False
-    return kind in ("rate_limit", "network", "timeout", "parse") or True  # 'unknown' fallback
-
+    return kind in ("rate_limit", "network", "timeout", "parse") or True
 
 def _estimate_cost(
     model: str, prompt_tokens: int | None, completion_tokens: int | None
 ) -> float | None:
+    try:
+        _MODEL_COST_TABLE = json.loads(os.getenv("MODEL_COST_TABLE_JSON", "{}"))
+        _MODEL_ALIAS_MAP = json.loads(os.getenv("MODEL_ALIAS_MAP_JSON", "{}"))
+    except Exception:
+        _MODEL_COST_TABLE = {}
+        _MODEL_ALIAS_MAP = {}
+
     if not model:
         return None
     model_key = _MODEL_ALIAS_MAP.get(model, model)
@@ -784,38 +590,45 @@ def _estimate_cost(
     ct = completion_tokens or 0
     return round(pt * p_rate + ct * c_rate, 6)
 
-
 def _sanitize(text: str) -> str:
+    _LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
     if not _LLM_SANITIZE_OUTPUT or not isinstance(text, str):
         return text
+
     sanitized = text.replace("\r", "")
     for marker in _SENSITIVE_MARKERS:
         if marker in sanitized:
             sanitized = sanitized.replace(marker, f"[REDACTED:{marker}]")
-    # Regex patterns
+
+    try:
+        _SANITIZE_REGEXES = json.loads(os.getenv("LLM_SANITIZE_REGEXES_JSON", "[]"))
+    except Exception:
+        _SANITIZE_REGEXES = []
+
     for pattern in _SANITIZE_REGEXES:
         with contextlib.suppress(Exception):
             sanitized = re.sub(pattern, "[REDACTED_PATTERN]", sanitized)
     return sanitized
 
-
 def _apply_force_model(payload: dict[str, Any]) -> None:
+    _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
     if _LLM_FORCE_MODEL:
         payload["model"] = _LLM_FORCE_MODEL
-
 
 def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
     for i in range(0, len(full_text), chunk_size):
         yield full_text[i : i + chunk_size]
 
-
 def _circuit_allowed() -> bool:
     now = time.time()
     return not _BREAKER_STATE["open_until"] > now
 
-
-def _note_error_for_breaker():
+def _note_error_for_breaker() -> None:
     now = time.time()
+    _BREAKER_WINDOW = float(os.getenv("LLM_BREAKER_WINDOW", "60") or 60.0)
+    _BREAKER_THRESHOLD = int(os.getenv("LLM_BREAKER_ERROR_THRESHOLD", "6") or 6)
+    _BREAKER_COOLDOWN = float(os.getenv("LLM_BREAKER_COOLDOWN", "30") or 30.0)
+
     _BREAKER_STATE["errors"].append(now)
     cutoff = now - _BREAKER_WINDOW
     _BREAKER_STATE["errors"] = [t for t in _BREAKER_STATE["errors"] if t >= cutoff]
@@ -829,17 +642,17 @@ def _note_error_for_breaker():
             _BREAKER_COOLDOWN,
         )
 
-
-def _maybe_close_breaker():
+def _maybe_close_breaker() -> None:
     now = time.time()
     if _BREAKER_STATE["open_until"] and _BREAKER_STATE["open_until"] <= now:
-        # Passive closure
         pass
 
-
-def _enforce_cost_budget(new_cost: float | None):
+def _enforce_cost_budget(new_cost: float | None) -> None:
     if not new_cost:
         return
+    _COST_BUDGET_SESSION = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
+    _COST_BUDGET_HARD_FAIL = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
+
     if _COST_BUDGET_SESSION <= 0:
         return
     projected = _LLMTOTAL["cost_usd"] + new_cost
@@ -852,11 +665,9 @@ def _enforce_cost_budget(new_cost: float | None):
             raise RuntimeError(msg)
         _LOG.warning("[LLM] %s (soft warn).", msg)
 
-
 # ======================================================================================
 # HIGH LEVEL INVOCATION
 # ======================================================================================
-
 
 def invoke_chat(
     model: str,
@@ -869,13 +680,29 @@ def invoke_chat(
     stream: bool | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any] | Generator[dict[str, Any], None, None]:
-    """
-    High-level resilient call.
-    If stream True (and enabled), returns generator that yields partial {"delta": "..."} pieces,
-    followed by final envelope on completion.
-    """
+
     if not _circuit_allowed():
         raise RuntimeError("LLM circuit breaker OPEN – rejecting invocation temporarily.")
+
+    _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+    _LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+
+    _LLM_MAX_RETRIES = int(
+        os.getenv(
+            "LLM_MAX_RETRIES", "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
+        )
+    )
+    _LLM_RETRY_BACKOFF_BASE = float(
+        os.getenv(
+            "LLM_RETRY_BACKOFF_BASE",
+            "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3"),
+        )
+    )
+    _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+    _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+    _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
+
+    _LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
 
     client = get_llm_client()
     start_build = time.time()
@@ -902,7 +729,7 @@ def invoke_chat(
     backoff = _LLM_RETRY_BACKOFF_BASE
     retry_schedule: list[float] = []
 
-    def _do_call():
+    def _do_call() -> Any:
         return client.chat.completions.create(
             model=payload["model"],
             messages=payload["messages"],
@@ -926,6 +753,7 @@ def invoke_chat(
                 pt = usage.get("prompt_tokens")
                 ct = usage.get("completion_tokens")
                 total = usage.get("total_tokens")
+
                 _LLMTOTAL["calls"] += 1
                 if pt:
                     _LLMTOTAL["prompt_tokens"] += pt
@@ -935,12 +763,14 @@ def invoke_chat(
                     _LLMTOTAL["total_tokens"] += total
                 _LLMTOTAL["latencies_ms"].append(latency_ms)
                 if len(_LLMTOTAL["latencies_ms"]) > _LAT_WIN:
-                    _LLMTOTAL["latencies_ms"] = _LLMTOTAL["latencies_ms"][-_LAT_WIN:]
+                    _LLMTOTAL["latencies_ms"][:] = _LLMTOTAL["latencies_ms"][-_LAT_WIN:]
+
                 content = _sanitize(content)
                 cost = _estimate_cost(payload["model"], pt, ct)
                 _enforce_cost_budget(cost)
                 if cost:
                     _LLMTOTAL["cost_usd"] += cost
+
                 envelope = {
                     "content": content,
                     "tool_calls": tool_calls,
@@ -998,42 +828,46 @@ def invoke_chat(
         return result
 
     def _stream_gen() -> Generator[dict[str, Any], None, None]:
-        # Simulated streaming: first full call → break content into deltas.
-        # After simulation, we still produce a final envelope (fresh call or reuse).
         envelope = _complete_once()
         full = envelope["content"]
         for chunk in _maybe_stream_simulated(full):
             yield {"delta": _sanitize(chunk)}
-        # Produce final (mark stream)
         envelope["meta"]["stream"] = True
         _maybe_close_breaker()
         yield envelope
 
     return _stream_gen()
 
-
-def invoke_chat_stream(*args, **kwargs) -> Generator[dict[str, Any], None, None]:
-    """
-    Explicit streaming helper. Forces stream=True.
-    """
+def invoke_chat_stream(*args: Any, **kwargs: Any) -> Generator[dict[str, Any], None, None]:
     kwargs["stream"] = True
     result = invoke_chat(*args, **kwargs)
     if not isinstance(result, Generator):
         raise RuntimeError("invoke_chat_stream expected a generator; streaming not enabled.")
     return result
 
-
-# ======================================================================================
-# HEALTH & SNAPSHOT
-# ======================================================================================
-
-
 def llm_health() -> dict[str, Any]:
     client = _CLIENT_SINGLETON
+    _BREAKER_WINDOW = float(os.getenv("LLM_BREAKER_WINDOW", "60") or 60.0)
+    _BREAKER_THRESHOLD = int(os.getenv("LLM_BREAKER_ERROR_THRESHOLD", "6") or 6)
+    _BREAKER_COOLDOWN = float(os.getenv("LLM_BREAKER_COOLDOWN", "30") or 30.0)
+
+    _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+    _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
+    _LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
+    _LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
+    _COST_BUDGET_SESSION = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
+    _COST_BUDGET_HARD_FAIL = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
+
+    try:
+        _MODEL_COST_TABLE = json.loads(os.getenv("MODEL_COST_TABLE_JSON", "{}"))
+        _MODEL_ALIAS_MAP = json.loads(os.getenv("MODEL_ALIAS_MAP_JSON", "{}"))
+    except Exception:
+        _MODEL_COST_TABLE = {}
+        _MODEL_ALIAS_MAP = {}
+
     base = {
         "initialized": client is not None,
         "meta": dict(_CLIENT_META),
-        "has_app_context": has_app_context(),
         "env_openrouter_key": bool(os.getenv("OPENROUTER_API_KEY")),
         "env_openai_key": bool(os.getenv("OPENAI_API_KEY")),
         "forced_mock": _should_force_mock(),
@@ -1048,8 +882,10 @@ def llm_health() -> dict[str, Any]:
         base["client_details"] = client.meta()
     else:
         base["client_kind"] = "real_or_legacy"
+
     lat = _LLMTOTAL["latencies_ms"]
     avg_lat = round(sum(lat) / len(lat), 2) if lat else None
+
     base["cumulative"] = {
         "prompt_tokens": _LLMTOTAL["prompt_tokens"],
         "completion_tokens": _LLMTOTAL["completion_tokens"],
@@ -1086,24 +922,6 @@ def llm_health() -> dict[str, Any]:
     }
     return base
 
-
-# ======================================================================================
-# INTERNAL / DEBUG UTILS
-# ======================================================================================
-
-
-def _debug_snapshot() -> dict[str, Any]:
-    return {
-        "client_kind": llm_health().get("client_kind"),
-        "cumulative": llm_health().get("cumulative"),
-        "breaker": llm_health().get("circuit_breaker"),
-    }
-
-
-# ======================================================================================
-# EXPORTS
-# ======================================================================================
-
 __all__ = [
     "get_llm_client",
     "reset_llm_client",
@@ -1114,47 +932,3 @@ __all__ = [
     "register_llm_pre_hook",
     "register_llm_post_hook",
 ]
-
-# ======================================================================================
-# SELF-TEST (manual execution)
-# ======================================================================================
-if __name__ == "__main__":  # pragma: no cover
-    print("=== LLM Client Service Self-Test (v4.7.0) ===")
-    c1 = get_llm_client()
-    print("Client Type:", type(c1))
-    print("Health (initial):", json.dumps(llm_health(), ensure_ascii=False, indent=2))
-
-    try:
-        resp = invoke_chat(
-            model="test-model",
-            messages=[
-                {"role": "system", "content": "You are test."},
-                {"role": "user", "content": "Say ONLY OK."},
-            ],
-        )
-        if isinstance(resp, dict):
-            print("Response content:", resp.get("content"))
-            print("Usage:", resp.get("usage"))
-            print("Meta:", resp.get("meta"))
-        else:
-            print("Streaming generator unexpected in self-test (skipped).")
-    except Exception as exc:
-        print("Invocation failed:", exc)
-
-    # Streaming simulation (if enabled)
-    if _LLM_ENABLE_STREAM:
-        print("\n-- Streaming Test --")
-        try:
-            for part in invoke_chat_stream(
-                model="test-model", messages=[{"role": "user", "content": "Stream test please."}]
-            ):
-                print("STREAM PART:", part)
-        except Exception as se:
-            print("Streaming failed:", se)
-
-    print("After calls -> Health:", json.dumps(llm_health(), ensure_ascii=False, indent=2))
-    reset_llm_client()
-    print("After reset -> Health:", json.dumps(llm_health(), ensure_ascii=False, indent=2))
-# =================================================================================================
-# END OF FILE
-# =================================================================================================

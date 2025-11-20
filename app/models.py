@@ -2,19 +2,18 @@
 from __future__ import annotations
 
 import enum
-import logging
-import os
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, Text, func
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from typing import List
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 # Setup password hashing
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -27,6 +26,50 @@ class MessageRole(str, enum.Enum):
     ASSISTANT = "assistant"
     TOOL = "tool"
     SYSTEM = "system"
+
+class MissionStatus(str, enum.Enum):
+    PENDING = "pending"
+    PLANNING = "planning"
+    PLANNED = "planned"
+    RUNNING = "running"
+    ADAPTING = "adapting"
+    SUCCESS = "success"
+    FAILED = "failed"
+    CANCELED = "canceled"
+
+class PlanStatus(str, enum.Enum):
+    DRAFT = "draft"
+    VALID = "valid"
+    INVALID = "invalid"
+    SELECTED = "selected"
+    ABANDONED = "abandoned"
+
+class TaskStatus(str, enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    RETRY = "retry"
+    SKIPPED = "skipped"
+
+class MissionEventType(str, enum.Enum):
+    CREATED = "mission_created"
+    ARCHITECTURE_CLASSIFIED = "architecture_classified"
+    PLAN_SELECTED = "plan_selected"
+    EXECUTION_STARTED = "execution_started"
+    TASK_STARTED = "task_started"
+    TASK_COMPLETED = "task_completed"
+    TASK_FAILED = "task_failed"
+    REPLAN_TRIGGERED = "replan_triggered"
+    REPLAN_APPLIED = "replan_applied"
+    RISK_SUMMARY = "risk_summary"
+    MISSION_COMPLETED = "mission_completed"
+    MISSION_FAILED = "mission_failed"
+    FINALIZED = "mission_finalized"
+
+# ==============================================================================
+# MODELS
+# ==============================================================================
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -44,12 +87,12 @@ class User(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     )
 
-    # Relationships - using sa_relationship to be explicit and avoid ambiguity
+    # Relationships
     admin_conversations: List["AdminConversation"] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
     missions: List["Mission"] = Relationship(
-        sa_relationship=relationship("Mission", back_populates="user")
+        sa_relationship=relationship("Mission", back_populates="initiator")
     )
 
     def set_password(self, password: str):
@@ -68,6 +111,10 @@ class AdminConversation(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
 
     # Relationships
     user: "User" = Relationship(
@@ -83,6 +130,10 @@ class AdminMessage(SQLModel, table=True):
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole = Field(sa_column=Column(SAEnum(MessageRole)))
     content: str = Field(sa_column=Column(Text))
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
 
     # Relationships
     conversation: "AdminConversation" = Relationship(
@@ -92,54 +143,120 @@ class AdminMessage(SQLModel, table=True):
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
     id: Optional[int] = Field(default=None, primary_key=True)
-    objective: str
-    user_id: int = Field(foreign_key="users.id", index=True)
+    objective: str = Field(sa_column=Column(Text))
+    status: MissionStatus = Field(default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus)))
+    initiator_id: int = Field(foreign_key="users.id", index=True)
+    active_plan_id: Optional[int] = Field(default=None, foreign_key="mission_plans.id")
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
 
     # Relationships
-    user: "User" = Relationship(
+    initiator: "User" = Relationship(
         sa_relationship=relationship("User", back_populates="missions")
     )
     tasks: List["Task"] = Relationship(
-        sa_relationship=relationship("Task", back_populates="mission")
+        sa_relationship=relationship("Task", back_populates="mission", foreign_keys="[Task.mission_id]")
     )
     mission_plans: List["MissionPlan"] = Relationship(
-        sa_relationship=relationship("MissionPlan", back_populates="mission")
+        sa_relationship=relationship("MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]")
     )
-    mission_events: List["MissionEvent"] = Relationship(
+    events: List["MissionEvent"] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
-    )
-
-class MissionEvent(SQLModel, table=True):
-    __tablename__ = "mission_events"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    event: str
-    mission_id: int = Field(foreign_key="missions.id", index=True)
-
-    # Relationships
-    mission: "Mission" = Relationship(
-        sa_relationship=relationship("Mission", back_populates="mission_events")
     )
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
     id: Optional[int] = Field(default=None, primary_key=True)
-    plan: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
+    version: int = Field(default=1)
+    planner_name: str = Field(max_length=100)
+    status: PlanStatus = Field(default=PlanStatus.DRAFT, sa_column=Column(SAEnum(PlanStatus)))
+    score: float = Field(default=0.0)
+    rationale: Optional[str] = Field(sa_column=Column(Text))
+    # Avoid JSONB for SQLite compat
+    raw_json: Optional[str] = Field(sa_column=Column(Text))
+    stats_json: Optional[str] = Field(sa_column=Column(Text))
+    warnings_json: Optional[str] = Field(sa_column=Column(Text))
+    content_hash: Optional[str] = Field(max_length=64)
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
 
     # Relationships
     mission: "Mission" = Relationship(
-        sa_relationship=relationship("Mission", back_populates="mission_plans")
+        sa_relationship=relationship("Mission", back_populates="mission_plans", foreign_keys=[mission_id])
+    )
+    tasks: List["Task"] = Relationship(
+        sa_relationship=relationship("Task", back_populates="plan")
     )
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
     id: Optional[int] = Field(default=None, primary_key=True)
-    description: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
+    plan_id: Optional[int] = Field(default=None, foreign_key="mission_plans.id", index=True)
+    task_key: str = Field(max_length=50)
+    description: Optional[str] = Field(sa_column=Column(Text))
+    tool_name: Optional[str] = Field(max_length=100)
+    # Avoid JSONB for SQLite compat, use JSON if available or Text
+    tool_args_json: Optional[Any] = Field(default=None, sa_column=Column(Text)) # Postgres specific or use string
+    status: TaskStatus = Field(default=TaskStatus.PENDING, sa_column=Column(SAEnum(TaskStatus)))
+    attempt_count: int = Field(default=0)
+    max_attempts: int = Field(default=3)
+    priority: int = Field(default=0)
+    risk_level: Optional[str] = Field(max_length=50)
+    criticality: Optional[str] = Field(max_length=50)
+    depends_on_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
+    result_text: Optional[str] = Field(sa_column=Column(Text))
+    result_meta_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
+    error_text: Optional[str] = Field(sa_column=Column(Text))
+
+    started_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
+    finished_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
+    next_retry_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
+    duration_ms: Optional[int] = Field(default=0)
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
 
     # Relationships
     mission: "Mission" = Relationship(
-        sa_relationship=relationship("Mission", back_populates="tasks")
+        sa_relationship=relationship("Mission", back_populates="tasks", foreign_keys=[mission_id])
+    )
+    plan: "MissionPlan" = Relationship(
+        sa_relationship=relationship("MissionPlan", back_populates="tasks", foreign_keys=[plan_id])
+    )
+
+class MissionEvent(SQLModel, table=True):
+    __tablename__ = "mission_events"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    mission_id: int = Field(foreign_key="missions.id", index=True)
+    event_type: MissionEventType = Field(sa_column=Column(SAEnum(MissionEventType)))
+    payload_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
+
+    # Relationships
+    mission: "Mission" = Relationship(
+        sa_relationship=relationship("Mission", back_populates="events")
     )
 
 class PromptTemplate(SQLModel, table=True):
@@ -163,17 +280,25 @@ class GeneratedPrompt(SQLModel, table=True):
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
+# Helpers
+def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None):
+    import json
+    evt = MissionEvent(
+        mission_id=mission.id,
+        event_type=event_type,
+        payload_json=json.dumps(payload)
+    )
+    if session:
+        session.add(evt)
 
-# ------------------------------------------------------------------------------
-# Model Rebuild & Validation
-# ------------------------------------------------------------------------------
+def update_mission_status(mission: Mission, status: MissionStatus, note: str | None = None, session=None):
+    mission.status = status
+    mission.updated_at = utc_now()
+
+# Rebuild models for forward refs
 import sys
 import traceback
-
 try:
-    # In Pydantic v2 / SQLModel latest, model_rebuild() is the standard way
-    # to resolve forward references.
     SQLModel.model_rebuild()
-except Exception as e:
-    print("SQLModel.model_rebuild() failed:", file=sys.stderr)
+except Exception:
     traceback.print_exc()

@@ -296,7 +296,7 @@ class CircuitBreakerService:
                 if state.failure_count >= self.config.failure_threshold:
                     state.state = CircuitState.OPEN
                     state.opened_at = datetime.now(UTC)
-                    current_app.logger.warning(
+                    logging.getLogger(__name__).warning(
                         f"Circuit breaker {service_id}: {state.state.value} -> OPEN "
                         f"(failures: {state.failure_count})"
                     )

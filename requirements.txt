@@ -1,56 +1,36 @@
-# Core ASGI Framework
-fastapi>=0.100.0
-gunicorn>=21.2.0
-uvicorn[standard]>=0.22.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+sqlmodel==0.0.14
+sqlalchemy==2.0.25
+alembic==1.13.1
+asyncpg==0.29.0
+psycopg2-binary==2.9.9  # For sync operations if needed, or alembic
+aiosqlite==0.19.0
+python-multipart==0.0.6
+httpx==0.26.0
+requests==2.31.0
+passlib[argon2]==1.7.4
+argon2-cffi==23.1.0
+pyjwt==2.8.0
+python-jose[cryptography]==3.3.0
+prometheus-client==0.19.0
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-instrumentation-fastapi==0.43b0
+tenacity==8.2.3
+jinja2==3.1.3
 
-# Database Layer
-sqlalchemy>=2.0
-alembic>=1.10
-psycopg2-binary
-aiosqlite>=0.17.0
-
-# API & Data Validation
-pydantic>=2.0
-sqlmodel>=0.0.27
-jsonschema>=4.0.0
-
-# Asynchronous HTTP requests
-httpx>=0.24.0
-
-# Environment Management
-python-dotenv>=1.0.0
-
-# AI & ML
-torch==2.3.1
-transformers==4.41.2
-sentence-transformers>=2.6.1
-numpy>=1.26
-openai>=1.40.0
-
-# CLI & Utilities
-typer>=0.12.3
-rich>=13.7.0
-marshmallow>=3.20.0
-PyJWT>=2.7.0
-cryptography>=41.0.0
-psutil>=5.9.0
-passlib
-argon2-cffi
-
-# --- Development & Testing ---
-pytest
-pytest-asyncio
-requests
-Faker
-factory-boy>=3.2.0
-
-# --- Code Quality & Linting ---
-black>=24.1.1
-isort>=5.13.2
-ruff>=0.2.0
-mypy>=1.8.0
-types-requests>=2.31.0
-bandit[toml]>=1.7.6
-safety>=3.0.0
-pre-commit>=3.6.0
-pydantic-settings
+# Dev / Test
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-env==1.1.3
+factory-boy==3.3.0
+ruff==0.1.14
+mypy==1.8.0
+types-requests==2.31.0.20240106
+types-python-jose==3.3.4.20240106
+types-passlib==1.7.7.20240106
+black==24.1.1

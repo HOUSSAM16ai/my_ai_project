@@ -25,7 +25,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import g, request
+from fastapi import Request
 
 
 # ======================================================================================
@@ -255,12 +255,6 @@ class DistributedTracer:
         with self.lock:
             self.active_spans[span_id] = span
 
-        # Store in Flask request context
-        if self._is_flask_context():
-            if not hasattr(g, "trace_spans"):
-                g.trace_spans = []
-            g.trace_spans.append(span_id)
-
         return SpanContext(
             trace_id=trace_id,
             span_id=span_id,
@@ -478,54 +472,17 @@ class DistributedTracer:
         # Flask support removed
         return False
 
-
-# ======================================================================================
-# FLASK INTEGRATION
-# ======================================================================================
-def trace_request():
-    """Flask before_request handler for tracing"""
-    tracer = get_distributed_tracer()
-
-    # Extract parent context from headers
-    parent_context = TraceContextPropagator.extract(dict(request.headers))
-
-    # Start span for this request
-    span_context = tracer.start_trace(
-        operation_name=f"{request.method} {request.path}",
-        kind=SpanKind.SERVER,
-        parent_context=parent_context,
-    )
-
-    # Add request tags
-    tracer.add_span_tag(span_context, "http.method", request.method)
-    tracer.add_span_tag(span_context, "http.url", request.url)
-    tracer.add_span_tag(span_context, "http.target", request.path)
-
-    # Store in request context
-    g.trace_context = span_context
-
-
-def trace_response(response):
-    """Flask after_request handler for tracing"""
-    if not hasattr(g, "trace_context"):
-        return response
-
-    tracer = get_distributed_tracer()
-    span_context = g.trace_context
-
-    # Add response tags
-    tracer.add_span_tag(span_context, "http.status_code", response.status_code)
-
-    # Determine status
-    status_code = "OK" if response.status_code < 400 else "ERROR"
-
-    # End span
-    tracer.end_span(span_context, status_code=status_code)
-
-    # Inject trace context into response headers
-    TraceContextPropagator.inject(span_context, response.headers)
-
-    return response
+    async def trace_request(self, request: Request):
+        """FastAPI request tracer"""
+        parent_context = TraceContextPropagator.extract(dict(request.headers))
+        span_context = self.start_trace(
+            operation_name=f"{request.method} {request.url.path}",
+            kind=SpanKind.SERVER,
+            parent_context=parent_context,
+        )
+        self.add_span_tag(span_context, "http.method", request.method)
+        self.add_span_tag(span_context, "http.url", str(request.url))
+        return span_context
 
 
 # ======================================================================================

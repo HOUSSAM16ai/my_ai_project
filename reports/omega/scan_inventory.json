@@ -1,0 +1,283 @@
+app/templates/home.html:436:      <h3 class="feature-title">Request Deduplication</h3>
+app/templates/home.html:444:      <h3 class="feature-title">Request Batching</h3>
+app/templates/home.html:536:      <div class="tech-name">Request Batching</div>
+app/gateways/ai_service_gateway.py:30:from app.protocols.http_client import HttpClient, RequestsAdapter
+app/gateways/ai_service_gateway.py:111:            http_client=RequestsAdapter(),
+app/middleware/factory/middleware_factory.py:18:    RequestLoggerMiddleware,
+app/middleware/factory/middleware_factory.py:54:            RequestLoggerMiddleware(config=config.get("logging", {})),
+app/middleware/factory/middleware_factory.py:81:            RequestLoggerMiddleware(config=config.get("logging", {})),
+app/middleware/fastapi_error_handlers.py:2:from fastapi import Request, status
+app/middleware/fastapi_error_handlers.py:4:from fastapi.exceptions import RequestValidationError
+app/middleware/fastapi_error_handlers.py:7:async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+app/middleware/fastapi_error_handlers.py:18:async def validation_exception_handler(request: Request, exc: RequestValidationError):
+app/middleware/fastapi_error_handlers.py:29:async def general_exception_handler(request: Request, exc: Exception):
+app/middleware/fastapi_error_handlers.py:42:    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app/middleware/core/hooks.py:111:        def my_hook(ctx: RequestContext):
+app/middleware/core/hooks.py:124:        def my_hook(ctx: RequestContext, result: MiddlewareResult):
+app/middleware/core/hooks.py:137:        def my_hook(ctx: RequestContext, result: MiddlewareResult):
+app/middleware/core/hooks.py:150:        def my_hook(ctx: RequestContext, result: MiddlewareResult):
+app/middleware/core/__init__.py:21:from .context import RequestContext
+app/middleware/core/__init__.py:30:    "RequestContext",
+app/middleware/core/response_factory.py:10:Flask support has been removed.
+app/middleware/core/response_factory.py:48:             raise NotImplementedError("Flask is no longer supported.")
+app/middleware/core/context.py:6:سياق الطلب الموحد - Unified Request Context
+app/middleware/core/context.py:10:(Flask, FastAPI, Django, ASGI).
+app/middleware/core/context.py:23:class RequestContext:
+app/middleware/core/context.py:29:    Flask, FastAPI, Django, and raw ASGI applications.
+app/middleware/core/context.py:34:        path: Request path/endpoint
+app/middleware/core/context.py:35:        headers: Request headers as dict
+app/middleware/core/context.py:37:        body: Request body (parsed or raw)
+app/middleware/core/context.py:40:        timestamp: Request start timestamp
+app/middleware/core/context.py:48:    # Request identification
+app/middleware/core/context.py:53:    # Request data
+app/middleware/core/context.py:80:    def from_flask_request(cls, request) -> "RequestContext":
+app/middleware/core/context.py:82:        Create context from Flask request object
+app/middleware/core/context.py:85:            request: Flask request object
+app/middleware/core/context.py:88:            RequestContext instance
+app/middleware/core/context.py:102:    def from_fastapi_request(cls, request) -> "RequestContext":
+app/middleware/core/context.py:110:            RequestContext instance
+app/middleware/core/context.py:123:    def from_django_request(cls, request) -> "RequestContext":
+app/middleware/core/context.py:131:            RequestContext instance
+app/middleware/core/base_middleware.py:18:from .context import RequestContext
+app/middleware/core/base_middleware.py:60:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/core/base_middleware.py:68:            ctx: Request context containing all request information
+app/middleware/core/base_middleware.py:75:    async def process_request_async(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/core/base_middleware.py:83:            ctx: Request context
+app/middleware/core/base_middleware.py:90:    def on_success(self, ctx: RequestContext):
+app/middleware/core/base_middleware.py:97:            ctx: Request context
+app/middleware/core/base_middleware.py:101:    def on_error(self, ctx: RequestContext, error: Exception):
+app/middleware/core/base_middleware.py:108:            ctx: Request context
+app/middleware/core/base_middleware.py:113:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/core/base_middleware.py:120:            ctx: Request context
+app/middleware/core/base_middleware.py:125:    def should_process(self, ctx: RequestContext) -> bool:
+app/middleware/core/base_middleware.py:133:            ctx: Request context
+app/middleware/core/base_middleware.py:174:    def should_process(self, ctx: RequestContext) -> bool:
+app/middleware/core/base_middleware.py:215:    def on_success(self, ctx: RequestContext):
+app/middleware/core/base_middleware.py:220:    def on_error(self, ctx: RequestContext, error: Exception):
+app/middleware/core/result.py:106:    def bad_request(cls, message: str = "Bad Request") -> "MiddlewareResult":
+app/middleware/core/result.py:107:        """Create a 400 Bad Request result"""
+app/middleware/core/pipeline.py:20:from .context import RequestContext
+app/middleware/core/pipeline.py:97:        ctx: RequestContext,
+app/middleware/core/pipeline.py:98:        process_func: Callable[[RequestContext], MiddlewareResult],
+app/middleware/core/pipeline.py:122:    def run(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/core/pipeline.py:148:    async def run_async(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/core/pipeline.py:177:        ctx: RequestContext,
+app/middleware/core/pipeline.py:178:        process_func: Callable[[RequestContext], Awaitable[MiddlewareResult]],
+app/middleware/error_response_factory.py:99:            # FastAPI doesn't store debug config exactly like Flask, using a safe default or attribute check
+app/middleware/superhuman_security.py:2:from fastapi import Request, Response
+app/middleware/superhuman_security.py:4:from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+app/middleware/superhuman_security.py:11:        self, request: Request, call_next: RequestResponseEndpoint
+app/middleware/fastapi_observability.py:4:from fastapi import Request
+app/middleware/fastapi_observability.py:14:    async def dispatch(self, request: Request, call_next):
+app/middleware/fastapi_observability.py:37:            message=f"Request started: {operation_name}",
+app/middleware/fastapi_observability.py:103:            message=f"Request completed: {request.method} {request.url.path}",
+app/middleware/error_handling/recovery_middleware.py:12:from app.middleware.core.context import RequestContext
+app/middleware/error_handling/recovery_middleware.py:36:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/error_handling/recovery_middleware.py:41:            ctx: Request context
+app/middleware/error_handling/recovery_middleware.py:48:    def on_error(self, ctx: RequestContext, error: Exception):
+app/middleware/error_handling/recovery_middleware.py:53:            ctx: Request context
+app/middleware/error_handling/recovery_middleware.py:66:    def _get_fallback_response(self, ctx: RequestContext) -> dict | None:
+app/middleware/error_handling/recovery_middleware.py:71:            ctx: Request context
+app/middleware/cors/cors_middleware.py:12:from app.middleware.core.context import RequestContext
+app/middleware/cors/cors_middleware.py:42:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/cors/cors_middleware.py:47:            ctx: Request context
+app/middleware/observability/telemetry_bridge.py:15:from app.middleware.core.context import RequestContext
+app/middleware/observability/telemetry_bridge.py:71:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/telemetry_bridge.py:76:            ctx: Request context
+app/middleware/observability/telemetry_bridge.py:88:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/telemetry_bridge.py:93:            ctx: Request context
+app/middleware/observability/telemetry_bridge.py:109:        self, ctx: RequestContext, result: MiddlewareResult
+app/middleware/observability/telemetry_bridge.py:115:            ctx: Request context
+app/middleware/observability/performance_profiler.py:16:from app.middleware.core.context import RequestContext
+app/middleware/observability/performance_profiler.py:44:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/performance_profiler.py:49:            ctx: Request context
+app/middleware/observability/performance_profiler.py:57:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/performance_profiler.py:62:            ctx: Request context
+app/middleware/observability/analytics_adapter.py:15:from app.middleware.core.context import RequestContext
+app/middleware/observability/analytics_adapter.py:38:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/analytics_adapter.py:43:            ctx: Request context
+app/middleware/observability/analytics_adapter.py:54:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/analytics_adapter.py:59:            ctx: Request context
+app/middleware/observability/analytics_adapter.py:80:        self, ctx: RequestContext, result: MiddlewareResult
+app/middleware/observability/analytics_adapter.py:86:            ctx: Request context
+app/middleware/observability/__init__.py:25:from .request_logger import RequestLoggerMiddleware
+app/middleware/observability/__init__.py:30:    "RequestLoggerMiddleware",
+app/middleware/observability/anomaly_inspector.py:16:from app.middleware.core.context import RequestContext
+app/middleware/observability/anomaly_inspector.py:40:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/anomaly_inspector.py:45:            ctx: Request context
+app/middleware/observability/anomaly_inspector.py:53:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/anomaly_inspector.py:58:            ctx: Request context
+app/middleware/observability/observability_middleware.py:15:from app.middleware.core.context import RequestContext
+app/middleware/observability/observability_middleware.py:42:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/observability_middleware.py:47:            ctx: Request context
+app/middleware/observability/observability_middleware.py:93:            message=f"Request started: {operation_name}",
+app/middleware/observability/observability_middleware.py:106:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/observability_middleware.py:111:            ctx: Request context
+app/middleware/observability/observability_middleware.py:172:            message=f"Request completed: {ctx.method} {ctx.path}",
+app/middleware/observability/observability_middleware.py:182:    def on_error(self, ctx: RequestContext, error: Exception):
+app/middleware/observability/observability_middleware.py:187:            ctx: Request context
+app/middleware/observability/observability_middleware.py:196:                message=f"Request failed: {str(error)}",
+app/middleware/observability/request_logger.py:6:وسيط تسجيل الطلبات - Request Logger Middleware
+app/middleware/observability/request_logger.py:13:from app.middleware.core.context import RequestContext
+app/middleware/observability/request_logger.py:18:class RequestLoggerMiddleware(BaseMiddleware):
+app/middleware/observability/request_logger.py:20:    Request Logger Middleware
+app/middleware/observability/request_logger.py:29:    name = "RequestLogger"
+app/middleware/observability/request_logger.py:37:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/observability/request_logger.py:42:            ctx: Request context
+app/middleware/observability/request_logger.py:71:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/observability/request_logger.py:76:            ctx: Request context
+app/middleware/observability/request_logger.py:83:            message=f"Request completed: {ctx.method} {ctx.path}",
+app/middleware/observability/request_logger.py:99:            path: Request path
+app/middleware/security/zero_trust_middleware.py:13:from app.middleware.core.context import RequestContext
+app/middleware/security/zero_trust_middleware.py:40:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/zero_trust_middleware.py:45:            ctx: Request context
+app/middleware/security/policy_enforcer.py:15:from app.middleware.core.context import RequestContext
+app/middleware/security/policy_enforcer.py:40:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/policy_enforcer.py:45:            ctx: Request context
+app/middleware/security/policy_enforcer.py:78:            path: Request path
+app/middleware/security/policy_enforcer.py:94:    def _check_policy(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+app/middleware/security/policy_enforcer.py:99:            ctx: Request context
+app/middleware/security/security_headers.py:13:from app.middleware.core.context import RequestContext
+app/middleware/security/security_headers.py:60:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/security_headers.py:63:        Request processing always succeeds.
+app/middleware/security/security_headers.py:66:            ctx: Request context
+app/middleware/security/telemetry_guard.py:16:from app.middleware.core.context import RequestContext
+app/middleware/security/telemetry_guard.py:48:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/telemetry_guard.py:53:            ctx: Request context
+app/middleware/security/telemetry_guard.py:82:    def on_error(self, ctx: RequestContext, error: Exception):
+app/middleware/security/telemetry_guard.py:87:            ctx: Request context
+app/middleware/security/telemetry_guard.py:111:    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+app/middleware/security/telemetry_guard.py:116:            ctx: Request context
+app/middleware/security/waf_middleware.py:13:from app.middleware.core.context import RequestContext
+app/middleware/security/waf_middleware.py:39:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/waf_middleware.py:44:            ctx: Request context
+app/middleware/security/waf_middleware.py:64:                    message=f"Request blocked by WAF: {attack_type}"
+app/middleware/security/rate_limit_middleware.py:13:from app.middleware.core.context import RequestContext
+app/middleware/security/rate_limit_middleware.py:38:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/rate_limit_middleware.py:43:            ctx: Request context
+app/middleware/security/rate_limit_middleware.py:89:    def _get_user_tier(self, ctx: RequestContext) -> UserTier:
+app/middleware/security/rate_limit_middleware.py:94:            ctx: Request context
+app/middleware/security/ai_threat_middleware.py:13:from app.middleware.core.context import RequestContext
+app/middleware/security/ai_threat_middleware.py:39:    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+app/middleware/security/ai_threat_middleware.py:44:            ctx: Request context
+app/middleware/security/ai_threat_middleware.py:72:                        message="AI threat detection: Request blocked"
+app/protocols/http_client.py:43:class RequestsAdapter:
+app/static/js/superhuman-framework.js:14:      latency: [],  // Request latencies
+app/static/js/superhuman-framework.js:22:  startRequest() {
+app/static/js/superhuman-framework.js:37:  endRequest() {
+app/static/js/superhuman-framework.js:67:      totalRequests: this.metrics.latency.length
+app/static/js/superhuman-framework.js:109:    this.performanceMonitor.startRequest();
+app/static/js/superhuman-framework.js:199:    this.performanceMonitor.endRequest();
+app/static/js/superhuman-framework.js:298:class RequestDeduplicator {
+app/static/js/superhuman-framework.js:336:class RequestBatcher {
+app/static/js/superhuman-framework.js:396:  async update(id, optimisticData, actualRequest, rollbackFn) {
+app/static/js/superhuman-framework.js:403:      const result = await actualRequest();
+app/static/js/superhuman-framework.js:849:  RequestDeduplicator,
+app/static/js/superhuman-framework.js:850:  RequestBatcher,
+app/telemetry/unified_observability.py:13:from fastapi import Request
+app/telemetry/unified_observability.py:196:        request: Request | None = None,
+app/telemetry/unified_observability.py:293:    def set_baggage(self, key: str, value: str, request: Request | None = None):
+app/services/service_mesh_integration.py:11:#   - Request timeout management
+app/services/service_mesh_integration.py:497:                    f"Request failed (attempt {attempt + 1}/{retry_policy.max_retries + 1}), "
+app/services/superhuman_integration.py:418:- Requests/sec: {status["performance_metrics"]["scalability"]["requests_per_second"]:,}
+app/services/distributed_tracing.py:258:        # Store in Flask request context
+app/services/distributed_tracing.py:477:        """Check if running in Flask request context"""
+app/services/distributed_tracing.py:478:        # Flask support removed
+app/services/distributed_tracing.py:486:    """Flask before_request handler for tracing"""
+app/services/distributed_tracing.py:509:    """Flask after_request handler for tracing"""
+app/services/api_governance_service.py:43:    SERVER_SIDE_REQUEST_FORGERY = "API7:2023 Server Side Request Forgery"
+app/services/api_governance_service.py:240:            return False, f"Request size {request_size} exceeds limit {MAX_REQUEST_SIZE}"
+app/services/api_governance_service.py:254:        API7:2023 - Check Server Side Request Forgery
+app/services/model_serving_infrastructure.py:149:class ModelRequest:
+app/services/model_serving_infrastructure.py:211:        self._request_history: deque[ModelRequest] = deque(maxlen=10000)
+app/services/model_serving_infrastructure.py:321:        request = ModelRequest(
+app/services/api_first_platform_service.py:403:            request.headers.get("X-Request-Id")
+app/services/api_first_platform_service.py:423:            resp.headers["X-Request-Id"] = request_id
+app/services/api_gateway_chaos.py:299:                    current_app.logger.warning(
+app/services/service_catalog_service.py:157:        # Python FastAPI Microservice (Replaced Flask)
+app/services/domain_events.py:335:class ApiRequestReceived(DomainEvent):
+app/services/domain_events.py:389:class NotificationRequested(DomainEvent):
+app/services/domain_events.py:415:class DataExportRequested(DomainEvent):
+app/services/domain_events.py:478:    ApiRequestReceived,
+app/services/domain_events.py:481:    NotificationRequested,
+app/services/domain_events.py:482:    DataExportRequested,
+app/services/api_gateway_service.py:189:        # REST requests are already validated by Flask
+app/services/api_gateway_service.py:753:            # 4. Route Request (placeholder for actual upstream call)
+app/services/api_gateway_deployment.py:237:            current_app.logger.info(
+app/services/api_observability_service.py:28:from fastapi import Request, Response
+app/services/api_observability_service.py:36:class RequestMetrics:
+app/services/api_observability_service.py:148:        metrics = RequestMetrics(
+app/services/api_observability_service.py:437:            if isinstance(arg, Request):
+app/services/history_service.py:9:# Compatibility imports - removed Flask dependencies
+app/services/database_service.py:8:#   to web frameworks like Flask or FastAPI.
+app/services/database_service.py:14:#   - Replaces Flask-dependent globals with explicit dependencies.
+app/services/llm_client_service.py:139:current_app = None
+app/services/llm_client_service.py:141:def has_app_context() -> bool:
+app/services/llm_client_service.py:392:    if has_app_context() and current_app:
+app/services/llm_client_service.py:394:            val = current_app.config.get(key)
+app/services/llm_client_service.py:1036:        "has_app_context": has_app_context(),
+app/services/api_developer_portal_service.py:226:            title="Basic API Request (Python)",
+app/services/api_developer_portal_service.py:253:            title="Basic API Request (JavaScript)",
+app/services/api_developer_portal_service.py:625:    req, err := http.NewRequest(method, url, bytes.NewBuffer(reqBody))
+app/services/distributed_resilience_service.py:85:    """Request priority levels"""
+app/services/api_security_service.py:10:#   - Request signature verification (HMAC-SHA256)
+app/services/api_security_service.py:84:class RequestSignature:
+app/services/api_security_service.py:85:    """Request signature for verification"""
+app/services/master_agent_service.py:277:    # Use standard logging instead of Flask current_app.logger
+app/services/api_contract_service.py:607:                    "RequestSignature": {
+app/services/api_contract_service.py:615:            "security": [{"BearerAuth": []}, {"RequestSignature": []}],
+app/core/kernel_v2/compat_collapse.py:31:    """Mimics `flask.current_app`."""
+app/core/kernel_v2/compat_collapse.py:43:# --- New Mock Objects for Request and Jsonify ---
+app/core/kernel_v2/compat_collapse.py:45:class _CompatRequest(MagicMock):
+app/core/kernel_v2/compat_collapse.py:47:    A MagicMock that can stand in for the Flask request object.
+app/core/kernel_v2/compat_collapse.py:66:current_app = None
+app/core/kernel_v2/compat_collapse.py:68:request = _CompatRequest()
+app/core/kernel_v2/compat_collapse.py:73:    global g, current_app
+app/core/kernel_v2/compat_collapse.py:75:    current_app = _CompatCurrentApp(kernel)
+app/core/kernel_v2/state_engine.py:6:context-scoped state, replacing the need for Flask's `g` object.
+app/core/factories.py:30:from app.protocols.http_client import HttpClient, RequestsAdapter
+app/core/factories.py:55:    http_client: HttpClient = Depends(lambda: RequestsAdapter()),
+app/core/time.py:7:that expects a Flask-like application context.
+app/core/time.py:18:# Flask-like application context. It yields a database session from the
+app/overmind/planning/deep_indexer.py:314:    # معيار مبسط: ملف في services/ أو يحتوي بناء FastAPI/Blueprint/Router
+app/security/threat_detector.py:5:from fastapi import Request
+app/security/threat_detector.py:17:        self, request: Request, ip_address: str
+app/security/rate_limiter.py:5:from fastapi import HTTPException, Request, status
+app/security/rate_limiter.py:13:    async def __call__(self, request: Request):
+app/security/secure_auth.py:4:from fastapi import Request
+app/security/secure_auth.py:14:        self, email: str, password: str, request: Request
+app/security/waf.py:5:from fastapi import HTTPException, Request, status
+app/security/waf.py:18:    async def check_request(self, request: Request):
+app/security/waf.py:30:    async def _extract_all_params(self, request: Request) -> dict[str, Any]:
+app/security/zero_trust.py:2:from fastapi import HTTPException, Request, status
+app/security/zero_trust.py:10:    async def __call__(self, request: Request):
+app/security/owasp_validator.py:51:    A10_SSRF = "A10:2021 - Server-Side Request Forgery"
+app/api/middleware.py:1:from fastapi import FastAPI, Request
+app/api/middleware.py:6:    async def log_requests(request: Request, call_next):
+app/api/middleware.py:8:        print(f"Request: {request.method} {request.url}")
+app/api/exceptions.py:1:from fastapi import FastAPI, Request
+app/api/exceptions.py:7:    async def generic_handler(request: Request, exc: Exception):
+app/api/routers/security.py:7:class TokenRequest(BaseModel):
+app/api/routers/security.py:11:class TokenVerifyRequest(BaseModel):
+app/api/routers/security.py:19:async def generate_token(request: TokenRequest):
+app/api/routers/security.py:32:async def verify_token(request: TokenVerifyRequest):
+app/api/routers/ai_service.py:15:from fastapi import APIRouter, Depends, HTTPException, Request
+app/api/routers/ai_service.py:26:class ChatRequest(BaseModel):
+app/api/routers/ai_service.py:45:def get_current_user(request: Request):
+app/api/routers/ai_service.py:73:async def stream_chat(chat_request: ChatRequest, user_id: str = Depends(get_current_user)):
+app/api/routers/admin.py:16:class ChatRequest(BaseModel):
+app/api/routers/admin.py:17:    """Request model for the chat endpoint."""
+app/api/routers/admin.py:31:    chat_request: ChatRequest,
+app/api_docs.py:9:#   - Request/response examples
+app/api_docs.py:128:                "description": "Session-based authentication using Flask-Login",
+tests/test_services_standalone.py:10:# Test observability service directly without Flask context
+tests/test_services_standalone.py:21:    """Test metrics recording without Flask"""
+tests/test_separation_of_concerns.py:444:            remediation="Request user consent",
+tests/gateways/test_ai_gateway_smoke.py:128:    from app.protocols.http_client import RequestsAdapter
+tests/gateways/test_ai_gateway_smoke.py:130:    http_client = RequestsAdapter()
+tests/conftest.py:125:    Mock for legacy Flask 'app_context' fixture.
+tests/test_superhuman_streaming.py:13:# Mark all tests as not requiring Flask app
+tests/test_unified_observability.py:252:            message="Request started",
+tests/test_horizontal_scaling.py:209:        # Request from Europe should route to Europe server
+tests/test_api_first_platform.py:9:        # The service likely relies on something that was Flask-dependent.
+tests/test_world_class_api.py:407:        assert "RequestSignature" in spec["components"]["securitySchemes"]
