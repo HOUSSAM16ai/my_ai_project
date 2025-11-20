@@ -51,3 +51,6 @@ async def api_v1_health():
         },
         status_code=200,
     )
+
+# Expose the FastAPI app instance cleanly for Uvicorn
+app = kernel.app

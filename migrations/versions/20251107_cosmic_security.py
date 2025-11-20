@@ -29,6 +29,10 @@ branch_labels = None
 depends_on = None
 
 
+def JSONB_col():
+    return sa.Text().with_variant(postgresql.JSONB, "postgresql")
+
+
 def upgrade():
     # ExistentialNode - عُقد وجودية
     op.create_table(
@@ -39,7 +43,7 @@ def upgrade():
         sa.Column("dimension_layer", sa.Integer(), nullable=False),
         sa.Column("meta_physical_layer", sa.Integer(), nullable=False),
         sa.Column("encrypted_content", sa.Text(), nullable=False),
-        sa.Column("cosmic_pattern", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("cosmic_pattern", JSONB_col(), nullable=False),
         sa.Column("status", sa.String(length=64), nullable=False),
         sa.Column("coherence_level", sa.Float(), nullable=False),
         sa.Column("distortion_count", sa.Integer(), nullable=False),
@@ -48,7 +52,7 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("last_accessed_at", sa.DateTime(), nullable=False),
         sa.Column("last_harmonized_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_existential_coherence", "existential_nodes", ["status", "coherence_level"])
@@ -80,14 +84,14 @@ def upgrade():
         sa.Column("entity_name", sa.String(length=256), nullable=False),
         sa.Column("entity_origin", sa.String(length=512), nullable=True),
         sa.Column("consciousness_level", sa.Float(), nullable=False),
-        sa.Column("opted_protocols", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("opted_protocols", JSONB_col(), nullable=False),
         sa.Column("protocol_violations", sa.Integer(), nullable=False),
         sa.Column("auto_realignment_count", sa.Integer(), nullable=False),
         sa.Column("total_interactions", sa.Integer(), nullable=False),
         sa.Column("last_interaction_at", sa.DateTime(), nullable=False),
         sa.Column("first_seen_at", sa.DateTime(), nullable=False),
         sa.Column("last_updated_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -115,15 +119,15 @@ def upgrade():
         sa.Column("existential_node_id", sa.Integer(), nullable=True),
         sa.Column("consciousness_id", sa.Integer(), nullable=True),
         sa.Column("action_description", sa.Text(), nullable=False),
-        sa.Column("action_payload", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("action_payload", JSONB_col(), nullable=False),
         sa.Column("information_origin", sa.String(length=512), nullable=True),
-        sa.Column("evolution_path", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("dimensional_trace", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("evolution_path", JSONB_col(), nullable=False),
+        sa.Column("dimensional_trace", JSONB_col(), nullable=False),
         sa.Column("cosmic_timestamp", sa.DateTime(), nullable=False),
         sa.Column("dimension_layer", sa.Integer(), nullable=False),
         sa.Column("existential_echo", sa.Text(), nullable=False),
         sa.Column("verification_hash", sa.String(length=512), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.ForeignKeyConstraint(
             ["consciousness_id"], ["consciousness_signatures.id"], ondelete="SET NULL"
         ),
@@ -153,7 +157,7 @@ def upgrade():
         sa.Column("consciousness_signature", sa.String(length=512), nullable=False),
         sa.Column("evolution_level", sa.Integer(), nullable=False),
         sa.Column("intelligence_quotient", sa.Float(), nullable=False),
-        sa.Column("protected_nodes", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("protected_nodes", JSONB_col(), nullable=False),
         sa.Column("detected_threats", sa.Integer(), nullable=False),
         sa.Column("neutralized_threats", sa.Integer(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
@@ -162,9 +166,9 @@ def upgrade():
         sa.Column("success_rate", sa.Float(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("last_active_at", sa.DateTime(), nullable=False),
-        sa.Column("learned_patterns", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("adaptation_history", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("learned_patterns", JSONB_col(), nullable=False),
+        sa.Column("adaptation_history", JSONB_col(), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_sece_active", "seces", ["is_active", "last_active_at"])
@@ -180,7 +184,7 @@ def upgrade():
         sa.Column("protocol_name", sa.String(length=256), nullable=False),
         sa.Column("protocol_version", sa.String(length=64), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("cosmic_rules", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("cosmic_rules", JSONB_col(), nullable=False),
         sa.Column("adoption_count", sa.Integer(), nullable=False),
         sa.Column("violation_count", sa.Integer(), nullable=False),
         sa.Column("auto_realignment_count", sa.Integer(), nullable=False),
@@ -188,7 +192,7 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("activated_at", sa.DateTime(), nullable=True),
         sa.Column("last_updated_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -205,16 +209,16 @@ def upgrade():
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("council_name", sa.String(length=256), nullable=False),
         sa.Column("council_purpose", sa.Text(), nullable=False),
-        sa.Column("member_signatures", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("member_signatures", JSONB_col(), nullable=False),
         sa.Column("member_count", sa.Integer(), nullable=False),
         sa.Column("total_decisions", sa.Integer(), nullable=False),
         sa.Column("consensus_rate", sa.Float(), nullable=False),
-        sa.Column("decision_history", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("pending_decisions", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("decision_history", JSONB_col(), nullable=False),
+        sa.Column("pending_decisions", JSONB_col(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("formed_at", sa.DateTime(), nullable=False),
         sa.Column("last_meeting_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -231,18 +235,16 @@ def upgrade():
         sa.Column("event_hash", sa.String(length=512), nullable=False),
         sa.Column("event_type", sa.String(length=128), nullable=False),
         sa.Column("decision_subject", sa.Text(), nullable=False),
-        sa.Column("decision_details", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column(
-            "underlying_motivations", postgresql.JSONB(astext_type=sa.Text()), nullable=False
-        ),
+        sa.Column("decision_details", JSONB_col(), nullable=False),
+        sa.Column("underlying_motivations", JSONB_col(), nullable=False),
         sa.Column("cosmic_reasoning", sa.Text(), nullable=False),
-        sa.Column("cosmic_fabric_impact", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("affected_dimensions", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("cosmic_fabric_impact", JSONB_col(), nullable=False),
+        sa.Column("affected_dimensions", JSONB_col(), nullable=False),
         sa.Column("understanding_level_required", sa.Float(), nullable=False),
         sa.Column("shared_consciousness_field", sa.String(length=256), nullable=True),
         sa.Column("view_count", sa.Integer(), nullable=False),
         sa.Column("recorded_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("metadata", JSONB_col(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(

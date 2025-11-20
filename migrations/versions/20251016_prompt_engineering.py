@@ -8,13 +8,17 @@ Create Date: 2025-10-16 17:30:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers, used by Alembic.
 revision = "20251016_prompt_engineering"
 down_revision = "20251011_admin_chat"
 branch_labels = None
 depends_on = None
+
+
+def JSONB_col():
+    return sa.Text().with_variant(JSONB, "postgresql")
 
 
 def upgrade():
@@ -26,9 +30,9 @@ def upgrade():
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("template_content", sa.Text(), nullable=False),
         sa.Column("category", sa.String(length=100), nullable=False),
-        sa.Column("few_shot_examples", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("rag_config", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("variables", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("few_shot_examples", JSONB_col(), nullable=True),
+        sa.Column("rag_config", JSONB_col(), nullable=True),
+        sa.Column("variables", JSONB_col(), nullable=True),
         sa.Column("usage_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("success_rate", sa.Float(), nullable=True),
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
@@ -68,8 +72,8 @@ def upgrade():
         sa.Column("user_description", sa.Text(), nullable=False),
         sa.Column("template_id", sa.Integer(), nullable=True),
         sa.Column("generated_prompt", sa.Text(), nullable=False),
-        sa.Column("context_snippets", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("generation_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("context_snippets", JSONB_col(), nullable=True),
+        sa.Column("generation_metadata", JSONB_col(), nullable=True),
         sa.Column("rating", sa.Integer(), nullable=True),
         sa.Column("feedback_text", sa.Text(), nullable=True),
         sa.Column("conversation_id", sa.Integer(), nullable=True),

@@ -8,16 +8,13 @@ Create Date: 2025-08-26 12:21:56.169594
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
-# --- [THE CRITICAL FIX - STEP 1: IMPORT] ---
-# We explicitly import our custom type, making it known to this script.
-try:
-    # This path is correct when running from the root flask command
-    from app.models import JSONB_or_JSON
-except ImportError:
-    # Fallback for environments where the path might be different, though less likely
-    # This part is defensive and might not be strictly needed but adds robustness
-    from app.models import JSONB_or_JSON
+
+# Helper for JSON/JSONB compatibility (redefined locally to avoid import errors)
+def JSONB_or_JSON():
+    return sa.Text().with_variant(JSONB, "postgresql")
+
 
 # revision identifiers, used by Alembic.
 revision = "0fe9bd3b1f3c"

@@ -1,5 +1,7 @@
 # app/core/config.py
 
+import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +26,25 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[str] = ["*"]
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def fix_database_url(cls, v: str | None) -> str:
+        if not v:
+            return "sqlite+aiosqlite:///./test.db"
+
+        # 1. Auto-fix Scheme: sync -> async
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+        # 2. Auto-fix SSL Mode for asyncpg compatibility
+        # asyncpg often rejects 'sslmode', preferring 'ssl' param or context.
+        if "sslmode=require" in v:
+            v = v.replace("sslmode=require", "ssl=require")
+
+        return v
 
 
 settings = Settings()

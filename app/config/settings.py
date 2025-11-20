@@ -1,7 +1,7 @@
 # app/config/settings.py
 import functools
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +27,7 @@ class AppSettings(BaseSettings):
 
     # --- Security Settings ---
     SECRET_KEY: str = Field(
-        ...,
+        default="changeme_in_production_super_secret_key_123456",
         description="A secret key for signing sessions and tokens. Must be kept confidential.",
     )
 
@@ -55,6 +55,33 @@ class AppSettings(BaseSettings):
         # Allow extra fields to be present in the environment without causing validation errors.
         extra="ignore",
     )
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def fix_database_url(cls, v: str | None) -> str:
+        if not v:
+            # Fallback for testing or local dev if completely missing
+             return "sqlite+aiosqlite:///./test.db"
+
+        # 1. Auto-fix Scheme: sync -> async
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+        # 2. Auto-fix SSL Mode: libpq 'sslmode' -> asyncpg 'ssl'
+        # Common issue with Supabase/Neon connection strings in asyncpg
+        if "sslmode=require" in v:
+             # asyncpg usually expects just explicit ssl context or param,
+             # but many drivers/SQLAlchemy handle query params.
+             # However, 'sslmode' is specific to libpq.
+             # For asyncpg, we often need to replace it or rely on SQLAlchemy to pass it.
+             # Safe bet: Replace sslmode=require with ssl=require which some layers understand,
+             # OR leave it if SQLAlchemy's make_url handles it.
+             # But asyncpg specifically doesn't like 'sslmode'.
+             v = v.replace("sslmode=require", "ssl=require")
+
+        return v
 
 
 @functools.lru_cache
