@@ -51,11 +51,18 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
     """Synchronous client for standard tests"""
-    # The app might need overrides for DB here if we were using Dependency Injection properly in routes
-    # For now, we assume the app uses global session or similar for legacy reasons,
-    # but we are moving to DI.
+    from app.core.database import get_db
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    kernel.app.dependency_overrides[get_db] = override_get_db
+
     with TestClient(kernel.app) as c:
         yield c
+
+    kernel.app.dependency_overrides.clear()
 
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
