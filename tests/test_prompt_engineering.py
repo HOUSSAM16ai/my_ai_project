@@ -1,27 +1,28 @@
 # tests/test_prompt_engineering.py
 import pytest
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
 from app.services.prompt_engineering_service import PromptEngineeringService
-
 
 @pytest.fixture
 def service() -> PromptEngineeringService:
     return PromptEngineeringService()
 
-def test_generate_prompt_success(service: PromptEngineeringService, session: Session):
+@pytest.mark.asyncio
+async def test_generate_prompt_success(service: PromptEngineeringService, session: AsyncSession):
     user = User(full_name="Test User", email="test@example.com")
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    await session.commit()
+    await session.refresh(user)
 
-    result = service.generate_prompt(
+    result = await service.generate_prompt(
         db=session,
-        user_description="Create a test prompt",
         user=user,
+        template_name="test_template",
+        variables={"prompt": "Hello World"},
+        user_description="Create a test prompt",
     )
 
-    assert result["status"] == "success"
-    assert "prompt_id" in result
-    assert "generated_prompt" in result
+    assert isinstance(result, str)
+    assert "Default template: Hello World" == result

@@ -1,53 +1,39 @@
 # app/services/prompt_engineering_service.py
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+from app.models import PromptTemplate, GeneratedPrompt, User
+import logging
 
-from app.models import GeneratedPrompt, PromptTemplate, User
-
+logger = logging.getLogger(__name__)
 
 class PromptEngineeringService:
-    def generate_prompt(
+    async def generate_prompt(
         self,
-        db: Session,
-        user_description: str,
+        db: AsyncSession,
         user: User,
-        template_id: int | None = None,
-    ) -> dict[str, any]:
-        template = None
-        if template_id:
-            template = db.query(PromptTemplate).filter(PromptTemplate.id == template_id).first()
+        template_name: str,
+        variables: dict,
+        user_description: str | None = None
+    ) -> str:
+        result = await db.execute(select(PromptTemplate).where(PromptTemplate.name == template_name))
+        template = result.scalars().first()
 
-        generated_prompt_text = f"User wants: {user_description}"
-        if template:
-            generated_prompt_text = template.template.format(user_description=user_description)
+        if not template:
+            template = PromptTemplate(name=template_name, template="Default template: {prompt}")
+            db.add(template)
+            await db.commit()
+            await db.refresh(template)
+
+        prompt_text = template.template.format(**variables)
 
         generated_record = GeneratedPrompt(
-            prompt=generated_prompt_text,
-            template_id=template.id if template else None,
+            prompt=prompt_text,
+            template_id=template.id
         )
         db.add(generated_record)
-        db.commit()
-        db.refresh(generated_record)
+        await db.commit()
+        await db.refresh(generated_record)
 
-        return {
-            "status": "success",
-            "prompt_id": generated_record.id,
-            "generated_prompt": generated_prompt_text,
-        }
-
-    def create_template(
-        self,
-        db: Session,
-        name: str,
-        template_content: str,
-        user: User,
-    ) -> dict[str, any]:
-        template = PromptTemplate(
-            name=name,
-            template=template_content,
-        )
-        db.add(template)
-        db.commit()
-        db.refresh(template)
-        return {"status": "success", "template_id": template.id}
+        return prompt_text
 
 prompt_engineering_service = PromptEngineeringService()

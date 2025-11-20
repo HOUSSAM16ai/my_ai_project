@@ -12,6 +12,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from app.middleware.fastapi_error_handlers import add_error_handlers
 
 class RealityKernel:
     def __init__(self):
@@ -20,13 +21,21 @@ class RealityKernel:
             description="The central execution spine of the system.",
             version="3.0.0",
         )
+
+        # Ensure error handlers are registered on initialization
+        add_error_handlers(self.app)
+
         self._state: dict[str, Any] = {}
         self._dependencies: dict[str, Callable] = {}
-        self.config = self._load_adaptive_config()
+        # Load config lazily to avoid import loops
+        self._config_cache = None
 
-    def _load_adaptive_config(self) -> dict[str, Any]:
-        from app.core.config import settings
-        return settings.model_dump()
+    @property
+    def config(self) -> dict[str, Any]:
+        if self._config_cache is None:
+            from app.core.config import settings
+            self._config_cache = settings.model_dump()
+        return self._config_cache
 
     def set_state(self, key: str, value: Any):
         self._state[key] = value

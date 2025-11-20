@@ -4,8 +4,8 @@ from __future__ import annotations
 import enum
 import logging
 import os
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, List, Optional
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, Text, func
@@ -14,15 +14,13 @@ from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    # This block prevents circular imports during runtime
-    pass
+    from typing import List
 
 # Setup password hashing
-# Using argon2 for robust security and to avoid bcrypt version conflicts
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def utc_now() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 class MessageRole(str, enum.Enum):
     USER = "user"
@@ -32,10 +30,10 @@ class MessageRole(str, enum.Enum):
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     full_name: str = Field(max_length=150)
     email: str = Field(max_length=150, unique=True, index=True)
-    password_hash: str | None = Field(default=None, max_length=256)
+    password_hash: Optional[str] = Field(default=None, max_length=256)
     is_admin: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -46,13 +44,11 @@ class User(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     )
 
-    # Relationships
-    # We use sa_relationship to explicitly define the relationship for SQLAlchemy,
-    # bypassing SQLModel's inference which fails with List['String'] forward refs.
-    admin_conversations: list[AdminConversation] = Relationship(
+    # Relationships - using sa_relationship to be explicit and avoid ambiguity
+    admin_conversations: List["AdminConversation"] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
-    missions: list[Mission] = Relationship(
+    missions: List["Mission"] = Relationship(
         sa_relationship=relationship("Mission", back_populates="user")
     )
 
@@ -69,105 +65,101 @@ class User(SQLModel, table=True):
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
 
     # Relationships
-    user: User = Relationship(
+    user: "User" = Relationship(
         sa_relationship=relationship("User", back_populates="admin_conversations")
     )
-    messages: list[AdminMessage] = Relationship(
+    messages: List["AdminMessage"] = Relationship(
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
-    role: MessageRole = Field(
-        sa_column=Column(
-            SAEnum(MessageRole, name="message_role_enum", native_enum=False)
-        )
-    )
+    role: MessageRole = Field(sa_column=Column(SAEnum(MessageRole)))
     content: str = Field(sa_column=Column(Text))
 
     # Relationships
-    conversation: AdminConversation = Relationship(
+    conversation: "AdminConversation" = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="messages")
     )
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     objective: str
     user_id: int = Field(foreign_key="users.id", index=True)
 
     # Relationships
-    user: User = Relationship(
+    user: "User" = Relationship(
         sa_relationship=relationship("User", back_populates="missions")
     )
-    tasks: list[Task] = Relationship(
+    tasks: List["Task"] = Relationship(
         sa_relationship=relationship("Task", back_populates="mission")
     )
-    mission_plans: list[MissionPlan] = Relationship(
+    mission_plans: List["MissionPlan"] = Relationship(
         sa_relationship=relationship("MissionPlan", back_populates="mission")
     )
-    mission_events: list[MissionEvent] = Relationship(
+    mission_events: List["MissionEvent"] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     event: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: Mission = Relationship(
+    mission: "Mission" = Relationship(
         sa_relationship=relationship("Mission", back_populates="mission_events")
     )
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     plan: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: Mission = Relationship(
+    mission: "Mission" = Relationship(
         sa_relationship=relationship("Mission", back_populates="mission_plans")
     )
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
 
     # Relationships
-    mission: Mission = Relationship(
+    mission: "Mission" = Relationship(
         sa_relationship=relationship("Mission", back_populates="tasks")
     )
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
     template: str
 
-    generated_prompts: list[GeneratedPrompt] = Relationship(
+    generated_prompts: List["GeneratedPrompt"] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
     # Relationships
-    template: PromptTemplate = Relationship(
+    template: "PromptTemplate" = Relationship(
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
@@ -175,18 +167,13 @@ class GeneratedPrompt(SQLModel, table=True):
 # ------------------------------------------------------------------------------
 # Model Rebuild & Validation
 # ------------------------------------------------------------------------------
-
-# Ensure reports directory exists
-os.makedirs("reports", exist_ok=True)
-logging.basicConfig(filename="reports/model_rebuild.log", level=logging.INFO)
+import sys
+import traceback
 
 try:
     # In Pydantic v2 / SQLModel latest, model_rebuild() is the standard way
     # to resolve forward references.
-    for cls in SQLModel.__subclasses__():
-        cls.model_rebuild()
-    logging.info("SQLModel.model_rebuild() completed successfully.")
+    SQLModel.model_rebuild()
 except Exception as e:
-    logging.error(f"Error during SQLModel.model_rebuild(): {e}")
-    # We re-raise so the failure is visible during import/test
-    raise e
+    print("SQLModel.model_rebuild() failed:", file=sys.stderr)
+    traceback.print_exc()
