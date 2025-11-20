@@ -1,9 +1,11 @@
 # app/services/history_service.py - The Akashic Records Ministry
 
+import logging
+
 from sqlalchemy import exc as sqlalchemy_exc
 
 from app import db
-from app.core.kernel_v2.compat_collapse import current_app, current_user
+from app.core.kernel_v2.compat_collapse import current_user
 from app.models import Conversation, Message
 
 
@@ -22,7 +24,7 @@ def get_recent_conversations(limit: int = 5):
         ).all()
         return conversations
     except Exception as e:
-        current_app.logger.error(
+        logging.getLogger(__name__).error(
             f"Failed to fetch recent conversations for user {current_user.id}: {e}", exc_info=True
         )
         return []
@@ -46,7 +48,7 @@ def rate_message_in_db(message_id: int, rating: str):
         # --- [SECURITY PROTOCOL] ---
         # Ensure the user can only rate messages from their own conversations.
         if message_to_rate.conversation.user_id != current_user.id:
-            current_app.logger.warning(
+            logging.getLogger(__name__).warning(
                 f"SECURITY ALERT: User {current_user.id} tried to rate message {message_id} belonging to another user."
             )
             return {
@@ -57,7 +59,7 @@ def rate_message_in_db(message_id: int, rating: str):
         message_to_rate.rating = rating
         db.session.commit()
 
-        current_app.logger.info(f"User {current_user.id} rated message {message_id} as '{rating}'.")
+        logging.getLogger(__name__).info(f"User {current_user.id} rated message {message_id} as '{rating}'.")
         return {
             "status": "success",
             "message": f"Message {message_id} has been rated as '{rating}'.",
@@ -65,13 +67,13 @@ def rate_message_in_db(message_id: int, rating: str):
 
     except sqlalchemy_exc.SQLAlchemyError as e:
         db.session.rollback()
-        current_app.logger.error(
+        logging.getLogger(__name__).error(
             f"Database error while rating message {message_id}: {e}", exc_info=True
         )
         return {"status": "error", "message": "A database error occurred."}
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(
+        logging.getLogger(__name__).error(
             f"Unexpected error while rating message {message_id}: {e}", exc_info=True
         )
         return {"status": "error", "message": "An unexpected error occurred."}

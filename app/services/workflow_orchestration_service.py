@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 import uuid
@@ -23,8 +24,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -128,7 +127,7 @@ class WorkflowOrchestrationService:
         self.event_subscriptions: dict[str, list[str]] = defaultdict(list)
         self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
 
-        current_app.logger.info("Workflow Orchestration Service initialized")
+        logging.getLogger(__name__).info("Workflow Orchestration Service initialized")
 
     # ==================================================================================
     # WORKFLOW MANAGEMENT
@@ -143,7 +142,7 @@ class WorkflowOrchestrationService:
             for event_type in workflow.event_triggers:
                 self.event_subscriptions[event_type].append(workflow.workflow_id)
 
-            current_app.logger.info(f"Registered workflow: {workflow.name}")
+            logging.getLogger(__name__).info(f"Registered workflow: {workflow.name}")
             return True
 
     def execute_workflow(self, workflow_id: str) -> WorkflowDefinition | None:
@@ -163,13 +162,13 @@ class WorkflowOrchestrationService:
 
             workflow.status = WorkflowStatus.COMPLETED
             workflow.completed_at = datetime.now(UTC)
-            current_app.logger.info(f"Workflow completed: {workflow.name}")
+            logging.getLogger(__name__).info(f"Workflow completed: {workflow.name}")
 
         except Exception as e:
             workflow.status = WorkflowStatus.FAILED
             workflow.error = str(e)
             workflow.completed_at = datetime.now(UTC)
-            current_app.logger.error(f"Workflow failed: {workflow.name} - {e}")
+            logging.getLogger(__name__).error(f"Workflow failed: {workflow.name} - {e}")
 
             # Trigger compensation
             self._compensate_workflow(workflow)
@@ -229,7 +228,7 @@ class WorkflowOrchestrationService:
     def _compensate_workflow(self, workflow: WorkflowDefinition):
         """Compensate failed workflow"""
         workflow.status = WorkflowStatus.COMPENSATING
-        current_app.logger.info(f"Compensating workflow: {workflow.name}")
+        logging.getLogger(__name__).info(f"Compensating workflow: {workflow.name}")
 
         # Execute compensation handlers in reverse order
         for activity in reversed(workflow.activities):
@@ -239,7 +238,7 @@ class WorkflowOrchestrationService:
                     if handler:
                         handler(activity.result)
                 except Exception as e:
-                    current_app.logger.error(f"Compensation failed for {activity.name}: {e}")
+                    logging.getLogger(__name__).error(f"Compensation failed for {activity.name}: {e}")
 
         workflow.status = WorkflowStatus.COMPENSATED
 

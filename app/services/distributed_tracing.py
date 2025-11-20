@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import uuid
 from collections import defaultdict, deque
@@ -24,7 +25,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app, g, request
+from app.core.kernel_v2.compat_collapse import g, request
 
 
 # ======================================================================================
@@ -166,7 +167,7 @@ class TraceContextPropagator:
             )
 
         except Exception as e:
-            current_app.logger.error(f"Failed to extract trace context: {e}")
+            logging.getLogger("distributed_tracing").error(f"Failed to extract trace context: {e}")
             return None
 
 
@@ -474,12 +475,8 @@ class DistributedTracer:
 
     def _is_flask_context(self) -> bool:
         """Check if running in Flask request context"""
-        try:
-            from flask import has_request_context
-
-            return has_request_context()
-        except Exception:
-            return False
+        # Flask support removed
+        return False
 
 
 # ======================================================================================

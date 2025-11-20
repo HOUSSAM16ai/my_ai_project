@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import logging
 import statistics
 import threading
 import uuid
@@ -23,8 +24,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -191,7 +190,7 @@ class AIOpsService:
             MetricType.REQUEST_RATE: {"zscore": 2.5},
         }
 
-        current_app.logger.info("AIOps Service initialized successfully")
+        logging.getLogger(__name__).info("AIOps Service initialized successfully")
 
     # ==================================================================================
     # TELEMETRY COLLECTION
@@ -305,7 +304,7 @@ class AIOpsService:
         """Record detected anomaly"""
         with self.lock:
             self.anomalies[anomaly.anomaly_id] = anomaly
-            current_app.logger.warning(
+            logging.getLogger(__name__).warning(
                 f"Anomaly detected: {anomaly.description} (severity: {anomaly.severity.value})"
             )
 
@@ -364,7 +363,7 @@ class AIOpsService:
 
     def _execute_healing(self, decision: HealingDecision):
         """Execute healing action"""
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"Executing healing: {decision.action.value} for {decision.service_name}"
         )
 

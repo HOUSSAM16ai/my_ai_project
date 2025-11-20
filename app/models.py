@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import enum
+import logging
+import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -173,8 +175,6 @@ class GeneratedPrompt(SQLModel, table=True):
 # ------------------------------------------------------------------------------
 # Model Rebuild & Validation
 # ------------------------------------------------------------------------------
-import logging
-import os
 
 # Ensure reports directory exists
 os.makedirs("reports", exist_ok=True)

@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 import uuid
@@ -22,8 +23,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -155,7 +154,7 @@ class AdvancedStreamingService:
         self.lock = threading.RLock()  # Use RLock to prevent deadlock with nested calls
         self.message_counter = 0
 
-        current_app.logger.info("Advanced Streaming Service initialized")
+        logging.getLogger(__name__).info("Advanced Streaming Service initialized")
 
     # ==================================================================================
     # STREAM MANAGEMENT
@@ -178,7 +177,7 @@ class AdvancedStreamingService:
                 },
             )
 
-            current_app.logger.info(f"Created stream: {config.name} ({config.protocol.value})")
+            logging.getLogger(__name__).info(f"Created stream: {config.name} ({config.protocol.value})")
             return True
 
     def get_stream(self, stream_id: str) -> StreamConfig | None:
@@ -205,7 +204,7 @@ class AdvancedStreamingService:
         if stream.schema_id:
             schema = self.schemas.get(stream.schema_id)
             if schema and not self._validate_schema(payload, schema):
-                current_app.logger.error(f"Schema validation failed for stream {stream_id}")
+                logging.getLogger(__name__).error(f"Schema validation failed for stream {stream_id}")
                 return None
 
         # Determine partition
@@ -276,7 +275,7 @@ class AdvancedStreamingService:
         with self.lock:
             self.consumers[stream_id].append(consumer)
 
-        current_app.logger.info(f"Consumer {consumer_id} subscribed to {stream_id}")
+        logging.getLogger(__name__).info(f"Consumer {consumer_id} subscribed to {stream_id}")
 
         return consumer_id
 
@@ -290,7 +289,7 @@ class AdvancedStreamingService:
                     consumer.callback(message)
                     consumer.offset = message.offset
                 except Exception as e:
-                    current_app.logger.error(f"Consumer {consumer.consumer_id} error: {e}")
+                    logging.getLogger(__name__).error(f"Consumer {consumer.consumer_id} error: {e}")
 
     def unsubscribe(self, consumer_id: str):
         """Unsubscribe consumer"""
@@ -309,7 +308,7 @@ class AdvancedStreamingService:
         """Register stream schema"""
         with self.lock:
             self.schemas[schema.schema_id] = schema
-            current_app.logger.info(f"Registered schema: {schema.schema_id}")
+            logging.getLogger(__name__).info(f"Registered schema: {schema.schema_id}")
             return True
 
     def get_schema(self, schema_id: str) -> StreamSchema | None:
@@ -364,7 +363,7 @@ class AdvancedStreamingService:
             }
 
         # In production, replicate to actual region
-        current_app.logger.info(f"Replicating stream {stream_id} to region {target_region}")
+        logging.getLogger(__name__).info(f"Replicating stream {stream_id} to region {target_region}")
 
         return {
             "success": True,
@@ -398,7 +397,7 @@ class AdvancedStreamingService:
 
         self.subscribe(stream_id, f"processor-{processor_id}", processing_callback)
 
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"Stream processor {processor_id} started: {stream_id} -> {output_stream_id}"
         )
 

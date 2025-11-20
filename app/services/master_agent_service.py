@@ -73,7 +73,6 @@ from sqlalchemy import exists, func, select
 from sqlalchemy.orm import joinedload
 
 from app import db
-from app.core.kernel_v2.compat_collapse import current_app
 from app.models import (
     Mission,
     MissionEventType,
@@ -1965,18 +1964,7 @@ class OvermindService:
     def _ensure_app_ref(self):
         # In FastAPI/Kernel mode, app context is implicit or handled via DI.
         # This legacy check is removed/softened.
-        # has_app_context is not defined in this scope in previous versions, checking availability
-        has_context = False
-        try:
-            from app.core.kernel_v2.compat_collapse import current_app
-            # Simplified check if we can import it, assuming context might exist
-            has_context = True
-        except ImportError:
-            pass
-
-        if self._app_ref is None and has_context:
-             # We just try to access it safely if needed, but for now self._app_ref might stay None
-             pass
+        pass
 
 
 # =================================================================================================

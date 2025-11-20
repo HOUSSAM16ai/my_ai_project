@@ -26,6 +26,8 @@ from sqlalchemy.orm import Session
 from app.config.settings import AppSettings
 from app.core.di import get_logger, get_session, get_settings
 from app.services.database_service import DatabaseService
+from app.gateways.ai_service_gateway import AIServiceGateway
+from app.protocols.http_client import HttpClient, RequestsAdapter
 
 if TYPE_CHECKING:
     pass
@@ -47,10 +49,6 @@ def get_db_service(
     Injects a SQLAlchemy session, a logger, and application settings.
     """
     return DatabaseService(session=session, logger=logger, settings=settings)
-
-
-from app.gateways.ai_service_gateway import AIServiceGateway
-from app.protocols.http_client import HttpClient, RequestsAdapter
 
 
 def get_ai_gateway(

@@ -24,7 +24,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-from app.core.kernel_v2.compat_collapse import current_app, current_user, jsonify, request
+from app.core.kernel_v2.compat_collapse import current_user, jsonify, request
 
 # ======================================================================================
 # ENUMERATIONS
@@ -417,7 +417,7 @@ class APIGovernanceService:
 
             self.deprecation_policies[policy.policy_id] = policy
 
-            current_app.logger.warning(
+            logging.getLogger(__name__).warning(
                 f"Deprecation policy added: {policy.endpoint_pattern} "
                 f"(sunset: {policy.sunset_date.isoformat()})"
             )

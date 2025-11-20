@@ -14,6 +14,7 @@
 #   - Recovery time tracking
 #   - Blast radius control
 
+import logging
 import random
 import secrets
 import threading
@@ -22,8 +23,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
-
-from app.core.kernel_v2.compat_collapse import current_app
 
 # ======================================================================================
 # ENUMERATIONS
@@ -240,13 +239,13 @@ class ChaosMonkeyService:
             self.enabled = True
             self.mode = mode
 
-            current_app.logger.info(f"🐒 Chaos Monkey enabled in {mode.value} mode")
+            logging.getLogger(__name__).info(f"🐒 Chaos Monkey enabled in {mode.value} mode")
 
     def disable_chaos_monkey(self):
         """Disable Chaos Monkey"""
         with self.lock:
             self.enabled = False
-            current_app.logger.info("🐒 Chaos Monkey disabled")
+            logging.getLogger(__name__).info("🐒 Chaos Monkey disabled")
 
     def execute_chaos_experiment(
         self,
@@ -319,7 +318,7 @@ class ChaosMonkeyService:
                 if execution.system_recovered:
                     self.total_recoveries_validated += 1
 
-            current_app.logger.info(
+            logging.getLogger(__name__).info(
                 f"🐒 Chaos experiment {execution_id} completed: "
                 f"{'PASSED' if execution.passed else 'FAILED'}"
             )
@@ -330,7 +329,7 @@ class ChaosMonkeyService:
         self, scenario: FailureScenario, target_services: list[str], duration_minutes: int
     ):
         """Inject specific failure scenario"""
-        current_app.logger.info(
+        logging.getLogger(__name__).info(
             f"💥 Injecting {scenario.value} into {', '.join(target_services)} "
             f"for {duration_minutes} minutes"
         )

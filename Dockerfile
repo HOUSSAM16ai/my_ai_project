@@ -44,14 +44,14 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.t
 COPY . .
 
 # Set the port the application will run on
-ENV PORT=5000
+ENV PORT=8000
 
 # Expose the port
 EXPOSE ${PORT}
 
 # Healthcheck to ensure the application is running correctly
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://127.0.0.1:${PORT}/health || exit 1
+  CMD curl -f http://127.0.0.1:${PORT}/system/health || exit 1
 
 # Command to run the application using Uvicorn directly for ASGI performance
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4"]
+CMD ["uvicorn", "app.main:kernel.app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
