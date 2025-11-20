@@ -328,7 +328,9 @@ class ChaosEngineer:
 
         try:
             # 1. Validate steady state before experiment
-            logging.getLogger(__name__).info(f"Validating steady state for experiment: {experiment.name}")
+            logging.getLogger(__name__).info(
+                f"Validating steady state for experiment: {experiment.name}"
+            )
 
             steady_state_before = experiment.steady_state_hypothesis.validation_function()
 
@@ -449,7 +451,9 @@ class ChaosEngineer:
         with self.lock:
             self.game_days[game_day_id] = game_day
 
-        logging.getLogger(__name__).info(f"Game Day scheduled: {name} at {scheduled_at.isoformat()}")
+        logging.getLogger(__name__).info(
+            f"Game Day scheduled: {name} at {scheduled_at.isoformat()}"
+        )
 
         return game_day_id
 

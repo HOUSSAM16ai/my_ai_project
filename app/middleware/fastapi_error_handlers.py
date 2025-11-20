@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
@@ -11,9 +12,10 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             "status": "error",
             "message": str(exc.detail),
             "data": None,
-            "timestamp": "2024-01-01T00:00:00Z" # Should be dynamic
+            "timestamp": "2024-01-01T00:00:00Z",  # Should be dynamic
         },
     )
+
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -22,9 +24,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "status": "error",
             "message": "Validation Error",
             "data": {"errors": exc.errors()},
-            "timestamp": "2024-01-01T00:00:00Z"
+            "timestamp": "2024-01-01T00:00:00Z",
         },
     )
+
 
 async def general_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -32,10 +35,11 @@ async def general_exception_handler(request: Request, exc: Exception):
         content={
             "status": "error",
             "message": "Internal Server Error",
-            "data": str(exc), # Be careful exposing this in prod
-             "timestamp": "2024-01-01T00:00:00Z"
-        }
+            "data": str(exc),  # Be careful exposing this in prod
+            "timestamp": "2024-01-01T00:00:00Z",
+        },
     )
+
 
 def add_error_handlers(app):
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

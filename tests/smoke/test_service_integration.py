@@ -13,6 +13,7 @@ from app.services.database_service import DatabaseService
 def client() -> TestClient:
     return TestClient(app)
 
+
 def test_system_health_endpoint_healthy_integration(client: TestClient):
     mock_db_service = MagicMock(spec=DatabaseService)
     mock_db_service.get_database_health.return_value = {

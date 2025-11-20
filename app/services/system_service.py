@@ -11,4 +11,5 @@ class SystemService:
         except Exception:
             return "unhealthy"
 
+
 system_service = SystemService()

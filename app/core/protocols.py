@@ -27,7 +27,9 @@ class DatabaseProtocol(Protocol):
 
     def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]: ...
 
-    def update_record(self, table_name: str, record_id: int, data: dict[str, Any]) -> dict[str, Any]: ...
+    def update_record(
+        self, table_name: str, record_id: int, data: dict[str, Any]
+    ) -> dict[str, Any]: ...
 
     def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]: ...
 
@@ -39,7 +41,9 @@ class UserRepositoryProtocol(Protocol):
 
     def get_all_users(self) -> list[Any]: ...
 
-    def create_new_user(self, full_name: str, email: str, password: str, is_admin: bool) -> dict[str, str]: ...
+    def create_new_user(
+        self, full_name: str, email: str, password: str, is_admin: bool
+    ) -> dict[str, str]: ...
 
     def ensure_admin_user_exists(self) -> dict[str, str]: ...
 
@@ -49,7 +53,9 @@ class UserRepositoryProtocol(Protocol):
 class AIClientProtocol(Protocol):
     """Interface for interacting with an AI model or service."""
 
-    def stream_chat(self, question: str, conversation_id: str | None, user_id: int | str) -> Any: ...
+    def stream_chat(
+        self, question: str, conversation_id: str | None, user_id: int | str
+    ) -> Any: ...
 
 
 class MessageQueueProtocol(Protocol):
@@ -78,7 +84,6 @@ class NotificationProtocol(Protocol):
 
 class VectorStoreProtocol(Protocol):
     """Interface for a vector database (e.g., Pinecone, Weaviate)."""
-
 
     def upsert(self, vectors: list[dict[str, Any]], namespace: str) -> None: ...
 

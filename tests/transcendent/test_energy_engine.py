@@ -13,7 +13,9 @@ from app.core.ai_gateway import get_ai_client
 from app.kernel import app  # Use the unified app
 
 
-@pytest.mark.skip(reason="Skipping due to persistent issues with AsyncClient and dependency overrides.")
+@pytest.mark.skip(
+    reason="Skipping due to persistent issues with AsyncClient and dependency overrides."
+)
 @pytest.mark.asyncio
 async def test_unified_ai_service_streams_chunks(setup_database):
     """
@@ -31,7 +33,11 @@ async def test_unified_ai_service_streams_chunks(setup_database):
     app.dependency_overrides[get_ai_client] = lambda: mock_ai_client
 
     async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.post("/admin/api/chat/stream", json={"question": "test"}, headers={"Authorization": "Bearer fake-token"})
+        response = await client.post(
+            "/admin/api/chat/stream",
+            json={"question": "test"},
+            headers={"Authorization": "Bearer fake-token"},
+        )
 
         assert response.status_code == 200
 

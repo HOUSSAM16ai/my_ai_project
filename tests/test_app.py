@@ -1,5 +1,6 @@
 # tests/test_app.py
 
+
 def test_app_fixture_loads_correctly(client):
     """
     Smoke test to ensure the app fixture loads correctly.

@@ -18,14 +18,17 @@ if TYPE_CHECKING:
 # Setup password hashing
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
 
 class MessageRole(str, enum.Enum):
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
     SYSTEM = "system"
+
 
 class MissionStatus(str, enum.Enum):
     PENDING = "pending"
@@ -37,12 +40,14 @@ class MissionStatus(str, enum.Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
+
 class PlanStatus(str, enum.Enum):
     DRAFT = "draft"
     VALID = "valid"
     INVALID = "invalid"
     SELECTED = "selected"
     ABANDONED = "abandoned"
+
 
 class TaskStatus(str, enum.Enum):
     PENDING = "pending"
@@ -51,6 +56,7 @@ class TaskStatus(str, enum.Enum):
     FAILED = "failed"
     RETRY = "retry"
     SKIPPED = "skipped"
+
 
 class MissionEventType(str, enum.Enum):
     CREATED = "mission_created"
@@ -67,9 +73,11 @@ class MissionEventType(str, enum.Enum):
     MISSION_FAILED = "mission_failed"
     FINALIZED = "mission_finalized"
 
+
 # ==============================================================================
 # MODELS
 # ==============================================================================
+
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -80,11 +88,11 @@ class User(SQLModel, table=True):
     is_admin: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
@@ -106,6 +114,7 @@ class User(SQLModel, table=True):
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
 
+
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -113,7 +122,7 @@ class AdminConversation(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
     # Relationships
@@ -124,6 +133,7 @@ class AdminConversation(SQLModel, table=True):
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
+
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -132,7 +142,7 @@ class AdminMessage(SQLModel, table=True):
     content: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
     # Relationships
@@ -140,21 +150,24 @@ class AdminMessage(SQLModel, table=True):
         sa_relationship=relationship("AdminConversation", back_populates="messages")
     )
 
+
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
     id: Optional[int] = Field(default=None, primary_key=True)
     objective: str = Field(sa_column=Column(Text))
-    status: MissionStatus = Field(default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus)))
+    status: MissionStatus = Field(
+        default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus))
+    )
     initiator_id: int = Field(foreign_key="users.id", index=True)
     active_plan_id: Optional[int] = Field(default=None, foreign_key="mission_plans.id")
 
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
@@ -162,14 +175,19 @@ class Mission(SQLModel, table=True):
         sa_relationship=relationship("User", back_populates="missions")
     )
     tasks: List["Task"] = Relationship(
-        sa_relationship=relationship("Task", back_populates="mission", foreign_keys="[Task.mission_id]")
+        sa_relationship=relationship(
+            "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
+        )
     )
     mission_plans: List["MissionPlan"] = Relationship(
-        sa_relationship=relationship("MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]")
+        sa_relationship=relationship(
+            "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
+        )
     )
     events: List["MissionEvent"] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
+
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
@@ -188,16 +206,17 @@ class MissionPlan(SQLModel, table=True):
 
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
     # Relationships
     mission: "Mission" = Relationship(
-        sa_relationship=relationship("Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]")
+        sa_relationship=relationship(
+            "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
+        )
     )
-    tasks: List["Task"] = Relationship(
-        sa_relationship=relationship("Task", back_populates="plan")
-    )
+    tasks: List["Task"] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
+
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
@@ -208,7 +227,9 @@ class Task(SQLModel, table=True):
     description: Optional[str] = Field(sa_column=Column(Text))
     tool_name: Optional[str] = Field(max_length=100)
     # Avoid JSONB for SQLite compat, use JSON if available or Text
-    tool_args_json: Optional[Any] = Field(default=None, sa_column=Column(Text)) # Postgres specific or use string
+    tool_args_json: Optional[Any] = Field(
+        default=None, sa_column=Column(Text)
+    )  # Postgres specific or use string
     status: TaskStatus = Field(default=TaskStatus.PENDING, sa_column=Column(SAEnum(TaskStatus)))
     attempt_count: int = Field(default=0)
     max_attempts: int = Field(default=3)
@@ -227,20 +248,25 @@ class Task(SQLModel, table=True):
 
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
     mission: "Mission" = Relationship(
-        sa_relationship=relationship("Mission", back_populates="tasks", foreign_keys="[Task.mission_id]")
+        sa_relationship=relationship(
+            "Mission", back_populates="tasks", foreign_keys="[Task.mission_id]"
+        )
     )
     plan: "MissionPlan" = Relationship(
-        sa_relationship=relationship("MissionPlan", back_populates="tasks", foreign_keys="[Task.plan_id]")
+        sa_relationship=relationship(
+            "MissionPlan", back_populates="tasks", foreign_keys="[Task.plan_id]"
+        )
     )
+
 
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
@@ -251,13 +277,14 @@ class MissionEvent(SQLModel, table=True):
 
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
     # Relationships
     mission: "Mission" = Relationship(
         sa_relationship=relationship("Mission", back_populates="events")
     )
+
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
@@ -268,6 +295,7 @@ class PromptTemplate(SQLModel, table=True):
     generated_prompts: List["GeneratedPrompt"] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
+
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
@@ -280,24 +308,29 @@ class GeneratedPrompt(SQLModel, table=True):
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
+
 # Helpers
 def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None):
     import json
+
     evt = MissionEvent(
-        mission_id=mission.id,
-        event_type=event_type,
-        payload_json=json.dumps(payload)
+        mission_id=mission.id, event_type=event_type, payload_json=json.dumps(payload)
     )
     if session:
         session.add(evt)
 
-def update_mission_status(mission: Mission, status: MissionStatus, note: str | None = None, session=None):
+
+def update_mission_status(
+    mission: Mission, status: MissionStatus, note: str | None = None, session=None
+):
     mission.status = status
     mission.updated_at = utc_now()
+
 
 # Rebuild models for forward refs
 import sys
 import traceback
+
 try:
     SQLModel.model_rebuild()
 except Exception:

@@ -381,7 +381,9 @@ class CanaryDeploymentService:
             deployment.canary_traffic_percent = 0.0
             deployment.current_stage = "rolled_back"
 
-            logging.getLogger(__name__).warning(f"Rolled back canary deployment: {deployment.service_id}")
+            logging.getLogger(__name__).warning(
+                f"Rolled back canary deployment: {deployment.service_id}"
+            )
             return True
 
 

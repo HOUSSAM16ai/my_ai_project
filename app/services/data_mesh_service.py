@@ -252,7 +252,9 @@ class DataMeshService:
         """Register a new bounded context"""
         with self.lock:
             if context.context_id in self.bounded_contexts:
-                logging.getLogger(__name__).warning(f"Bounded context already exists: {context.context_id}")
+                logging.getLogger(__name__).warning(
+                    f"Bounded context already exists: {context.context_id}"
+                )
                 return False
 
             self.bounded_contexts[context.context_id] = context
@@ -272,12 +274,16 @@ class DataMeshService:
         with self.lock:
             # Validate schema compatibility
             if not self._validate_schema_compatibility(contract):
-                logging.getLogger(__name__).error(f"Schema compatibility validation failed: {contract.name}")
+                logging.getLogger(__name__).error(
+                    f"Schema compatibility validation failed: {contract.name}"
+                )
                 return False
 
             # Check governance policies
             if not self._check_governance_compliance(contract):
-                logging.getLogger(__name__).error(f"Governance compliance check failed: {contract.name}")
+                logging.getLogger(__name__).error(
+                    f"Governance compliance check failed: {contract.name}"
+                )
                 return False
 
             self.data_contracts[contract.contract_id] = contract
@@ -427,7 +433,9 @@ class DataMeshService:
             if policy.level == GovernanceLevel.MANDATORY:
                 for rule in policy.rules:
                     if not self._evaluate_governance_rule(contract, rule):
-                        logging.getLogger(__name__).error(f"Governance violation: {policy.name} - {rule}")
+                        logging.getLogger(__name__).error(
+                            f"Governance violation: {policy.name} - {rule}"
+                        )
                         return False
 
         return True

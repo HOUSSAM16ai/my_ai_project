@@ -9,6 +9,7 @@ from fastapi import Request
 class ThreatDetection:
     threat_score: float
 
+
 class AIThreatDetector:
     def __init__(self):
         self.stats = deque(maxlen=1000)

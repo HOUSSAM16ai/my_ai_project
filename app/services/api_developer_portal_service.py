@@ -308,7 +308,9 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             self.api_keys[key_id] = api_key
 
-            logging.getLogger(__name__).info(f"Created API key {key_id} for developer {developer_id}")
+            logging.getLogger(__name__).info(
+                f"Created API key {key_id} for developer {developer_id}"
+            )
 
             return api_key
 
@@ -386,7 +388,9 @@ axios.get('https://api.cogniforge.ai/v1/users', {
 
             self.tickets[ticket_id] = ticket
 
-            logging.getLogger(__name__).info(f"Created ticket {ticket_id} for developer {developer_id}")
+            logging.getLogger(__name__).info(
+                f"Created ticket {ticket_id} for developer {developer_id}"
+            )
 
             return ticket
 

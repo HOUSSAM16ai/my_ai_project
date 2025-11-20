@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
+
 class TestAPIFirstPlatformService:
     def test_track_api_usage(self, service, app):
         # In FastAPI, we don't need app_context.
@@ -17,6 +18,7 @@ class TestAPIFirstPlatformService:
         # Assuming service methods are updated or we can just call them.
         # For now, we just pass. The real test logic would go here.
         pass
+
 
 class TestIntegration:
     def test_full_api_lifecycle(self, app):

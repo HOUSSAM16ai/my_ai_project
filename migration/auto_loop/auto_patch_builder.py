@@ -10,7 +10,7 @@ class AutoPatchBuilder:
         rewriting Flask imports.
         """
         print("Generating intelligent migration patch...")
-        lines = original_content.split('\n')
+        lines = original_content.split("\n")
         new_lines = []
         modified = False
 
@@ -29,7 +29,7 @@ class AutoPatchBuilder:
                 # Handle imports with parentheses
                 imports_str = imports_str.replace("(", "").replace(")", "")
                 # Find all imported objects on that line
-                imported_objects = {s.strip() for s in imports_str.split(',')}
+                imported_objects = {s.strip() for s in imports_str.split(",")}
 
                 # Check which of these are ones we can replace
                 replaceable_objects = imported_objects.intersection(compat_objects)
@@ -41,11 +41,10 @@ class AutoPatchBuilder:
             # Also handle flask_login imports
             match_login = re.search(r"^\s*from\s+flask_login\s+import\s+(.*)", line)
             if match_login:
-                 if "current_user" in match_login.group(1):
-                     flask_imports_found.add("current_user")
-                     lines_to_remove.append(i)
-                     modified = True
-
+                if "current_user" in match_login.group(1):
+                    flask_imports_found.add("current_user")
+                    lines_to_remove.append(i)
+                    modified = True
 
         if not modified:
             print("No replaceable Flask imports found.")
@@ -54,7 +53,9 @@ class AutoPatchBuilder:
         # --- Construct the new file content ---
         # 1. Create the new compat import line
         sorted_imports = sorted(list(flask_imports_found))
-        compat_import_line = f"from app.core.kernel_v2.compat_collapse import {', '.join(sorted_imports)}"
+        compat_import_line = (
+            f"from app.core.kernel_v2.compat_collapse import {', '.join(sorted_imports)}"
+        )
         print(f"+ Generated new import: {compat_import_line}")
 
         # 2. Add the new line at the top (or a suitable position)
@@ -64,7 +65,7 @@ class AutoPatchBuilder:
             if line.strip().startswith("import ") or line.strip().startswith("from "):
                 import_insertion_point = i + 1
             elif line.strip() == "" and import_insertion_point > 0:
-                break # First blank line after imports
+                break  # First blank line after imports
 
         # 3. Rebuild the file
         new_lines.append(compat_import_line)

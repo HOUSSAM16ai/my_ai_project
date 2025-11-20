@@ -6,6 +6,7 @@ from app.models import Mission, User
 
 # Factories are now session-agnostic. The session is injected at test runtime via a fixture.
 
+
 class UserFactory(SQLAlchemyModelFactory):
     class Meta:
         model = User
@@ -13,9 +14,10 @@ class UserFactory(SQLAlchemyModelFactory):
         # sqlalchemy_session_persistence = "flush" # Set in fixture
 
     id = factory.Sequence(lambda n: n + 1)
-    email = factory.LazyAttribute(lambda obj: f'user{obj.id}@example.com')
-    full_name = factory.Faker('name')
+    email = factory.LazyAttribute(lambda obj: f"user{obj.id}@example.com")
+    full_name = factory.Faker("name")
     # password hash will be set by the model's default setter or method
+
 
 class MissionFactory(SQLAlchemyModelFactory):
     class Meta:
@@ -23,7 +25,7 @@ class MissionFactory(SQLAlchemyModelFactory):
         # sqlalchemy_session_persistence = "flush" # Set in fixture
 
     id = factory.Sequence(lambda n: n + 1)
-    objective = factory.Faker('sentence')
+    objective = factory.Faker("sentence")
     # Corrected to match 'user' relationship and 'user_id' foreign key in Mission model
-    user_id = factory.SelfAttribute('user.id')
+    user_id = factory.SelfAttribute("user.id")
     user = factory.SubFactory(UserFactory)

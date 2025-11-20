@@ -177,7 +177,9 @@ class AdvancedStreamingService:
                 },
             )
 
-            logging.getLogger(__name__).info(f"Created stream: {config.name} ({config.protocol.value})")
+            logging.getLogger(__name__).info(
+                f"Created stream: {config.name} ({config.protocol.value})"
+            )
             return True
 
     def get_stream(self, stream_id: str) -> StreamConfig | None:
@@ -204,7 +206,9 @@ class AdvancedStreamingService:
         if stream.schema_id:
             schema = self.schemas.get(stream.schema_id)
             if schema and not self._validate_schema(payload, schema):
-                logging.getLogger(__name__).error(f"Schema validation failed for stream {stream_id}")
+                logging.getLogger(__name__).error(
+                    f"Schema validation failed for stream {stream_id}"
+                )
                 return None
 
         # Determine partition
@@ -363,7 +367,9 @@ class AdvancedStreamingService:
             }
 
         # In production, replicate to actual region
-        logging.getLogger(__name__).info(f"Replicating stream {stream_id} to region {target_region}")
+        logging.getLogger(__name__).info(
+            f"Replicating stream {stream_id} to region {target_region}"
+        )
 
         return {
             "success": True,

@@ -13,6 +13,7 @@ class MetaKernel:
     """
     The orchestrator for the new reality.
     """
+
     def __init__(self):
         print("Reality Kernel v2 Initializing...")
 
@@ -26,7 +27,9 @@ class MetaKernel:
 
         self.logger.info("Reality Kernel v2 is online and fully operational.")
 
+
 _meta_kernel_instance = None
+
 
 def get_kernel() -> MetaKernel:
     """
@@ -37,5 +40,6 @@ def get_kernel() -> MetaKernel:
     if _meta_kernel_instance is None:
         _meta_kernel_instance = MetaKernel()
     return _meta_kernel_instance
+
 
 # Initialize on first call to get_kernel() instead of module load

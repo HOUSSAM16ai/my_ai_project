@@ -9,9 +9,11 @@ from app.core.ai_gateway import get_ai_client
 
 logger = logging.getLogger(__name__)
 
+
 # Module-level function for testing patching
 def get_llm_client():
     return get_ai_client()
+
 
 class AdminAIService:
     def create_conversation(
@@ -60,45 +62,52 @@ class AdminAIService:
         return get_llm_client()
 
     # Added answer_question method which was missing and caused AttributeError
-    def answer_question(self, question: str, user: Any, conversation_id: str | None = None, use_deep_context: bool = False):
-         # Mock implementation logic similar to what tests expect
-         # In real app, this would use the AI client.
-         # Since this method is mainly tested with mocks, we implement basic logic to pass tests
-         # when mocks are applied.
+    def answer_question(
+        self,
+        question: str,
+        user: Any,
+        conversation_id: str | None = None,
+        use_deep_context: bool = False,
+    ):
+        # Mock implementation logic similar to what tests expect
+        # In real app, this would use the AI client.
+        # Since this method is mainly tested with mocks, we implement basic logic to pass tests
+        # when mocks are applied.
 
-         # The test mocks get_llm_client().chat.completions.create()
-         # So we need to call that.
-         client = self.get_llm_client()
-         try:
-             response = client.chat.completions.create()
+        # The test mocks get_llm_client().chat.completions.create()
+        # So we need to call that.
+        client = self.get_llm_client()
+        try:
+            response = client.chat.completions.create()
 
-             # Mimic logic tested in test_empty_response_fix.py
-             content = response.choices[0].message.content
-             tool_calls = response.choices[0].message.tool_calls
+            # Mimic logic tested in test_empty_response_fix.py
+            content = response.choices[0].message.content
+            tool_calls = response.choices[0].message.tool_calls
 
-             if content is None or content == "":
-                 if tool_calls:
-                     return {
-                         "status": "error",
-                         "answer": "Tool calls detected but no content.",
-                         "tokens_used": response.usage.total_tokens,
-                         "model_used": response.model
-                     }
-                 return {
-                     "status": "error",
-                     "answer": "Model did not return any content (لم يُرجع أي محتوى).",
-                     "tokens_used": response.usage.total_tokens,
-                     "model_used": response.model
-                 }
+            if content is None or content == "":
+                if tool_calls:
+                    return {
+                        "status": "error",
+                        "answer": "Tool calls detected but no content.",
+                        "tokens_used": response.usage.total_tokens,
+                        "model_used": response.model,
+                    }
+                return {
+                    "status": "error",
+                    "answer": "Model did not return any content (لم يُرجع أي محتوى).",
+                    "tokens_used": response.usage.total_tokens,
+                    "model_used": response.model,
+                }
 
-             return {
-                 "status": "success",
-                 "answer": content,
-                 "tokens_used": response.usage.total_tokens,
-                 "model_used": response.model
-             }
+            return {
+                "status": "success",
+                "answer": content,
+                "tokens_used": response.usage.total_tokens,
+                "model_used": response.model,
+            }
 
-         except Exception as e:
-             return {"status": "error", "answer": str(e)}
+        except Exception as e:
+            return {"status": "error", "answer": str(e)}
+
 
 admin_ai_service = AdminAIService()

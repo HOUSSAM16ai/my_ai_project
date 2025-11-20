@@ -24,9 +24,8 @@ engine = create_async_engine(
     connect_args={"check_same_thread": False},
 )
 
-TestingSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
+TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -34,6 +33,7 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.fixture(scope="session", autouse=True)
 async def init_db():
@@ -43,10 +43,12 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
 
+
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with TestingSessionLocal() as session:
         yield session
+
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
@@ -63,6 +65,7 @@ def client() -> Generator[TestClient, None, None]:
         yield c
 
     kernel.app.dependency_overrides.clear()
+
 
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:

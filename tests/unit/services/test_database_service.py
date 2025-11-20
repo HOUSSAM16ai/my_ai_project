@@ -7,6 +7,7 @@ from app.services.database_service import DatabaseService
 from app.config.settings import AppSettings
 from unittest.mock import MagicMock
 
+
 @pytest.fixture(name="session")
 def session_fixture():
     engine = create_engine("sqlite:///:memory:")
@@ -14,12 +15,14 @@ def session_fixture():
     with Session(engine) as session:
         yield session
 
+
 @pytest.fixture
 def database_service(session: Session) -> DatabaseService:
     # Mock dependencies
     logger = MagicMock()
     settings = MagicMock(spec=AppSettings)
     return DatabaseService(session=session, logger=logger, settings=settings)
+
 
 def test_create_and_get_record(database_service: DatabaseService, session: Session):
     user_data = {"full_name": "Test User", "email": "test@example.com", "is_admin": False}
@@ -34,4 +37,7 @@ def test_create_and_get_record(database_service: DatabaseService, session: Sessi
 
     assert retrieved_record["status"] == "success"
     assert retrieved_record["data"]["full_name"] == user_data["full_name"]
-    assert retrieved_record["data"]["email"] == user_data["full_name"] or retrieved_record["data"]["email"] == user_data["email"]
+    assert (
+        retrieved_record["data"]["email"] == user_data["full_name"]
+        or retrieved_record["data"]["email"] == user_data["email"]
+    )

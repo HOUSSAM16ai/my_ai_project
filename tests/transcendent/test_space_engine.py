@@ -18,12 +18,14 @@ def test_models_use_correct_base():
     assert issubclass(User, Base)
     assert User.__mro__[2] == Base
 
+
 def test_direct_session_creation_is_impossible():
     """
     Asserts that the old way of creating sessions is gone.
     """
     with pytest.raises(ImportError):
         from app.extensions import db  # noqa
+
 
 @pytest.mark.asyncio
 async def test_get_db_provides_session(setup_database):

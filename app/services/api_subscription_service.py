@@ -385,7 +385,9 @@ class APISubscriptionService:
             subscription.plan = new_plan
             subscription.last_updated = datetime.now(UTC)
 
-            logging.getLogger(__name__).info(f"Upgraded subscription {subscription_id} to {new_plan.name}")
+            logging.getLogger(__name__).info(
+                f"Upgraded subscription {subscription_id} to {new_plan.name}"
+            )
 
             return True
 

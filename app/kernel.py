@@ -14,6 +14,7 @@ from fastapi import FastAPI
 
 from app.middleware.fastapi_error_handlers import add_error_handlers
 
+
 class RealityKernel:
     def __init__(self):
         self.app = FastAPI(
@@ -34,6 +35,7 @@ class RealityKernel:
     def config(self) -> dict[str, Any]:
         if self._config_cache is None:
             from app.core.config import settings
+
             self._config_cache = settings.model_dump()
         return self._config_cache
 
@@ -51,6 +53,7 @@ class RealityKernel:
         if not provider:
             raise KeyError(f"Dependency '{name}' not found.")
         return provider()
+
 
 kernel = RealityKernel()
 app = kernel.app

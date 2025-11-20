@@ -22,6 +22,7 @@ router = APIRouter(
     tags=["AI Service"],
 )
 
+
 # --- Models ---
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)

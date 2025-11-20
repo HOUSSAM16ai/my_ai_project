@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "CogniForge Reality Kernel V3"
     VERSION: str = "3.0.0"
@@ -24,5 +25,6 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+
 
 settings = Settings()

@@ -24,4 +24,5 @@ class RateLimiter:
 
         self.history[ip].append(now)
 
+
 rate_limiter = RateLimiter(requests_per_minute=20)

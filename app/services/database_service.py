@@ -452,5 +452,3 @@ class DatabaseService:
         except Exception as e:
             self.logger.error(f"Error executing custom query: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
-
-

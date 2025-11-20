@@ -16,4 +16,5 @@ class ZeroTrustAuthenticator:
             )
         return {"user_id": 1, "session_id": session_id}
 
+
 zero_trust_authenticator = ZeroTrustAuthenticator()

@@ -221,7 +221,7 @@ class GraphQLAdapter(ProtocolAdapter):
                 return False, "Missing 'query' field in GraphQL request"
             return True, None
         except Exception:
-             return False, "Invalid JSON body"
+            return False, "Invalid JSON body"
 
     async def transform_request(self, request: Request) -> dict[str, Any]:
         """Transform GraphQL request"""
@@ -718,7 +718,10 @@ class APIGatewayService:
         logger.info(f"Registered upstream service: {service.service_id}")
 
     async def process_request(
-        self, request: Request, protocol: ProtocolType = ProtocolType.REST, route_id: str | None = None
+        self,
+        request: Request,
+        protocol: ProtocolType = ProtocolType.REST,
+        route_id: str | None = None,
     ) -> tuple[dict[str, Any], int]:
         """
         معالجة الطلب عبر البوابة - Process request through gateway
@@ -830,6 +833,7 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool 
         async def my_endpoint(request: Request):
             ...
     """
+
     # Note: In FastAPI, decorators that wrap route handlers need to match the signature or use dependencies.
     # This is a simplified adaptation.
     def decorator(f: Callable) -> Callable:
@@ -849,7 +853,9 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool 
                 return result
             except Exception as e:
                 logger.error(f"Endpoint error: {e}", exc_info=True)
-                return JSONResponse(content={"error": "Internal error", "message": str(e)}, status_code=500)
+                return JSONResponse(
+                    content={"error": "Internal error", "message": str(e)}, status_code=500
+                )
 
         return decorated_function
 

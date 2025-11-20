@@ -12,10 +12,12 @@ from typing import Any
 # in an async environment.
 _state: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("kernel_state", default={})
 
+
 class StateEngine:
     """
     Manages a dictionary-like state that is safe for concurrent use.
     """
+
     def set(self, key: str, value: Any) -> None:
         """
         Sets a value in the current context's state.

@@ -14,12 +14,12 @@ class LoopDriver:
         print("Scanning for Flask hotspots...")
         result = subprocess.run(
             ["grep", "-r", "-l", "from flask import", self.codebase_path],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
         )
-        files = result.stdout.strip().split('\n')
+        files = result.stdout.strip().split("\n")
         self.hotspots = [
-            f for f in files
-            if f and 'compat_collapse' not in f and not f.endswith('.bak')
+            f for f in files if f and "compat_collapse" not in f and not f.endswith(".bak")
         ]
         print(f"Found {len(self.hotspots)} hotspots.")
 

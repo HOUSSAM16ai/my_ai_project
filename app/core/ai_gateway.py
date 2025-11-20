@@ -19,11 +19,11 @@ import httpx
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
 
+
 # --- Protocols ---
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
-        ...
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
 
     # This is added to satisfy the type checker, but it's not used in the streaming implementation.
     # It seems to be a quirk of how @runtime_checkable works with async generators.
@@ -49,7 +49,7 @@ class OpenRouterAIClient:
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
                 json={"model": self.model, "messages": messages, "stream": True},
-                timeout=None
+                timeout=None,
             ) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():

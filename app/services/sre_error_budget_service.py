@@ -334,7 +334,9 @@ class SREErrorBudgetService:
         with self.lock:
             self.canary_deployments[deployment.deployment_id] = deployment
 
-        logging.getLogger(__name__).info(f"Started canary deployment: {service_name} ({canary_percentage}%)")
+        logging.getLogger(__name__).info(
+            f"Started canary deployment: {service_name} ({canary_percentage}%)"
+        )
 
         return deployment
 

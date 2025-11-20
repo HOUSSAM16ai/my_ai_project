@@ -9,10 +9,13 @@ from sqlmodel import select
 # Compatibility imports - removed Flask dependencies
 from app.core.database import get_session as get_db_session
 
+
 def get_db():
     # Helper to get session
     from app.core.di import get_session
+
     return get_session()
+
 
 class DBWrapper:
     @property
@@ -21,6 +24,7 @@ class DBWrapper:
 
     def select(self, *args):
         return select(*args)
+
 
 db = DBWrapper()
 
@@ -31,6 +35,7 @@ def get_recent_conversations(user_id: int, limit: int = 5):
     This is a pure data retrieval function.
     """
     from app.models import AdminConversation as Conversation
+
     try:
         session = db.session
         conversations = session.scalars(
@@ -75,13 +80,17 @@ def rate_message_in_db(message_id: int, rating: str, user_id: int):
                 "message": "Permission denied. You can only rate your own conversations.",
             }
 
-        if hasattr(message_to_rate, 'rating'):
+        if hasattr(message_to_rate, "rating"):
             message_to_rate.rating = rating
             session.commit()
         else:
-             logging.getLogger(__name__).warning(f"Message model has no rating field. Skipping update.")
+            logging.getLogger(__name__).warning(
+                f"Message model has no rating field. Skipping update."
+            )
 
-        logging.getLogger(__name__).info(f"User {user_id} rated message {message_id} as '{rating}'.")
+        logging.getLogger(__name__).info(
+            f"User {user_id} rated message {message_id} as '{rating}'."
+        )
         return {
             "status": "success",
             "message": f"Message {message_id} has been rated as '{rating}'.",
