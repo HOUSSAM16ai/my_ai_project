@@ -1,4 +1,21 @@
+# ملاحظة: حذفنا رقم الإصدار version لأنه لم يعد مطلوباً
+
+# --- 1. هذا هو الجزء المفقود (التعريف) ---
+# يجب أن يبدأ بـ x- وعلامة & ليعرف البرنامج أن هذا "قالب"
+x-common-environment: &common-environment
+  # ضع متغيرات البيئة الخاصة بك هنا
+  ADMIN_EMAIL: ${ADMIN_EMAIL}
+  ADMIN_NAME: ${ADMIN_NAME}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+  DATABASE_URL: ${DATABASE_URL}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  SECRET_KEY: ${SECRET_KEY}
+  # يمكنك إضافة أي متغيرات أخرى تحتاجها هنا
+
 services:
+  # ----------------------------------------------------------------------------------
+  # The Unified Reality Kernel Service
+  # ----------------------------------------------------------------------------------
   web:
     build:
       context: .
@@ -6,7 +23,7 @@ services:
     container_name: cogniforge-unified-reality
     restart: unless-stopped
     
-    # توحيد المنافذ: الخارجي 8000 والداخلي 8000
+    # توحيد المنافذ
     ports:
       - "8000:8000"
       
@@ -14,10 +31,12 @@ services:
       - appnet
       
     environment:
+      # --- 2. هنا يتم الاستدعاء (الذي سبب الخطأ سابقاً) ---
+      # الآن سيعمل لأنه سيجد التعريف في الأعلى
       <<: *common-environment
-      PORT: 8000 # التأكد من أن التطبيق يعرف منفذه
+      PORT: 8000
       
-    # فحص الصحة دقيق جداً الآن
+    # فحص الصحة
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
