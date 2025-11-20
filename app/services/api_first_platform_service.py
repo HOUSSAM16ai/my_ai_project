@@ -355,7 +355,7 @@ class WebhookSigner:
     def __init__(self, secret: str):
         self.secret = secret.encode()
 
-    def sign(self, payload: dict, timestamp: int = None) -> str:
+    def sign(self, payload: dict, timestamp: int | None = None) -> str:
         """توقيع payload"""
         if timestamp is None:
             timestamp = int(time.time())

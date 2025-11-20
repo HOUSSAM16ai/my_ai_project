@@ -69,8 +69,10 @@ except Exception:
         def to_dict(self):
             return {"ok": self.ok, "result": self.result, "error": self.error}
 
+    from typing import ClassVar
+
     class agent_tools:
-        _TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
+        _TOOL_REGISTRY: ClassVar[dict[str, dict[str, Any]]] = {}
 
         @staticmethod
         def ToolResult(ok: bool, result=None, error=""):
@@ -92,8 +94,9 @@ except Exception:
     class system_service:
         @staticmethod
         def find_related_context(_desc: str):
+
             class R:
-                data = {"context": "system-context-unavailable"}
+                data: ClassVar[dict[str, str]] = {"context": "system-context-unavailable"}
 
             return R()
 
@@ -1321,14 +1324,14 @@ def register_post_finalize_hook(func: Callable[[Any], None]):
 generation_service = get_generation_service()
 
 __all__ = [
-    "generation_service",
-    "get_generation_service",
-    "forge_new_code",
-    "generate_json",
-    "generate_comprehensive_response",
+    "diagnostics",
     "execute_task",
     "execute_task_legacy_wrapper",
-    "diagnostics",
+    "forge_new_code",
+    "generate_comprehensive_response",
+    "generate_json",
+    "generation_service",
+    "get_generation_service",
     "register_post_finalize_hook",
 ]
 

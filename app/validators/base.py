@@ -4,7 +4,7 @@
 # PRIME DIRECTIVE:
 #   فئة أساسية للتحقق من صحة البيانات - Base validator with enterprise patterns
 
-from typing import Any
+from typing import Any, ClassVar
 
 from marshmallow import Schema, ValidationError
 
@@ -19,7 +19,7 @@ class BaseValidator:
     - Schema caching for performance
     """
 
-    _schema_cache: dict[str, Schema] = {}
+    _schema_cache: ClassVar[dict[str, Schema]] = {}
 
     @classmethod
     def validate(
@@ -51,11 +51,7 @@ class BaseValidator:
             # Format errors
             # err.messages can be dict, list, or str - handle appropriately
             messages = err.messages
-            if isinstance(messages, dict):
-                invalid_fields = list(messages.keys())
-            else:
-                # For list or string messages, no specific field keys
-                invalid_fields = []
+            invalid_fields = list(messages.keys()) if isinstance(messages, dict) else []
 
             errors = {
                 "validation_errors": messages,

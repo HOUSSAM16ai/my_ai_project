@@ -54,7 +54,7 @@ class BaseMiddleware(ABC):
         Internal setup method called during initialization
         Override in subclasses for custom setup logic
         """
-        pass
+        # Default implementation is empty
 
     @abstractmethod
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
@@ -96,7 +96,7 @@ class BaseMiddleware(ABC):
         Args:
             ctx: Request context
         """
-        pass
+        # Default implementation is empty
 
     def on_error(self, ctx: RequestContext, error: Exception):
         """
@@ -108,7 +108,7 @@ class BaseMiddleware(ABC):
             ctx: Request context
             error: The exception that occurred
         """
-        pass
+        # Default implementation is empty
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
         """
@@ -120,7 +120,7 @@ class BaseMiddleware(ABC):
             ctx: Request context
             result: The result of middleware execution
         """
-        pass
+        # Default implementation is empty
 
     def should_process(self, ctx: RequestContext) -> bool:
         """
@@ -193,10 +193,7 @@ class ConditionalMiddleware(BaseMiddleware):
                 return False
 
         # Check HTTP methods
-        if self.methods and ctx.method not in self.methods:
-            return False
-
-        return True
+        return not (self.methods and ctx.method not in self.methods)
 
 
 class MetricsMiddleware(BaseMiddleware):

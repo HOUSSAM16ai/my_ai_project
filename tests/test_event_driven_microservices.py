@@ -12,6 +12,8 @@ Tests:
 - Event sourcing
 """
 
+import builtins
+import contextlib
 import time
 
 import pytest
@@ -278,10 +280,8 @@ class TestServiceMesh:
 
         # Should fail and open circuit
         for _ in range(3):
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 mesh.call_with_resilience("test_service", failing_function)
-            except:
-                pass
 
         # Circuit should be open now
         health = mesh.get_service_health("test_service")

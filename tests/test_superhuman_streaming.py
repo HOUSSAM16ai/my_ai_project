@@ -305,7 +305,7 @@ class TestEnsembleAI:
 
         # Route a complex query
         complex_query = "Explain the advanced algorithm for neural network optimization"
-        model2, tier2 = await router.route(complex_query, {})
+        model2, _tier2 = await router.route(complex_query, {})
         assert model2 is not None
 
     def test_intelligent_router_tier_selection(self):

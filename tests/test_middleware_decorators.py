@@ -39,9 +39,9 @@ class TestMiddlewareDecorators:
         )
 
         # Check they're functions (decorators)
-        assert hasattr(monitor_performance, "__call__")
-        assert hasattr(rate_limit, "__call__")
-        assert hasattr(require_jwt_auth, "__call__")
+        assert callable(monitor_performance)
+        assert callable(rate_limit)
+        assert callable(require_jwt_auth)
 
     def test_decorators_module_has_correct_exports(self):
         """Test that __all__ contains expected decorator names."""

@@ -245,10 +245,7 @@ class PolicyEngine:
             return False
 
         # تحقق من Conditions
-        if not self._evaluate_conditions(principal, resource, rule.conditions, context):
-            return False
-
-        return True
+        return self._evaluate_conditions(principal, resource, rule.conditions, context)
 
     def _matches_principals(self, principal: Principal, principals: list[str]) -> bool:
         """التحقق من مطابقة Principal"""
@@ -262,10 +259,7 @@ class PolicyEngine:
                 if principal.has_role(role):
                     return True
             # تحقق من المعرف
-            elif principal_pattern == principal.id:
-                return True
-            # wildcards
-            elif principal_pattern == "*":
+            elif principal_pattern == principal.id or principal_pattern == "*":
                 return True
 
         return False

@@ -52,8 +52,8 @@ def get_current_user(request: Request):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError as e:
+        raise HTTPException(status_code=401, detail="Invalid token") from e
 
 
 # --- AI Service Logic ---

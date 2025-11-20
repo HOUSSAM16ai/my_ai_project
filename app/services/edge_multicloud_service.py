@@ -219,9 +219,11 @@ class EdgeMultiCloudService:
             if not region.available:
                 continue
 
-            if all(cap in region.capabilities for cap in required_capabilities):
-                if region.cost_factor <= max_cost_factor:
-                    suitable_regions.append(region)
+            if (
+                all(cap in region.capabilities for cap in required_capabilities)
+                and region.cost_factor <= max_cost_factor
+            ):
+                suitable_regions.append(region)
 
         if not suitable_regions:
             raise ValueError("No suitable regions found")

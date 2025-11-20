@@ -9,7 +9,8 @@ Creates HTTP responses for FastAPI.
 Refactored to remove Django/Flask/ASGI fallback complexity.
 """
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 from fastapi.responses import JSONResponse
 
 if TYPE_CHECKING:

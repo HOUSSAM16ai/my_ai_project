@@ -180,7 +180,7 @@ class CodeAnalyzer:
                     issue_id="syntax_error_001",
                     severity=Severity.CRITICAL,
                     issue_type="SyntaxError",
-                    description=f"Syntax error: {str(e)}",
+                    description=f"Syntax error: {e!s}",
                     file_path=file_path,
                     line_number=e.lineno or 0,
                     column=e.offset or 0,
@@ -266,12 +266,13 @@ class CodeAnalyzer:
                         )
                     )
 
-            elif isinstance(node, ast.ClassDef):
+            elif isinstance(node, ast.ClassDef) and not re.match(
+                r"^[A-Z][a-zA-Z0-9]*$", node.name
+            ):
                 # Check PascalCase for classes
-                if not re.match(r"^[A-Z][a-zA-Z0-9]*$", node.name):
-                    self.issues_found.append(
-                        CodeIssue(
-                            issue_id=f"naming_class_{file_path}_{node.lineno}",
+                self.issues_found.append(
+                    CodeIssue(
+                        issue_id=f"naming_class_{file_path}_{node.lineno}",
                             severity=Severity.LOW,
                             issue_type="NamingConvention",
                             description=f"Class '{node.name}' should use PascalCase",
@@ -295,12 +296,14 @@ class CodeAnalyzer:
         """فحص المشاكل الأمنية"""
         for node in ast.walk(tree):
             # Check for dangerous functions
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name):
-                    if node.func.id in ["eval", "exec"]:
-                        self.issues_found.append(
-                            CodeIssue(
-                                issue_id=f"security_{file_path}_{node.lineno}",
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in ["eval", "exec"]
+            ):
+                self.issues_found.append(
+                    CodeIssue(
+                        issue_id=f"security_{file_path}_{node.lineno}",
                                 severity=Severity.CRITICAL,
                                 issue_type="SecurityRisk",
                                 description=f"Dangerous use of {node.func.id}() - code injection risk",
@@ -345,12 +348,15 @@ class CodeAnalyzer:
         """فحص مشاكل الأداء"""
         for node in ast.walk(tree):
             # Check for inefficient loops
-            if isinstance(node, ast.For):
+            if (
+                isinstance(node, ast.For)
+                and isinstance(node.target, ast.Name)
+                and len(node.body) == 1
+                and isinstance(node.body[0], ast.Expr)
+            ):
                 # Check for list comprehension opportunities
-                if isinstance(node.target, ast.Name) and len(node.body) == 1:
-                    if isinstance(node.body[0], ast.Expr):
-                        self.issues_found.append(
-                            CodeIssue(
+                self.issues_found.append(
+                    CodeIssue(
                                 issue_id=f"perf_{file_path}_{node.lineno}",
                                 severity=Severity.LOW,
                                 issue_type="Performance",
@@ -401,7 +407,9 @@ class CodeAnalyzer:
     def _calculate_metrics(self, tree: ast.AST, file_path: str, code: str) -> CodeQualityMetrics:
         """حساب مقاييس الجودة"""
         lines = code.split("\n")
-        lines_of_code = len([l for l in lines if l.strip() and not l.strip().startswith("#")])
+        lines_of_code = len(
+            [line for line in lines if line.strip() and not line.strip().startswith("#")]
+        )
 
         # Calculate complexity
         total_complexity = 0

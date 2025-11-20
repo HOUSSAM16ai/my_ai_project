@@ -136,7 +136,7 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -217,12 +217,12 @@ else:
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.getenv(name, str(default)))
-    except:
+    except Exception:
         return default
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(int(1 if default else 0))).strip().lower() in (
+    return os.getenv(name, str(1 if default else 0)).strip().lower() in (
         "1",
         "true",
         "yes",
@@ -470,7 +470,7 @@ def extract_requested_lines(obj: str) -> int | None:
             val = int(m.group(1))
             if mx is None or val > mx:
                 mx = val
-        except:
+        except Exception:
             pass
     if any(t in obj.lower() for t in HUGE_TERMS):
         mx = CHUNK_SIZE_HINT * 10 if mx is None else int(mx * 1.5)
@@ -703,7 +703,7 @@ class UltraHyperPlanner(BasePlanner):
     name = "ultra_hyper_semantic_planner"
     version = "7.3.0-ultra-l4++"
     production_ready = True
-    capabilities = {
+    capabilities: ClassVar[set[str]] = {
         "semantic",
         "chunked",
         "multi-file",
@@ -714,7 +714,7 @@ class UltraHyperPlanner(BasePlanner):
         "telemetry",
         "global_scan",
     }
-    tags = {"ultra", "hyper", "planner", "index", "semantic"}
+    tags: ClassVar[set[str]] = {"ultra", "hyper", "planner", "index", "semantic"}
 
     # ------------------------------------------------------------------
     def generate_plan(
@@ -1609,13 +1609,13 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
 LLMGroundedPlanner = UltraHyperPlanner
 
 __all__ = [
-    "UltraHyperPlanner",
     "LLMGroundedPlanner",
     "MissionPlanSchema",
-    "PlannedTask",
-    "PlanningContext",
-    "PlannerError",
     "PlanValidationError",
+    "PlannedTask",
+    "PlannerError",
+    "PlanningContext",
+    "UltraHyperPlanner",
 ]
 
 # --------------------------------------------------------------------------------------

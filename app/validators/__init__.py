@@ -21,9 +21,9 @@ from app.validators.schemas import (
 
 __all__ = [
     "BaseValidator",
-    "UserSchema",
     "MissionSchema",
-    "TaskSchema",
     "PaginationSchema",
     "QuerySchema",
+    "TaskSchema",
+    "UserSchema",
 ]

@@ -98,7 +98,7 @@ class TestServiceBoundaries:
 
         # محاولات متكررة حتى فتح الدائرة
         for _ in range(3):
-            with pytest.raises(Exception):
+            with pytest.raises(Exception):  # noqa: B017
                 await circuit_breaker.call(failing_function)
 
         # التحقق من فتح الدائرة

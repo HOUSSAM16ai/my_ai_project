@@ -154,7 +154,7 @@ class AIScalingEngine:
         حساب العدد الأمثل من المثيلات باستخدام multi-objective optimization
         """
         # Predict future load
-        predicted_load, confidence = self.predict_load(service_name, current_metrics)
+        _predicted_load, confidence = self.predict_load(service_name, current_metrics)
 
         # Calculate resource utilization
         cpu_util = current_metrics.cpu_usage

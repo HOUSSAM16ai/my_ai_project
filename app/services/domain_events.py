@@ -20,7 +20,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 
 # ======================================================================================
@@ -441,7 +441,7 @@ class DataExportRequested(DomainEvent):
 class DomainEventRegistry:
     """Registry for all domain events"""
 
-    _events: dict[str, type[DomainEvent]] = {}
+    _events: ClassVar[dict[str, type[DomainEvent]]] = {}
 
     @classmethod
     def register(cls, event_class: type[DomainEvent]):

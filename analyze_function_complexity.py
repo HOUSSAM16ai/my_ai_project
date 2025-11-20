@@ -450,7 +450,7 @@ def analyze_file(file_path: Path) -> list[FunctionMetrics]:
 
 
 def analyze_directory(
-    path: Path, exclude_dirs: set[str] = None, threshold: int = 10
+    path: Path, exclude_dirs: set[str] | None = None, threshold: int = 10
 ) -> list[FunctionMetrics]:
     """Analyze all Python files in a directory"""
     if exclude_dirs is None:

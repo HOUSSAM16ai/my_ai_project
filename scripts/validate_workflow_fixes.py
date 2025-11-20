@@ -91,12 +91,14 @@ class WorkflowValidator:
             steps = job_data.get("steps", [])
             for step in steps:
                 run_script = step.get("run", "")
-                if isinstance(run_script, str):
-                    # Check for self-monitoring skip logic
-                    if "WORKFLOW_NAME" in run_script and workflow_name in run_script:
-                        if "exit 0" in run_script or "Skipping self-monitoring" in run_script:
-                            has_self_skip = True
-                            break
+                if (
+                    isinstance(run_script, str)
+                    and "WORKFLOW_NAME" in run_script
+                    and workflow_name in run_script
+                    and ("exit 0" in run_script or "Skipping self-monitoring" in run_script)
+                ):
+                    has_self_skip = True
+                    break
 
         if has_self_skip:
             self.print_success(f"{workflow_file.name}: Has self-monitoring prevention")
@@ -132,12 +134,14 @@ class WorkflowValidator:
 
                 for step in steps:
                     run_script = step.get("run", "")
-                    if isinstance(run_script, str):
-                        # Look for status verification patterns
-                        if "needs." in run_script and ".result" in run_script:
-                            if "failure" in run_script or "success" in run_script:
-                                has_verification = True
-                                break
+                    if (
+                        isinstance(run_script, str)
+                        and "needs." in run_script
+                        and ".result" in run_script
+                        and ("failure" in run_script or "success" in run_script)
+                    ):
+                        has_verification = True
+                        break
 
                 if has_verification:
                     self.print_success(

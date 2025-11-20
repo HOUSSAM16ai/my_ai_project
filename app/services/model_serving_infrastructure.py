@@ -761,7 +761,7 @@ class ModelServingInfrastructure:
     def _collect_all_metrics(self):
         """جمع مقاييس جميع النماذج"""
         with self._lock:
-            for version_id in self._models:
+            for _version_id in self._models:
                 # في النظام الحقيقي، يتم جمع من نظام المراقبة
                 pass
 

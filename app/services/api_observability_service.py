@@ -21,9 +21,10 @@ import statistics
 import threading
 import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from fastapi import Request, Response
 
@@ -421,7 +422,7 @@ def get_observability_service() -> APIObservabilityService:
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def monitor_performance(func: F) -> F:
+def monitor_performance[F: Callable[..., Any]](func: F) -> F:
     """
     Decorator to monitor the performance of an endpoint.
     Records metrics to the global observability service.

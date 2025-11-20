@@ -118,7 +118,7 @@ def _int_env(name: str, default: int) -> int:
 
 
 def _bool_env(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(int(1 if default else 0))).strip().lower() in (
+    return os.getenv(name, str(1 if default else 0)).strip().lower() in (
         "1",
         "true",
         "yes",
@@ -234,9 +234,13 @@ def _load_deep_struct_map(force: bool = False) -> bool:
     if not DEEP_MAP_PATH or not os.path.isfile(DEEP_MAP_PATH):
         return False
     with _DEEP_LOCK:
-        if not force and DEEP_MAP_TTL > 0:
-            if (_now() - _DEEP_STRUCT_LOADED_AT) < DEEP_MAP_TTL and _DEEP_STRUCT_MAP is not None:
-                return False
+        if (
+            not force
+            and DEEP_MAP_TTL > 0
+            and (_now() - _DEEP_STRUCT_LOADED_AT) < DEEP_MAP_TTL
+            and _DEEP_STRUCT_MAP is not None
+        ):
+            return False
         try:
             with open(DEEP_MAP_PATH, encoding="utf-8") as f:
                 raw = f.read()
@@ -1594,8 +1598,8 @@ def code_index_project(
                     with open(fpath, encoding="utf-8", errors="replace") as f:
                         lines = f.readlines()
                     line_count = len(lines)
-                    non_empty = sum(1 for l in lines if l.strip())
-                    avg_len = sum(len(l) for l in lines) / line_count if line_count else 0
+                    non_empty = sum(1 for line in lines if line.strip())
+                    avg_len = sum(len(line) for line in lines) / line_count if line_count else 0
                     complexity_score = round(
                         (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
                     )
@@ -1978,67 +1982,67 @@ def code_search_semantic_tool(**kwargs):
 # __all__
 # ======================================================================================
 __all__ = [
-    "__version__",
-    "ToolResult",
-    "canonicalize_tool_name",
-    "resolve_tool_name",
-    "get_tool",
-    "has_tool",
-    "get_tools_schema",
-    "list_tools",
-    # Core Tools
-    "introspect_tools",
-    "memory_put",
-    "memory_get",
-    "generic_think",
-    "summarize_text",
-    "refine_text",
-    "write_file",
-    "write_file_if_changed",
-    "append_file",
-    "read_file",
-    "read_bulk_files",
-    "file_exists",
-    "list_dir",
-    "delete_file",
-    "ensure_file",
-    "ensure_directory",
-    "dispatch_tool",
-    "analyze_path_semantics",
-    "reload_deep_struct_map",
-    "code_index_project",
-    "code_search_lexical",
-    "code_search_semantic",
-    # Legacy alias wrappers
-    "generic_think_tool",
-    "summarize_text_tool",
-    "refine_text_tool",
-    "write_file_tool",
-    "write_file_if_changed_tool",
-    "append_file_tool",
-    "read_file_tool",
-    "read_bulk_files_tool",
-    "file_exists_tool",
-    "list_dir_tool",
-    "delete_file_tool",
-    "ensure_file_tool",
-    "ensure_directory_tool",
-    "introspect_tools_tool",
-    "memory_put_tool",
-    "memory_get_tool",
-    "dispatch_tool_tool",
-    "analyze_path_semantics_tool",
-    "reload_deep_struct_map_tool",
-    "code_index_project_tool",
-    "code_search_lexical_tool",
-    "code_search_semantic_tool",
+    "PROJECT_ROOT",
+    "_ALIAS_INDEX",
+    "_CAPABILITIES",
+    "_LAYER_STATS",
     # Registries / Stats
     "_TOOL_REGISTRY",
     "_TOOL_STATS",
-    "_ALIAS_INDEX",
-    "_CAPABILITIES",
-    "PROJECT_ROOT",
-    "_LAYER_STATS",
+    "ToolResult",
+    "__version__",
+    "analyze_path_semantics",
+    "analyze_path_semantics_tool",
+    "append_file",
+    "append_file_tool",
+    "canonicalize_tool_name",
+    "code_index_project",
+    "code_index_project_tool",
+    "code_search_lexical",
+    "code_search_lexical_tool",
+    "code_search_semantic",
+    "code_search_semantic_tool",
+    "delete_file",
+    "delete_file_tool",
+    "dispatch_tool",
+    "dispatch_tool_tool",
+    "ensure_directory",
+    "ensure_directory_tool",
+    "ensure_file",
+    "ensure_file_tool",
+    "file_exists",
+    "file_exists_tool",
+    "generic_think",
+    # Legacy alias wrappers
+    "generic_think_tool",
+    "get_tool",
+    "get_tools_schema",
+    "has_tool",
+    # Core Tools
+    "introspect_tools",
+    "introspect_tools_tool",
+    "list_dir",
+    "list_dir_tool",
+    "list_tools",
+    "memory_get",
+    "memory_get_tool",
+    "memory_put",
+    "memory_put_tool",
+    "read_bulk_files",
+    "read_bulk_files_tool",
+    "read_file",
+    "read_file_tool",
+    "refine_text",
+    "refine_text_tool",
+    "reload_deep_struct_map",
+    "reload_deep_struct_map_tool",
+    "resolve_tool_name",
+    "summarize_text",
+    "summarize_text_tool",
+    "write_file",
+    "write_file_if_changed",
+    "write_file_if_changed_tool",
+    "write_file_tool",
 ]
 
 # END OF FILE (v4.5.0-hyper-l5++-omniplan)

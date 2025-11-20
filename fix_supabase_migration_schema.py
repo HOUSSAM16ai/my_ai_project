@@ -146,7 +146,7 @@ def create_supabase_migration_schema(engine):
                 raise e
 
     except Exception as e:
-        print_error(f"Failed to create schema: {str(e)}")
+        print_error(f"Failed to create schema: {e!s}")
         print_info(traceback.format_exc())
         return False
 
@@ -238,7 +238,7 @@ def sync_alembic_to_supabase(engine):
                 raise e
 
     except Exception as e:
-        print_error(f"Failed to sync migrations: {str(e)}")
+        print_error(f"Failed to sync migrations: {e!s}")
         print_info(traceback.format_exc())
         return False
 
@@ -311,7 +311,7 @@ def verify_setup(engine):
             return True
 
     except Exception as e:
-        print_error(f"Verification failed: {str(e)}")
+        print_error(f"Verification failed: {e!s}")
         print_info(traceback.format_exc())
         return False
 
@@ -383,7 +383,7 @@ def main():
         return 0
 
     except Exception as e:
-        print_error(f"Fatal error: {str(e)}")
+        print_error(f"Fatal error: {e!s}")
         print_info(traceback.format_exc())
         return 1
 

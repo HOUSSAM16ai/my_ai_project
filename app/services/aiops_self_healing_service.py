@@ -351,13 +351,15 @@ class AIOpsService:
                 "parameters": {"threshold": 0.5, "timeout_seconds": 30},
             }
 
-        elif anomaly.anomaly_type == AnomalyType.TRAFFIC_ANOMALY:
-            if anomaly.metric_value > anomaly.expected_value:
-                return {
-                    "action": HealingAction.SCALE_UP,
-                    "reason": "Traffic spike detected, scaling up",
-                    "parameters": {"scale_factor": 2.0, "max_instances": 20},
-                }
+        elif (
+            anomaly.anomaly_type == AnomalyType.TRAFFIC_ANOMALY
+            and anomaly.metric_value > anomaly.expected_value
+        ):
+            return {
+                "action": HealingAction.SCALE_UP,
+                "reason": "Traffic spike detected, scaling up",
+                "parameters": {"scale_factor": 2.0, "max_instances": 20},
+            }
 
         return None
 
@@ -556,7 +558,7 @@ class AIOpsService:
         ]
 
         latest_forecast = None
-        if service_name in self.forecasts and self.forecasts[service_name]:
+        if self.forecasts.get(service_name):
             latest_forecast = self.forecasts[service_name][-1]
 
         return {

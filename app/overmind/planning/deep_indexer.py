@@ -509,7 +509,7 @@ def _cache_paths(cache_dir: str) -> tuple[str, str]:
 def _load_cache(cache_dir: str) -> dict[str, Any]:
     if not CONFIG["CACHE_ENABLE"]:
         return {}
-    main_path, meta_path = _cache_paths(cache_dir)
+    main_path, _meta_path = _cache_paths(cache_dir)
     try:
         if os.path.exists(main_path):
             with open(main_path, encoding="utf-8") as f:

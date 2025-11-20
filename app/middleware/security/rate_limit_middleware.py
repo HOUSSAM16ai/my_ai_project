@@ -9,6 +9,8 @@ Adapter for the existing rate limiter using the new middleware architecture.
 Provides adaptive rate limiting based on user tier.
 """
 
+import contextlib
+
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
@@ -103,10 +105,8 @@ class RateLimitMiddleware(BaseMiddleware):
         if ctx.user_id:
             tier_str = ctx.get_metadata("user_tier")
             if tier_str:
-                try:
+                with contextlib.suppress(KeyError, AttributeError):
                     tier = UserTier[tier_str.upper()]
-                except (KeyError, AttributeError):
-                    pass
 
         return tier
 

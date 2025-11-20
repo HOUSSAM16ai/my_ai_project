@@ -4,7 +4,7 @@ from app.security.waf import WebApplicationFirewall
 from app.security.zero_trust import ZeroTrustAuthenticator
 
 __all__ = [
-    "WebApplicationFirewall",
     "RateLimiter",
+    "WebApplicationFirewall",
     "ZeroTrustAuthenticator",
 ]

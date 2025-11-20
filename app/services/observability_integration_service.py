@@ -491,7 +491,7 @@ class ObservabilityIntegration:
                 "cluster_cpu_usage": stats.get("cpu_utilization", 0.0),
                 "cluster_memory_usage": stats.get("memory_utilization", 0.0),
             }
-        except:
+        except Exception:
             return {}
 
     def _collect_model_serving_metrics(self, model_serving) -> dict[str, Any]:
@@ -502,7 +502,7 @@ class ObservabilityIntegration:
                 "total_models": len(models),
                 "serving_models": sum(1 for m in models if m.status.value == "ready"),
             }
-        except:
+        except Exception:
             return {}
 
     # ======================================================================================

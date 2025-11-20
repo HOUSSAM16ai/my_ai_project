@@ -51,7 +51,7 @@ class TraceContext:
             parts = traceparent.split("-")
             if len(parts) != 4:
                 return None
-            version, trace_id, parent_span_id, flags = parts
+            _version, trace_id, parent_span_id, flags = parts
             sampled = flags == "01"
             baggage = {}
             tracestate = headers.get("tracestate") or headers.get("Tracestate", "")

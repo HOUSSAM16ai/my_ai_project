@@ -1,6 +1,5 @@
 # app/core/config.py
-from typing import Optional, List
-from pydantic import PostgresDsn, RedisDsn
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,11 +17,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
 
     # LLM
-    OPENAI_API_KEY: Optional[str] = None
-    OPENROUTER_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: str | None = None
+    OPENROUTER_API_KEY: str | None = None
 
     # Cors
-    BACKEND_CORS_ORIGINS: List[str] = ["*"]
+    BACKEND_CORS_ORIGINS: list[str] = ["*"]
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

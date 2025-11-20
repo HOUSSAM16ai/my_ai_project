@@ -8,7 +8,7 @@
 Maps Python exceptions to appropriate HTTP status codes and error responses.
 """
 
-from typing import Any
+from typing import Any, ClassVar
 
 
 class ExceptionMapper:
@@ -19,7 +19,7 @@ class ExceptionMapper:
     """
 
     # Default exception mappings
-    EXCEPTION_MAP: dict[type, dict[str, Any]] = {
+    EXCEPTION_MAP: ClassVar[dict[type, dict[str, Any]]] = {
         ValueError: {"status_code": 400, "message": "Invalid value provided"},
         TypeError: {"status_code": 400, "message": "Invalid type provided"},
         KeyError: {"status_code": 400, "message": "Missing required field"},

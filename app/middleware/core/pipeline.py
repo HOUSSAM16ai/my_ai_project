@@ -115,7 +115,7 @@ class SmartPipeline:
             mw_time = time.time() - mw_start
             self._update_middleware_stats(mw.name, False, mw_time)
             mw.on_error(ctx, e)
-            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {str(e)}")
+            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {e!s}")
             mw.on_complete(ctx, result)
             return result
 
@@ -195,7 +195,7 @@ class SmartPipeline:
             mw_time = time.time() - mw_start
             self._update_middleware_stats(mw.name, False, mw_time)
             mw.on_error(ctx, e)
-            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {str(e)}")
+            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {e!s}")
             mw.on_complete(ctx, result)
             return result
 

@@ -292,7 +292,7 @@ def batch_select_best_planners(
 
     from .ranking import rank_planners
 
-    req_set = set(s.lower().strip() for s in (required_capabilities or []))
+    req_set = {s.lower().strip() for s in (required_capabilities or [])}
     active = _GLOBAL_FACTORY._active_planner_names()
     if not active:
         return []
@@ -528,46 +528,46 @@ def instantiation_profiles(limit: int = 50) -> list[dict[str, Any]]:
 # ======================================================================================
 
 __all__ = [
-    # Core factory class (NEW)
-    "PlannerFactory",
-    # Exceptions (NEW)
-    "PlannerError",
-    "PlannerNotFound",
-    "PlannerQuarantined",
-    "SandboxTimeout",
-    "SandboxImportError",
-    "NoActivePlannersError",
-    "PlannerSelectionError",
-    "PlannerInstantiationError",
     # Configuration (NEW)
     "FactoryConfig",
-    # Discovery & metadata
-    "discover",
-    "refresh_metadata",
-    # Retrieval & selection
-    "get_planner",
-    "get_all_planners",
-    "list_planners",
-    "select_best_planner",
-    "select_best_planner_name",
-    "batch_select_best_planners",
-    # Maintenance
-    "self_heal",
-    "reload_planners",
-    # Diagnostics
-    "planner_stats",
-    "describe_planner",
-    "diagnostics_report",
-    "diagnostics_json",
-    "export_diagnostics",
-    "health_check",
-    "list_quarantined",
-    # Profiling
-    "selection_profiles",
-    "instantiation_profiles",
+    "NoActivePlannersError",
+    # Exceptions (NEW)
+    "PlannerError",
+    # Core factory class (NEW)
+    "PlannerFactory",
+    "PlannerInstantiationError",
+    "PlannerNotFound",
+    "PlannerQuarantined",
+    "PlannerSelectionError",
+    "SandboxImportError",
+    "SandboxTimeout",
     # Async wrappers
     "a_get_planner",
     "a_select_best_planner",
+    "batch_select_best_planners",
+    "describe_planner",
+    "diagnostics_json",
+    "diagnostics_report",
+    # Discovery & metadata
+    "discover",
+    "export_diagnostics",
+    "get_all_planners",
+    # Retrieval & selection
+    "get_planner",
+    "health_check",
+    "instantiation_profiles",
+    "list_planners",
+    "list_quarantined",
+    # Diagnostics
+    "planner_stats",
+    "refresh_metadata",
+    "reload_planners",
+    "select_best_planner",
+    "select_best_planner_name",
+    # Profiling
+    "selection_profiles",
+    # Maintenance
+    "self_heal",
 ]
 
 # ======================================================================================

@@ -96,7 +96,7 @@ class QueryClassifier:
 
         # Weighted average
         weights = [0.2, 0.3, 0.3, 0.2]
-        complexity = sum(v * w for v, w in zip(factors.values(), weights))
+        complexity = sum(v * w for v, w in zip(factors.values(), weights, strict=False))
 
         return min(complexity, 1.0)
 
@@ -264,10 +264,7 @@ class IntelligentRouter:
         analysis = await self.classifier.analyze(query, context)
 
         # Select tier
-        if user_tier_preference:
-            selected_tier = user_tier_preference
-        else:
-            selected_tier = self.select_optimal_tier(analysis)
+        selected_tier = user_tier_preference or self.select_optimal_tier(analysis)
 
         # Check cost constraints
         estimated_tokens = self._estimate_tokens(query, analysis)
@@ -344,9 +341,9 @@ def get_router() -> IntelligentRouter:
 # ======================================================================================
 
 __all__ = [
-    "IntelligentRouter",
-    "QueryClassifier",
     "CostOptimizer",
+    "IntelligentRouter",
     "ModelTier",
+    "QueryClassifier",
     "get_router",
 ]

@@ -236,7 +236,7 @@ def list_tables():
 
         except Exception as e:
             print(f"\n{R}❌ حدث خطأ / Error occurred:{E}")
-            print(f"{R}{str(e)}{E}\n")
+            print(f"{R}{e!s}{E}\n")
             import traceback
 
             traceback.print_exc()
@@ -263,7 +263,7 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"\n{R}❌ خطأ غير متوقع / Unexpected error:{E}")
-        print(f"{R}{str(e)}{E}\n")
+        print(f"{R}{e!s}{E}\n")
         import traceback
 
         traceback.print_exc()

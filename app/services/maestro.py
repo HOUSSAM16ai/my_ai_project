@@ -178,7 +178,7 @@ class _GenerationServiceAdapter:
         user_prompt: str,
         temperature: float = 0.3,
         max_tokens: int = 800,
-        max_retries: int = None,
+        max_retries: int | None = None,
         fail_hard: bool = False,
         model: str | None = None,
     ) -> str:
@@ -249,7 +249,7 @@ class _GenerationServiceAdapter:
         user_prompt: str,
         format_schema: dict,
         temperature: float = 0.2,
-        max_retries: int = None,
+        max_retries: int | None = None,
         fail_hard: bool = False,
         model: str | None = None,
     ) -> dict | None:
@@ -384,10 +384,10 @@ def ensure_adapter_ready(raise_on_fail: bool = False) -> bool:
 
 
 __all__ = [
-    "generation_service",
+    "__version__",
     "diagnostics",
     "ensure_adapter_ready",
-    "__version__",
+    "generation_service",
 ]
 
 # ======================================================================================

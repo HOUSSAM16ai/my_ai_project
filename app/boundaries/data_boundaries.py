@@ -478,7 +478,7 @@ class ReadModel:
         """استعلام من نموذج القراءة"""
         # بحث بسيط للمثال
         results = []
-        for entity_id, entity_data in self._data.items():
+        for _entity_id, entity_data in self._data.items():
             if all(entity_data.get(k) == v for k, v in filters.items()):
                 results.append(entity_data)
         return results

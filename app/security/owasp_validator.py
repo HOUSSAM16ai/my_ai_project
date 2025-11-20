@@ -23,7 +23,7 @@ Similar to tools used by:
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 
 class SecuritySeverity(Enum):
@@ -85,7 +85,7 @@ class OWASPValidator:
     _CONTEXT_AFTER = 100  # Characters to include after match for context analysis
 
     # Safe patterns that indicate a match is not a real security issue
-    _SAFE_SECRET_PATTERNS = [
+    _SAFE_SECRET_PATTERNS: ClassVar[list[str]] = [
         "class ",  # Enum or class definition
         "Enum",
         '= "api_key"',  # String literal representing a type, not actual key
@@ -112,7 +112,7 @@ class OWASPValidator:
     ]
 
     # Environment variable access patterns (safe - not hardcoded)
-    _ENV_VAR_PATTERNS = [
+    _ENV_VAR_PATTERNS: ClassVar[list[str]] = [
         "os.environ",
         "os.getenv",
         "getenv(",
@@ -187,11 +187,10 @@ class OWASPValidator:
                 )
 
         # Check for plain text password storage
-        if re.search(r"password\s*=\s*request", code, re.IGNORECASE):
-            if "hash" not in code.lower():
-                issues.append(
-                    SecurityIssue(
-                        category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+        if re.search(r"password\s*=\s*request", code, re.IGNORECASE) and "hash" not in code.lower():
+            issues.append(
+                SecurityIssue(
+                    category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
                         severity=SecuritySeverity.CRITICAL,
                         title="Potential Plain Text Password Storage",
                         description="Password appears to be stored without hashing",
@@ -253,11 +252,14 @@ class OWASPValidator:
             )
 
         # Check for missing authorization checks
-        if re.search(r"@app\.route.*<int:user_id>", code):
-            if "@login_required" not in code and "@require_auth" not in code:
-                issues.append(
-                    SecurityIssue(
-                        category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+        if (
+            re.search(r"@app\.route.*<int:user_id>", code)
+            and "@login_required" not in code
+            and "@require_auth" not in code
+        ):
+            issues.append(
+                SecurityIssue(
+                    category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
                         severity=SecuritySeverity.HIGH,
                         title="Missing Authorization Check",
                         description="Endpoint with user_id parameter lacks authorization",
@@ -436,11 +438,14 @@ class OWASPValidator:
         issues = []
 
         # Check if authentication events are logged
-        if "login" in code.lower() or "authenticate" in code.lower():
-            if "log" not in code.lower() and "audit" not in code.lower():
-                issues.append(
-                    SecurityIssue(
-                        category=OWASPCategory.A09_LOGGING_FAILURES,
+        if (
+            ("login" in code.lower() or "authenticate" in code.lower())
+            and "log" not in code.lower()
+            and "audit" not in code.lower()
+        ):
+            issues.append(
+                SecurityIssue(
+                    category=OWASPCategory.A09_LOGGING_FAILURES,
                         severity=SecuritySeverity.MEDIUM,
                         title="Missing Security Event Logging",
                         description="Authentication events should be logged",
@@ -496,7 +501,7 @@ class OWASPValidator:
                     category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
                     severity=SecuritySeverity.INFO,
                     title="File Validation Error",
-                    description=f"Could not validate file: {str(e)}",
+                    description=f"Could not validate file: {e!s}",
                     file_path=file_path,
                 )
             ]
@@ -512,7 +517,7 @@ class OWASPValidator:
             Comprehensive security report
         """
         # Count by severity
-        severity_counts = {severity: 0 for severity in SecuritySeverity}
+        severity_counts = dict.fromkeys(SecuritySeverity, 0)
         for issue in issues:
             severity_counts[issue.severity] += 1
 

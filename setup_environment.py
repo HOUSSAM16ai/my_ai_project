@@ -35,7 +35,7 @@ def write_env_file(env_vars, mode):
                     key, _, _ = line.partition("=")
                     existing_vars[key.strip()] = line
 
-        new_vars_dict = {key: line for key, line in (line.partition("=")[::2] for line in env_vars)}
+        new_vars_dict = dict(line.partition("=")[::2] for line in env_vars)
 
         # Update existing vars or append new ones
         for key, line in new_vars_dict.items():

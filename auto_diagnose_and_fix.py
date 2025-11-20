@@ -229,7 +229,7 @@ class CogniForgeAutoDiagnostic:
             return DiagnosticResult(
                 check_name="اتصال قاعدة البيانات / Database connection",
                 passed=False,
-                message=f"✗ Database check failed: {str(e)}",
+                message=f"✗ Database check failed: {e!s}",
                 severity="high",
                 fix_available=False,
             )
@@ -267,7 +267,7 @@ class CogniForgeAutoDiagnostic:
             return DiagnosticResult(
                 check_name="التبعيات المطلوبة / Required dependencies",
                 passed=False,
-                message=f"✗ Dependency check failed: {str(e)}",
+                message=f"✗ Dependency check failed: {e!s}",
                 severity="medium",
                 fix_available=False,
             )
@@ -322,7 +322,7 @@ class CogniForgeAutoDiagnostic:
             return DiagnosticResult(
                 check_name="هجرات قاعدة البيانات / Database migrations",
                 passed=False,
-                message=f"✗ Migration check failed: {str(e)}",
+                message=f"✗ Migration check failed: {e!s}",
                 severity="high",
                 fix_available=False,
             )
@@ -358,9 +358,12 @@ class CogniForgeAutoDiagnostic:
         env_result = self.check_env_file()
         self.add_result(env_result)
 
-        if not env_result.passed and env_result.fix_available:
-            if self.auto_fix or self.ask_for_fix("Create .env file?"):
-                self.fix_env_file()
+        if (
+            not env_result.passed
+            and env_result.fix_available
+            and (self.auto_fix or self.ask_for_fix("Create .env file?"))
+        ):
+            self.fix_env_file()
 
         # 2. Check API keys
         self.print_section("2️⃣ API Keys", "🔑")
@@ -372,9 +375,12 @@ class CogniForgeAutoDiagnostic:
         dep_result = self.check_dependencies()
         self.add_result(dep_result)
 
-        if not dep_result.passed and dep_result.fix_available:
-            if self.auto_fix or self.ask_for_fix("Install missing dependencies?"):
-                self.fix_dependencies()
+        if (
+            not dep_result.passed
+            and dep_result.fix_available
+            and (self.auto_fix or self.ask_for_fix("Install missing dependencies?"))
+        ):
+            self.fix_dependencies()
 
         # 4. Check database connection
         self.print_section("4️⃣ Database", "💾")
@@ -386,9 +392,12 @@ class CogniForgeAutoDiagnostic:
             migration_result = self.check_migrations()
             self.add_result(migration_result)
 
-            if not migration_result.passed and migration_result.fix_available:
-                if self.auto_fix or self.ask_for_fix("Apply database migrations?"):
-                    self.fix_migrations()
+            if (
+                not migration_result.passed
+                and migration_result.fix_available
+                and (self.auto_fix or self.ask_for_fix("Apply database migrations?"))
+            ):
+                self.fix_migrations()
 
     def ask_for_fix(self, question: str) -> bool:
         """Ask user if they want to apply a fix"""

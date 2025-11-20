@@ -3,11 +3,12 @@
 The main application entry point for the FastAPI service, orchestrated by the
 Reality Kernel V3.
 """
-from datetime import datetime, timezone
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from datetime import UTC, datetime
 
-from app.api.routers import admin, ai_service, chat, system, crud, observability, security, gateway
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.api.routers import admin, ai_service, chat, crud, gateway, observability, security, system
 from app.kernel import kernel
 from app.middleware.fastapi_error_handlers import add_error_handlers
 
@@ -46,7 +47,7 @@ async def api_v1_health():
             "status": "success",
             "message": "System operational",
             "data": {"status": "healthy", "database": "connected", "version": "v1.0"},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
         status_code=200,
     )

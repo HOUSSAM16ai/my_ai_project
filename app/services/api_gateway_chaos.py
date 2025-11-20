@@ -12,6 +12,7 @@
 #   - Automated disaster recovery
 #   - Chaos experiments management
 
+import logging
 import random
 import threading
 import time
@@ -21,8 +22,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-
-import logging
 
 # ======================================================================================
 # ENUMERATIONS

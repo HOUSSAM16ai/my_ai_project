@@ -167,6 +167,6 @@ DEFAULT_CONFIG = FactoryConfig.from_env()
 
 
 __all__ = [
-    "FactoryConfig",
     "DEFAULT_CONFIG",
+    "FactoryConfig",
 ]

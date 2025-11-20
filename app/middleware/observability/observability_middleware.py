@@ -193,7 +193,7 @@ class ObservabilityMiddleware(BaseMiddleware):
             # Log exception
             self.obs.log(
                 level="ERROR",
-                message=f"Request failed: {str(error)}",
+                message=f"Request failed: {error!s}",
                 context={
                     "exception_type": type(error).__name__,
                     "method": ctx.method,

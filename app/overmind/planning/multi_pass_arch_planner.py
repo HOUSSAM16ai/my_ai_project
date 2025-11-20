@@ -122,7 +122,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
+from typing import Any, ClassVar
 
 from .base_planner import BasePlanner
 
@@ -193,7 +193,7 @@ class AdaptiveMultiPassArchPlanner(BasePlanner):
     name = "adaptive_multi_pass_arch_planner"
     version = "0.9.0-epic-l5"
     production_ready = False
-    capabilities = {
+    capabilities: ClassVar[set[str]] = {
         "architecture",
         "multi_stage",
         "llm",

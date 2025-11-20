@@ -17,7 +17,7 @@ import json
 import logging
 import sys
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 
 class StructuredLogger:
@@ -31,7 +31,7 @@ class StructuredLogger:
     - Loggly (more structure, better search)
     """
 
-    LOG_LEVELS = {
+    LOG_LEVELS: ClassVar[dict[str, int]] = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,

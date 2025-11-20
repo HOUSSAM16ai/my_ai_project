@@ -61,7 +61,7 @@ def get_code_metrics() -> dict[str, Any]:
     if code == 0:
         try:
             metrics["lines_of_code"] = int(output.split()[0])
-        except:
+        except Exception:
             metrics["lines_of_code"] = 0
 
     # Count files
@@ -69,7 +69,7 @@ def get_code_metrics() -> dict[str, Any]:
     if code == 0:
         try:
             metrics["python_files"] = int(output.strip())
-        except:
+        except Exception:
             metrics["python_files"] = 0
 
     # Get Radon complexity
@@ -90,7 +90,7 @@ def get_code_metrics() -> dict[str, Any]:
                 round(total_complexity / function_count, 2) if function_count > 0 else 0
             )
             metrics["total_functions"] = function_count
-        except:
+        except Exception:
             metrics["average_complexity"] = 0
             metrics["total_functions"] = 0
 
@@ -108,7 +108,7 @@ def get_code_metrics() -> dict[str, Any]:
             metrics["maintainability_index"] = (
                 round(sum(mi_scores) / len(mi_scores), 2) if mi_scores else 0
             )
-        except:
+        except Exception:
             metrics["maintainability_index"] = 0
 
     return metrics
@@ -147,7 +147,7 @@ def get_test_metrics() -> dict[str, Any]:
     if code == 0:
         try:
             metrics["test_files"] = int(output.strip())
-        except:
+        except Exception:
             metrics["test_files"] = 0
 
     # Extract test count from pytest output
@@ -161,7 +161,7 @@ def get_test_metrics() -> dict[str, Any]:
                 metrics["total_tests"] = int(match.group(1))
             else:
                 metrics["total_tests"] = 0
-        except:
+        except Exception:
             metrics["total_tests"] = 0
     else:
         metrics["total_tests"] = 0
@@ -174,7 +174,7 @@ def get_security_metrics() -> dict[str, Any]:
     metrics = {}
 
     # Run Bandit
-    code, output = run_command("bandit -r app/ -c pyproject.toml -f json 2>&1")
+    _code, output = run_command("bandit -r app/ -c pyproject.toml -f json 2>&1")
 
     # Parse Bandit output
     try:
@@ -191,7 +191,7 @@ def get_security_metrics() -> dict[str, Any]:
         metrics["security_total"] = (
             metrics["security_high"] + metrics["security_medium"] + metrics["security_low"]
         )
-    except:
+    except Exception:
         metrics["security_high"] = 0
         metrics["security_medium"] = 0
         metrics["security_low"] = 0
@@ -219,7 +219,7 @@ def get_linting_metrics() -> dict[str, Any]:
                 metrics["pylint_score"] = float(match.group(1))
             else:
                 metrics["pylint_score"] = 0.0
-        except:
+        except Exception:
             metrics["pylint_score"] = 0.0
     else:
         metrics["pylint_score"] = 0.0

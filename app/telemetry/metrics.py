@@ -146,7 +146,7 @@ class Summary:
     def get_quantiles(self) -> dict[float, float]:
         """Get quantile values"""
         if not self.observations:
-            return {q: 0.0 for q in self.quantiles}
+            return dict.fromkeys(self.quantiles, 0.0)
 
         sorted_obs = sorted(self.observations)
         return {q: sorted_obs[int(len(sorted_obs) * q)] for q in self.quantiles}

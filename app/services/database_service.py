@@ -178,13 +178,13 @@ class DatabaseService:
                     total_records += count
                     table_sizes[name] = count
                 except Exception as e:
-                    health["warnings"].append(f"Could not count {name}: {str(e)}")
+                    health["warnings"].append(f"Could not count {name}: {e!s}")
             health["metrics"].update({"total_records": total_records, "table_sizes": table_sizes})
 
         except Exception as e:
             self.logger.error(f"Database health check failed: {e}", exc_info=True)
             health["status"] = "error"
-            health["errors"].append(f"Health check failed: {str(e)}")
+            health["errors"].append(f"Health check failed: {e!s}")
         return health
 
     def get_table_schema(self, table_name: str) -> dict[str, Any]:

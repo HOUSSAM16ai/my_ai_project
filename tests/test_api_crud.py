@@ -1,6 +1,4 @@
 # tests/test_api_crud.py
-import pytest
-from starlette import status
 
 
 class TestHealthEndpoints:

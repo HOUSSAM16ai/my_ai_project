@@ -2,25 +2,24 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, List, Optional
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, Text, func
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 # Setup password hashing
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class MessageRole(str, enum.Enum):
@@ -81,10 +80,10 @@ class MissionEventType(str, enum.Enum):
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     full_name: str = Field(max_length=150)
     email: str = Field(max_length=150, unique=True, index=True)
-    password_hash: Optional[str] = Field(default=None, max_length=256)
+    password_hash: str | None = Field(default=None, max_length=256)
     is_admin: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -96,10 +95,10 @@ class User(SQLModel, table=True):
     )
 
     # Relationships
-    admin_conversations: List["AdminConversation"] = Relationship(
+    admin_conversations: list[AdminConversation] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
-    missions: List["Mission"] = Relationship(
+    missions: list[Mission] = Relationship(
         sa_relationship=relationship("Mission", back_populates="initiator")
     )
 
@@ -117,7 +116,7 @@ class User(SQLModel, table=True):
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(
@@ -126,17 +125,17 @@ class AdminConversation(SQLModel, table=True):
     )
 
     # Relationships
-    user: "User" = Relationship(
+    user: User = Relationship(
         sa_relationship=relationship("User", back_populates="admin_conversations")
     )
-    messages: List["AdminMessage"] = Relationship(
+    messages: list[AdminMessage] = Relationship(
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
 
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole = Field(sa_column=Column(SAEnum(MessageRole)))
     content: str = Field(sa_column=Column(Text))
@@ -146,20 +145,20 @@ class AdminMessage(SQLModel, table=True):
     )
 
     # Relationships
-    conversation: "AdminConversation" = Relationship(
+    conversation: AdminConversation = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="messages")
     )
 
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     objective: str = Field(sa_column=Column(Text))
     status: MissionStatus = Field(
         default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus))
     )
     initiator_id: int = Field(foreign_key="users.id", index=True)
-    active_plan_id: Optional[int] = Field(default=None, foreign_key="mission_plans.id")
+    active_plan_id: int | None = Field(default=None, foreign_key="mission_plans.id")
 
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -171,38 +170,38 @@ class Mission(SQLModel, table=True):
     )
 
     # Relationships
-    initiator: "User" = Relationship(
+    initiator: User = Relationship(
         sa_relationship=relationship("User", back_populates="missions")
     )
-    tasks: List["Task"] = Relationship(
+    tasks: list[Task] = Relationship(
         sa_relationship=relationship(
             "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
         )
     )
-    mission_plans: List["MissionPlan"] = Relationship(
+    mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship(
             "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    events: List["MissionEvent"] = Relationship(
+    events: list[MissionEvent] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     version: int = Field(default=1)
     planner_name: str = Field(max_length=100)
     status: PlanStatus = Field(default=PlanStatus.DRAFT, sa_column=Column(SAEnum(PlanStatus)))
     score: float = Field(default=0.0)
-    rationale: Optional[str] = Field(sa_column=Column(Text))
+    rationale: str | None = Field(sa_column=Column(Text))
     # Avoid JSONB for SQLite compat
-    raw_json: Optional[str] = Field(sa_column=Column(Text))
-    stats_json: Optional[str] = Field(sa_column=Column(Text))
-    warnings_json: Optional[str] = Field(sa_column=Column(Text))
-    content_hash: Optional[str] = Field(max_length=64)
+    raw_json: str | None = Field(sa_column=Column(Text))
+    stats_json: str | None = Field(sa_column=Column(Text))
+    warnings_json: str | None = Field(sa_column=Column(Text))
+    content_hash: str | None = Field(max_length=64)
 
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -210,41 +209,41 @@ class MissionPlan(SQLModel, table=True):
     )
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship(
             "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    tasks: List["Task"] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
+    tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
 
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    plan_id: Optional[int] = Field(default=None, foreign_key="mission_plans.id", index=True)
+    plan_id: int | None = Field(default=None, foreign_key="mission_plans.id", index=True)
     task_key: str = Field(max_length=50)
-    description: Optional[str] = Field(sa_column=Column(Text))
-    tool_name: Optional[str] = Field(max_length=100)
+    description: str | None = Field(sa_column=Column(Text))
+    tool_name: str | None = Field(max_length=100)
     # Avoid JSONB for SQLite compat, use JSON if available or Text
-    tool_args_json: Optional[Any] = Field(
+    tool_args_json: Any | None = Field(
         default=None, sa_column=Column(Text)
     )  # Postgres specific or use string
     status: TaskStatus = Field(default=TaskStatus.PENDING, sa_column=Column(SAEnum(TaskStatus)))
     attempt_count: int = Field(default=0)
     max_attempts: int = Field(default=3)
     priority: int = Field(default=0)
-    risk_level: Optional[str] = Field(max_length=50)
-    criticality: Optional[str] = Field(max_length=50)
-    depends_on_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
-    result_text: Optional[str] = Field(sa_column=Column(Text))
-    result_meta_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
-    error_text: Optional[str] = Field(sa_column=Column(Text))
+    risk_level: str | None = Field(max_length=50)
+    criticality: str | None = Field(max_length=50)
+    depends_on_json: Any | None = Field(default=None, sa_column=Column(Text))
+    result_text: str | None = Field(sa_column=Column(Text))
+    result_meta_json: Any | None = Field(default=None, sa_column=Column(Text))
+    error_text: str | None = Field(sa_column=Column(Text))
 
-    started_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
-    finished_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
-    next_retry_at: Optional[datetime] = Field(sa_column=Column(DateTime(timezone=True)))
-    duration_ms: Optional[int] = Field(default=0)
+    started_at: datetime | None = Field(sa_column=Column(DateTime(timezone=True)))
+    finished_at: datetime | None = Field(sa_column=Column(DateTime(timezone=True)))
+    next_retry_at: datetime | None = Field(sa_column=Column(DateTime(timezone=True)))
+    duration_ms: int | None = Field(default=0)
 
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -256,12 +255,12 @@ class Task(SQLModel, table=True):
     )
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship(
             "Mission", back_populates="tasks", foreign_keys="[Task.mission_id]"
         )
     )
-    plan: "MissionPlan" = Relationship(
+    plan: MissionPlan = Relationship(
         sa_relationship=relationship(
             "MissionPlan", back_populates="tasks", foreign_keys="[Task.plan_id]"
         )
@@ -270,10 +269,10 @@ class Task(SQLModel, table=True):
 
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     event_type: MissionEventType = Field(sa_column=Column(SAEnum(MissionEventType)))
-    payload_json: Optional[Any] = Field(default=None, sa_column=Column(Text))
+    payload_json: Any | None = Field(default=None, sa_column=Column(Text))
 
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -281,30 +280,30 @@ class MissionEvent(SQLModel, table=True):
     )
 
     # Relationships
-    mission: "Mission" = Relationship(
+    mission: Mission = Relationship(
         sa_relationship=relationship("Mission", back_populates="events")
     )
 
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
     template: str
 
-    generated_prompts: List["GeneratedPrompt"] = Relationship(
+    generated_prompts: list[GeneratedPrompt] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
 
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
     # Relationships
-    template: "PromptTemplate" = Relationship(
+    template: PromptTemplate = Relationship(
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
@@ -328,10 +327,9 @@ def update_mission_status(
 
 
 # Rebuild models for forward refs
-import sys
-import traceback
-
 try:
     SQLModel.model_rebuild()
 except Exception:
+    import traceback
+
     traceback.print_exc()

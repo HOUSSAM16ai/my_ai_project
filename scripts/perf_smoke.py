@@ -1,8 +1,8 @@
-import time
-import requests
-import statistics
-import threading
 import json
+import statistics
+import time
+
+import requests
 
 # Basic performance smoke test script
 # Assumes app is running on localhost:8000

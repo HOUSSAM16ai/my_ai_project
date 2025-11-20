@@ -217,8 +217,8 @@ class TelemetryManager:
 
 
 __all__ = [
+    "InstantiationProfiler",
     "RingBuffer",
     "SelectionProfiler",
-    "InstantiationProfiler",
     "TelemetryManager",
 ]

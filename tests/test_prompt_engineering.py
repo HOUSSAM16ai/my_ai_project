@@ -27,4 +27,4 @@ async def test_generate_prompt_success(service: PromptEngineeringService, sessio
     )
 
     assert isinstance(result, str)
-    assert "Default template: Hello World" == result
+    assert result == "Default template: Hello World"

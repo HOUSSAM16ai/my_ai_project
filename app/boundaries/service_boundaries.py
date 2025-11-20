@@ -270,7 +270,7 @@ class APIGateway:
             raise ValueError(f"Service {service_name} not found")
 
         # تحقق من Cache
-        cache_key = f"{service_name}:{endpoint}:{str(params)}"
+        cache_key = f"{service_name}:{endpoint}:{params!s}"
         if cache_key in self._cache:
             cached_data, cached_at = self._cache[cache_key]
             if datetime.now() - cached_at < self._cache_ttl:

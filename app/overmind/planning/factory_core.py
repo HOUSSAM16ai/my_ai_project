@@ -279,7 +279,7 @@ class PlannerFactory:
                     module=rec.module,
                     error=error_msg,
                 )
-                raise PlannerInstantiationError(key, error_msg)
+                raise PlannerInstantiationError(key, error_msg) from e
 
         try:
             cls = self._get_planner_class(key)
@@ -294,7 +294,7 @@ class PlannerFactory:
                 planner=key,
                 error=error_msg,
             )
-            raise PlannerInstantiationError(key, error_msg)
+            raise PlannerInstantiationError(key, error_msg) from e
 
         with self._state.lock:
             # Double-check to prevent race
@@ -659,8 +659,8 @@ class PlannerFactory:
 
 
 __all__ = [
+    "FACTORY_VERSION",
+    "FactoryState",
     "PlannerFactory",
     "PlannerRecord",
-    "FactoryState",
-    "FACTORY_VERSION",
 ]

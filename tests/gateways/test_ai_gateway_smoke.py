@@ -45,10 +45,10 @@ class FakeHttpClient(HttpClient):
         self,
         url: str,
         *,
-        headers: dict = None,
-        json: dict = None,
+        headers: dict | None = None,
+        json: dict | None = None,
         stream: bool = False,
-        timeout: int = None,
+        timeout: int | None = None,
     ):
         return self.response
 
@@ -131,5 +131,5 @@ def test_ai_gateway_integration(mock_settings, mock_logger):
     gateway = AIServiceGateway(http_client=http_client, settings=mock_settings, logger=mock_logger)
 
     # This will likely fail if the service is not running, but it's a start
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         list(gateway.stream_chat("Hi", "conv123", "user1"))

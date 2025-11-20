@@ -42,9 +42,8 @@ def extract_revision_info(filepath):
     revision = revision_match.group(1)
     down_revision = None
 
-    if down_match:
-        if "None" not in down_match.group(0):
-            down_revision = down_match.group(2) if down_match.group(2) else None
+    if down_match and "None" not in down_match.group(0):
+        down_revision = down_match.group(2) if down_match.group(2) else None
 
     return {
         "revision": revision,

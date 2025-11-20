@@ -24,7 +24,7 @@ def test_error_handling():
         print("   ✅ Service imported successfully")
     except ImportError as e:
         print(f"   ❌ Failed to import service: {e}")
-        raise AssertionError(f"Failed to import service: {e}")
+        raise AssertionError(f"Failed to import service: {e}") from e
 
     # Test 2: Create service instance
     print("\n2️⃣ Testing service instantiation...")
@@ -33,7 +33,7 @@ def test_error_handling():
         print("   ✅ Service instantiated successfully")
     except Exception as e:
         print(f"   ❌ Failed to create service: {e}")
-        raise AssertionError(f"Failed to create service: {e}")
+        raise AssertionError(f"Failed to create service: {e}") from e
 
     # Test 3: Check API key detection
     print("\n3️⃣ Testing API key detection...")

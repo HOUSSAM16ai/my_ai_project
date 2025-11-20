@@ -195,16 +195,18 @@ def test_self_heal_with_backoff():
     factory = load_factory_module()
 
     # Mock _active_planner_names to return empty initially
-    with unittest.mock.patch.object(factory, "_active_planner_names", return_value=[]):
-        with unittest.mock.patch.object(factory, "discover"):
-            start = time.time()
-            result = factory.self_heal(force=True, max_attempts=3)
-            elapsed = time.time() - start
+    with (
+        unittest.mock.patch.object(factory, "_active_planner_names", return_value=[]),
+        unittest.mock.patch.object(factory, "discover"),
+    ):
+        start = time.time()
+        result = factory.self_heal(force=True, max_attempts=3)
+        elapsed = time.time() - start
 
-            # Should have attempted multiple times with delays
-            assert result["attempts"] > 0, "Should have attempted self-heal"
-            # With backoff: 0.2 + 0.4 + 0.8 = 1.4s minimum
-            assert elapsed >= 1.0, "Should have used backoff delays"
+        # Should have attempted multiple times with delays
+        assert result["attempts"] > 0, "Should have attempted self-heal"
+        # With backoff: 0.2 + 0.4 + 0.8 = 1.4s minimum
+        assert elapsed >= 1.0, "Should have used backoff delays"
 
     print("✓ Test 11: self_heal with exponential backoff works")
 
