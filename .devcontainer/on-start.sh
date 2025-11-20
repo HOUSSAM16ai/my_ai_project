@@ -11,6 +11,7 @@
 ###############################################################################
 
 set -Eeuo pipefail
+cd /app  # FORCE ROOT CONTEXT
 source .devcontainer/utils.sh
 
 trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
@@ -46,8 +47,13 @@ fi
 # 2. Migrations (Retry/Ensure)
 log "Step 2/3: Ensuring Database Schema..."
 if command -v alembic &> /dev/null; then
-    alembic upgrade head
-    ok "✅ Database migrations applied."
+    # VERIFY FILE
+    if [ ! -f "alembic.ini" ]; then
+        warn "WARNING: alembic.ini not found in $(pwd). Skipping migrations."
+    else
+        alembic upgrade head
+        ok "✅ Database migrations applied."
+    fi
 fi
 
 # 3. Create or update admin user

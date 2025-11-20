@@ -10,6 +10,7 @@
 ###############################################################################
 
 set -Eeuo pipefail
+cd /app  # FORCE ROOT CONTEXT
 source .devcontainer/utils.sh
 
 trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
@@ -73,8 +74,14 @@ log "Step 3/3: Attempting Database Migrations..."
 # We will try to run upgrade.
 if command -v alembic &> /dev/null; then
     log "Running Alembic migrations..."
-    # We use '|| true' to prevent failure if DB is not up yet (postCreate might happen before DB is ready)
-    alembic upgrade head || warn "Migration attempt failed (DB might not be ready). Will retry in on-start.sh."
+
+    # VERIFY FILE
+    if [ ! -f "alembic.ini" ]; then
+        warn "WARNING: alembic.ini not found in $(pwd). Skipping migrations."
+    else
+        # We use '|| true' to prevent failure if DB is not up yet (postCreate might happen before DB is ready)
+        alembic upgrade head || warn "Migration attempt failed (DB might not be ready). Will retry in on-start.sh."
+    fi
 else
     warn "Alembic not found. Skipping migrations."
 fi
