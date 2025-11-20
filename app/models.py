@@ -1,15 +1,25 @@
 # app/models.py
 from __future__ import annotations
 import enum
-from datetime import datetime, UTC
-from typing import List, Optional, Any
-from sqlmodel import Field, SQLModel, Relationship, Column, JSON
-from sqlalchemy import String, Text, DateTime, func, Index
+from datetime import datetime, timezone
+from typing import List, Optional, TYPE_CHECKING
+
+from sqlalchemy import Column, DateTime, String, Text, func
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.orm import relationship
+from sqlmodel import Field, SQLModel, Relationship, JSON
+from passlib.context import CryptContext
+
+if TYPE_CHECKING:
+    # This block prevents circular imports during runtime
+    pass
+
+# Setup password hashing
+# Using argon2 for robust security and to avoid bcrypt version conflicts
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def utc_now() -> datetime:
-    return datetime.now(UTC)
-
-Json = JSON()
+    return datetime.now(timezone.utc)
 
 class MessageRole(str, enum.Enum):
     USER = "user"
@@ -24,58 +34,118 @@ class User(SQLModel, table=True):
     email: str = Field(max_length=150, unique=True, index=True)
     password_hash: Optional[str] = Field(default=None, max_length=256)
     is_admin: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now()))
-    updated_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()))
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    )
 
-    admin_conversations: List["AdminConversation"] = Relationship(back_populates="user")
-    missions: List["Mission"] = Relationship(back_populates="user")
+    # Relationships
+    # We use sa_relationship to explicitly define the relationship for SQLAlchemy,
+    # bypassing SQLModel's inference which fails with List['String'] forward refs.
+    admin_conversations: List["AdminConversation"] = Relationship(
+        sa_relationship=relationship("AdminConversation", back_populates="user")
+    )
+    missions: List["Mission"] = Relationship(
+        sa_relationship=relationship("Mission", back_populates="user")
+    )
+
+    def set_password(self, password: str):
+        self.password_hash = pwd_context.hash(password)
+
+    def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
+        return pwd_context.verify(password, self.password_hash)
+
+    def __repr__(self):
+        return f"<User id={self.id} email={self.email}>"
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     user_id: int = Field(foreign_key="users.id", index=True)
-    user: "User" = Relationship(back_populates="admin_conversations")
-    messages: List["AdminMessage"] = Relationship(back_populates="conversation")
+
+    # Relationships
+    user: "User" = Relationship(
+        sa_relationship=relationship("User", back_populates="admin_conversations")
+    )
+    messages: List["AdminMessage"] = Relationship(
+        sa_relationship=relationship("AdminMessage", back_populates="conversation")
+    )
 
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
     id: Optional[int] = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
-    role: MessageRole
+    role: MessageRole = Field(
+        sa_column=Column(
+            SAEnum(MessageRole, name="message_role_enum", native_enum=False)
+        )
+    )
     content: str = Field(sa_column=Column(Text))
-    conversation: "AdminConversation" = Relationship(back_populates="messages")
+
+    # Relationships
+    conversation: "AdminConversation" = Relationship(
+        sa_relationship=relationship("AdminConversation", back_populates="messages")
+    )
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
     id: Optional[int] = Field(default=None, primary_key=True)
     objective: str
     user_id: int = Field(foreign_key="users.id", index=True)
-    user: "User" = Relationship(back_populates="missions")
-    tasks: List["Task"] = Relationship(back_populates="mission")
-    mission_plans: List["MissionPlan"] = Relationship(back_populates="mission")
-    mission_events: List["MissionEvent"] = Relationship(back_populates="mission")
+
+    # Relationships
+    user: "User" = Relationship(
+        sa_relationship=relationship("User", back_populates="missions")
+    )
+    tasks: List["Task"] = Relationship(
+        sa_relationship=relationship("Task", back_populates="mission")
+    )
+    mission_plans: List["MissionPlan"] = Relationship(
+        sa_relationship=relationship("MissionPlan", back_populates="mission")
+    )
+    mission_events: List["MissionEvent"] = Relationship(
+        sa_relationship=relationship("MissionEvent", back_populates="mission")
+    )
 
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
     id: Optional[int] = Field(default=None, primary_key=True)
     event: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: "Mission" = Relationship(back_populates="mission_events")
+
+    # Relationships
+    mission: "Mission" = Relationship(
+        sa_relationship=relationship("Mission", back_populates="mission_events")
+    )
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
     id: Optional[int] = Field(default=None, primary_key=True)
     plan: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: "Mission" = Relationship(back_populates="mission_plans")
+
+    # Relationships
+    mission: "Mission" = Relationship(
+        sa_relationship=relationship("Mission", back_populates="mission_plans")
+    )
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    mission: "Mission" = Relationship(back_populates="tasks")
+
+    # Relationships
+    mission: "Mission" = Relationship(
+        sa_relationship=relationship("Mission", back_populates="tasks")
+    )
 
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
@@ -83,19 +153,39 @@ class PromptTemplate(SQLModel, table=True):
     name: str = Field(unique=True)
     template: str
 
+    generated_prompts: List["GeneratedPrompt"] = Relationship(
+        sa_relationship=relationship("GeneratedPrompt", back_populates="template")
+    )
+
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
     id: Optional[int] = Field(default=None, primary_key=True)
     prompt: str
     template_id: int = Field(foreign_key="prompt_templates.id", index=True)
 
-# Automatically update forward references for all SQLModel subclasses
-# This is a more robust solution than manually updating each model.
-for cls in SQLModel.__subclasses__():
-    try:
-        cls.update_forward_refs()
-    except Exception as e:
-        # This can happen if a model is defined in a way that
-        # `update_forward_refs` is not applicable.
-        # We can safely ignore these cases.
-        pass
+    # Relationships
+    template: "PromptTemplate" = Relationship(
+        sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
+    )
+
+
+# ------------------------------------------------------------------------------
+# Model Rebuild & Validation
+# ------------------------------------------------------------------------------
+import os
+import logging
+
+# Ensure reports directory exists
+os.makedirs("reports", exist_ok=True)
+logging.basicConfig(filename="reports/model_rebuild.log", level=logging.INFO)
+
+try:
+    # In Pydantic v2 / SQLModel latest, model_rebuild() is the standard way
+    # to resolve forward references.
+    for cls in SQLModel.__subclasses__():
+        cls.model_rebuild()
+    logging.info("SQLModel.model_rebuild() completed successfully.")
+except Exception as e:
+    logging.error(f"Error during SQLModel.model_rebuild(): {e}")
+    # We re-raise so the failure is visible during import/test
+    raise e
