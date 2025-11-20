@@ -6,7 +6,8 @@
 # Responsibilities:
 #   1. Auto-generate .env from Codespaces secrets.
 #   2. Install Python dependencies (to ensure sync with requirements.txt).
-#   3. Run Database Migrations.
+#   3. Run Smart Database Migrations (Idempotent).
+#   4. Auto-seed Admin User.
 ###############################################################################
 
 set -Eeuo pipefail
@@ -18,7 +19,7 @@ trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
 log "🚀 On-Create: Initializing environment..."
 
 # --- 1. .env Generation ---
-log "Step 1/3: Checking for Codespaces secrets to generate .env..."
+log "Step 1/4: Checking for Codespaces secrets to generate .env..."
 
 if [ ! -f ".env" ] && [ -n "${CODESPACES:-}" ]; then
   if [ -n "${DATABASE_URL:-}" ]; then
@@ -47,7 +48,7 @@ else
 fi
 
 # --- 2. Dependency Installation ---
-log "Step 2/3: Installing/Updating Python dependencies..."
+log "Step 2/4: Installing/Updating Python dependencies..."
 # Although Dockerfile installs them, we run this to ensure any dev-time changes
 # to requirements.txt are picked up immediately without rebuild.
 pip install --no-cache-dir --upgrade pip
@@ -57,33 +58,23 @@ fi
 pip install --no-cache-dir ruff pytest
 ok "✅ Dependencies installed."
 
-# --- 3. Database Migrations ---
-# Note: This assumes the DB service is reachable.
-# In postCreateCommand, services defined in docker-compose might not be fully ready
-# or reachable via localhost if we are inside one of them.
-# However, we will attempt it. If it fails, on-start.sh will catch it.
-log "Step 3/3: Attempting Database Migrations..."
+# --- 3. Smart Database Migrations ---
+# Note: This uses the smart_migrate script to handle existing DBs safely.
+log "Step 3/4: Attempting Smart Database Migrations..."
 
-# Wait for DB (simple check)
-# We need to know the DB host. Usually 'db' or 'postgres'.
-# Based on docker-compose.yml (implied), let's assume 'db' is the service name if it exists,
-# or we rely on DATABASE_URL.
-# Since we are IN the container, we might need to wait for the sidecar DB.
-# For now, we'll skip heavy waiting here and let on-start handle it if this is too early,
-# BUT the prompt explicitly asked for migrations here.
-# We will try to run upgrade.
-if command -v alembic &> /dev/null; then
-    log "Running Alembic migrations..."
-
-    # VERIFY FILE
-    if [ ! -f "alembic.ini" ]; then
-        warn "WARNING: alembic.ini not found in $(pwd). Skipping migrations."
-    else
-        # We use '|| true' to prevent failure if DB is not up yet (postCreate might happen before DB is ready)
-        alembic upgrade head || warn "Migration attempt failed (DB might not be ready). Will retry in on-start.sh."
-    fi
+if [ -f "scripts/smart_migrate.py" ]; then
+    log "Running Smart Migration Strategy..."
+    python scripts/smart_migrate.py || warn "Migration attempt failed (DB might not be ready). Will retry in on-start.sh."
 else
-    warn "Alembic not found. Skipping migrations."
+    warn "scripts/smart_migrate.py not found. Skipping migrations."
+fi
+
+# --- 4. Admin Seeding ---
+log "Step 4/4: Auto-seeding Admin User..."
+if [ -f "scripts/seed_admin.py" ]; then
+    python scripts/seed_admin.py || warn "Admin seeding failed (DB might not be ready). Will retry in on-start.sh."
+else
+    warn "scripts/seed_admin.py not found. Skipping admin seeding."
 fi
 
 ok "✅ On-Create script finished."
