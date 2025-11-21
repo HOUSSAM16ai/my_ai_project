@@ -1,14 +1,15 @@
 import asyncio
 import logging
+import os
 from logging.config import fileConfig
+
+from dotenv import load_dotenv
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
-
-from app.core.di import get_settings
 
 # Import your app's models to register them with SQLModel.metadata
 from app import models  # noqa: F401
@@ -23,18 +24,35 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 logger = logging.getLogger("alembic.env")
 
-# Get settings
-settings = get_settings()
-if not settings.DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the environment or .env file")
+# Load environment variables from .env file if present
+load_dotenv()
+
+# ------------------------------------------------------------------------------
+# FIX: Bypass ConfigParser interpolation & Pydantic settings
+# We read the DATABASE_URL directly from os.environ to avoid issues with
+# special characters (like %) in the URL.
+# ------------------------------------------------------------------------------
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+
+def fix_database_url(url: str) -> str:
+    """
+    Auto-fix the database URL for asyncpg compatibility.
+    """
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    # Fix SSL mode
+    if "sslmode=require" in url:
+        url = url.replace("sslmode=require", "ssl=require")
+
+    return url
+
+DATABASE_URL = fix_database_url(DATABASE_URL)
 
 # Your models' metadata for 'autogenerate' support
 target_metadata = SQLModel.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:
@@ -49,7 +67,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = settings.DATABASE_URL
+    url = DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -76,13 +94,13 @@ async def run_migrations_online() -> None:
 
     """
     connect_args = {}
-    if "sqlite" not in settings.DATABASE_URL:
+    if "sqlite" not in DATABASE_URL:
         # Fix for Supabase PgBouncer in transaction mode
         connect_args["statement_cache_size"] = 0
 
     # Use async engine
     connectable = create_async_engine(
-        settings.DATABASE_URL,
+        DATABASE_URL,
         poolclass=pool.NullPool,
         future=True,
         connect_args=connect_args,
