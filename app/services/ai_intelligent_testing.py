@@ -254,8 +254,12 @@ class AITestGenerator:
                     risks.append("File I/O: Verify file path validation")
 
             # Check for SQL-like strings
-            if isinstance(node, ast.Constant) and isinstance(node.value, str) and any(
-                kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and any(
+                    kw in node.value.lower() for kw in ["select ", "insert ", "update ", "delete "]
+                )
             ):
                 risks.append("SQL Injection Risk: Raw SQL query detected")
 

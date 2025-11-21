@@ -717,7 +717,6 @@ def invoke_chat(
     stream: bool | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any] | Generator[dict[str, Any], None, None]:
-
     if not _circuit_allowed():
         raise RuntimeError("LLM circuit breaker OPEN – rejecting invocation temporarily.")
 

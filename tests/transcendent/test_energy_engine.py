@@ -4,6 +4,7 @@ Transcendent tests for the ENERGY-ENGINE.
 
 These tests verify the Law of Energetic Continuity.
 """
+
 from unittest.mock import MagicMock
 
 import pytest

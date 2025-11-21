@@ -170,9 +170,7 @@ class Mission(SQLModel, table=True):
     )
 
     # Relationships
-    initiator: User = Relationship(
-        sa_relationship=relationship("User", back_populates="missions")
-    )
+    initiator: User = Relationship(sa_relationship=relationship("User", back_populates="missions"))
     tasks: list[Task] = Relationship(
         sa_relationship=relationship(
             "Task", back_populates="mission", foreign_keys="[Task.mission_id]"

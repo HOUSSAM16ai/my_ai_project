@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 
 class TestHistoryServiceMigration(unittest.TestCase):
-
     @patch("app.services.history_service.Conversation", MagicMock())
     @patch("app.services.history_service.Message", MagicMock())
     @patch("app.services.history_service.db")

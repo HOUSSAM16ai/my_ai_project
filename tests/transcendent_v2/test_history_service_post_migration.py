@@ -3,6 +3,7 @@
 Unit test for the History Service after its migration to Reality Kernel v2.
 This test confirms the service logic works with the new SQLModel backend.
 """
+
 from unittest.mock import MagicMock, patch
 
 

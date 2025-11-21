@@ -510,7 +510,10 @@ class SecurityMetricsEngine:
     # --------------------------------------------------------
 
     def generate_comprehensive_report(
-        self, findings: list[SecurityFinding], code_metrics: dict | None = None, hourly_rate: float = 100.0
+        self,
+        findings: list[SecurityFinding],
+        code_metrics: dict | None = None,
+        hourly_rate: float = 100.0,
     ) -> dict:
         """
         توليد تقرير شامل بكل المقاييس والخوارزميات

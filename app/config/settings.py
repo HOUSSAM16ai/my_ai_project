@@ -61,7 +61,7 @@ class AppSettings(BaseSettings):
     def fix_database_url(cls, v: str | None) -> str:
         if not v:
             # Fallback for testing or local dev if completely missing
-             return "sqlite+aiosqlite:///./test.db"
+            return "sqlite+aiosqlite:///./test.db"
 
         # 1. Auto-fix Scheme: sync -> async
         if v.startswith("postgres://"):
@@ -72,14 +72,14 @@ class AppSettings(BaseSettings):
         # 2. Auto-fix SSL Mode: libpq 'sslmode' -> asyncpg 'ssl'
         # Common issue with Supabase/Neon connection strings in asyncpg
         if "sslmode=require" in v:
-             # asyncpg usually expects just explicit ssl context or param,
-             # but many drivers/SQLAlchemy handle query params.
-             # However, 'sslmode' is specific to libpq.
-             # For asyncpg, we often need to replace it or rely on SQLAlchemy to pass it.
-             # Safe bet: Replace sslmode=require with ssl=require which some layers understand,
-             # OR leave it if SQLAlchemy's make_url handles it.
-             # But asyncpg specifically doesn't like 'sslmode'.
-             v = v.replace("sslmode=require", "ssl=require")
+            # asyncpg usually expects just explicit ssl context or param,
+            # but many drivers/SQLAlchemy handle query params.
+            # However, 'sslmode' is specific to libpq.
+            # For asyncpg, we often need to replace it or rely on SQLAlchemy to pass it.
+            # Safe bet: Replace sslmode=require with ssl=require which some layers understand,
+            # OR leave it if SQLAlchemy's make_url handles it.
+            # But asyncpg specifically doesn't like 'sslmode'.
+            v = v.replace("sslmode=require", "ssl=require")
 
         return v
 

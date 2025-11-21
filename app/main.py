@@ -3,6 +3,7 @@
 The main application entry point for the FastAPI service, orchestrated by the
 Reality Kernel V3.
 """
+
 from datetime import UTC, datetime
 
 from fastapi.responses import JSONResponse
@@ -51,6 +52,7 @@ async def api_v1_health():
         },
         status_code=200,
     )
+
 
 # Expose the FastAPI app instance cleanly for Uvicorn
 app = kernel.app

@@ -5,6 +5,7 @@ The State Engine for Reality Kernel v2.
 This provides a framework-agnostic way to manage request-scoped or
 context-scoped state, replacing the need for Flask's `g` object.
 """
+
 import contextvars
 from typing import Any
 

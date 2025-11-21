@@ -644,7 +644,9 @@ class AIModelMetricsService:
         # Group by sensitive attribute
         groups: dict[Any, dict[str, list[Any]]] = defaultdict(lambda: {"pred": [], "truth": []})
 
-        for pred, truth, attr in zip(predictions, ground_truths, sensitive_attributes, strict=False):
+        for pred, truth, attr in zip(
+            predictions, ground_truths, sensitive_attributes, strict=False
+        ):
             groups[attr]["pred"].append(pred)
             groups[attr]["truth"].append(truth)
 
@@ -659,14 +661,18 @@ class AIModelMetricsService:
 
             # True positive rate (TPR)
             tp = sum(
-                1 for p, t in zip(preds, truths, strict=False) if p == positive_class and t == positive_class
+                1
+                for p, t in zip(preds, truths, strict=False)
+                if p == positive_class and t == positive_class
             )
             actual_positives = sum(1 for t in truths if t == positive_class)
             tpr = tp / actual_positives if actual_positives > 0 else 0.0
 
             # False positive rate (FPR)
             fp = sum(
-                1 for p, t in zip(preds, truths, strict=False) if p == positive_class and t != positive_class
+                1
+                for p, t in zip(preds, truths, strict=False)
+                if p == positive_class and t != positive_class
             )
             actual_negatives = sum(1 for t in truths if t != positive_class)
             fpr = fp / actual_negatives if actual_negatives > 0 else 0.0

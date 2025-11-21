@@ -31,9 +31,12 @@ def test_settings_load_from_env_file():
 
     # Patch the model_config to use our specific test .env file
     # AND patch os.environ to avoid interference from conftest.py
-    with patch.dict(os.environ, {}, clear=True), patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": test_env_path, "extra": "ignore"},
+    with (
+        patch.dict(os.environ, {}, clear=True),
+        patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": test_env_path, "extra": "ignore"},
+        ),
     ):
         settings = get_settings()
 
@@ -54,9 +57,12 @@ def test_settings_validation_error_on_missing_required_fields():
         pass
 
     # Patch os.environ to be empty to ensure no env vars are picked up
-    with patch.dict(os.environ, {}, clear=True), patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": empty_env_path, "extra": "ignore"},
+    with (
+        patch.dict(os.environ, {}, clear=True),
+        patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": empty_env_path, "extra": "ignore"},
+        ),
     ):
         with pytest.raises(ValidationError) as excinfo:
             # The validation error should be triggered here
@@ -79,9 +85,12 @@ def test_get_settings_is_a_singleton():
 
     # Just verify singleton behavior, env doesn't matter much as long as it's valid
     # We use temp.env so it loads valid settings
-    with patch.dict(os.environ, {}, clear=True), patch(
-        "app.config.settings.AppSettings.model_config",
-        {"env_file": test_env_path, "extra": "ignore"},
+    with (
+        patch.dict(os.environ, {}, clear=True),
+        patch(
+            "app.config.settings.AppSettings.model_config",
+            {"env_file": test_env_path, "extra": "ignore"},
+        ),
     ):
         settings1 = get_settings()
         settings2 = get_settings()
