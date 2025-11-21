@@ -28,31 +28,32 @@ async def test_connection():
         print("❌ DATABASE_URL is not set!")
         sys.exit(1)
 
-    print(f"📝 Raw DATABASE_URL Scheme: {url.split('://')[0]}")
-    print(f"📝 Masked DATABASE_URL: {mask_url(url)}")
+    # Normalize URL for display
+    display_url = url
+    if "postgresql" in url and "sslmode=require" in url:
+        display_url = url.replace("sslmode=require", "ssl=require")
+
+    print(f"📝 Raw DATABASE_URL Scheme: {display_url.split('://')[0]}")
+    print(f"📝 Masked DATABASE_URL: {mask_url(display_url)}")
 
     # 1. Asyncpg Raw Connection Test
     try:
         import asyncpg
         print("\n🧪 Attempting RAW asyncpg connection...")
-        # Parse params from URL
-        parsed = urllib.parse.urlparse(url)
 
-        if '+' in parsed.scheme:
-            scheme = parsed.scheme.split('+')[1] # asyncpg
-        else:
-            scheme = parsed.scheme
+        # Prepare DSN
+        dsn = url
+        if "postgresql+asyncpg://" in dsn:
+            dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
 
-        if scheme != 'asyncpg' and scheme != 'postgresql':
-             print(f"⚠️ Scheme seems to be {scheme}, expecting asyncpg compatible")
+        if "sslmode=require" in dsn:
+             dsn = dsn.replace("sslmode=require", "ssl=require")
 
-        # We will try to connect using the DSN directly if asyncpg allows,
-        # but asyncpg.connect(dsn) is standard.
-        # Note: asyncpg expects postgresql:// not postgresql+asyncpg://
+        # Check if we need to inject statement_cache_size=0
+        # For raw asyncpg, we pass it as kwarg
+        print(f"   - Connecting with statement_cache_size=0...")
+        conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
 
-        asyncpg_url = url.replace("postgresql+asyncpg://", "postgresql://")
-
-        conn = await asyncpg.connect(asyncpg_url, statement_cache_size=0)
         version = await conn.fetchval('SELECT version()')
         print(f"✅ Asyncpg Connection Successful! Version: {version}")
         await conn.close()
@@ -66,10 +67,16 @@ async def test_connection():
         sa_url = url
         if "postgresql://" in sa_url and "postgresql+asyncpg://" not in sa_url:
              sa_url = sa_url.replace("postgresql://", "postgresql+asyncpg://")
+        elif "postgres://" in sa_url:
+             sa_url = sa_url.replace("postgres://", "postgresql+asyncpg://")
+
+        if "sslmode=require" in sa_url:
+            sa_url = sa_url.replace("sslmode=require", "ssl=require")
 
         connect_args = {}
         if "postgresql" in sa_url:
             connect_args.update({"statement_cache_size": 0})
+            print("   - Applied statement_cache_size=0")
 
         engine = create_async_engine(sa_url, connect_args=connect_args)
 

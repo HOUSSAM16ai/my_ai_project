@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-🚀 FIX SUPABASE MIGRATION SCHEMA - The Ultimate Solution
-=========================================================
+🚀 FIX SUPABASE MIGRATION SCHEMA - The Ultimate Solution (Async)
+================================================================
 This script creates the Supabase migration schema and table that the
 Supabase Dashboard expects, while maintaining compatibility with Alembic.
-Adapted to work with PgBouncer transaction mode (using sync engine with explicit args if needed).
+Adapted to work with PgBouncer transaction mode (using ASYNC engine).
 """
 
+import asyncio
 import os
 import sys
 import traceback
-from pathlib import Path
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Load environment variables
 load_dotenv()
@@ -45,39 +46,49 @@ def print_error(text):
 def print_info(text):
     print(f"{B}ℹ️  {text}{E}")
 
-def get_sync_db_url():
+def get_async_db_url():
     url = os.getenv("DATABASE_URL")
     if not url:
         return None
-    # Ensure using psycopg2 or default sync driver
-    # If it has +asyncpg, remove it
-    url = url.replace("+asyncpg", "").replace("+aiosqlite", "")
+
+    # Force asyncpg
+    if "postgresql://" in url and "postgresql+asyncpg://" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://")
+    elif "postgres://" in url:
+        url = url.replace("postgres://", "postgresql+asyncpg://")
+
+    if "sslmode=require" in url:
+        url = url.replace("sslmode=require", "ssl=require")
+
     return url
 
-def main():
-    print_header("🚀 SUPABASE MIGRATION SCHEMA FIX")
+async def main():
+    print_header("🚀 SUPABASE MIGRATION SCHEMA FIX (ASYNC)")
 
-    db_url = get_sync_db_url()
+    db_url = get_async_db_url()
     if not db_url:
         print_error("DATABASE_URL not found!")
         return 1
 
     try:
-        # Use standard create_engine (sync)
-        # Note: psycopg2 typically works with PgBouncer unless server-side cursors are used.
-        # We don't use server-side cursors here.
-        engine = create_engine(db_url, pool_pre_ping=True)
+        connect_args = {}
+        if "sqlite" not in db_url:
+             connect_args["statement_cache_size"] = 0
+             connect_args["timeout"] = 30
+             connect_args["command_timeout"] = 60
 
-        with engine.connect() as conn:
-            trans = conn.begin()
-            try:
+        engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+
+        async with engine.connect() as conn:
+            # No nested transaction with asyncpg in the same way, but we use .begin()
+            async with conn.begin():
                 print_info("Creating/Checking supabase_migrations schema...")
 
                 # Create Schema
-                conn.execute(text("CREATE SCHEMA IF NOT EXISTS supabase_migrations"))
+                await conn.execute(text("CREATE SCHEMA IF NOT EXISTS supabase_migrations"))
 
                 # Create Table
-                conn.execute(text("""
+                await conn.execute(text("""
                     CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
                         version VARCHAR(255) PRIMARY KEY NOT NULL,
                         statements TEXT[],
@@ -88,28 +99,26 @@ def main():
 
                 # Sync Alembic
                 print_info("Syncing Alembic history...")
-                alembic_versions = conn.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+                result = await conn.execute(text("SELECT version_num FROM alembic_version"))
+                alembic_versions = result.scalars().all()
 
-                synced_versions = conn.execute(text("SELECT version FROM supabase_migrations.schema_migrations")).scalars().all()
+                result = await conn.execute(text("SELECT version FROM supabase_migrations.schema_migrations"))
+                synced_versions = result.scalars().all()
 
                 to_sync = set(alembic_versions) - set(synced_versions)
 
                 if to_sync:
                     print_info(f"Syncing {len(to_sync)} migrations...")
                     for v in to_sync:
-                        conn.execute(text("""
+                        await conn.execute(text("""
                             INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
                             VALUES (:v, :n, :s)
                         """), {"v": v, "n": f"Migration {v}", "s": ["-- Synced from Alembic"]})
                 else:
                     print_success("All migrations already synced.")
 
-                trans.commit()
-                print_success("Done!")
-
-            except Exception as e:
-                trans.rollback()
-                raise e
+        await engine.dispose()
+        print_success("Done!")
 
     except Exception as e:
         print_error(f"Error: {e}")
@@ -119,4 +128,10 @@ def main():
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nCancelled.")
+    except Exception as e:
+        print_error(f"Unhandled exception: {e}")
+        sys.exit(1)
