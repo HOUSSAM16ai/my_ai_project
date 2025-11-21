@@ -37,7 +37,8 @@ async def seed_admin():
 
     # Create Async Engine & Session
     # We create a local engine here to avoid dependency injection complexity in a script
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    connect_args = {"statement_cache_size": 0} if "sqlite" not in settings.DATABASE_URL else {}
+    engine = create_async_engine(settings.DATABASE_URL, echo=False, connect_args=connect_args)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:

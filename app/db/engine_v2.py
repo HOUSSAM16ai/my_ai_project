@@ -11,9 +11,11 @@ from app.core.kernel_v2.config_v2 import get_settings
 settings = get_settings()
 DATABASE_URL = settings.DATABASE_URL
 
+connect_args = {"statement_cache_size": 0} if "sqlite" not in DATABASE_URL else {}
+
 # Create the async engine.
 # `echo=True` is useful for debugging in development.
-async_engine = create_async_engine(DATABASE_URL, echo=False)
+async_engine = create_async_engine(DATABASE_URL, echo=False, connect_args=connect_args)
 
 
 def get_async_engine():
