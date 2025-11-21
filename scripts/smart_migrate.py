@@ -23,7 +23,10 @@ async def check_db_state():
     Checks the state of the database to determine the migration strategy.
     Returns: (has_alembic_table: bool, has_user_table: bool)
     """
-    connect_args = {"statement_cache_size": 0} if "sqlite" not in settings.DATABASE_URL else {}
+    connect_args = {}
+    if "sqlite" not in settings.DATABASE_URL:
+        connect_args["statement_cache_size"] = 0
+
     engine = create_async_engine(settings.DATABASE_URL, connect_args=connect_args)
     async with engine.connect() as conn:
 

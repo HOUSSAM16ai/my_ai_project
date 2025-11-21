@@ -10,7 +10,9 @@ from app.core.config import settings
 # Async Engine (Primary for FastAPI)
 # Fix for Supabase PgBouncer in transaction mode
 # asyncpg tries to use prepared statements by default, which fails with PgBouncer
-connect_args = {"statement_cache_size": 0} if "sqlite" not in settings.DATABASE_URL else {}
+connect_args = {}
+if "sqlite" not in settings.DATABASE_URL:
+    connect_args["statement_cache_size"] = 0
 
 engine = create_async_engine(
     settings.DATABASE_URL,
