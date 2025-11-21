@@ -2,7 +2,7 @@ import os
 import logging
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
@@ -91,6 +91,20 @@ async_session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_comm
 SYNC_DATABASE_URL = FINAL_DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
 sync_engine = None
 
+# We trap ALL usage of Sync Engine for production
+class SyncEngineTrap:
+    def __init__(self, *args, **kwargs):
+        pass
+    def __call__(self, *args, **kwargs):
+        raise RuntimeError(
+            "🚨 CRITICAL ERROR: Sync Database Engine is DISABLED. "
+            "You must use the Async Engine (await db.execute) to avoid PgBouncer errors."
+        )
+    def __getattr__(self, name):
+        raise RuntimeError(
+            f"🚨 CRITICAL ERROR: Attempted to access '{name}' on Sync Engine, which is DISABLED."
+        )
+
 if "sqlite" in SYNC_DATABASE_URL:
     # Allow Sync Engine for SQLite (Tests/Local)
     sync_connect_args = {"check_same_thread": False}
@@ -100,26 +114,12 @@ if "sqlite" in SYNC_DATABASE_URL:
         future=True,
         connect_args=sync_connect_args,
     )
+    # For SQLite tests, we might need a working SessionLocal
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 else:
     # DISABLE SYNC ENGINE FOR POSTGRES
-    # We create a "Trap" class that raises an error if instantiated or used.
-    class SyncEngineTrap:
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            raise RuntimeError(
-                "🚨 CRITICAL ERROR: Sync Database Engine is DISABLED for Supabase/Postgres. "
-                "You must use the Async Engine (await db.execute) to avoid PgBouncer errors."
-            )
-        def __getattr__(self, name):
-            raise RuntimeError(
-                f"🚨 CRITICAL ERROR: Attempted to access '{name}' on Sync Engine, which is DISABLED for Supabase/Postgres."
-            )
-
     SessionLocal = SyncEngineTrap
     sync_engine = None # Explicitly None to catch direct usage
-
     logger.info("🔒 Sync Engine DISABLED for Production/Postgres to prevent PgBouncer conflicts.")
 
 

@@ -19,11 +19,11 @@ def get_session():
     global _session_factory_singleton
     if _session_factory_singleton is None:
         settings = get_settings()
+        # Now returns an Async Session Factory
         _session_factory_singleton = get_session_factory(settings.DATABASE_URL)
-    # Return an actual session instance, not the factory
-    return _session_factory_singleton()
-
+    return _session_factory_singleton
 
 def get_logger():
+    """Returns a logger instance."""
     settings = get_settings()
     return create_logger(settings)

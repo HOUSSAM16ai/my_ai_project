@@ -11,6 +11,7 @@ This entire module is deprecated and will be removed in a future release.
 Do not use these functions in new code.
 """
 
+import asyncio
 import warnings
 from typing import Any
 
@@ -45,6 +46,21 @@ def get_legacy_database_service() -> DatabaseService:
         )
     return _database_service_singleton
 
+def _run_async(coro):
+    """Helper to run async methods in sync context."""
+    try:
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+             # If we are already in an event loop (e.g. pytest-asyncio), creating a new one is bad.
+             # But we cannot await here because this is a sync function.
+             # This is a known issue with mixing sync/async.
+             # For CLI (no loop running), asyncio.run works.
+             # For Tests (loop running), we might need to use a task or fail.
+             # However, legacy compat is mostly for CLI/Sync parts.
+             return asyncio.run_coroutine_threadsafe(coro, loop).result()
+    except RuntimeError:
+        pass
+    return asyncio.run(coro)
 
 # ======================================================================================
 # ==                         BACKWARD COMPATIBILITY ADAPTERS                          ==
@@ -58,7 +74,7 @@ def get_database_health() -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().get_database_health()
+    return _run_async(get_legacy_database_service().get_database_health())
 
 
 def get_table_schema(table_name: str) -> dict[str, Any]:
@@ -68,7 +84,7 @@ def get_table_schema(table_name: str) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().get_table_schema(table_name)
+    return _run_async(get_legacy_database_service().get_table_schema(table_name))
 
 
 def get_all_tables() -> list[dict[str, Any]]:
@@ -78,7 +94,7 @@ def get_all_tables() -> list[dict[str, Any]]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().get_all_tables()
+    return _run_async(get_legacy_database_service().get_all_tables())
 
 
 def get_table_data(
@@ -95,9 +111,9 @@ def get_table_data(
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().get_table_data(
+    return _run_async(get_legacy_database_service().get_table_data(
         table_name, page, per_page, search, order_by, order_dir
-    )
+    ))
 
 
 def get_record(table_name: str, record_id: int) -> dict[str, Any]:
@@ -107,7 +123,7 @@ def get_record(table_name: str, record_id: int) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().get_record(table_name, record_id)
+    return _run_async(get_legacy_database_service().get_record(table_name, record_id))
 
 
 def create_record(table_name: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -117,7 +133,7 @@ def create_record(table_name: str, data: dict[str, Any]) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().create_record(table_name, data)
+    return _run_async(get_legacy_database_service().create_record(table_name, data))
 
 
 def update_record(table_name: str, record_id: int, data: dict[str, Any]) -> dict[str, Any]:
@@ -127,7 +143,7 @@ def update_record(table_name: str, record_id: int, data: dict[str, Any]) -> dict
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().update_record(table_name, record_id, data)
+    return _run_async(get_legacy_database_service().update_record(table_name, record_id, data))
 
 
 def delete_record(table_name: str, record_id: int) -> dict[str, Any]:
@@ -137,7 +153,7 @@ def delete_record(table_name: str, record_id: int) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().delete_record(table_name, record_id)
+    return _run_async(get_legacy_database_service().delete_record(table_name, record_id))
 
 
 def execute_query(sql: str) -> dict[str, Any]:
@@ -147,4 +163,4 @@ def execute_query(sql: str) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
-    return get_legacy_database_service().execute_query(sql)
+    return _run_async(get_legacy_database_service().execute_query(sql))

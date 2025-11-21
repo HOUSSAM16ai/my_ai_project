@@ -9,7 +9,7 @@
 #
 # ✨ Key Features:
 #   - Fully typed and documented methods.
-#   - Accepts a SQLAlchemy Session via constructor for testability and flexibility.
+#   - Accepts a SQLAlchemy AsyncSession via constructor for testability and flexibility.
 #   - Handles CRUD, querying, schema inspection, and health checks.
 #   - Replaces Flask-dependent globals with explicit dependencies.
 #   - Includes backward-compatibility adapters to prevent breaking changes.
@@ -23,7 +23,8 @@ from logging import Logger
 from typing import Any
 
 from sqlalchemy import func, inspect, select, text
-from sqlalchemy.orm import Session, class_mapper
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import class_mapper
 
 from app.config.settings import AppSettings as Settings
 from app.utils.model_registry import ModelRegistry
@@ -93,8 +94,7 @@ MODEL_METADATA = {
     "missions": {"icon": "🎯", "category": "Overmind", "description": "AI missions"},
     "mission_plans": {
         "icon": "📋",
-        "category": "Overmind",
-        "description": "Mission execution plans",
+        "category": "Overmind", "description": "Mission execution plans",
     },
     "tasks": {"icon": "✅", "category": "Overmind", "description": "Mission tasks"},
     "mission_events": {"icon": "📊", "category": "Overmind", "description": "Mission event logs"},
@@ -104,7 +104,7 @@ MODEL_METADATA = {
 class DatabaseService:
     """A framework-agnostic service for database operations."""
 
-    def __init__(self, session: Session, logger: Logger, settings: Settings):
+    def __init__(self, session: AsyncSession, logger: Logger, settings: Settings):
         self.session = session
         self.logger = logger
         self.settings = settings
@@ -138,7 +138,7 @@ class DatabaseService:
             self.logger.warning("Validators not available, skipping validation.")
         return True, data
 
-    def get_database_health(self) -> dict[str, Any]:
+    async def get_database_health(self) -> dict[str, Any]:
         """Comprehensive database health check."""
         health = {
             "status": "healthy",
@@ -150,7 +150,7 @@ class DatabaseService:
         }
         try:
             start = datetime.now(UTC)
-            self.session.execute(text("SELECT 1"))
+            await self.session.execute(text("SELECT 1"))
             connection_time = (datetime.now(UTC) - start).total_seconds() * 1000
             health["checks"]["connection"] = {
                 "status": "ok",
@@ -160,8 +160,13 @@ class DatabaseService:
                 health["warnings"].append(f"High connection latency: {connection_time:.2f}ms")
 
             engine = self.session.get_bind()
-            inspector = inspect(engine)
-            missing_tables = [name for name in ALL_MODELS if not inspector.has_table(name)]
+
+            def _inspect_tables(conn):
+                inspector = inspect(conn)
+                return [name for name in ALL_MODELS if not inspector.has_table(name)]
+
+            missing_tables = await self.session.run_sync(_inspect_tables)
+
             health["checks"]["tables"] = {
                 "status": "ok" if not missing_tables else "error",
                 "total": len(ALL_MODELS),
@@ -174,7 +179,8 @@ class DatabaseService:
             total_records, table_sizes = 0, {}
             for name, model in ALL_MODELS.items():
                 try:
-                    count = self.session.query(model).count()
+                    result = await self.session.execute(select(func.count()).select_from(model))
+                    count = result.scalar()
                     total_records += count
                     table_sizes[name] = count
                 except Exception as e:
@@ -187,15 +193,33 @@ class DatabaseService:
             health["errors"].append(f"Health check failed: {e!s}")
         return health
 
-    def get_table_schema(self, table_name: str) -> dict[str, Any]:
+    async def get_table_schema(self, table_name: str) -> dict[str, Any]:
         """Get detailed table schema."""
         if table_name not in ALL_MODELS:
             return {"status": "error", "message": f"Table {table_name} not found"}
         model = ALL_MODELS[table_name]
         try:
             mapper = class_mapper(model)
-            engine = self.session.get_bind()
-            inspector = inspect(engine)
+
+            def _get_schema_info(conn):
+                inspector = inspect(conn)
+                indexes = [
+                    {"name": i["name"], "columns": i["column_names"], "unique": i.get("unique", False)}
+                    for i in inspector.get_indexes(table_name)
+                ]
+                foreign_keys = [
+                    {
+                        "name": fk.get("name"),
+                        "columns": fk["constrained_columns"],
+                        "referred_table": fk["referred_table"],
+                        "referred_columns": fk["referred_columns"],
+                    }
+                    for fk in inspector.get_foreign_keys(table_name)
+                ]
+                return indexes, foreign_keys
+
+            indexes, foreign_keys = await self.session.run_sync(_get_schema_info)
+
             columns = [
                 {
                     "name": c.key,
@@ -207,19 +231,7 @@ class DatabaseService:
                 }
                 for c in mapper.columns
             ]
-            indexes = [
-                {"name": i["name"], "columns": i["column_names"], "unique": i.get("unique", False)}
-                for i in inspector.get_indexes(table_name)
-            ]
-            foreign_keys = [
-                {
-                    "name": fk.get("name"),
-                    "columns": fk["constrained_columns"],
-                    "referred_table": fk["referred_table"],
-                    "referred_columns": fk["referred_columns"],
-                }
-                for fk in inspector.get_foreign_keys(table_name)
-            ]
+
             return {
                 "status": "success",
                 "table": table_name,
@@ -233,7 +245,7 @@ class DatabaseService:
             self.logger.error(f"Error getting schema for table {table_name}: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
 
-    def get_all_tables(self) -> list[dict[str, Any]]:
+    async def get_all_tables(self) -> list[dict[str, Any]]:
         """Get all tables with enhanced metadata."""
         cache_key = "all_tables"
         if (
@@ -248,15 +260,20 @@ class DatabaseService:
         tables = []
         for name, model in ALL_MODELS.items():
             try:
-                count = self.session.query(model).count()
+                result = await self.session.execute(select(func.count()).select_from(model))
+                count = result.scalar()
+
                 columns = [c.key for c in class_mapper(model).columns]
-                recent_count = (
-                    self.session.query(model)
-                    .filter(model.created_at >= datetime.now(UTC) - timedelta(days=1))
-                    .count()
-                    if hasattr(model, "created_at")
-                    else 0
-                )
+
+                recent_count = 0
+                if hasattr(model, "created_at"):
+                    result_recent = await self.session.execute(
+                        select(func.count())
+                        .select_from(model)
+                        .filter(model.created_at >= datetime.now(UTC) - timedelta(days=1))
+                    )
+                    recent_count = result_recent.scalar()
+
                 metadata = MODEL_METADATA.get(name, {})
                 tables.append(
                     {
@@ -286,17 +303,17 @@ class DatabaseService:
         self._cache_timestamp[cache_key] = datetime.now(UTC)
         return tables
 
-    def _paginate(self, query, page, per_page):
+    async def _paginate(self, query, page, per_page):
         """Internal pagination helper."""
-        total = self.session.execute(select(func.count()).select_from(query.subquery())).scalar()
-        items = (
-            self.session.execute(query.offset((page - 1) * per_page).limit(per_page))
-            .scalars()
-            .all()
-        )
+        total_res = await self.session.execute(select(func.count()).select_from(query.subquery()))
+        total = total_res.scalar()
+
+        items_res = await self.session.execute(query.offset((page - 1) * per_page).limit(per_page))
+        items = items_res.scalars().all()
+
         return items, total, math.ceil(total / per_page) if total > 0 else 1
 
-    def get_table_data(
+    async def get_table_data(
         self,
         table_name: str,
         page: int = 1,
@@ -327,14 +344,14 @@ class DatabaseService:
                     order_col.desc() if order_dir.lower() == "desc" else order_col.asc()
                 )
 
-            total_items = self.session.execute(
-                select(func.count()).select_from(query.alias())
-            ).scalar()
+            total_res = await self.session.execute(select(func.count()).select_from(query.alias()))
+            total_items = total_res.scalar()
             pages = math.ceil(total_items / per_page)
 
             paginated_query = query.limit(per_page).offset((page - 1) * per_page)
 
-            items = self.session.execute(paginated_query).scalars().all()
+            items_res = await self.session.execute(paginated_query)
+            items = items_res.scalars().all()
 
             columns = [c.key for c in class_mapper(model).columns]
 
@@ -353,13 +370,13 @@ class DatabaseService:
             self.logger.error(f"Error getting data for table {table_name}: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
 
-    def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
+    async def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
         """Get a single record."""
         if table_name not in ALL_MODELS:
             return {"status": "error", "message": f"Table {table_name} not found"}
         model = ALL_MODELS[table_name]
         try:
-            record = self.session.get(model, record_id)
+            record = await self.session.get(model, record_id)
             if not record:
                 return {"status": "error", "message": "Record not found"}
             columns = [c.key for c in class_mapper(model).columns]
@@ -371,7 +388,7 @@ class DatabaseService:
             )
             return {"status": "error", "message": str(e)}
 
-    def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
+    async def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new record with validation."""
         if table_name not in ALL_MODELS:
             return {"status": "error", "message": f"Table {table_name} not found"}
@@ -384,22 +401,23 @@ class DatabaseService:
         try:
             new_record = model(**result)
             self.session.add(new_record)
-            self.session.commit()
+            await self.session.commit()
             return {
                 "status": "success",
                 "message": f"Record created in {table_name}",
                 "id": new_record.id,
             }
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             self.logger.error(f"Error creating record in {table_name}: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
 
-    def update_record(
+    async def update_record(
         self, table_name: str, record_id: int, data: dict[str, Any]
     ) -> dict[str, Any]:
         """Update an existing record with validation."""
-        record = self.session.get(ALL_MODELS[table_name], record_id)
+        model = ALL_MODELS[table_name]
+        record = await self.session.get(model, record_id)
         if not record:
             return {"status": "error", "message": "Record not found"}
 
@@ -411,38 +429,39 @@ class DatabaseService:
             for key, value in result.items():
                 if hasattr(record, key):
                     setattr(record, key, value)
-            self.session.commit()
+            await self.session.commit()
             return {"status": "success", "message": f"Record {record_id} updated in {table_name}"}
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             self.logger.error(
                 f"Error updating record {record_id} in {table_name}: {e}", exc_info=True
             )
             return {"status": "error", "message": str(e)}
 
-    def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]:
+    async def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]:
         """Delete a record."""
-        record = self.session.get(ALL_MODELS[table_name], record_id)
+        model = ALL_MODELS[table_name]
+        record = await self.session.get(model, record_id)
         if not record:
             return {"status": "error", "message": "Record not found"}
 
         try:
-            self.session.delete(record)
-            self.session.commit()
+            await self.session.delete(record)
+            await self.session.commit()
             return {"status": "success", "message": f"Record {record_id} deleted from {table_name}"}
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             self.logger.error(
                 f"Error deleting record {record_id} from {table_name}: {e}", exc_info=True
             )
             return {"status": "error", "message": str(e)}
 
-    def execute_query(self, sql: str) -> dict[str, Any]:
+    async def execute_query(self, sql: str) -> dict[str, Any]:
         """Execute a custom (read-only) SQL query."""
         if not sql.strip().upper().startswith("SELECT"):
             return {"status": "error", "message": "Only SELECT queries are allowed"}
         try:
-            result = self.session.execute(text(sql))
+            result = await self.session.execute(text(sql))
             columns = list(result.keys())
             rows = [
                 {columns[i]: _serialize_value(value) for i, value in enumerate(row)}
