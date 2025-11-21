@@ -48,7 +48,8 @@ FINAL_DATABASE_URL = get_connection_string()
 # We must disable them globally for asyncpg.
 # ------------------------------------------------------------------------------
 connect_args = {}
-if "postgresql" in FINAL_DATABASE_URL:
+# FIX: Apply to all non-SQLite databases (targeting Supabase/Postgres/Asyncpg)
+if "sqlite" not in FINAL_DATABASE_URL:
     # 1. Disable prepared statements
     connect_args["statement_cache_size"] = 0
     # 2. Add timeouts to avoid silent hangs
