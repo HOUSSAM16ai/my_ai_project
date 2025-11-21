@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from logging.config import fileConfig
+from urllib.parse import urlparse
 
 from alembic import context
 from dotenv import load_dotenv
@@ -14,13 +15,11 @@ from sqlmodel import SQLModel
 sys.path.append(os.getcwd())
 
 # Import your app's models to register them with SQLModel.metadata
-from app import models  # noqa: F401
-
-# Import the robust sanitization logic
-# We need to add the scripts directory to path temporarily if we want to reuse it,
-# but it's cleaner to just rely on the environment variable which was ALREADY processed by bootstrap_db.py
-# in setup_dev.sh. However, for safety inside env.py (e.g. running alembic directly),
-# we implement a robust getter.
+try:
+    from app import models  # noqa: F401
+except ImportError as e:
+    print(f"CRITICAL: Could not import app.models: {e}")
+    sys.exit(1)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -93,21 +92,18 @@ async def run_async_migrations() -> None:
     # --------------------------------------------------------------------------
     connect_args = {}
 
-    # FIX: Supabase/PgBouncer Transaction Mode
-    # Apply to all non-SQLite databases (targeting Supabase/Postgres/Asyncpg)
-    if "sqlite" not in DATABASE_URL:
-        # 1. Disable prepared statements for PgBouncer transaction mode
-        connect_args["statement_cache_size"] = 0
+    # Explicitly check for asyncpg usage via URL scheme or driver
+    is_sqlite = "sqlite" in DATABASE_URL
 
-        # 2. Set a connection timeout to prevent infinite hangs
-        # 'command_timeout' is for queries, 'timeout' is for connection
-        connect_args["timeout"] = 30  # 30 seconds connection timeout
+    if not is_sqlite:
+        # Enforce statement_cache_size=0 for ALL Postgres connections
+        connect_args["statement_cache_size"] = 0
+        connect_args["timeout"] = 30
         connect_args["command_timeout"] = 60
 
-        # 3. SSL is usually handled by the query param ?ssl=require in the URL
-        # which we ensured in get_database_url / bootstrap_db.py
-
-    logger.info(f"Connecting to database with args: {connect_args.keys()}")
+        # Double check: Log the exact configuration
+        logger.info(f"🔧 FORCE-APPLYING PgBouncer Fix: statement_cache_size=0")
+        logger.info(f"🔧 Connection Args: {connect_args}")
 
     connectable = create_async_engine(
         DATABASE_URL,
