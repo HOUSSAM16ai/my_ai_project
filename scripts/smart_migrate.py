@@ -8,14 +8,34 @@ sys.path.append(os.getcwd())
 
 from alembic import command
 from alembic.config import Config
+from dotenv import load_dotenv
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import create_async_engine
-
-from app.core.config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("smart_migrate")
+
+# Load environment variables
+load_dotenv()
+
+
+def get_database_url():
+    """
+    Get DATABASE_URL from environment and fix it for asyncpg if needed.
+    Bypasses Pydantic settings to avoid interpolation issues.
+    """
+    url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    if "sslmode=require" in url:
+        url = url.replace("sslmode=require", "ssl=require")
+
+    return url
 
 
 async def check_db_state():
@@ -23,11 +43,14 @@ async def check_db_state():
     Checks the state of the database to determine the migration strategy.
     Returns: (has_alembic_table: bool, has_user_table: bool)
     """
+    database_url = get_database_url()
     connect_args = {}
-    if "sqlite" not in settings.DATABASE_URL:
+
+    # FIX: Inject statement_cache_size=0 for non-sqlite (Supabase/PgBouncer)
+    if "sqlite" not in database_url:
         connect_args["statement_cache_size"] = 0
 
-    engine = create_async_engine(settings.DATABASE_URL, connect_args=connect_args)
+    engine = create_async_engine(database_url, connect_args=connect_args)
     async with engine.connect() as conn:
 
         def _inspect(connection):
