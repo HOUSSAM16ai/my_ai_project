@@ -49,9 +49,7 @@ FINAL_DATABASE_URL = get_connection_string()
 # ------------------------------------------------------------------------------
 connect_args = {}
 if "postgresql" in FINAL_DATABASE_URL:
-    connect_args = {
-        "statement_cache_size": 0,
-    }
+    connect_args.update({"statement_cache_size": 0})
 
 # Create Async Engine
 engine = create_async_engine(

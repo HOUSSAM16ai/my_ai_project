@@ -76,9 +76,7 @@ def run_migrations_online() -> None:
     # FIX: Supabase PgBouncer Compatibility
     connect_args = {}
     if "postgresql" in DATABASE_URL:
-        connect_args = {
-            "statement_cache_size": 0,
-        }
+        connect_args.update({"statement_cache_size": 0})
 
     connectable = create_async_engine(
         DATABASE_URL,
