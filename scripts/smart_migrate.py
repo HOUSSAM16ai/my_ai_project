@@ -49,6 +49,7 @@ async def check_db_state():
     # FIX: Inject statement_cache_size=0 for non-sqlite (Supabase/PgBouncer)
     if "sqlite" not in database_url:
         connect_args["statement_cache_size"] = 0
+        connect_args["server_settings"] = {"jit": "off"}
 
     engine = create_async_engine(database_url, connect_args=connect_args)
     async with engine.connect() as conn:
