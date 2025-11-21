@@ -55,6 +55,19 @@ if "sqlite" not in FINAL_DATABASE_URL:
     # 2. Add timeouts to avoid silent hangs
     connect_args["timeout"] = 30
     connect_args["command_timeout"] = 60
+else:
+    # For SQLite (tests), we might want other args, but no cache fix needed
+    pass
+
+# GLOBAL SAFETY NET: Warn if we are about to create an engine that might crash on PgBouncer
+if "postgresql" in FINAL_DATABASE_URL and connect_args.get("statement_cache_size") != 0:
+    import logging
+    logging.getLogger("app.core.database").critical(
+        "🚨 FATAL CONFIGURATION ERROR: Creating Async Engine for Postgres WITHOUT statement_cache_size=0. "
+        "This will crash on Supabase/PgBouncer!"
+    )
+    # Force the fix if it was somehow missed (Double Safety)
+    connect_args["statement_cache_size"] = 0
 
 # Create Async Engine
 engine = create_async_engine(

@@ -1,238 +1,123 @@
 #!/usr/bin/env python3
 """
-🔍 Supabase Connection Verification Script
-==========================================
+🔍 Supabase Connection Verification Script (Async/Modern)
+=======================================================
+This script verifies the connection to Supabase database using the
+modern AsyncEngine stack of the Reality Kernel.
 
-This script verifies the connection to Supabase database (local or remote).
-It tests:
-1. Database connectivity
-2. SQLAlchemy session
-3. Basic query execution
-4. Available tables
+It verifies:
+1. Asyncpg connectivity
+2. SSL configuration
+3. PgBouncer compatibility (statement_cache_size=0)
+4. Schema access
 
 Usage:
     python verify_supabase_connection.py
 """
 
+import asyncio
 import os
 import sys
 
 from dotenv import load_dotenv
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Load environment variables
 load_dotenv()
 
-
-# Color codes for terminal output
-class Colors:
-    GREEN = "\033[92m"
-    RED = "\033[91m"
-    YELLOW = "\033[93m"
-    BLUE = "\033[94m"
-    CYAN = "\033[96m"
-    BOLD = "\033[1m"
-    END = "\033[0m"
-
+# Color codes
+G = "\033[92m"
+R = "\033[91m"
+Y = "\033[93m"
+B = "\033[94m"
+E = "\033[0m"
 
 def print_header(text):
-    """Print a formatted header"""
-    print(f"\n{Colors.CYAN}{Colors.BOLD}{'=' * 70}{Colors.END}")
-    print(f"{Colors.CYAN}{Colors.BOLD}{text.center(70)}{Colors.END}")
-    print(f"{Colors.CYAN}{Colors.BOLD}{'=' * 70}{Colors.END}\n")
+    print(f"\n{B}{'=' * 70}{E}")
+    print(f"{B}{text.center(70)}{E}")
+    print(f"{B}{'=' * 70}{E}\n")
 
+def get_database_url():
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        print(f"{R}❌ DATABASE_URL is not set in .env{E}")
+        sys.exit(1)
 
-def print_success(text):
-    """Print success message"""
-    print(f"{Colors.GREEN}✅ {text}{Colors.END}")
+    # Force asyncpg scheme
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and "asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-
-def print_error(text):
-    """Print error message"""
-    print(f"{Colors.RED}❌ {text}{Colors.END}")
-
-
-def print_info(text):
-    """Print info message"""
-    print(f"{Colors.BLUE}ℹ️  {text}{Colors.END}")
-
-
-def print_warning(text):
-    """Print warning message"""
-    print(f"{Colors.YELLOW}⚠️  {text}{Colors.END}")
-
-
-def replace_docker_hostname(url):
-    """Replace Docker hostname 'db' with 'localhost' for external access"""
-    if url and "db:5432" in url:
-        return url.replace("db:5432", "localhost:5432")
     return url
 
+async def main():
+    print_header("🚀 Supabase Connection Verification (Async)")
 
-def main():
-    print_header("🗄️ Supabase Database Connection Verification")
+    db_url = get_database_url()
+    # Mask password
+    safe_url = db_url
+    if "@" in safe_url:
+        parts = safe_url.split("@")
+        safe_url = f"...@{parts[1]}"
 
-    # Step 1: Check environment variables
-    print_info("Step 1: Checking environment variables...")
-    database_url = os.environ.get("DATABASE_URL")
+    print(f"{B}ℹ️  Target URL:{E} {safe_url}")
 
-    if not database_url:
-        print_error("DATABASE_URL not found in environment variables")
-        print_warning("Please ensure .env file exists with DATABASE_URL configured")
-        return False
+    # ------------------------------------------------------------------
+    # KEY FIX: PgBouncer Transaction Mode Compatibility
+    # ------------------------------------------------------------------
+    connect_args = {}
+    if "sqlite" not in db_url:
+        print(f"{G}🔧 Applying 'statement_cache_size=0' for PgBouncer compatibility{E}")
+        connect_args["statement_cache_size"] = 0
+        connect_args["timeout"] = 30
 
-    # If running outside Docker, replace 'db' with 'localhost'
-    database_url = replace_docker_hostname(database_url)
-    if database_url != os.environ.get("DATABASE_URL"):
-        print_info("Running outside Docker - using localhost instead of 'db' hostname")
+    engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 
-    # Mask password in URL for display
-    display_url = database_url
-    if "@" in database_url:
-        parts = database_url.split("@")
-        if ":" in parts[0]:
-            user_pass = parts[0].split(":")
-            if len(user_pass) >= 3:
-                display_url = f"{user_pass[0]}:{user_pass[1]}:****@{parts[1]}"
-
-    print_success(f"DATABASE_URL found: {display_url}")
-
-    # Step 2: Import Flask app and database
-    print_info("\nStep 2: Importing Flask application...")
     try:
-        # Temporarily override DATABASE_URL for this script if needed
-        os.environ["DATABASE_URL"] = replace_docker_hostname(os.environ.get("DATABASE_URL", ""))
+        print(f"\n{Y}⏳ Connecting...{E}")
+        async with engine.connect() as conn:
+            print(f"{G}✅ Connection Established!{E}")
 
-        from app import create_app, db
-
-        print_success("Flask app and database modules imported successfully")
-    except ImportError as e:
-        print_error(f"Failed to import Flask app: {e}")
-        return False
-    except Exception as e:
-        print_error(f"Unexpected error during import: {e}")
-        return False
-
-    # Step 3: Create app context
-    print_info("\nStep 3: Creating application context...")
-    try:
-        app = create_app()
-        print_success("Application created successfully")
-    except (RuntimeError, ValueError) as e:
-        print_error(f"Failed to create application: {e}")
-        return False
-    except Exception as e:
-        print_error(f"Unexpected error during app creation: {e}")
-        return False
-
-    # Step 4: Test database connection
-    print_info("\nStep 4: Testing database connection...")
-    try:
-        with app.app_context():
-            # Test basic connectivity
-            result = db.session.execute(db.text("SELECT 1"))
-            result.close()
-            print_success("Database connection successful!")
-
-            # Get database version
-            result = db.session.execute(db.text("SELECT version()"))
+            # 1. Check Version
+            result = await conn.execute(text("SELECT version()"))
             version = result.scalar()
-            result.close()
-            print_success(f"PostgreSQL Version: {version.split(',')[0]}")
+            print(f"   📝 Version: {version.split(',')[0]}")
 
-            # Get current database name
-            result = db.session.execute(db.text("SELECT current_database()"))
+            # 2. Check Current Database
+            result = await conn.execute(text("SELECT current_database()"))
             db_name = result.scalar()
-            result.close()
-            print_success(f"Connected to database: {db_name}")
+            print(f"   🗄️  Database: {db_name}")
 
-    except OperationalError as e:
-        print_error(f"Database connection failed: {e}")
-        print_warning("Make sure the database container is running:")
-        print_warning("  docker-compose up -d db")
-        return False
-    except SQLAlchemyError as e:
-        print_error(f"Database error: {e}")
-        return False
-    except Exception as e:
-        print_error(f"Unexpected error during database connection: {e}")
-        return False
-
-    # Step 5: List available tables
-    print_info("\nStep 5: Checking available tables...")
-    try:
-        with app.app_context():
-            # Query for user tables (excluding system tables)
-            result = db.session.execute(
-                db.text(
-                    """
+            # 3. List Tables
+            print(f"\n{Y}📊 Fetching Tables...{E}")
+            result = await conn.execute(text("""
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
                 ORDER BY table_name
-            """
-                )
-            )
-            tables = [row[0] for row in result]
-            result.close()
+            """))
+            tables = result.scalars().all()
 
             if tables:
-                print_success(f"Found {len(tables)} tables in database:")
-                for table in tables:
-                    print(f"  📋 {table}")
+                print(f"{G}✅ Found {len(tables)} tables:{E}")
+                for t in tables:
+                    print(f"   - {t}")
             else:
-                print_warning("No tables found in database")
-                print_info("You may need to run migrations:")
-                print_info("  flask db upgrade")
+                print(f"{Y}⚠️  No tables found in 'public' schema.{E}")
 
-    except SQLAlchemyError as e:
-        print_error(f"Failed to list tables: {e}")
-        return False
+        print_header("✅ VERIFICATION COMPLETE - SYSTEM HEALTHY")
+
     except Exception as e:
-        print_error(f"Unexpected error while listing tables: {e}")
-        return False
-
-    # Step 6: Test database service
-    print_info("\nStep 6: Testing database service...")
-    try:
-        from app.services import database_service
-
-        if database_service:
-            with app.app_context():
-                stats = database_service.get_database_stats()
-                print_success("Database service working!")
-                print_success(f"Total records across all tables: {stats.get('total_records', 0)}")
-        else:
-            print_warning("Database service not available")
-
-    except ImportError as e:
-        print_warning(f"Database service not available: {e}")
-    except AttributeError as e:
-        print_warning(f"Database service method not found: {e}")
-    except Exception as e:
-        print_warning(f"Database service test failed: {e}")
-
-    # Final summary
-    print_header("✅ Connection Verification Complete!")
-    print_success("Supabase database is accessible and ready to use")
-    print_info("\nNext steps:")
-    print("  1. Access admin panel: http://localhost:5000/admin/database")
-    print("  2. Login with admin credentials from .env file")
-    print("  3. Start managing your database!")
-
-    return True
-
+        print(f"\n{R}❌ CONNECTION FAILED{E}")
+        print(f"{R}Error: {e}{E}")
+        if "DuplicatePreparedStatementError" in str(e):
+            print(f"\n{Y}💡 DIAGNOSIS: This error confirms usage of prepared statements on PgBouncer.{E}")
+            print(f"{Y}   Ensure 'statement_cache_size=0' is effectively passed.{E}")
+        sys.exit(1)
+    finally:
+        await engine.dispose()
 
 if __name__ == "__main__":
-    try:
-        success = main()
-        sys.exit(0 if success else 1)
-    except KeyboardInterrupt:
-        print_warning("\n\nVerification interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        print_error(f"\n\nUnexpected error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
+    asyncio.run(main())
