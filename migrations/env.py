@@ -86,33 +86,28 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-async def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-    connect_args = {}
-    if "sqlite" not in DATABASE_URL:
-        # Fix for Supabase PgBouncer in transaction mode
-        connect_args["statement_cache_size"] = 0
-
-    # Use async engine
+def run_migrations_online() -> None:
+    # BYPASS CONFIG PARSER: Read directly from env or bootstrap
     connectable = create_async_engine(
-        DATABASE_URL,
+        os.environ.get("DATABASE_URL"), # Logic: The URL is already sanitized by the bootstrap script
         poolclass=pool.NullPool,
-        future=True,
-        connect_args=connect_args,
+        connect_args={"statement_cache_size": 0} # FIX: Supabase PgBouncer Compatibility
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    def do_run_migrations_sync(connection):
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
 
-    await connectable.dispose()
+    async def do_run_migrations():
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations_sync)
+
+    import asyncio
+    asyncio.run(do_run_migrations())
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_migrations_online())
+    run_migrations_online()
