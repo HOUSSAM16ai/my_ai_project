@@ -13,6 +13,7 @@ from app.core.config import settings
 connect_args = {}
 if "sqlite" not in settings.DATABASE_URL:
     connect_args["statement_cache_size"] = 0
+    connect_args["server_settings"] = {"jit": "off"}
 
 engine = create_async_engine(
     settings.DATABASE_URL,
