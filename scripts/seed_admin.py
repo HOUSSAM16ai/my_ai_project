@@ -6,12 +6,12 @@ import sys
 # Ensure we can import app modules
 sys.path.append(os.getcwd())
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
 
-from app.core.config import settings
-from app.models import User
+from app.core.database import get_connection_string  # noqa: E402
+from app.models import User  # noqa: E402
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,12 +36,15 @@ async def seed_admin():
     logger.info(f"Checking for admin user: {admin_email}")
 
     # Create Async Engine & Session
-    # We create a local engine here to avoid dependency injection complexity in a script
-    connect_args = {}
-    if "sqlite" not in settings.DATABASE_URL:
-        connect_args["statement_cache_size"] = 0
+    database_url = get_connection_string()
 
-    engine = create_async_engine(settings.DATABASE_URL, echo=False, connect_args=connect_args)
+    connect_args = {}
+    if "postgresql" in database_url:
+        connect_args = {
+            "statement_cache_size": 0,
+        }
+
+    engine = create_async_engine(database_url, echo=False, connect_args=connect_args)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:

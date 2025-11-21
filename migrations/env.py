@@ -1,11 +1,9 @@
-import asyncio
 import logging
 import os
 from logging.config import fileConfig
 
-from dotenv import load_dotenv
-
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -25,48 +23,36 @@ if config.config_file_name is not None:
 logger = logging.getLogger("alembic.env")
 
 # Load environment variables from .env file if present
-load_dotenv()
+# NOTE: We load dotenv but we will prioritize existing env vars
+# to respect the bootstrap script's work.
+load_dotenv(override=False)
 
 # ------------------------------------------------------------------------------
 # FIX: Bypass ConfigParser interpolation & Pydantic settings
-# We read the DATABASE_URL directly from os.environ to avoid issues with
-# special characters (like %) in the URL.
+# We read the DATABASE_URL directly from os.environ.
 # ------------------------------------------------------------------------------
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+def get_raw_connection_url() -> str:
+    url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-def fix_database_url(url: str) -> str:
-    """
-    Auto-fix the database URL for asyncpg compatibility.
-    """
+    # Defensive: Ensure scheme is correct even if env var is raw
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    # Fix SSL mode
     if "sslmode=require" in url:
         url = url.replace("sslmode=require", "ssl=require")
 
     return url
 
-DATABASE_URL = fix_database_url(DATABASE_URL)
+DATABASE_URL = get_raw_connection_url()
 
 # Your models' metadata for 'autogenerate' support
 target_metadata = SQLModel.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
+    """Run migrations in 'offline' mode."""
     url = DATABASE_URL
     context.configure(
         url=url,
@@ -87,11 +73,17 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 def run_migrations_online() -> None:
-    # BYPASS CONFIG PARSER: Read directly from env or bootstrap
+    # FIX: Supabase PgBouncer Compatibility
+    connect_args = {}
+    if "postgresql" in DATABASE_URL:
+        connect_args = {
+            "statement_cache_size": 0,
+        }
+
     connectable = create_async_engine(
-        os.environ.get("DATABASE_URL"), # Logic: The URL is already sanitized by the bootstrap script
+        DATABASE_URL,
         poolclass=pool.NullPool,
-        connect_args={"statement_cache_size": 0} # FIX: Supabase PgBouncer Compatibility
+        connect_args=connect_args
     )
 
     def do_run_migrations_sync(connection):
