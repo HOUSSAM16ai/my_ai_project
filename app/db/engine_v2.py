@@ -11,7 +11,9 @@ from app.core.kernel_v2.config_v2 import get_settings
 settings = get_settings()
 DATABASE_URL = settings.DATABASE_URL
 
-connect_args = {"statement_cache_size": 0} if "sqlite" not in DATABASE_URL else {}
+connect_args = {}
+if "sqlite" not in DATABASE_URL:
+    connect_args["statement_cache_size"] = 0
 
 # Create the async engine.
 # `echo=True` is useful for debugging in development.
