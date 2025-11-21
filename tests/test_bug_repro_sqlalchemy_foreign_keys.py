@@ -10,7 +10,6 @@ def test_sqlalchemy_mapper_configuration():
     # Importing app.models triggers the SQLModel definition and relationship setup.
     # If the bug exists, importing or configuring mappers will raise ArgumentError.
     try:
-
         # Force mapper configuration to catch deferred errors
         configure_mappers()
     except Exception as e:

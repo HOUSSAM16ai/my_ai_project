@@ -25,6 +25,7 @@ async def check_db_state():
     """
     engine = create_async_engine(settings.DATABASE_URL)
     async with engine.connect() as conn:
+
         def _inspect(connection):
             inspector = inspect(connection)
             tables = inspector.get_table_names()

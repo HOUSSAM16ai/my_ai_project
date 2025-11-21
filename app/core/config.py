@@ -1,6 +1,5 @@
 # app/core/config.py
 
-import os
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

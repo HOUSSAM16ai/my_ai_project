@@ -5,6 +5,7 @@ The File Migrator component of the AML.
 This module is responsible for the low-level task of reading a file,
 applying a generated patch, and writing the changes back.
 """
+
 import os
 
 

@@ -94,7 +94,6 @@ except Exception:
     class system_service:
         @staticmethod
         def find_related_context(_desc: str):
-
             class R:
                 data: ClassVar[dict[str, str]] = {"context": "system-context-unavailable"}
 

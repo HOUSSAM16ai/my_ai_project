@@ -266,25 +266,23 @@ class CodeAnalyzer:
                         )
                     )
 
-            elif isinstance(node, ast.ClassDef) and not re.match(
-                r"^[A-Z][a-zA-Z0-9]*$", node.name
-            ):
+            elif isinstance(node, ast.ClassDef) and not re.match(r"^[A-Z][a-zA-Z0-9]*$", node.name):
                 # Check PascalCase for classes
                 self.issues_found.append(
                     CodeIssue(
                         issue_id=f"naming_class_{file_path}_{node.lineno}",
-                            severity=Severity.LOW,
-                            issue_type="NamingConvention",
-                            description=f"Class '{node.name}' should use PascalCase",
-                            file_path=file_path,
-                            line_number=node.lineno,
-                            column=node.col_offset,
-                            code_snippet=f"class {node.name}:",
-                            suggested_fix=f"Rename to: {self._to_pascal_case(node.name)}",
-                            auto_fixable=True,
-                            impact_score=10,
-                        )
+                        severity=Severity.LOW,
+                        issue_type="NamingConvention",
+                        description=f"Class '{node.name}' should use PascalCase",
+                        file_path=file_path,
+                        line_number=node.lineno,
+                        column=node.col_offset,
+                        code_snippet=f"class {node.name}:",
+                        suggested_fix=f"Rename to: {self._to_pascal_case(node.name)}",
+                        auto_fixable=True,
+                        impact_score=10,
                     )
+                )
 
     def _check_code_duplication(self, tree: ast.AST, file_path: str):
         """فحص تكرار الكود"""
@@ -304,18 +302,18 @@ class CodeAnalyzer:
                 self.issues_found.append(
                     CodeIssue(
                         issue_id=f"security_{file_path}_{node.lineno}",
-                                severity=Severity.CRITICAL,
-                                issue_type="SecurityRisk",
-                                description=f"Dangerous use of {node.func.id}() - code injection risk",
-                                file_path=file_path,
-                                line_number=node.lineno,
-                                column=node.col_offset,
-                                code_snippet=f"{node.func.id}(...)",
-                                suggested_fix="Use safer alternatives like ast.literal_eval() or json.loads()",
-                                auto_fixable=False,
-                                impact_score=95,
-                            )
-                        )
+                        severity=Severity.CRITICAL,
+                        issue_type="SecurityRisk",
+                        description=f"Dangerous use of {node.func.id}() - code injection risk",
+                        file_path=file_path,
+                        line_number=node.lineno,
+                        column=node.col_offset,
+                        code_snippet=f"{node.func.id}(...)",
+                        suggested_fix="Use safer alternatives like ast.literal_eval() or json.loads()",
+                        auto_fixable=False,
+                        impact_score=95,
+                    )
+                )
 
             # Check for hardcoded secrets
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -357,19 +355,19 @@ class CodeAnalyzer:
                 # Check for list comprehension opportunities
                 self.issues_found.append(
                     CodeIssue(
-                                issue_id=f"perf_{file_path}_{node.lineno}",
-                                severity=Severity.LOW,
-                                issue_type="Performance",
-                                description="Consider using list comprehension for better performance",
-                                file_path=file_path,
-                                line_number=node.lineno,
-                                column=node.col_offset,
-                                code_snippet="for ... in ...: ...",
-                                suggested_fix="Use list comprehension: [... for ... in ...]",
-                                auto_fixable=True,
-                                impact_score=15,
-                            )
-                        )
+                        issue_id=f"perf_{file_path}_{node.lineno}",
+                        severity=Severity.LOW,
+                        issue_type="Performance",
+                        description="Consider using list comprehension for better performance",
+                        file_path=file_path,
+                        line_number=node.lineno,
+                        column=node.col_offset,
+                        code_snippet="for ... in ...: ...",
+                        suggested_fix="Use list comprehension: [... for ... in ...]",
+                        auto_fixable=True,
+                        impact_score=15,
+                    )
+                )
 
     def _check_type_hints(self, tree: ast.AST, file_path: str):
         """فحص type hints"""

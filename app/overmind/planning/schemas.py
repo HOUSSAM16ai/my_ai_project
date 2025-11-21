@@ -270,7 +270,9 @@ class PlannedTask(BaseModel):
             try:
                 return TOOL_REGISTRY.validate(tool_name, v)
             except Exception as ex:
-                raise ValueError(f"tool_args validation failed for tool '{tool_name}': {ex}") from ex
+                raise ValueError(
+                    f"tool_args validation failed for tool '{tool_name}': {ex}"
+                ) from ex
         return v
 
     @field_validator("risk_level")

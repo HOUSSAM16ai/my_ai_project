@@ -396,7 +396,9 @@ class APIObservabilityService:
             "sla_status": (
                 "compliant"
                 if compliance_rate >= 99.0
-                else "at_risk" if compliance_rate >= 95.0 else "violated"
+                else "at_risk"
+                if compliance_rate >= 95.0
+                else "violated"
             ),
         }
 

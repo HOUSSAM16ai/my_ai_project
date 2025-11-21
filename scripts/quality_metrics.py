@@ -271,7 +271,9 @@ def display_dashboard(metrics: dict[str, Any]) -> None:
     score_color = (
         Colors.GREEN
         if overall_score >= 80
-        else Colors.YELLOW if overall_score >= 60 else Colors.RED
+        else Colors.YELLOW
+        if overall_score >= 60
+        else Colors.RED
     )
     print(f"{Colors.CYAN}📊 Overall Quality Score: {score_color}{overall_score}/100{Colors.NC}")
     print()
@@ -328,7 +330,9 @@ def display_dashboard(metrics: dict[str, Any]) -> None:
     pylint_color = (
         Colors.GREEN
         if pylint_score >= 8.0
-        else Colors.YELLOW if pylint_score >= 6.0 else Colors.RED
+        else Colors.YELLOW
+        if pylint_score >= 6.0
+        else Colors.RED
     )
     print(f"  Ruff Violations:        {linting.get('ruff_violations', 0)}")
     print(f"  Pylint Score:           {pylint_color}{pylint_score}/10.0{Colors.NC}")

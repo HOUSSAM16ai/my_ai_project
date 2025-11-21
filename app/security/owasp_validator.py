@@ -191,14 +191,14 @@ class OWASPValidator:
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
-                        severity=SecuritySeverity.CRITICAL,
-                        title="Potential Plain Text Password Storage",
-                        description="Password appears to be stored without hashing",
-                        file_path=file_path,
-                        recommendation="Always hash passwords before storing",
-                        cwe_id="CWE-256",
-                    )
+                    severity=SecuritySeverity.CRITICAL,
+                    title="Potential Plain Text Password Storage",
+                    description="Password appears to be stored without hashing",
+                    file_path=file_path,
+                    recommendation="Always hash passwords before storing",
+                    cwe_id="CWE-256",
                 )
+            )
 
         # Check for missing rate limiting
         if "login" in code.lower() and "rate_limit" not in code.lower():
@@ -260,14 +260,14 @@ class OWASPValidator:
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
-                        severity=SecuritySeverity.HIGH,
-                        title="Missing Authorization Check",
-                        description="Endpoint with user_id parameter lacks authorization",
-                        file_path=file_path,
-                        recommendation="Add @login_required and verify user owns the resource",
-                        cwe_id="CWE-862",
-                    )
+                    severity=SecuritySeverity.HIGH,
+                    title="Missing Authorization Check",
+                    description="Endpoint with user_id parameter lacks authorization",
+                    file_path=file_path,
+                    recommendation="Add @login_required and verify user owns the resource",
+                    cwe_id="CWE-862",
                 )
+            )
 
         return issues
 
@@ -446,14 +446,14 @@ class OWASPValidator:
             issues.append(
                 SecurityIssue(
                     category=OWASPCategory.A09_LOGGING_FAILURES,
-                        severity=SecuritySeverity.MEDIUM,
-                        title="Missing Security Event Logging",
-                        description="Authentication events should be logged",
-                        file_path=file_path,
-                        recommendation="Log all authentication attempts with timestamp, IP, result",
-                        cwe_id="CWE-778",
-                    )
+                    severity=SecuritySeverity.MEDIUM,
+                    title="Missing Security Event Logging",
+                    description="Authentication events should be logged",
+                    file_path=file_path,
+                    recommendation="Log all authentication attempts with timestamp, IP, result",
+                    cwe_id="CWE-778",
                 )
+            )
 
         # Check for logging sensitive data
         if re.search(r"log.*password|log.*token|log.*secret", code, re.IGNORECASE):
