@@ -2,8 +2,10 @@ import asyncio
 import os
 import sys
 import urllib.parse
-from sqlalchemy.ext.asyncio import create_async_engine
+
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 
 def mask_url(url: str) -> str:
     """Masks the password in the connection string."""
@@ -50,7 +52,7 @@ async def test_connection():
 
         asyncpg_url = url.replace("postgresql+asyncpg://", "postgresql://")
 
-        conn = await asyncpg.connect(asyncpg_url)
+        conn = await asyncpg.connect(asyncpg_url, statement_cache_size=0)
         version = await conn.fetchval('SELECT version()')
         print(f"✅ Asyncpg Connection Successful! Version: {version}")
         await conn.close()
@@ -67,7 +69,7 @@ async def test_connection():
 
         connect_args = {}
         if "postgresql" in sa_url:
-            connect_args = {"statement_cache_size": 0}
+            connect_args.update({"statement_cache_size": 0})
 
         engine = create_async_engine(sa_url, connect_args=connect_args)
 

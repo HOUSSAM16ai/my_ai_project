@@ -6,12 +6,12 @@ import sys
 # Ensure we can import app modules
 sys.path.append(os.getcwd())
 
-from sqlalchemy import select  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
-from sqlalchemy.orm import sessionmaker  # noqa: E402
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
-from app.core.database import get_connection_string  # noqa: E402
-from app.models import User  # noqa: E402
+from app.core.database import get_connection_string
+from app.models import User
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -40,9 +40,7 @@ async def seed_admin():
 
     connect_args = {}
     if "postgresql" in database_url:
-        connect_args = {
-            "statement_cache_size": 0,
-        }
+        connect_args.update({"statement_cache_size": 0})
 
     engine = create_async_engine(database_url, echo=False, connect_args=connect_args)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
