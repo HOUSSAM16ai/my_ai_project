@@ -8,10 +8,17 @@ from sqlmodel import SQLModel
 from app.core.config import settings
 
 # Async Engine (Primary for FastAPI)
+connect_args = {}
+if "sqlite" not in settings.DATABASE_URL:
+    # Fix for Supabase PgBouncer in transaction mode
+    # asyncpg tries to use prepared statements by default, which fails with PgBouncer
+    connect_args["statement_cache_size"] = 0
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
+    connect_args=connect_args,
 )
 
 async_session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
