@@ -49,7 +49,11 @@ FINAL_DATABASE_URL = get_connection_string()
 # ------------------------------------------------------------------------------
 connect_args = {}
 if "postgresql" in FINAL_DATABASE_URL:
-    connect_args.update({"statement_cache_size": 0})
+    # 1. Disable prepared statements
+    connect_args["statement_cache_size"] = 0
+    # 2. Add timeouts to avoid silent hangs
+    connect_args["timeout"] = 30
+    connect_args["command_timeout"] = 60
 
 # Create Async Engine
 engine = create_async_engine(
