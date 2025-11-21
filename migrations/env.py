@@ -5,7 +5,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
 
 from app.core.di import get_settings
@@ -28,9 +28,6 @@ settings = get_settings()
 if not settings.DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the environment or .env file")
 
-# Set sqlalchemy.url from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-
 # Your models' metadata for 'autogenerate' support
 target_metadata = SQLModel.metadata
 
@@ -52,7 +49,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -78,11 +75,17 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    connect_args = {}
+    if "sqlite" not in settings.DATABASE_URL:
+        # Fix for Supabase PgBouncer in transaction mode
+        connect_args["statement_cache_size"] = 0
+
     # Use async engine
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        settings.DATABASE_URL,
         poolclass=pool.NullPool,
+        future=True,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
