@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -8,6 +9,9 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
 
 # Import your app's models to register them with SQLModel.metadata
 from app import models  # noqa: F401

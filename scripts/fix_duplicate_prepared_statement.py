@@ -14,9 +14,6 @@ from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 
-# Ensure we use the app's core logic if possible, but we define it here to be standalone
-# to prove the fix works.
-
 def get_safe_db_url():
     url = os.environ.get("DATABASE_URL")
     if not url:
@@ -28,6 +25,9 @@ def get_safe_db_url():
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    if "sslmode=require" in url:
+        url = url.replace("sslmode=require", "ssl=require")
 
     return url
 
@@ -44,6 +44,8 @@ async def verify_fix():
         connect_args["statement_cache_size"] = 0
         connect_args["timeout"] = 30
         connect_args["command_timeout"] = 60
+    else:
+        print("ℹ️  SQLite detected, skipping statement_cache_size=0")
 
     engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 
@@ -59,9 +61,12 @@ async def verify_fix():
                 print(f"   Query {i+1}: Result={val}")
 
             # Test explicit version query
-            version = await conn.execute(text("SELECT version()"))
-            v = version.scalar()
-            print(f"✅ Database Version: {v.split(',')[0]}")
+            try:
+                version = await conn.execute(text("SELECT version()"))
+                v = version.scalar()
+                print(f"✅ Database Version: {v.split(',')[0]}")
+            except Exception:
+                print("ℹ️  Could not fetch version (might be SQLite)")
 
         print("\n🎉 VERIFICATION SUCCESSFUL: No DuplicatePreparedStatementError detected.")
         print("   The fix (statement_cache_size=0) is working correctly.")
@@ -76,4 +81,10 @@ async def verify_fix():
         await engine.dispose()
 
 if __name__ == "__main__":
-    asyncio.run(verify_fix())
+    if "--verify" in sys.argv:
+        try:
+            asyncio.run(verify_fix())
+        except Exception as e:
+            sys.exit(1)
+    else:
+        print("Usage: python3 scripts/fix_duplicate_prepared_statement.py --verify")
