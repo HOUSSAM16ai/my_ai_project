@@ -39,7 +39,7 @@ async def seed_admin():
     database_url = get_connection_string()
 
     connect_args = {}
-    if "postgresql" in database_url:
+    if "sqlite" not in database_url:
         connect_args.update({"statement_cache_size": 0})
 
     engine = create_async_engine(database_url, echo=False, connect_args=connect_args)

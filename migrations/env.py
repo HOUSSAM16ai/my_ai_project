@@ -89,7 +89,9 @@ async def run_async_migrations() -> None:
     # --------------------------------------------------------------------------
     connect_args = {}
 
-    if "postgresql" in DATABASE_URL:
+    # FIX: Supabase/PgBouncer Transaction Mode
+    # Apply to all non-SQLite databases (targeting Supabase/Postgres/Asyncpg)
+    if "sqlite" not in DATABASE_URL:
         # 1. Disable prepared statements for PgBouncer transaction mode
         connect_args["statement_cache_size"] = 0
 
@@ -100,8 +102,6 @@ async def run_async_migrations() -> None:
 
         # 3. SSL is usually handled by the query param ?ssl=require in the URL
         # which we ensured in get_database_url / bootstrap_db.py
-        # If we needed to enforce it here:
-        # connect_args["ssl"] = "require"
 
     logger.info(f"Connecting to database with args: {connect_args.keys()}")
 
