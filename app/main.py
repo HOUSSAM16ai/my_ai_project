@@ -11,12 +11,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routers import admin, ai_service, chat, crud, gateway, observability, security, system
 from app.kernel import kernel
+from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
 from app.middleware.fastapi_error_handlers import add_error_handlers
 
 # SERVICE ORCHESTRATION
 kernel.app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 add_error_handlers(kernel.app)
+kernel.app.add_middleware(FlaskCompatMiddleware)
 
 # Mount routers
 kernel.app.include_router(system.router)
