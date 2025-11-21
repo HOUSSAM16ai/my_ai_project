@@ -1,10 +1,12 @@
 # app/cli_handlers/db_cli.py
+import asyncio
 import os
-from collections.abc import Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import click
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from app import models  # Import models to register them
@@ -23,7 +25,12 @@ def register_db_commands(root):
         """Creates all database tables."""
         logger = ctx.obj["logger"]
         logger.info("Creating all database tables...")
-        SQLModel.metadata.create_all(bind=engine)
+
+        async def _create():
+            async with engine.begin() as conn:
+                await conn.run_sync(SQLModel.metadata.create_all)
+
+        asyncio.run(_create())
         logger.info("All database tables created.")
 
     @db_group.command("seed")
@@ -42,33 +49,37 @@ def register_db_commands(root):
             logger.warning("Seeding requires --confirm")
             raise click.UsageError("Add --confirm to proceed")
 
-        with transactional_session(SessionLocal, logger, dry_run=dry_run) as session:
-            user = session.query(models.User).filter_by(email=admin_email).one_or_none()
-            if not user:
-                user = models.User(email=admin_email, is_admin=True, full_name="Admin User")
-                session.add(user)
-                logger.info(f"User with email {admin_email} created.")
-            else:
-                logger.info(f"User with email {admin_email} already exists.")
-            logger.info("seed: completed")
+        async def _seed():
+            async with transactional_session(SessionLocal, logger, dry_run=dry_run) as session:
+                result = await session.execute(select(models.User).filter_by(email=admin_email))
+                user = result.scalar()
+
+                if not user:
+                    user = models.User(email=admin_email, is_admin=True, full_name="Admin User")
+                    session.add(user)
+                    # We must commit/flush to generate ID if needed, but transactional_session handles commit
+                    logger.info(f"User with email {admin_email} created.")
+                else:
+                    logger.info(f"User with email {admin_email} already exists.")
+                logger.info("seed: completed")
+
+        asyncio.run(_seed())
 
 
-@contextmanager
-def transactional_session(
+@asynccontextmanager
+async def transactional_session(
     SessionFactory, logger, dry_run: bool = False
-) -> Generator[Session, None, None]:
-    session = SessionFactory()
-    try:
-        yield session
-        if dry_run:
-            logger.info("dry-run: rolling back.")
-            session.rollback()
-        else:
-            session.commit()
-            logger.info("committed transaction.")
-    except Exception:
-        logger.exception("exception during CLI operation; rolling back.")
-        session.rollback()
-        raise
-    finally:
-        session.close()
+) -> AsyncGenerator[AsyncSession, None]:
+    async with SessionFactory() as session:
+        try:
+            yield session
+            if dry_run:
+                logger.info("dry-run: rolling back.")
+                await session.rollback()
+            else:
+                await session.commit()
+                logger.info("committed transaction.")
+        except Exception:
+            logger.exception("exception during CLI operation; rolling back.")
+            await session.rollback()
+            raise

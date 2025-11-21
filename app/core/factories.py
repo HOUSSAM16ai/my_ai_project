@@ -21,10 +21,11 @@ from logging import Logger
 from typing import TYPE_CHECKING
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import AppSettings
-from app.core.di import get_logger, get_session, get_settings
+from app.core.database import get_db
+from app.core.di import get_logger, get_settings
 from app.gateways.ai_service_gateway import AIServiceGateway
 from app.protocols.http_client import HttpClient, RequestsAdapter
 from app.services.database_service import DatabaseService
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 
 
 def get_db_service(
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_db),
     logger: Logger = Depends(get_logger),
     settings: AppSettings = Depends(get_settings),
 ) -> DatabaseService:

@@ -36,29 +36,34 @@ async def test_connection():
     print(f"📝 Raw DATABASE_URL Scheme: {display_url.split('://')[0]}")
     print(f"📝 Masked DATABASE_URL: {mask_url(display_url)}")
 
+    is_sqlite = "sqlite" in url
+
     # 1. Asyncpg Raw Connection Test
-    try:
-        import asyncpg
-        print("\n🧪 Attempting RAW asyncpg connection...")
+    if not is_sqlite:
+        try:
+            import asyncpg
+            print("\n🧪 Attempting RAW asyncpg connection...")
 
-        # Prepare DSN
-        dsn = url
-        if "postgresql+asyncpg://" in dsn:
-            dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
+            # Prepare DSN
+            dsn = url
+            if "postgresql+asyncpg://" in dsn:
+                dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
 
-        if "sslmode=require" in dsn:
-             dsn = dsn.replace("sslmode=require", "ssl=require")
+            if "sslmode=require" in dsn:
+                 dsn = dsn.replace("sslmode=require", "ssl=require")
 
-        # Check if we need to inject statement_cache_size=0
-        # For raw asyncpg, we pass it as kwarg
-        print(f"   - Connecting with statement_cache_size=0...")
-        conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
+            # Check if we need to inject statement_cache_size=0
+            # For raw asyncpg, we pass it as kwarg
+            print(f"   - Connecting with statement_cache_size=0...")
+            conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
 
-        version = await conn.fetchval('SELECT version()')
-        print(f"✅ Asyncpg Connection Successful! Version: {version}")
-        await conn.close()
-    except Exception as e:
-        print(f"❌ Asyncpg Connection Failed: {e}")
+            version = await conn.fetchval('SELECT version()')
+            print(f"✅ Asyncpg Connection Successful! Version: {version}")
+            await conn.close()
+        except Exception as e:
+            print(f"❌ Asyncpg Connection Failed: {e}")
+    else:
+        print("\nℹ️  Skipping RAW asyncpg check (SQLite detected).")
 
     # 2. SQLAlchemy Connection Test
     try:
@@ -74,7 +79,7 @@ async def test_connection():
             sa_url = sa_url.replace("sslmode=require", "ssl=require")
 
         connect_args = {}
-        if "postgresql" in sa_url:
+        if "postgresql" in sa_url and "sqlite" not in sa_url:
             connect_args.update({"statement_cache_size": 0})
             print("   - Applied statement_cache_size=0")
 
