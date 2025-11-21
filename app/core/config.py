@@ -36,10 +36,10 @@ class Settings(BaseSettings):
         if v.startswith("postgres://"):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
         elif v.startswith("postgresql://"):
-            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if "postgresql+asyncpg://" not in v:
+                 v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
 
         # 2. Auto-fix SSL Mode for asyncpg compatibility
-        # asyncpg often rejects 'sslmode', preferring 'ssl' param or context.
         if "sslmode=require" in v:
             v = v.replace("sslmode=require", "ssl=require")
 

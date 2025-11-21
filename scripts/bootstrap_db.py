@@ -1,31 +1,59 @@
 #!/usr/bin/env python3
 import os
-import sys
-from urllib.parse import urlparse, urlunparse, quote_plus, parse_qsl, urlencode
+from urllib.parse import parse_qsl, quote_plus, unquote_plus, urlencode, urlparse, urlunparse
+
 
 def sanitize():
     url = os.environ.get("DATABASE_URL", "")
-    if not url: return ""
+    if not url:
+        return ""
 
     try:
+        # Detect if it's a path-based URL like sqlite
+        if url.startswith("sqlite"):
+            return url
+
         p = urlparse(url)
-        # 1. Encode Password (Fixes % crash)
-        safe_pwd = quote_plus(p.password) if p.password else ""
+
+        # 1. Extract and Safe Encode Password
+        raw_password = p.password
+        if raw_password:
+            # Try to decode first to handle already encoded passwords
+            try:
+                decoded = unquote_plus(raw_password)
+            except Exception:
+                decoded = raw_password
+
+            safe_pwd = quote_plus(decoded)
+        else:
+            safe_pwd = ""
 
         # 2. Rebuild Netloc
-        userinfo = f"{p.username}:{safe_pwd}" if safe_pwd else p.username
+        username = p.username if p.username else ""
+        userinfo = f"{username}:{safe_pwd}" if safe_pwd else username
         netloc = f"{userinfo}@{p.hostname}"
-        if p.port: netloc += f":{p.port}"
+        if p.port:
+            netloc += f":{p.port}"
 
         # 3. Fix Query Params (SSL & Asyncpg)
         q = dict(parse_qsl(p.query))
-        if 'sslmode' in q: del q['sslmode']
-        q['ssl'] = 'require'
+        if "sslmode" in q:
+            del q["sslmode"]
 
-        # 4. Force Scheme
-        return urlunparse(("postgresql+asyncpg", netloc, p.path, p.params, urlencode(q), p.fragment))
-    except:
+        # Only force ssl=require for Postgres/Supabase
+        if p.scheme.startswith("postgres"):
+            q["ssl"] = "require"
+            scheme = "postgresql+asyncpg"
+        else:
+            scheme = p.scheme
+
+        # 4. Reconstruct
+        clean_url = urlunparse((scheme, netloc, p.path, p.params, urlencode(q), p.fragment))
+
+        return clean_url
+    except Exception:
         return url
+
 
 if __name__ == "__main__":
     print(sanitize())
