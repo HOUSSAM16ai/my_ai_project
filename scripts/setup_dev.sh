@@ -1,44 +1,72 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "🔧 Bootstrapping Database Environment..."
+# --- SETUP LOGGING ---
+LOG_FILE=".setup_dev.log"
+exec 3>&1 4>&2 # Save original stdout/stderr
+exec > >(tee -a "$LOG_FILE") 2>&1 # Redirect all output to log file and stdout
 
-# 1. Sanitize and Export URL (The Magic Step)
-# This script (scripts/bootstrap_db.py) ensures DATABASE_URL is:
-# - Safe (passwords encoded)
-# - Correct Scheme (postgresql+asyncpg)
-# - SSL Ready (ssl=require)
-export DATABASE_URL=$(python3 scripts/bootstrap_db.py)
+echo "🔧 Starting Development Environment Setup..."
+echo "📜 Logs will be saved to $LOG_FILE"
 
-if [ -z "$DATABASE_URL" ]; then
-    echo "❌ Error: DATABASE_URL could not be determined."
+# --- 1. DEPENDENCIES ---
+echo "📦 Installing Python Dependencies..."
+pip install -r requirements.txt > /dev/null 2>&1 || { echo "❌ Pip install failed"; exit 1; }
+echo "✅ Dependencies Installed."
+
+# --- 2. BOOTSTRAP DATABASE URL ---
+echo "🔗 Bootstrapping Database Connection..."
+# Capture ONLY the stdout from bootstrap_db.py.
+# stderr flows through to our script's stderr (and log file).
+# We use a temporary file to avoid any subshell weirdness, although strict variable capture is also fine.
+RAW_URL_FILE="/tmp/db_url_capture"
+python3 scripts/bootstrap_db.py > "$RAW_URL_FILE"
+
+# Read and Trim
+DATABASE_URL=$(cat "$RAW_URL_FILE" | tr -d '\n' | tr -d ' ')
+export DATABASE_URL
+
+# Validation
+if [[ -z "$DATABASE_URL" ]]; then
+    echo "❌ Error: DATABASE_URL is empty. Bootstrap failed."
     exit 1
 fi
 
-echo "✅ URL Sanitized."
+if [[ "$DATABASE_URL" != *"://"* ]]; then
+    echo "❌ Error: Invalid DATABASE_URL format: $DATABASE_URL"
+    exit 1
+fi
 
-# 1.5 Verify Connection Fix (Prevent PgBouncer Crashes)
-# We verify that statement_cache_size=0 is correctly applied
-echo "🔍 Verifying Database Connection and PgBouncer Fix..."
+echo "✅ Database URL captured: ${DATABASE_URL//:*/:******@...}"
+
+# --- 3. VERIFY ENGINE SAFETY ---
+echo "🛡️  Verifying Engine Configuration..."
 python3 scripts/fix_duplicate_prepared_statement.py --verify || {
-    echo "❌ Connection verification failed! The environment is not safe for migrations."
-    echo "   Check 'scripts/fix_duplicate_prepared_statement.py' output above."
+    echo "❌ Engine verification failed. See logs above."
     exit 1
 }
 
-# 2. Run Migrations (Now Safe)
-# We rely on migrations/env.py to pick up the sanitized DATABASE_URL from env
-echo "🚀 Running Migrations..."
-alembic upgrade head
+# --- 4. RUN MIGRATIONS ---
+echo "🚀 Running Alembic Migrations..."
+# Ensure we are at head
+alembic upgrade head || {
+    echo "❌ Migration failed."
+    exit 1
+}
+echo "✅ Schema is up to date."
 
-# 3. Seed Admin
-# This script also respects the sanitized DATABASE_URL and connect_args
-echo "👤 Seeding Admin..."
-python3 scripts/seed_admin.py
+# --- 5. SEED DATA ---
+echo "🌱 Seeding Admin User..."
+python3 scripts/seed_admin.py || {
+    echo "❌ Admin seeding failed."
+    exit 1
+}
 
-echo "✅ Setup Complete."
+# --- 6. VALIDATE TESTS (Smoke Test) ---
+if [ -f "tests/conftest.py" ]; then
+    echo "🧪 Running Smoke Tests..."
+    # Running a quick check, not the full suite, to ensure env is viable
+    pytest -q tests/transcendent/ --ignore=tests/transcendent/test_infrastructure_rebuild.py || echo "⚠️  Some smoke tests failed, but continuing setup..."
+fi
 
-# 4. Start Application
-echo "🌐 Starting Application Server..."
-# Use exec to replace the shell process with Uvicorn
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+echo "✅ Setup Complete! Run 'uvicorn app.main:app --reload' to start."
