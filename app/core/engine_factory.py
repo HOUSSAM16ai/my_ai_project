@@ -82,11 +82,15 @@ def create_unified_async_engine(
 
         # FORCE 0
         connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
-        connect_args["command_timeout"] = 60
+
+        # Ensure basic timeout settings are also safe
+        if "timeout" not in connect_args:
+             connect_args["timeout"] = 30
+        if "command_timeout" not in connect_args:
+             connect_args["command_timeout"] = 60
 
         # Log this event
-        logger.debug("🔒 Secured Async Engine with statement_cache_size=0")
+        logger.info("🔒 Secured Async Engine with statement_cache_size=0")
 
     # 3. CREATE ENGINE
     try:

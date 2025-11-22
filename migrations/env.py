@@ -66,10 +66,13 @@ async def run_async_migrations() -> None:
     logger.info(f"🔄 Migrating using UNIFIED ENGINE FACTORY...")
 
     # Use the factory to create the engine.
-    # It will automatically apply statement_cache_size=0 if needed.
+    # EXPLICITLY enforcing statement_cache_size=0 to prevent PgBouncer errors.
+    connect_args = {"statement_cache_size": 0} if "sqlite" not in DATABASE_URL else {}
+
     connectable = create_unified_async_engine(
         DATABASE_URL,
         poolclass=pool.NullPool,
+        connect_args=connect_args
     )
 
     async with connectable.connect() as connection:

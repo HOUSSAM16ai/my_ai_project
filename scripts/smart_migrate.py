@@ -33,7 +33,13 @@ async def check_db_state():
     database_url = get_database_url()
 
     # Use Unified Factory
-    engine = create_unified_async_engine(database_url)
+    # EXPLICITLY enforcing statement_cache_size=0 to prevent PgBouncer errors.
+    connect_args = {"statement_cache_size": 0} if "sqlite" not in database_url else {}
+
+    engine = create_unified_async_engine(
+        database_url,
+        connect_args=connect_args
+    )
 
     async with engine.connect() as conn:
 
