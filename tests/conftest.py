@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator, Generator
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.main import kernel  # Use kernel to get app
+from app.core.ai_gateway import get_ai_client
 
 # Ensure we use an in-memory SQLite DB for tests
 # Using shared cache to allow multiple connections to same memory db
@@ -69,3 +71,62 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Asynchronous client for async tests"""
     async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
         yield ac
+
+@pytest.fixture
+async def admin_user(db_session: AsyncSession):
+    """
+    Fixture to create an admin user.
+    """
+    from app.models import User
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.email == "admin@test.com")
+    result = await db_session.execute(stmt)
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user:
+        return existing_user
+
+    admin = User(
+        email="admin@test.com",
+        full_name="Admin User",
+        is_admin=True
+    )
+    admin.set_password("password123")
+    db_session.add(admin)
+    await db_session.commit()
+    await db_session.refresh(admin)
+    return admin
+
+@pytest.fixture
+def admin_auth_headers(admin_user):
+    """
+    Fixture to provide authentication headers for the admin user.
+    """
+    from app.core.security import generate_service_token
+    token = generate_service_token(str(admin_user.id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def mock_ai_client_global():
+    """
+    Global fixture to mock the AI Client dependency for all tests.
+    Prevents tests from hitting the real AI API.
+    """
+    mock_gateway = MagicMock()
+
+    # Default behavior: yield a simple response
+    async def default_stream(messages):
+        yield {"role": "assistant", "content": "Mocked response"}
+
+    mock_gateway.stream_chat = default_stream
+
+    def mock_get_client():
+        return mock_gateway
+
+    kernel.app.dependency_overrides[get_ai_client] = mock_get_client
+    yield mock_gateway
+    # Cleanup
+    if get_ai_client in kernel.app.dependency_overrides:
+        del kernel.app.dependency_overrides[get_ai_client]
