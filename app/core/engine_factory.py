@@ -1,161 +1,154 @@
-# app/core/engine_factory.py
-"""
-🔥 THE OMNIVERSAL ENGINE FACTORY 🔥
-===================================
-The SINGLE source of truth for all database engine creation in the universe.
-Enforces `statement_cache_size=0` for PgBouncer/Supabase compatibility.
-
-ABSOLUTE REALITY REWRITER PROTOCOL:
-- No engine is created outside this file.
-- No connection escapes the 'statement_cache_size=0' check.
-- Ghost Engines are banished.
-"""
-
+import copy
 import logging
-import sys
-from typing import Any
+import os
+from typing import Any, Dict
 
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-logger = logging.getLogger("cogniforge.engine_factory")
+# Configure logging
+logger = logging.getLogger(__name__)
 
-class FatalEngineError(RuntimeError):
-    """Raised when an engine is created unsafely."""
+class FatalEngineError(Exception):
+    """Raised when an unsafe or invalid engine configuration is detected."""
     pass
 
-def _sanitize_url_for_async(url: str) -> str:
+def _sanitize_database_url(url: str) -> str:
     """
-    Ensures the URL uses the correct asyncpg scheme.
+    Sanitizes and validates the DATABASE_URL.
+
+    Ensures:
+    1. Correct protocol (postgresql+asyncpg for async, postgresql+psycopg2/sync for sync).
+    2. SSL mode is handled correctly for production.
     """
     if not url:
-        raise FatalEngineError("Database URL is empty!")
+        raise FatalEngineError("DATABASE_URL is not set.")
 
+    # Auto-correct common protocol mistakes
     if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
 
-    if "sslmode=require" in url:
-        url = url.replace("sslmode=require", "ssl=require")
-
-    return url
-
-def _sanitize_url_for_sync(url: str) -> str:
-    """
-    Ensures the URL uses the correct sync scheme (psycopg2).
-    """
-    if not url:
-         raise FatalEngineError("Database URL is empty!")
-
-    # If it has +asyncpg, strip it for sync engine (if ever needed)
-    if "+asyncpg" in url:
-        url = url.replace("+asyncpg", "")
-
-    if "+aiosqlite" in url:
-        url = url.replace("+aiosqlite", "")
+    # If using asyncpg, ensure the scheme is correct
+    if "asyncpg" not in url and "sqlite" not in url and "postgresql" in url:
+        # Default to asyncpg for async engines if not specified
+        # However, this function doesn't know if we are creating async or sync yet.
+        # We will handle scheme enforcement in the specific creator functions.
+        pass
 
     return url
 
 def create_unified_async_engine(
-    url: str,
+    database_url: str = None,
     echo: bool = False,
     **kwargs: Any
 ) -> AsyncEngine:
     """
-    The ONE AND ONLY way to create an async SQLAlchemy engine.
-    Automatically injects PgBouncer-safe arguments.
+    The Single Source of Truth for creating Async SQLAlchemy Engines.
+
+    STRICTLY ENFORCES:
+    - statement_cache_size=0 for all non-SQLite databases (Critical for PgBouncer).
+    - Safe connection pooling settings.
+    - Idempotent configuration via copy.deepcopy.
+
+    Args:
+        database_url: The DB connection string. Defaults to os.getenv("DATABASE_URL").
+        echo: Whether to log SQL statements.
+        **kwargs: Additional arguments passed to create_async_engine.
     """
-    safe_url = _sanitize_url_for_async(url)
+    if database_url is None:
+        database_url = os.getenv("DATABASE_URL")
 
-    # 1. DEFAULT CONNECT ARGS
-    connect_args = kwargs.pop("connect_args", {}) or {}
+    database_url = _sanitize_database_url(database_url)
 
-    # 2. ENFORCE PGBOUNCER COMPATIBILITY
-    if "sqlite" not in safe_url:
-        # Check if already set
-        existing_cache = connect_args.get("statement_cache_size")
+    # Deep copy kwargs to prevent side effects
+    engine_kwargs = copy.deepcopy(kwargs)
+    engine_kwargs["echo"] = echo
 
-        if existing_cache is not None and existing_cache != 0:
-            logger.critical(f"🚨 ATTEMPT TO SET statement_cache_size={existing_cache} DETECTED! OVERRIDING TO 0.")
+    # Detect Database Type
+    is_sqlite = "sqlite" in database_url
+    is_postgres = "postgresql" in database_url
 
-        # FORCE 0
-        connect_args["statement_cache_size"] = 0
+    # --- CRITICAL CONFIGURATION ENFORCEMENT ---
+    if is_postgres:
+        # Enforce correct async driver
+        if "asyncpg" not in database_url:
+             # If it's just 'postgresql://', upgrade to 'postgresql+asyncpg://'
+             if "postgresql://" in database_url and "+" not in database_url:
+                 database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
 
-        # Ensure basic timeout settings are also safe
-        if "timeout" not in connect_args:
-             connect_args["timeout"] = 30
-        if "command_timeout" not in connect_args:
-             connect_args["command_timeout"] = 60
+        # Ensure connect_args exists
+        if "connect_args" not in engine_kwargs:
+            engine_kwargs["connect_args"] = {}
 
-        # Log this event
-        logger.info("🔒 Secured Async Engine with statement_cache_size=0")
+        # STRICTLY DISABLE PREPARED STATEMENTS for PgBouncer compatibility
+        # This fixes the "DuplicatePreparedStatementError"
+        engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-    # 3. HANDLE POOLING FOR SQLITE VS POSTGRES
-    # SQLite (especially in-memory) doesn't support pool_size/max_overflow like Postgres does
-    if "sqlite" in safe_url:
-        # Remove incompatible arguments if present
-        kwargs.pop("pool_size", None)
-        kwargs.pop("max_overflow", None)
-        # SQLite with asyncio often needs StaticPool for in-memory dbs, but let's stick to default
-        # unless explicitly requested via other means.
-        # Note: aiosqlite doesn't support some pool args.
-    else:
-        # For Postgres, ensure pre-ping is on
-        if "pool_pre_ping" not in kwargs:
-            kwargs["pool_pre_ping"] = True
+        # Enforce safe pooling defaults if not provided
+        engine_kwargs.setdefault("pool_pre_ping", True)
+        engine_kwargs.setdefault("pool_size", 20)
+        engine_kwargs.setdefault("max_overflow", 10)
 
-    # 4. CREATE ENGINE
-    try:
-        engine = create_async_engine(
-            safe_url,
-            echo=echo,
-            connect_args=connect_args,
-            future=True,
-            **kwargs
-        )
-        return engine
-    except Exception as e:
-        logger.critical(f"💥 FAILED TO CREATE ASYNC ENGINE: {e}")
-        raise FatalEngineError(f"Engine creation failed: {e}") from e
+        logger.info(f"Creating Unified Async Engine for Postgres. Cache Disabled. Pool Size: {engine_kwargs.get('pool_size')}")
+
+    elif is_sqlite:
+        # SQLite Specific Cleanups
+        # SQLite doesn't support server-side pooling arguments
+        engine_kwargs.pop("pool_size", None)
+        engine_kwargs.pop("max_overflow", None)
+        engine_kwargs.pop("pool_pre_ping", None)
+
+        # Ensure proper async sqlite protocol
+        if "sqlite+aiosqlite" not in database_url and "sqlite://" in database_url:
+             database_url = database_url.replace("sqlite://", "sqlite+aiosqlite://")
+
+        # Enable foreign keys for SQLite
+        if "connect_args" not in engine_kwargs:
+            engine_kwargs["connect_args"] = {}
+        engine_kwargs["connect_args"]["check_same_thread"] = False # Needed for FastAPI/Starlette
+
+        logger.info("Creating Unified Async Engine for SQLite.")
+
+    # Final Check
+    if is_postgres and engine_kwargs.get("connect_args", {}).get("statement_cache_size") != 0:
+        raise FatalEngineError("Security Violation: statement_cache_size must be 0 for Postgres/PgBouncer.")
+
+    return create_async_engine(database_url, **engine_kwargs)
 
 def create_unified_sync_engine(
-    url: str,
+    database_url: str = None,
     echo: bool = False,
     **kwargs: Any
-) -> Engine:
+):
     """
-    The ONE AND ONLY way to create a SYNC SQLAlchemy engine.
-    (Used mainly for isolated scripts or legacy tests).
+    The Single Source of Truth for creating Sync SQLAlchemy Engines.
+    Used strictly for:
+    - Alembic Migrations (when run synchronously)
+    - Legacy synchronous scripts
     """
-    safe_url = _sanitize_url_for_sync(url)
+    if database_url is None:
+        database_url = os.getenv("DATABASE_URL")
 
-    connect_args = kwargs.pop("connect_args", {}) or {}
+    database_url = _sanitize_database_url(database_url)
 
-    # WARNING: Psycopg2 usually doesn't need statement_cache_size=0 because it doesn't use
-    # server-side prepared statements by default unless configured.
-    # But we monitor it.
+    # Ensure sync driver for Postgres
+    if "postgresql+asyncpg" in database_url:
+        database_url = database_url.replace("postgresql+asyncpg", "postgresql") # Fallback to default (psycopg2)
 
-    if "sqlite" not in safe_url:
-         # For sync engines (psycopg2), we don't strictly need statement_cache_size
-         # because it's an asyncpg-specific param.
-         pass
+    engine_kwargs = copy.deepcopy(kwargs)
+    engine_kwargs["echo"] = echo
+
+    is_sqlite = "sqlite" in database_url
+
+    if not is_sqlite:
+         engine_kwargs.setdefault("pool_pre_ping", True)
+         # Note: statement_cache_size is an asyncpg-specific setting, not needed for sync psycopg2
     else:
-         # SQLite specific cleanup
-         kwargs.pop("pool_size", None)
-         kwargs.pop("max_overflow", None)
+        engine_kwargs.pop("pool_size", None)
+        engine_kwargs.pop("max_overflow", None)
+        if "connect_args" not in engine_kwargs:
+            engine_kwargs["connect_args"] = {}
+        engine_kwargs["connect_args"]["check_same_thread"] = False
 
-    try:
-        engine = create_engine(
-            safe_url,
-            echo=echo,
-            connect_args=connect_args,
-            pool_pre_ping=True,
-            future=True,
-            **kwargs
-        )
-        return engine
-    except Exception as e:
-        logger.critical(f"💥 FAILED TO CREATE SYNC ENGINE: {e}")
-        raise FatalEngineError(f"Sync Engine creation failed: {e}") from e
+    logger.info(f"Creating Unified Sync Engine for {'SQLite' if is_sqlite else 'Postgres'}.")
+    return create_engine(database_url, **engine_kwargs)

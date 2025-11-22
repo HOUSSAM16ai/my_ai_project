@@ -1,28 +1,27 @@
-import logging
+from typing import AsyncGenerator, Callable
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import Settings, get_settings
 from app.core.database import async_session_factory
-from app.config.settings import get_settings as _get_settings
-from app.core.cli_logging import create_logger
 
-_settings_singleton = None
-# _session_factory_singleton is effectively managed by app.core.database which instantiates it at module level.
+# --- DEPENDENCY INJECTION LAYER ---
+# This module decouples the application from specific implementations.
+# It currently delegates to the singletons in app.core.database and app.core.config.
 
+_settings_singleton = get_settings()
+_session_factory_singleton = async_session_factory
 
-def get_settings(env: str | None = None):
-    global _settings_singleton
-    if _settings_singleton is None:
-        _settings_singleton = _get_settings()
+def get_di_settings() -> Settings:
     return _settings_singleton
 
+def get_di_session_factory() -> Callable[[], AsyncSession]:
+    """Returns the global async session factory."""
+    return _session_factory_singleton
 
-def get_session():
+async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Returns the Singleton Async Session Factory from app.core.database.
-    This ensures we use the ONE TRUE ENGINE created by the Unified Factory.
+    Dependency Injection compliant database session provider.
     """
-    # Direct return of the factory from core.database
-    return async_session_factory
-
-def get_logger():
-    """Returns a logger instance."""
-    settings = get_settings()
-    return create_logger(settings)
+    async with _session_factory_singleton() as session:
+        yield session
