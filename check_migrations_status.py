@@ -42,7 +42,7 @@ async def check_status():
     db_url = get_database_url()
     connect_args = {}
     if "sqlite" not in db_url:
-        connect_args["statement_cache_size"] = 0
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
     engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 
@@ -60,14 +60,18 @@ async def check_status():
                  print(f"{Y}⚠️  alembic_version table does not exist.{E}")
 
             # List Tables
-            result = await conn.execute(text("""
-                SELECT table_name FROM information_schema.tables
-                WHERE table_schema = 'public'
-            """))
-            tables = result.scalars().all()
-            print(f"\n{G}📊 Tables Found ({len(tables)}):{E}")
-            for t in tables:
-                print(f"   - {t}")
+            try:
+                result = await conn.execute(text("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                """))
+                tables = result.scalars().all()
+                print(f"\n{G}📊 Tables Found ({len(tables)}):{E}")
+                for t in tables:
+                    print(f"   - {t}")
+            except Exception:
+                 # SQLite check
+                 pass
 
     except Exception as e:
         print(f"{R}❌ Error: {e}{E}")

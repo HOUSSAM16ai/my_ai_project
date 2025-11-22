@@ -13,7 +13,7 @@ DATABASE_URL = settings.DATABASE_URL
 
 connect_args = {}
 if "sqlite" not in DATABASE_URL:
-    connect_args["statement_cache_size"] = 0
+    connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
 # Create the async engine.
 # `echo=True` is useful for debugging in development.

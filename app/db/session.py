@@ -7,9 +7,7 @@ from app.core.config import settings
 # Ensure connection args are set for Supabase/PgBouncer compatibility
 connect_args = {}
 if "sqlite" not in settings.DATABASE_URL:
-    connect_args["statement_cache_size"] = 0
-    connect_args["timeout"] = 30
-    connect_args["command_timeout"] = 60
+    connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
 engine = create_async_engine(
     settings.DATABASE_URL,

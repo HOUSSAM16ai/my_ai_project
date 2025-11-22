@@ -73,9 +73,7 @@ async def main():
     try:
         connect_args = {}
         if "sqlite" not in db_url:
-             connect_args["statement_cache_size"] = 0
-             connect_args["timeout"] = 30
-             connect_args["command_timeout"] = 60
+             connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
         engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 
@@ -99,23 +97,26 @@ async def main():
 
                 # Sync Alembic
                 print_info("Syncing Alembic history...")
-                result = await conn.execute(text("SELECT version_num FROM alembic_version"))
-                alembic_versions = result.scalars().all()
+                try:
+                    result = await conn.execute(text("SELECT version_num FROM alembic_version"))
+                    alembic_versions = result.scalars().all()
 
-                result = await conn.execute(text("SELECT version FROM supabase_migrations.schema_migrations"))
-                synced_versions = result.scalars().all()
+                    result = await conn.execute(text("SELECT version FROM supabase_migrations.schema_migrations"))
+                    synced_versions = result.scalars().all()
 
-                to_sync = set(alembic_versions) - set(synced_versions)
+                    to_sync = set(alembic_versions) - set(synced_versions)
 
-                if to_sync:
-                    print_info(f"Syncing {len(to_sync)} migrations...")
-                    for v in to_sync:
-                        await conn.execute(text("""
-                            INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
-                            VALUES (:v, :n, :s)
-                        """), {"v": v, "n": f"Migration {v}", "s": ["-- Synced from Alembic"]})
-                else:
-                    print_success("All migrations already synced.")
+                    if to_sync:
+                        print_info(f"Syncing {len(to_sync)} migrations...")
+                        for v in to_sync:
+                            await conn.execute(text("""
+                                INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+                                VALUES (:v, :n, :s)
+                            """), {"v": v, "n": f"Migration {v}", "s": ["-- Synced from Alembic"]})
+                    else:
+                        print_success("All migrations already synced.")
+                except Exception as e:
+                     print_info(f"Skipping Alembic sync: {e}")
 
         await engine.dispose()
         print_success("Done!")
