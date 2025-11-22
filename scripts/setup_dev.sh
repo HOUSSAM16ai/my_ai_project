@@ -69,4 +69,4 @@ if [ -f "tests/conftest.py" ]; then
     pytest -q tests/transcendent/ --ignore=tests/transcendent/test_infrastructure_rebuild.py || echo "⚠️  Some smoke tests failed, but continuing setup..."
 fi
 
-echo "✅ Setup Complete! Run 'uvicorn app.main:app --reload' to start."
+echo "✅ Setup Complete! Run 'uvicorn app.main:create_app --factory --reload' to start."
