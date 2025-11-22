@@ -37,7 +37,7 @@ def _sanitize_database_url(url: str) -> str:
     return url
 
 
-def _pg_prepared_statement_name_func(query: str) -> str:
+def _pg_prepared_statement_name_func(*args: Any) -> str:
     """
     Force asyncpg to use the unnamed prepared statement.
     This bypasses the statement cache and prevents DuplicatePreparedStatementError
