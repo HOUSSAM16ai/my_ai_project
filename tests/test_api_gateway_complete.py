@@ -14,25 +14,31 @@ from tests._helpers import parse_response_json
 
 
 @pytest.fixture
-def sample_user(session, user_factory):
+async def sample_user(db_session, user_factory):
     """Create a sample user for testing"""
     import uuid
 
     unique_email = f"test-{uuid.uuid4().hex[:8]}@example.com"
-    user = user_factory(
+    # Use build() to avoid factory_boy trying to use sync session.commit()
+    user = user_factory.build(
         full_name="Test User", email=unique_email, password="test_password", is_admin=True
     )
-    session.commit()
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
     return user
 
 
 @pytest.fixture
-def sample_mission(session, sample_user, mission_factory):
+async def sample_mission(db_session, sample_user, mission_factory):
     """Create a sample mission for testing"""
-    mission = mission_factory(
+    # Use build() to avoid factory_boy trying to use sync session.commit()
+    mission = mission_factory.build(
         objective="Test Mission", status="PENDING", initiator_id=sample_user.id
     )
-    session.commit()
+    db_session.add(mission)
+    await db_session.commit()
+    await db_session.refresh(mission)
     return mission
 
 
