@@ -5,12 +5,14 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.main import kernel  # Use kernel to get app
 from app.core.ai_gateway import get_ai_client
+from tests.factories import UserFactory, MissionFactory
 
 # Ensure we use an in-memory SQLite DB for tests
 # Using shared cache to allow multiple connections to same memory db
@@ -43,10 +45,54 @@ async def init_db():
         await conn.run_sync(SQLModel.metadata.drop_all)
 
 
+@pytest.fixture(autouse=True)
+async def clean_db():
+    """
+    Fixture to clean up the database after each test.
+    This ensures test isolation by deleting all data.
+    """
+    yield
+    async with engine.begin() as conn:
+        # Disable foreign key checks to allow deletion in any order
+        # Note: SQLite syntax for disabling FKs
+        await conn.execute(sa.text("PRAGMA foreign_keys=OFF;"))
+
+        for table in SQLModel.metadata.tables.values():
+            await conn.execute(table.delete())
+
+        await conn.execute(sa.text("PRAGMA foreign_keys=ON;"))
+
+
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with TestingSessionLocal() as session:
         yield session
+
+
+@pytest.fixture
+def user_factory(db_session):
+    """
+    Fixture to provide a UserFactory bound to the current async session.
+    """
+    class AsyncUserFactory(UserFactory):
+        class Meta:
+            sqlalchemy_session = db_session
+            sqlalchemy_session_persistence = "commit"
+
+    return AsyncUserFactory
+
+
+@pytest.fixture
+def mission_factory(db_session):
+    """
+    Fixture to provide a MissionFactory bound to the current async session.
+    """
+    class AsyncMissionFactory(MissionFactory):
+        class Meta:
+            sqlalchemy_session = db_session
+            sqlalchemy_session_persistence = "commit"
+
+    return AsyncMissionFactory
 
 
 @pytest.fixture
