@@ -137,6 +137,13 @@ async def chat_stream(
         messages.append({"role": "user", "content": question})
 
     async def response_generator():
+        # Send the conversation ID immediately so the client can update its state
+        init_payload = {
+            "conversation_id": conversation.id,
+            "title": conversation.title,
+        }
+        yield f"event: conversation_init\ndata: {json.dumps(init_payload)}\n\n"
+
         full_response = []
         try:
             # Stream the response from AI
