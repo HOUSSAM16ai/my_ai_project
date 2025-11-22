@@ -10,8 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from app import models  # Import models to register them
-from app.db.session import SessionLocal, engine
+from app.core.database import engine, async_session_factory
 
+# NOTE: We now import engine and factory from app.core.database,
+# which are powered by the Unified Engine Factory.
 
 def register_db_commands(root):
     @root.group("db")
@@ -50,7 +52,8 @@ def register_db_commands(root):
             raise click.UsageError("Add --confirm to proceed")
 
         async def _seed():
-            async with transactional_session(SessionLocal, logger, dry_run=dry_run) as session:
+            # Use factory to get session
+            async with transactional_session(async_session_factory, logger, dry_run=dry_run) as session:
                 result = await session.execute(select(models.User).filter_by(email=admin_email))
                 user = result.scalar()
 

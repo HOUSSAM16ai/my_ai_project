@@ -3,16 +3,7 @@
 🔍 Supabase Connection Verification Script (Async/Modern)
 =======================================================
 This script verifies the connection to Supabase database using the
-modern AsyncEngine stack of the Reality Kernel.
-
-It verifies:
-1. Asyncpg connectivity
-2. SSL configuration
-3. PgBouncer compatibility (statement_cache_size=0)
-4. Schema access
-
-Usage:
-    python verify_supabase_connection.py
+modern AsyncEngine stack (Unified Factory).
 """
 
 import asyncio
@@ -21,7 +12,11 @@ import sys
 
 from dotenv import load_dotenv
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 # Load environment variables
 load_dotenv()
@@ -43,17 +38,10 @@ def get_database_url():
     if not url:
         print(f"{R}❌ DATABASE_URL is not set in .env{E}")
         sys.exit(1)
-
-    # Force asyncpg scheme
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
     return url
 
 async def main():
-    print_header("🚀 Supabase Connection Verification (Async)")
+    print_header("🚀 Supabase Connection Verification (Async/Unified)")
 
     db_url = get_database_url()
     # Mask password
@@ -64,15 +52,8 @@ async def main():
 
     print(f"{B}ℹ️  Target URL:{E} {safe_url}")
 
-    # ------------------------------------------------------------------
-    # KEY FIX: PgBouncer Transaction Mode Compatibility
-    # ------------------------------------------------------------------
-    connect_args = {}
-    if "sqlite" not in db_url:
-        print(f"{G}🔧 Applying 'statement_cache_size=0' for PgBouncer compatibility{E}")
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-
-    engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+    # Use Unified Factory
+    engine = create_unified_async_engine(db_url, echo=False)
 
     try:
         print(f"\n{Y}⏳ Connecting...{E}")

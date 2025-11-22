@@ -7,10 +7,10 @@ import sys
 sys.path.append(os.getcwd())
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from app.core.database import get_connection_string
+from app.core.engine_factory import create_unified_async_engine
 from app.models import User
 
 # Configure logging
@@ -21,28 +21,27 @@ logger = logging.getLogger(__name__)
 async def seed_admin():
     """
     Seeds the admin user if it doesn't exist.
-    Reads ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME from environment.
+    Uses Unified Engine Factory.
     """
-    logger.info("🌱 Starting Admin Seeding Process...")
+    logger.info("🌱 Starting Admin Seeding Process (Unified)...")
 
     admin_email = os.getenv("ADMIN_EMAIL")
     admin_password = os.getenv("ADMIN_PASSWORD")
     admin_name = os.getenv("ADMIN_NAME", "Admin User")
+    database_url = os.getenv("DATABASE_URL")
 
     if not admin_email or not admin_password:
         logger.warning("⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set. Skipping admin creation.")
         return
 
+    if not database_url:
+        logger.error("❌ DATABASE_URL not set.")
+        return
+
     logger.info(f"Checking for admin user: {admin_email}")
 
-    # Create Async Engine & Session
-    database_url = get_connection_string()
-
-    connect_args = {}
-    if "sqlite" not in database_url:
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-
-    engine = create_async_engine(database_url, echo=False, connect_args=connect_args)
+    # Use Unified Engine Factory
+    engine = create_unified_async_engine(database_url, echo=False)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:

@@ -1,8 +1,7 @@
-# app/core/di.py
-
+import logging
+from app.core.database import async_session_factory
 from app.config.settings import get_settings as _get_settings
 from app.core.cli_logging import create_logger
-from app.core.cli_session import get_session_factory
 
 _settings_singleton = None
 _session_factory_singleton = None
@@ -16,12 +15,14 @@ def get_settings(env: str | None = None):
 
 
 def get_session():
-    global _session_factory_singleton
-    if _session_factory_singleton is None:
-        settings = get_settings()
-        # Now returns an Async Session Factory
-        _session_factory_singleton = get_session_factory(settings.DATABASE_URL)
-    return _session_factory_singleton
+    """
+    Returns the Singleton Async Session Factory from app.core.database.
+    This ensures we use the ONE TRUE ENGINE created by the Unified Factory.
+    """
+    # Direct return of the factory from core.database
+    # We wrap it in a singleton getter just to maintain the DI interface pattern
+    # if we ever need lazy loading (though app.core.database loads at import).
+    return async_session_factory
 
 def get_logger():
     """Returns a logger instance."""

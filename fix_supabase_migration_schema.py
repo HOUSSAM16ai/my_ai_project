@@ -4,7 +4,7 @@
 ================================================================
 This script creates the Supabase migration schema and table that the
 Supabase Dashboard expects, while maintaining compatibility with Alembic.
-Adapted to work with PgBouncer transaction mode (using ASYNC engine).
+Adapted to work with PgBouncer transaction mode (using Unified Factory).
 """
 
 import asyncio
@@ -14,7 +14,11 @@ import traceback
 
 from dotenv import load_dotenv
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 # Load environment variables
 load_dotenv()
@@ -50,20 +54,10 @@ def get_async_db_url():
     url = os.getenv("DATABASE_URL")
     if not url:
         return None
-
-    # Force asyncpg
-    if "postgresql://" in url and "postgresql+asyncpg://" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://")
-    elif "postgres://" in url:
-        url = url.replace("postgres://", "postgresql+asyncpg://")
-
-    if "sslmode=require" in url:
-        url = url.replace("sslmode=require", "ssl=require")
-
     return url
 
 async def main():
-    print_header("🚀 SUPABASE MIGRATION SCHEMA FIX (ASYNC)")
+    print_header("🚀 SUPABASE MIGRATION SCHEMA FIX (ASYNC/UNIFIED)")
 
     db_url = get_async_db_url()
     if not db_url:
@@ -71,11 +65,8 @@ async def main():
         return 1
 
     try:
-        connect_args = {}
-        if "sqlite" not in db_url:
-             connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-
-        engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+        # Unified Factory
+        engine = create_unified_async_engine(db_url, echo=False)
 
         async with engine.connect() as conn:
             # No nested transaction with asyncpg in the same way, but we use .begin()
