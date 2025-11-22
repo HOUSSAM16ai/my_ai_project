@@ -6,14 +6,13 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import AsyncEngine
 
 # --- 1. ENVIRONMENT BOOTSTRAP ---
 # Ensure we can import the app modules
 sys.path.append(os.getcwd())
 
 from app.core.config import settings
-from app.core.engine_factory import create_unified_async_engine, create_unified_sync_engine
+from app.core.engine_factory import create_unified_async_engine, FatalEngineError
 from app.models import SQLModel  # Import SQLModel to get metadata
 
 # --- 2. LOGGING CONFIGURATION ---
@@ -74,15 +73,18 @@ async def run_async_migrations() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-
-    # --- CRITICAL: USE UNIFIED ENGINE FACTORY ---
-    # This ensures we inherit the statement_cache_size=0 fix
-    # and all other safety protocols.
-    connectable = create_unified_async_engine(
-        database_url=settings.DATABASE_URL,
-        echo=True,
-        poolclass=pool.NullPool, # NullPool is often best for migrations to avoid locking
-    )
+    try:
+        # --- CRITICAL: USE UNIFIED ENGINE FACTORY ---
+        # This ensures we inherit the statement_cache_size=0 fix
+        # and all other safety protocols.
+        connectable = create_unified_async_engine(
+            database_url=settings.DATABASE_URL,
+            echo=True,
+            poolclass=pool.NullPool, # NullPool is used for migrations to avoid locking
+        )
+    except FatalEngineError as e:
+        logger.error(f"CRITICAL: Migration Engine Creation Failed: {e}")
+        sys.exit(1)
 
     # Explicitly verify configuration before running
     if "sqlite" not in settings.DATABASE_URL and connectable.dialect.name == "postgresql":
