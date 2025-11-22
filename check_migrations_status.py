@@ -2,8 +2,7 @@
 """
 🔄 MIGRATION STATUS CHECKER (Async/Modern)
 ==========================================
-Checks migration status using the modern async engine stack.
-Replaces the legacy Flask-based checker.
+Checks migration status using the Unified Engine Factory.
 """
 
 import asyncio
@@ -12,7 +11,11 @@ import sys
 
 from dotenv import load_dotenv
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 # Load environment variables
 load_dotenv()
@@ -28,23 +31,17 @@ def get_database_url():
     url = os.environ.get("DATABASE_URL")
     if not url:
         return "sqlite+aiosqlite:///./test.db"
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
 
 async def check_status():
     print(f"\n{B}{'='*60}{E}")
-    print(f"{B}🔄 MIGRATION STATUS CHECKER (Async){E}")
+    print(f"{B}🔄 MIGRATION STATUS CHECKER (Async/Unified){E}")
     print(f"{B}{'='*60}{E}\n")
 
     db_url = get_database_url()
-    connect_args = {}
-    if "sqlite" not in db_url:
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
-    engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+    # Use Unified Factory
+    engine = create_unified_async_engine(db_url, echo=False)
 
     try:
         async with engine.connect() as conn:
@@ -70,7 +67,6 @@ async def check_status():
                 for t in tables:
                     print(f"   - {t}")
             except Exception:
-                 # SQLite check
                  pass
 
     except Exception as e:

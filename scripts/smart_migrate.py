@@ -10,7 +10,8 @@ from alembic import command
 from alembic.config import Config
 from dotenv import load_dotenv
 from sqlalchemy import inspect
-from sqlalchemy.ext.asyncio import create_async_engine
+
+from app.core.engine_factory import create_unified_async_engine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,21 +22,7 @@ load_dotenv()
 
 
 def get_database_url():
-    """
-    Get DATABASE_URL from environment and fix it for asyncpg if needed.
-    Bypasses Pydantic settings to avoid interpolation issues.
-    """
-    url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
-
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-    if "sslmode=require" in url:
-        url = url.replace("sslmode=require", "ssl=require")
-
-    return url
+    return os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
 
 async def check_db_state():
@@ -44,13 +31,10 @@ async def check_db_state():
     Returns: (has_alembic_table: bool, has_user_table: bool)
     """
     database_url = get_database_url()
-    connect_args = {}
 
-    # FIX: Inject statement_cache_size=0 for non-sqlite (Supabase/PgBouncer)
-    if "sqlite" not in database_url:
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
+    # Use Unified Factory
+    engine = create_unified_async_engine(database_url)
 
-    engine = create_async_engine(database_url, connect_args=connect_args)
     async with engine.connect() as conn:
 
         def _inspect(connection):
@@ -73,9 +57,8 @@ def run_smart_migration():
 
     alembic_cfg = Config(alembic_cfg_path)
 
-    logger.info("🔍 Checking database state...")
+    logger.info("🔍 Checking database state (Unified)...")
 
-    # We need to run the async check in a loop loop
     has_alembic, has_users = asyncio.run(check_db_state())
 
     if has_alembic:

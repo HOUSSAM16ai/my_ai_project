@@ -3,7 +3,7 @@
 🚀 SUPABASE CONNECTION SETUP & VERIFICATION SCRIPT (ASYNC)
 ==========================================================
 This script sets up and verifies the connection to the new Supabase project
-using the ASYNC engine to avoid PgBouncer transaction mode errors.
+using the Unified Engine Factory.
 """
 
 import asyncio
@@ -13,7 +13,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 # Load environment variables
 load_dotenv()
@@ -53,16 +57,6 @@ def get_async_db_url():
     url = os.getenv("DATABASE_URL")
     if not url:
         return None
-
-    # Force asyncpg
-    if "postgresql://" in url and "postgresql+asyncpg://" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://")
-    elif "postgres://" in url:
-        url = url.replace("postgres://", "postgresql+asyncpg://")
-
-    if "sslmode=require" in url:
-        url = url.replace("sslmode=require", "ssl=require")
-
     return url
 
 async def verify_environment():
@@ -76,16 +70,13 @@ async def verify_environment():
     return True
 
 async def test_connection():
-    print_header("🔌 STEP 2: TEST DATABASE CONNECTION (ASYNC)")
+    print_header("🔌 STEP 2: TEST DATABASE CONNECTION (ASYNC/UNIFIED)")
 
     db_url = get_async_db_url()
 
-    connect_args = {}
-    if "sqlite" not in db_url:
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-
     try:
-        engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+        # Unified Factory
+        engine = create_unified_async_engine(db_url, echo=False)
 
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT version()"))
@@ -127,7 +118,7 @@ async def check_tables(engine):
 
 async def main():
     print(f"\n{M}{'=' * 70}{E}")
-    print(f"{M}🚀 SUPABASE CONNECTION SETUP & VERIFICATION (ASYNC){E}")
+    print(f"{M}🚀 SUPABASE CONNECTION SETUP & VERIFICATION (ASYNC/UNIFIED){E}")
     print(f"{M}{'=' * 70}{E}\n")
 
     if not await verify_environment():

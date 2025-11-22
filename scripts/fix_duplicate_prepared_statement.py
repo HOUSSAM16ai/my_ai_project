@@ -9,43 +9,29 @@ by ensuring `statement_cache_size=0` is correctly applied to all asyncpg connect
 import asyncio
 import os
 import sys
-from urllib.parse import urlparse
 
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 def get_safe_db_url():
     url = os.environ.get("DATABASE_URL")
     if not url:
         print("❌ DATABASE_URL not set")
         sys.exit(1)
-
-    # Fix scheme for asyncpg
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-    if "sslmode=require" in url:
-        url = url.replace("sslmode=require", "ssl=require")
-
     return url
 
 async def verify_fix():
-    print("🔍 Verifying fix for DuplicatePreparedStatementError...")
+    print("🔍 Verifying fix for DuplicatePreparedStatementError (Unified)...")
 
     db_url = get_safe_db_url()
     print(f"📝 URL Scheme: {db_url.split('://')[0]}")
 
-    # 1. Create engine WITH the fix
-    connect_args = {}
-    if "sqlite" not in db_url:
-        print("✅ Applying 'statement_cache_size=0' (Fix for PgBouncer/Supabase)")
-        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-    else:
-        print("ℹ️  SQLite detected, skipping statement_cache_size=0")
-
-    engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
+    # Use Unified Factory
+    engine = create_unified_async_engine(db_url, echo=False)
 
     try:
         async with engine.connect() as conn:
@@ -67,13 +53,12 @@ async def verify_fix():
                 print("ℹ️  Could not fetch version (might be SQLite)")
 
         print("\n🎉 VERIFICATION SUCCESSFUL: No DuplicatePreparedStatementError detected.")
-        print("   The fix (statement_cache_size=0) is working correctly.")
+        print("   The Unified Engine Factory correctly enforced statement_cache_size=0.")
 
     except Exception as e:
         print(f"\n❌ VERIFICATION FAILED: {e}")
         if "DuplicatePreparedStatementError" in str(e):
             print("   ⚠️  This is the exact error we are trying to fix!")
-            print("   Ensure statement_cache_size=0 is passed to connect_args.")
         raise e
     finally:
         await engine.dispose()

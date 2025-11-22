@@ -4,7 +4,11 @@ import sys
 import urllib.parse
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+# FIX: Ensure app modules are importable
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine
 
 
 def mask_url(url: str) -> str:
@@ -21,7 +25,7 @@ def mask_url(url: str) -> str:
         return "Invalid URL Format"
 
 async def test_connection():
-    print("🔍 DEBUG CONNECTION PROBE INITIATED")
+    print("🔍 DEBUG CONNECTION PROBE INITIATED (Unified)")
 
     url = os.getenv("DATABASE_URL")
     if not url:
@@ -44,16 +48,14 @@ async def test_connection():
             import asyncpg
             print("\n🧪 Attempting RAW asyncpg connection...")
 
-            # Prepare DSN
             dsn = url
             if "postgresql+asyncpg://" in dsn:
                 dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
-
             if "sslmode=require" in dsn:
                  dsn = dsn.replace("sslmode=require", "ssl=require")
 
-            # Check if we need to inject statement_cache_size=0
-            # For raw asyncpg, we pass it as kwarg
+            # We still manually pass statement_cache_size here because this is RAW asyncpg
+            # The unified factory handles SQLAlchemy engines.
             print(f"   - Connecting with statement_cache_size=0...")
             conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
 
@@ -65,25 +67,12 @@ async def test_connection():
     else:
         print("\nℹ️  Skipping RAW asyncpg check (SQLite detected).")
 
-    # 2. SQLAlchemy Connection Test
+    # 2. SQLAlchemy Connection Test via Unified Factory
     try:
-        print("\n🧪 Attempting SQLAlchemy Engine connection...")
-        # Force asyncpg driver in URL if not present
-        sa_url = url
-        if "postgresql://" in sa_url and "postgresql+asyncpg://" not in sa_url:
-             sa_url = sa_url.replace("postgresql://", "postgresql+asyncpg://")
-        elif "postgres://" in sa_url:
-             sa_url = sa_url.replace("postgres://", "postgresql+asyncpg://")
+        print("\n🧪 Attempting SQLAlchemy Unified Engine connection...")
 
-        if "sslmode=require" in sa_url:
-            sa_url = sa_url.replace("sslmode=require", "ssl=require")
-
-        connect_args = {}
-        if "sqlite" not in sa_url:
-            connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
-            print("   - Applied statement_cache_size=0")
-
-        engine = create_async_engine(sa_url, connect_args=connect_args)
+        # Use Factory
+        engine = create_unified_async_engine(url)
 
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
