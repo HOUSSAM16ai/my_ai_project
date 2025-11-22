@@ -45,12 +45,12 @@ async def chat_stream(
     async def response_generator():
         try:
             async for chunk in ai_client.stream_chat([{"role": "user", "content": question}]):
-                yield f"data: {json.dumps(chunk)}\\n\\n"
+                yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
             error_payload = {
                 "type": "error",
                 "payload": {"error": f"Failed to connect to AI service: {e}"},
             }
-            yield f"data: {json.dumps(error_payload)}\\n\\n"
+            yield f"data: {json.dumps(error_payload)}\n\n"
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
