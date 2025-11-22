@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.engine_factory import create_unified_async_engine
 from app.core.database import async_session_factory
 from app.core.security import get_password_hash
-from app.models import User, UserRole
+from app.models import User # UserRole is not in app.models in this snapshot, using string literal or default
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,11 +45,11 @@ async def seed_admin(
             hashed_password = get_password_hash(password)
             new_admin = User(
                 email=email,
-                hashed_password=hashed_password,
+                password_hash=hashed_password, # Field name is password_hash in model
                 full_name=name,
-                role=UserRole.ADMIN,
-                is_active=True,
-                is_verified=True
+                is_admin=True, # Using boolean flag instead of Enum based on model def
+                # is_active=True, # Model doesn't have is_active, skipping
+                # is_verified=True # Model doesn't have is_verified, skipping
             )
 
             session.add(new_admin)
