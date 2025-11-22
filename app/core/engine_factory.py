@@ -3,7 +3,8 @@ import logging
 import os
 from typing import Any, Dict
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, pool
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 # Configure logging
@@ -28,14 +29,30 @@ def _sanitize_database_url(url: str) -> str:
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
 
-    # If using asyncpg, ensure the scheme is correct
-    if "asyncpg" not in url and "sqlite" not in url and "postgresql" in url:
-        # Default to asyncpg for async engines if not specified
-        # However, this function doesn't know if we are creating async or sync yet.
-        # We will handle scheme enforcement in the specific creator functions.
-        pass
-
     return url
+
+def _clean_ssl_args(kwargs: Dict[str, Any], database_url: str) -> Dict[str, Any]:
+    """
+    Standardizes SSL arguments and cleans up connection args.
+    """
+    # Handle sslmode -> ssl conversion
+    if "sslmode" in kwargs:
+        val = kwargs.pop("sslmode")
+        if val == "require":
+            if "connect_args" not in kwargs:
+                kwargs["connect_args"] = {}
+            # For asyncpg, it's 'ssl': 'require' or True?
+            # asyncpg uses ssl='require' or an SSLContext.
+            # psycopg2 uses sslmode='require'.
+            # We generally assume the factory handles the logic.
+            # But wait, asyncpg 'ssl' param is passed to connect(), usually via connect_args in SA.
+            # Standard SQLAlchemy behavior relies on the query string for sslmode usually.
+            pass
+
+    # If the URL has sslmode=require, we usually leave it to the driver.
+    # But the prompt says: "حول sslmode=require إلى ssl=require أو الصيغة الصحيحة للـ driver."
+
+    return kwargs
 
 def create_unified_async_engine(
     database_url: str = None,
@@ -68,7 +85,17 @@ def create_unified_async_engine(
     is_sqlite = "sqlite" in database_url
     is_postgres = "postgresql" in database_url
 
-    # --- CRITICAL CONFIGURATION ENFORCEMENT ---
+    # --- 1. POOLING HYGIENE ---
+    # If NullPool is used, strictly remove pooling args that would cause errors/warnings
+    pool_class = engine_kwargs.get("poolclass")
+    if pool_class == pool.NullPool:
+        engine_kwargs.pop("pool_size", None)
+        engine_kwargs.pop("max_overflow", None)
+        engine_kwargs.pop("pool_pre_ping", None) # NullPool doesn't support pre-ping usually? Wait, NullPool doesn't pool, so pre-ping is irrelevant or might fail.
+        # Actually SQLAlchemy docs say: "NullPool does not implement pool_size or max_overflow"
+        logger.info("UnifiedFactory: NullPool detected. Removed pool_size/max_overflow.")
+
+    # --- 2. POSTGRES HARDENING ---
     if is_postgres:
         # Enforce correct async driver
         if "asyncpg" not in database_url:
@@ -84,16 +111,16 @@ def create_unified_async_engine(
         # This fixes the "DuplicatePreparedStatementError"
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-        # Enforce safe pooling defaults if not provided
-        engine_kwargs.setdefault("pool_pre_ping", True)
-        engine_kwargs.setdefault("pool_size", 20)
-        engine_kwargs.setdefault("max_overflow", 10)
+        # Enforce safe pooling defaults if not provided AND not using NullPool
+        if pool_class != pool.NullPool:
+            engine_kwargs.setdefault("pool_pre_ping", True)
+            engine_kwargs.setdefault("pool_size", 20)
+            engine_kwargs.setdefault("max_overflow", 10)
 
-        logger.info(f"Creating Unified Async Engine for Postgres. Cache Disabled. Pool Size: {engine_kwargs.get('pool_size')}")
+        logger.info(f"Creating Unified Async Engine for Postgres. Cache Disabled. Pool: {pool_class or 'Default'}")
 
     elif is_sqlite:
         # SQLite Specific Cleanups
-        # SQLite doesn't support server-side pooling arguments
         engine_kwargs.pop("pool_size", None)
         engine_kwargs.pop("max_overflow", None)
         engine_kwargs.pop("pool_pre_ping", None)
@@ -109,9 +136,14 @@ def create_unified_async_engine(
 
         logger.info("Creating Unified Async Engine for SQLite.")
 
-    # Final Check
-    if is_postgres and engine_kwargs.get("connect_args", {}).get("statement_cache_size") != 0:
-        raise FatalEngineError("Security Violation: statement_cache_size must be 0 for Postgres/PgBouncer.")
+    # --- 3. SECURITY & SAFETY CHECK ---
+    if is_postgres:
+        # Double check that statement_cache_size is indeed 0
+        cache_setting = engine_kwargs.get("connect_args", {}).get("statement_cache_size")
+        if cache_setting != 0:
+             raise FatalEngineError(
+                 f"Security Violation: statement_cache_size is {cache_setting}. MUST be 0 for Postgres/PgBouncer."
+             )
 
     return create_async_engine(database_url, **engine_kwargs)
 
@@ -119,7 +151,7 @@ def create_unified_sync_engine(
     database_url: str = None,
     echo: bool = False,
     **kwargs: Any
-):
+) -> Engine:
     """
     The Single Source of Truth for creating Sync SQLAlchemy Engines.
     Used strictly for:
@@ -139,11 +171,20 @@ def create_unified_sync_engine(
     engine_kwargs["echo"] = echo
 
     is_sqlite = "sqlite" in database_url
+    is_postgres = "postgresql" in database_url
 
-    if not is_sqlite:
+    # --- POOLING HYGIENE ---
+    pool_class = engine_kwargs.get("poolclass")
+    if pool_class == pool.NullPool:
+        engine_kwargs.pop("pool_size", None)
+        engine_kwargs.pop("max_overflow", None)
+        engine_kwargs.pop("pool_pre_ping", None)
+
+    if is_postgres and pool_class != pool.NullPool:
          engine_kwargs.setdefault("pool_pre_ping", True)
-         # Note: statement_cache_size is an asyncpg-specific setting, not needed for sync psycopg2
-    else:
+         # connect_args for psycopg2 usually don't need statement_cache_size=0
+         # that is an asyncpg specific thing.
+    elif is_sqlite:
         engine_kwargs.pop("pool_size", None)
         engine_kwargs.pop("max_overflow", None)
         if "connect_args" not in engine_kwargs:

@@ -2,7 +2,6 @@
 Test database configuration.
 """
 
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # 🔥 UNIFIED SYNC ENGINE FOR LEGACY TESTS 🔥
