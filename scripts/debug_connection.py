@@ -79,7 +79,7 @@ async def test_connection():
             sa_url = sa_url.replace("sslmode=require", "ssl=require")
 
         connect_args = {}
-        if "postgresql" in sa_url and "sqlite" not in sa_url:
+        if "sqlite" not in sa_url:
             connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
             print("   - Applied statement_cache_size=0")
 
