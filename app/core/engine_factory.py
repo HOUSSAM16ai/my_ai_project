@@ -92,14 +92,27 @@ def create_unified_async_engine(
         # Log this event
         logger.info("🔒 Secured Async Engine with statement_cache_size=0")
 
-    # 3. CREATE ENGINE
+    # 3. HANDLE POOLING FOR SQLITE VS POSTGRES
+    # SQLite (especially in-memory) doesn't support pool_size/max_overflow like Postgres does
+    if "sqlite" in safe_url:
+        # Remove incompatible arguments if present
+        kwargs.pop("pool_size", None)
+        kwargs.pop("max_overflow", None)
+        # SQLite with asyncio often needs StaticPool for in-memory dbs, but let's stick to default
+        # unless explicitly requested via other means.
+        # Note: aiosqlite doesn't support some pool args.
+    else:
+        # For Postgres, ensure pre-ping is on
+        if "pool_pre_ping" not in kwargs:
+            kwargs["pool_pre_ping"] = True
+
+    # 4. CREATE ENGINE
     try:
         engine = create_async_engine(
             safe_url,
             echo=echo,
             connect_args=connect_args,
             future=True,
-            pool_pre_ping=True,
             **kwargs
         )
         return engine
@@ -127,8 +140,11 @@ def create_unified_sync_engine(
     if "sqlite" not in safe_url:
          # For sync engines (psycopg2), we don't strictly need statement_cache_size
          # because it's an asyncpg-specific param.
-         # However, we ensure we aren't doing anything crazy.
          pass
+    else:
+         # SQLite specific cleanup
+         kwargs.pop("pool_size", None)
+         kwargs.pop("max_overflow", None)
 
     try:
         engine = create_engine(
