@@ -80,7 +80,7 @@ async def test_connection():
 
         connect_args = {}
         if "postgresql" in sa_url and "sqlite" not in sa_url:
-            connect_args.update({"statement_cache_size": 0})
+            connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
             print("   - Applied statement_cache_size=0")
 
         engine = create_async_engine(sa_url, connect_args=connect_args)

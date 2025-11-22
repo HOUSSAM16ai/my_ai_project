@@ -93,13 +93,9 @@ async def run_async_migrations() -> None:
     connect_args = {}
 
     # Explicitly check for asyncpg usage via URL scheme or driver
-    is_sqlite = "sqlite" in DATABASE_URL
-
-    if not is_sqlite:
+    if "sqlite" not in DATABASE_URL:
         # Enforce statement_cache_size=0 for ALL Postgres connections
-        connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
-        connect_args["command_timeout"] = 60
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
         # Double check: Log the exact configuration
         logger.info(f"🔧 FORCE-APPLYING PgBouncer Fix: statement_cache_size=0")

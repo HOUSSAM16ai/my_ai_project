@@ -12,9 +12,7 @@ def get_session_factory(database_url: str):
 
     # FIX: Apply to all non-SQLite databases (targeting Supabase/Postgres/Asyncpg)
     if "sqlite" not in database_url:
-        connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
-        connect_args["command_timeout"] = 60
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
     # Ensure async driver
     if database_url.startswith("postgres://"):

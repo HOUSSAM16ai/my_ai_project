@@ -52,14 +52,7 @@ FINAL_DATABASE_URL = get_connection_string()
 connect_args = {}
 # FIX: Apply to all non-SQLite databases (targeting Supabase/Postgres/Asyncpg)
 if "sqlite" not in FINAL_DATABASE_URL:
-    # 1. Disable prepared statements
-    connect_args["statement_cache_size"] = 0
-    # 2. Add timeouts to avoid silent hangs
-    connect_args["timeout"] = 30
-    connect_args["command_timeout"] = 60
-else:
-    # For SQLite (tests), we might want other args, but no cache fix needed
-    pass
+    connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
 # GLOBAL SAFETY NET: Warn if we are about to create an engine that might crash on PgBouncer
 if "postgresql" in FINAL_DATABASE_URL and connect_args.get("statement_cache_size") != 0:

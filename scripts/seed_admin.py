@@ -40,7 +40,7 @@ async def seed_admin():
 
     connect_args = {}
     if "sqlite" not in database_url:
-        connect_args.update({"statement_cache_size": 0})
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
     engine = create_async_engine(database_url, echo=False, connect_args=connect_args)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

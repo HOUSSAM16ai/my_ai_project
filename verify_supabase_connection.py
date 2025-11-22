@@ -70,8 +70,7 @@ async def main():
     connect_args = {}
     if "sqlite" not in db_url:
         print(f"{G}🔧 Applying 'statement_cache_size=0' for PgBouncer compatibility{E}")
-        connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
     engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 

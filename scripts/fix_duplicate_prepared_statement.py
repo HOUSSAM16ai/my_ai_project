@@ -41,9 +41,7 @@ async def verify_fix():
     connect_args = {}
     if "sqlite" not in db_url:
         print("✅ Applying 'statement_cache_size=0' (Fix for PgBouncer/Supabase)")
-        connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
-        connect_args["command_timeout"] = 60
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
     else:
         print("ℹ️  SQLite detected, skipping statement_cache_size=0")
 

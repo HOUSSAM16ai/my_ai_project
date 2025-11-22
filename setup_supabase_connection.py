@@ -82,8 +82,7 @@ async def test_connection():
 
     connect_args = {}
     if "sqlite" not in db_url:
-        connect_args["statement_cache_size"] = 0
-        connect_args["timeout"] = 30
+        connect_args = {"statement_cache_size": 0, "timeout": 30, "command_timeout": 60}
 
     try:
         engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
