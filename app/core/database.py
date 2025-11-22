@@ -26,6 +26,7 @@ def get_connection_string() -> str:
 FINAL_DATABASE_URL = get_connection_string()
 
 # Create Async Engine via Factory
+# Note: We allow extra kwargs to be passed if needed, but for the main app engine, defaults are usually fine.
 engine = create_unified_async_engine(FINAL_DATABASE_URL, echo=False)
 
 async_session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -34,16 +35,22 @@ async_session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_comm
 # SYNC ENGINE TRAP
 # ------------------------------------------------------------------------------
 # We explicitly do NOT expose a sync engine here for the app.
-# If valid legacy code needs it, it must use create_unified_sync_engine explicitly.
+# If valid legacy code needs it, it must use create_unified_sync_engine explicitly from the factory.
 sync_engine = None
 SessionLocal = None
 
 async def init_db():
+    """
+    Initialize the database.
+    """
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency for getting an async database session.
+    """
     async with async_session_factory() as session:
         yield session
 

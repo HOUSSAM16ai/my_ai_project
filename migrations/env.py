@@ -9,35 +9,59 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlmodel import SQLModel
 
-# FIX: Ensure app modules are importable
+# ------------------------------------------------------------------------------
+# 🛡️ MIGRATION SECURITY LAYER
+# ------------------------------------------------------------------------------
+# Ensure strict isolation and correct path resolution
 sys.path.append(os.getcwd())
 
 # Import Unified Engine Factory
-from app.core.engine_factory import create_unified_async_engine
+# This must be the ONLY way an engine is created.
+try:
+    from app.core.engine_factory import create_unified_async_engine
+except ImportError as e:
+    print(f"🔥 CRITICAL ERROR: Could not import Unified Engine Factory: {e}")
+    sys.exit(1)
 
-# Import your app's models to register them with SQLModel.metadata
+# Import Models for Metadata
 try:
     from app import models  # noqa: F401
 except ImportError as e:
-    print(f"CRITICAL: Could not import app.models: {e}")
-    sys.exit(1)
+    print(f"⚠️ WARNING: Could not import app.models: {e}")
+    # We continue, as sometimes we might only need raw SQL, but usually this is bad.
 
+# Load Config
 config = context.config
-
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Logger
 logger = logging.getLogger("alembic.env")
 
+# Load Environment
 load_dotenv(override=False)
 
+# ------------------------------------------------------------------------------
+# 🔧 CONFIGURATION
+# ------------------------------------------------------------------------------
+
 def get_database_url():
-    url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
-    # The factory handles scheme correction, but we pass it raw or semi-raw
+    """
+    Retrieves the DATABASE_URL from environment.
+    """
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        # Fallback for local testing if absolutely needed, but we prefer env var
+        logger.warning("⚠️ DATABASE_URL not set in environment. Using default SQLite fallback.")
+        return "sqlite+aiosqlite:///./test.db"
     return url
 
 DATABASE_URL = get_database_url()
 target_metadata = SQLModel.metadata
 
+# ------------------------------------------------------------------------------
+# 🚀 MIGRATION LOGIC
+# ------------------------------------------------------------------------------
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -53,38 +77,63 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection: Connection) -> None:
+def do_run_migrations_sync(connection: Connection) -> None:
+    """
+    Sync helper to run migrations.
+    """
     context.configure(connection=connection, target_metadata=target_metadata)
-
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_async_migrations() -> None:
-    """Run migrations in 'online' mode using the UNIFIED ENGINE FACTORY."""
+    """
+    Run migrations in 'online' mode using the UNIFIED ENGINE FACTORY.
+    """
+    logger.info("🔄 INITIALIZING MIGRATION CONTEXT (Unified Mode)")
 
-    logger.info(f"🔄 Migrating using UNIFIED ENGINE FACTORY...")
+    # 1. SECURITY CHECK
+    if not DATABASE_URL:
+        logger.error("❌ CRITICAL: DATABASE_URL is missing.")
+        sys.exit(1)
 
-    # Use the factory to create the engine.
-    # EXPLICITLY enforcing statement_cache_size=0 to prevent PgBouncer errors.
-    connect_args = {"statement_cache_size": 0} if "sqlite" not in DATABASE_URL else {}
+    # 2. CONFIGURE CONNECT ARGS
+    # We explicity set statement_cache_size=0 here as a fail-safe,
+    # although the factory also enforces it.
+    is_sqlite = "sqlite" in DATABASE_URL
 
-    connectable = create_unified_async_engine(
-        DATABASE_URL,
-        poolclass=pool.NullPool,
-        connect_args=connect_args
-    )
+    connect_args = {}
+    if not is_sqlite:
+        connect_args["statement_cache_size"] = 0
+        logger.info("🛡️  Enforcing statement_cache_size=0 for Migration Engine")
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations_sync)
+    # 3. CREATE ENGINE
+    # We rely 100% on the factory to handle the engine creation details.
+    try:
+        connectable = create_unified_async_engine(
+            DATABASE_URL,
+            poolclass=pool.NullPool, # Migrations don't need a pool
+            connect_args=connect_args
+        )
+    except Exception as e:
+        logger.error(f"❌ FAILED to create migration engine: {e}")
+        sys.exit(1)
 
-    await connectable.dispose()
-
-
-def do_run_migrations_sync(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
-    with context.begin_transaction():
-        context.run_migrations()
+    # 4. EXECUTE MIGRATION
+    try:
+        async with connectable.connect() as connection:
+            # Verify connection args were applied (if possible to inspect)
+            logger.info("✅ Connected to database. Running migrations...")
+            await connection.run_sync(do_run_migrations_sync)
+    except Exception as e:
+        logger.error(f"💥 MIGRATION ERROR: {e}")
+        if "DuplicatePreparedStatementError" in str(e):
+            logger.critical("💣 DETECTED DUPLICATE PREPARED STATEMENT ERROR")
+            logger.critical("   Ensure PgBouncer is configured with pool_mode=transaction")
+            logger.critical("   and statement_cache_size=0 is active.")
+        raise e
+    finally:
+        await connectable.dispose()
 
 
 def run_migrations_online() -> None:
