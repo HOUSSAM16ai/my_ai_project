@@ -106,11 +106,41 @@ async def chat_stream(
     db.add(user_message)
     await db.commit()
 
+    # 3. Prepare Context
+    # Retrieve conversation history (limit to last 20 messages for context window)
+    # To get the LAST 20 messages ordered by time ascending, we sort by time DESC, limit, then reverse.
+    stmt = (
+        select(AdminMessage)
+        .where(AdminMessage.conversation_id == conversation.id)
+        .order_by(AdminMessage.created_at.desc())
+        .limit(20)
+    )
+    result = await db.execute(stmt)
+    # Convert to list to support reversal
+    history_messages = list(result.scalars().all())
+
+    # Reverse to get chronological order (ASC)
+    # The DB query returned them DESC (newest first)
+    history_messages.reverse()
+
+    # Format messages for AI Client
+    messages = []
+    for msg in history_messages:
+        role = msg.role
+        # Enum values are already lowercase "user", "assistant"
+        messages.append({"role": role.value, "content": msg.content})
+
+    # Ensure the current question is included.
+    # Since we just saved 'user_message', it might be in 'history_messages' if the limit wasn't reached
+    # or if it was recent enough.
+    if not messages or messages[-1]["content"] != question:
+        messages.append({"role": "user", "content": question})
+
     async def response_generator():
         full_response = []
         try:
             # Stream the response from AI
-            async for chunk in ai_client.stream_chat([{"role": "user", "content": question}]):
+            async for chunk in ai_client.stream_chat(messages):
                 # Expecting chunk to be a dict, potentially with 'content' or similar structure
                 # Adjust based on actual AIClient output structure.
                 # Assuming chunk is a dict representing partial response or full object.
