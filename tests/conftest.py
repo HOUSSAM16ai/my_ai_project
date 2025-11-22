@@ -6,22 +6,26 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.main import kernel  # Use kernel to get app
 from app.core.ai_gateway import get_ai_client
+from app.core.engine_factory import create_unified_async_engine
 from tests.factories import UserFactory, MissionFactory
 
 # Ensure we use an in-memory SQLite DB for tests
 # Using shared cache to allow multiple connections to same memory db
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-engine = create_async_engine(
+# 🔥 UNIFIED ENGINE ENFORCEMENT 🔥
+# We use the global factory even for tests to ensure consistency.
+# The factory is smart enough to detect SQLite and NOT apply Postgres-specific args
+# (like statement_cache_size=0), preventing errors while maintaining standard.
+engine = create_unified_async_engine(
     TEST_DATABASE_URL,
     echo=False,
-    future=True,
     connect_args={"check_same_thread": False},
 )
 
