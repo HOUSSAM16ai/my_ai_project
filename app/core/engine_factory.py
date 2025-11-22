@@ -26,12 +26,6 @@ def _sanitize_database_url(url: str) -> str:
     2. SSL mode is handled correctly for production.
     """
     if not url:
-        # Fallback for local testing if not set, or raise error?
-        # Generally, we expect DATABASE_URL.
-        # If this is running in a context without it (like some tests without fixtures),
-        # it might fail. But usually better to fail early.
-        # However, for safety, we can check if we are in a test env or raise.
-        # Given the prompt, we should be strict.
         if "pytest" in os.environ.get("_", "") or os.environ.get("TESTING"):
             return "sqlite+aiosqlite:///:memory:"
         raise FatalEngineError("DATABASE_URL is not set.")
@@ -41,6 +35,16 @@ def _sanitize_database_url(url: str) -> str:
         url = url.replace("postgres://", "postgresql://", 1)
 
     return url
+
+
+def _pg_prepared_statement_name_func(query: str) -> str:
+    """
+    Force asyncpg to use the unnamed prepared statement.
+    This bypasses the statement cache and prevents DuplicatePreparedStatementError
+    when using PgBouncer in transaction mode, as the unnamed statement
+    is effectively transient and overwritten on every execution.
+    """
+    return ""
 
 
 def create_unified_async_engine(
@@ -97,6 +101,11 @@ def create_unified_async_engine(
         # This fixes the "DuplicatePreparedStatementError"
         # We OVERRIDE whatever was passed to ensure safety.
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
+
+        # RADICAL FIX: Force unnamed prepared statements
+        # This prevents asyncpg from generating named statements (e.g., __asyncpg_stmt_1__)
+        # which collide when sharing connections in transaction mode.
+        engine_kwargs["connect_args"]["prepared_statement_name_func"] = _pg_prepared_statement_name_func
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
         if pool_class != pool.NullPool:
