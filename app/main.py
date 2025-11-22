@@ -4,8 +4,10 @@ The main application entry point for the FastAPI service, orchestrated by the
 Reality Kernel V3.
 """
 
+import inspect
 from datetime import UTC, datetime
 
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -56,5 +58,33 @@ async def api_v1_health():
     )
 
 
-# Expose the FastAPI app instance cleanly for Uvicorn
+# --- EXPLICIT APP FACTORY ---
+# This resolves ambiguity for Uvicorn, ensuring it treats the app correctly
+# regardless of how it's imported or wrapped.
+def create_app() -> FastAPI:
+    """
+    Factory function to return the FastAPI application instance.
+    Used by Uvicorn with the --factory flag.
+    """
+    # Runtime safety check to prevent 'coroutine is not callable' errors
+    if inspect.iscoroutine(kernel.app):
+        raise TypeError(
+            f"CRITICAL ERROR: kernel.app is a coroutine object! "
+            f"It should be a FastAPI instance. Type: {type(kernel.app)}"
+        )
+
+    if not isinstance(kernel.app, FastAPI):
+        # Fallback check for valid callables (wrappers) that are not coroutines
+        if hasattr(kernel.app, "__call__") and not inspect.iscoroutinefunction(kernel.app):
+            pass  # It is a valid callable wrapper
+        else:
+            raise TypeError(
+                f"CRITICAL ERROR: kernel.app is not a FastAPI instance or valid callable. "
+                f"Type: {type(kernel.app)}"
+            )
+
+    return kernel.app
+
+
+# Expose the FastAPI app instance cleanly for Uvicorn (Legacy/Direct support)
 app = kernel.app
