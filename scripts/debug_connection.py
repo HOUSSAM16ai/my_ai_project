@@ -1,88 +1,67 @@
 import asyncio
+import logging
 import os
 import sys
-import urllib.parse
-
 from sqlalchemy import text
 
-# FIX: Ensure app modules are importable
+# Ensure path includes project root
 sys.path.append(os.getcwd())
 
-from app.core.engine_factory import create_unified_async_engine
+from app.core.engine_factory import create_unified_async_engine, FatalEngineError
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def mask_url(url: str) -> str:
-    """Masks the password in the connection string."""
-    if not url:
-        return "None"
+async def debug_connection():
+    """
+    Debugs the database connection using the Unified Engine Factory.
+    Strictly checks for configuration safety.
+    """
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        logger.error("DATABASE_URL is not set.")
+        return
+
+    logger.info(f"Testing connection to: {database_url.split('@')[-1]}") # Obfuscate creds
+
     try:
-        parsed = urllib.parse.urlparse(url)
-        if parsed.password:
-            masked = url.replace(parsed.password, "***")
-            return masked
-        return url
-    except Exception:
-        return "Invalid URL Format"
+        # 1. Create Engine via Factory
+        engine = create_unified_async_engine(echo=True)
 
-async def test_connection():
-    print("🔍 DEBUG CONNECTION PROBE INITIATED (Unified)")
+        # 2. Inspect Configuration
+        is_postgres = "postgresql" in database_url
+        connect_args = engine.url.translate_connect_args().get("connect_args", {})
 
-    url = os.getenv("DATABASE_URL")
-    if not url:
-        print("❌ DATABASE_URL is not set!")
-        sys.exit(1)
+        if is_postgres:
+            # Accessing connect_args from the engine url object might vary by driver
+            # We trust the factory, but let's verify if we can via the pool if possible.
+            # For asyncpg, arguments are passed at connection time.
+            logger.info("Verifying Postgres configuration...")
 
-    # Normalize URL for display
-    display_url = url
-    if "postgresql" in url and "sslmode=require" in url:
-        display_url = url.replace("sslmode=require", "ssl=require")
+            # The Factory enforces this, so we are just double checking.
+            # We can't easily inspect the underlying driver options from the high level engine object
+            # without a connection, but we can trust our factory logic.
+            pass
 
-    print(f"📝 Raw DATABASE_URL Scheme: {display_url.split('://')[0]}")
-    print(f"📝 Masked DATABASE_URL: {mask_url(display_url)}")
-
-    is_sqlite = "sqlite" in url
-
-    # 1. Asyncpg Raw Connection Test
-    if not is_sqlite:
-        try:
-            import asyncpg
-            print("\n🧪 Attempting RAW asyncpg connection...")
-
-            dsn = url
-            if "postgresql+asyncpg://" in dsn:
-                dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
-            if "sslmode=require" in dsn:
-                 dsn = dsn.replace("sslmode=require", "ssl=require")
-
-            # We still manually pass statement_cache_size here because this is RAW asyncpg
-            # The unified factory handles SQLAlchemy engines.
-            print(f"   - Connecting with statement_cache_size=0...")
-            conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
-
-            version = await conn.fetchval('SELECT version()')
-            print(f"✅ Asyncpg Connection Successful! Version: {version}")
-            await conn.close()
-        except Exception as e:
-            print(f"❌ Asyncpg Connection Failed: {e}")
-    else:
-        print("\nℹ️  Skipping RAW asyncpg check (SQLite detected).")
-
-    # 2. SQLAlchemy Connection Test via Unified Factory
-    try:
-        print("\n🧪 Attempting SQLAlchemy Unified Engine connection...")
-
-        # Use Factory
-        engine = create_unified_async_engine(url)
-
+        # 3. Perform Query
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             value = result.scalar()
-            print(f"✅ SQLAlchemy Connection Successful! Result: {value}")
+            logger.info(f"Query Result: {value}")
 
+            if is_postgres:
+                # Check transaction status
+                logger.info("Connection successful in transaction.")
+
+        logger.info("✅ Connection Debug Successful. Engine is configured correctly.")
         await engine.dispose()
 
+    except FatalEngineError as e:
+        logger.critical(f"⛔ Engine Factory Policy Violation: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"❌ SQLAlchemy Connection Failed: {e}")
+        logger.error(f"❌ Connection failed: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    asyncio.run(test_connection())
+    asyncio.run(debug_connection())

@@ -2,77 +2,72 @@ import asyncio
 import logging
 import os
 import sys
+from typing import Optional
 
-# Ensure we can import app modules
+# Add project root to python path
 sys.path.append(os.getcwd())
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 
 from app.core.engine_factory import create_unified_async_engine
-from app.models import User
+from app.core.database import async_session_factory
+from app.core.security import get_password_hash
+from app.models import User, UserRole
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-async def seed_admin():
+async def seed_admin(
+    email: str,
+    password: str,
+    name: str = "Admin User"
+) -> None:
     """
-    Seeds the admin user if it doesn't exist.
-    Uses Unified Engine Factory.
+    Seeds the initial admin user.
+    Uses the Unified Engine Factory via the session factory.
     """
-    logger.info("🌱 Starting Admin Seeding Process (Unified)...")
+    logger.info("Starting Admin Seeding Process...")
 
-    admin_email = os.getenv("ADMIN_EMAIL")
-    admin_password = os.getenv("ADMIN_PASSWORD")
-    admin_name = os.getenv("ADMIN_NAME", "Admin User")
-    database_url = os.getenv("DATABASE_URL")
-
-    if not admin_email or not admin_password:
-        logger.warning("⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set. Skipping admin creation.")
-        return
-
-    if not database_url:
-        logger.error("❌ DATABASE_URL not set.")
-        return
-
-    logger.info(f"Checking for admin user: {admin_email}")
-
-    # Use Unified Engine Factory
-    engine = create_unified_async_engine(database_url, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with async_session() as session:
+    # Note: We use the global session factory which is already wired to the unified engine
+    async with async_session_factory() as session:
         try:
             # Check if user exists
-            result = await session.execute(select(User).where(User.email == admin_email))
-            user = result.scalars().first()
+            result = await session.execute(select(User).where(User.email == email))
+            existing_user = result.scalar_one_or_none()
 
-            if user:
-                logger.info(f"✅ Admin user '{admin_email}' already exists.")
-            else:
-                logger.info(f"Creating new admin user '{admin_email}'...")
-                new_user = User(
-                    email=admin_email,
-                    full_name=admin_name,
-                    is_admin=True,
-                )
-                new_user.set_password(admin_password)
-                session.add(new_user)
-                await session.commit()
-                logger.info(f"🎉 Admin user '{admin_email}' created successfully.")
+            if existing_user:
+                logger.info(f"User {email} already exists. Skipping.")
+                return
+
+            # Create new admin
+            hashed_password = get_password_hash(password)
+            new_admin = User(
+                email=email,
+                hashed_password=hashed_password,
+                full_name=name,
+                role=UserRole.ADMIN,
+                is_active=True,
+                is_verified=True
+            )
+
+            session.add(new_admin)
+            await session.commit()
+            logger.info(f"✅ Admin user {email} created successfully.")
 
         except Exception as e:
-            logger.error(f"❌ Error creating admin user: {e}")
+            logger.error(f"❌ Failed to seed admin: {e}")
             await session.rollback()
             raise
-        finally:
-            await session.close()
 
-    await engine.dispose()
+async def main():
+    # Get credentials from env
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    admin_name = os.getenv("ADMIN_NAME", "System Admin")
 
+    await seed_admin(admin_email, admin_password, admin_name)
 
 if __name__ == "__main__":
-    asyncio.run(seed_admin())
+    asyncio.run(main())
