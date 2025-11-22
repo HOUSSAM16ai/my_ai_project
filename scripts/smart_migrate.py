@@ -33,13 +33,9 @@ async def check_db_state():
     database_url = get_database_url()
 
     # Use Unified Factory
-    # EXPLICITLY enforcing statement_cache_size=0 to prevent PgBouncer errors.
-    connect_args = {"statement_cache_size": 0} if "sqlite" not in database_url else {}
-
-    engine = create_unified_async_engine(
-        database_url,
-        connect_args=connect_args
-    )
+    # The factory automatically injects statement_cache_size=0 for Postgres
+    # so we don't need to manually specify it here.
+    engine = create_unified_async_engine(database_url)
 
     async with engine.connect() as conn:
 
