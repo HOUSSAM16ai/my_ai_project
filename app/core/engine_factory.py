@@ -13,6 +13,7 @@ ABSOLUTE REALITY REWRITER PROTOCOL:
 
 import logging
 import sys
+import copy
 from typing import Any
 
 from sqlalchemy import create_engine
@@ -69,38 +70,48 @@ def create_unified_async_engine(
     """
     safe_url = _sanitize_url_for_async(url)
 
-    # 1. DEFAULT CONNECT ARGS
-    connect_args = kwargs.pop("connect_args", {}) or {}
+    # Create a deep copy of kwargs to avoid side effects
+    final_kwargs = copy.deepcopy(kwargs)
+
+    # 1. EXTRACT OR INIT CONNECT ARGS
+    connect_args = final_kwargs.pop("connect_args", {}) or {}
 
     # 2. ENFORCE PGBOUNCER COMPATIBILITY
     if "sqlite" not in safe_url:
-        # Check if already set
-        existing_cache = connect_args.get("statement_cache_size")
-
-        if existing_cache is not None and existing_cache != 0:
-            logger.critical(f"🚨 ATTEMPT TO SET statement_cache_size={existing_cache} DETECTED! OVERRIDING TO 0.")
+        # Critical check
+        if connect_args.get("statement_cache_size") is not None:
+            val = connect_args["statement_cache_size"]
+            if val != 0:
+                logger.critical(f"🚨 OVERRIDING UNSAFE statement_cache_size={val} TO 0")
 
         # FORCE 0
         connect_args["statement_cache_size"] = 0
 
-        # Ensure basic timeout settings are also safe
+        # Ensure timeouts
         if "timeout" not in connect_args:
              connect_args["timeout"] = 30
         if "command_timeout" not in connect_args:
              connect_args["command_timeout"] = 60
 
-        # Log this event
-        logger.info("🔒 Secured Async Engine with statement_cache_size=0")
+        logger.debug(f"🔒 Async Engine Configured: {safe_url.split('://')[0]} | cache_size=0")
+    else:
+        # SQLite cleanup
+        final_kwargs.pop("pool_size", None)
+        final_kwargs.pop("max_overflow", None)
 
-    # 3. CREATE ENGINE
+    # 3. POOLING CONFIG
+    if "sqlite" not in safe_url:
+        if "pool_pre_ping" not in final_kwargs:
+            final_kwargs["pool_pre_ping"] = True
+
+    # 4. CREATE ENGINE
     try:
         engine = create_async_engine(
             safe_url,
             echo=echo,
             connect_args=connect_args,
             future=True,
-            pool_pre_ping=True,
-            **kwargs
+            **final_kwargs
         )
         return engine
     except Exception as e:
@@ -114,21 +125,15 @@ def create_unified_sync_engine(
 ) -> Engine:
     """
     The ONE AND ONLY way to create a SYNC SQLAlchemy engine.
-    (Used mainly for isolated scripts or legacy tests).
     """
     safe_url = _sanitize_url_for_sync(url)
+    final_kwargs = copy.deepcopy(kwargs)
 
-    connect_args = kwargs.pop("connect_args", {}) or {}
+    connect_args = final_kwargs.pop("connect_args", {}) or {}
 
-    # WARNING: Psycopg2 usually doesn't need statement_cache_size=0 because it doesn't use
-    # server-side prepared statements by default unless configured.
-    # But we monitor it.
-
-    if "sqlite" not in safe_url:
-         # For sync engines (psycopg2), we don't strictly need statement_cache_size
-         # because it's an asyncpg-specific param.
-         # However, we ensure we aren't doing anything crazy.
-         pass
+    if "sqlite" in safe_url:
+         final_kwargs.pop("pool_size", None)
+         final_kwargs.pop("max_overflow", None)
 
     try:
         engine = create_engine(
@@ -137,7 +142,7 @@ def create_unified_sync_engine(
             connect_args=connect_args,
             pool_pre_ping=True,
             future=True,
-            **kwargs
+            **final_kwargs
         )
         return engine
     except Exception as e:
