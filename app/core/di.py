@@ -4,7 +4,7 @@ from app.config.settings import get_settings as _get_settings
 from app.core.cli_logging import create_logger
 
 _settings_singleton = None
-_session_factory_singleton = None
+# _session_factory_singleton is effectively managed by app.core.database which instantiates it at module level.
 
 
 def get_settings(env: str | None = None):
@@ -20,8 +20,6 @@ def get_session():
     This ensures we use the ONE TRUE ENGINE created by the Unified Factory.
     """
     # Direct return of the factory from core.database
-    # We wrap it in a singleton getter just to maintain the DI interface pattern
-    # if we ever need lazy loading (though app.core.database loads at import).
     return async_session_factory
 
 def get_logger():
