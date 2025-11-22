@@ -37,3 +37,8 @@ echo "👤 Seeding Admin..."
 python3 scripts/seed_admin.py
 
 echo "✅ Setup Complete."
+
+# 4. Start Application
+echo "🌐 Starting Application Server..."
+# Use exec to replace the shell process with Uvicorn
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
