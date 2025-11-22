@@ -24,6 +24,7 @@ from app.services.api_gateway_service import (
     RESTAdapter,
     RoutingStrategy,
 )
+import pytest
 
 
 class TestIntelligentRouter:
@@ -83,9 +84,10 @@ class TestPolicyEngine:
 
 
 class TestProtocolAdapters:
-    def test_rest_adapter(self):
+    @pytest.mark.asyncio
+    async def test_rest_adapter(self):
         adapter = RESTAdapter()
-        is_valid, _error = adapter.validate_request(None)
+        is_valid, _error = await adapter.validate_request(None)
         assert is_valid is True
 
     def test_graphql_adapter(self):

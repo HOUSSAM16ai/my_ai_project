@@ -1,452 +1,632 @@
 I001 [*] Import block is un-sorted or un-formatted
- --> app/api/main.py:1:1
-  |
-1 | / from app.api.routers import system
-2 | | from fastapi import FastAPI
-  | |___________________________^
-  |
-help: Organize imports
-
-F401 [*] `fastapi.Request` imported but unused
-  --> app/api/routers/admin.py:8:56
+  --> app/api/routers/admin.py:7:1
    |
- 6 | import json
- 7 |
- 8 | from fastapi import APIRouter, Depends, HTTPException, Request
-   |                                                        ^^^^^^^
- 9 | from fastapi.responses import StreamingResponse
-10 | from pydantic import BaseModel
-   |
-help: Remove unused import: `fastapi.Request`
-
-I001 [*] Import block is un-sorted or un-formatted
- --> app/api/routers/chat.py:2:1
-  |
-1 |   # app/api/routers/chat.py
-2 | / import json
-3 | |
-4 | | from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
-5 | |
-6 | | from app.core.ai_gateway import AIClient, get_ai_client
-  | |_______________________________________________________^
-  |
-help: Organize imports
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> app/api/routers/system.py:8:1
-   |
- 6 |   """
- 7 |
- 8 | / from fastapi import APIRouter, Depends, status
- 9 | | from fastapi.responses import JSONResponse
-10 | | from sqlalchemy.ext.asyncio import AsyncSession
-11 | | from sqlalchemy import text
-12 | |
-13 | | from app.core.database import get_db
-   | |____________________________________^
-14 |
-15 |   router = APIRouter(
+ 5 |   """
+ 6 |
+ 7 | / import json
+ 8 | | import jwt
+ 9 | | import os
+10 | |
+11 | | from fastapi import APIRouter, Depends, HTTPException, Request
+12 | | from fastapi.responses import StreamingResponse
+13 | | from pydantic import BaseModel
+14 | | from sqlalchemy import select
+15 | |
+16 | | from app.core.ai_gateway import AIClient, get_ai_client
+17 | | from app.core.database import AsyncSession, get_db
+18 | | from app.models import AdminConversation, AdminMessage, MessageRole, User
+   | |_________________________________________________________________________^
+19 |
+20 |   # --- JWT Configuration ---
    |
 help: Organize imports
+
+F401 [*] `app.models.User` imported but unused
+  --> app/api/routers/admin.py:18:70
+   |
+16 | from app.core.ai_gateway import AIClient, get_ai_client
+17 | from app.core.database import AsyncSession, get_db
+18 | from app.models import AdminConversation, AdminMessage, MessageRole, User
+   |                                                                      ^^^^
+19 |
+20 | # --- JWT Configuration ---
+   |
+help: Remove unused import: `app.models.User`
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> app/api/routers/admin.py:57:10
+   |
+55 |         raise HTTPException(status_code=401, detail="Invalid token") from e
+56 |     except ValueError:
+57 |          raise HTTPException(status_code=401, detail="Invalid user ID in token")
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
 
 I001 [*] Import block is un-sorted or un-formatted
   --> app/cli_handlers/db_cli.py:2:1
    |
  1 |   # app/cli_handlers/db_cli.py
- 2 | / import os
- 3 | | from collections.abc import Generator
- 4 | | from contextlib import contextmanager
- 5 | |
- 6 | | import click
- 7 | | from sqlalchemy import create_engine
- 8 | | from sqlalchemy.orm import Session, sessionmaker
- 9 | |
-10 | | from app import models  # Import models to register them
-11 | | from app.extensions import db
-   | |_____________________________^
+ 2 | / import asyncio
+ 3 | | import os
+ 4 | | from collections.abc import AsyncGenerator
+ 5 | | from contextlib import asynccontextmanager
+ 6 | |
+ 7 | | import click
+ 8 | | from sqlalchemy import select
+ 9 | | from sqlalchemy.ext.asyncio import AsyncSession
+10 | | from sqlmodel import SQLModel
+11 | |
+12 | | from app import models  # Import models to register them
+13 | | from app.core.database import engine, async_session_factory
+   | |___________________________________________________________^
+14 |
+15 |   # NOTE: We now import engine and factory from app.core.database,
+   |
+help: Organize imports
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+  --> app/core/config.py:38:9
+   |
+36 |           if v.startswith("postgres://"):
+37 |               v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+38 | /         elif v.startswith("postgresql://"):
+39 | |             if "postgresql+asyncpg://" not in v:
+   | |________________________________________________^
+40 |                    v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+   |
+help: Combine `if` statements using `and`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/database.py:1:1
+   |
+ 1 | / import os
+ 2 | | import logging
+ 3 | | from collections.abc import AsyncGenerator
+ 4 | |
+ 5 | | from sqlalchemy.orm import sessionmaker
+ 6 | | from sqlalchemy.ext.asyncio import AsyncSession
+ 7 | | from sqlmodel import SQLModel
+ 8 | |
+ 9 | | from app.core.config import settings
+10 | | from app.core.engine_factory import create_unified_async_engine
+   | |_______________________________________________________________^
+11 |
+12 |   logger = logging.getLogger(__name__)
    |
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
-  --> app/core/ai_gateway.py:11:1
+ --> app/core/di.py:1:1
+  |
+1 | / import logging
+2 | | from app.core.database import async_session_factory
+3 | | from app.config.settings import get_settings as _get_settings
+4 | | from app.core.cli_logging import create_logger
+  | |______________________________________________^
+5 |
+6 |   _settings_singleton = None
+  |
+help: Organize imports
+
+F401 [*] `logging` imported but unused
+ --> app/core/di.py:1:8
+  |
+1 | import logging
+  |        ^^^^^^^
+2 | from app.core.database import async_session_factory
+3 | from app.config.settings import get_settings as _get_settings
+  |
+help: Remove unused import: `logging`
+
+F401 [*] `sys` imported but unused
+  --> app/core/engine_factory.py:15:8
    |
- 9 |   """
+14 | import logging
+15 | import sys
+   |        ^^^
+16 | from typing import Any
+   |
+help: Remove unused import: `sys`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> app/core/kernel_v2/compat_collapse.py:6:1
+   |
+ 4 |   """
+ 5 |
+ 6 | / import contextvars
+ 7 | | from typing import Any, Optional, Callable
+ 8 | | from fastapi.responses import JSONResponse
+ 9 | | from fastapi import Request
+   | |___________________________^
 10 |
-11 | / import os
-12 | | from typing import Protocol, runtime_checkable, AsyncGenerator
-13 | | import httpx
-14 | | import json
-   | |___________^
-15 |
-16 |   # --- Configuration ---
+11 |   # Context variables to hold the state
    |
 help: Organize imports
 
-UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`
-  --> app/core/ai_gateway.py:12:1
-   |
-11 | import os
-12 | from typing import Protocol, runtime_checkable, AsyncGenerator
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-13 | import httpx
-14 | import json
-   |
+UP035 [*] Import from `collections.abc` instead: `Callable`
+ --> app/core/kernel_v2/compat_collapse.py:7:1
+  |
+6 | import contextvars
+7 | from typing import Any, Optional, Callable
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 | from fastapi.responses import JSONResponse
+9 | from fastapi import Request
+  |
 help: Import from `collections.abc`
 
-I001 [*] Import block is un-sorted or un-formatted
-  --> app/core/database.py:10:1
+UP045 [*] Use `X | None` for type annotations
+  --> app/core/kernel_v2/compat_collapse.py:12:42
    |
- 8 |   """
- 9 |
-10 | / import os
-11 | | from typing import AsyncGenerator
-12 | |
-13 | | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-14 | | from sqlalchemy.orm import sessionmaker, declarative_base
-   | |_________________________________________________________^
-15 |
-16 |   # ======================================================================================
+11 | # Context variables to hold the state
+12 | _request_ctx_var: contextvars.ContextVar[Optional[Request]] = contextvars.ContextVar("request", default=None)
+   |                                          ^^^^^^^^^^^^^^^^^
+13 | _g_ctx_var: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar("g", default=None)
+14 | _user_ctx_var: contextvars.ContextVar[Any] = contextvars.ContextVar("user", default=None)
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/core/kernel_v2/compat_collapse.py:13:36
+   |
+11 | # Context variables to hold the state
+12 | _request_ctx_var: contextvars.ContextVar[Optional[Request]] = contextvars.ContextVar("request", default=None)
+13 | _g_ctx_var: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar("g", default=None)
+   |                                    ^^^^^^^^^^^^^^
+14 | _user_ctx_var: contextvars.ContextVar[Any] = contextvars.ContextVar("user", default=None)
+   |
+help: Convert to `X | None`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> app/middleware/adapters/flask_compat.py:1:1
+  |
+1 | / from starlette.middleware.base import BaseHTTPMiddleware
+2 | | from fastapi import Request
+3 | | from app.core.kernel_v2.compat_collapse import RequestContext, UserContext, AnonymousUser
+  | |_________________________________________________________________________________________^
+4 |
+5 |   class FlaskCompatMiddleware(BaseHTTPMiddleware):
+  |
+help: Organize imports
+
+F841 Local variable `engine` is assigned to but never used
+   --> app/services/database_service.py:162:13
+    |
+160 |                 health["warnings"].append(f"High connection latency: {connection_time:.2f}ms")
+161 |
+162 |             engine = self.session.get_bind()
+    |             ^^^^^^
+163 |
+164 |             def _inspect_tables(conn):
+    |
+help: Remove assignment to unused variable `engine`
+
+E402 Module level import not at top of file
+   --> app/services/user_service.py:132:1
+    |
+130 | # ======================================================================================
+131 |
+132 | import asyncio
+    | ^^^^^^^^^^^^^^
+133 |
+134 | def get_all_users() -> list[User]:
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> app/services/user_service.py:132:1
+    |
+130 | # ======================================================================================
+131 |
+132 | import asyncio
+    | ^^^^^^^^^^^^^^
+133 |
+134 | def get_all_users() -> list[User]:
+    |
+help: Organize imports
+
+F541 [*] f-string without any placeholders
+  --> scripts/debug_connection.py:59:19
+   |
+57 |             # We still manually pass statement_cache_size here because this is RAW asyncpg
+58 |             # The unified factory handles SQLAlchemy engines.
+59 |             print(f"   - Connecting with statement_cache_size=0...")
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+60 |             conn = await asyncpg.connect(dsn, statement_cache_size=0, timeout=10)
+   |
+help: Remove extraneous `f` prefix
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> scripts/fix_duplicate_prepared_statement.py:18:1
+   |
+16 | sys.path.append(os.getcwd())
+17 |
+18 | from app.core.engine_factory import create_unified_async_engine
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |
+20 | def get_safe_db_url():
    |
 help: Organize imports
 
-UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`
-  --> app/core/database.py:11:1
+F841 [*] Local variable `e` is assigned to but never used
+  --> scripts/fix_duplicate_prepared_statement.py:70:29
+   |
+68 |         try:
+69 |             asyncio.run(verify_fix())
+70 |         except Exception as e:
+   |                             ^
+71 |             sys.exit(1)
+72 |     else:
+   |
+help: Remove assignment to unused variable `e`
+
+F401 [*] `pathlib.Path` imported but unused
+  --> setup_supabase_connection.py:12:21
    |
 10 | import os
-11 | from typing import AsyncGenerator
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-12 |
-13 | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-   |
-help: Import from `collections.abc`
-
-E402 Module level import not at top of file
-  --> app/core/factories.py:52:1
-   |
-52 | from app.gateways.ai_service_gateway import AIServiceGateway
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-53 | from app.protocols.http_client import HttpClient, RequestsAdapter
-   |
-
-E402 Module level import not at top of file
-  --> app/core/factories.py:53:1
-   |
-52 | from app.gateways.ai_service_gateway import AIServiceGateway
-53 | from app.protocols.http_client import HttpClient, RequestsAdapter
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> app/core/time.py:10:1
-   |
- 8 |   """
- 9 |
-10 | / from contextlib import contextmanager
-11 | | from app.core.database import AsyncSessionLocal
-   | |_______________________________________________^
-12 |
-13 |   # ======================================================================================
-   |
-help: Organize imports
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> app/main.py:9:1
-   |
- 7 |   """
- 8 |
- 9 | / from fastapi.staticfiles import StaticFiles
-10 | |
-11 | | from app.api.routers import admin, chat, system, ai_service
-12 | | from app.kernel import app
-   | |__________________________^
+11 | import sys
+12 | from pathlib import Path
+   |                     ^^^^
 13 |
-14 |   # ======================================================================================
+14 | from dotenv import load_dotenv
+   |
+help: Remove unused import: `pathlib.Path`
+
+F401 [*] `json` imported but unused
+  --> supabase_verification_system.py:8:8
+   |
+ 6 | """
+ 7 |
+ 8 | import json
+   |        ^^^^
+ 9 | import os
+10 | import sys
+   |
+help: Remove unused import: `json`
+
+F401 [*] `datetime.datetime` imported but unused
+  --> supabase_verification_system.py:13:22
+   |
+11 | import time
+12 | import traceback
+13 | from datetime import datetime
+   |                      ^^^^^^^^
+14 | from typing import Any
+   |
+help: Remove unused import: `datetime.datetime`
+
+F401 [*] `sqlalchemy.ext.asyncio.AsyncSession` imported but unused
+  --> supabase_verification_system.py:17:36
+   |
+16 | from sqlalchemy import text
+17 | from sqlalchemy.ext.asyncio import AsyncSession
+   |                                    ^^^^^^^^^^^^
+18 | from sqlalchemy.orm import sessionmaker
+   |
+help: Remove unused import: `sqlalchemy.ext.asyncio.AsyncSession`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> supabase_verification_system.py:23:1
+   |
+21 | sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+22 |
+23 | from app.core.engine_factory import create_unified_async_engine, create_unified_sync_engine
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 |
+25 | # الألوان للتقارير
+   |
+help: Organize imports
+
+F401 [*] `app.core.engine_factory.create_unified_async_engine` imported but unused
+  --> supabase_verification_system.py:23:37
+   |
+21 | sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+22 |
+23 | from app.core.engine_factory import create_unified_async_engine, create_unified_sync_engine
+   |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 |
+25 | # الألوان للتقارير
+   |
+help: Remove unused import: `app.core.engine_factory.create_unified_async_engine`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/conftest.py:1:1
+   |
+ 1 | / import asyncio
+ 2 | | from collections.abc import AsyncGenerator, Generator
+ 3 | | from unittest.mock import MagicMock
+ 4 | |
+ 5 | | import pytest
+ 6 | | from fastapi.testclient import TestClient
+ 7 | | from httpx import AsyncClient
+ 8 | | from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+ 9 | | from sqlalchemy.orm import sessionmaker
+10 | | from sqlmodel import SQLModel
+11 | |
+12 | | from app.main import kernel  # Use kernel to get app
+13 | | from app.core.ai_gateway import get_ai_client
+   | |_____________________________________________^
+14 |
+15 |   # Ensure we use an in-memory SQLite DB for tests
    |
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
-  --> app/services/admin_ai_service.py:28:1
+  --> tests/conftest.py:80:5
    |
-26 |   """
-27 |
-28 | / from __future__ import annotations
-29 | |
-30 | | import json
-31 | | import logging
-32 | | import os
-33 | | import time
-34 | | from datetime import UTC, datetime
-35 | | from typing import Any
-36 | |
-37 | | from app.extensions import db
-38 | | from app.models import (
-39 | |     AdminConversation,
-40 | |     AdminMessage,
-41 | |     User,
-42 | |     utc_now,
-43 | | )
-   | |_^
-44 |
-45 |   try:
-   |
-help: Organize imports
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:410:17
-    |
-409 |             except Exception as e:
-410 |                 current_app.logger.warning(f"Error evaluating provider {provider_name}: {e}")
-    |                 ^^^^^^^^^^^
-411 |                 continue
-    |
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:620:21
-    |
-619 |                 except Exception as e:
-620 |                     current_app.logger.error(f"Policy evaluation error: {e}")
-    |                     ^^^^^^^^^^^
-621 |                     continue
-    |
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:703:9
-    |
-701 |         """Register a gateway route"""
-702 |         self.routes[route.route_id] = route
-703 |         current_app.logger.info(f"Registered route: {route.route_id} -> {route.path_pattern}")
-    |         ^^^^^^^^^^^
-704 |
-705 |     def register_upstream_service(self, service: UpstreamService):
-    |
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:708:9
-    |
-706 |         """Register an upstream service"""
-707 |         self.upstream_services[service.service_id] = service
-708 |         current_app.logger.info(f"Registered upstream service: {service.service_id}")
-    |         ^^^^^^^^^^^
-709 |
-710 |     def process_request(
-    |
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:771:13
-    |
-770 |         except Exception as e:
-771 |             current_app.logger.error(f"Gateway processing error: {e}", exc_info=True)
-    |             ^^^^^^^^^^^
-772 |             return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
-    |
-
-F821 Undefined name `current_app`
-   --> app/services/api_gateway_service.py:836:17
-    |
-834 |                 return result
-835 |             except Exception as e:
-836 |                 current_app.logger.error(f"Endpoint error: {e}", exc_info=True)
-    |                 ^^^^^^^^^^^
-837 |                 return jsonify({"error": "Internal error", "message": str(e)}), 500
-    |
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> app/services/prompt_engineering_service.py:69:1
-   |
-67 |   """
-68 |
-69 | / from __future__ import annotations
-70 | |
-71 | | import logging
-72 | | import os
-73 | | import re
-74 | | import time
-75 | | from typing import Any
-76 | |
-77 | | from app.extensions import db
-78 | | from app.models import GeneratedPrompt, PromptTemplate, User
-   | |____________________________________________________________^
-79 |
-80 |   try:
+78 |       Fixture to create an admin user.
+79 |       """
+80 | /     from app.models import User
+81 | |     from sqlalchemy import select
+   | |_________________________________^
+82 |
+83 |       stmt = select(User).where(User.email == "admin@test.com")
    |
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
- --> tests/conftest.py:2:1
-  |
-1 |   # tests/conftest.py
-2 | / import os
-3 | | import asyncio
-4 | | from typing import AsyncGenerator, Generator
-  | |____________________________________________^
-5 |
-6 |   # Set environment variables for testing BEFORE application imports
-  |
-help: Organize imports
-
-UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`, `Generator`
- --> tests/conftest.py:4:1
-  |
-2 | import os
-3 | import asyncio
-4 | from typing import AsyncGenerator, Generator
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5 |
-6 | # Set environment variables for testing BEFORE application imports
-  |
-help: Import from `collections.abc`
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> tests/conftest.py:11:1
+  --> tests/simulation/test_concurrent_admin_chat.py:2:1
    |
- 9 |   os.environ["OPENROUTER_API_KEY"] = "test-key" # Required by ENERGY-ENGINE
-10 |
-11 | / import pytest
-12 | | import pytest_asyncio
-13 | | from fastapi.testclient import TestClient
-14 | | from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-15 | | from sqlalchemy.orm import sessionmaker
-16 | |
-17 | | from app.core.database import get_db, Base
-18 | | from app.kernel import app
-   | |__________________________^
-19 |
-20 |   # Use a separate database for testing
+ 1 |   # tests/simulation/test_concurrent_admin_chat.py
+ 2 | / import asyncio
+ 3 | | import pytest
+ 4 | | from httpx import AsyncClient
+ 5 | | from app.main import kernel
+ 6 | | from app.core.security import generate_service_token
+ 7 | | from sqlalchemy import select
+ 8 | | from app.models import AdminConversation, AdminMessage
+ 9 | | from app.core.database import get_db
+10 | | from tests.conftest import TestingSessionLocal
+   | |______________________________________________^
+11 |
+12 |   @pytest.mark.asyncio
    |
 help: Organize imports
 
+F841 Local variable `mock_method` is assigned to but never used
+  --> tests/smoke/test_database_service_smoke.py:90:91
+   |
+88 |         return {"status": "mocked"}
+89 |
+90 |     with patch.object(DatabaseService, "get_database_health", side_effect=mock_health) as mock_method:
+   |                                                                                           ^^^^^^^^^^^
+91 |         # We also need to mock get_legacy_database_service to return a service with this mock
+92 |         with patch("app.services.compat.database_compat.get_legacy_database_service") as mock_get_legacy:
+   |
+help: Remove assignment to unused variable `mock_method`
+
 I001 [*] Import block is un-sorted or un-formatted
-  --> tests/test_ai_service.py:12:1
+  --> tests/test_admin_api_error_handling.py:12:1
    |
 10 |   """
 11 |
 12 | / import json
-13 | | from datetime import UTC, datetime, timedelta
-14 | | from unittest.mock import patch
-15 | |
-16 | | import jwt
-17 | | import pytest
-18 | | from fastapi.testclient import TestClient
-19 | |
-20 | | # Ensure the app is imported correctly
-21 | | from ai_service_standalone.main import ALGORITHM, SECRET_KEY, app
-22 | | from tests._helpers import parse_response_json
-   | |______________________________________________^
-23 |
-24 |   client = TestClient(app)
-   |
-help: Organize imports
-
-F841 Local variable `f` is assigned to but never used
-  --> tests/test_settings_smoke.py:53:39
-   |
-51 |     # Create an empty temporary .env file
-52 |     empty_env_path = os.path.join(os.path.dirname(__file__), "empty.env")
-53 |     with open(empty_env_path, "w") as f:
-   |                                       ^
-54 |         pass
-   |
-help: Remove assignment to unused variable `f`
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> tests/transcendent/test_energy_engine.py:7:1
-   |
- 5 |   These tests verify the Law of Energetic Continuity.
- 6 |   """
- 7 | / import pytest
- 8 | | from httpx import AsyncClient
- 9 | | from app.kernel import app  # Use the unified app
-10 | | from unittest.mock import MagicMock, AsyncMock
-11 | |
-12 | | from app.core.ai_gateway import get_ai_client
+13 | | from unittest.mock import MagicMock
+14 | |
+15 | | import pytest
+16 | | import requests
+17 | | from app.main import kernel
+18 | | from app.core.ai_gateway import get_ai_client
    | |_____________________________________________^
-13 |
-14 |   @pytest.mark.skip(reason="Skipping due to persistent issues with AsyncClient and dependency overrides.")
+19 |
+20 |   def test_chat_stream_gateway_connection_error(
    |
 help: Organize imports
 
-F401 [*] `unittest.mock.AsyncMock` imported but unused
-  --> tests/transcendent/test_energy_engine.py:10:38
+F401 [*] `unittest.mock.MagicMock` imported but unused
+  --> tests/test_admin_api_error_handling.py:13:27
    |
- 8 | from httpx import AsyncClient
- 9 | from app.kernel import app  # Use the unified app
-10 | from unittest.mock import MagicMock, AsyncMock
-   |                                      ^^^^^^^^^
-11 |
-12 | from app.core.ai_gateway import get_ai_client
+12 | import json
+13 | from unittest.mock import MagicMock
+   |                           ^^^^^^^^^
+14 |
+15 | import pytest
    |
-help: Remove unused import: `unittest.mock.AsyncMock`
+help: Remove unused import: `unittest.mock.MagicMock`
+
+E701 Multiple statements on one line (colon)
+  --> tests/test_admin_api_error_handling.py:31:17
+   |
+29 |     async def failing_stream(messages):
+30 |         # Yield nothing, just raise
+31 |         if False: yield # make it a generator
+   |                 ^
+32 |         raise requests.exceptions.ConnectionError("Failed to connect to AI service")
+   |
 
 I001 [*] Import block is un-sorted or un-formatted
-  --> tests/transcendent/test_space_engine.py:8:1
+  --> tests/test_admin_chat_complex_questions.py:11:1
    |
- 6 |   """
- 7 |
- 8 | / import pytest
- 9 | | from sqlalchemy.orm import declarative_base
-10 | | from app.core.database import Base, get_db
-11 | | from app.models import User  # Import a model to check its base
-   | |___________________________^
-12 |
-13 |   def test_models_use_correct_base():
-   |
-help: Organize imports
-
-F401 [*] `sqlalchemy.orm.declarative_base` imported but unused
-  --> tests/transcendent/test_space_engine.py:9:28
-   |
- 8 | import pytest
- 9 | from sqlalchemy.orm import declarative_base
-   |                            ^^^^^^^^^^^^^^^^
-10 | from app.core.database import Base, get_db
-11 | from app.models import User  # Import a model to check its base
-   |
-help: Remove unused import: `sqlalchemy.orm.declarative_base`
-
-I001 [*] Import block is un-sorted or un-formatted
-  --> tests/transcendent/test_time_engine.py:7:1
-   |
- 5 |   These tests verify the Law of Temporal Coherence.
- 6 |   """
- 7 | / import pytest
- 8 | | from app.core.time import legacy_context
- 9 | | from sqlalchemy.ext.asyncio import AsyncSession
-   | |_______________________________________________^
+ 9 | """
 10 |
-11 |   def test_legacy_context_provides_db_session(client):
+11 | import pytest
+   | ^^^^^^^^^^^^^
+12 |
+13 | def test_chat_stream_handles_complex_question_via_post(
    |
 help: Organize imports
 
 F401 [*] `pytest` imported but unused
- --> tests/transcendent/test_time_engine.py:7:8
-  |
-5 | These tests verify the Law of Temporal Coherence.
-6 | """
-7 | import pytest
-  |        ^^^^^^
-8 | from app.core.time import legacy_context
-9 | from sqlalchemy.ext.asyncio import AsyncSession
-  |
+  --> tests/test_admin_chat_complex_questions.py:11:8
+   |
+ 9 | """
+10 |
+11 | import pytest
+   |        ^^^^^^
+12 |
+13 | def test_chat_stream_handles_complex_question_via_post(
+   |
 help: Remove unused import: `pytest`
 
 I001 [*] Import block is un-sorted or un-formatted
-  --> tests/unit/services/test_database_service.py:10:1
+ --> tests/test_admin_chat_persistence_repro.py:1:1
+  |
+1 | / import pytest
+2 | | from sqlalchemy import select
+3 | | from app.models import AdminConversation, AdminMessage
+  | |______________________________________________________^
+4 |
+5 |   @pytest.mark.asyncio
+  |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_bootstrap_db.py:2:1
+  |
+2 | / import os
+3 | | import unittest
+4 | | from unittest.mock import patch
+5 | | from scripts.bootstrap_db import sanitize_database_url
+  | |______________________________________________________^
+6 |
+7 |   class TestBootstrapDB(unittest.TestCase):
+  |
+help: Organize imports
+
+F401 [*] `os` imported but unused
+ --> tests/test_bootstrap_db.py:2:8
+  |
+2 | import os
+  |        ^^
+3 | import unittest
+4 | from unittest.mock import patch
+  |
+help: Remove unused import: `os`
+
+F401 [*] `unittest.mock.patch` imported but unused
+ --> tests/test_bootstrap_db.py:4:27
+  |
+2 | import os
+3 | import unittest
+4 | from unittest.mock import patch
+  |                           ^^^^^
+5 | from scripts.bootstrap_db import sanitize_database_url
+  |
+help: Remove unused import: `unittest.mock.patch`
+
+F841 Local variable `url` is assigned to but never used
+  --> tests/test_bootstrap_db.py:20:9
    |
- 8 |   """
- 9 |
-10 | / from logging import getLogger
-11 | |
-12 | | import pytest
-13 | | from sqlalchemy import create_engine
-14 | | from sqlalchemy.orm import sessionmaker
-15 | |
-16 | | from app.config.settings import AppSettings
-17 | | from app.extensions import Base  # Import the actual Base
-18 | | from app.models import User  # Import a representative model
-19 | | from app.services.database_service import DatabaseService
-   | |_________________________________________________________^
+18 |     def test_postgres_with_special_chars_in_password(self):
+19 |         # password is 'p@ssword'
+20 |         url = "postgresql://user:p%40ssword@localhost:5432/db"
+   |         ^^^
+21 |         expected = "postgresql+asyncpg://user:p%2540ssword@localhost:5432/db?ssl=require"
+22 |         # Wait, if it's already encoded 'p%40ssword' (@), the sanitizer decodes it to 'p@ssword' then encodes to 'p%40ssword'
+   |
+help: Remove assignment to unused variable `url`
+
+F841 Local variable `expected` is assigned to but never used
+  --> tests/test_bootstrap_db.py:21:9
+   |
+19 |         # password is 'p@ssword'
+20 |         url = "postgresql://user:p%40ssword@localhost:5432/db"
+21 |         expected = "postgresql+asyncpg://user:p%2540ssword@localhost:5432/db?ssl=require"
+   |         ^^^^^^^^
+22 |         # Wait, if it's already encoded 'p%40ssword' (@), the sanitizer decodes it to 'p@ssword' then encodes to 'p%40ssword'
+23 |         # My sanitization logic tries to be smart.
+   |
+help: Remove assignment to unused variable `expected`
+
+F841 Local variable `url_raw` is assigned to but never used
+  --> tests/test_bootstrap_db.py:29:9
+   |
+28 |         # Let's try a password that needs encoding but isn't: "foo:bar"
+29 |         url_raw = "postgresql://user:foo:bar@localhost:5432/db"
+   |         ^^^^^^^
+30 |         # urlparse might fail to parse password correctly if it contains colon without encoding?
+31 |         # Actually urlparse is usually smart enough if the scheme is standard, but 'foo:bar' as password is ambiguous
+   |
+help: Remove assignment to unused variable `url_raw`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_dependency_availability.py:1:1
+  |
+1 | import pytest
+  | ^^^^^^^^^^^^^
+2 |
+3 | def test_import_api_contract_service():
+  |
+help: Organize imports
+
+F401 `app.services.api_contract_service.APIContractService` imported but unused; consider using `importlib.util.find_spec` to test for availability
+ --> tests/test_dependency_availability.py:5:55
+  |
+3 | def test_import_api_contract_service():
+4 |     try:
+5 |         from app.services.api_contract_service import APIContractService
+  |                                                       ^^^^^^^^^^^^^^^^^^
+6 |     except ImportError as e:
+7 |         pytest.fail(f"Failed to import APIContractService: {e}")
+  |
+help: Remove unused import: `app.services.api_contract_service.APIContractService`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_flask_compat.py:1:1
+  |
+1 | / import pytest
+2 | | from fastapi import FastAPI, Request
+3 | | from fastapi.testclient import TestClient
+4 | | from app.core.kernel_v2.compat_collapse import g, request, current_user, jsonify
+5 | | from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
+  | |______________________________________________________________________^
+6 |
+7 |   app = FastAPI()
+  |
+help: Organize imports
+
+F401 [*] `fastapi.Request` imported but unused
+ --> tests/test_flask_compat.py:2:30
+  |
+1 | import pytest
+2 | from fastapi import FastAPI, Request
+  |                              ^^^^^^^
+3 | from fastapi.testclient import TestClient
+4 | from app.core.kernel_v2.compat_collapse import g, request, current_user, jsonify
+  |
+help: Remove unused import: `fastapi.Request`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_sse_streaming.py:12:1
+   |
+10 | """
+11 |
+12 | import pytest
+   | ^^^^^^^^^^^^^
+13 |
+14 | def parse_response_json(response):
    |
 help: Organize imports
 
-Found 33 errors.
-[*] 24 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+  --> tests/transcendent/test_space_engine.py:50:5
+   |
+49 |       # Since we are testing the generator manually:
+50 | /     try:
+51 | |         await session.close()
+52 | |     except Exception:
+53 | |         pass
+   | |____________^
+   |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/services/test_database_service.py:2:1
+   |
+ 1 |   # tests/unit/services/test_database_service.py
+ 2 | / from unittest.mock import MagicMock
+ 3 | |
+ 4 | | import pytest
+ 5 | | from sqlalchemy.ext.asyncio import AsyncSession
+ 6 | | from sqlmodel import SQLModel
+ 7 | |
+ 8 | | from app.config.settings import AppSettings
+ 9 | | from app.models import User
+10 | | from app.services.database_service import DatabaseService
+11 | | from app.core.engine_factory import create_unified_async_engine
+   | |_______________________________________________________________^
+12 |
+13 |   # Use the Unified Factory for the test engine (SQLite)
+   |
+help: Organize imports
+
+Found 49 errors.
+[*] 38 fixable with the `--fix` option (7 hidden fixes can be enabled with the `--unsafe-fixes` option).
