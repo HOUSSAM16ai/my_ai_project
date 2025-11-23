@@ -6,20 +6,18 @@ This has been migrated to use the new Reality Kernel engines.
 
 import json
 import jwt
-import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
 from app.models import AdminConversation, AdminMessage, MessageRole, User
 
-# --- JWT Configuration ---
-# Reusing the config from ai_service.py as a temporary measure until IDENTITY-ENGINE is fully unified
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-super-secret-key")
+# --- Configuration ---
 ALGORITHM = "HS256"
 
 
@@ -51,8 +49,9 @@ def get_current_user_id(request: Request) -> int:
         raise HTTPException(status_code=401, detail="Invalid Authorization header format")
 
     token = parts[1]
+    settings = get_settings()
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
