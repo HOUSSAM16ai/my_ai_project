@@ -23,6 +23,11 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+
 class TokenVerifyRequest(BaseModel):
     token: str | None = None
 
@@ -30,11 +35,46 @@ class TokenVerifyRequest(BaseModel):
 async def health_check():
     return {"status": "success", "data": {"status": "healthy", "features": ["jwt", "argon2"]}}
 
+@router.post("/register", summary="Register a New User")
+async def register(register_data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Register a new user in the system.
+    Default role is 'user'.
+    """
+    # Check if user already exists
+    stmt = select(User).where(User.email == register_data.email)
+    result = await db.execute(stmt)
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Create new user
+    new_user = User(
+        full_name=register_data.full_name,
+        email=register_data.email,
+        is_admin=False
+    )
+    new_user.set_password(register_data.password)
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    return {
+        "status": "success",
+        "message": "User registered successfully",
+        "data": {
+            "id": new_user.id,
+            "email": new_user.email
+        }
+    }
+
 @router.post("/login", summary="Authenticate User and Get Token")
 async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     """
     Authenticate a user via email/password and return a JWT token.
-    Supports Admin Access.
+    Supports Admin and Regular User Access.
     """
     settings = get_settings()
 
@@ -51,10 +91,11 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # 3. Generate JWT
+    role = "admin" if user.is_admin else "user"
     payload = {
         "sub": str(user.id),
         "email": user.email,
-        "role": "admin", # Assuming all logging in users here are admins for now
+        "role": role,
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24)
     }
 

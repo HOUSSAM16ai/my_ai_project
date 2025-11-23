@@ -110,6 +110,29 @@
                 }
             };
 
+            const registerUser = async (fullName, email, password) => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const res = await fetch('/api/security/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ full_name: fullName, email, password })
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+                    return true;
+                } catch (err) {
+                    setError(err.message);
+                    return false;
+                } finally {
+                    setLoading(false);
+                }
+            };
+
             const logout = () => {
                 localStorage.removeItem('admin_token');
                 localStorage.removeItem('admin_user');
@@ -118,7 +141,7 @@
             };
 
             return (
-                <AuthContext.Provider value={{ token, user, login, logout, loading, error }}>
+                <AuthContext.Provider value={{ token, user, login, registerUser, logout, loading, error }}>
                     {children}
                 </AuthContext.Provider>
             );
@@ -129,13 +152,26 @@
         // --- COMPONENTS ---
 
         const LoginScreen = () => {
-            const { login, loading, error } = useAuth();
-            const [email, setEmail] = useState('admin@cogniforge.com'); // Pre-fill for convenience
+            const { login, registerUser, loading, error } = useAuth();
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('admin@cogniforge.com');
             const [password, setPassword] = useState('');
+            const [fullName, setFullName] = useState('');
+            const [successMsg, setSuccessMsg] = useState(null);
 
-            const handleSubmit = (e) => {
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                login(email, password);
+                setSuccessMsg(null);
+                if (isLogin) {
+                    login(email, password);
+                } else {
+                    const success = await registerUser(fullName, email, password);
+                    if (success) {
+                        setSuccessMsg("Registration successful! Initiating login protocol...");
+                        // Switch to login mode and prefill
+                        setTimeout(() => setIsLogin(true), 1500);
+                    }
+                }
             };
 
             return (
@@ -151,11 +187,15 @@
                         className="w-full max-w-md p-8 glass-panel rounded-2xl relative z-10"
                     >
                         <div className="text-center mb-8">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
-                                <i className="ph-bold ph-fingerprint text-white text-2xl"></i>
+                            <div className={`w-12 h-12 bg-gradient-to-br ${isLogin ? 'from-blue-500 to-indigo-600' : 'from-emerald-500 to-teal-600'} rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 transition-all duration-500`}>
+                                <i className={`ph-bold ${isLogin ? 'ph-fingerprint' : 'ph-user-plus'} text-white text-2xl`}></i>
                             </div>
-                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">System Access</h1>
-                            <p className="text-slate-500 text-sm mt-2">Identify yourself to proceed to Reality Kernel</p>
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                                {isLogin ? 'System Access' : 'New User Protocol'}
+                            </h1>
+                            <p className="text-slate-500 text-sm mt-2">
+                                {isLogin ? 'Identify yourself to proceed to Reality Kernel' : 'Create identity record in the central registry'}
+                            </p>
                         </div>
 
                         {error && (
@@ -164,7 +204,30 @@
                             </div>
                         )}
 
+                        {successMsg && (
+                            <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                                <i className="ph-bold ph-check-circle"></i> {successMsg}
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {!isLogin && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                                    <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Full Designation (Name)</label>
+                                    <div className="relative">
+                                        <i className="ph-bold ph-identification-card absolute left-3 top-2.5 text-slate-500"></i>
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600"
+                                            placeholder="John Doe"
+                                            required={!isLogin}
+                                        />
+                                    </div>
+                                </motion.div>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Identity Code (Email)</label>
                                 <div className="relative">
@@ -173,7 +236,7 @@
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white placeholder-slate-600"
+                                        className={`w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 text-white placeholder-slate-600 ${isLogin ? 'focus:border-blue-500 focus:ring-blue-500' : 'focus:border-emerald-500 focus:ring-emerald-500'}`}
                                         placeholder="admin@cogniforge.com"
                                         required
                                     />
@@ -187,7 +250,7 @@
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white placeholder-slate-600"
+                                        className={`w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 text-white placeholder-slate-600 ${isLogin ? 'focus:border-blue-500 focus:ring-blue-500' : 'focus:border-emerald-500 focus:ring-emerald-500'}`}
                                         placeholder="••••••••"
                                         required
                                     />
@@ -196,14 +259,77 @@
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className={`w-full text-white font-medium py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${
+                                    isLogin
+                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20'
+                                }`}
                             >
-                                {loading ? <div className="loader"></div> : <><i className="ph-bold ph-sign-in"></i> Authenticate</>}
+                                {loading ? <div className="loader"></div> : <><i className={`ph-bold ${isLogin ? 'ph-sign-in' : 'ph-user-plus'}`}></i> {isLogin ? 'Authenticate' : 'Register Identity'}</>}
                             </button>
                         </form>
+
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={() => { setIsLogin(!isLogin); setError(null); setSuccessMsg(null); }}
+                                className="text-xs text-slate-500 hover:text-white transition-colors"
+                            >
+                                {isLogin ? "Need access? Initialize registration" : "Already verified? Back to login"}
+                            </button>
+                        </div>
                     </motion.div>
                 </div>
             );
+        };
+
+        const UserDashboard = () => {
+             const { user, logout } = useAuth();
+             return (
+                <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                     <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-600/10 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-teal-600/10 rounded-full blur-[100px]"></div>
+                     </div>
+
+                     <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-panel p-8 rounded-2xl max-w-2xl w-full text-center relative z-10"
+                     >
+                        <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl mx-auto flex items-center justify-center mb-6 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+                             <i className="ph-duotone ph-user-circle text-4xl text-emerald-400"></i>
+                        </div>
+
+                        <h1 className="text-3xl font-bold text-white mb-2">Welcome, {user?.name}</h1>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-400 mb-8">
+                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                             Standard Clearance
+                        </div>
+
+                        <p className="text-slate-400 mb-10 leading-relaxed max-w-lg mx-auto">
+                            You have successfully authenticated into the CogniForge secure environment.
+                            Your user dashboard provides access to authorized modules and personal telemetry data.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                             <div className="p-5 rounded-xl bg-slate-900/40 border border-slate-800 text-left hover:border-emerald-500/30 hover:bg-slate-800/60 transition-all cursor-pointer group">
+                                <div className="mb-3 text-emerald-500 group-hover:scale-110 transition-transform origin-left"><i className="ph-bold ph-files text-2xl"></i></div>
+                                <div className="font-semibold text-slate-200">My Projects</div>
+                                <div className="text-xs text-slate-500 mt-1">View and manage resources</div>
+                             </div>
+                             <div className="p-5 rounded-xl bg-slate-900/40 border border-slate-800 text-left hover:border-emerald-500/30 hover:bg-slate-800/60 transition-all cursor-pointer group">
+                                <div className="mb-3 text-teal-500 group-hover:scale-110 transition-transform origin-left"><i className="ph-bold ph-gear text-2xl"></i></div>
+                                <div className="font-semibold text-slate-200">User Settings</div>
+                                <div className="text-xs text-slate-500 mt-1">Account configuration</div>
+                             </div>
+                        </div>
+
+                        <button onClick={logout} className="text-slate-500 hover:text-white text-sm flex items-center justify-center gap-2 mx-auto transition-colors px-4 py-2 rounded-lg hover:bg-white/5">
+                            <i className="ph-bold ph-sign-out"></i> Sign Out
+                        </button>
+                     </motion.div>
+                </div>
+             );
         };
 
         const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -218,7 +344,7 @@
             return (
                 <div className="w-64 h-screen border-r border-slate-800 bg-slate-950/50 flex flex-col p-4">
                     <div className="flex items-center gap-3 mb-8 px-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <i className="ph-bold ph-brain text-white text-lg"></i>
                         </div>
                         <h1 className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
@@ -507,6 +633,11 @@
             const [activeTab, setActiveTab] = useState('dashboard');
 
             if (!user) return <LoginScreen />;
+
+            // Reroute non-admin users to UserDashboard
+            if (user.role !== 'admin') {
+                return <UserDashboard />;
+            }
 
             return (
                 <div className="flex h-screen bg-gradient-to-br from-slate-950 via-[#0f172a] to-slate-900 text-slate-200">
