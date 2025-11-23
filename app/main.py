@@ -30,7 +30,6 @@ from app.api.routers import (
     system,
 )
 from app.kernel import kernel
-from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.core.startup_diagnostics import run_diagnostics
 
@@ -110,7 +109,6 @@ def create_app() -> FastAPI:
 
     # Error Handlers and Compat Middleware (moved here to ensure order)
     add_error_handlers(app_instance)
-    app_instance.add_middleware(FlaskCompatMiddleware)
 
     # Mount routers
     app_instance.include_router(system.router)
