@@ -539,9 +539,18 @@ class IntelligentCache:
         with self.lock:
             # Estimate size
             data_size = len(json.dumps(response_data))
+            max_size_bytes = self.max_size_mb * 1024 * 1024
+
+            # If item is larger than total cache size, don't cache it
+            if data_size > max_size_bytes:
+                return
 
             # Evict if needed
-            while (self.current_size_bytes + data_size) > (self.max_size_mb * 1024 * 1024):
+            while (self.current_size_bytes + data_size) > max_size_bytes:
+                # Safety check: if cache is empty but we still can't fit it, break
+                # (This shouldn't happen due to the check above, but good for robustness)
+                if not self.cache:
+                    break
                 self._evict_lru()
 
             # Store
