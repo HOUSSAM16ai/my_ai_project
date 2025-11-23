@@ -11,7 +11,17 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import admin, ai_service, chat, crud, gateway, observability, security, system
+from app.api.routers import (
+    admin,
+    ai_service,
+    chat,
+    crud,
+    gateway,
+    intelligent_platform,
+    observability,
+    security,
+    system,
+)
 from app.kernel import kernel
 from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -31,6 +41,7 @@ kernel.app.include_router(crud.router)
 kernel.app.include_router(observability.router)
 kernel.app.include_router(security.router)
 kernel.app.include_router(gateway.router)
+kernel.app.include_router(intelligent_platform.router)
 
 
 @kernel.app.get("/", summary="Root Endpoint", tags=["System"])
