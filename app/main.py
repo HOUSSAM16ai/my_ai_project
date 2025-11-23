@@ -148,9 +148,6 @@ async def root():
     """
     Provides a basic welcome message and a link to the API documentation.
     """
-    if Path("app/static/index.html").exists():
-        return FileResponse("app/static/index.html")
-
     return {
         "message": "Welcome to the CogniForge Reality Kernel V3. See /docs for API documentation."
     }
