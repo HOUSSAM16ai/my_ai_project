@@ -1,5 +1,6 @@
 # app/core/config.py
 
+from functools import lru_cache
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -47,3 +48,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+@lru_cache()
+def get_settings():
+    return Settings()
