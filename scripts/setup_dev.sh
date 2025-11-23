@@ -62,11 +62,6 @@ python3 scripts/seed_admin.py || {
     exit 1
 }
 
-# --- 6. VALIDATE TESTS (Smoke Test) ---
-if [ -f "tests/conftest.py" ]; then
-    echo "🧪 Running Smoke Tests..."
-    # Running a quick check, not the full suite, to ensure env is viable
-    pytest -q tests/transcendent/ --ignore=tests/transcendent/test_infrastructure_rebuild.py || echo "⚠️  Some smoke tests failed, but continuing setup..."
-fi
-
-echo "✅ Setup Complete! Run 'uvicorn app.main:create_app --factory --reload' to start."
+# --- 6. START APPLICATION ---
+echo "🚀 Starting Application via standardized script..."
+bash scripts/start.sh

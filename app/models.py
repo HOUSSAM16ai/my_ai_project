@@ -111,6 +111,9 @@ class User(SQLModel, table=True):
             return False
         return pwd_context.verify(password, self.password_hash)
 
+    def verify_password(self, password: str) -> bool:
+        return self.check_password(password)
+
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
 

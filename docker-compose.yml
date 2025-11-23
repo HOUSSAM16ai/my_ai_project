@@ -46,7 +46,7 @@ services:
 
     # Automated Zero-Touch Deployment Command
     # Runs smart migration (safe for existing DBs), seeds admin, then starts app
-    command: /bin/sh -c "python scripts/smart_migrate.py && python scripts/seed_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+    command: ["/bin/bash", "scripts/start.sh"]
 
 networks:
   appnet:
