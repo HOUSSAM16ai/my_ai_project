@@ -44,7 +44,11 @@ def get_current_user_id(request: Request) -> int:
         # For now, we require auth.
         raise HTTPException(status_code=401, detail="Authorization header missing")
 
-    token = auth_header.split(" ")[1]
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+
+    token = parts[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
