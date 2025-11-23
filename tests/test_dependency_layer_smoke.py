@@ -2,6 +2,7 @@
 import logging
 import os
 import pytest
+from unittest import mock
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
@@ -31,21 +32,16 @@ def setup_test_environment():
     """
     Set up a controlled environment for the smoke test.
     """
-    # Set a specific database URL for testing. Using an in-memory SQLite database
-    # is a fast and isolated way to test database connectivity.
-    # MUST be async for the async engine
-    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-    # Set a known log level for verification.
-    os.environ["LOG_LEVEL"] = "DEBUG"
-    # Ensure a secret key is provided, as it's a required setting.
-    os.environ["SECRET_KEY"] = "test-secret-key-for-smoke-test"
+    # Use patch.dict to safely modify os.environ and automatically restore it after the fixture yields.
+    # This prevents side effects on other tests that rely on global environment variables (like pytest.ini defaults).
+    env_vars = {
+        "DATABASE_URL": "sqlite+aiosqlite:///:memory:",
+        "LOG_LEVEL": "DEBUG",
+        "SECRET_KEY": "test-secret-key-for-smoke-test"
+    }
 
-    yield
-
-    # Teardown: Unset the environment variables to avoid side effects on other tests.
-    del os.environ["DATABASE_URL"]
-    del os.environ["LOG_LEVEL"]
-    del os.environ["SECRET_KEY"]
+    with mock.patch.dict(os.environ, env_vars):
+        yield
 
 
 def test_get_logger_smoke(setup_test_environment):

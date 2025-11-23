@@ -5,19 +5,19 @@ I001 [*] Import block is un-sorted or un-formatted
  6 |
  7 | / import json
  8 | | import jwt
- 9 | | import os
-10 | |
-11 | | from fastapi import APIRouter, Depends, HTTPException, Request
-12 | | from fastapi.responses import StreamingResponse
-13 | | from pydantic import BaseModel
-14 | | from sqlalchemy import select
-15 | |
+ 9 | |
+10 | | from fastapi import APIRouter, Depends, HTTPException, Request
+11 | | from fastapi.responses import StreamingResponse
+12 | | from pydantic import BaseModel
+13 | | from sqlalchemy import select
+14 | |
+15 | | from app.config.settings import get_settings
 16 | | from app.core.ai_gateway import AIClient, get_ai_client
-17 | | from app.core.database import AsyncSession, get_db
+17 | | from app.core.database import AsyncSession, async_session_factory, get_db
 18 | | from app.models import AdminConversation, AdminMessage, MessageRole, User
    | |_________________________________________________________________________^
 19 |
-20 |   # --- JWT Configuration ---
+20 |   # --- Configuration ---
    |
 help: Organize imports
 
@@ -25,22 +25,33 @@ F401 [*] `app.models.User` imported but unused
   --> app/api/routers/admin.py:18:70
    |
 16 | from app.core.ai_gateway import AIClient, get_ai_client
-17 | from app.core.database import AsyncSession, get_db
+17 | from app.core.database import AsyncSession, async_session_factory, get_db
 18 | from app.models import AdminConversation, AdminMessage, MessageRole, User
    |                                                                      ^^^^
 19 |
-20 | # --- JWT Configuration ---
+20 | # --- Configuration ---
    |
 help: Remove unused import: `app.models.User`
 
 B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
-  --> app/api/routers/admin.py:63:9
+  --> app/api/routers/admin.py:62:9
    |
-61 |         raise HTTPException(status_code=401, detail="Invalid token") from e
-62 |     except ValueError:
-63 |         raise HTTPException(status_code=401, detail="Invalid user ID in token")
+60 |         raise HTTPException(status_code=401, detail="Invalid token") from e
+61 |     except ValueError:
+62 |         raise HTTPException(status_code=401, detail="Invalid user ID in token")
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
+
+F401 [*] `fastapi.status` imported but unused
+ --> app/api/routers/security.py:6:56
+  |
+5 | import jwt
+6 | from fastapi import APIRouter, Depends, HTTPException, status
+  |                                                        ^^^^^^
+7 | from pydantic import BaseModel
+8 | from sqlalchemy import select
+  |
+help: Remove unused import: `fastapi.status`
 
 I001 [*] Import block is un-sorted or un-formatted
  --> app/cli.py:2:1
@@ -246,14 +257,14 @@ UP045 [*] Use `X | None` for type annotations
 help: Convert to `X | None`
 
 B004 Using `hasattr(x, "__call__")` to test if x is callable is unreliable. Use `callable(x)` for consistent results.
-  --> app/main.py:89:12
+  --> app/main.py:64:12
    |
-87 |     if not isinstance(kernel.app, FastAPI):
-88 |         # Fallback check for valid callables (wrappers) that are not coroutines
-89 |         if hasattr(kernel.app, "__call__") and not inspect.iscoroutinefunction(kernel.app):
+62 |     if not isinstance(kernel.app, FastAPI):
+63 |         # Fallback check for valid callables (wrappers) that are not coroutines
+64 |         if hasattr(kernel.app, "__call__") and not inspect.iscoroutinefunction(kernel.app):
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-90 |             pass  # It is a valid callable wrapper
-91 |         else:
+65 |             pass  # It is a valid callable wrapper
+66 |         else:
    |
 help: Replace with `callable()`
 
@@ -616,7 +627,7 @@ I001 [*] Import block is un-sorted or un-formatted
 10 | | from sqlalchemy.orm import sessionmaker
 11 | | from sqlmodel import SQLModel
 12 | |
-13 | | from app.main import kernel  # Use kernel to get app
+13 | | from app.main import kernel, create_app  # Use kernel to get app
 14 | | from app.core.ai_gateway import get_ai_client
 15 | | from app.core.engine_factory import create_unified_async_engine
 16 | | from tests.factories import UserFactory, MissionFactory
@@ -627,15 +638,15 @@ I001 [*] Import block is un-sorted or un-formatted
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
-   --> tests/conftest.py:133:5
+   --> tests/conftest.py:143:5
     |
-131 |       Fixture to create an admin user.
-132 |       """
-133 | /     from app.models import User
-134 | |     from sqlalchemy import select
+141 |       Fixture to create an admin user.
+142 |       """
+143 | /     from app.models import User
+144 | |     from sqlalchemy import select
     | |_________________________________^
-135 |
-136 |       stmt = select(User).where(User.email == "admin@test.com")
+145 |
+146 |       stmt = select(User).where(User.email == "admin@test.com")
     |
 help: Organize imports
 
@@ -669,6 +680,30 @@ F841 Local variable `mock_method` is assigned to but never used
 help: Remove assignment to unused variable `mock_method`
 
 I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_adaptive_cache_eviction.py:2:1
+  |
+2 | / import asyncio
+3 | | import time
+4 | | import pytest
+5 | | from app.services.breakthrough_streaming import AdaptiveCache
+  | |_____________________________________________________________^
+6 |
+7 |   @pytest.mark.asyncio
+  |
+help: Organize imports
+
+F401 [*] `time` imported but unused
+ --> tests/test_adaptive_cache_eviction.py:3:8
+  |
+2 | import asyncio
+3 | import time
+  |        ^^^^
+4 | import pytest
+5 | from app.services.breakthrough_streaming import AdaptiveCache
+  |
+help: Remove unused import: `time`
+
+I001 [*] Import block is un-sorted or un-formatted
   --> tests/test_admin_api_error_handling.py:12:1
    |
 10 |   """
@@ -694,6 +729,44 @@ F401 [*] `unittest.mock.MagicMock` imported but unused
 15 | import pytest
    |
 help: Remove unused import: `unittest.mock.MagicMock`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_admin_auth_config_fix.py:2:1
+  |
+2 | / import pytest
+3 | | import sys
+4 | | import os
+5 | | import jwt
+6 | | from unittest.mock import MagicMock, patch
+7 | | from fastapi import Request, HTTPException
+  | |__________________________________________^
+8 |
+9 |   # We need to test the logic inside get_current_user_id specifically regarding key usage.
+  |
+help: Organize imports
+
+F401 [*] `sys` imported but unused
+ --> tests/test_admin_auth_config_fix.py:3:8
+  |
+2 | import pytest
+3 | import sys
+  |        ^^^
+4 | import os
+5 | import jwt
+  |
+help: Remove unused import: `sys`
+
+F401 [*] `os` imported but unused
+ --> tests/test_admin_auth_config_fix.py:4:8
+  |
+2 | import pytest
+3 | import sys
+4 | import os
+  |        ^^
+5 | import jwt
+6 | from unittest.mock import MagicMock, patch
+  |
+help: Remove unused import: `os`
 
 F401 [*] `pytest` imported but unused
   --> tests/test_admin_chat_complex_questions.py:11:8
@@ -904,6 +977,60 @@ F811 [*] Redefinition of unused `get_ai_client` from line 5
 help: Remove definition: `get_ai_client`
 
 I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_admin_chat_persistence_fix.py:2:1
+   |
+ 2 | / import asyncio
+ 3 | | import json
+ 4 | | import pytest
+ 5 | | from httpx import AsyncClient
+ 6 | | from app.models import AdminConversation, AdminMessage, User, MessageRole
+ 7 | | from sqlalchemy import select
+ 8 | | from app.main import kernel
+ 9 | | from app.core.ai_gateway import get_ai_client
+10 | | from app.core.database import get_db
+11 | | from tests.conftest import TestingSessionLocal
+12 | | from unittest.mock import MagicMock, patch
+   | |__________________________________________^
+13 |
+14 |   # Override get_db to ensure we use the same engine/session factory as the test fixtures
+   |
+help: Organize imports
+
+F401 [*] `app.models.User` imported but unused
+ --> tests/test_admin_chat_persistence_fix.py:6:57
+  |
+4 | import pytest
+5 | from httpx import AsyncClient
+6 | from app.models import AdminConversation, AdminMessage, User, MessageRole
+  |                                                         ^^^^
+7 | from sqlalchemy import select
+8 | from app.main import kernel
+  |
+help: Remove unused import: `app.models.User`
+
+F841 Local variable `conversation_id` is assigned to but never used
+  --> tests/test_admin_chat_persistence_fix.py:85:29
+   |
+83 |                         # Handle conversation_init vs chunks
+84 |                         if "conversation_id" in data:
+85 |                             conversation_id = data["conversation_id"]
+   |                             ^^^^^^^^^^^^^^^
+86 |                         elif "choices" in data:
+87 |                             content += data["choices"][0]["delta"]["content"]
+   |
+help: Remove assignment to unused variable `conversation_id`
+
+E722 Do not use bare `except`
+  --> tests/test_admin_chat_persistence_fix.py:88:21
+   |
+86 |                         elif "choices" in data:
+87 |                             content += data["choices"][0]["delta"]["content"]
+88 |                     except:
+   |                     ^^^^^^
+89 |                         pass
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
  --> tests/test_api_first_platform.py:2:1
   |
 1 |   # tests/test_api_first_platform.py
@@ -955,6 +1082,18 @@ I001 [*] Import block is un-sorted or un-formatted
 27 | | import pytest
    | |_____________^
    |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_api_gateway_cache_limit.py:2:1
+  |
+2 | / import pytest
+3 | | import threading
+4 | | from app.services.api_gateway_service import IntelligentCache
+  | |_____________________________________________________________^
+5 |
+6 |   def test_cache_oversized_item_prevention():
+  |
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
@@ -1011,6 +1150,23 @@ I001 [*] Import block is un-sorted or un-formatted
 5 | | from app.models import Mission
   | |______________________________^
   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_cli_smoke.py:2:1
+   |
+ 1 |   # tests/test_cli_smoke.py
+ 2 | / import os
+ 3 | | import subprocess
+ 4 | | import sys
+ 5 | | import logging
+ 6 | |
+ 7 | | import pytest
+ 8 | | from click.testing import CliRunner
+ 9 | |
+10 | | from app.cli import cli
+   | |_______________________^
+   |
 help: Organize imports
 
 F401 `app.services.api_contract_service.APIContractService` imported but unused; consider using `importlib.util.find_spec` to test for availability
@@ -1109,6 +1265,26 @@ F401 [*] `fastapi.Request` imported but unused
   |
 help: Remove unused import: `fastapi.Request`
 
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_health_bug_verification.py:1:1
+  |
+1 | / import pytest
+2 | | from fastapi.testclient import TestClient
+  | |_________________________________________^
+3 |
+4 |   def test_health_bug_verification(client: TestClient):
+  |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_health_bug_verification.py:1:8
+  |
+1 | import pytest
+  |        ^^^^^^
+2 | from fastapi.testclient import TestClient
+  |
+help: Remove unused import: `pytest`
+
 F401 [*] `pytest` imported but unused
   --> tests/test_intelligent_platform.py:8:8
    |
@@ -1147,6 +1323,28 @@ F401 [*] `app.core.database.get_db` imported but unused
 6 | from sqlalchemy import select
   |
 help: Remove unused import: `app.core.database.get_db`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_verify_integration_flag.py:1:1
+  |
+1 | / import subprocess
+2 | | import pytest
+  | |_____________^
+3 |
+4 |   def test_integration_flag_registered():
+  |
+help: Organize imports
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_verify_integration_flag.py:2:8
+  |
+1 | import subprocess
+2 | import pytest
+  |        ^^^^^^
+3 |
+4 | def test_integration_flag_registered():
+  |
+help: Remove unused import: `pytest`
 
 I001 [*] Import block is un-sorted or un-formatted
  --> tests/transcendent/test_infrastructure_rebuild.py:1:1
@@ -1192,5 +1390,39 @@ I001 [*] Import block is un-sorted or un-formatted
    |
 help: Organize imports
 
-Found 91 errors.
-[*] 74 fixable with the `--fix` option (12 hidden fixes can be enabled with the `--unsafe-fixes` option).
+I001 [*] Import block is un-sorted or un-formatted
+ --> verify_logging_fix.py:1:1
+  |
+1 | / import logging
+2 | | import sys
+3 | | from app.core.kernel_v2.logging_spine import setup_logging, get_logger
+  | |______________________________________________________________________^
+4 |
+5 |   def test_logging_setup():
+  |
+help: Organize imports
+
+F401 [*] `sys` imported but unused
+ --> verify_logging_fix.py:2:8
+  |
+1 | import logging
+2 | import sys
+  |        ^^^
+3 | from app.core.kernel_v2.logging_spine import setup_logging, get_logger
+  |
+help: Remove unused import: `sys`
+
+F401 [*] `app.core.kernel_v2.logging_spine.get_logger` imported but unused
+ --> verify_logging_fix.py:3:61
+  |
+1 | import logging
+2 | import sys
+3 | from app.core.kernel_v2.logging_spine import setup_logging, get_logger
+  |                                                             ^^^^^^^^^^
+4 |
+5 | def test_logging_setup():
+  |
+help: Remove unused import: `app.core.kernel_v2.logging_spine.get_logger`
+
+Found 110 errors.
+[*] 91 fixable with the `--fix` option (13 hidden fixes can be enabled with the `--unsafe-fixes` option).
