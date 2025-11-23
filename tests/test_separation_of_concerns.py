@@ -428,7 +428,8 @@ class TestPolicyBoundaries:
             is False
         )
 
-    def test_compliance_engine_validation(self):
+    @pytest.mark.asyncio
+    async def test_compliance_engine_validation(self):
         """اختبار محرك الامتثال"""
         policy_boundary = PolicyBoundary()
 
@@ -449,10 +450,8 @@ class TestPolicyBoundaries:
         data_without_consent = {"name": "أحمد", "email": "ahmad@example.com"}
 
         # التحقق (يجب أن يفشل)
-        result = asyncio.run(
-            policy_boundary.compliance_engine.validate(
-                data_without_consent, [ComplianceRegulation.GDPR]
-            )
+        result = await policy_boundary.compliance_engine.validate(
+            data_without_consent, [ComplianceRegulation.GDPR]
         )
         assert result["is_compliant"] is False
         assert len(result["failed_rules"]) == 1
@@ -465,10 +464,8 @@ class TestPolicyBoundaries:
         }
 
         # التحقق (يجب أن ينجح)
-        result = asyncio.run(
-            policy_boundary.compliance_engine.validate(
-                data_with_consent, [ComplianceRegulation.GDPR]
-            )
+        result = await policy_boundary.compliance_engine.validate(
+            data_with_consent, [ComplianceRegulation.GDPR]
         )
         assert result["is_compliant"] is True
 
