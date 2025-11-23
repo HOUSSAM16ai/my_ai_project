@@ -22,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bootstrap_db")
 
-def sanitize_url(url_str: str) -> str:
+def sanitize_database_url(url_str: str) -> str:
     """
     Sanitizes and validates the database URL.
     - Fixes scheme (postgres -> postgresql)
@@ -66,6 +66,9 @@ def sanitize_url(url_str: str) -> str:
     # render_as_string(hide_password=False)
     return u.render_as_string(hide_password=False)
 
+# Alias for backward compatibility if needed, or internal use
+sanitize_url = sanitize_database_url
+
 async def verify_connection(url: str) -> bool:
     """
     Verifies the connection using the Unified Engine Factory.
@@ -87,7 +90,7 @@ async def main():
         raw_url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
         # 2. Sanitize
-        clean_url = sanitize_url(raw_url)
+        clean_url = sanitize_database_url(raw_url)
         logger.info(f"Sanitized URL scheme: {make_url(clean_url).drivername}")
 
         # 3. Verify
