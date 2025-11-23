@@ -181,3 +181,8 @@ def mock_ai_client_global():
     # Cleanup
     if get_ai_client in kernel.app.dependency_overrides:
         del kernel.app.dependency_overrides[get_ai_client]
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-integration", action="store_true", default=False, help="run integration tests"
+    )
