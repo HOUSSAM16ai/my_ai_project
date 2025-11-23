@@ -189,18 +189,23 @@ async def chat_stream(
             # CRITICAL FIX: We must use a NEW session, as the request-scoped 'db' session
             # might already be closed by FastAPI if the client disconnected.
             assistant_content = "".join(full_response)
-            if assistant_content:
-                try:
-                    async with async_session_factory() as session:
-                        assistant_msg = AdminMessage(
-                            conversation_id=conversation.id,
-                            role=MessageRole.ASSISTANT,
-                            content=assistant_content,
-                        )
-                        session.add(assistant_msg)
-                        await session.commit()
-                except Exception as db_e:
-                    # Log error but don't crash the generator close
-                    print(f"Failed to save assistant message: {db_e}")
+
+            # If content is empty (e.g. error or empty stream), save a fallback message
+            # so the conversation history isn't left in a broken state.
+            if not assistant_content:
+                assistant_content = "Error: No response received from AI service."
+
+            try:
+                async with async_session_factory() as session:
+                    assistant_msg = AdminMessage(
+                        conversation_id=conversation.id,
+                        role=MessageRole.ASSISTANT,
+                        content=assistant_content,
+                    )
+                    session.add(assistant_msg)
+                    await session.commit()
+            except Exception as db_e:
+                # Log error but don't crash the generator close
+                print(f"Failed to save assistant message: {db_e}")
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
