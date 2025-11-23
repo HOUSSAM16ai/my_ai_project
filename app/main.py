@@ -32,6 +32,7 @@ from app.api.routers import (
 from app.kernel import kernel
 from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
 from app.middleware.fastapi_error_handlers import add_error_handlers
+from app.core.startup_diagnostics import run_diagnostics
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -52,6 +53,9 @@ def create_app() -> FastAPI:
     Factory function to return the FastAPI application instance.
     Used by Uvicorn with the --factory flag.
     """
+    # SUPERHUMAN DIAGNOSTICS
+    run_diagnostics()
+
     # Runtime safety check to prevent 'coroutine is not callable' errors
     if inspect.iscoroutine(kernel.app):
         raise TypeError(
