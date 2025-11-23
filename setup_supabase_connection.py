@@ -53,11 +53,13 @@ def print_warning(text):
 def print_info(text):
     print(f"{B}ℹ️  {text}{E}")
 
+
 def get_async_db_url():
     url = os.getenv("DATABASE_URL")
     if not url:
         return None
     return url
+
 
 async def verify_environment():
     print_header("📋 STEP 1: VERIFY ENVIRONMENT VARIABLES")
@@ -68,6 +70,7 @@ async def verify_environment():
 
     print_success("Environment variables verified")
     return True
+
 
 async def test_connection():
     print_header("🔌 STEP 2: TEST DATABASE CONNECTION (ASYNC/UNIFIED)")
@@ -93,15 +96,20 @@ async def test_connection():
         print_error(f"Connection failed: {e}")
         return None
 
+
 async def check_tables(engine):
     print_header("📊 STEP 3: CHECK EXISTING TABLES")
     try:
         async with engine.connect() as conn:
-            result = await conn.execute(text("""
+            result = await conn.execute(
+                text(
+                    """
                 SELECT table_name FROM information_schema.tables
                 WHERE table_schema = 'public'
                 ORDER BY table_name
-            """))
+            """
+                )
+            )
             tables = result.scalars().all()
 
             if tables:
@@ -115,6 +123,7 @@ async def check_tables(engine):
     except Exception as e:
         print_error(f"Failed to check tables: {e}")
         return []
+
 
 async def main():
     print(f"\n{M}{'=' * 70}{E}")
@@ -132,6 +141,7 @@ async def main():
 
     await engine.dispose()
     return 0
+
 
 if __name__ == "__main__":
     try:

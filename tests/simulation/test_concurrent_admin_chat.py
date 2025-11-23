@@ -9,6 +9,7 @@ from app.models import AdminConversation, AdminMessage
 from app.core.database import get_db
 from tests.conftest import TestingSessionLocal
 
+
 @pytest.mark.asyncio
 async def test_concurrent_chat_requests(admin_user):
     """
@@ -22,18 +23,19 @@ async def test_concurrent_chat_requests(admin_user):
     # Override dependency to use a NEW session for each request, matching the real app behavior
     async def override_get_db():
         async with TestingSessionLocal() as session:
-             yield session
+            yield session
 
     kernel.app.dependency_overrides[get_db] = override_get_db
 
     try:
+
         async def send_chat_request(i: int):
             async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/admin/api/chat/stream",
                     json={"question": f"Concurrent Request {i}"},
                     headers=headers,
-                    timeout=10.0
+                    timeout=10.0,
                 )
                 return response
 
@@ -66,7 +68,9 @@ async def test_concurrent_chat_requests(admin_user):
             messages = result.scalars().all()
 
             # Filter by the conversations we just created
-            created_conv_ids = [c.id for c in conversations if c.title.startswith("Concurrent Request")]
+            created_conv_ids = [
+                c.id for c in conversations if c.title.startswith("Concurrent Request")
+            ]
 
             count = 0
             for m in messages:
@@ -79,15 +83,18 @@ async def test_concurrent_chat_requests(admin_user):
     finally:
         kernel.app.dependency_overrides.clear()
 
+
 @pytest.mark.asyncio
 async def test_invalid_auth_scenarios():
     """
     Test various invalid auth scenarios.
     """
+
     # No DB needed really, but if it hits it...
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
+
     kernel.app.dependency_overrides[get_db] = override_get_db
 
     try:
@@ -100,11 +107,12 @@ async def test_invalid_auth_scenarios():
             resp = await ac.post(
                 "/admin/api/chat/stream",
                 json={"question": "Hi"},
-                headers={"Authorization": "Bearer invalidtoken"}
+                headers={"Authorization": "Bearer invalidtoken"},
             )
             assert resp.status_code == 401
     finally:
         kernel.app.dependency_overrides.clear()
+
 
 @pytest.mark.asyncio
 async def test_invalid_conversation_id(admin_user):
@@ -118,6 +126,7 @@ async def test_invalid_conversation_id(admin_user):
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
+
     kernel.app.dependency_overrides[get_db] = override_get_db
 
     try:
@@ -126,7 +135,7 @@ async def test_invalid_conversation_id(admin_user):
             resp = await ac.post(
                 "/admin/api/chat/stream",
                 json={"question": "Hi", "conversation_id": "invalid-id"},
-                headers=headers
+                headers=headers,
             )
             assert resp.status_code == 200
 
@@ -134,7 +143,7 @@ async def test_invalid_conversation_id(admin_user):
             resp = await ac.post(
                 "/admin/api/chat/stream",
                 json={"question": "Hi", "conversation_id": "999999"},
-                headers=headers
+                headers=headers,
             )
             assert resp.status_code == 200
     finally:

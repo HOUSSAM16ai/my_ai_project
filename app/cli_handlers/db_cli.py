@@ -15,6 +15,7 @@ from app.core.database import engine, async_session_factory
 # NOTE: We now import engine and factory from app.core.database,
 # which are powered by the Unified Engine Factory.
 
+
 def register_db_commands(root):
     @root.group("db")
     def db_group():
@@ -53,7 +54,9 @@ def register_db_commands(root):
 
         async def _seed():
             # Use factory to get session
-            async with transactional_session(async_session_factory, logger, dry_run=dry_run) as session:
+            async with transactional_session(
+                async_session_factory, logger, dry_run=dry_run
+            ) as session:
                 result = await session.execute(select(models.User).filter_by(email=admin_email))
                 user = result.scalar()
 

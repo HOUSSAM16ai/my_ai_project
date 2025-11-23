@@ -23,6 +23,7 @@ async_session_factory = async_sessionmaker(
 # Alias for backward compatibility / preference
 AsyncSessionLocal = async_session_factory
 
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency to get a database session.

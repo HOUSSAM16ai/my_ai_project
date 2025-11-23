@@ -2,6 +2,7 @@
 from unittest.mock import MagicMock
 import pytest
 
+
 class TestAPIFirstPlatformService:
     def test_track_api_usage(self):
         # In FastAPI, we don't need app_context.

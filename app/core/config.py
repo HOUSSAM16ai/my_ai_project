@@ -38,7 +38,7 @@ class Settings(BaseSettings):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
         elif v.startswith("postgresql://"):
             if "postgresql+asyncpg://" not in v:
-                 v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
 
         # 2. Auto-fix SSL Mode for asyncpg compatibility
         if "sslmode=require" in v:
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
 
 @lru_cache()
 def get_settings():

@@ -11,8 +11,9 @@ sys.path.append(os.getcwd())
 from app.core.engine_factory import create_unified_async_engine, FatalEngineError
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 async def verify_engine_configuration():
     """
@@ -43,13 +44,17 @@ async def verify_engine_configuration():
             # But let's check the factory behavior:
             # create_unified_async_engine modifies connect_args.
 
-            logger.info("✅ Postgres Engine Policy: statement_cache_size=0 enforcement active (Factory Guard).")
+            logger.info(
+                "✅ Postgres Engine Policy: statement_cache_size=0 enforcement active (Factory Guard)."
+            )
 
         if is_sqlite:
-             logger.info("✅ SQLite Engine Policy: Pooling disabled active.")
+            logger.info("✅ SQLite Engine Policy: Pooling disabled active.")
 
         await engine.dispose()
-        logger.info("✅ VERIFICATION PASSED: The Unified Engine Factory is enforcing security policies.")
+        logger.info(
+            "✅ VERIFICATION PASSED: The Unified Engine Factory is enforcing security policies."
+        )
         return True
 
     except FatalEngineError as e:
@@ -59,8 +64,10 @@ async def verify_engine_configuration():
         logger.error(f"❌ VERIFICATION FAILED: Unexpected Error - {e}")
         # Print stack trace
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify Database Engine Configuration")

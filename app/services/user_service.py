@@ -131,6 +131,7 @@ def get_user_service() -> UserService:
 
 import asyncio
 
+
 def get_all_users() -> list[User]:
     """Deprecated: replaced by UserService.get_all_users."""
     return asyncio.run(get_user_service().get_all_users())

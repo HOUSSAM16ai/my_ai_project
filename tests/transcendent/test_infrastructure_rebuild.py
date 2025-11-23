@@ -9,6 +9,7 @@ from app.core.engine_factory import create_unified_async_engine
 BOOTSTRAP_SCRIPT = "scripts/bootstrap_db.py"
 SETUP_SCRIPT = "scripts/setup_dev.sh"
 
+
 class TestInfrastructureRebuild:
     """
     Transcendent verification tests for the infrastructure rebuild.
@@ -26,7 +27,7 @@ class TestInfrastructureRebuild:
             [sys.executable, BOOTSTRAP_SCRIPT],
             capture_output=True,
             text=True,
-            env={**os.environ, "DATABASE_URL": "sqlite+aiosqlite:///./test_infra.db"}
+            env={**os.environ, "DATABASE_URL": "sqlite+aiosqlite:///./test_infra.db"},
         )
 
         assert result.returncode == 0, f"Bootstrap script failed: {result.stderr}"
@@ -53,13 +54,15 @@ class TestInfrastructureRebuild:
             env={
                 **os.environ,
                 "DATABASE_URL": "postgres://user:pass@localhost:5432/db",
-                "SKIP_DB_VERIFY": "1"
-            }
+                "SKIP_DB_VERIFY": "1",
+            },
         )
 
         raw_url = result.stdout
         if result.returncode != 0:
-             pytest.fail(f"Bootstrap script failed with return code {result.returncode}. Stderr: {result.stderr}")
+            pytest.fail(
+                f"Bootstrap script failed with return code {result.returncode}. Stderr: {result.stderr}"
+            )
 
         try:
             u = make_url(raw_url)

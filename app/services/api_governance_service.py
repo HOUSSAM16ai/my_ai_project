@@ -528,9 +528,9 @@ def check_api_version(f: Callable) -> Callable:
                     "%a, %d %b %Y %H:%M:%S GMT"
                 )
             if version_info.migration_guide_url:
-                response.headers["Link"] = (
-                    f'<{version_info.migration_guide_url}>; rel="deprecation"'
-                )
+                response.headers[
+                    "Link"
+                ] = f'<{version_info.migration_guide_url}>; rel="deprecation"'
 
         return response
 

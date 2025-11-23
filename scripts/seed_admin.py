@@ -13,17 +13,16 @@ from sqlalchemy.exc import IntegrityError
 from app.core.engine_factory import create_unified_async_engine
 from app.core.database import async_session_factory
 from app.core.security import get_password_hash
-from app.models import User # UserRole is not in app.models in this snapshot, using string literal or default
+from app.models import (
+    User,
+)  # UserRole is not in app.models in this snapshot, using string literal or default
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def seed_admin(
-    email: str,
-    password: str,
-    name: str = "Admin User"
-) -> None:
+
+async def seed_admin(email: str, password: str, name: str = "Admin User") -> None:
     """
     Seeds the initial admin user.
     Uses the Unified Engine Factory via the session factory.
@@ -45,9 +44,9 @@ async def seed_admin(
             hashed_password = get_password_hash(password)
             new_admin = User(
                 email=email,
-                password_hash=hashed_password, # Field name is password_hash in model
+                password_hash=hashed_password,  # Field name is password_hash in model
                 full_name=name,
-                is_admin=True, # Using boolean flag instead of Enum based on model def
+                is_admin=True,  # Using boolean flag instead of Enum based on model def
                 # is_active=True, # Model doesn't have is_active, skipping
                 # is_verified=True # Model doesn't have is_verified, skipping
             )
@@ -61,6 +60,7 @@ async def seed_admin(
             await session.rollback()
             raise
 
+
 async def main():
     # Get credentials from env
     admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
@@ -68,6 +68,7 @@ async def main():
     admin_name = os.getenv("ADMIN_NAME", "System Admin")
 
     await seed_admin(admin_email, admin_password, admin_name)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

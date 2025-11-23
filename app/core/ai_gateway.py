@@ -23,7 +23,8 @@ DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
 # --- Protocols ---
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        ...
 
     # This is added to satisfy the type checker, but it's not used in the streaming implementation.
     # It seems to be a quirk of how @runtime_checkable works with async generators.

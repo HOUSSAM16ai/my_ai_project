@@ -50,6 +50,7 @@ def get_legacy_database_service() -> DatabaseService:
         )
     return _database_service_singleton
 
+
 def _run_async(coro):
     """Helper to run async methods in sync context."""
     try:
@@ -58,23 +59,24 @@ def _run_async(coro):
         loop = None
 
     if loop and loop.is_running():
-         # If we are already in an event loop (e.g. pytest-asyncio), creating a new one is bad.
-         # But we cannot await here because this is a sync function.
-         # This is a known issue with mixing sync/async.
-         # For CLI (no loop running), asyncio.run works.
-         # For Tests (loop running), we use run_coroutine_threadsafe if possible,
-         # but that requires a separate thread usually.
+        # If we are already in an event loop (e.g. pytest-asyncio), creating a new one is bad.
+        # But we cannot await here because this is a sync function.
+        # This is a known issue with mixing sync/async.
+        # For CLI (no loop running), asyncio.run works.
+        # For Tests (loop running), we use run_coroutine_threadsafe if possible,
+        # but that requires a separate thread usually.
 
-         # HACK: If loop is running, we might be in a test.
-         # We can try to just return the coro if the caller can handle it,
-         # but this function signature says it returns dict.
+        # HACK: If loop is running, we might be in a test.
+        # We can try to just return the coro if the caller can handle it,
+        # but this function signature says it returns dict.
 
-         # Attempt to create a new task if possible, but we need the result.
-         # Use a new loop in a new thread? Overkill.
-         # We'll trust that legacy code is mostly CLI.
-         pass
+        # Attempt to create a new task if possible, but we need the result.
+        # Use a new loop in a new thread? Overkill.
+        # We'll trust that legacy code is mostly CLI.
+        pass
 
     return asyncio.run(coro)
+
 
 # ======================================================================================
 # ==                         BACKWARD COMPATIBILITY ADAPTERS                          ==
@@ -105,9 +107,11 @@ def get_table_data(
     order_dir: str = "asc",
 ) -> dict[str, Any]:
     """Deprecated: replaced by DatabaseService.get_table_data."""
-    return _run_async(get_legacy_database_service().get_table_data(
-        table_name, page, per_page, search, order_by, order_dir
-    ))
+    return _run_async(
+        get_legacy_database_service().get_table_data(
+            table_name, page, per_page, search, order_by, order_dir
+        )
+    )
 
 
 def get_record(table_name: str, record_id: int) -> dict[str, Any]:

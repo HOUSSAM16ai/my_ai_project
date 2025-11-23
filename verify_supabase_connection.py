@@ -28,10 +28,12 @@ Y = "\033[93m"
 B = "\033[94m"
 E = "\033[0m"
 
+
 def print_header(text):
     print(f"\n{B}{'=' * 70}{E}")
     print(f"{B}{text.center(70)}{E}")
     print(f"{B}{'=' * 70}{E}\n")
+
 
 def get_database_url():
     url = os.environ.get("DATABASE_URL")
@@ -39,6 +41,7 @@ def get_database_url():
         print(f"{R}❌ DATABASE_URL is not set in .env{E}")
         sys.exit(1)
     return url
+
 
 async def main():
     print_header("🚀 Supabase Connection Verification (Async/Unified)")
@@ -72,12 +75,16 @@ async def main():
 
             # 3. List Tables
             print(f"\n{Y}📊 Fetching Tables...{E}")
-            result = await conn.execute(text("""
+            result = await conn.execute(
+                text(
+                    """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
                 ORDER BY table_name
-            """))
+            """
+                )
+            )
             tables = result.scalars().all()
 
             if tables:
@@ -93,11 +100,14 @@ async def main():
         print(f"\n{R}❌ CONNECTION FAILED{E}")
         print(f"{R}Error: {e}{E}")
         if "DuplicatePreparedStatementError" in str(e):
-            print(f"\n{Y}💡 DIAGNOSIS: This error confirms usage of prepared statements on PgBouncer.{E}")
+            print(
+                f"\n{Y}💡 DIAGNOSIS: This error confirms usage of prepared statements on PgBouncer.{E}"
+            )
             print(f"{Y}   Ensure 'statement_cache_size=0' is effectively passed.{E}")
         sys.exit(1)
     finally:
         await engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
