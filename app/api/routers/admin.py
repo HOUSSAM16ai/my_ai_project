@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.core.ai_gateway import AIClient, get_ai_client
-from app.core.database import AsyncSession, get_db
+from app.core.database import AsyncSession, async_session_factory, get_db
 from app.models import AdminConversation, AdminMessage, MessageRole, User
 
 # --- JWT Configuration ---
@@ -187,16 +187,19 @@ async def chat_stream(
             # 3. Save Assistant Message (after stream completes or disconnects)
             # This 'finally' block ensures we save what we have generated so far,
             # even if the client disconnects (GeneratorExit) or an error occurs.
+            # CRITICAL FIX: We must use a NEW session, as the request-scoped 'db' session
+            # might already be closed by FastAPI if the client disconnected.
             assistant_content = "".join(full_response)
             if assistant_content:
                 try:
-                    assistant_msg = AdminMessage(
-                        conversation_id=conversation.id,
-                        role=MessageRole.ASSISTANT,
-                        content=assistant_content,
-                    )
-                    db.add(assistant_msg)
-                    await db.commit()
+                    async with async_session_factory() as session:
+                        assistant_msg = AdminMessage(
+                            conversation_id=conversation.id,
+                            role=MessageRole.ASSISTANT,
+                            content=assistant_content,
+                        )
+                        session.add(assistant_msg)
+                        await session.commit()
                 except Exception as db_e:
                     # Log error but don't crash the generator close
                     print(f"Failed to save assistant message: {db_e}")
