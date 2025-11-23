@@ -117,16 +117,53 @@ class AdaptiveCache:
 
         # Store if should cache
         if self.should_cache(key):
+            # Ensure space exists
+            if len(self.cache) >= self.max_size:
+                self._cleanup_expired()
+
+            if len(self.cache) >= self.max_size:
+                self._evict()
+
             self.cache[key] = {"data": result, "timestamp": time.time(), "ttl": ttl}
+            # Initialize hit count if new
+            if key not in self.hit_count:
+                self.hit_count[key] = 1
 
         return result
 
     def should_cache(self, key: str) -> bool:
         """Decide whether to cache this key"""
-        # Don't cache if at max capacity and this is rarely accessed
-        if len(self.cache) >= self.max_size:
-            return self.hit_count.get(key, 0) > 2
         return True
+
+    def _cleanup_expired(self):
+        """Remove expired items"""
+        now = time.time()
+        # Create list to avoid runtime error during iteration
+        expired = [
+            k for k, v in self.cache.items()
+            if now - v["timestamp"] >= v["ttl"]
+        ]
+        for k in expired:
+            del self.cache[k]
+            # Optional: keep hit_count for "history" or clear it?
+            # Clearing it frees memory.
+            if k in self.hit_count:
+                del self.hit_count[k]
+
+    def _evict(self):
+        """Evict item with lowest hit count"""
+        if not self.cache:
+            return
+
+        # Strategy: Remove item with lowest hit_count
+        # Tie-breaker: oldest timestamp (implicit in dictionary order if Python 3.7+, but let's be explicit)
+        victim = min(
+            self.cache.keys(),
+            key=lambda k: (self.hit_count.get(k, 0), self.cache[k]["timestamp"])
+        )
+        del self.cache[victim]
+        if victim in self.hit_count:
+            del self.hit_count[victim]
 
     def get_cache_key(self, context: dict) -> str:
         """Generate cache key from context"""
