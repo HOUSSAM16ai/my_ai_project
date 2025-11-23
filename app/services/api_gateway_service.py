@@ -345,9 +345,16 @@ class IntelligentRouter:
             "anthropic": AnthropicAdapter(),
         }
         self.routing_history: deque = deque(maxlen=10000)
-        self.provider_stats: dict[str, LoadBalancerState] = defaultdict(
-            lambda: LoadBalancerState(service_id="")
-        )
+
+        # Correctly handle dynamic LoadBalancerState initialization
+        # We use a custom dict that initializes missing keys with the key as service_id
+        class AutoInitDict(dict):
+            def __missing__(self, key):
+                value = LoadBalancerState(service_id=str(key))
+                self[key] = value
+                return value
+
+        self.provider_stats: dict[str, LoadBalancerState] = AutoInitDict()
         self.lock = threading.RLock()
 
     def route_request(
