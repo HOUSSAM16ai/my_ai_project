@@ -27,7 +27,7 @@ class AppSettings(BaseSettings):
 
     # --- Security Settings ---
     SECRET_KEY: str = Field(
-        default="changeme_in_production_super_secret_key_123456",
+        ...,
         description="A secret key for signing sessions and tokens. Must be kept confidential.",
     )
 

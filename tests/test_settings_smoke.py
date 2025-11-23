@@ -40,7 +40,8 @@ def test_settings_load_from_env_file():
     ):
         settings = get_settings()
 
-        assert settings.DATABASE_URL == "postgresql://test:test@localhost:5432/test"
+        # The validator automatically upgrades the scheme to use asyncpg
+        assert settings.DATABASE_URL == "postgresql+asyncpg://test:test@localhost:5432/test"
         assert settings.SECRET_KEY == "test-secret-key"
         assert settings.AI_SERVICE_URL == "http://localhost:8080"
         assert settings.LOG_LEVEL == "DEBUG"
