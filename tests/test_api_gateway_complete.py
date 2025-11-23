@@ -60,7 +60,7 @@ class TestHealthCheck:
         assert "data" in data
         assert data["data"]["status"] == "healthy"
         assert data["data"]["database"] == "connected"
-        assert data["data"]["version"] == "v1.0"
+        assert data["data"]["version"] == "v3.0-hyper"
 
     def test_security_health(self, client):
         """Test security service health check"""

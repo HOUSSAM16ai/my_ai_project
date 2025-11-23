@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-from app.main import kernel  # Use kernel to get app
+from app.main import kernel, create_app  # Use kernel to get app
 from app.core.ai_gateway import get_ai_client
 from app.core.engine_factory import create_unified_async_engine
 from tests.factories import UserFactory, MissionFactory
@@ -38,6 +38,16 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_app():
+    """
+    Ensure the FastAPI application is fully configured with routers and middleware
+    before any tests run.
+    """
+    # This modifies kernel.app in-place by adding routers and middleware
+    create_app()
 
 
 @pytest.fixture(scope="session", autouse=True)
