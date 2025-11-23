@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import enum
+import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, DateTime, ForeignKey, Text, func, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Text, TypeDecorator, func, Integer
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
@@ -189,6 +190,32 @@ class Mission(SQLModel, table=True):
     )
 
 
+class JSONText(TypeDecorator):
+    """
+    SQLAlchemy TypeDecorator that serializes JSON to Text for storage
+    and deserializes Text to JSON on retrieval.
+    Ensures compatibility with SQLite while allowing dict/list usage in Python.
+    """
+
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, (dict, list)):
+            return json.dumps(value)
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return value
+
+
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
     id: int | None = Field(default=None, primary_key=True)
@@ -199,9 +226,9 @@ class MissionPlan(SQLModel, table=True):
     score: float = Field(default=0.0)
     rationale: str | None = Field(sa_column=Column(Text))
     # Avoid JSONB for SQLite compat
-    raw_json: str | None = Field(sa_column=Column(Text))
-    stats_json: str | None = Field(sa_column=Column(Text))
-    warnings_json: str | None = Field(sa_column=Column(Text))
+    raw_json: Any | None = Field(sa_column=Column(JSONText))
+    stats_json: Any | None = Field(sa_column=Column(JSONText))
+    warnings_json: Any | None = Field(sa_column=Column(JSONText))
     content_hash: str | None = Field(max_length=64)
 
     created_at: datetime = Field(
@@ -228,7 +255,7 @@ class Task(SQLModel, table=True):
     tool_name: str | None = Field(max_length=100)
     # Avoid JSONB for SQLite compat, use JSON if available or Text
     tool_args_json: Any | None = Field(
-        default=None, sa_column=Column(Text)
+        default=None, sa_column=Column(JSONText)
     )  # Postgres specific or use string
     status: TaskStatus = Field(default=TaskStatus.PENDING, sa_column=Column(SAEnum(TaskStatus)))
     attempt_count: int = Field(default=0)
@@ -236,9 +263,9 @@ class Task(SQLModel, table=True):
     priority: int = Field(default=0)
     risk_level: str | None = Field(max_length=50)
     criticality: str | None = Field(max_length=50)
-    depends_on_json: Any | None = Field(default=None, sa_column=Column(Text))
+    depends_on_json: Any | None = Field(default=None, sa_column=Column(JSONText))
     result_text: str | None = Field(sa_column=Column(Text))
-    result_meta_json: Any | None = Field(default=None, sa_column=Column(Text))
+    result_meta_json: Any | None = Field(default=None, sa_column=Column(JSONText))
     error_text: str | None = Field(sa_column=Column(Text))
 
     started_at: datetime | None = Field(sa_column=Column(DateTime(timezone=True)))
@@ -273,7 +300,7 @@ class MissionEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     event_type: MissionEventType = Field(sa_column=Column(SAEnum(MissionEventType)))
-    payload_json: Any | None = Field(default=None, sa_column=Column(Text))
+    payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
     created_at: datetime = Field(
         default_factory=utc_now,
