@@ -112,7 +112,7 @@ async def chat_stream(
     stmt = (
         select(AdminMessage)
         .where(AdminMessage.conversation_id == conversation.id)
-        .order_by(AdminMessage.created_at.desc())
+        .order_by(AdminMessage.created_at.desc(), AdminMessage.id.desc())
         .limit(20)
     )
     result = await db.execute(stmt)
