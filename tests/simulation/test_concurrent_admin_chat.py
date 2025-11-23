@@ -30,7 +30,8 @@ async def test_concurrent_chat_requests(admin_user):
     try:
 
         async def send_chat_request(i: int):
-            async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
+            from httpx import ASGITransport
+            async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
                 response = await ac.post(
                     "/admin/api/chat/stream",
                     json={"question": f"Concurrent Request {i}"},
@@ -98,7 +99,8 @@ async def test_invalid_auth_scenarios():
     kernel.app.dependency_overrides[get_db] = override_get_db
 
     try:
-        async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
+        from httpx import ASGITransport
+        async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
             # 1. No Header
             resp = await ac.post("/admin/api/chat/stream", json={"question": "Hi"})
             assert resp.status_code == 401
@@ -130,7 +132,8 @@ async def test_invalid_conversation_id(admin_user):
     kernel.app.dependency_overrides[get_db] = override_get_db
 
     try:
-        async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
+        from httpx import ASGITransport
+        async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
             # 1. Non-integer ID
             resp = await ac.post(
                 "/admin/api/chat/stream",
