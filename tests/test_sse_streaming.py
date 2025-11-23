@@ -64,7 +64,11 @@ def test_chat_stream_success_and_format(
     # 2. Validate content
     lines = [line for line in response.text.strip().split("\n") if line]
     assert len(lines) > 0
-    assert lines[0].startswith("data: ")
+
+    # First event should be conversation_init
+    assert lines[0] == "event: conversation_init"
+    assert lines[1].startswith("data: ")
+    assert "conversation_id" in lines[1]
 
 
 def test_chat_stream_missing_question(admin_user, client, admin_auth_headers):
