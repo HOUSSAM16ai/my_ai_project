@@ -2,6 +2,7 @@
 import os
 import subprocess
 import sys
+import logging
 
 import pytest
 from click.testing import CliRunner
@@ -74,7 +75,7 @@ def test_seed_dry_run_returns_zero_subprocess(test_db_path):
     assert "dry-run: rolling back" in res_seed.stdout
 
 
-def test_seed_dry_run_returns_zero_runner(test_db_path):
+def test_seed_dry_run_returns_zero_runner(test_db_path, caplog):
     """
     Tests the CLI seed command with --dry-run using CliRunner and a file DB.
     """
@@ -87,13 +88,22 @@ def test_seed_dry_run_returns_zero_runner(test_db_path):
     }
 
     # Create tables
-    result_create = runner.invoke(cli, ["db", "create-all"], env=env)
+    with caplog.at_level(logging.INFO):
+        result_create = runner.invoke(cli, ["db", "create-all"], env=env)
     assert result_create.exit_code == 0
 
     # Seed data
-    result_seed = runner.invoke(cli, ["db", "seed", "--dry-run"], env=env)
+    # Clear previous logs
+    caplog.clear()
+
+    with caplog.at_level(logging.INFO):
+        result_seed = runner.invoke(cli, ["db", "seed", "--dry-run"], env=env)
 
     print("OUTPUT:", result_seed.output)
+    print("LOGS:", caplog.text)
 
     assert result_seed.exit_code == 0
-    assert "dry-run: rolling back" in result_seed.output
+
+    # Use caplog to verify the log message because CliRunner might not capture
+    # logs sent to the original stdout if the logger was initialized before CliRunner.
+    assert "dry-run: rolling back" in caplog.text

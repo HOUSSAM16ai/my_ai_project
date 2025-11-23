@@ -42,6 +42,12 @@ def setup_logging():
     Configures the logging for the application.
     This is now idempotent thanks to lru_cache.
     """
+    # Check if the root logger already has handlers configured (e.g. by pytest caplog)
+    # If so, we should merge or respect them, but dictConfig clobbers them.
+    # For now, if we detect handlers on the root logger, we assume it's configured.
+    if logging.getLogger().handlers:
+        return
+
     print("Configuring logging...")
     logging.config.dictConfig(LOGGING_CONFIG)
 
