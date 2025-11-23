@@ -21,10 +21,10 @@
   // "initializeCommand": "bash .devcontainer/local-setup.sh",
 
   // 2. Post Create: Dependencies & DB Migrations
-  "postCreateCommand": "",
+  "postCreateCommand": "bash .devcontainer/on-create.sh",
 
   // 3. Post Start: Launch background services
-  "postStartCommand": "",
+  "postStartCommand": "bash .devcontainer/on-start.sh",
 
   // 4. Post Attach: Orchestrate setup
   "postAttachCommand": "/bin/bash scripts/setup_dev.sh",
@@ -33,7 +33,7 @@
   "portsAttributes": {
       "8000": { 
         "label": "Unified AI Interface", 
-        "onAutoForward": "notify" 
+        "onAutoForward": "openBrowser"
       }
   },
 

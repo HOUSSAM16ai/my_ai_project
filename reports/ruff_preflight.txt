@@ -91,38 +91,199 @@ I001 [*] Import block is un-sorted or un-formatted
 help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
- --> app/core/config.py:3:1
+ --> app/config/settings.py:2:1
   |
-1 |   # app/core/config.py
-2 |
-3 | / from functools import lru_cache
-4 | | from pydantic import field_validator
-5 | | from pydantic_settings import BaseSettings, SettingsConfigDict
+1 |   # app/config/settings.py
+2 | / import functools
+3 | | import os
+4 | | import sys
+5 | | from typing import Any, List, Optional
+6 | |
+7 | | from pydantic import Field, field_validator, ValidationInfo
+8 | | from pydantic_settings import BaseSettings, SettingsConfigDict
   | |______________________________________________________________^
   |
 help: Organize imports
 
+UP035 `typing.List` is deprecated, use `list` instead
+ --> app/config/settings.py:5:1
+  |
+3 | import os
+4 | import sys
+5 | from typing import Any, List, Optional
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 |
+7 | from pydantic import Field, field_validator, ValidationInfo
+  |
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:29:21
+   |
+27 |     # --- Codespaces & Cloud Native Identity ---
+28 |     CODESPACES: bool = Field(False, description="Auto-detected: True if running in GitHub Codespaces.")
+29 |     CODESPACE_NAME: Optional[str] = Field(None, description="The name of the Codespace environment.")
+   |                     ^^^^^^^^^^^^^
+30 |     GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: Optional[str] = Field(None, description="Domain suffix for port forwarding.")
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:30:47
+   |
+28 |     CODESPACES: bool = Field(False, description="Auto-detected: True if running in GitHub Codespaces.")
+29 |     CODESPACE_NAME: Optional[str] = Field(None, description="The name of the Codespace environment.")
+30 |     GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: Optional[str] = Field(None, description="Domain suffix for port forwarding.")
+   |                                               ^^^^^^^^^^^^^
+31 |
+32 |     # --- Core Infrastructure Settings ---
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:33:19
+   |
+32 |     # --- Core Infrastructure Settings ---
+33 |     DATABASE_URL: Optional[str] = Field(
+   |                   ^^^^^^^^^^^^^
+34 |         default=None,
+35 |         description="The primary database connection string. Auto-heals sync/async schemes.",
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:37:16
+   |
+35 |         description="The primary database connection string. Auto-heals sync/async schemes.",
+36 |     )
+37 |     REDIS_URL: Optional[str] = Field(
+   |                ^^^^^^^^^^^^^
+38 |         None,
+39 |         description="The Redis connection string.",
+   |
+help: Convert to `X | None`
+
+UP006 [*] Use `list` instead of `List` for type annotation
+  --> app/config/settings.py:48:27
+   |
+46 |     )
+47 |     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="JWT expiration time in minutes.")
+48 |     BACKEND_CORS_ORIGINS: List[str] | str = Field(
+   |                           ^^^^
+49 |         default=["*"],
+50 |         description="List of allowed CORS origins. Supports comma-separated string injection.",
+   |
+help: Replace with `list`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:54:21
+   |
+53 |     # --- Service Integration (AI & LLM) ---
+54 |     AI_SERVICE_URL: Optional[str] = Field(
+   |                     ^^^^^^^^^^^^^
+55 |         None, description="The URL for the external AI inference service."
+56 |     )
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:61:21
+   |
+59 |         description="The default AI model to use for inference.",
+60 |     )
+61 |     OPENAI_API_KEY: Optional[str] = Field(None, description="API Key for OpenAI.")
+   |                     ^^^^^^^^^^^^^
+62 |     OPENROUTER_API_KEY: Optional[str] = Field(None, description="API Key for OpenRouter.")
+   |
+help: Convert to `X | None`
+
+UP045 [*] Use `X | None` for type annotations
+  --> app/config/settings.py:62:25
+   |
+60 |     )
+61 |     OPENAI_API_KEY: Optional[str] = Field(None, description="API Key for OpenAI.")
+62 |     OPENROUTER_API_KEY: Optional[str] = Field(None, description="API Key for OpenRouter.")
+   |                         ^^^^^^^^^^^^^
+63 |
+64 |     # --- Operational Settings ---
+   |
+help: Convert to `X | None`
+
 SIM102 Use a single `if` statement instead of nested `if` statements
-  --> app/core/config.py:39:9
-   |
-37 |           if v.startswith("postgres://"):
-38 |               v = v.replace("postgres://", "postgresql+asyncpg://", 1)
-39 | /         elif v.startswith("postgresql://"):
-40 | |             if "postgresql+asyncpg://" not in v:
-   | |________________________________________________^
-41 |                   v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
-   |
+   --> app/config/settings.py:105:9
+    |
+103 |           if v.startswith("postgres://"):
+104 |               v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+105 | /         elif v.startswith("postgresql://"):
+106 | |             if "postgresql+asyncpg" not in v:
+    | |_____________________________________________^
+107 |                   v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+    |
 help: Combine `if` statements using `and`
 
-UP011 [*] Unnecessary parentheses to `functools.lru_cache`
-  --> app/core/config.py:53:11
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> app/config/settings.py:123:44
+    |
+121 |     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+122 |     @classmethod
+123 |     def parse_cors_origins(cls, v: Any) -> List[str]:
+    |                                            ^^^^
+124 |         if isinstance(v, str) and not v.startswith("["):
+125 |             return [origin.strip() for origin in v.split(",")]
+    |
+help: Replace with `list`
+
+F401 [*] `abc.ABC` imported but unused
+  --> app/core/ai_gateway.py:17:17
    |
-53 | @lru_cache()
-   |           ^^
-54 | def get_settings():
-55 |     return Settings()
+15 | import random
+16 | import time
+17 | from abc import ABC, abstractmethod
+   |                 ^^^
+18 | from collections.abc import AsyncGenerator
+19 | from enum import Enum
    |
-help: Remove unnecessary parentheses
+help: Remove unused import
+
+F401 [*] `abc.abstractmethod` imported but unused
+  --> app/core/ai_gateway.py:17:22
+   |
+15 | import random
+16 | import time
+17 | from abc import ABC, abstractmethod
+   |                      ^^^^^^^^^^^^^^
+18 | from collections.abc import AsyncGenerator
+19 | from enum import Enum
+   |
+help: Remove unused import
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> app/core/ai_gateway.py:297:17
+    |
+296 |                   # Analyze error for Circuit Breaker
+297 | /                 if isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500:
+298 | |                     self.circuit_breaker.record_failure()
+299 | |                 elif isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
+300 | |                     self.circuit_breaker.record_failure()
+    | |_________________________________________________________^
+301 |
+302 |                   # Check if we should retry
+    |
+help: Combine `if` branches
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> app/core/ai_gateway.py:304:17
+    |
+302 |                   # Check if we should retry
+303 |                   should_retry = False
+304 | /                 if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in (429, 500, 502, 503, 504):
+305 | |                     should_retry = True
+306 | |                 elif isinstance(e, (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout)):
+307 | |                     should_retry = True
+    | |_______________________________________^
+308 |
+309 |                   if not should_retry or attempt > MAX_RETRIES:
+    |
+help: Combine `if` branches
 
 UP035 [*] Import from `collections.abc` instead: `AsyncGenerator`
  --> app/core/database.py:2:1
@@ -164,7 +325,7 @@ I001 [*] Import block is un-sorted or un-formatted
 2 | |
 3 | | from sqlalchemy.ext.asyncio import AsyncSession
 4 | |
-5 | | from app.core.config import Settings, get_settings as _get_settings_config
+5 | | from app.config.settings import AppSettings, get_settings as _get_settings_config
 6 | | from app.core.database import async_session_factory
 7 | | from app.core.kernel_v2.logging_spine import get_logger as _get_logger
   | |______________________________________________________________________^
@@ -209,74 +370,96 @@ RUF013 PEP 484 prohibits implicit `Optional`
 help: Convert to `T | None`
 
 I001 [*] Import block is un-sorted or un-formatted
-  --> app/core/kernel_v2/compat_collapse.py:6:1
-   |
- 4 |   """
- 5 |
- 6 | / import contextvars
- 7 | | from typing import Any, Optional, Callable
- 8 | | from fastapi.responses import JSONResponse
- 9 | | from fastapi import Request
-   | |___________________________^
-10 |
-11 |   # Context variables to hold the state
-   |
+ --> app/core/startup_diagnostics.py:1:1
+  |
+1 | / import os
+2 | | import sys
+3 | | from app.config.settings import get_settings
+  | |____________________________________________^
+4 |
+5 |   def run_diagnostics():
+  |
 help: Organize imports
 
-UP035 [*] Import from `collections.abc` instead: `Callable`
- --> app/core/kernel_v2/compat_collapse.py:7:1
+F401 [*] `os` imported but unused
+ --> app/core/startup_diagnostics.py:1:8
   |
-6 | import contextvars
-7 | from typing import Any, Optional, Callable
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-8 | from fastapi.responses import JSONResponse
-9 | from fastapi import Request
+1 | import os
+  |        ^^
+2 | import sys
+3 | from app.config.settings import get_settings
   |
-help: Import from `collections.abc`
+help: Remove unused import: `os`
 
-UP045 [*] Use `X | None` for type annotations
-  --> app/core/kernel_v2/compat_collapse.py:12:42
-   |
-11 | # Context variables to hold the state
-12 | _request_ctx_var: contextvars.ContextVar[Optional[Request]] = contextvars.ContextVar(
-   |                                          ^^^^^^^^^^^^^^^^^
-13 |     "request", default=None
-14 | )
-   |
-help: Convert to `X | None`
+F401 [*] `sys` imported but unused
+ --> app/core/startup_diagnostics.py:2:8
+  |
+1 | import os
+2 | import sys
+  |        ^^^
+3 | from app.config.settings import get_settings
+  |
+help: Remove unused import: `sys`
 
-UP045 [*] Use `X | None` for type annotations
-  --> app/core/kernel_v2/compat_collapse.py:15:36
+F841 Local variable `masked` is assigned to but never used
+  --> app/core/startup_diagnostics.py:27:13
    |
-13 |     "request", default=None
-14 | )
-15 | _g_ctx_var: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar("g", default=None)
-   |                                    ^^^^^^^^^^^^^^
-16 | _user_ctx_var: contextvars.ContextVar[Any] = contextvars.ContextVar("user", default=None)
+25 |             masked = str(value)[:4] + "..." + str(value)[-4:]
+26 |         else:
+27 |             masked = "N/A"
+   |             ^^^^^^
+28 |         print(f"[*] Secret Audit [{name}]: {status}")
    |
-help: Convert to `X | None`
-
-B004 Using `hasattr(x, "__call__")` to test if x is callable is unreliable. Use `callable(x)` for consistent results.
-  --> app/main.py:64:12
-   |
-62 |     if not isinstance(kernel.app, FastAPI):
-63 |         # Fallback check for valid callables (wrappers) that are not coroutines
-64 |         if hasattr(kernel.app, "__call__") and not inspect.iscoroutinefunction(kernel.app):
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-65 |             pass  # It is a valid callable wrapper
-66 |         else:
-   |
-help: Replace with `callable()`
+help: Remove assignment to unused variable `masked`
 
 I001 [*] Import block is un-sorted or un-formatted
- --> app/middleware/adapters/flask_compat.py:1:1
-  |
-1 | / from starlette.middleware.base import BaseHTTPMiddleware
-2 | | from fastapi import Request
-3 | | from app.core.kernel_v2.compat_collapse import RequestContext, UserContext, AnonymousUser
-  | |_________________________________________________________________________________________^
-  |
+  --> app/main.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / import inspect
+ 8 | | import os
+ 9 | | from datetime import UTC, datetime
+10 | | from pathlib import Path
+11 | |
+12 | | from fastapi import FastAPI
+13 | | from fastapi.middleware.cors import CORSMiddleware
+14 | | from fastapi.middleware.gzip import GZipMiddleware
+15 | | from fastapi.middleware.trustedhost import TrustedHostMiddleware
+16 | | from fastapi.responses import FileResponse, JSONResponse
+17 | | from fastapi.staticfiles import StaticFiles
+18 | | from starlette.middleware.base import BaseHTTPMiddleware
+19 | | from starlette.requests import Request
+20 | |
+21 | | from app.api.routers import (
+22 | |     admin,
+23 | |     ai_service,
+24 | |     chat,
+25 | |     crud,
+26 | |     gateway,
+27 | |     intelligent_platform,
+28 | |     observability,
+29 | |     security,
+30 | |     system,
+31 | | )
+32 | | from app.kernel import kernel
+33 | | from app.middleware.fastapi_error_handlers import add_error_handlers
+34 | | from app.core.startup_diagnostics import run_diagnostics
+   | |________________________________________________________^
+   |
 help: Organize imports
+
+B004 Using `hasattr(x, "__call__")` to test if x is callable is unreliable. Use `callable(x)` for consistent results.
+  --> app/main.py:67:12
+   |
+65 |     if not isinstance(kernel.app, FastAPI):
+66 |         # Fallback check for valid callables (wrappers) that are not coroutines
+67 |         if hasattr(kernel.app, "__call__") and not inspect.iscoroutinefunction(kernel.app):
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+68 |             pass  # It is a valid callable wrapper
+69 |         else:
+   |
+help: Replace with `callable()`
 
 I001 [*] Import block is un-sorted or un-formatted
   --> app/models.py:2:1
@@ -613,6 +796,31 @@ F401 [*] `app.core.engine_factory.create_unified_async_engine` imported but unus
 help: Remove unused import: `app.core.engine_factory.create_unified_async_engine`
 
 I001 [*] Import block is un-sorted or un-formatted
+ --> tests/config/test_superhuman_config.py:1:1
+  |
+1 | / import os
+2 | | import pytest
+3 | | from unittest.mock import patch
+4 | | from app.config.settings import AppSettings
+  | |___________________________________________^
+5 |
+6 |   class TestSuperhumanConfiguration:
+  |
+help: Organize imports
+
+SIM300 [*] Yoda condition detected
+  --> tests/config/test_superhuman_config.py:34:16
+   |
+32 |         # Expecting asyncpg injection and sslmode fix
+33 |         expected = "postgresql+asyncpg://user:pass@dbhost:5432/db?ssl=require"
+34 |         assert settings.DATABASE_URL == expected
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+35 |
+36 |     def test_secret_absorption(self, mock_codespaces_env):
+   |
+help: Rewrite as `expected == settings.DATABASE_URL`
+
+I001 [*] Import block is un-sorted or un-formatted
   --> tests/conftest.py:1:1
    |
  1 | / import asyncio
@@ -637,18 +845,112 @@ I001 [*] Import block is un-sorted or un-formatted
    |
 help: Organize imports
 
-I001 [*] Import block is un-sorted or un-formatted
-   --> tests/conftest.py:143:5
+W293 [*] Blank line contains whitespace
+   --> tests/conftest.py:139:1
     |
-141 |       Fixture to create an admin user.
-142 |       """
-143 | /     from app.models import User
-144 | |     from sqlalchemy import select
+137 |     # The error 'got an unexpected keyword argument app' implies httpx > 0.18 but usage is tricky.
+138 |     # Safe fix: Use transport=ASGITransport(app=app) if available, or just standard fix.
+139 |
+    | ^^^^
+140 |     from httpx import ASGITransport
+141 |     async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
+    |
+help: Remove whitespace from blank line
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> tests/conftest.py:150:5
+    |
+148 |       Fixture to create an admin user.
+149 |       """
+150 | /     from app.models import User
+151 | |     from sqlalchemy import select
     | |_________________________________^
-145 |
-146 |       stmt = select(User).where(User.email == "admin@test.com")
+152 |
+153 |       stmt = select(User).where(User.email == "admin@test.com")
     |
 help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/core/test_superhuman_ai_gateway.py:2:1
+   |
+ 2 | / import asyncio
+ 3 | | import pytest
+ 4 | | from unittest.mock import MagicMock, patch, AsyncMock
+ 5 | | import httpx
+ 6 | | from app.core.ai_gateway import (
+ 7 | |     CircuitBreaker, CircuitState, OpenRouterAIClient,
+ 8 | |     ConnectionManager, AICircuitOpenError, AIProviderError,
+ 9 | |     _GLOBAL_CIRCUIT_BREAKER
+10 | | )
+   | |_^
+11 |
+12 |   # --- Test Circuit Breaker Logic ---
+   |
+help: Organize imports
+
+F401 [*] `app.core.ai_gateway.AIProviderError` imported but unused
+  --> tests/core/test_superhuman_ai_gateway.py:8:44
+   |
+ 6 | from app.core.ai_gateway import (
+ 7 |     CircuitBreaker, CircuitState, OpenRouterAIClient,
+ 8 |     ConnectionManager, AICircuitOpenError, AIProviderError,
+   |                                            ^^^^^^^^^^^^^^^
+ 9 |     _GLOBAL_CIRCUIT_BREAKER
+10 | )
+   |
+help: Remove unused import: `app.core.ai_gateway.AIProviderError`
+
+B017 Do not assert blind exception: `Exception`
+  --> tests/core/test_superhuman_ai_gateway.py:97:14
+   |
+95 |     with patch.object(ConnectionManager, "get_client", return_value=mock_httpx):
+96 |         # Fail 1
+97 |         with pytest.raises(Exception):
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^
+98 |             async for _ in client.stream_chat([]): pass
+   |
+
+E701 Multiple statements on one line (colon)
+   --> tests/core/test_superhuman_ai_gateway.py:98:50
+    |
+ 96 |         # Fail 1
+ 97 |         with pytest.raises(Exception):
+ 98 |             async for _ in client.stream_chat([]): pass
+    |                                                  ^
+ 99 |
+100 |         # Fail 2 (Threshold met)
+    |
+
+B017 Do not assert blind exception: `Exception`
+   --> tests/core/test_superhuman_ai_gateway.py:101:14
+    |
+100 |         # Fail 2 (Threshold met)
+101 |         with pytest.raises(Exception):
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+102 |             async for _ in client.stream_chat([]): pass
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tests/core/test_superhuman_ai_gateway.py:102:50
+    |
+100 |         # Fail 2 (Threshold met)
+101 |         with pytest.raises(Exception):
+102 |             async for _ in client.stream_chat([]): pass
+    |                                                  ^
+103 |
+104 |         assert _GLOBAL_CIRCUIT_BREAKER.state == CircuitState.OPEN
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tests/core/test_superhuman_ai_gateway.py:108:50
+    |
+106 |         # Fail 3 (Circuit Open - Fast Fail)
+107 |         with pytest.raises(AICircuitOpenError):
+108 |             async for _ in client.stream_chat([]): pass
+    |                                                  ^
+109 |
+110 | @pytest.mark.asyncio
+    |
 
 I001 [*] Import block is un-sorted or un-formatted
   --> tests/simulation/test_concurrent_admin_chat.py:2:1
@@ -777,6 +1079,70 @@ F401 [*] `pytest` imported but unused
    |        ^^^^^^
    |
 help: Remove unused import: `pytest`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_admin_chat_empty_stream.py:2:1
+   |
+ 2 | / import pytest
+ 3 | | import json
+ 4 | | from unittest.mock import MagicMock
+ 5 | | from app.core.database import get_db, async_session_factory
+ 6 | | from app.core.ai_gateway import get_ai_client
+ 7 | | from tests.conftest import TestingSessionLocal
+ 8 | | from app.models import AdminMessage, MessageRole
+   | |________________________________________________^
+ 9 |
+10 |   # Override get_db to ensure we use the same engine/session factory as the test fixtures
+   |
+help: Organize imports
+
+F401 [*] `json` imported but unused
+ --> tests/test_admin_chat_empty_stream.py:3:8
+  |
+2 | import pytest
+3 | import json
+  |        ^^^^
+4 | from unittest.mock import MagicMock
+5 | from app.core.database import get_db, async_session_factory
+  |
+help: Remove unused import: `json`
+
+F401 [*] `app.core.database.async_session_factory` imported but unused
+ --> tests/test_admin_chat_empty_stream.py:5:39
+  |
+3 | import json
+4 | from unittest.mock import MagicMock
+5 | from app.core.database import get_db, async_session_factory
+  |                                       ^^^^^^^^^^^^^^^^^^^^^
+6 | from app.core.ai_gateway import get_ai_client
+7 | from tests.conftest import TestingSessionLocal
+  |
+help: Remove unused import: `app.core.database.async_session_factory`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_admin_chat_empty_stream.py:32:5
+   |
+30 |       We want to verify this behavior or identify it as a bug if we expect an error message.
+31 |       """
+32 | /     from app.main import kernel
+33 | |     from unittest.mock import patch
+   | |___________________________________^
+34 |
+35 |       # Apply override to async_client's app
+   |
+help: Organize imports
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_admin_chat_empty_stream.py:72:9
+   |
+71 |           # 2. Check what was saved in DB
+72 | /         from sqlalchemy import select
+73 | |         from app.models import AdminConversation
+   | |________________________________________________^
+74 |
+75 |           # Get the conversation
+   |
+help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
  --> tests/test_admin_chat_history.py:1:1
@@ -1182,88 +1548,64 @@ F401 `app.services.api_contract_service.APIContractService` imported but unused;
 help: Remove unused import: `app.services.api_contract_service.APIContractService`
 
 I001 [*] Import block is un-sorted or un-formatted
- --> tests/test_dependency_layer_smoke.py:2:1
-  |
-1 |   # tests/test_dependency_layer_smoke.py
-2 | / import logging
-3 | | import os
-4 | | import pytest
-5 | | from sqlalchemy import text
-6 | | from sqlalchemy.ext.asyncio import AsyncSession
-7 | | from app.core.config import Settings
-8 | | from app.core import di
-9 | | from app.core.di import get_logger, get_session, get_settings
-  | |_____________________________________________________________^
-  |
+  --> tests/test_dependency_layer_smoke.py:2:1
+   |
+ 1 |   # tests/test_dependency_layer_smoke.py
+ 2 | / import logging
+ 3 | | import os
+ 4 | | import pytest
+ 5 | | from unittest import mock
+ 6 | | from sqlalchemy import text
+ 7 | | from sqlalchemy.ext.asyncio import AsyncSession
+ 8 | | from app.core.config import Settings
+ 9 | | from app.core import di
+10 | | from app.core.di import get_logger, get_session, get_settings
+   | |_____________________________________________________________^
+   |
 help: Organize imports
 
 F401 [*] `app.core.config.Settings` imported but unused
- --> tests/test_dependency_layer_smoke.py:7:29
-  |
-5 | from sqlalchemy import text
-6 | from sqlalchemy.ext.asyncio import AsyncSession
-7 | from app.core.config import Settings
-  |                             ^^^^^^^^
-8 | from app.core import di
-9 | from app.core.di import get_logger, get_session, get_settings
-  |
+  --> tests/test_dependency_layer_smoke.py:8:29
+   |
+ 6 | from sqlalchemy import text
+ 7 | from sqlalchemy.ext.asyncio import AsyncSession
+ 8 | from app.core.config import Settings
+   |                             ^^^^^^^^
+ 9 | from app.core import di
+10 | from app.core.di import get_logger, get_session, get_settings
+   |
 help: Remove unused import: `app.core.config.Settings`
 
 F401 [*] `app.core.di.get_settings` imported but unused
- --> tests/test_dependency_layer_smoke.py:9:50
-  |
-7 | from app.core.config import Settings
-8 | from app.core import di
-9 | from app.core.di import get_logger, get_session, get_settings
-  |                                                  ^^^^^^^^^^^^
-  |
+  --> tests/test_dependency_layer_smoke.py:10:50
+   |
+ 8 | from app.core.config import Settings
+ 9 | from app.core import di
+10 | from app.core.di import get_logger, get_session, get_settings
+   |                                                  ^^^^^^^^^^^^
+   |
 help: Remove unused import: `app.core.di.get_settings`
 
-F811 [*] Redefinition of unused `Settings` from line 7
-  --> tests/test_dependency_layer_smoke.py:76:33
+F811 [*] Redefinition of unused `Settings` from line 8
+  --> tests/test_dependency_layer_smoke.py:72:33
    |
-74 |     # Because get_settings() in di.py returns a singleton created at import time.
-75 |     # So we should probably manually re-create settings for this test.
-76 |     from app.core.config import Settings
+70 |     # Because get_settings() in di.py returns a singleton created at import time.
+71 |     # So we should probably manually re-create settings for this test.
+72 |     from app.core.config import Settings
    |                                 ^^^^^^^^ `Settings` redefined here
-77 |
-78 |     # Manually creating settings to verify environment loading works for the Pydantic model
+73 |
+74 |     # Manually creating settings to verify environment loading works for the Pydantic model
    |
-  ::: tests/test_dependency_layer_smoke.py:7:29
+  ::: tests/test_dependency_layer_smoke.py:8:29
    |
- 5 | from sqlalchemy import text
- 6 | from sqlalchemy.ext.asyncio import AsyncSession
- 7 | from app.core.config import Settings
+ 6 | from sqlalchemy import text
+ 7 | from sqlalchemy.ext.asyncio import AsyncSession
+ 8 | from app.core.config import Settings
    |                             -------- previous definition of `Settings` here
- 8 | from app.core import di
- 9 | from app.core.di import get_logger, get_session, get_settings
+ 9 | from app.core import di
+10 | from app.core.di import get_logger, get_session, get_settings
    |
 help: Remove definition: `Settings`
-
-I001 [*] Import block is un-sorted or un-formatted
- --> tests/test_flask_compat.py:1:1
-  |
-1 | / import pytest
-2 | | from fastapi import FastAPI, Request
-3 | | from fastapi.testclient import TestClient
-4 | | from app.core.kernel_v2.compat_collapse import g, request, current_user, jsonify
-5 | | from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
-  | |______________________________________________________________________^
-6 |
-7 |   app = FastAPI()
-  |
-help: Organize imports
-
-F401 [*] `fastapi.Request` imported but unused
- --> tests/test_flask_compat.py:2:30
-  |
-1 | import pytest
-2 | from fastapi import FastAPI, Request
-  |                              ^^^^^^^
-3 | from fastapi.testclient import TestClient
-4 | from app.core.kernel_v2.compat_collapse import g, request, current_user, jsonify
-  |
-help: Remove unused import: `fastapi.Request`
 
 I001 [*] Import block is un-sorted or un-formatted
  --> tests/test_health_bug_verification.py:1:1
@@ -1323,6 +1665,18 @@ F401 [*] `app.core.database.get_db` imported but unused
 6 | from sqlalchemy import select
   |
 help: Remove unused import: `app.core.database.get_db`
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/test_root_json_fix.py:2:1
+  |
+2 | / import os
+3 | | from fastapi.testclient import TestClient
+4 | | from app.main import create_app
+  | |_______________________________^
+5 |
+6 |   # Ensure we use the correct environment settings for testing
+  |
+help: Organize imports
 
 I001 [*] Import block is un-sorted or un-formatted
  --> tests/test_verify_integration_flag.py:1:1
@@ -1424,5 +1778,5 @@ F401 [*] `app.core.kernel_v2.logging_spine.get_logger` imported but unused
   |
 help: Remove unused import: `app.core.kernel_v2.logging_spine.get_logger`
 
-Found 110 errors.
-[*] 91 fixable with the `--fix` option (13 hidden fixes can be enabled with the `--unsafe-fixes` option).
+Found 137 errors.
+[*] 111 fixable with the `--fix` option (14 hidden fixes can be enabled with the `--unsafe-fixes` option).

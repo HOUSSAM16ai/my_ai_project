@@ -131,7 +131,14 @@ def client() -> Generator[TestClient, None, None]:
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Asynchronous client for async tests"""
-    async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
+    # httpx.AsyncClient signature change: use 'transport' or 'app' depends on version
+    # For newer httpx with fastapi/starlette, we use ASGITransport explicitly or just pass transport=
+    # But usually 'app=' works if using starlette.testclient patterns, but here we use raw httpx.
+    # The error 'got an unexpected keyword argument app' implies httpx > 0.18 but usage is tricky.
+    # Safe fix: Use transport=ASGITransport(app=app) if available, or just standard fix.
+
+    from httpx import ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
         yield ac
 
 
