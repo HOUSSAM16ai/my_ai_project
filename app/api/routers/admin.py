@@ -176,39 +176,29 @@ async def chat_stream(
 
                 yield f"data: {json.dumps(chunk)}\n\n"
 
-            # 3. Save Assistant Message (after stream completes)
-            assistant_content = "".join(full_response)
-            # If response was empty (e.g. error or weird format), we might still want to save something?
-            # But for now let's save what we got.
-            if assistant_content:
-                # We need a new DB session or ensure the existing one is valid?
-                # The generator runs in the same context, so 'db' should be valid.
-                # However, we need to be careful with async generators and DB sessions if the request context closes.
-                # But StreamingResponse runs in the background. FastAPI dependency 'db' might be closed?
-                # Actually, Depends(get_db) yields a session. FastAPI closes it after the route handler returns.
-                # But for StreamingResponse, the response_generator runs *after* the route handler returns?
-                # Wait. If I use the 'db' session inside the generator, and the route handler has returned 'StreamingResponse',
-                # FastAPI *might* close the dependencies.
-
-                # Correct way: The response_generator needs its own session management or we rely on FastAPI keeping it open?
-                # FastAPI 0.109 usually handles BackgroundTasks, but StreamingResponse is different.
-                # Dependencies with `yield` are closed after the response is sent.
-                # So `get_db` (which uses `yield`) will likely close the session AFTER the response is fully streamed.
-                # So it should be safe to use `db` here.
-
-                assistant_msg = AdminMessage(
-                    conversation_id=conversation.id,
-                    role=MessageRole.ASSISTANT,
-                    content=assistant_content,
-                )
-                db.add(assistant_msg)
-                await db.commit()
-
         except Exception as e:
             error_payload = {
                 "type": "error",
                 "payload": {"error": f"Failed to connect to AI service: {e}"},
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
+
+        finally:
+            # 3. Save Assistant Message (after stream completes or disconnects)
+            # This 'finally' block ensures we save what we have generated so far,
+            # even if the client disconnects (GeneratorExit) or an error occurs.
+            assistant_content = "".join(full_response)
+            if assistant_content:
+                try:
+                    assistant_msg = AdminMessage(
+                        conversation_id=conversation.id,
+                        role=MessageRole.ASSISTANT,
+                        content=assistant_content,
+                    )
+                    db.add(assistant_msg)
+                    await db.commit()
+                except Exception as db_e:
+                    # Log error but don't crash the generator close
+                    print(f"Failed to save assistant message: {db_e}")
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
