@@ -13,15 +13,19 @@ from app.core.kernel_v2.logging_spine import get_logger as _get_logger
 _settings_singleton = _get_settings_config()
 _session_factory_singleton = async_session_factory
 
+
 def get_di_settings() -> Settings:
     return _settings_singleton
+
 
 # Re-export or Alias for consumers expecting 'get_settings' from di
 get_settings = get_di_settings
 
+
 def get_di_session_factory() -> Callable[[], AsyncSession]:
     """Returns the global async session factory."""
     return _session_factory_singleton
+
 
 async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -29,6 +33,7 @@ async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
     async with _session_factory_singleton() as session:
         yield session
+
 
 # Alias for consumers expecting 'get_session' or 'get_db'
 get_session = get_di_db

@@ -11,11 +11,13 @@ authentication, and streams data in the correct format.
 
 import pytest
 
+
 def parse_response_json(response):
     try:
         return response.json()
     except Exception:
         return {}
+
 
 @pytest.mark.skip(reason="Authentication not yet implemented")
 def test_chat_stream_authentication(client):
@@ -29,15 +31,18 @@ def test_chat_stream_authentication(client):
         "status": "error",
         "message": "Not authenticated",
         "data": None,
-        "timestamp": "2024-01-01T00:00:00Z" # Timestamp is mocked in error handler
+        "timestamp": "2024-01-01T00:00:00Z",  # Timestamp is mocked in error handler
     }
 
 
-def test_chat_stream_success_and_format(admin_user, client, admin_auth_headers, mock_ai_client_global):
+def test_chat_stream_success_and_format(
+    admin_user, client, admin_auth_headers, mock_ai_client_global
+):
     """
     Tests a successful streaming request, validating the SSE format,
     the content of the stream, and the interaction with the mock gateway.
     """
+
     # Configure mock behavior for this test
     async def mock_stream_chat(messages):
         """Simulated streaming response."""
@@ -49,7 +54,7 @@ def test_chat_stream_success_and_format(admin_user, client, admin_auth_headers, 
     response = client.post(
         "/admin/api/chat/stream",
         json={"question": "Hello Gateway", "conversation_id": "conv_123"},
-        headers=admin_auth_headers
+        headers=admin_auth_headers,
     )
 
     # 1. Validate the response headers and status

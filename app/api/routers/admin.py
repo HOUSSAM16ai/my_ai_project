@@ -22,6 +22,7 @@ from app.models import AdminConversation, AdminMessage, MessageRole, User
 SECRET_KEY = os.environ.get("SECRET_KEY", "your-super-secret-key")
 ALGORITHM = "HS256"
 
+
 class ChatRequest(BaseModel):
     """Request model for the chat endpoint."""
 
@@ -33,6 +34,7 @@ router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
 )
+
 
 # --- Security ---
 def get_current_user_id(request: Request) -> int:
@@ -58,7 +60,7 @@ def get_current_user_id(request: Request) -> int:
     except jwt.PyJWTError as e:
         raise HTTPException(status_code=401, detail="Invalid token") from e
     except ValueError:
-         raise HTTPException(status_code=401, detail="Invalid user ID in token")
+        raise HTTPException(status_code=401, detail="Invalid user ID in token")
 
 
 @router.post("/api/chat/stream", summary="Admin Chat Streaming Endpoint")
@@ -84,28 +86,22 @@ async def chat_stream(
         try:
             conv_id_int = int(chat_request.conversation_id)
             stmt = select(AdminConversation).where(
-                AdminConversation.id == conv_id_int,
-                AdminConversation.user_id == user_id
+                AdminConversation.id == conv_id_int, AdminConversation.user_id == user_id
             )
             result = await db.execute(stmt)
             conversation = result.scalar_one_or_none()
         except ValueError:
-            pass # Invalid ID format, treat as new
+            pass  # Invalid ID format, treat as new
 
     if not conversation:
-        conversation = AdminConversation(
-            title=question[:50],
-            user_id=user_id
-        )
+        conversation = AdminConversation(title=question[:50], user_id=user_id)
         db.add(conversation)
         await db.commit()
         await db.refresh(conversation)
 
     # 2. Save User Message
     user_message = AdminMessage(
-        conversation_id=conversation.id,
-        role=MessageRole.USER,
-        content=question
+        conversation_id=conversation.id, role=MessageRole.USER, content=question
     )
     db.add(user_message)
     await db.commit()
@@ -185,28 +181,28 @@ async def chat_stream(
             # If response was empty (e.g. error or weird format), we might still want to save something?
             # But for now let's save what we got.
             if assistant_content:
-                 # We need a new DB session or ensure the existing one is valid?
-                 # The generator runs in the same context, so 'db' should be valid.
-                 # However, we need to be careful with async generators and DB sessions if the request context closes.
-                 # But StreamingResponse runs in the background. FastAPI dependency 'db' might be closed?
-                 # Actually, Depends(get_db) yields a session. FastAPI closes it after the route handler returns.
-                 # But for StreamingResponse, the response_generator runs *after* the route handler returns?
-                 # Wait. If I use the 'db' session inside the generator, and the route handler has returned 'StreamingResponse',
-                 # FastAPI *might* close the dependencies.
+                # We need a new DB session or ensure the existing one is valid?
+                # The generator runs in the same context, so 'db' should be valid.
+                # However, we need to be careful with async generators and DB sessions if the request context closes.
+                # But StreamingResponse runs in the background. FastAPI dependency 'db' might be closed?
+                # Actually, Depends(get_db) yields a session. FastAPI closes it after the route handler returns.
+                # But for StreamingResponse, the response_generator runs *after* the route handler returns?
+                # Wait. If I use the 'db' session inside the generator, and the route handler has returned 'StreamingResponse',
+                # FastAPI *might* close the dependencies.
 
-                 # Correct way: The response_generator needs its own session management or we rely on FastAPI keeping it open?
-                 # FastAPI 0.109 usually handles BackgroundTasks, but StreamingResponse is different.
-                 # Dependencies with `yield` are closed after the response is sent.
-                 # So `get_db` (which uses `yield`) will likely close the session AFTER the response is fully streamed.
-                 # So it should be safe to use `db` here.
+                # Correct way: The response_generator needs its own session management or we rely on FastAPI keeping it open?
+                # FastAPI 0.109 usually handles BackgroundTasks, but StreamingResponse is different.
+                # Dependencies with `yield` are closed after the response is sent.
+                # So `get_db` (which uses `yield`) will likely close the session AFTER the response is fully streamed.
+                # So it should be safe to use `db` here.
 
-                 assistant_msg = AdminMessage(
-                     conversation_id=conversation.id,
-                     role=MessageRole.ASSISTANT,
-                     content=assistant_content
-                 )
-                 db.add(assistant_msg)
-                 await db.commit()
+                assistant_msg = AdminMessage(
+                    conversation_id=conversation.id,
+                    role=MessageRole.ASSISTANT,
+                    content=assistant_content,
+                )
+                db.add(assistant_msg)
+                await db.commit()
 
         except Exception as e:
             error_payload = {

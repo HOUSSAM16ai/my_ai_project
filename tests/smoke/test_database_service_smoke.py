@@ -53,7 +53,7 @@ async def test_database_service_get_health(mock_di):
     # ARRANGE
     mock_session = AsyncMock()
     mock_session.execute.return_value = None
-    mock_session.run_sync.return_value = [] # For inspect tables
+    mock_session.run_sync.return_value = []  # For inspect tables
 
     service = get_database_service(
         session=mock_session,
@@ -87,9 +87,13 @@ def test_backward_compatibility_wrapper(mock_di):
     async def mock_health():
         return {"status": "mocked"}
 
-    with patch.object(DatabaseService, "get_database_health", side_effect=mock_health) as mock_method:
+    with patch.object(
+        DatabaseService, "get_database_health", side_effect=mock_health
+    ) as mock_method:
         # We also need to mock get_legacy_database_service to return a service with this mock
-        with patch("app.services.compat.database_compat.get_legacy_database_service") as mock_get_legacy:
+        with patch(
+            "app.services.compat.database_compat.get_legacy_database_service"
+        ) as mock_get_legacy:
             mock_service = MagicMock()
             mock_service.get_database_health.side_effect = mock_health
             mock_get_legacy.return_value = mock_service

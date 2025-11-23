@@ -1,11 +1,10 @@
-
 import os
 import unittest
 from unittest.mock import patch
 from scripts.bootstrap_db import sanitize_database_url
 
-class TestBootstrapDB(unittest.TestCase):
 
+class TestBootstrapDB(unittest.TestCase):
     def test_sqlite_pass_through(self):
         # The script enforces sqlite+aiosqlite for async engine compatibility
         url = "sqlite:///./test.db"
@@ -50,5 +49,6 @@ class TestBootstrapDB(unittest.TestCase):
         expected = "postgresql+asyncpg://user:pass@host/db"
         self.assertEqual(sanitize_database_url(url), expected)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

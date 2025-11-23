@@ -7,10 +7,12 @@ from app.core.database import get_db
 from app.core.ai_gateway import get_ai_client
 from tests.conftest import TestingSessionLocal
 
+
 # Override get_db
 async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
+
 
 @pytest.mark.asyncio
 async def test_admin_chat_history_context(async_client, admin_user, admin_auth_headers, db_session):
@@ -35,24 +37,17 @@ async def test_admin_chat_history_context(async_client, admin_user, admin_auth_h
     kernel.app.dependency_overrides[get_ai_client] = mock_get_client
 
     # 2. Seed existing conversation and messages
-    conversation = AdminConversation(
-        title="History Test",
-        user_id=admin_user.id
-    )
+    conversation = AdminConversation(title="History Test", user_id=admin_user.id)
     db_session.add(conversation)
     await db_session.commit()
     await db_session.refresh(conversation)
 
     # Add a previous message context
     msg1 = AdminMessage(
-        conversation_id=conversation.id,
-        role=MessageRole.USER,
-        content="My name is Jules."
+        conversation_id=conversation.id, role=MessageRole.USER, content="My name is Jules."
     )
     msg2 = AdminMessage(
-        conversation_id=conversation.id,
-        role=MessageRole.ASSISTANT,
-        content="Hello Jules."
+        conversation_id=conversation.id, role=MessageRole.ASSISTANT, content="Hello Jules."
     )
     db_session.add(msg1)
     db_session.add(msg2)
@@ -63,7 +58,7 @@ async def test_admin_chat_history_context(async_client, admin_user, admin_auth_h
         "POST",
         "/admin/api/chat/stream",
         json={"question": "What is my name?", "conversation_id": str(conversation.id)},
-        headers=admin_auth_headers
+        headers=admin_auth_headers,
     ) as response:
         assert response.status_code == 200
         async for line in response.aiter_lines():

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, DateTime, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Text, func, Integer
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
@@ -158,7 +158,10 @@ class Mission(SQLModel, table=True):
         default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus))
     )
     initiator_id: int = Field(foreign_key="users.id", index=True)
-    active_plan_id: int | None = Field(default=None, foreign_key="mission_plans.id")
+    active_plan_id: int | None = Field(
+        default=None,
+        sa_column=Column(Integer, ForeignKey("mission_plans.id", use_alter=True)),
+    )
 
     created_at: datetime = Field(
         default_factory=utc_now,

@@ -18,9 +18,10 @@ from app.core.engine_factory import create_unified_async_engine, FatalEngineErro
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr
+    stream=sys.stderr,
 )
 logger = logging.getLogger("bootstrap_db")
+
 
 def sanitize_database_url(url_str: str) -> str:
     """
@@ -46,7 +47,7 @@ def sanitize_database_url(url_str: str) -> str:
     if u.drivername == "postgresql":
         u = u.set(drivername="postgresql+asyncpg")
     elif u.drivername == "sqlite" and "aiosqlite" not in u.drivername:
-         u = u.set(drivername="sqlite+aiosqlite")
+        u = u.set(drivername="sqlite+aiosqlite")
 
     # 3. Query Param Fixes (SSL)
     # SQLAlchemy URL object handles query params as a dict
@@ -66,8 +67,10 @@ def sanitize_database_url(url_str: str) -> str:
     # render_as_string(hide_password=False)
     return u.render_as_string(hide_password=False)
 
+
 # Alias for backward compatibility if needed, or internal use
 sanitize_url = sanitize_database_url
+
 
 async def verify_connection(url: str) -> bool:
     """
@@ -83,6 +86,7 @@ async def verify_connection(url: str) -> bool:
     except Exception as e:
         logger.error(f"Connection verification failed: {e}")
         return False
+
 
 async def main():
     try:
@@ -102,7 +106,7 @@ async def main():
                 sys.exit(1)
             logger.info("✅ Verification successful.")
         else:
-             logger.info("⚠️ Skipping connection verification (SKIP_DB_VERIFY=1)")
+            logger.info("⚠️ Skipping connection verification (SKIP_DB_VERIFY=1)")
 
         # 4. OUTPUT (STDOUT ONLY)
         # The ONLY thing printed to stdout.
@@ -111,6 +115,7 @@ async def main():
     except Exception as e:
         logger.error(f"Bootstrap Critical Failure: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     try:

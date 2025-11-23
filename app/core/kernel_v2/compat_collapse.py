@@ -9,14 +9,18 @@ from fastapi.responses import JSONResponse
 from fastapi import Request
 
 # Context variables to hold the state
-_request_ctx_var: contextvars.ContextVar[Optional[Request]] = contextvars.ContextVar("request", default=None)
+_request_ctx_var: contextvars.ContextVar[Optional[Request]] = contextvars.ContextVar(
+    "request", default=None
+)
 _g_ctx_var: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar("g", default=None)
 _user_ctx_var: contextvars.ContextVar[Any] = contextvars.ContextVar("user", default=None)
+
 
 class LocalProxy:
     """
     A simple implementation of a local proxy to avoid depending on werkzeug.
     """
+
     def __init__(self, local: Callable[[], Any]):
         object.__setattr__(self, "_local", local)
 
@@ -57,27 +61,33 @@ class LocalProxy:
         except RuntimeError:
             return True
 
+
 def _get_request():
     req = _request_ctx_var.get()
     if req is None:
         raise RuntimeError("Working outside of request context")
     return req
 
+
 def _get_g():
     g_val = _g_ctx_var.get()
     if g_val is None:
-         raise RuntimeError("Working outside of application context")
+        raise RuntimeError("Working outside of application context")
     return g_val
+
 
 def _get_current_user():
     return _user_ctx_var.get()
+
 
 # Proxies
 request = LocalProxy(_get_request)
 current_user = LocalProxy(_get_current_user)
 
+
 class G:
     """Simulate Flask's g object"""
+
     def __getattr__(self, name):
         g_dict = _get_g()
         if name not in g_dict:
@@ -91,7 +101,9 @@ class G:
     def get(self, name, default=None):
         return _get_g().get(name, default)
 
+
 g = G()
+
 
 class AnonymousUser:
     @property
@@ -105,6 +117,7 @@ class AnonymousUser:
     def __str__(self):
         return "AnonymousUser"
 
+
 def jsonify(*args, **kwargs):
     """
     Simulate Flask's jsonify.
@@ -117,6 +130,7 @@ def jsonify(*args, **kwargs):
         data = args or kwargs
 
     return JSONResponse(content=data)
+
 
 # Context managers for setting the context (to be used in middleware)
 class RequestContext:
@@ -135,6 +149,7 @@ class RequestContext:
             _request_ctx_var.reset(self.token)
         if self.g_token:
             _g_ctx_var.reset(self.g_token)
+
 
 class UserContext:
     def __init__(self, user: Any):

@@ -12,6 +12,7 @@ from app.core.engine_factory import create_unified_async_engine, FatalEngineErro
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def debug_connection():
     """
     Debugs the database connection using the Unified Engine Factory.
@@ -22,7 +23,7 @@ async def debug_connection():
         logger.error("DATABASE_URL is not set.")
         return
 
-    logger.info(f"Testing connection to: {database_url.split('@')[-1]}") # Obfuscate creds
+    logger.info(f"Testing connection to: {database_url.split('@')[-1]}")  # Obfuscate creds
 
     try:
         # 1. Create Engine via Factory
@@ -62,6 +63,7 @@ async def debug_connection():
     except Exception as e:
         logger.error(f"❌ Connection failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(debug_connection())

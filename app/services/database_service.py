@@ -94,7 +94,8 @@ MODEL_METADATA = {
     "missions": {"icon": "🎯", "category": "Overmind", "description": "AI missions"},
     "mission_plans": {
         "icon": "📋",
-        "category": "Overmind", "description": "Mission execution plans",
+        "category": "Overmind",
+        "description": "Mission execution plans",
     },
     "tasks": {"icon": "✅", "category": "Overmind", "description": "Mission tasks"},
     "mission_events": {"icon": "📊", "category": "Overmind", "description": "Mission event logs"},
@@ -204,7 +205,11 @@ class DatabaseService:
             def _get_schema_info(conn):
                 inspector = inspect(conn)
                 indexes = [
-                    {"name": i["name"], "columns": i["column_names"], "unique": i.get("unique", False)}
+                    {
+                        "name": i["name"],
+                        "columns": i["column_names"],
+                        "unique": i.get("unique", False),
+                    }
                     for i in inspector.get_indexes(table_name)
                 ]
                 foreign_keys = [

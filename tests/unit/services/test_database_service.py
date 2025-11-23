@@ -10,6 +10,7 @@ from app.models import User
 from app.services.database_service import DatabaseService
 from app.core.engine_factory import create_unified_async_engine
 
+
 # Use the Unified Factory for the test engine (SQLite)
 # This ensures we test the same engine creation path
 @pytest.fixture(name="engine")
@@ -20,10 +21,12 @@ async def engine_fixture():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(name="session")
 async def session_fixture(engine):
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
+
 
 @pytest.fixture
 def database_service(session: AsyncSession) -> DatabaseService:
@@ -31,6 +34,7 @@ def database_service(session: AsyncSession) -> DatabaseService:
     logger = MagicMock()
     settings = MagicMock(spec=AppSettings)
     return DatabaseService(session=session, logger=logger, settings=settings)
+
 
 @pytest.mark.asyncio
 async def test_create_and_get_record(database_service: DatabaseService, session: AsyncSession):

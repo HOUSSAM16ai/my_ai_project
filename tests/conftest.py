@@ -78,6 +78,7 @@ def user_factory(db_session):
     """
     Fixture to provide a UserFactory bound to the current async session.
     """
+
     class AsyncUserFactory(UserFactory):
         class Meta:
             sqlalchemy_session = db_session
@@ -91,6 +92,7 @@ def mission_factory(db_session):
     """
     Fixture to provide a MissionFactory bound to the current async session.
     """
+
     class AsyncMissionFactory(MissionFactory):
         class Meta:
             sqlalchemy_session = db_session
@@ -122,6 +124,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=kernel.app, base_url="http://test") as ac:
         yield ac
 
+
 @pytest.fixture
 async def admin_user(db_session: AsyncSession):
     """
@@ -137,16 +140,13 @@ async def admin_user(db_session: AsyncSession):
     if existing_user:
         return existing_user
 
-    admin = User(
-        email="admin@test.com",
-        full_name="Admin User",
-        is_admin=True
-    )
+    admin = User(email="admin@test.com", full_name="Admin User", is_admin=True)
     admin.set_password("password123")
     db_session.add(admin)
     await db_session.commit()
     await db_session.refresh(admin)
     return admin
+
 
 @pytest.fixture
 def admin_auth_headers(admin_user):
@@ -154,6 +154,7 @@ def admin_auth_headers(admin_user):
     Fixture to provide authentication headers for the admin user.
     """
     from app.core.security import generate_service_token
+
     token = generate_service_token(str(admin_user.id))
     return {"Authorization": f"Bearer {token}"}
 

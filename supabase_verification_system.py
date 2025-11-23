@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.engine_factory import create_unified_async_engine, create_unified_sync_engine
 
+
 # الألوان للتقارير
 class Colors:
     HEADER = "\033[95m"
@@ -149,6 +150,7 @@ class SupabaseVerificationSystem:
         try:
             # Use inspector from sqlalchemy
             from sqlalchemy import inspect
+
             inspector = inspect(self.engine)
             tables = inspector.get_table_names()
 
@@ -177,6 +179,7 @@ class SupabaseVerificationSystem:
         print_success("✅ تم التحقق من المحرك الموحد والاتصال بنجاح.")
         return True
 
+
 def main():
     system = SupabaseVerificationSystem()
     try:
@@ -188,6 +191,7 @@ def main():
     except Exception as e:
         print_error(f"خطأ: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

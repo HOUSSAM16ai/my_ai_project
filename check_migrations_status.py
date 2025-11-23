@@ -27,11 +27,13 @@ R = "\033[91m"
 B = "\033[94m"
 E = "\033[0m"
 
+
 def get_database_url():
     url = os.environ.get("DATABASE_URL")
     if not url:
         return "sqlite+aiosqlite:///./test.db"
     return url
+
 
 async def check_status():
     print(f"\n{B}{'='*60}{E}")
@@ -54,26 +56,31 @@ async def check_status():
                 else:
                     print(f"{Y}⚠️  alembic_version table is empty.{E}")
             except Exception:
-                 print(f"{Y}⚠️  alembic_version table does not exist.{E}")
+                print(f"{Y}⚠️  alembic_version table does not exist.{E}")
 
             # List Tables
             try:
-                result = await conn.execute(text("""
+                result = await conn.execute(
+                    text(
+                        """
                     SELECT table_name FROM information_schema.tables
                     WHERE table_schema = 'public'
-                """))
+                """
+                    )
+                )
                 tables = result.scalars().all()
                 print(f"\n{G}📊 Tables Found ({len(tables)}):{E}")
                 for t in tables:
                     print(f"   - {t}")
             except Exception:
-                 pass
+                pass
 
     except Exception as e:
         print(f"{R}❌ Error: {e}{E}")
         sys.exit(1)
     finally:
         await engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(check_status())
