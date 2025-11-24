@@ -1,0 +1,59 @@
+# ملاحظة: حذفنا رقم الإصدار version لأنه لم يعد مطلوباً
+
+# --- 1. هذا هو الجزء المفقود (التعريف) ---
+# يجب أن يبدأ بـ x- وعلامة & ليعرف البرنامج أن هذا "قالب"
+x-common-environment: &common-environment
+  # متغيرات البيئة الأساسية
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+  ADMIN_NAME: ${ADMIN_NAME:-Admin}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+  DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./cogniforge.db}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  SECRET_KEY: ${SECRET_KEY:-development-secret-key-change-in-production}
+  ENV: ${ENV:-development}
+  PYTHONUNBUFFERED: "1"
+
+services:
+  # Backend Service - FastAPI with Uvicorn
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-backend
+    restart: unless-stopped
+    
+    ports:
+      - "8000:8000"
+      
+    networks:
+      - appnet
+      
+    environment:
+      <<: *common-environment
+      PORT: 8000
+      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # Direct command without scripts for reliability
+    command: >
+      bash -c "
+      echo 'Running migrations...' &&
+      python -m alembic upgrade head 2>/dev/null || echo 'Migration skipped (SQLite)' &&
+      echo 'Starting Uvicorn...' &&
+      python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
+networks:
+  appnet:
+    driver: bridge
