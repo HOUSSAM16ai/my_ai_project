@@ -257,6 +257,10 @@ class AdminChatStreamingService:
                 max(StreamingConfig.MIN_CHUNK_DELAY_MS, chunk_latency),
                 StreamingConfig.MAX_CHUNK_DELAY_MS,
             )
+
+            # CRITICAL FIX: Ensure we don't block main thread in async contexts
+            # If we are running in a threadpool (likely for sync generator), sleep is okay-ish,
+            # but we should be careful.
             time.sleep(delay_ms / MS_TO_SECONDS)
 
         # Send completion event

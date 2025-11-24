@@ -273,7 +273,15 @@ class HybridStreamEngine:
         prediction_task = asyncio.create_task(self.predictor.predict_next(user_context))
 
         try:
+            # SUPERHUMAN RESILIENCE: Circuit Breaker for Infinite Streams
+            stream_start_time = time.time()
+            max_duration = 600 # 10 minutes max for any stream
+
             async for token in llm_stream:
+                if time.time() - stream_start_time > max_duration:
+                    logger.warning("Superhuman Circuit Breaker: Stream exceeded max duration. Terminating.")
+                    break
+
                 # Record first token latency (TTFT - Time To First Token)
                 if not first_token_sent:
                     ttft = (time.time() - start_time) * 1000
@@ -330,6 +338,14 @@ class HybridStreamEngine:
         except Exception as e:
             logger.error(f"Hybrid streaming error: {e}", exc_info=True)
             raise
+        finally:
+             # Ensure prediction task is cancelled if still running
+             if not prediction_task.done():
+                 prediction_task.cancel()
+                 try:
+                     await prediction_task
+                 except asyncio.CancelledError:
+                     pass
 
     def get_optimal_chunk_size(self) -> int:
         """Calculate optimal chunk size based on latency"""
