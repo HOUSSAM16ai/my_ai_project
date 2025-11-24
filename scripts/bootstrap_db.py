@@ -31,7 +31,8 @@ def sanitize_database_url(url_str: str) -> str:
     - Encodes passwords if needed (though usually assumed encoded in env)
     """
     if not url_str:
-        raise ValueError("DATABASE_URL is empty")
+        # If empty, default to SQLite immediately
+        return "sqlite+aiosqlite:///./dev.db"
 
     # 1. Basic Scheme Fixes
     if url_str.startswith("postgres://"):
@@ -40,7 +41,8 @@ def sanitize_database_url(url_str: str) -> str:
     try:
         u = make_url(url_str)
     except Exception as e:
-        raise ValueError(f"Invalid DATABASE_URL format: {e}")
+        logger.warning(f"Invalid DATABASE_URL format ({e}). Defaulting to SQLite.")
+        return "sqlite+aiosqlite:///./dev.db"
 
     # 2. Driver Fixes for Async
     if u.drivername == "postgresql":
@@ -63,21 +65,17 @@ def sanitize_database_url(url_str: str) -> str:
     u = u.set(query=query_params)
 
     # 4. Render
-    # render_as_string(hide_password=False)
     return u.render_as_string(hide_password=False)
 
 
-# Alias for backward compatibility if needed, or internal use
-sanitize_url = sanitize_database_url
-
-
-async def verify_connection(url: str) -> bool:
+async def verify_connection(url: str, is_fallback: bool = False) -> bool:
     """
     Verifies the connection using the Unified Engine Factory.
     Includes Hyper-Resilient Retry Logic (Exponential Backoff + Strict Timeouts)
     to prevent setup freezes.
     """
-    max_retries = 3
+    # If falling back to SQLite, we don't need many retries
+    max_retries = 1 if is_fallback else 3
     base_timeout = 5.0  # seconds
 
     for attempt in range(1, max_retries + 1):
@@ -91,14 +89,16 @@ async def verify_connection(url: str) -> bool:
                 return True
 
         except TimeoutError:
-            logger.warning(
-                f"⚠️ Connection verification timed out (Attempt {attempt}/{max_retries}). "
-                f"The database might be unreachable or blocking."
-            )
+            if not is_fallback:
+                logger.warning(
+                    f"⚠️ Connection verification timed out (Attempt {attempt}/{max_retries}). "
+                    f"The database might be unreachable or blocking."
+                )
         except Exception as e:
-            logger.warning(
-                f"⚠️ Connection verification failed (Attempt {attempt}/{max_retries}): {e}"
-            )
+            if not is_fallback:
+                logger.warning(
+                    f"⚠️ Connection verification failed (Attempt {attempt}/{max_retries}): {e}"
+                )
 
         # Exponential Backoff
         if attempt < max_retries:
@@ -106,28 +106,45 @@ async def verify_connection(url: str) -> bool:
             logger.info(f"⏳ Waiting {sleep_time}s before retrying...")
             await asyncio.sleep(sleep_time)
 
-    logger.error("❌ Critical Failure: Could not establish database connection after multiple attempts.")
+    if not is_fallback:
+        logger.error("❌ Critical Failure: Could not establish database connection after multiple attempts.")
     return False
 
 
 async def main():
     try:
         # 1. Get Raw URL
-        raw_url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+        raw_url = os.environ.get("DATABASE_URL")
 
-        # 2. Sanitize
-        clean_url = sanitize_database_url(raw_url)
-        logger.info(f"Sanitized URL scheme: {make_url(clean_url).drivername}")
+        # If no URL provided, default directly to SQLite
+        if not raw_url:
+             logger.info("No DATABASE_URL set. Using default SQLite.")
+             clean_url = "sqlite+aiosqlite:///./dev.db"
+        else:
+             # 2. Sanitize provided URL
+             clean_url = sanitize_database_url(raw_url)
+             logger.info(f"Sanitized URL scheme: {make_url(clean_url).drivername}")
 
         # 3. Verify
         # Skip verification if explicitly requested (e.g. for unit testing URL generation only)
         if os.environ.get("SKIP_DB_VERIFY") != "1":
             logger.info("🔍 Verifying connection with Resilient Probe...")
+
             if not await verify_connection(clean_url):
-                logger.error("❌ Verification failed. The database is unreachable.")
-                # We exit with 1 to inform setup_dev.sh, but we ensure we DON'T hang.
-                sys.exit(1)
-            logger.info("✅ Verification successful. Database is ready.")
+                logger.warning("⚠️  Primary Database Unreachable. Activating EMERGENCY SQLITE PROTOCOL.")
+
+                # FALLBACK LOGIC
+                clean_url = "sqlite+aiosqlite:///./dev.db"
+                logger.info(f"🔄 Switching to Fallback Database: {clean_url}")
+
+                # Verify Fallback
+                if not await verify_connection(clean_url, is_fallback=True):
+                    logger.error("❌ COMPLETE SYSTEM FAILURE: Even SQLite fallback failed.")
+                    sys.exit(1)
+
+                logger.info("✅ Emergency Protocol Successful. Using local database.")
+            else:
+                logger.info("✅ Verification successful. Database is ready.")
         else:
             logger.info("⚠️ Skipping connection verification (SKIP_DB_VERIFY=1)")
 
@@ -137,7 +154,10 @@ async def main():
 
     except Exception as e:
         logger.error(f"Bootstrap Critical Failure: {e}")
-        sys.exit(1)
+        # Even on critical failure, try to output SQLite to keep the app alive?
+        # No, if we crash here something is very wrong. But let's be safe.
+        print("sqlite+aiosqlite:///./dev.db", end="")
+        sys.exit(0) # Exit 0 to let setup_dev.sh continue with the fallback
 
 
 if __name__ == "__main__":

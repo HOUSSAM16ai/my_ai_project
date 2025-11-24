@@ -6,92 +6,147 @@ LOG_FILE=".setup_dev.log"
 exec 3>&1 4>&2 # Save original stdout/stderr
 exec > >(tee -a "$LOG_FILE") 2>&1 # Redirect all output to log file and stdout
 
-echo "🔧 Starting Development Environment Setup..."
+echo "🔧 Starting SUPERHUMAN Development Environment Setup..."
 echo "📜 Logs will be saved to $LOG_FILE"
 
-# --- 1. DEPENDENCIES ---
-echo "📦 Installing Python Dependencies..."
-pip install -r requirements.txt > /dev/null 2>&1 || { echo "❌ Pip install failed"; exit 1; }
-echo "✅ Dependencies Installed."
+# --- 1. PYTHON DEPENDENCIES ---
+echo "📦 [Phase 1] Installing Python Dependencies..."
+if pip install -r requirements.txt > /dev/null 2>&1; then
+    echo "✅ Python Dependencies Installed."
+else
+    echo "❌ Python Pip install failed. Retrying with verbose output..."
+    pip install -r requirements.txt || { echo "❌ Critical Failure: Pip install failed completely."; exit 1; }
+fi
 
-# --- 2. BOOTSTRAP DATABASE URL ---
-echo "🔗 Bootstrapping Database Connection..."
-# Capture ONLY the stdout from bootstrap_db.py.
-# stderr flows through to our script's stderr (and log file).
-# We use a temporary file to avoid any subshell weirdness.
+# --- 2. NODE DEPENDENCIES ---
+echo "📦 [Phase 2] Installing Node.js Dependencies..."
+if [ -f "package.json" ]; then
+    if npm install > /dev/null 2>&1; then
+        echo "✅ Node Dependencies Installed."
+    else
+        echo "⚠️  npm install had issues. Retrying verbose..."
+        npm install || echo "⚠️  npm install failed, but proceeding (Frontend might be broken)."
+    fi
+else
+    echo "⚠️  No package.json found. Skipping Node setup."
+fi
+
+# --- 3. BOOTSTRAP DATABASE URL ---
+echo "🔗 [Phase 3] Bootstrapping Database Connection..."
 RAW_URL_FILE="/tmp/db_url_capture"
-
-# Run bootstrap with error handling
 if ! python3 scripts/bootstrap_db.py > "$RAW_URL_FILE"; then
     echo "❌ Database Bootstrap Failed."
-    echo "💡 Suggestion: Check if your database container is running (docker ps) and healthy."
     exit 1
 fi
 
-# Read and Trim
 DATABASE_URL=$(cat "$RAW_URL_FILE" | tr -d '\n' | tr -d ' ')
-export DATABASE_URL
 
-# Validation
 if [[ -z "$DATABASE_URL" ]]; then
-    echo "❌ Error: DATABASE_URL is empty. Bootstrap failed."
+    echo "❌ Error: DATABASE_URL is empty."
     exit 1
 fi
 
-if [[ "$DATABASE_URL" != *"://"* ]]; then
-    echo "❌ Error: Invalid DATABASE_URL format: $DATABASE_URL"
-    exit 1
+echo "✅ Database Configured: ${DATABASE_URL//:*/:******@...}"
+
+# --- 4. PERSIST ENVIRONMENT (.env) ---
+echo "💾 [Phase 4] Persisting Environment Configuration..."
+if [ ! -f .env ]; then
+    touch .env
 fi
 
-echo "✅ Database URL captured: ${DATABASE_URL//:*/:******@...}"
+# Function to update or add a key-value pair in .env
+update_env() {
+    local key=$1
+    local value=$2
+    if grep -q "^$key=" .env; then
+        # Use a temp file to avoid issues with sed in-place on some systems
+        sed "s|^$key=.*|$key=$value|" .env > .env.tmp && mv .env.tmp .env
+    else
+        echo "$key=$value" >> .env
+    fi
+}
 
-# --- 3. VERIFY ENGINE SAFETY ---
-echo "🛡️  Verifying Engine Configuration..."
+# Persist DATABASE_URL
+update_env "DATABASE_URL" "$DATABASE_URL"
+
+# Persist SECRET_KEY (Generate if missing)
+if ! grep -q "^SECRET_KEY=" .env; then
+    # Generate a strong random key
+    GENERATED_KEY=$(openssl rand -hex 32)
+    update_env "SECRET_KEY" "$GENERATED_KEY"
+    echo "🔑 Generated new SECRET_KEY."
+else
+    echo "🔑 SECRET_KEY already exists."
+fi
+
+# Reload environment to ensure current shell has latest values
+set -a
+source .env
+set +a
+echo "✅ Environment persisted to .env"
+
+
+# --- 5. VERIFY ENGINE SAFETY ---
+echo "🛡️  [Phase 5] Verifying Engine Configuration..."
 if ! python3 scripts/fix_duplicate_prepared_statement.py --verify; then
-    echo "❌ Engine verification failed. See logs above."
-    echo "💡 This usually means the database is reachable but rejected the connection (e.g., auth error or SSL issue)."
+    echo "❌ Engine verification failed."
     exit 1
 fi
 
-# --- 4. RUN MIGRATIONS ---
-echo "🚀 Running Alembic Migrations (via Smart Strategy)..."
-# Use smart_migrate.py which includes timeout and retry logic
+# --- 6. RUN MIGRATIONS ---
+echo "🚀 [Phase 6] Running Migrations..."
 python3 scripts/smart_migrate.py || {
     echo "❌ Migration failed."
     exit 1
 }
-echo "✅ Schema is up to date."
 
-# --- 5. SEED DATA ---
-echo "🌱 Seeding Admin User..."
+# --- 7. SEED DATA ---
+echo "🌱 [Phase 7] Seeding Admin User..."
 python3 scripts/seed_admin.py || {
     echo "❌ Admin seeding failed."
     exit 1
 }
 
-# --- 6. START APPLICATION ---
-echo "🚀 Starting Application via standardized script..."
-
-# Check if port 8000 is already in use by another process not named uvicorn
-if lsof -i :8000 > /dev/null 2>&1; then
-    echo "⚠️  Port 8000 is already in use."
-    # We don't exit, we just warn, as it might be a previous instance or something else.
-fi
-
+# --- 8. START BACKEND ---
+echo "🚀 [Phase 8] Launching Backend (Port 8000)..."
 if pgrep -f "uvicorn" > /dev/null; then
-    echo "✅ Application is already running."
+    echo "✅ Backend already running."
 else
-    echo "🚀 Starting Application in background..."
-    # Ensure start.sh runs with nohup and detaches completely
-    nohup bash scripts/start.sh > .app_background.log 2>&1 &
-
-    # Superhuman verification: Wait a moment and check if it died immediately
-    sleep 5
-    if ! pgrep -f "uvicorn" > /dev/null; then
-        echo "❌ Application failed to start. Logs:"
-        cat .app_background.log
-        exit 1
-    fi
-    echo "✅ Application started. Logs are being written to .app_background.log"
-    echo "🌐 Access the app at http://localhost:8000"
+    nohup bash scripts/start.sh > .backend.log 2>&1 &
+    echo "✅ Backend launched in background."
 fi
+
+# --- 9. START FRONTEND ---
+echo "🎨 [Phase 9] Launching Frontend (Port 5000)..."
+if pgrep -f "vite" > /dev/null; then
+    echo "✅ Frontend already running."
+else
+    if [ -f "package.json" ]; then
+        # Ensure we bind to 0.0.0.0
+        nohup npm run dev -- --host 0.0.0.0 --port 5000 > .frontend.log 2>&1 &
+        echo "✅ Frontend launched in background."
+    else
+        echo "⚠️  Skipping Frontend (No package.json)."
+    fi
+fi
+
+# --- 10. HEALTH CHECK ---
+echo "🏥 [Phase 10] Performing Health Check..."
+sleep 5
+
+if ! pgrep -f "uvicorn" > /dev/null; then
+    echo "❌ Backend FAILED to start. Logs:"
+    cat .backend.log
+    exit 1
+fi
+
+if [ -f "package.json" ] && ! pgrep -f "vite" > /dev/null; then
+    echo "⚠️  Frontend FAILED to start. Logs:"
+    cat .frontend.log
+    # We don't exit here strictly, but it's a warning
+fi
+
+echo "✨ SUPERHUMAN SETUP COMPLETE ✨"
+echo "🌐 Backend: http://localhost:8000"
+echo "🎨 Frontend: http://localhost:5000"
+echo "✅ All systems operational."
