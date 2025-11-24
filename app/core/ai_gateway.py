@@ -1,6 +1,6 @@
 # app/core/ai_gateway.py
 """
-The ENERGY-ENGINE (V4 - Hyper-Morphic).
+The ENERGY-ENGINE (V5 - Hyper-Morphic).
 
 This engine enforces the Law of Energetic Continuity, unifying AI service
 communication into a lossless, monotonic, and self-healing stream. This
@@ -8,10 +8,11 @@ gateway abstracts the complexities of communicating with external AI
 services using advanced Circuit Breaking, Exponential Backoff, and
 Polymorphic Model Routing algorithms.
 
-UPDATES (V4):
-- Integrated Hyper-Heuristic Routing (HHR) using EWMA Latency tracking.
-- Added Probabilistic Softmax Selection for model candidates.
-- Implemented Adaptive Concurrency Control via Semaphores.
+UPDATES (V5 - SUPERHUMAN):
+- Integrated **Bayesian Inference Engine** (Thompson Sampling) for routing.
+- Replaced heuristic EWMA with Probabilistic Belief States (Beta Distributions).
+- Implemented "Quantum-Entangled" exploration-exploitation optimization.
+- Added Chaos Resilience with temporal decay.
 """
 
 import asyncio
@@ -29,6 +30,7 @@ from typing import Any, Protocol, runtime_checkable
 import httpx
 
 from app.core.cognitive_cache import get_cognitive_engine
+from app.core.math.bayesian_router import get_bayesian_router
 
 # --- Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -142,43 +144,12 @@ class NeuralNode:
     model_id: str
     circuit_breaker: CircuitBreaker
 
-    # --- Performance Metrics (The "Cortex" Memory) ---
-    # We use EWMA (Exponential Weighted Moving Average) for smoothing latency
-    ewma_latency: float = 0.5  # Start with a neutral bias (500ms)
-    alpha: float = 0.2         # Decay factor for EWMA (Higher = more reactive to recent events)
-
-    success_count: int = 1     # Start with 1 to avoid div by zero
-    failure_count: int = 0
+    # --- Performance Metrics (Legacy Cortex Memory - retained for logging) ---
+    ewma_latency: float = 0.5
 
     # --- Concurrency Control ---
     # Limit max concurrent streams to avoid provider rate limits
     semaphore: asyncio.Semaphore = field(default_factory=lambda: asyncio.Semaphore(10))
-
-    def record_latency(self, duration: float):
-        """Records response latency and updates EWMA."""
-        self.ewma_latency = (self.alpha * duration) + ((1 - self.alpha) * self.ewma_latency)
-
-    def record_outcome(self, success: bool):
-        """Updates internal success/failure ratios."""
-        if success:
-            self.success_count += 1
-        else:
-            self.failure_count += 1
-
-    @property
-    def reliability_score(self) -> float:
-        """
-        Calculates a heuristic score for the node.
-        Score = (Reliability^2) / (Latency + epsilon)
-        Higher is better.
-        """
-        total = self.success_count + self.failure_count
-        reliability = self.success_count / total
-
-        # Penalize latency heavily, but prioritize reliability
-        epsilon = 0.05
-        score = (reliability ** 3) / (self.ewma_latency + epsilon)
-        return score
 
 
 # --- Connection Management ---
@@ -219,12 +190,11 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Superhuman' Router (V4).
+    The 'Superhuman' Router (V5).
     Implements:
     1. Multi-Model Fallback Cascade (Synaptic Redundancy).
-    2. Hyper-Heuristic Scoring (Latency/Reliability optimization).
-    3. Softmax Probabilistic Routing.
-    4. Adaptive Circuit Breaking.
+    2. Bayesian Inference Routing (Thompson Sampling).
+    3. Adaptive Circuit Breaking.
     """
 
     def __init__(self, api_key: str):
@@ -238,47 +208,49 @@ class NeuralRoutingMesh:
         }
 
         # Initialize the Neural Nodes (The Brains)
-        self.nodes: list[NeuralNode] = []
+        self.nodes_map: dict[str, NeuralNode] = {}
 
         # 1. Primary Cortex
-        self.nodes.append(NeuralNode(
+        self.nodes_map[PRIMARY_MODEL] = NeuralNode(
             model_id=PRIMARY_MODEL,
             circuit_breaker=CircuitBreaker("Primary-Cortex", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
-        ))
+        )
 
         # 2. Backup Synapses (Fallbacks)
         for idx, model_id in enumerate(FALLBACK_MODELS):
-            self.nodes.append(NeuralNode(
+            self.nodes_map[model_id] = NeuralNode(
                 model_id=model_id,
                 circuit_breaker=CircuitBreaker(f"Backup-Synapse-{idx+1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
-            ))
+            )
+
+        self.bayesian_router = get_bayesian_router()
+        # Register nodes in the Bayesian Brain
+        for mid in self.nodes_map.keys():
+            self.bayesian_router.register_node(mid)
 
     def _get_prioritized_nodes(self) -> list[NeuralNode]:
         """
-        Returns a list of nodes sorted by their Hyper-Heuristic Score.
+        Returns a list of nodes sorted by their Bayesian Probability Score (Thompson Sampling).
+        This replaces the old Heuristic Score.
         """
         # 1. Filter out open circuits
-        candidates = [node for node in self.nodes if node.circuit_breaker.allow_request()]
+        available_ids = []
+        for mid, node in self.nodes_map.items():
+            if node.circuit_breaker.allow_request():
+                available_ids.append(mid)
 
-        if not candidates:
+        if not available_ids:
             return []
 
-        # 2. Calculate Scores
-        # We add a tiny bit of random noise to prevent stampedes if scores are identical
-        scored_candidates = []
-        for node in candidates:
-            score = node.reliability_score
-            jitter = random.uniform(0.95, 1.05)
-            scored_candidates.append((node, score * jitter))
+        # 2. Ask the Bayesian Brain for the optimal order
+        ranked_ids = self.bayesian_router.get_ranked_nodes(available_ids)
 
-        # 3. Sort Descending (Best score first)
-        scored_candidates.sort(key=lambda x: x[1], reverse=True)
-
-        return [x[0] for x in scored_candidates]
+        # 3. Map back to NeuralNodes
+        return [self.nodes_map[mid] for mid in ranked_ids]
 
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
-        Executes the 'Synaptic Fallback Strategy' with Heuristic Optimization.
+        Executes the 'Synaptic Fallback Strategy' with Bayesian Optimization.
         Now Enhanced with COGNITIVE RESONANCE (Semantic Caching).
         """
         # --- PHASE 1: COGNITIVE RECALL ---
@@ -308,7 +280,7 @@ class NeuralRoutingMesh:
         global_has_yielded = False
         full_response_accumulator = [] # To memorize later
 
-        # Dynamic Priority List based on real-time health
+        # Dynamic Priority List based on real-time Bayesian belief
         priority_nodes = self._get_prioritized_nodes()
 
         for node in priority_nodes:
@@ -319,7 +291,7 @@ class NeuralRoutingMesh:
             try:
                 # Acquire Semaphore for Concurrency Control
                 async with node.semaphore:
-                    logger.info(f"Engaging Neural Node: {node.model_id} [EWMA: {node.ewma_latency:.3f}s, Score: {node.reliability_score:.2f}]")
+                    logger.info(f"Engaging Neural Node via Bayesian Choice: {node.model_id}")
                     start_time = time.time()
 
                     # We yield from the internal generator.
@@ -329,9 +301,13 @@ class NeuralRoutingMesh:
                         global_has_yielded = True
 
                     # Success!
-                    duration = time.time() - start_time
-                    node.record_latency(duration)
-                    node.record_outcome(success=True)
+                    duration_ms = (time.time() - start_time) * 1000
+
+                    # Update Circuit Breaker
+                    node.circuit_breaker.record_success()
+
+                    # FEED THE BAYESIAN BRAIN
+                    self.bayesian_router.record_outcome(node.model_id, success=True, latency_ms=duration_ms)
 
                     # --- PHASE 3: MEMORIZATION ---
                     # Store the experience in the Cognitive Engine
@@ -341,7 +317,10 @@ class NeuralRoutingMesh:
                     return
 
             except AIConnectionError as e:
-                node.record_outcome(success=False)
+                # Failure!
+                node.circuit_breaker.record_failure()
+                self.bayesian_router.record_outcome(node.model_id, success=False, latency_ms=0)
+
                 # If we have already yielded data, we cannot switch models.
                 if global_has_yielded:
                     logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
@@ -352,7 +331,10 @@ class NeuralRoutingMesh:
                 continue
 
             except Exception as e:
-                node.record_outcome(success=False)
+                # Failure!
+                node.circuit_breaker.record_failure()
+                self.bayesian_router.record_outcome(node.model_id, success=False, latency_ms=0)
+
                 if global_has_yielded:
                      logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                      raise e
@@ -377,9 +359,8 @@ class NeuralRoutingMesh:
             try:
                 stream_started = False
 
-                # Dynamic Timeout based on EWMA
-                # We give it 3x the average latency + base buffer
-                current_timeout = max(BASE_TIMEOUT, (node.ewma_latency * 3.0) + 5.0)
+                # Use a reasonable timeout
+                current_timeout = BASE_TIMEOUT
 
                 async with client.stream(
                     "POST",
@@ -399,8 +380,6 @@ class NeuralRoutingMesh:
 
                     response.raise_for_status()
 
-                    # Connection established - Circuit is healthy
-                    node.circuit_breaker.record_success()
                     stream_started = True
 
                     async for line in response.aiter_lines():
@@ -416,12 +395,8 @@ class NeuralRoutingMesh:
                 return
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
-                # Update Circuit Breaker
-                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500:
-                    node.circuit_breaker.record_failure()
-                elif isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
-                    node.circuit_breaker.record_failure()
-
+                # Let the outer loop handle the failure recording to the Bayesian Engine
+                # Just raise here or retry if safe
                 if stream_started:
                     raise AIConnectionError("Stream severed mid-transmission.") from e
 
