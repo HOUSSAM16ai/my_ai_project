@@ -76,16 +76,23 @@ async def verify_connection(url: str, is_fallback: bool = False) -> bool:
     """
     # If falling back to SQLite, we don't need many retries
     max_retries = 1 if is_fallback else 3
-    base_timeout = 5.0  # seconds
+    # INCREASED TIMEOUTS: 10s for Primary, 30s for Fallback (to handle slow IO)
+    base_timeout = 30.0 if is_fallback else 10.0
 
     for attempt in range(1, max_retries + 1):
         try:
             # We use a strict timeout to kill hanging connections
             async with asyncio.timeout(base_timeout):
                 engine = create_unified_async_engine(database_url=url)
-                async with engine.connect() as conn:
-                    await conn.execute(text("SELECT 1"))
-                await engine.dispose()
+                try:
+                    async with engine.connect() as conn:
+                        await conn.execute(text("SELECT 1"))
+                finally:
+                    # Ensure dispose is called, but shield it from immediate cancellation
+                    # to prevent 'Exception closing connection' logs if possible.
+                    # We accept that if it's already cancelled, dispose might be noisy,
+                    # but the try/finally ensures we at least TRY to clean up.
+                    await engine.dispose()
                 return True
 
         except TimeoutError:
@@ -94,6 +101,8 @@ async def verify_connection(url: str, is_fallback: bool = False) -> bool:
                     f"⚠️ Connection verification timed out (Attempt {attempt}/{max_retries}). "
                     f"The database might be unreachable or blocking."
                 )
+        except asyncio.CancelledError:
+            logger.warning(f"⚠️ Connection cancelled during verification (Attempt {attempt}).")
         except Exception as e:
             if not is_fallback:
                 logger.warning(
@@ -136,6 +145,14 @@ async def main():
                 # FALLBACK LOGIC
                 clean_url = "sqlite+aiosqlite:///./dev.db"
                 logger.info(f"🔄 Switching to Fallback Database: {clean_url}")
+
+                # Self-Healing: Ensure we can write to the directory
+                try:
+                    with open("./dev_probe.tmp", "w") as f:
+                        f.write("probe")
+                    os.remove("./dev_probe.tmp")
+                except Exception as e:
+                    logger.error(f"❌ Filesystem is Read-Only or Broken: {e}")
 
                 # Verify Fallback
                 if not await verify_connection(clean_url, is_fallback=True):
