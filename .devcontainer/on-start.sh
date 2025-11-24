@@ -70,5 +70,16 @@ if [ -f "cli.py" ]; then
     fi
 fi
 
+# 4. Ensure Application is Running (Superhuman Redundancy)
+log "Step 4/4: Ensuring Application Server is UP..."
+if ! pgrep -f "uvicorn" > /dev/null; then
+    log "Starting Uvicorn in background..."
+    # We use nohup to ensure it persists, and redirect output
+    nohup bash scripts/start.sh > .app_background.log 2>&1 &
+    ok "✅ Application started in background."
+else
+    ok "✅ Application is already running."
+fi
+
 echo
 log "🎉 --- System is fully operational --- 🎉"

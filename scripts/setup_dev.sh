@@ -64,4 +64,9 @@ python3 scripts/seed_admin.py || {
 
 # --- 6. START APPLICATION ---
 echo "🚀 Starting Application via standardized script..."
-bash scripts/start.sh
+
+if pgrep -f "uvicorn" > /dev/null; then
+    echo "✅ Application is already running."
+else
+    bash scripts/start.sh
+fi
