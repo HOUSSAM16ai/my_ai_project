@@ -47,9 +47,9 @@ python3 scripts/fix_duplicate_prepared_statement.py --verify || {
 }
 
 # --- 4. RUN MIGRATIONS ---
-echo "🚀 Running Alembic Migrations..."
-# Ensure we are at head
-alembic upgrade head || {
+echo "🚀 Running Alembic Migrations (via Smart Strategy)..."
+# Use smart_migrate.py which includes timeout and retry logic
+python3 scripts/smart_migrate.py || {
     echo "❌ Migration failed."
     exit 1
 }
