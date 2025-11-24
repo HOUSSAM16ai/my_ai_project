@@ -80,19 +80,14 @@ async def verify_connection(url: str, is_fallback: bool = False) -> bool:
     base_timeout = 30.0 if is_fallback else 10.0
 
     for attempt in range(1, max_retries + 1):
+        engine = create_unified_async_engine(database_url=url)
+        conn = None
         try:
             # We use a strict timeout to kill hanging connections
             async with asyncio.timeout(base_timeout):
-                engine = create_unified_async_engine(database_url=url)
-                try:
-                    async with engine.connect() as conn:
-                        await conn.execute(text("SELECT 1"))
-                finally:
-                    # Ensure dispose is called, but shield it from immediate cancellation
-                    # to prevent 'Exception closing connection' logs if possible.
-                    # We accept that if it's already cancelled, dispose might be noisy,
-                    # but the try/finally ensures we at least TRY to clean up.
-                    await engine.dispose()
+                # Manual connection management for shielded cleanup
+                conn = await engine.connect()
+                await conn.execute(text("SELECT 1"))
                 return True
 
         except TimeoutError:
@@ -102,21 +97,39 @@ async def verify_connection(url: str, is_fallback: bool = False) -> bool:
                     f"The database might be unreachable or blocking."
                 )
         except asyncio.CancelledError:
-            logger.warning(f"⚠️ Connection cancelled during verification (Attempt {attempt}).")
+            logger.warning(f"⚠️ Connection verification cancelled (Attempt {attempt}).")
         except Exception as e:
             if not is_fallback:
                 logger.warning(
                     f"⚠️ Connection verification failed (Attempt {attempt}/{max_retries}): {e}"
                 )
+        finally:
+            # SHIELDED CLEANUP
+            if conn:
+                try:
+                    await asyncio.shield(conn.close())
+                except asyncio.CancelledError:
+                    pass
+                except Exception as e:
+                    logger.debug(f"Ignored error closing connection: {e}")
 
-        # Exponential Backoff
+            try:
+                await asyncio.shield(engine.dispose())
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.debug(f"Ignored error disposing engine: {e}")
+
+        # Exponential Backoff (only if we are going to retry)
         if attempt < max_retries:
-            sleep_time = 2.0 ** attempt
+            sleep_time = 2.0**attempt
             logger.info(f"⏳ Waiting {sleep_time}s before retrying...")
             await asyncio.sleep(sleep_time)
 
     if not is_fallback:
-        logger.error("❌ Critical Failure: Could not establish database connection after multiple attempts.")
+        logger.error(
+            "❌ Critical Failure: Could not establish database connection after multiple attempts."
+        )
     return False
 
 
@@ -127,12 +140,12 @@ async def main():
 
         # If no URL provided, default directly to SQLite
         if not raw_url:
-             logger.info("No DATABASE_URL set. Using default SQLite.")
-             clean_url = "sqlite+aiosqlite:///./dev.db"
+            logger.info("No DATABASE_URL set. Using default SQLite.")
+            clean_url = "sqlite+aiosqlite:///./dev.db"
         else:
-             # 2. Sanitize provided URL
-             clean_url = sanitize_database_url(raw_url)
-             logger.info(f"Sanitized URL scheme: {make_url(clean_url).drivername}")
+            # 2. Sanitize provided URL
+            clean_url = sanitize_database_url(raw_url)
+            logger.info(f"Sanitized URL scheme: {make_url(clean_url).drivername}")
 
         # 3. Verify
         # Skip verification if explicitly requested (e.g. for unit testing URL generation only)
@@ -140,7 +153,9 @@ async def main():
             logger.info("🔍 Verifying connection with Resilient Probe...")
 
             if not await verify_connection(clean_url):
-                logger.warning("⚠️  Primary Database Unreachable. Activating EMERGENCY SQLITE PROTOCOL.")
+                logger.warning(
+                    "⚠️  Primary Database Unreachable. Activating EMERGENCY SQLITE PROTOCOL."
+                )
 
                 # FALLBACK LOGIC
                 clean_url = "sqlite+aiosqlite:///./dev.db"
@@ -174,7 +189,7 @@ async def main():
         # Even on critical failure, try to output SQLite to keep the app alive?
         # No, if we crash here something is very wrong. But let's be safe.
         print("sqlite+aiosqlite:///./dev.db", end="")
-        sys.exit(0) # Exit 0 to let setup_dev.sh continue with the fallback
+        sys.exit(0)  # Exit 0 to let setup_dev.sh continue with the fallback
 
 
 if __name__ == "__main__":
