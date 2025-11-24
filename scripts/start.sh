@@ -1,15 +1,21 @@
 #!/bin/bash
 set -e
 
-# Load .env file if it exists (Crucial for local dev and Codespaces)
+# --- SUPERHUMAN STARTUP SCRIPT ---
+
+# 1. Load Environment
 if [ -f .env ]; then
-  echo "Loading environment from .env..."
   set -a
   source .env
   set +a
 fi
 
-# Standardized startup command using the Factory Pattern
-# We use python3 -m uvicorn to ensure it uses the correct environment path
-echo "🚀 Launching CogniForge Reality Kernel..."
+# 2. Run Magic Access/Cleanup
+python3 scripts/magic_access.py
+
+# 3. Launch Application
+echo "🚀 Igniting Reality Kernel V3..."
+
+# Use python3 -m uvicorn for correct path resolution
+# Bind to 0.0.0.0 to ensure external access in containers
 exec python3 -m uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
