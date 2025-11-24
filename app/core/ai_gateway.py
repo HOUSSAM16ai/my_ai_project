@@ -5,7 +5,8 @@ The ENERGY-ENGINE (V3 - Hyper-Resilient).
 This engine enforces the Law of Energetic Continuity, unifying AI service
 communication into a lossless, monotonic, and self-healing stream. This
 gateway abstracts the complexities of communicating with external AI
-services using advanced Circuit Breaking and Exponential Backoff algorithms.
+services using advanced Circuit Breaking, Exponential Backoff, and
+Polymorphic Model Routing algorithms.
 """
 
 import asyncio
@@ -16,6 +17,7 @@ import random
 import time
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol, runtime_checkable
 
@@ -23,7 +25,15 @@ import httpx
 
 # --- Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
+
+# The "Holographic Registry" of Models
+# We prioritize "Intelligence" (Sonnet) -> "Versatility" (GPT-4o) -> "Speed" (Haiku/Instant)
+PRIMARY_MODEL = "anthropic/claude-3.5-sonnet"
+FALLBACK_MODELS = [
+    "openai/gpt-4o",
+    "anthropic/claude-instant-1.2"
+]
+
 MAX_RETRIES = 3
 BASE_TIMEOUT = 30.0
 CIRCUIT_FAILURE_THRESHOLD = 5
@@ -48,6 +58,9 @@ class AICircuitOpenError(AIError):
 class AIConnectionError(AIError):
     """Network or connection failure."""
 
+class AIAllModelsExhaustedError(AIError):
+    """All available AI models in the Neural Mesh have failed."""
+
 
 # --- Resilience Algorithms ---
 
@@ -63,7 +76,8 @@ class CircuitBreaker:
     Prevents cascading failures by stopping requests to a failing service.
     """
 
-    def __init__(self, failure_threshold: int, recovery_timeout: float):
+    def __init__(self, name: str, failure_threshold: int, recovery_timeout: float):
+        self.name = name
         self.threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.failure_count = 0
@@ -73,7 +87,7 @@ class CircuitBreaker:
     def record_success(self):
         """Reset failure count on success."""
         if self.state == CircuitState.HALF_OPEN:
-            logger.info("Circuit Breaker: Recovered to CLOSED state.")
+            logger.info(f"Circuit Breaker [{self.name}]: Recovered to CLOSED state.")
             self.state = CircuitState.CLOSED
             self.failure_count = 0
         elif self.state == CircuitState.CLOSED:
@@ -84,7 +98,7 @@ class CircuitBreaker:
         self.failure_count += 1
         self.last_failure_time = time.time()
         logger.warning(
-            f"Circuit Breaker: Failure recorded ({self.failure_count}/{self.threshold})"
+            f"Circuit Breaker [{self.name}]: Failure recorded ({self.failure_count}/{self.threshold})"
         )
 
         if self.state == CircuitState.CLOSED and self.failure_count >= self.threshold:
@@ -95,7 +109,7 @@ class CircuitBreaker:
 
     def _open_circuit(self):
         self.state = CircuitState.OPEN
-        logger.error(f"Circuit Breaker: OPENED. Blocking requests for {self.recovery_timeout}s.")
+        logger.error(f"Circuit Breaker [{self.name}]: OPENED. Blocking requests for {self.recovery_timeout}s.")
 
     def allow_request(self) -> bool:
         """Check if request should be allowed to proceed."""
@@ -104,53 +118,29 @@ class CircuitBreaker:
 
         if self.state == CircuitState.OPEN:
             if time.time() - self.last_failure_time > self.recovery_timeout:
-                logger.info("Circuit Breaker: Probing (HALF_OPEN).")
+                logger.info(f"Circuit Breaker [{self.name}]: Probing (HALF_OPEN).")
                 self.state = CircuitState.HALF_OPEN
                 return True
             return False
 
-        # HALF_OPEN: We usually allow one probe request.
-        # For simplicity in this implementation, we allow it (handled by logic above).
         return True
 
 
-class ResilienceKernel:
+@dataclass
+class NeuralNode:
     """
-    Implements retry logic with Exponential Backoff and Jitter.
+    Represents a single node in the AI Intelligence Mesh.
+    Combines Model Identity with its Resilience State (Circuit Breaker).
     """
+    model_id: str
+    circuit_breaker: CircuitBreaker
+    latency_history: list[float] = field(default_factory=list)
 
-    @staticmethod
-    async def execute_with_retry(
-        func, *args, retries: int = MAX_RETRIES, **kwargs
-    ) -> Any:
-        last_exception = None
-
-        for attempt in range(1, retries + 2):
-            try:
-                return await func(*args, **kwargs)
-            except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout) as e:
-                # Transient network errors
-                last_exception = e
-                if attempt > retries:
-                    break
-            except httpx.HTTPStatusError as e:
-                # Retry on 5xx errors or 429
-                last_exception = e
-                if e.response.status_code in (429, 500, 502, 503, 504):
-                    if attempt > retries:
-                        break
-                else:
-                    # Client error (400, 401, etc.) - Do not retry
-                    raise AIProviderError(f"Upstream Error: {e}") from e
-
-            # Calculate Backoff: base * 2^(attempt-1) + jitter
-            sleep_time = (2 ** (attempt - 1)) * 0.5 + random.uniform(0, 0.5)
-            logger.warning(
-                f"Attempt {attempt}/{retries} failed. Retrying in {sleep_time:.2f}s..."
-            )
-            await asyncio.sleep(sleep_time)
-
-        raise AIConnectionError(f"Max retries exceeded. Last error: {last_exception}") from last_exception
+    def record_latency(self, duration: float):
+        """Records response latency for predictive optimization (Future Use)."""
+        self.latency_history.append(duration)
+        if len(self.latency_history) > 100:
+            self.latency_history.pop(0)
 
 
 # --- Connection Management ---
@@ -187,84 +177,129 @@ class AIClient(Protocol):
         return self
 
 
-# --- Concrete Implementation ---
-class OpenRouterAIClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL):
+# --- The Omniscient Router ---
+
+class NeuralRoutingMesh:
+    """
+    The 'Superhuman' Router.
+    Implements:
+    1. Multi-Model Fallback Cascade (Synaptic Redundancy).
+    2. Adaptive Circuit Breaking per Model.
+    3. Self-Healing Stream Recovery.
+    """
+
+    def __init__(self, api_key: str):
         self.api_key = api_key
-        self.model = model
         self.base_url = "https://openrouter.ai/api/v1"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://cogniforge.local",  # Required by OpenRouter
+            "HTTP-Referer": "https://cogniforge.local",
             "X-Title": "CogniForge Reality Kernel"
         }
-        # Each client instance shares the global circuit breaker for the provider
-        # In a multi-provider setup, this would be keyed by provider domain.
-        self.circuit_breaker = _GLOBAL_CIRCUIT_BREAKER
+
+        # Initialize the Neural Nodes (The Brains)
+        self.nodes: list[NeuralNode] = []
+
+        # 1. Primary Cortex
+        self.nodes.append(NeuralNode(
+            model_id=PRIMARY_MODEL,
+            circuit_breaker=CircuitBreaker("Primary-Cortex", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
+        ))
+
+        # 2. Backup Synapses (Fallbacks)
+        for idx, model_id in enumerate(FALLBACK_MODELS):
+            self.nodes.append(NeuralNode(
+                model_id=model_id,
+                circuit_breaker=CircuitBreaker(f"Backup-Synapse-{idx+1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
+            ))
 
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
-        Streams chat completion with full resilience (Circuit Breaker + Retries).
+        Executes the 'Synaptic Fallback Strategy'.
+        If the Primary Cortex fails, it instantly reroutes to Backup Synapses.
         """
-        if not self.circuit_breaker.allow_request():
-            raise AICircuitOpenError(
-                f"Circuit is OPEN. Recovering for {self.circuit_breaker.recovery_timeout}s."
-            )
+        errors = []
+        global_has_yielded = False
 
+        for node in self.nodes:
+            # 1. Check Circuit Health
+            if not node.circuit_breaker.allow_request():
+                logger.warning(f"Skipping [{node.model_id}]: Circuit OPEN.")
+                continue
+
+            try:
+                # 2. Attempt Connection
+                logger.info(f"Engaging Neural Node: {node.model_id}")
+                start_time = time.time()
+
+                # We yield from the internal generator.
+                async for chunk in self._stream_from_node(node, messages):
+                    yield chunk
+                    global_has_yielded = True
+
+                # Success!
+                duration = time.time() - start_time
+                node.record_latency(duration)
+                return
+
+            except AIConnectionError as e:
+                # If we have already yielded data, we cannot switch models as it would
+                # corrupt the stream (duplicate data). We must abort.
+                if global_has_yielded:
+                    logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
+                    raise e
+
+                # Otherwise, log and continue to next node
+                logger.error(f"Node [{node.model_id}] Connection Failed: {str(e)}. Rerouting...")
+                errors.append(f"{node.model_id}: {str(e)}")
+                continue
+
+            except Exception as e:
+                if global_has_yielded:
+                     logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
+                     raise e
+
+                logger.error(f"Node [{node.model_id}] Unexpected Error: {str(e)}. Rerouting...")
+                errors.append(f"{node.model_id}: {str(e)}")
+                continue
+
+        # If we get here, ALL nodes failed.
+        logger.critical("All Neural Nodes Exhausted. System Collapse.")
+        raise AIAllModelsExhaustedError(f"Complete Failure. Errors: {errors}")
+
+    async def _stream_from_node(self, node: NeuralNode, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        """
+        Internal generator for a specific node with Retry Logic.
+        """
         client = ConnectionManager.get_client()
-
-        # Inner generator to handle the stream logic
-        async def _make_stream_request():
-            async with client.stream(
-                "POST",
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json={"model": self.model, "messages": messages, "stream": True},
-            ) as response:
-                response.raise_for_status()
-                # If we got here, headers are fine. We consider this a "success"
-                # for the circuit breaker regarding reachability.
-                self.circuit_breaker.record_success()
-
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str.strip() == "[DONE]":
-                            break
-                        try:
-                            chunk = json.loads(data_str)
-                            yield chunk
-                        except json.JSONDecodeError:
-                            continue
-
-        # We wrap the generator execution in the Retry Kernel
-        # Note: We can only retry the *setup* of the stream. Once we start yielding,
-        # we can't retry cleanly without re-sending the whole context (which might duplicate tokens).
-        # So we retry the connection phase.
-
-        # Simulating retry logic for a generator is complex.
-        # We try to establish the stream. If it fails before yielding, we retry.
 
         attempt = 0
         while attempt <= MAX_RETRIES:
             attempt += 1
             try:
-                # We consume the generator here.
-                # Ideally, we would separate connection from consumption,
-                # but httpx.stream combines them contextually.
-
-                # We use a flag to know if we successfully started streaming
                 stream_started = False
-
                 async with client.stream(
                     "POST",
                     f"{self.base_url}/chat/completions",
                     headers=self.headers,
-                    json={"model": self.model, "messages": messages, "stream": True},
+                    json={"model": node.model_id, "messages": messages, "stream": True},
                 ) as response:
+
+                    if response.status_code >= 500:
+                         # Server Error - Retryable, but counts as failure for Circuit
+                         response.read() # Consume to ensure connection close
+                         raise httpx.HTTPStatusError("Server Error", request=response.request, response=response)
+
+                    if response.status_code == 429:
+                        # Rate Limit - Retryable
+                        response.read()
+                        raise httpx.HTTPStatusError("Rate Limited", request=response.request, response=response)
+
                     response.raise_for_status()
-                    self.circuit_breaker.record_success()
+
+                    # Connection established - Circuit is healthy
+                    node.circuit_breaker.record_success()
                     stream_started = True
 
                     async for line in response.aiter_lines():
@@ -277,54 +312,37 @@ class OpenRouterAIClient:
                                 yield chunk
                             except json.JSONDecodeError:
                                 continue
-
-                # If we exit the context manager normally, we are done.
                 return
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
-                # If we started streaming and THEN failed, we probably shouldn't auto-retry
-                # blindly as it might confuse the user, but for now we assume
-                # strict resilience is preferred if the stream dies early.
-                # However, re-yielding duplicate chunks is bad.
-                # A robust implementation checks if ANY data was yielded.
-
-                if stream_started:
-                    # We already sent data to the user. Abort retry to avoid duplication/confusion.
-                    logger.error(f"Stream interrupted after start: {e}")
-                    raise AIConnectionError("Stream interrupted.") from e
-
-                # Analyze error for Circuit Breaker
+                # Update Circuit Breaker
                 if isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500:
-                    self.circuit_breaker.record_failure()
+                    node.circuit_breaker.record_failure()
                 elif isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
-                    self.circuit_breaker.record_failure()
+                    node.circuit_breaker.record_failure()
 
-                # Check if we should retry
-                should_retry = False
-                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in (429, 500, 502, 503, 504):
-                    should_retry = True
-                elif isinstance(e, (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout)):
-                    should_retry = True
+                # Safety Check: If we already sent data, we CANNOT retry seamlessly.
+                if stream_started:
+                    # We raise a specific error that the parent catches
+                    raise AIConnectionError("Stream severed mid-transmission.") from e
 
-                if not should_retry or attempt > MAX_RETRIES:
-                    raise AIProviderError(f"Stream failed after {attempt} attempts: {e}") from e
+                # Check Max Retries
+                if attempt > MAX_RETRIES:
+                    # Re-raise to trigger fallback to next Node
+                    # Wrap in generic Exception if needed, but raising the original is fine
+                    # as long as the parent catches it.
+                    # We wrap in AIConnectionError to signify it's a "connection attempt" failure
+                    raise AIConnectionError(f"Max retries exceeded for node {node.model_id}") from e
 
                 # Backoff
                 sleep_time = (2 ** (attempt - 1)) * 0.5 + random.uniform(0, 0.5)
-                logger.warning(f"Streaming setup failed (Attempt {attempt}). Retrying in {sleep_time:.2f}s...")
                 await asyncio.sleep(sleep_time)
-
-
-# --- Global Singletons ---
-_GLOBAL_CIRCUIT_BREAKER = CircuitBreaker(
-    failure_threshold=CIRCUIT_FAILURE_THRESHOLD,
-    recovery_timeout=CIRCUIT_RECOVERY_TIMEOUT
-)
 
 # --- Dependency Injectable Gateway ---
 def get_ai_client() -> AIClient:
     if not OPENROUTER_API_KEY:
-        # For development/testing without keys, we might want to warn or raise.
-        # But existing code raised ValueError.
-        raise ValueError("OPENROUTER_API_KEY is not set.")
-    return OpenRouterAIClient(api_key=OPENROUTER_API_KEY)
+        # Fallback for CI/Test environments where key might be missing
+        # We allow instantiation but it will fail on request if not mocked
+        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
+        pass
+    return NeuralRoutingMesh(api_key=OPENROUTER_API_KEY or "dummy_key")
