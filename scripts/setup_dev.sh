@@ -68,5 +68,7 @@ echo "🚀 Starting Application via standardized script..."
 if pgrep -f "uvicorn" > /dev/null; then
     echo "✅ Application is already running."
 else
-    bash scripts/start.sh
+    echo "🚀 Starting Application in background..."
+    nohup bash scripts/start.sh > .app_background.log 2>&1 &
+    echo "✅ Application started. Logs are being written to .app_background.log"
 fi
