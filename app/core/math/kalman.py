@@ -1,23 +1,24 @@
 """
-KALMAN FILTER LATENCY ESTIMATOR (Hyper-Morphic V6: Adaptive Resonance)
+KALMAN FILTER LATENCY ESTIMATOR (Hyper-Morphic V7: Singularity Ready)
 ========================================================================
-Implements a 1D Adaptive Kalman Filter that dynamically adjusts its
-internal plasticity (Process Noise Q) based on Innovation Magnitude.
+Now integrated with the HYPER-FLUX CAPACITOR.
 
-This allows the system to:
-1. Ignore noise when stable (Low Q, High R).
-2. "Wake up" and learn instantly when the environment changes (High Q).
-3. "Clamp" extreme outliers to prevent destabilization from single spikes.
+This V7 Engine combines:
+1. Adaptive Resonance (V6) for normal plasticity.
+2. Flux Shielding (V7) for precognitive outlier rejection.
+
+When the Flux Capacitor predicts a singularity, this filter automatically
+hardens its covariance matrix, rejecting the "Chaos of the Void".
 """
 
 import math
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field
+from app.core.math.hyper_flux import HyperFluxCapacitor
 
 @dataclass
 class KalmanFilter:
     """
-    Adaptive Recursive Filter with Outlier Clamping.
+    Adaptive Recursive Filter with Flux Shielding.
     """
 
     # Initial State Estimate (x_hat)
@@ -33,15 +34,13 @@ class KalmanFilter:
     measurement_noise: float = 5000.0
 
     # Adaptation Factor (k_adapt)
-    # Scales the Process Noise injection based on the "Resonance Ratio".
-    # Increased to 300.0 for aggressive learning of valid shifts.
     adaptation_factor: float = 300.0
 
     # Resonance Clamp
-    # Caps the "Resonance Ratio" (Innovation^2 / R) to prevent infinite Q explosion
-    # on massive single-sample outliers (e.g., 100x latency spikes).
-    # A value of 60.0 means we stop increasing plasticity after a ~7.7-sigma event.
     resonance_clamp: float = 60.0
+
+    # THE FLUX CAPACITOR
+    flux_capacitor: HyperFluxCapacitor = field(default_factory=HyperFluxCapacitor)
 
     def predict(self):
         """
@@ -51,25 +50,29 @@ class KalmanFilter:
 
     def update(self, measurement: float) -> float:
         """
-        Measurement Update (Correct) with Clamped Adaptive Resonance.
+        Measurement Update (Correct) with Flux Shielding.
         """
         # 1. Calculate Innovation (Residual)
         innovation = measurement - self.estimate
         innovation_sq = innovation**2
 
-        # 2. Adaptive Q Scaling (The "Resonance")
+        # 2. FEED THE FLUX CAPACITOR
+        self.flux_capacitor.observe_flux(innovation)
+        shield_factor = self.flux_capacitor.predict_volatility()
+
+        # 3. Adaptive Q Scaling (The "Resonance")
         # resonance_ratio = (y - y_hat)^2 / R
         resonance_ratio = innovation_sq / self.measurement_noise
 
-        # 3. Apply Clamp (The "Stoic Guard")
-        # Protects against extreme outliers destabilizing the filter.
+        # 4. Apply Clamp (The "Stoic Guard")
         effective_ratio = min(resonance_ratio, self.resonance_clamp)
 
-        # 4. Inject Uncertainty
-        adaptive_q = self.adaptation_factor * effective_ratio
+        # 5. Inject Uncertainty, MODULATED BY SHIELD FACTOR
+        # If shield_factor is low (singularity detected), plasticity is reduced.
+        adaptive_q = (self.adaptation_factor * effective_ratio) * shield_factor
         self.error_covariance += adaptive_q
 
-        # 5. Standard Kalman Update
+        # 6. Standard Kalman Update
         kalman_gain = self.error_covariance / (self.error_covariance + self.measurement_noise)
 
         # Update Estimate
