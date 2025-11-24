@@ -46,13 +46,16 @@ export default defineConfig({
   },
 
   server: {
-    port: 5173,
+    port: 5000,
     strictPort: false,
-    host: true,
+    host: '0.0.0.0',
     open: false,
+    hmr: {
+      clientPort: 443
+    },
     proxy: {
-      '/api':   { target: 'http://localhost:5001', changeOrigin: true },
-      '/admin': { target: 'http://localhost:5001', changeOrigin: true }
+      '/api':   { target: 'http://localhost:8001', changeOrigin: true },
+      '/admin': { target: 'http://localhost:8001', changeOrigin: true }
     }
   },
 
