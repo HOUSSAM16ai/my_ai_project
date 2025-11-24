@@ -2,16 +2,14 @@ import asyncio
 import logging
 import os
 import sys
-import urllib.parse
-from typing import Optional
 
 # Ensure project root is in sys.path
 sys.path.append(os.getcwd())
 
 from sqlalchemy import text
-from sqlalchemy.engine.url import make_url, URL
+from sqlalchemy.engine.url import make_url
 
-from app.core.engine_factory import create_unified_async_engine, FatalEngineError
+from app.core.engine_factory import create_unified_async_engine
 
 # --- 1. LOGGING SETUP (STRICTLY STDERR) ---
 # Prevent any logs from going to stdout
@@ -76,17 +74,40 @@ sanitize_url = sanitize_database_url
 async def verify_connection(url: str) -> bool:
     """
     Verifies the connection using the Unified Engine Factory.
-    This ensures the URL is actually usable by our application logic.
+    Includes Hyper-Resilient Retry Logic (Exponential Backoff + Strict Timeouts)
+    to prevent setup freezes.
     """
-    try:
-        engine = create_unified_async_engine(database_url=url)
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        await engine.dispose()
-        return True
-    except Exception as e:
-        logger.error(f"Connection verification failed: {e}")
-        return False
+    max_retries = 3
+    base_timeout = 5.0  # seconds
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            # We use a strict timeout to kill hanging connections
+            async with asyncio.timeout(base_timeout):
+                engine = create_unified_async_engine(database_url=url)
+                async with engine.connect() as conn:
+                    await conn.execute(text("SELECT 1"))
+                await engine.dispose()
+                return True
+
+        except TimeoutError:
+            logger.warning(
+                f"⚠️ Connection verification timed out (Attempt {attempt}/{max_retries}). "
+                f"The database might be unreachable or blocking."
+            )
+        except Exception as e:
+            logger.warning(
+                f"⚠️ Connection verification failed (Attempt {attempt}/{max_retries}): {e}"
+            )
+
+        # Exponential Backoff
+        if attempt < max_retries:
+            sleep_time = 2.0 ** attempt
+            logger.info(f"⏳ Waiting {sleep_time}s before retrying...")
+            await asyncio.sleep(sleep_time)
+
+    logger.error("❌ Critical Failure: Could not establish database connection after multiple attempts.")
+    return False
 
 
 async def main():
@@ -101,11 +122,12 @@ async def main():
         # 3. Verify
         # Skip verification if explicitly requested (e.g. for unit testing URL generation only)
         if os.environ.get("SKIP_DB_VERIFY") != "1":
-            logger.info("Verifying connection...")
+            logger.info("🔍 Verifying connection with Resilient Probe...")
             if not await verify_connection(clean_url):
-                logger.error("Could not connect to database.")
+                logger.error("❌ Verification failed. The database is unreachable.")
+                # We exit with 1 to inform setup_dev.sh, but we ensure we DON'T hang.
                 sys.exit(1)
-            logger.info("✅ Verification successful.")
+            logger.info("✅ Verification successful. Database is ready.")
         else:
             logger.info("⚠️ Skipping connection verification (SKIP_DB_VERIFY=1)")
 
