@@ -70,5 +70,13 @@ if pgrep -f "uvicorn" > /dev/null; then
 else
     echo "🚀 Starting Application in background..."
     nohup bash scripts/start.sh > .app_background.log 2>&1 &
+
+    # Superhuman verification: Wait a moment and check if it died immediately
+    sleep 3
+    if ! pgrep -f "uvicorn" > /dev/null; then
+        echo "❌ Application failed to start. Logs:"
+        cat .app_background.log
+        exit 1
+    fi
     echo "✅ Application started. Logs are being written to .app_background.log"
 fi
