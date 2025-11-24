@@ -1,0 +1,2 @@
+BACKEND=http://localhost:8000
+FRONTEND=http://localhost:5000

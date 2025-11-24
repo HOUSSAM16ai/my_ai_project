@@ -119,12 +119,9 @@ python3 scripts/seed_admin.py || {
 
 # --- 8. START BACKEND ---
 echo "🚀 [Phase 8] Launching Backend (Port 8000)..."
-if pgrep -f "uvicorn" > /dev/null; then
-    echo "✅ Backend already running."
-else
-    nohup bash scripts/start.sh > .backend.log 2>&1 &
-    echo "✅ Backend launched in background."
-fi
+# We deliberately call start.sh which now handles cleanup/restarts intelligently
+nohup bash scripts/start.sh > .backend.log 2>&1 &
+echo "✅ Backend launched in background via Superhuman Protocol."
 
 # --- 9. START FRONTEND ---
 echo "🎨 [Phase 9] Launching Frontend (Port 5000)..."
