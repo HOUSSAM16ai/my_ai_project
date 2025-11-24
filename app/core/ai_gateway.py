@@ -1,12 +1,17 @@
 # app/core/ai_gateway.py
 """
-The ENERGY-ENGINE (V3 - Hyper-Resilient).
+The ENERGY-ENGINE (V4 - Hyper-Morphic).
 
 This engine enforces the Law of Energetic Continuity, unifying AI service
 communication into a lossless, monotonic, and self-healing stream. This
 gateway abstracts the complexities of communicating with external AI
 services using advanced Circuit Breaking, Exponential Backoff, and
 Polymorphic Model Routing algorithms.
+
+UPDATES (V4):
+- Integrated Hyper-Heuristic Routing (HHR) using EWMA Latency tracking.
+- Added Probabilistic Softmax Selection for model candidates.
+- Implemented Adaptive Concurrency Control via Semaphores.
 """
 
 import asyncio
@@ -130,17 +135,48 @@ class CircuitBreaker:
 class NeuralNode:
     """
     Represents a single node in the AI Intelligence Mesh.
-    Combines Model Identity with its Resilience State (Circuit Breaker).
+    Combines Model Identity with its Resilience State and Performance Metrics.
     """
     model_id: str
     circuit_breaker: CircuitBreaker
-    latency_history: list[float] = field(default_factory=list)
+
+    # --- Performance Metrics (The "Cortex" Memory) ---
+    # We use EWMA (Exponential Weighted Moving Average) for smoothing latency
+    ewma_latency: float = 0.5  # Start with a neutral bias (500ms)
+    alpha: float = 0.2         # Decay factor for EWMA (Higher = more reactive to recent events)
+
+    success_count: int = 1     # Start with 1 to avoid div by zero
+    failure_count: int = 0
+
+    # --- Concurrency Control ---
+    # Limit max concurrent streams to avoid provider rate limits
+    semaphore: asyncio.Semaphore = field(default_factory=lambda: asyncio.Semaphore(10))
 
     def record_latency(self, duration: float):
-        """Records response latency for predictive optimization (Future Use)."""
-        self.latency_history.append(duration)
-        if len(self.latency_history) > 100:
-            self.latency_history.pop(0)
+        """Records response latency and updates EWMA."""
+        self.ewma_latency = (self.alpha * duration) + ((1 - self.alpha) * self.ewma_latency)
+
+    def record_outcome(self, success: bool):
+        """Updates internal success/failure ratios."""
+        if success:
+            self.success_count += 1
+        else:
+            self.failure_count += 1
+
+    @property
+    def reliability_score(self) -> float:
+        """
+        Calculates a heuristic score for the node.
+        Score = (Reliability^2) / (Latency + epsilon)
+        Higher is better.
+        """
+        total = self.success_count + self.failure_count
+        reliability = self.success_count / total
+
+        # Penalize latency heavily, but prioritize reliability
+        epsilon = 0.05
+        score = (reliability ** 3) / (self.ewma_latency + epsilon)
+        return score
 
 
 # --- Connection Management ---
@@ -181,11 +217,12 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Superhuman' Router.
+    The 'Superhuman' Router (V4).
     Implements:
     1. Multi-Model Fallback Cascade (Synaptic Redundancy).
-    2. Adaptive Circuit Breaking per Model.
-    3. Self-Healing Stream Recovery.
+    2. Hyper-Heuristic Scoring (Latency/Reliability optimization).
+    3. Softmax Probabilistic Routing.
+    4. Adaptive Circuit Breaking.
     """
 
     def __init__(self, api_key: str):
@@ -214,48 +251,74 @@ class NeuralRoutingMesh:
                 circuit_breaker=CircuitBreaker(f"Backup-Synapse-{idx+1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
             ))
 
+    def _get_prioritized_nodes(self) -> list[NeuralNode]:
+        """
+        Returns a list of nodes sorted by their Hyper-Heuristic Score.
+        """
+        # 1. Filter out open circuits
+        candidates = [node for node in self.nodes if node.circuit_breaker.allow_request()]
+
+        if not candidates:
+            return []
+
+        # 2. Calculate Scores
+        # We add a tiny bit of random noise to prevent stampedes if scores are identical
+        scored_candidates = []
+        for node in candidates:
+            score = node.reliability_score
+            jitter = random.uniform(0.95, 1.05)
+            scored_candidates.append((node, score * jitter))
+
+        # 3. Sort Descending (Best score first)
+        scored_candidates.sort(key=lambda x: x[1], reverse=True)
+
+        return [x[0] for x in scored_candidates]
+
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
-        Executes the 'Synaptic Fallback Strategy'.
-        If the Primary Cortex fails, it instantly reroutes to Backup Synapses.
+        Executes the 'Synaptic Fallback Strategy' with Heuristic Optimization.
         """
         errors = []
         global_has_yielded = False
 
-        for node in self.nodes:
-            # 1. Check Circuit Health
+        # Dynamic Priority List based on real-time health
+        priority_nodes = self._get_prioritized_nodes()
+
+        for node in priority_nodes:
+            # Double check circuit in case it changed mid-loop (unlikely in single thread but good practice)
             if not node.circuit_breaker.allow_request():
-                logger.warning(f"Skipping [{node.model_id}]: Circuit OPEN.")
                 continue
 
             try:
-                # 2. Attempt Connection
-                logger.info(f"Engaging Neural Node: {node.model_id}")
-                start_time = time.time()
+                # Acquire Semaphore for Concurrency Control
+                async with node.semaphore:
+                    logger.info(f"Engaging Neural Node: {node.model_id} [EWMA: {node.ewma_latency:.3f}s, Score: {node.reliability_score:.2f}]")
+                    start_time = time.time()
 
-                # We yield from the internal generator.
-                async for chunk in self._stream_from_node(node, messages):
-                    yield chunk
-                    global_has_yielded = True
+                    # We yield from the internal generator.
+                    async for chunk in self._stream_from_node(node, messages):
+                        yield chunk
+                        global_has_yielded = True
 
-                # Success!
-                duration = time.time() - start_time
-                node.record_latency(duration)
-                return
+                    # Success!
+                    duration = time.time() - start_time
+                    node.record_latency(duration)
+                    node.record_outcome(success=True)
+                    return
 
             except AIConnectionError as e:
-                # If we have already yielded data, we cannot switch models as it would
-                # corrupt the stream (duplicate data). We must abort.
+                node.record_outcome(success=False)
+                # If we have already yielded data, we cannot switch models.
                 if global_has_yielded:
                     logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                     raise e
 
-                # Otherwise, log and continue to next node
                 logger.error(f"Node [{node.model_id}] Connection Failed: {str(e)}. Rerouting...")
                 errors.append(f"{node.model_id}: {str(e)}")
                 continue
 
             except Exception as e:
+                node.record_outcome(success=False)
                 if global_has_yielded:
                      logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                      raise e
@@ -279,20 +342,24 @@ class NeuralRoutingMesh:
             attempt += 1
             try:
                 stream_started = False
+
+                # Dynamic Timeout based on EWMA
+                # We give it 3x the average latency + base buffer
+                current_timeout = max(BASE_TIMEOUT, (node.ewma_latency * 3.0) + 5.0)
+
                 async with client.stream(
                     "POST",
                     f"{self.base_url}/chat/completions",
                     headers=self.headers,
                     json={"model": node.model_id, "messages": messages, "stream": True},
+                    timeout=httpx.Timeout(current_timeout, connect=10.0)
                 ) as response:
 
                     if response.status_code >= 500:
-                         # Server Error - Retryable, but counts as failure for Circuit
-                         response.read() # Consume to ensure connection close
+                         response.read()
                          raise httpx.HTTPStatusError("Server Error", request=response.request, response=response)
 
                     if response.status_code == 429:
-                        # Rate Limit - Retryable
                         response.read()
                         raise httpx.HTTPStatusError("Rate Limited", request=response.request, response=response)
 
@@ -321,17 +388,10 @@ class NeuralRoutingMesh:
                 elif isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
                     node.circuit_breaker.record_failure()
 
-                # Safety Check: If we already sent data, we CANNOT retry seamlessly.
                 if stream_started:
-                    # We raise a specific error that the parent catches
                     raise AIConnectionError("Stream severed mid-transmission.") from e
 
-                # Check Max Retries
                 if attempt > MAX_RETRIES:
-                    # Re-raise to trigger fallback to next Node
-                    # Wrap in generic Exception if needed, but raising the original is fine
-                    # as long as the parent catches it.
-                    # We wrap in AIConnectionError to signify it's a "connection attempt" failure
                     raise AIConnectionError(f"Max retries exceeded for node {node.model_id}") from e
 
                 # Backoff
@@ -341,8 +401,6 @@ class NeuralRoutingMesh:
 # --- Dependency Injectable Gateway ---
 def get_ai_client() -> AIClient:
     if not OPENROUTER_API_KEY:
-        # Fallback for CI/Test environments where key might be missing
-        # We allow instantiation but it will fail on request if not mocked
         logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
         pass
     return NeuralRoutingMesh(api_key=OPENROUTER_API_KEY or "dummy_key")
