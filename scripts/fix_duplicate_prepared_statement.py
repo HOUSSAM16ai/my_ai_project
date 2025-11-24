@@ -5,12 +5,14 @@ scripts/fix_duplicate_prepared_statement.py
 Verifies database engine health by attempting to establish a connection
 and execute a simple query using app.core.engine_factory.create_unified_async_engine.
 This ensures the environment is correctly configured for PgBouncer (statement_cache_size=0).
+Includes Hyper-Resilient Timeout Logic to prevent CI/CD Freezes.
 """
-import asyncio
 import argparse
-import sys
-import os
+import asyncio
 import logging
+import os
+import sys
+
 from sqlalchemy import text
 
 # Ensure project root is in sys.path
@@ -31,6 +33,7 @@ async def verify_engine_configuration():
     Verifies that the database engine can be created and connected to.
     This implicitly checks for PgBouncer compatibility (statement_cache_size=0)
     if the factory is correctly implemented.
+    Includes strict timeouts to prevent hanging.
     """
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -51,14 +54,18 @@ async def verify_engine_configuration():
     logger.info(f"Verifying engine for URL: {safe_url}")
 
     try:
-        engine = create_unified_async_engine(database_url)
+        # Strict timeout for verification to prevent freeze
+        async with asyncio.timeout(10.0): # 10 seconds max for engine verification
+            engine = create_unified_async_engine(database_url)
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+                logger.info("✅ Connection successful. Engine is healthy.")
+            await engine.dispose()
+            return True
 
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-            logger.info("✅ Connection successful. Engine is healthy.")
-
-        await engine.dispose()
-        return True
+    except TimeoutError:
+        logger.error("❌ Engine verification TIMED OUT. Database is unresponsive.")
+        return False
     except Exception as e:
         logger.error(f"❌ Engine verification failed: {e}")
         return False
@@ -73,4 +80,7 @@ async def main():
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        sys.exit(130)
