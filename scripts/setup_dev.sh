@@ -58,11 +58,17 @@ fi
 update_env() {
     local key=$1
     local value=$2
+    # Always quote the value to prevent syntax errors with spaces
+    local quoted_value="\"$value\""
+
     if grep -q "^$key=" .env; then
         # Use a temp file to avoid issues with sed in-place on some systems
-        sed "s|^$key=.*|$key=$value|" .env > .env.tmp && mv .env.tmp .env
+        # We escape the quoted value for sed if needed, but basic quotes usually work
+        # Note: We use a delimiter | but if value has |, it might break.
+        # For DATABASE_URL and SECRET_KEY this is usually fine.
+        sed "s|^$key=.*|$key=$quoted_value|" .env > .env.tmp && mv .env.tmp .env
     else
-        echo "$key=$value" >> .env
+        echo "$key=$quoted_value" >> .env
     fi
 }
 
@@ -79,11 +85,15 @@ else
     echo "🔑 SECRET_KEY already exists."
 fi
 
+# --- SUPERHUMAN HEALING: Fix .env syntax before sourcing ---
+echo "🚑 Healing Environment File..."
+python3 scripts/heal_env.py
+
 # Reload environment to ensure current shell has latest values
 set -a
 source .env
 set +a
-echo "✅ Environment persisted to .env"
+echo "✅ Environment persisted and healed."
 
 
 # --- 5. VERIFY ENGINE SAFETY ---

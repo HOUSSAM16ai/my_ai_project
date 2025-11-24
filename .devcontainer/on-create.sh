@@ -26,15 +26,16 @@ if [ ! -f ".env" ] && [ -n "${CODESPACES:-}" ]; then
     ok "Found DATABASE_URL secret. Generating .env file automatically..."
 
     {
-      echo "DATABASE_URL=${DATABASE_URL}"
-      echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}"
-      echo "SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}"
-      echo "ADMIN_EMAIL=${ADMIN_EMAIL:-benmerahhoussam16@gmail.com}"
-      echo "ADMIN_PASSWORD=${ADMIN_PASSWORD:-1111}"
-      echo "ADMIN_NAME=${ADMIN_NAME:-'Houssam Benmerah'}"
-      echo "SUPABASE_URL=${SUPABASE_URL:-}"
-      echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}"
-      echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}"
+      # Properly quote all values to handle spaces (e.g., ADMIN_NAME)
+      echo "DATABASE_URL=\"${DATABASE_URL}\""
+      echo "OPENROUTER_API_KEY=\"${OPENROUTER_API_KEY:-}\""
+      echo "SECRET_KEY=\"${SECRET_KEY:-$(openssl rand -hex 32)}\""
+      echo "ADMIN_EMAIL=\"${ADMIN_EMAIL:-benmerahhoussam16@gmail.com}\""
+      echo "ADMIN_PASSWORD=\"${ADMIN_PASSWORD:-1111}\""
+      echo "ADMIN_NAME=\"${ADMIN_NAME:-Houssam Benmerah}\""
+      echo "SUPABASE_URL=\"${SUPABASE_URL:-}\""
+      echo "SUPABASE_ANON_KEY=\"${SUPABASE_ANON_KEY:-}\""
+      echo "SUPABASE_SERVICE_ROLE_KEY=\"${SUPABASE_SERVICE_ROLE_KEY:-}\""
     } > .env
 
     ok "✅ .env file automatically generated."
