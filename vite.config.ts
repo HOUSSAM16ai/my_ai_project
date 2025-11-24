@@ -54,8 +54,8 @@ export default defineConfig({
       clientPort: 443
     },
     proxy: {
-      '/api':   { target: 'http://localhost:8001', changeOrigin: true },
-      '/admin': { target: 'http://localhost:8001', changeOrigin: true }
+      '/api':   { target: 'http://localhost:8000', changeOrigin: true },
+      '/admin': { target: 'http://localhost:8000', changeOrigin: true }
     }
   },
 
