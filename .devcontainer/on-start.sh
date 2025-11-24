@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 ###############################################################################
-# on-start.sh (Superhuman Automation Edition)
+# on-start.sh (Superhuman Automation Edition - Non-Blocking)
 #
 # Executed every time the container starts.
-# Responsibilities (Fully Automated & Idempotent):
-#   1. Install/Verify Dependencies (Fast check).
-#   2. Smart Database Migrations (Retry/Ensure).
-#   3. Ensure Admin User.
-#   4. Start Application in Background.
+#
+# CHANGE: This script now delegates all heavy lifting to 'scripts/launch_stack.sh'
+# and exits IMMEDIATELY. This solves the "Codespaces Stuck" issue where the
+# lifecycle hook waits for foreground processes.
 ###############################################################################
 
 set -Eeuo pipefail
@@ -16,50 +15,22 @@ source .devcontainer/utils.sh
 
 trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
 
-log "🚀 On-Start: Launching the fully automated CogniForge ecosystem..."
+log "🚀 On-Start: Initializing Superhuman Supervisor..."
 
-# --- 1. Dependency Check (Fast) ---
-log "Step 1/4: Verifying Dependencies..."
-if [ -f requirements.txt ]; then
-    # We use pip install --no-deps to just check if packages are present,
-    # but strictly we want to ensure everything is installed.
-    # Since Dockerfile installs them, this is usually a no-op unless requirements changed.
-    pip install --no-cache-dir -r requirements.txt > /dev/null 2>&1 || warn "Dependency check warning. Run 'pip install -r requirements.txt' manually if needed."
-    ok "✅ Dependencies verified."
+# Check if the supervisor script exists
+if [ ! -f "scripts/launch_stack.sh" ]; then
+    err "Critical: scripts/launch_stack.sh not found!"
+    exit 1
 fi
 
-# --- 2. Smart Database Migrations ---
-log "Step 2/4: Ensuring Database Schema..."
-if [ -f "scripts/smart_migrate.py" ]; then
-    log "Running Smart Migration Strategy..."
-    # We run this in foreground because the app NEEDS the DB to start correctly.
-    # But smart_migrate.py has timeouts, so it won't hang forever.
-    python scripts/smart_migrate.py || warn "Migration failed. Application might not start correctly."
-else
-    warn "scripts/smart_migrate.py not found. Skipping migrations."
-fi
+# Launch the full stack in the background
+# We redirect all output to .superhuman_bootstrap.log
+nohup bash scripts/launch_stack.sh > .superhuman_bootstrap.log 2>&1 &
+PID=$!
 
-# --- 3. Create or update admin user ---
-log "Step 3/4: Ensuring admin user exists..."
-if [ -f "scripts/seed_admin.py" ]; then
-    python scripts/seed_admin.py || warn "Admin seeding failed."
-elif [ -f "cli.py" ]; then
-    # Fallback to CLI if script missing
-    if python cli.py --help | grep -q "create-admin"; then
-         python cli.py create-admin || warn "Admin creation failed."
-    fi
-fi
+ok "✅ Background Bootstrap Initiated (PID: $PID)."
+log "📝 logs: tail -f .superhuman_bootstrap.log"
+log "⚡ The environment is now interactive. The app will appear on port 8000 shortly."
 
-# --- 4. Ensure Application is Running (Superhuman Redundancy) ---
-log "Step 4/4: Ensuring Application Server is UP..."
-if ! pgrep -f "uvicorn" > /dev/null; then
-    log "Starting Uvicorn in background..."
-    # We use nohup to ensure it persists, and redirect output
-    nohup bash scripts/start.sh > .app_background.log 2>&1 &
-    ok "✅ Application started in background."
-else
-    ok "✅ Application is already running."
-fi
-
-echo
-log "🎉 --- System is fully operational --- 🎉"
+# Exit immediately to unblock the IDE
+exit 0
