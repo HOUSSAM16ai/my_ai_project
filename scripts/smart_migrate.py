@@ -8,7 +8,7 @@ import sys
 sys.path.append(os.getcwd())
 
 from dotenv import load_dotenv
-from sqlalchemy import inspect
+from sqlalchemy import inspect, pool
 
 from app.core.engine_factory import create_unified_async_engine
 
@@ -29,6 +29,8 @@ def get_database_url():
 async def check_db_state_with_retry(max_retries=5, timeout=10):
     """
     Checks the state of the database with robust retry logic and timeouts.
+    Uses 'NullPool' to prevent connection pool exhaustion/locking during checks.
+
     Returns: (has_alembic_table: bool, has_user_table: bool)
     """
     database_url = get_database_url()
@@ -36,12 +38,16 @@ async def check_db_state_with_retry(max_retries=5, timeout=10):
 
     for attempt in range(max_retries):
         try:
-            # Use Unified Factory
-            engine = create_unified_async_engine(database_url)
+            # Use NullPool for liveness checks to create a single disposable connection.
+            # This avoids pool overhead and prevents connection issues in constrained environments.
+            engine = create_unified_async_engine(database_url, poolclass=pool.NullPool)
+
+            logger.info(f"Attempt {attempt + 1}/{max_retries}: Checking database connection...")
 
             # Use asyncio.wait_for to enforce strict timeout
             async with asyncio.timeout(timeout):
                 async with engine.connect() as conn:
+                    logger.info("Connection established. Verifying tables...")
 
                     def _inspect(connection):
                         inspector = inspect(connection)
@@ -52,11 +58,11 @@ async def check_db_state_with_retry(max_retries=5, timeout=10):
 
         except TimeoutError:
             logger.warning(
-                f"⏳ Attempt {attempt + 1}/{max_retries}: Connection timed out after {timeout}s."
+                f"Attempt {attempt + 1}/{max_retries}: Connection timed out after {timeout}s."
             )
             last_error = "Connection timed out"
         except Exception as e:
-            logger.warning(f"⚠️ Attempt {attempt + 1}/{max_retries}: Connection failed: {e}")
+            logger.warning(f"Attempt {attempt + 1}/{max_retries}: Connection failed: {e}")
             last_error = e
         finally:
             # Ensure engine disposal if created
@@ -66,7 +72,7 @@ async def check_db_state_with_retry(max_retries=5, timeout=10):
         # Exponential backoff
         if attempt < max_retries - 1:
             sleep_time = 2**attempt
-            logger.info(f"Using Superhuman Backoff Algorithm... Sleeping {sleep_time}s")
+            logger.info(f"Retrying in {sleep_time}s...")
             await asyncio.sleep(sleep_time)
 
     raise Exception(
@@ -80,7 +86,7 @@ def run_alembic_command(args):
     asyncio loop conflicts or driver cleanup hangs.
     """
     cmd = [sys.executable, "-m", "alembic"] + args
-    logger.info(f"⚡ Executing Isolated Command: {' '.join(cmd)}")
+    logger.info(f"Executing command: {' '.join(cmd)}")
 
     # We need to ensure the subprocess sees the same env (for DATABASE_URL)
     env = os.environ.copy()
@@ -106,30 +112,30 @@ def run_smart_migration():
         alembic_cfg_path = "alembic.ini"
 
     if not os.path.exists(alembic_cfg_path):
-        logger.error(f"❌ alembic.ini not found at {alembic_cfg_path}")
+        logger.error(f"alembic.ini not found at {alembic_cfg_path}")
         sys.exit(1)
 
-    logger.info("🔍 Checking database state (Unified + Superhuman Retry)...")
+    logger.info("Checking database state...")
 
     try:
         has_alembic, has_users = asyncio.run(check_db_state_with_retry())
     except Exception as e:
-        logger.error(f"❌ Database State Check Failed: {e}")
+        logger.error(f"Database State Check Failed: {e}")
         logger.error("This usually means the database is not ready or is locked.")
         sys.exit(1)
 
     if has_alembic:
-        logger.info("✅ 'alembic_version' table found. Continuing with standard migration...")
+        logger.info("'alembic_version' table found. Continuing with standard migration...")
         run_alembic_command(["-c", alembic_cfg_path, "upgrade", "head"])
 
     elif has_users:
-        logger.warning("⚠️  Existing tables found ('users') but NO 'alembic_version'.")
-        logger.warning("🛑  Preventing re-creation errors. Stamping DB as 'head'...")
+        logger.warning("Existing tables found ('users') but NO 'alembic_version'.")
+        logger.warning("Preventing re-creation errors. Stamping DB as 'head'...")
         run_alembic_command(["-c", alembic_cfg_path, "stamp", "head"])
-        logger.info("✅  Database stamped. You are now synced with the codebase.")
+        logger.info("Database stamped. You are now synced with the codebase.")
 
     else:
-        logger.info("✨  Fresh database detected. Running full migration...")
+        logger.info("Fresh database detected. Running full migration...")
         run_alembic_command(["-c", alembic_cfg_path, "upgrade", "head"])
 
 
@@ -137,5 +143,5 @@ if __name__ == "__main__":
     try:
         run_smart_migration()
     except Exception as e:
-        logger.error(f"❌ Migration failed: {e}")
+        logger.error(f"Migration failed: {e}")
         sys.exit(1)
