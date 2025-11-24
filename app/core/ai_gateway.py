@@ -28,6 +28,8 @@ from typing import Any, Protocol, runtime_checkable
 
 import httpx
 
+from app.core.cognitive_cache import get_cognitive_engine
+
 # --- Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
@@ -277,9 +279,34 @@ class NeuralRoutingMesh:
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
         Executes the 'Synaptic Fallback Strategy' with Heuristic Optimization.
+        Now Enhanced with COGNITIVE RESONANCE (Semantic Caching).
         """
+        # --- PHASE 1: COGNITIVE RECALL ---
+        # Extract the prompt for semantic analysis
+        prompt = messages[-1].get("content", "") if messages else ""
+        cognitive_engine = get_cognitive_engine()
+
+        # Calculate Context Hash (All messages EXCEPT the last user prompt)
+        # This ensures we only cache if the conversation history is identical.
+        import hashlib
+        context_str = json.dumps([m for m in messages[:-1]], sort_keys=True)
+        context_hash = hashlib.sha256(context_str.encode()).hexdigest()
+
+        # specific to user messages only to avoid caching system prompts incorrectly
+        if prompt and messages[-1].get("role") == "user":
+            cached_memory = cognitive_engine.recall(prompt, context_hash)
+            if cached_memory:
+                logger.info(f"⚡ Neural Resonance: Serving cached reflection for '{prompt[:20]}...'")
+                for chunk in cached_memory:
+                    # Simulate streaming delay for natural feel (optional, but "Human-like")
+                    # await asyncio.sleep(0.01)
+                    yield chunk
+                return
+
+        # --- PHASE 2: SYNAPTIC ROUTING ---
         errors = []
         global_has_yielded = False
+        full_response_accumulator = [] # To memorize later
 
         # Dynamic Priority List based on real-time health
         priority_nodes = self._get_prioritized_nodes()
@@ -298,12 +325,19 @@ class NeuralRoutingMesh:
                     # We yield from the internal generator.
                     async for chunk in self._stream_from_node(node, messages):
                         yield chunk
+                        full_response_accumulator.append(chunk)
                         global_has_yielded = True
 
                     # Success!
                     duration = time.time() - start_time
                     node.record_latency(duration)
                     node.record_outcome(success=True)
+
+                    # --- PHASE 3: MEMORIZATION ---
+                    # Store the experience in the Cognitive Engine
+                    if prompt and full_response_accumulator:
+                         cognitive_engine.memorize(prompt, context_hash, full_response_accumulator)
+
                     return
 
             except AIConnectionError as e:
