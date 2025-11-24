@@ -40,18 +40,27 @@ async def verify_engine_configuration():
         logger.warning("DATABASE_URL not set. Using in-memory SQLite for verification.")
         database_url = "sqlite+aiosqlite:///:memory:"
 
+    # Check if we are using SQLite (either fallback or explicit)
+    is_sqlite = "sqlite" in database_url
+
     # Redact password for logging
     safe_url = database_url
     if "@" in safe_url:
-        prefix = safe_url.split("@")[0]
-        suffix = safe_url.split("@")[1]
-        # Keep scheme and user, hide password
-        if ":" in prefix and "://" in prefix:
-            scheme_part = prefix.split("://")[0]
-            user_part = prefix.split("://")[1].split(":")[0]
-            safe_url = f"{scheme_part}://{user_part}:******@{suffix}"
+        try:
+            prefix = safe_url.split("@")[0]
+            suffix = safe_url.split("@")[1]
+            # Keep scheme and user, hide password
+            if ":" in prefix and "://" in prefix:
+                scheme_part = prefix.split("://")[0]
+                user_part = prefix.split("://")[1].split(":")[0]
+                safe_url = f"{scheme_part}://{user_part}:******@{suffix}"
+        except IndexError:
+             pass # Fallback to raw if parsing fails
 
     logger.info(f"Verifying engine for URL: {safe_url}")
+
+    if is_sqlite:
+         logger.info("ℹ️  SQLite detected. Skipping PgBouncer specific checks.")
 
     try:
         # Strict timeout for verification to prevent freeze
