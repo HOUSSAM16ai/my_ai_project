@@ -1,6 +1,6 @@
 # app/core/ai_gateway.py
 """
-The ENERGY-ENGINE (V5 - Hyper-Morphic).
+The ENERGY-ENGINE (V6 - Hyper-Morphic - OMNI-COGNITIVE).
 
 This engine enforces the Law of Energetic Continuity, unifying AI service
 communication into a lossless, monotonic, and self-healing stream. This
@@ -8,11 +8,10 @@ gateway abstracts the complexities of communicating with external AI
 services using advanced Circuit Breaking, Exponential Backoff, and
 Polymorphic Model Routing algorithms.
 
-UPDATES (V5 - SUPERHUMAN):
-- Integrated **Bayesian Inference Engine** (Thompson Sampling) for routing.
-- Replaced heuristic EWMA with Probabilistic Belief States (Beta Distributions).
-- Implemented "Quantum-Entangled" exploration-exploitation optimization.
-- Added Chaos Resilience with temporal decay.
+UPDATES (V6 - GOD MODE):
+- **Omni-Cognitive Routing**: Replaced simple Bayesian Router with Contextual Multi-Armed Bandits.
+- **Kalman Filtering**: Latency measurements are denoised for "True Belief" tracking.
+- **Cognitive Complexity Analysis**: The router now understands if a prompt is "Hard" or "Easy" and routes accordingly.
 """
 
 import asyncio
@@ -21,6 +20,7 @@ import logging
 import os
 import random
 import time
+import hashlib
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
@@ -30,13 +30,13 @@ from typing import Any, Protocol, runtime_checkable
 import httpx
 
 from app.core.cognitive_cache import get_cognitive_engine
-from app.core.math.bayesian_router import get_bayesian_router
+# Use the new Omni Router
+from app.core.math.omni_router import get_omni_router
 
 # --- Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # The "Holographic Registry" of Models
-# We prioritize "Intelligence" (Sonnet) -> "Versatility" (GPT-4o) -> "Speed" (Haiku/Instant)
 PRIMARY_MODEL = "anthropic/claude-3.5-sonnet"
 FALLBACK_MODELS = [
     "openai/gpt-4o",
@@ -190,10 +190,10 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Superhuman' Router (V5).
+    The 'Superhuman' Router (V6).
     Implements:
     1. Multi-Model Fallback Cascade (Synaptic Redundancy).
-    2. Bayesian Inference Routing (Thompson Sampling).
+    2. Omni-Cognitive Routing (Contextual Bandits + Kalman Filter).
     3. Adaptive Circuit Breaking.
     """
 
@@ -223,15 +223,14 @@ class NeuralRoutingMesh:
                 circuit_breaker=CircuitBreaker(f"Backup-Synapse-{idx+1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
             )
 
-        self.bayesian_router = get_bayesian_router()
-        # Register nodes in the Bayesian Brain
+        self.omni_router = get_omni_router()
+        # Register nodes in the Omni Brain
         for mid in self.nodes_map.keys():
-            self.bayesian_router.register_node(mid)
+            self.omni_router.register_node(mid)
 
-    def _get_prioritized_nodes(self) -> list[NeuralNode]:
+    def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
         """
-        Returns a list of nodes sorted by their Bayesian Probability Score (Thompson Sampling).
-        This replaces the old Heuristic Score.
+        Returns a list of nodes sorted by their Omni-Cognitive Score.
         """
         # 1. Filter out open circuits
         available_ids = []
@@ -242,15 +241,15 @@ class NeuralRoutingMesh:
         if not available_ids:
             return []
 
-        # 2. Ask the Bayesian Brain for the optimal order
-        ranked_ids = self.bayesian_router.get_ranked_nodes(available_ids)
+        # 2. Ask the Omni Brain for the optimal order based on PROMPT
+        ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
 
         # 3. Map back to NeuralNodes
         return [self.nodes_map[mid] for mid in ranked_ids]
 
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
-        Executes the 'Synaptic Fallback Strategy' with Bayesian Optimization.
+        Executes the 'Synaptic Fallback Strategy' with Omni-Cognitive Optimization.
         Now Enhanced with COGNITIVE RESONANCE (Semantic Caching).
         """
         # --- PHASE 1: COGNITIVE RECALL ---
@@ -259,8 +258,6 @@ class NeuralRoutingMesh:
         cognitive_engine = get_cognitive_engine()
 
         # Calculate Context Hash (All messages EXCEPT the last user prompt)
-        # This ensures we only cache if the conversation history is identical.
-        import hashlib
         context_str = json.dumps([m for m in messages[:-1]], sort_keys=True)
         context_hash = hashlib.sha256(context_str.encode()).hexdigest()
 
@@ -270,8 +267,6 @@ class NeuralRoutingMesh:
             if cached_memory:
                 logger.info(f"⚡ Neural Resonance: Serving cached reflection for '{prompt[:20]}...'")
                 for chunk in cached_memory:
-                    # Simulate streaming delay for natural feel (optional, but "Human-like")
-                    # await asyncio.sleep(0.01)
                     yield chunk
                 return
 
@@ -280,18 +275,17 @@ class NeuralRoutingMesh:
         global_has_yielded = False
         full_response_accumulator = [] # To memorize later
 
-        # Dynamic Priority List based on real-time Bayesian belief
-        priority_nodes = self._get_prioritized_nodes()
+        # Dynamic Priority List based on Contextual Analysis
+        priority_nodes = self._get_prioritized_nodes(prompt)
 
         for node in priority_nodes:
-            # Double check circuit in case it changed mid-loop (unlikely in single thread but good practice)
             if not node.circuit_breaker.allow_request():
                 continue
 
             try:
                 # Acquire Semaphore for Concurrency Control
                 async with node.semaphore:
-                    logger.info(f"Engaging Neural Node via Bayesian Choice: {node.model_id}")
+                    logger.info(f"Engaging Neural Node via Omni Choice: {node.model_id}")
                     start_time = time.time()
 
                     # We yield from the internal generator.
@@ -306,8 +300,13 @@ class NeuralRoutingMesh:
                     # Update Circuit Breaker
                     node.circuit_breaker.record_success()
 
-                    # FEED THE BAYESIAN BRAIN
-                    self.bayesian_router.record_outcome(node.model_id, success=True, latency_ms=duration_ms)
+                    # FEED THE OMNI BRAIN (Contextual Feedback)
+                    self.omni_router.record_outcome(
+                        model_id=node.model_id,
+                        prompt=prompt,
+                        success=True,
+                        latency_ms=duration_ms
+                    )
 
                     # --- PHASE 3: MEMORIZATION ---
                     # Store the experience in the Cognitive Engine
@@ -319,9 +318,8 @@ class NeuralRoutingMesh:
             except AIConnectionError as e:
                 # Failure!
                 node.circuit_breaker.record_failure()
-                self.bayesian_router.record_outcome(node.model_id, success=False, latency_ms=0)
+                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
-                # If we have already yielded data, we cannot switch models.
                 if global_has_yielded:
                     logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                     raise e
@@ -333,7 +331,7 @@ class NeuralRoutingMesh:
             except Exception as e:
                 # Failure!
                 node.circuit_breaker.record_failure()
-                self.bayesian_router.record_outcome(node.model_id, success=False, latency_ms=0)
+                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
                 if global_has_yielded:
                      logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
@@ -359,7 +357,6 @@ class NeuralRoutingMesh:
             try:
                 stream_started = False
 
-                # Use a reasonable timeout
                 current_timeout = BASE_TIMEOUT
 
                 async with client.stream(
@@ -395,8 +392,6 @@ class NeuralRoutingMesh:
                 return
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
-                # Let the outer loop handle the failure recording to the Bayesian Engine
-                # Just raise here or retry if safe
                 if stream_started:
                     raise AIConnectionError("Stream severed mid-transmission.") from e
 
