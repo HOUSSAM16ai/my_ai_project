@@ -1,12 +1,9 @@
-
 from unittest.mock import patch
 
 import pytest
 
 from app.core.ai_gateway import AIAllModelsExhaustedError, CircuitState, NeuralRoutingMesh
 
-
-import pytest
 
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
@@ -21,12 +18,12 @@ async def test_adaptive_routing_logic():
     # 1. Setup Nodes
     # The router initializes with default nodes. Let's grab them.
     # PRIMARY_MODEL is usually first.
-    node_a = router.nodes[0] # Primary
-    node_b = router.nodes[1] # Backup 1
+    node_a = router.nodes[0]  # Primary
+    node_b = router.nodes[1]  # Backup 1
 
     # Ensure any other nodes are effectively out of the race
     for node in router.nodes[2:]:
-        node.record_latency(10.0) # Make them super slow
+        node.record_latency(10.0)  # Make them super slow
         node.ewma_latency = 10.0
 
     node_a.model_id = "node-a"
@@ -62,7 +59,7 @@ async def test_adaptive_routing_logic():
     # 3. Test Case: Reliability wins when speed is good but unstable
     # Node A starts failing
     for _ in range(5):
-        node_a.record_outcome(False) # 5 failures
+        node_a.record_outcome(False)  # 5 failures
 
     # Now Node A has ~66% reliability (10 success, 5 fail)
     # Node B has 100% reliability
@@ -75,7 +72,7 @@ async def test_adaptive_routing_logic():
 
     # Let's make Node A really bad.
     for _ in range(20):
-         node_a.record_outcome(False)
+        node_a.record_outcome(False)
 
     # Now Node A is mostly failing.
     prioritized_v2 = router._get_prioritized_nodes()
@@ -86,7 +83,9 @@ async def test_adaptive_routing_logic():
     score_a = node_a.reliability_score
     score_b = node_b.reliability_score
 
-    assert score_b > score_a, f"Reliable node should outscore failing node. A: {score_a}, B: {score_b}"
+    assert score_b > score_a, (
+        f"Reliable node should outscore failing node. A: {score_a}, B: {score_b}"
+    )
     assert prioritized_v2[0].model_id == "node-b"
 
 
@@ -101,9 +100,11 @@ async def test_circuit_breaker_integration():
     # Trip ALL breakers
     for n in router.nodes:
         n.circuit_breaker.state = CircuitState.OPEN
-        n.circuit_breaker.last_failure_time = 10000000000 # Future
+        n.circuit_breaker.last_failure_time = 10000000000  # Future
 
-    with patch.object(router, '_stream_from_node', side_effect=Exception("Should not be called")) as mock_stream:
+    with patch.object(
+        router, "_stream_from_node", side_effect=Exception("Should not be called")
+    ) as mock_stream:
         with pytest.raises(AIAllModelsExhaustedError):
             async for _ in router.stream_chat([]):
                 pass

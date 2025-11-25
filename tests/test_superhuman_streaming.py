@@ -6,8 +6,6 @@ Tests for breakthrough_streaming.py and ensemble_ai.py
 Run with: pytest tests/test_superhuman_streaming.py -v
 """
 
-import asyncio
-
 import pytest
 
 # Mark all tests as not requiring Flask app

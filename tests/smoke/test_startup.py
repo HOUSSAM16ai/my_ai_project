@@ -1,7 +1,6 @@
+import pytest
 from fastapi.testclient import TestClient
 
-
-import pytest
 
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_health_check(client: TestClient):

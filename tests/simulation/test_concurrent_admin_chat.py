@@ -12,8 +12,6 @@ from app.models import AdminConversation, AdminMessage
 from tests.conftest import TestingSessionLocal
 
 
-import pytest
-
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
 async def test_concurrent_chat_requests(admin_user):
@@ -36,7 +34,10 @@ async def test_concurrent_chat_requests(admin_user):
 
         async def send_chat_request(i: int):
             from httpx import ASGITransport
-            async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=kernel.app), base_url="http://test"
+            ) as ac:
                 response = await ac.post(
                     "/admin/api/chat/stream",
                     json={"question": f"Concurrent Request {i}"},
@@ -106,7 +107,10 @@ async def test_invalid_auth_scenarios():
 
     try:
         from httpx import ASGITransport
-        async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
+
+        async with AsyncClient(
+            transport=ASGITransport(app=kernel.app), base_url="http://test"
+        ) as ac:
             # 1. No Header
             resp = await ac.post("/admin/api/chat/stream", json={"question": "Hi"})
             assert resp.status_code == 401
@@ -140,7 +144,10 @@ async def test_invalid_conversation_id(admin_user):
 
     try:
         from httpx import ASGITransport
-        async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
+
+        async with AsyncClient(
+            transport=ASGITransport(app=kernel.app), base_url="http://test"
+        ) as ac:
             # 1. Non-integer ID
             resp = await ac.post(
                 "/admin/api/chat/stream",
