@@ -77,7 +77,7 @@ class AdaptiveCache:
             value = coro_func()
 
         # 4. Evict if needed
-        if len(self.cache) >= self.max_size:
+        while len(self.cache) >= self.max_size:
             self._evict()
 
         # 5. Store
