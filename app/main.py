@@ -163,3 +163,7 @@ if not isinstance(kernel.app, FastAPI):
     else:
         # If it's not a FastAPI instance and not a callable wrapper, panic.
         raise RuntimeError("CRITICAL: Reality Kernel failed to initialize FastAPI instance.")
+
+# --- ASGI App Export ---
+# Expose the kernel's app instance for ASGI servers like Uvicorn
+app = kernel.app

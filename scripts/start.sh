@@ -18,4 +18,4 @@ echo "🚀 Igniting Reality Kernel V3..."
 
 # Use python3 -m uvicorn for correct path resolution
 # Bind to 0.0.0.0 to ensure external access in containers
-exec python3 -m uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
+exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
