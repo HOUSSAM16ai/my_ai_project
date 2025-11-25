@@ -49,7 +49,13 @@ class OmniNodeState:
         for level in CognitiveComplexity:
             self.skills[level] = ContextualBeliefState()
 
-    def update(self, complexity: CognitiveComplexity, success: bool, raw_latency_ms: float):
+    def update(
+        self,
+        complexity: CognitiveComplexity,
+        success: bool,
+        raw_latency_ms: float,
+        quality_score: float = 0.5,  # Default to neutral
+    ):
         """
         Update the specific skill belief based on outcome.
         """
@@ -69,18 +75,23 @@ class OmniNodeState:
                 belief.beta = max(1.0, belief.beta * decay)
                 belief.last_decay = now
 
-            # 4. Calculate Reward based on Kalman-Filtered Latency
+            # 4. Calculate Reward based on Latency AND Quality
             if success:
-                # Latency Penalty
-                # < 2000ms = Good reward. > 2000ms = Lower reward.
-                latency_penalty = 1.0 / (1.0 + math.exp((true_latency - 2000) / 1000))
+                # Latency Factor (Range: ~0.5 to 1.0)
+                # Lower latency is better.
+                latency_factor = 1.0 / (1.0 + math.exp((true_latency - 2000) / 1000))
 
-                # Boost reward: Range [0.5, 2.0]
-                # If fast (penalty ~ 1.0) -> reward 2.0 (Alpha grows fast)
-                # If slow (penalty ~ 0.5) -> reward 1.25
-                weighted_reward = 1.0 + (1.0 * latency_penalty)
+                # Quality Factor (Range: 0.1 to 1.5)
+                # quality_score is [0, 1]. We map it to a wider range.
+                # 0 -> 0.1, 0.5 -> 0.8, 1.0 -> 1.5
+                quality_factor = 0.1 + 1.4 * (quality_score**2)
 
-                belief.alpha += weighted_reward
+                # Final reward is a blend of speed and quality.
+                # Max reward for fast, high-quality response: 1.0 * 1.5 = 1.5
+                # Min reward for slow, low-quality response: 0.5 * 0.1 = 0.05
+                final_reward = latency_factor * quality_factor
+
+                belief.alpha += final_reward
                 belief.failure_streak = 0
             else:
                 # Penalty
@@ -135,12 +146,19 @@ class OmniCognitiveRouter:
         candidates.sort(key=lambda x: x[1], reverse=True)
         return [c[0] for c in candidates]
 
-    def record_outcome(self, model_id: str, prompt: str, success: bool, latency_ms: float):
+    def record_outcome(
+        self,
+        model_id: str,
+        prompt: str,
+        success: bool,
+        latency_ms: float,
+        quality_score: float = 0.5,
+    ):
         if model_id not in self.nodes:
             self.register_node(model_id)
 
         complexity = assess_cognitive_complexity(prompt)
-        self.nodes[model_id].update(complexity, success, latency_ms)
+        self.nodes[model_id].update(complexity, success, latency_ms, quality_score)
 
 
 # Singleton instance for production/development
