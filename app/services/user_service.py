@@ -13,6 +13,7 @@ instances can be created per request or shared across threads without issue.
 
 from __future__ import annotations
 
+import asyncio
 from logging import Logger
 from typing import TYPE_CHECKING
 
@@ -128,8 +129,6 @@ def get_user_service() -> UserService:
 # ======================================================================================
 # ==                         BACKWARD COMPATIBILITY ADAPTERS                          ==
 # ======================================================================================
-
-import asyncio
 
 
 def get_all_users() -> list[User]:

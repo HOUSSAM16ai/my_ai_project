@@ -1,8 +1,10 @@
 
 import asyncio
-import time
+
 import pytest
+
 from app.services.breakthrough_streaming import AdaptiveCache
+
 
 @pytest.mark.asyncio
 async def test_adaptive_cache_eviction_fix():

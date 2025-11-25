@@ -1,6 +1,7 @@
 # app/cli.py
-import click
 import os
+
+import click
 
 from app.cli_handlers.db_cli import register_db_commands
 from app.cli_handlers.maintenance_cli import register_maintenance_commands

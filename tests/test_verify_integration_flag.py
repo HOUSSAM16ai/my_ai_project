@@ -1,5 +1,5 @@
 import subprocess
-import pytest
+
 
 def test_integration_flag_registered():
     """

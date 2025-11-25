@@ -10,12 +10,12 @@ feedback to the client.
 """
 
 import json
-from unittest.mock import MagicMock
 
 import pytest
 import requests
-from app.main import kernel
+
 from app.core.ai_gateway import get_ai_client
+from app.main import kernel
 
 
 def test_chat_stream_gateway_connection_error(

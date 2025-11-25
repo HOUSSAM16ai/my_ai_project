@@ -1,11 +1,11 @@
+from datetime import datetime
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
-from app.models import AdminConversation, AdminMessage, MessageRole, User
-from app.core.database import get_db
+
 from app.core.ai_gateway import get_ai_client
-from unittest.mock import MagicMock, AsyncMock
-import json
-from datetime import datetime, timedelta
+from app.models import AdminConversation, AdminMessage, MessageRole, User
 
 
 # Helper for async iterator
@@ -23,7 +23,6 @@ async def test_chat_stream_message_ordering_fixed(
     when timestamps are identical.
     """
     # 1. Setup - Create conversation and messages with IDENTICAL timestamps
-    from app.models import User
     from sqlalchemy import select
 
     stmt = select(User).where(User.email == "admin@test.com")
@@ -61,7 +60,6 @@ async def test_chat_stream_message_ordering_fixed(
     # 2. Request
     payload = {"question": "New Question", "conversation_id": str(conversation.id)}
 
-    from app.core.ai_gateway import get_ai_client
     from app.main import kernel
 
     # Setup Mock - Use the generator function directly!

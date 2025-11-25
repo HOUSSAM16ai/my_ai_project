@@ -1,8 +1,10 @@
 
-import asyncio
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from app.core.ai_gateway import NeuralRoutingMesh, NeuralNode, CircuitBreaker, CircuitState, AIProviderError, AIAllModelsExhaustedError
+
+from app.core.ai_gateway import AIAllModelsExhaustedError, CircuitState, NeuralRoutingMesh
+
 
 @pytest.mark.asyncio
 async def test_adaptive_routing_logic():

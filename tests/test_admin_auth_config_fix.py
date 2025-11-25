@@ -1,10 +1,9 @@
 
-import pytest
-import sys
-import os
-import jwt
 from unittest.mock import MagicMock, patch
-from fastapi import Request, HTTPException
+
+import jwt
+import pytest
+from fastapi import HTTPException, Request
 
 # We need to test the logic inside get_current_user_id specifically regarding key usage.
 # Since we modified the code to use get_settings() at runtime (inside the function),

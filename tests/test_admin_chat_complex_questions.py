@@ -8,7 +8,6 @@ This test suite ensures the admin chat stream can handle complex, long, and
 potentially problematic questions gracefully by using the POST method.
 """
 
-import pytest
 
 
 def test_chat_stream_handles_complex_question_via_post(

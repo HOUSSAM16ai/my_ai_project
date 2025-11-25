@@ -1,5 +1,7 @@
 # tests/test_api_gateway.py
 
+import pytest
+
 from app.services.api_gateway_chaos import (
     ChaosEngineeringService,
     ChaosExperiment,
@@ -24,7 +26,6 @@ from app.services.api_gateway_service import (
     RESTAdapter,
     RoutingStrategy,
 )
-import pytest
 
 
 class TestIntelligentRouter:

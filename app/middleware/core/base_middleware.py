@@ -15,11 +15,16 @@ Architecture: Plugin-based with lifecycle hooks
 from abc import ABC, abstractmethod
 from typing import Any
 
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp
+
 from .context import RequestContext
 from .result import MiddlewareResult
 
 
-class BaseMiddleware(ABC):
+class BaseMiddleware(BaseHTTPMiddleware, ABC):
     """
     Abstract base class for all middleware components
 
@@ -39,13 +44,15 @@ class BaseMiddleware(ABC):
     order: int = 0
     enabled: bool = True
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
         """
         Initialize middleware with optional configuration
 
         Args:
+            app: The ASGI application
             config: Configuration dictionary
         """
+        super().__init__(app)
         self.config = config or {}
         self._setup()
 
@@ -87,65 +94,81 @@ class BaseMiddleware(ABC):
         """
         return self.process_request(ctx)
 
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """
+        ASGI Dispatch method (Starlette/FastAPI integration)
+        """
+        if not self.enabled:
+             return await call_next(request)
+
+        # Create Context
+        # Note: from_fastapi_request is async
+        ctx = await RequestContext.from_fastapi_request(request)
+
+        try:
+            # Check conditions
+            if not self.should_process(ctx):
+                return await call_next(request)
+
+            # Process Request
+            result = await self.process_request_async(ctx)
+
+            if not result.is_success:
+                self.on_error(ctx, Exception(result.message))
+                self.on_complete(ctx, result)
+
+                # Convert result to Response
+                status = 400 # Default
+                if "rate limit" in str(result.message).lower():
+                    status = 429
+
+                return JSONResponse(
+                    status_code=status,
+                    content={"error": result.message, "details": result.details}
+                )
+
+            # Call Next
+            response = await call_next(request)
+
+            # Post-process (Lifecycle hooks)
+            self.on_success(ctx)
+            self.on_complete(ctx, result)
+
+            # Handle Metadata Headers (e.g. Security Headers)
+            # SecurityHeadersMiddleware stores headers in ctx.metadata["security_headers"]
+            sec_headers = ctx.get_metadata("security_headers")
+            if sec_headers and isinstance(sec_headers, dict):
+                for k, v in sec_headers.items():
+                    response.headers[k] = v
+
+            # Handle Rate Limit Headers (if any)
+            # RateLimitMiddleware stores in ctx.metadata["rate_limit_info"]
+            # We would need logic to map info to headers, but avoiding complexity for now.
+
+            return response
+
+        except Exception as e:
+            self.on_error(ctx, e)
+            raise e
+
     def on_success(self, ctx: RequestContext):
-        """
-        Lifecycle hook called when middleware check passes
-
-        Override to add custom logic after successful execution.
-
-        Args:
-            ctx: Request context
-        """
+        """Lifecycle hook called when middleware check passes"""
         # Default implementation is empty
 
     def on_error(self, ctx: RequestContext, error: Exception):
-        """
-        Lifecycle hook called when middleware encounters an error
-
-        Override to add custom error handling logic.
-
-        Args:
-            ctx: Request context
-            error: The exception that occurred
-        """
+        """Lifecycle hook called when middleware encounters an error"""
         # Default implementation is empty
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
-        """
-        Lifecycle hook called after middleware execution completes
-
-        Called regardless of success or failure.
-
-        Args:
-            ctx: Request context
-            result: The result of middleware execution
-        """
+        """Lifecycle hook called after middleware execution completes"""
         # Default implementation is empty
 
     def should_process(self, ctx: RequestContext) -> bool:
-        """
-        Determine if this middleware should process the request
-
-        Override to add conditional execution logic
-        (e.g., skip certain paths, only run for authenticated users)
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            True if middleware should process, False to skip
-        """
+        """Determine if this middleware should process the request"""
         return self.enabled
 
     def get_statistics(self) -> dict[str, Any]:
-        """
-        Get statistics about this middleware's operation
-
-        Override to provide custom metrics and statistics.
-
-        Returns:
-            Dictionary of statistics
-        """
+        """Return collected metrics"""
         return {
             "name": self.name,
             "order": self.order,
@@ -158,15 +181,10 @@ class BaseMiddleware(ABC):
 
 
 class ConditionalMiddleware(BaseMiddleware):
-    """
-    Base class for middleware that only runs under certain conditions
+    """Base class for middleware that only runs under certain conditions"""
 
-    Useful for middleware that should only apply to specific paths,
-    methods, or user roles.
-    """
-
-    def __init__(self, config: dict[str, Any] | None = None):
-        super().__init__(config)
+    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
+        super().__init__(app, config)
         self.include_paths: list[str] = self.config.get("include_paths", [])
         self.exclude_paths: list[str] = self.config.get("exclude_paths", [])
         self.methods: list[str] = self.config.get("methods", [])
@@ -197,30 +215,23 @@ class ConditionalMiddleware(BaseMiddleware):
 
 
 class MetricsMiddleware(BaseMiddleware):
-    """
-    Base class for middleware that collects metrics
+    """Base class for middleware that collects metrics"""
 
-    Provides common metric collection functionality.
-    """
-
-    def __init__(self, config: dict[str, Any] | None = None):
-        super().__init__(config)
+    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
+        super().__init__(app, config)
         self.request_count = 0
         self.success_count = 0
         self.failure_count = 0
 
     def on_success(self, ctx: RequestContext):
-        """Increment success counter"""
         self.success_count += 1
         self.request_count += 1
 
     def on_error(self, ctx: RequestContext, error: Exception):
-        """Increment failure counter"""
         self.failure_count += 1
         self.request_count += 1
 
     def get_statistics(self) -> dict[str, Any]:
-        """Return collected metrics"""
         stats = super().get_statistics()
         stats.update(
             {

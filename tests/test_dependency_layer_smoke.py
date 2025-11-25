@@ -1,13 +1,15 @@
 # tests/test_dependency_layer_smoke.py
 import logging
 import os
-import pytest
 from unittest import mock
+
+import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import Settings
+
 from app.core import di
-from app.core.di import get_logger, get_session, get_settings
+from app.core.config import Settings
+from app.core.di import get_logger, get_session
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +71,6 @@ def test_get_settings_smoke(setup_test_environment):
     # We need to reload settings to pick up environment variables set in fixture
     # Because get_settings() in di.py returns a singleton created at import time.
     # So we should probably manually re-create settings for this test.
-    from app.core.config import Settings
 
     # Manually creating settings to verify environment loading works for the Pydantic model
     # The DI singleton won't update unless we force it.

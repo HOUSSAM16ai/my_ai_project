@@ -1,11 +1,13 @@
 
-import pytest
-import json
 from unittest.mock import MagicMock
-from app.core.database import get_db, async_session_factory
+
+import pytest
+
 from app.core.ai_gateway import get_ai_client
-from tests.conftest import TestingSessionLocal
+from app.core.database import get_db
 from app.models import AdminMessage, MessageRole
+from tests.conftest import TestingSessionLocal
+
 
 # Override get_db to ensure we use the same engine/session factory as the test fixtures
 async def override_get_db():
@@ -29,8 +31,9 @@ async def test_admin_chat_empty_response_persistence(
     Current behavior: If response is empty, nothing is saved.
     We want to verify this behavior or identify it as a bug if we expect an error message.
     """
-    from app.main import kernel
     from unittest.mock import patch
+
+    from app.main import kernel
 
     # Apply override to async_client's app
     kernel.app.dependency_overrides[get_db] = override_get_db
@@ -70,6 +73,7 @@ async def test_admin_chat_empty_response_persistence(
 
         # 2. Check what was saved in DB
         from sqlalchemy import select
+
         from app.models import AdminConversation
 
         # Get the conversation

@@ -15,21 +15,21 @@ UPDATES (V6 - GOD MODE):
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
 import random
 import time
-import hashlib
-from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import httpx
 
 from app.core.cognitive_cache import get_cognitive_engine
+
 # Use the new Omni Router
 from app.core.math.omni_router import get_omni_router
 
@@ -225,7 +225,7 @@ class NeuralRoutingMesh:
 
         self.omni_router = get_omni_router()
         # Register nodes in the Omni Brain
-        for mid in self.nodes_map.keys():
+        for mid in self.nodes_map:
             self.omni_router.register_node(mid)
 
     def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
@@ -258,7 +258,7 @@ class NeuralRoutingMesh:
         cognitive_engine = get_cognitive_engine()
 
         # Calculate Context Hash (All messages EXCEPT the last user prompt)
-        context_str = json.dumps([m for m in messages[:-1]], sort_keys=True)
+        context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         context_hash = hashlib.sha256(context_str.encode()).hexdigest()
 
         # specific to user messages only to avoid caching system prompts incorrectly
@@ -324,8 +324,8 @@ class NeuralRoutingMesh:
                     logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                     raise e
 
-                logger.error(f"Node [{node.model_id}] Connection Failed: {str(e)}. Rerouting...")
-                errors.append(f"{node.model_id}: {str(e)}")
+                logger.error(f"Node [{node.model_id}] Connection Failed: {e!s}. Rerouting...")
+                errors.append(f"{node.model_id}: {e!s}")
                 continue
 
             except Exception as e:
@@ -337,8 +337,8 @@ class NeuralRoutingMesh:
                      logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
                      raise e
 
-                logger.error(f"Node [{node.model_id}] Unexpected Error: {str(e)}. Rerouting...")
-                errors.append(f"{node.model_id}: {str(e)}")
+                logger.error(f"Node [{node.model_id}] Unexpected Error: {e!s}. Rerouting...")
+                errors.append(f"{node.model_id}: {e!s}")
                 continue
 
         # If we get here, ALL nodes failed.
