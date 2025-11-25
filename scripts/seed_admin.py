@@ -3,16 +3,14 @@ import logging
 import os
 import sys
 
+from sqlalchemy import select
+
 # Add project root to python path
 sys.path.append(os.getcwd())
 
-from sqlalchemy import select
-
-from app.core.database import async_session_factory
-from app.core.security import get_password_hash
-from app.models import (
-    User,
-)  # UserRole is not in app.models in this snapshot, using string literal or default
+from app.core.database import async_session_factory  # noqa: E402
+from app.core.security import get_password_hash  # noqa: E402
+from app.models import User  # noqa: E402
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -134,9 +134,9 @@ def test_conversation_continuation():
                 .all()
             )
 
-            assert len(messages) == 4, (
-                f"Expected 4 messages after continuation, got {len(messages)}"
-            )
+            assert (
+                len(messages) == 4
+            ), f"Expected 4 messages after continuation, got {len(messages)}"
             print(f"{G}✓ Conversation now has {len(messages)} messages{E}")
 
             # Verify order

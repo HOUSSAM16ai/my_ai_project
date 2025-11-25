@@ -5,6 +5,7 @@ The "God-Mode" Router.
 """
 
 import math
+import os
 import random
 import threading
 import time
@@ -141,8 +142,6 @@ class OmniCognitiveRouter:
         complexity = assess_cognitive_complexity(prompt)
         self.nodes[model_id].update(complexity, success, latency_ms)
 
-
-import os
 
 # Singleton instance for production/development
 _omni_router_instance: OmniCognitiveRouter | None = None

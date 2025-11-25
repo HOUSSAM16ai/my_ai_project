@@ -139,7 +139,7 @@ class AppSettings(BaseSettings):
     def parse_cors_origins(cls, v: Any) -> list[str]:
         if isinstance(v, str) and not v.startswith("["):
             return [origin.strip() for origin in v.split(",")]
-        elif isinstance(v, (list, str)):
+        elif isinstance(v, list | str):
             return v
         return []
 

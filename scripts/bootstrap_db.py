@@ -3,13 +3,13 @@ import logging
 import os
 import sys
 
-# Ensure project root is in sys.path
-sys.path.append(os.getcwd())
-
 from sqlalchemy import text
 from sqlalchemy.engine.url import make_url
 
-from app.core.engine_factory import create_unified_async_engine
+# Ensure project root is in sys.path
+sys.path.append(os.getcwd())
+
+from app.core.engine_factory import create_unified_async_engine  # noqa: E402
 
 # --- 1. LOGGING SETUP (STRICTLY STDERR) ---
 # Prevent any logs from going to stdout

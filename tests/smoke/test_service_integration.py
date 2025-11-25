@@ -1,5 +1,5 @@
 # tests/smoke/test_service_integration.py
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,14 +9,8 @@ from app.kernel import app
 from app.services.database_service import DatabaseService
 
 
-@pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
-
-
-@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_system_health_endpoint_healthy_integration(client: TestClient):
-    mock_db_service = MagicMock(spec=DatabaseService)
+    mock_db_service = AsyncMock(spec=DatabaseService)
     mock_db_service.get_database_health.return_value = {
         "status": "healthy",
         "checks": {"connection": {"status": "ok"}},
