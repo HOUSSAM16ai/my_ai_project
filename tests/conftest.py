@@ -32,12 +32,7 @@ engine = create_unified_async_engine(
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# REMOVED: Custom event_loop fixture to allow pytest-asyncio to handle it.
 
 
 @pytest.fixture(scope="session", autouse=True)

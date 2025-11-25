@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import Settings
+from app.config.settings import AppSettings
 from app.core.di import get_logger, get_session, get_settings
 from app.models import User
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 class UserService:
     """A service for user-related operations."""
 
-    def __init__(self, session: AsyncSession, settings: Settings, logger: Logger):
+    def __init__(self, session: AsyncSession, settings: AppSettings, logger: Logger):
         self.session = session
         self.settings = settings
         self.logger = logger
