@@ -11,13 +11,11 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 
+from app.core.math.cognitive_fingerprint import (
+    CognitiveComplexity,
+    assess_cognitive_complexity,
+)
 from app.core.math.kalman import KalmanFilter
-
-
-class CognitiveComplexity(Enum):
-    REFLEX = 0  # Simple (< 100 chars, no complex keywords)
-    THOUGHT = 1  # Moderate
-    DEEP_THOUGHT = 2  # Complex (Code, Long context)
 
 
 @dataclass
@@ -119,31 +117,11 @@ class OmniCognitiveRouter:
             if model_id not in self.nodes:
                 self.nodes[model_id] = OmniNodeState(model_id=model_id)
 
-    def assess_complexity(self, prompt: str) -> CognitiveComplexity:
-        """
-        Heuristic Analysis of the Prompt.
-        """
-        length = len(prompt)
-        # Check for code indicators
-        code_keywords = ["def ", "class ", "import ", "{", "}", "function", "return"]
-        is_code = any(k in prompt for k in code_keywords)
-
-        if length > 2000:
-            return CognitiveComplexity.DEEP_THOUGHT
-
-        if length > 500 and is_code:
-            return CognitiveComplexity.DEEP_THOUGHT
-
-        if length > 500:
-            return CognitiveComplexity.THOUGHT
-
-        return CognitiveComplexity.REFLEX
-
     def get_ranked_nodes(self, available_model_ids: list[str], prompt: str) -> list[str]:
         """
         Context-Aware Ranking.
         """
-        complexity = self.assess_complexity(prompt)
+        complexity = assess_cognitive_complexity(prompt)
 
         candidates = []
         for mid in available_model_ids:
@@ -161,7 +139,7 @@ class OmniCognitiveRouter:
         if model_id not in self.nodes:
             self.register_node(model_id)
 
-        complexity = self.assess_complexity(prompt)
+        complexity = assess_cognitive_complexity(prompt)
         self.nodes[model_id].update(complexity, success, latency_ms)
 
 
