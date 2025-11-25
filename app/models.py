@@ -206,7 +206,7 @@ class JSONText(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        if isinstance(value, (dict, list)):
+        if isinstance(value, dict | list):
             return json.dumps(value)
         return str(value)
 

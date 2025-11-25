@@ -26,14 +26,14 @@ async def test_admin_chat_persistence_flow():
     # Configure execute to return the result
     mock_db.execute.return_value = mock_result
 
-    mock_ai_client = AsyncMock()
+    mock_ai_client = MagicMock()
 
     # Mock AI response generator
     async def mock_ai_gen(messages):
         yield {"choices": [{"delta": {"content": "Hello "}}]}
         yield {"choices": [{"delta": {"content": "World"}}]}
 
-    mock_ai_client.stream_chat.side_effect = mock_ai_gen
+    mock_ai_client.stream_chat = mock_ai_gen
 
     # Setup request
     request = ChatRequest(question="Hello AI")
@@ -50,23 +50,9 @@ async def test_admin_chat_persistence_flow():
         chat_request=request, ai_client=mock_ai_client, db=mock_db, user_id=1
     )
 
-    # Consume stream
-    content = ""
-    try:
-        async for line in response.body_iterator:
-            if line:
-                # Parse SSE
-                line_str = line.decode("utf-8") if isinstance(line, bytes) else line
-                if line_str.startswith("data: "):
-                    data_str = line_str.replace("data: ", "").strip()
-                    try:
-                        data = json.loads(data_str)
-                        if "choices" in data:
-                            content += data["choices"][0]["delta"]["content"]
-                    except Exception:
-                        pass
-    except Exception:
-        pass  # Streaming finished
+    # Consume stream fully
+    _ = [chunk async for chunk in response.body_iterator]
+
 
     # Assertions
     # Check that user message was added

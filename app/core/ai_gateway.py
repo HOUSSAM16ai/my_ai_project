@@ -183,7 +183,8 @@ class ConnectionManager:
 # --- Protocols ---
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        ...
 
     async def __aiter__(self):
         return self
@@ -287,6 +288,9 @@ class NeuralRoutingMesh:
 
         # Dynamic Priority List based on Contextual Analysis
         priority_nodes = self._get_prioritized_nodes(prompt)
+
+        if not priority_nodes:
+            raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         for node in priority_nodes:
             if not node.circuit_breaker.allow_request():

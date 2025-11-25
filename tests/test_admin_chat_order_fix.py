@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -35,7 +35,7 @@ async def test_chat_stream_message_ordering_fixed(
     await db_session.refresh(conversation)
 
     # Force identical timestamps
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     # Message 1 (Older by ID, same time)
     msg1 = AdminMessage(
