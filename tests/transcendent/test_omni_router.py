@@ -52,6 +52,8 @@ async def test_ranking_based_on_performance_deterministic(monkeypatch):
 
     model_fast = "model-fast"
     model_slow = "model-slow"
+    router.register_node(model_fast)
+    router.register_node(model_slow)
     available_models = [model_fast, model_slow]
 
     prompt_code = "Implement a quicksort algorithm in Rust."  # DEEP_THOUGHT

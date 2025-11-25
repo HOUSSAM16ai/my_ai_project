@@ -142,9 +142,28 @@ class OmniCognitiveRouter:
         self.nodes[model_id].update(complexity, success, latency_ms)
 
 
-# Singleton
-_omni_router = OmniCognitiveRouter()
+import os
+
+# Singleton instance for production/development
+_omni_router_instance: OmniCognitiveRouter | None = None
+_lock = threading.Lock()
 
 
 def get_omni_router() -> OmniCognitiveRouter:
-    return _omni_router
+    """
+    Returns the singleton OmniCognitiveRouter instance.
+
+    In a testing environment (determined by `ENVIRONMENT=testing`),
+    it returns a *new* instance on each call to ensure test isolation.
+    """
+    # Check for testing environment to ensure test isolation
+    if os.getenv("ENVIRONMENT") == "testing":
+        return OmniCognitiveRouter()
+
+    global _omni_router_instance
+    if _omni_router_instance is None:
+        with _lock:
+            # Double-check locking to prevent race conditions
+            if _omni_router_instance is None:
+                _omni_router_instance = OmniCognitiveRouter()
+    return _omni_router_instance
