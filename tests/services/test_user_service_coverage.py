@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock
 
 import pytest
@@ -30,6 +29,7 @@ async def test_get_all_users(db_session):
     assert users[0].email == "test1@example.com"
     assert users[1].email == "test2@example.com"
 
+
 @pytest.mark.asyncio
 async def test_create_new_user_success(db_session):
     logger = MagicMock()
@@ -42,10 +42,13 @@ async def test_create_new_user_success(db_session):
     assert "created with ID" in result["message"]
 
     # Verify in DB
-    db_user = (await db_session.execute(select(User).filter_by(email="new@example.com"))).scalar_one()
+    db_user = (
+        await db_session.execute(select(User).filter_by(email="new@example.com"))
+    ).scalar_one()
     assert db_user.full_name == "New User"
     assert db_user.verify_password("password")
     assert not db_user.is_admin
+
 
 @pytest.mark.asyncio
 async def test_create_new_user_duplicate_email(db_session):
@@ -62,6 +65,7 @@ async def test_create_new_user_duplicate_email(db_session):
     assert result["status"] == "error"
     assert "already exists" in result["message"]
 
+
 @pytest.mark.asyncio
 async def test_create_new_user_exception(db_session):
     logger = MagicMock()
@@ -74,6 +78,7 @@ async def test_create_new_user_exception(db_session):
 
     assert result["status"] == "error"
     assert "Database error" in result["message"]
+
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_create_new(db_session):
@@ -91,9 +96,12 @@ async def test_ensure_admin_user_exists_create_new(db_session):
     assert "created" in result["message"]
 
     # Verify
-    admin = (await db_session.execute(select(User).filter_by(email="admin@example.com"))).scalar_one()
+    admin = (
+        await db_session.execute(select(User).filter_by(email="admin@example.com"))
+    ).scalar_one()
     assert admin.is_admin
     assert admin.full_name == "Admin"
+
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_already_admin(db_session):
@@ -115,6 +123,7 @@ async def test_ensure_admin_user_exists_already_admin(db_session):
 
     assert result["status"] == "success"
     assert "already configured" in result["message"]
+
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_promote_user(db_session):
@@ -140,6 +149,7 @@ async def test_ensure_admin_user_exists_promote_user(db_session):
     # Verify promotion
     await db_session.refresh(user)
     assert user.is_admin
+
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_missing_env(db_session):

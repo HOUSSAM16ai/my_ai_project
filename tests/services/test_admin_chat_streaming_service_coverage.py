@@ -1,5 +1,3 @@
-
-
 import pytest
 
 from app.services.admin_chat_streaming_service import (
@@ -12,6 +10,7 @@ from app.services.admin_chat_streaming_service import (
 
 # --- Unit Tests for Components ---
 
+
 def test_smart_token_chunker_chunk_text():
     chunker = SmartTokenChunker()
     text = "one two three four five six"
@@ -23,6 +22,7 @@ def test_smart_token_chunker_chunk_text():
     # Chunk size 3
     chunks = chunker.chunk_text(text, chunk_size=3)
     assert chunks == ["one two three", "four five six"]
+
 
 def test_smart_token_chunker_smart_chunk():
     chunker = SmartTokenChunker()
@@ -39,6 +39,7 @@ def test_smart_token_chunker_smart_chunk():
     assert len(plain_chunks) > 0
     assert "hello " in plain_chunks[0] or "hello world " in plain_chunks[0]
 
+
 def test_speculative_decoder_patterns():
     decoder = SpeculativeDecoder()
 
@@ -53,29 +54,34 @@ def test_speculative_decoder_patterns():
     # No match
     assert decoder.predict_next_tokens("unknown_word_xyz") == []
 
+
 def test_streaming_metrics():
     metrics = StreamingMetrics()
-    metrics.record_chunk(10, 50.0) # size 10, 50ms
-    metrics.record_chunk(20, 100.0) # size 20, 100ms
+    metrics.record_chunk(10, 50.0)  # size 10, 50ms
+    metrics.record_chunk(20, 100.0)  # size 20, 100ms
 
     stats = metrics.get_stats()
     assert stats["total_streams"] == 2
     assert stats["total_tokens"] == 30
     assert stats["avg_latency_ms"] == 75.0
-    assert stats["p50_latency_ms"] == 100.0 # sorted [50.0, 100.0], index 1 (int(2*0.5)=1)
+    assert stats["p50_latency_ms"] == 100.0  # sorted [50.0, 100.0], index 1 (int(2*0.5)=1)
+
 
 def test_streaming_metrics_empty():
     metrics = StreamingMetrics()
     stats = metrics.get_stats()
     assert stats["total_streams"] == 0
 
+
 # --- Service Tests ---
+
 
 def test_service_initialization():
     service = AdminChatStreamingService()
     assert isinstance(service.metrics, StreamingMetrics)
     assert isinstance(service.speculative_decoder, SpeculativeDecoder)
     assert isinstance(service.chunker, SmartTokenChunker)
+
 
 def test_service_stream_response():
     service = AdminChatStreamingService()
@@ -99,6 +105,7 @@ def test_service_stream_response():
     # Verify Complete
     assert "event: complete" in chunks[-1]
 
+
 @pytest.mark.asyncio
 async def test_service_async_stream_response():
     service = AdminChatStreamingService()
@@ -119,6 +126,7 @@ async def test_service_async_stream_response():
     content = "".join(chunks)
     assert "hello" in content
     assert "world" in content
+
 
 def test_singleton():
     s1 = get_streaming_service()

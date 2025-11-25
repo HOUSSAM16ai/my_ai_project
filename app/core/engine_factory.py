@@ -103,7 +103,11 @@ def create_unified_async_engine(
     # --- 2. POSTGRES HARDENING ---
     if is_postgres:
         # Enforce correct async driver
-        if "asyncpg" not in database_url and "postgresql://" in database_url and "+" not in database_url:
+        if (
+            "asyncpg" not in database_url
+            and "postgresql://" in database_url
+            and "+" not in database_url
+        ):
             # If it's just 'postgresql://', upgrade to 'postgresql+asyncpg://'
             database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
 
@@ -119,9 +123,9 @@ def create_unified_async_engine(
         # RADICAL FIX: Force unnamed prepared statements
         # This prevents asyncpg from generating named statements (e.g., __asyncpg_stmt_1__)
         # which collide when sharing connections in transaction mode.
-        engine_kwargs["connect_args"][
-            "prepared_statement_name_func"
-        ] = _pg_prepared_statement_name_func
+        engine_kwargs["connect_args"]["prepared_statement_name_func"] = (
+            _pg_prepared_statement_name_func
+        )
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
         if pool_class != pool.NullPool:
@@ -186,19 +190,18 @@ def create_unified_sync_engine(
     # psycopg2 expects 'sslmode', asyncpg expects 'ssl'
     # Since _sanitize_database_url converts to 'ssl', we need to check if we are using psycopg2
     if "postgresql" in database_url and "asyncpg" not in database_url:
-         if "ssl=require" in database_url:
-             database_url = database_url.replace("ssl=require", "sslmode=require")
-         elif "ssl=disable" in database_url:
-             database_url = database_url.replace("ssl=disable", "sslmode=disable")
-         elif "ssl=allow" in database_url:
-             database_url = database_url.replace("ssl=allow", "sslmode=allow")
-         elif "ssl=prefer" in database_url:
-             database_url = database_url.replace("ssl=prefer", "sslmode=prefer")
-         elif "ssl=verify-ca" in database_url:
-             database_url = database_url.replace("ssl=verify-ca", "sslmode=verify-ca")
-         elif "ssl=verify-full" in database_url:
-             database_url = database_url.replace("ssl=verify-full", "sslmode=verify-full")
-
+        if "ssl=require" in database_url:
+            database_url = database_url.replace("ssl=require", "sslmode=require")
+        elif "ssl=disable" in database_url:
+            database_url = database_url.replace("ssl=disable", "sslmode=disable")
+        elif "ssl=allow" in database_url:
+            database_url = database_url.replace("ssl=allow", "sslmode=allow")
+        elif "ssl=prefer" in database_url:
+            database_url = database_url.replace("ssl=prefer", "sslmode=prefer")
+        elif "ssl=verify-ca" in database_url:
+            database_url = database_url.replace("ssl=verify-ca", "sslmode=verify-ca")
+        elif "ssl=verify-full" in database_url:
+            database_url = database_url.replace("ssl=verify-full", "sslmode=verify-full")
 
     engine_kwargs = copy.deepcopy(kwargs)
     engine_kwargs["echo"] = echo

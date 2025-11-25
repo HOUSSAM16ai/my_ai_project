@@ -7,7 +7,6 @@ from app.config.settings import AppSettings
 
 
 class TestSuperhumanConfiguration:
-
     @pytest.fixture
     def mock_codespaces_env(self):
         """Simulates a GitHub Codespaces environment."""
@@ -18,7 +17,7 @@ class TestSuperhumanConfiguration:
             "DATABASE_URL": "postgresql://user:pass@dbhost:5432/db?sslmode=require",
             "SECRET_KEY": "superhuman-secret-key",
             "OPENAI_API_KEY": "sk-123456789",
-            "ENVIRONMENT": "production" # To test override
+            "ENVIRONMENT": "production",  # To test override
         }
         with patch.dict(os.environ, env_vars, clear=True):
             yield
@@ -50,11 +49,15 @@ class TestSuperhumanConfiguration:
 
     def test_cors_injection(self):
         """Verifies CSV string injection for CORS."""
-        with patch.dict(os.environ, {
-            "SECRET_KEY": "test",
-            "DATABASE_URL": "sqlite:///",
-            "BACKEND_CORS_ORIGINS": "http://localhost:3000,https://myapp.com"
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "SECRET_KEY": "test",
+                "DATABASE_URL": "sqlite:///",
+                "BACKEND_CORS_ORIGINS": "http://localhost:3000,https://myapp.com",
+            },
+            clear=True,
+        ):
             settings = AppSettings()
             assert "http://localhost:3000" in settings.BACKEND_CORS_ORIGINS
             assert "https://myapp.com" in settings.BACKEND_CORS_ORIGINS

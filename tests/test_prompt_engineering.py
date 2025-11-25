@@ -12,14 +12,21 @@ def service() -> PromptEngineeringService:
 
 
 @pytest.mark.asyncio
-async def test_generate_prompt_success(service: PromptEngineeringService, session: AsyncSession):
+async def test_generate_prompt_success(service: PromptEngineeringService, db_session: AsyncSession):
+    from app.models import PromptTemplate
+
+    # Pre-create the template to avoid race conditions and ensure test isolation
+    template = PromptTemplate(name="test_template", template="Default template: {prompt}")
+    db_session.add(template)
+    await db_session.commit()
+
     user = User(full_name="Test User", email="test@example.com")
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
 
     result = await service.generate_prompt(
-        db=session,
+        db=db_session,
         user=user,
         template_name="test_template",
         variables={"prompt": "Hello World"},

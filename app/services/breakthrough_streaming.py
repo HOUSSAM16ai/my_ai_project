@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable
@@ -6,15 +7,18 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class StreamingConfig:
     OPTIMAL_CHUNK_SIZE = 3
     MIN_CHUNK_DELAY_MS = 30
     MAX_CHUNK_DELAY_MS = 100
 
+
 class BreakthroughStreamingService:
     """
     Service for advanced streaming logic.
     """
+
     async def stream_with_smart_chunking(
         self, generator: AsyncGenerator[str, None]
     ) -> AsyncGenerator[str, None]:
@@ -25,13 +29,13 @@ class BreakthroughStreamingService:
         async for token in generator:
             buffer += token
             if len(buffer.split()) >= StreamingConfig.OPTIMAL_CHUNK_SIZE:
-                yield f"event: delta\ndata: {{\"text\": \"{buffer}\"}}\n\n"
+                yield f'event: delta\ndata: {{"text": "{buffer}"}}\n\n'
                 buffer = ""
                 # Non-blocking sleep
                 await asyncio.sleep(StreamingConfig.MIN_CHUNK_DELAY_MS / 1000.0)
 
         if buffer:
-            yield f"event: delta\ndata: {{\"text\": \"{buffer}\"}}\n\n"
+            yield f'event: delta\ndata: {{"text": "{buffer}"}}\n\n'
 
         yield "event: complete\ndata: {}\n\n"
 
@@ -39,17 +43,21 @@ class BreakthroughStreamingService:
         # Placeholder for speculative decoding
         return []
 
+
 class AdaptiveCache:
     """
     Adaptive caching with LRU-like eviction and TTL.
     """
+
     def __init__(self, max_size: int = 100):
         self.max_size = max_size
         self.cache: dict[str, Any] = {}
         self.access_times: dict[str, float] = {}
         self.ttls: dict[str, float] = {}
 
-    async def get_or_compute(self, key: str, coro_func: Callable[..., Any], ttl: float | None = None) -> Any:
+    async def get_or_compute(
+        self, key: str, coro_func: Callable[..., Any], ttl: float | None = None
+    ) -> Any:
         now = time.time()
 
         # 1. Cleanup expired
@@ -63,7 +71,10 @@ class AdaptiveCache:
             return self.cache[key]
 
         # 3. Compute
-        value = await coro_func()
+        if inspect.iscoroutinefunction(coro_func):
+            value = await coro_func()
+        else:
+            value = coro_func()
 
         # 4. Evict if needed
         if len(self.cache) >= self.max_size:

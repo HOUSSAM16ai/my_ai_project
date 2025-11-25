@@ -15,6 +15,7 @@ class MockGenerator:
             yield chunk
             await asyncio.sleep(0.01)
 
+
 @pytest.mark.asyncio
 async def test_streaming_service_basic():
     service = BreakthroughStreamingService()
@@ -26,6 +27,7 @@ async def test_streaming_service_basic():
 
     assert len(result) > 0
     assert "event: delta" in result[0]
+
 
 @pytest.mark.asyncio
 async def test_streaming_cancellation():

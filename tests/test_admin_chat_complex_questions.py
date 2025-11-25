@@ -9,7 +9,6 @@ potentially problematic questions gracefully by using the POST method.
 """
 
 
-
 def test_chat_stream_handles_complex_question_via_post(
     admin_user, client, admin_auth_headers, mock_ai_client_global
 ):

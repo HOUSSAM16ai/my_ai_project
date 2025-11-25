@@ -99,7 +99,7 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
         ASGI Dispatch method (Starlette/FastAPI integration)
         """
         if not self.enabled:
-             return await call_next(request)
+            return await call_next(request)
 
         # Create Context
         # Note: from_fastapi_request is async
@@ -118,13 +118,12 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
                 self.on_complete(ctx, result)
 
                 # Convert result to Response
-                status = 400 # Default
+                status = 400  # Default
                 if "rate limit" in str(result.message).lower():
                     status = 429
 
                 return JSONResponse(
-                    status_code=status,
-                    content={"error": result.message, "details": result.details}
+                    status_code=status, content={"error": result.message, "details": result.details}
                 )
 
             # Call Next

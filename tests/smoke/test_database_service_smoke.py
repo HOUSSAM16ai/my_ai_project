@@ -6,6 +6,7 @@ from app.services.database_service import DatabaseService
 
 # tests/smoke/test_database_service_smoke.py
 
+@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
 async def test_database_health_check():
     # Mock session

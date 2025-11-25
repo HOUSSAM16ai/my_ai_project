@@ -42,14 +42,12 @@ async def test_admin_chat_persistence_flow():
     def mock_add(obj):
         if isinstance(obj, AdminConversation):
             obj.id = 1
+
     mock_db.add.side_effect = mock_add
 
     # Execute
     response = await chat_stream(
-        chat_request=request,
-        ai_client=mock_ai_client,
-        db=mock_db,
-        user_id=1
+        chat_request=request, ai_client=mock_ai_client, db=mock_db, user_id=1
     )
 
     # Consume stream
@@ -58,7 +56,7 @@ async def test_admin_chat_persistence_flow():
         async for line in response.body_iterator:
             if line:
                 # Parse SSE
-                line_str = line.decode('utf-8') if isinstance(line, bytes) else line
+                line_str = line.decode("utf-8") if isinstance(line, bytes) else line
                 if line_str.startswith("data: "):
                     data_str = line_str.replace("data: ", "").strip()
                     try:
@@ -68,7 +66,7 @@ async def test_admin_chat_persistence_flow():
                     except Exception:
                         pass
     except Exception:
-        pass # Streaming finished
+        pass  # Streaming finished
 
     # Assertions
     # Check that user message was added

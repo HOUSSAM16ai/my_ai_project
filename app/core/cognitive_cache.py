@@ -33,8 +33,9 @@ class SemanticEngram:
     """
     Represents a stored memory pattern in the Cognitive Cache.
     """
+
     original_prompt: str
-    context_hash: str # Hash of the conversation history to ensure context safety
+    context_hash: str  # Hash of the conversation history to ensure context safety
     normalized_tokens: set[str]
     response_payload: list[dict]  # The full chat history or response chunks
     created_at: float = field(default_factory=time.time)
@@ -64,13 +65,15 @@ class CognitiveResonanceEngine:
         """
         text = text.lower()
         # Remove non-alphanumeric (keep spaces)
-        text = re.sub(r'[^a-z0-9\s]', '', text)
+        text = re.sub(r"[^a-z0-9\s]", "", text)
         tokens = set(text.split())
         # Basic stop words (can be expanded)
-        stop_words = {'the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'of', 'to'}
+        stop_words = {"the", "is", "at", "which", "on", "a", "an", "and", "or", "of", "to"}
         return tokens - stop_words
 
-    def _calculate_resonance(self, tokens_a: set[str], tokens_b: set[str], text_a: str, text_b: str) -> float:
+    def _calculate_resonance(
+        self, tokens_a: set[str], tokens_b: set[str], text_a: str, text_b: str
+    ) -> float:
         """
         Calculates the "Resonance Score" (Similarity) between two inputs.
         Combines Token Overlap (Jaccard) with Structural Similarity.
@@ -122,14 +125,18 @@ class CognitiveResonanceEngine:
             if engram.context_hash != context_hash:
                 continue
 
-            score = self._calculate_resonance(input_tokens, engram.normalized_tokens, prompt, engram.original_prompt)
+            score = self._calculate_resonance(
+                input_tokens, engram.normalized_tokens, prompt, engram.original_prompt
+            )
 
             if score > best_score:
                 best_score = score
                 best_engram = engram
 
         if best_score >= RESONANCE_THRESHOLD and best_engram:
-            logger.info(f"Cognitive Resonance Detected! Score: {best_score:.4f} | Query: '{prompt}' matches '{best_engram.original_prompt}'")
+            logger.info(
+                f"Cognitive Resonance Detected! Score: {best_score:.4f} | Query: '{prompt}' matches '{best_engram.original_prompt}'"
+            )
             best_engram.access_count += 1
             self._stats["hits"] += 1
             return best_engram.response_payload
@@ -149,20 +156,18 @@ class CognitiveResonanceEngine:
             original_prompt=prompt,
             context_hash=context_hash,
             normalized_tokens=tokens,
-            response_payload=response
+            response_payload=response,
         )
-        self.memory.appendleft(engram) # MRU (Most Recently Used) logic via appendleft + maxlen
+        self.memory.appendleft(engram)  # MRU (Most Recently Used) logic via appendleft + maxlen
         logger.debug(f"Memorized new pattern: '{prompt[:30]}...'")
 
     def get_stats(self):
-        return {
-            **self._stats,
-            "memory_usage": len(self.memory),
-            "capacity": MAX_MEMORY_SLOTS
-        }
+        return {**self._stats, "memory_usage": len(self.memory), "capacity": MAX_MEMORY_SLOTS}
+
 
 # Singleton Instance
 _cognitive_engine = CognitiveResonanceEngine()
+
 
 def get_cognitive_engine() -> CognitiveResonanceEngine:
     return _cognitive_engine

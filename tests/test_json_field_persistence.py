@@ -11,6 +11,7 @@ async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
 
+
 @pytest.mark.asyncio
 async def test_task_json_field_persistence(db_session):
     """
@@ -35,7 +36,7 @@ async def test_task_json_field_persistence(db_session):
         mission_id=mission.id,
         task_key="test-task",
         tool_name="test-tool",
-        tool_args_json=input_data
+        tool_args_json=input_data,
     )
     db_session.add(task)
     await db_session.commit()

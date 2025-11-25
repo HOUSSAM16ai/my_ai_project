@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock, patch
 
 import jwt
@@ -17,6 +16,7 @@ from fastapi import HTTPException, Request
 #         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
 
 # This makes testing MUCH easier. We can just mock get_settings.
+
 
 @pytest.mark.asyncio
 async def test_admin_auth_uses_centralized_config():
@@ -48,7 +48,6 @@ async def test_admin_auth_uses_centralized_config():
 
     # 5. Patch get_settings to return our mock
     with patch("app.api.routers.admin.get_settings", return_value=mock_settings):
-
         # Case A: Valid Token (Signed with Settings Key) -> Should Succeed
         user_id = get_current_user_id(req_valid)
         assert user_id == 123

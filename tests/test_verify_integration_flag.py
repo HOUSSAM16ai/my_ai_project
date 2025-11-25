@@ -15,9 +15,15 @@ def test_integration_flag_registered():
 
     # We run with -v to see output
     result = subprocess.run(
-        ["python", "-m", "pytest", "tests/gateways/test_ai_gateway_smoke.py::test_ai_gateway_integration", "-vv"],
+        [
+            "python",
+            "-m",
+            "pytest",
+            "tests/gateways/test_ai_gateway_smoke.py::test_ai_gateway_integration",
+            "-vv",
+        ],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     # Check that we didn't get the ValueError
@@ -29,9 +35,16 @@ def test_integration_flag_registered():
 
     # Now run with the flag
     result_with_flag = subprocess.run(
-        ["python", "-m", "pytest", "tests/gateways/test_ai_gateway_smoke.py::test_ai_gateway_integration", "--run-integration", "-vv"],
+        [
+            "python",
+            "-m",
+            "pytest",
+            "tests/gateways/test_ai_gateway_smoke.py::test_ai_gateway_integration",
+            "--run-integration",
+            "-vv",
+        ],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     # Should not have ValueError
@@ -43,5 +56,5 @@ def test_integration_flag_registered():
     # If the test fails because "Exception" was not raised, that's a failure, not an error.
 
     if result_with_flag.returncode != 0:
-         # Ensure it wasn't a collection error
-         assert "ValueError" not in result_with_flag.stderr
+        # Ensure it wasn't a collection error
+        assert "ValueError" not in result_with_flag.stderr

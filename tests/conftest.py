@@ -132,6 +132,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     # Safe fix: Use transport=ASGITransport(app=app) if available, or just standard fix.
 
     from httpx import ASGITransport
+
     async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
         yield ac
 
@@ -193,6 +194,7 @@ def mock_ai_client_global():
     # Cleanup
     if get_ai_client in kernel.app.dependency_overrides:
         del kernel.app.dependency_overrides[get_ai_client]
+
 
 def pytest_addoption(parser):
     parser.addoption(

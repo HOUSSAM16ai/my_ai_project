@@ -1,4 +1,3 @@
-
 def test_bootstrap_db_encoding():
     """
     Test that special characters in passwords are handled correctly.

@@ -7,6 +7,7 @@ and execute a simple query using app.core.engine_factory.create_unified_async_en
 This ensures the environment is correctly configured for PgBouncer (statement_cache_size=0).
 Includes Hyper-Resilient Timeout Logic to prevent CI/CD Freezes.
 """
+
 import argparse
 import asyncio
 import logging
@@ -40,9 +41,7 @@ async def verify_engine_configuration():
     """
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        logger.warning(
-            "DATABASE_URL not set. Using in-memory SQLite for verification."
-        )
+        logger.warning("DATABASE_URL not set. Using in-memory SQLite for verification.")
         database_url = "sqlite+aiosqlite:///:memory:"
 
     # Check if we are using SQLite (either fallback or explicit)
@@ -72,9 +71,7 @@ async def verify_engine_configuration():
 
     try:
         # Strict timeout for verification to prevent freeze
-        async with asyncio.timeout(
-            10.0
-        ):  # 10 seconds max for engine verification
+        async with asyncio.timeout(10.0):  # 10 seconds max for engine verification
             # We avoid context manager for conn to better control close() in finally
             conn = await engine.connect()
             await conn.execute(text("SELECT 1"))
@@ -82,9 +79,7 @@ async def verify_engine_configuration():
             return True
 
     except TimeoutError:
-        logger.error(
-            "❌ Engine verification TIMED OUT. Database is unresponsive."
-        )
+        logger.error("❌ Engine verification TIMED OUT. Database is unresponsive.")
         return False
     except asyncio.CancelledError:
         logger.error("❌ Engine verification Cancelled.")
@@ -114,12 +109,8 @@ async def verify_engine_configuration():
 
 
 async def main():
-    parser = argparse.ArgumentParser(
-        description="Verify Database Engine Configuration"
-    )
-    parser.add_argument(
-        "--verify", action="store_true", help="Run verification and exit"
-    )
+    parser = argparse.ArgumentParser(description="Verify Database Engine Configuration")
+    parser.add_argument("--verify", action="store_true", help="Run verification and exit")
     _ = parser.parse_args()  # Mark as used via assignment
 
     # If --verify is passed (or default), run verification
