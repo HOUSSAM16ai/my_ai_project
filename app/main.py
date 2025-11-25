@@ -23,6 +23,7 @@ from app.api.routers import (
     security as auth,
 )
 from app.core.di import get_settings
+import app.models
 from app.core.startup_diagnostics import run_diagnostics
 from app.kernel import RealityKernel
 

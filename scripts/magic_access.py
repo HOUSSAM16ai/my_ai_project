@@ -35,7 +35,8 @@ class Colors:
 
 def print_banner():
     print(f"{Colors.HEADER}")
-    print(r"""
+    print(
+        r"""
    _____                      _ ______
   / ____|                    (_)  ____|
  | |     ___   __ _ _ __  _   _| |__ ___  _ __ __ _  ___
@@ -44,7 +45,8 @@ def print_banner():
   \_____\___/ \__, |_| |_|\__,_|_|  \___/|_|  \__, |\___|
                __/ |                           __/ |
               |___/                           |___/
-    """)
+    """
+    )
     print(f"{Colors.CYAN}   >>> SUPERHUMAN ACCESS PROTOCOL INITIATED <<<{Colors.ENDC}")
     print(f"{Colors.HEADER}--------------------------------------------------{Colors.ENDC}")
 

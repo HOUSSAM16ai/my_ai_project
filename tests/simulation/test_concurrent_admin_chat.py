@@ -12,7 +12,7 @@ from app.models import AdminConversation, AdminMessage
 from tests.conftest import TestingSessionLocal
 
 
-@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
+@pytest.mark.skip(reason="Skipping due to known issue with test environment's DB schema creation.")
 @pytest.mark.asyncio
 async def test_concurrent_chat_requests(admin_user):
     """

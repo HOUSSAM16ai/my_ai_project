@@ -166,7 +166,8 @@ except Exception:
             self.objective = objective
             self.extra = extra
 
-    class PlanValidationError(PlannerError): ...
+    class PlanValidationError(PlannerError):
+        ...
 
     class BasePlanner:
         name = "stub"
@@ -192,7 +193,8 @@ except Exception:
         tasks: list[PlannedTask]
         meta: dict[str, Any] = None
 
-    class PlanningContext: ...
+    class PlanningContext:
+        ...
 
 
 # --------------------------------------------------------------------------------------
