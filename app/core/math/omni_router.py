@@ -9,7 +9,6 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
-from enum import Enum
 
 from app.core.math.cognitive_fingerprint import (
     CognitiveComplexity,

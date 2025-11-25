@@ -18,20 +18,32 @@ from app.core.math.cognitive_fingerprint import (
         ("Hello, how are you?", CognitiveComplexity.REFLEX),
         ("Translate 'book' to Spanish.", CognitiveComplexity.REFLEX),
         # THOUGHT
-        ("Summarize the main points of the article about climate change.", CognitiveComplexity.THOUGHT),
+        (
+            "Summarize the main points of the article about climate change.",
+            CognitiveComplexity.THOUGHT,
+        ),
         (
             "Explain the difference between supervised and unsupervised machine learning.",
             CognitiveComplexity.THOUGHT,
         ),
-        ("What are the implications of quantum computing on modern cryptography?", CognitiveComplexity.THOUGHT),
+        (
+            "What are the implications of quantum computing on modern cryptography?",
+            CognitiveComplexity.THOUGHT,
+        ),
         # DEEP_THOUGHT (Code)
         ("def factorial(n):", CognitiveComplexity.DEEP_THOUGHT),
-        ("Write a Python function to find all prime numbers up to n.", CognitiveComplexity.DEEP_THOUGHT),
+        (
+            "Write a Python function to find all prime numbers up to n.",
+            CognitiveComplexity.DEEP_THOUGHT,
+        ),
         ("```javascript\nconst x = 10;\n```", CognitiveComplexity.DEEP_THOUGHT),
         # CREATIVE
         ("Write a short story about a robot who discovers music.", CognitiveComplexity.CREATIVE),
         ("Imagine you are a dragon. Describe your hoard.", CognitiveComplexity.CREATIVE),
-        ("Create a dialogue between Plato and a modern-day influencer.", CognitiveComplexity.CREATIVE),
+        (
+            "Create a dialogue between Plato and a modern-day influencer.",
+            CognitiveComplexity.CREATIVE,
+        ),
         # LOGICAL_REASONING
         ("Solve the following equation for x: 2x + 5 = 15", CognitiveComplexity.LOGICAL_REASONING),
         ("Calculate the derivative of x^3.", CognitiveComplexity.LOGICAL_REASONING),

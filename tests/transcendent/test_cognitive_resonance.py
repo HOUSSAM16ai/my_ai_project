@@ -1,9 +1,8 @@
+from unittest.mock import patch
+
 import pytest
 
 from app.core.cognitive_cache import CognitiveResonanceEngine
-
-
-from unittest.mock import patch
 
 
 @pytest.mark.asyncio
