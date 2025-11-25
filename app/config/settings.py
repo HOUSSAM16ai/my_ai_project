@@ -2,9 +2,9 @@
 import functools
 import os
 import sys
-from typing import Any, List, Optional
+from typing import Any
 
-from pydantic import Field, field_validator, ValidationInfo
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,15 +26,15 @@ class AppSettings(BaseSettings):
 
     # --- Codespaces & Cloud Native Identity ---
     CODESPACES: bool = Field(False, description="Auto-detected: True if running in GitHub Codespaces.")
-    CODESPACE_NAME: Optional[str] = Field(None, description="The name of the Codespace environment.")
-    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: Optional[str] = Field(None, description="Domain suffix for port forwarding.")
+    CODESPACE_NAME: str | None = Field(None, description="The name of the Codespace environment.")
+    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None, description="Domain suffix for port forwarding.")
 
     # --- Core Infrastructure Settings ---
-    DATABASE_URL: Optional[str] = Field(
+    DATABASE_URL: str | None = Field(
         default=None,
         description="The primary database connection string. Auto-heals sync/async schemes.",
     )
-    REDIS_URL: Optional[str] = Field(
+    REDIS_URL: str | None = Field(
         None,
         description="The Redis connection string.",
     )
@@ -45,21 +45,29 @@ class AppSettings(BaseSettings):
         description="Master cryptographic key. MUST be set in production.",
     )
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="JWT expiration time in minutes.")
-    BACKEND_CORS_ORIGINS: List[str] | str = Field(
+    BACKEND_CORS_ORIGINS: list[str] | str = Field(
         default=["*"],
         description="List of allowed CORS origins. Supports comma-separated string injection.",
     )
+    ALLOWED_HOSTS: list[str] = Field(
+        default=["*"],
+        description="List of allowed hosts for TrustedHostMiddleware."
+    )
+    FRONTEND_URL: str = Field(
+        default="http://localhost:5000",
+        description="URL of the frontend application."
+    )
 
     # --- Service Integration (AI & LLM) ---
-    AI_SERVICE_URL: Optional[str] = Field(
+    AI_SERVICE_URL: str | None = Field(
         None, description="The URL for the external AI inference service."
     )
     DEFAULT_AI_MODEL: str = Field(
         default="openai/gpt-4o",
         description="The default AI model to use for inference.",
     )
-    OPENAI_API_KEY: Optional[str] = Field(None, description="API Key for OpenAI.")
-    OPENROUTER_API_KEY: Optional[str] = Field(None, description="API Key for OpenRouter.")
+    OPENAI_API_KEY: str | None = Field(None, description="API Key for OpenAI.")
+    OPENROUTER_API_KEY: str | None = Field(None, description="API Key for OpenRouter.")
 
     # --- Operational Settings ---
     LOG_LEVEL: str = Field(
@@ -102,9 +110,8 @@ class AppSettings(BaseSettings):
         # 1. Auto-fix Scheme: sync -> async
         if v.startswith("postgres://"):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
-        elif v.startswith("postgresql://"):
-            if "postgresql+asyncpg" not in v:
-                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://") and "postgresql+asyncpg" not in v:
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
 
         # 2. Auto-fix SSL Mode: libpq 'sslmode' -> asyncpg 'ssl'
         # Crucial for Supabase/Neon in Codespaces
@@ -120,7 +127,7 @@ class AppSettings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: Any) -> List[str]:
+    def parse_cors_origins(cls, v: Any) -> list[str]:
         if isinstance(v, str) and not v.startswith("["):
             return [origin.strip() for origin in v.split(",")]
         elif isinstance(v, (list, str)):

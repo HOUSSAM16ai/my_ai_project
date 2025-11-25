@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, DateTime, ForeignKey, Text, TypeDecorator, func, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel

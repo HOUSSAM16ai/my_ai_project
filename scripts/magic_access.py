@@ -7,13 +7,12 @@ It handles port conflicts, process termination, and URL generation
 with extreme prejudice and precision.
 """
 
-import socket
 import os
+import socket
 import sys
-import psutil
 import time
-import subprocess
-from pathlib import Path
+
+import psutil
 
 # --- CONFIGURATION ---
 PORT_BACKEND = 8000

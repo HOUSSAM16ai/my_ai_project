@@ -1,9 +1,12 @@
 
-import pytest
 from unittest.mock import MagicMock
-from app.services.user_service import UserService
-from app.models import User
+
+import pytest
 from sqlalchemy import select
+
+from app.models import User
+from app.services.user_service import UserService
+
 
 @pytest.mark.asyncio
 async def test_get_all_users(db_session):

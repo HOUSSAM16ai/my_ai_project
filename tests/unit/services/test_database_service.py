@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from app.config.settings import AppSettings
+from app.core.engine_factory import create_unified_async_engine
 from app.models import User
 from app.services.database_service import DatabaseService
-from app.core.engine_factory import create_unified_async_engine
 
 
 # Use the Unified Factory for the test engine (SQLite)

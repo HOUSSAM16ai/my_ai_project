@@ -10,10 +10,10 @@ an incoming volatility storm and pre-emptively stiffens the Kalman Filter's
 plasticity (lowers Q), effectively "shielding" the state estimate from chaos.
 """
 
-import math
+import statistics
 from collections import deque
 from dataclasses import dataclass, field
-import statistics
+
 
 @dataclass
 class HyperFluxCapacitor:

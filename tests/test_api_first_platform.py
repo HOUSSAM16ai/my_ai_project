@@ -1,6 +1,5 @@
 # tests/test_api_first_platform.py
 from unittest.mock import MagicMock
-import pytest
 
 
 class TestAPIFirstPlatformService:

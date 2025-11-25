@@ -23,7 +23,7 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from collections import defaultdict, deque
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta

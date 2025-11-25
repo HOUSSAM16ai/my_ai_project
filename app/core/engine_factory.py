@@ -63,7 +63,7 @@ def _pg_prepared_statement_name_func(*args: Any) -> str:
 
 
 def create_unified_async_engine(
-    database_url: str = None, echo: bool = False, **kwargs: Any
+    database_url: str | None = None, echo: bool = False, **kwargs: Any
 ) -> AsyncEngine:
     """
     The Single Source of Truth for creating Async SQLAlchemy Engines.
@@ -103,10 +103,9 @@ def create_unified_async_engine(
     # --- 2. POSTGRES HARDENING ---
     if is_postgres:
         # Enforce correct async driver
-        if "asyncpg" not in database_url:
+        if "asyncpg" not in database_url and "postgresql://" in database_url and "+" not in database_url:
             # If it's just 'postgresql://', upgrade to 'postgresql+asyncpg://'
-            if "postgresql://" in database_url and "+" not in database_url:
-                database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
 
         # Ensure connect_args exists
         if "connect_args" not in engine_kwargs:
@@ -164,7 +163,7 @@ def create_unified_async_engine(
 
 
 def create_unified_sync_engine(
-    database_url: str = None, echo: bool = False, **kwargs: Any
+    database_url: str | None = None, echo: bool = False, **kwargs: Any
 ) -> Engine:
     """
     The Single Source of Truth for creating Sync SQLAlchemy Engines.

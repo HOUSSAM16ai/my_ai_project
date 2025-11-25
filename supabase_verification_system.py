@@ -5,22 +5,19 @@
 نظام التحقق الخارق من اتصال Supabase (المعدل للعمل مع المصنع الموحد)
 """
 
-import json
 import os
 import sys
 import time
 import traceback
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 # تأكد من إضافة المسار الصحيح
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.core.engine_factory import create_unified_async_engine, create_unified_sync_engine
+from app.core.engine_factory import create_unified_sync_engine
 
 
 # الألوان للتقارير

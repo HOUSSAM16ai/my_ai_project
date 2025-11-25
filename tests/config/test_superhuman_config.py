@@ -1,7 +1,10 @@
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from app.config.settings import AppSettings
+
 
 class TestSuperhumanConfiguration:
 
@@ -31,7 +34,7 @@ class TestSuperhumanConfiguration:
         settings = AppSettings()
         # Expecting asyncpg injection and sslmode fix
         expected = "postgresql+asyncpg://user:pass@dbhost:5432/db?ssl=require"
-        assert settings.DATABASE_URL == expected
+        assert expected == settings.DATABASE_URL
 
     def test_secret_absorption(self, mock_codespaces_env):
         """Verifies secrets are correctly mapped."""

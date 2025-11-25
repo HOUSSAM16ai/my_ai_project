@@ -1,19 +1,18 @@
-import asyncio
 from collections.abc import AsyncGenerator, Generator
 from unittest.mock import MagicMock
 
 import pytest
+import sqlalchemy as sa
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-from app.main import kernel, create_app  # Use kernel to get app
 from app.core.ai_gateway import get_ai_client
 from app.core.engine_factory import create_unified_async_engine
-from tests.factories import UserFactory, MissionFactory
+from app.main import create_app, kernel  # Use kernel to get app
+from tests.factories import MissionFactory, UserFactory
 
 # Ensure we use an in-memory SQLite DB for tests
 # Using shared cache to allow multiple connections to same memory db
@@ -142,8 +141,9 @@ async def admin_user(db_session: AsyncSession):
     """
     Fixture to create an admin user.
     """
-    from app.models import User
     from sqlalchemy import select
+
+    from app.models import User
 
     stmt = select(User).where(User.email == "admin@test.com")
     result = await db_session.execute(stmt)

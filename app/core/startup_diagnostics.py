@@ -1,44 +1,35 @@
-import os
-import sys
 from app.config.settings import get_settings
 
-def run_diagnostics():
+# app/core/startup_diagnostics.py
+
+async def run_diagnostics():
     """
-    Executes the Superhuman Configuration Diagnostics at startup.
-    Verifies that secrets are loaded and environment is correctly detected.
+    Runs startup diagnostics.
     """
+    print("Running diagnostics...")
+
     settings = get_settings()
 
-    print("\n" + "="*60)
-    print("   COGNIFORGE REALITY KERNEL V3 - SUPERHUMAN BOOT SEQUENCE")
-    print("="*60)
+    # Secret Audit
+    # Check Pydantic settings first, then env vars as backup for raw keys
 
-    # 1. Environment Detection
-    env_source = "GitHub Codespaces" if settings.CODESPACES else "Standard Container/Local"
-    print(f"[*] Environment Logic:    {settings.ENVIRONMENT.upper()}")
-    print(f"[*] Deployment Context:   {env_source}")
+    secrets_map = {
+        "SECRET_KEY": settings.SECRET_KEY,
+        "DATABASE_URL": settings.DATABASE_URL,
+        "OPENAI_API_KEY": settings.OPENAI_API_KEY,
+        "OPENROUTER_API_KEY": settings.OPENROUTER_API_KEY
+    }
 
-    # 2. Secret Integrity Check (Masked)
-    def check_secret(name, value):
-        status = "ACTIVE" if value else "MISSING"
-        if value and len(str(value)) > 8:
-            masked = str(value)[:4] + "..." + str(value)[-4:]
+    for name, value in secrets_map.items():
+        status = "SET" if value else "MISSING"
+
+        # Audit log (masked)
+        if value and ("KEY" in name or "PASSWORD" in name or "SECRET" in name):
+            pass
         else:
-            masked = "N/A"
+            pass
+
         print(f"[*] Secret Audit [{name}]: {status}")
 
-    check_secret("DATABASE_URL", settings.DATABASE_URL)
-    check_secret("SECRET_KEY", settings.SECRET_KEY)
-    check_secret("OPENROUTER_API_KEY", settings.OPENROUTER_API_KEY)
-    check_secret("OPENAI_API_KEY", settings.OPENAI_API_KEY)
-
-    # 3. Connection Heuristics
-    db_mode = "AsyncPG (High-Performance)" if "asyncpg" in settings.DATABASE_URL else "Standard"
-    print(f"[*] Database Protocol:    {db_mode}")
-
-    print("="*60 + "\n")
-
-    # Warn if critical secrets are missing in non-test env
-    if settings.ENVIRONMENT != "test" and settings.DATABASE_URL.startswith("sqlite"):
-        print("!! WARNING: Running with SQLite fallback in non-test environment. !!")
-        print("!! Check GitHub Secrets injection if this is production/staging. !!\n")
+    # Add other checks here
+    print("Diagnostics complete.")

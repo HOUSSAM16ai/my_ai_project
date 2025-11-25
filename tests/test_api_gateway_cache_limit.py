@@ -1,7 +1,10 @@
 
-import pytest
 import threading
+
+import pytest
+
 from app.services.api_gateway_service import IntelligentCache
+
 
 def test_cache_oversized_item_prevention():
     """

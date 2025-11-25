@@ -2,15 +2,12 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Optional
 
 # Add project root to python path
 sys.path.append(os.getcwd())
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 
-from app.core.engine_factory import create_unified_async_engine
 from app.core.database import async_session_factory
 from app.core.security import get_password_hash
 from app.models import (

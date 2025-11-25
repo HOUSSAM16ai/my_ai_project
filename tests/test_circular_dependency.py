@@ -1,7 +1,9 @@
-import pytest
-from sqlalchemy.orm import configure_mappers
-from sqlalchemy.exc import SAWarning
 import warnings
+
+import pytest
+from sqlalchemy.exc import SAWarning
+from sqlalchemy.orm import configure_mappers
+
 from app.models import Mission
 
 

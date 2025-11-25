@@ -6,13 +6,13 @@ The "God-Mode" Router.
 
 import math
 import random
-import time
 import threading
+import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
 from enum import Enum
 
 from app.core.math.kalman import KalmanFilter
+
 
 class CognitiveComplexity(Enum):
     REFLEX = 0       # Simple (< 100 chars, no complex keywords)
@@ -38,7 +38,7 @@ class OmniNodeState:
     kalman_filter: KalmanFilter = field(default_factory=KalmanFilter)
 
     # The Skill Tree: Map[Complexity -> Belief]
-    skills: Dict[CognitiveComplexity, ContextualBeliefState] = field(default_factory=dict)
+    skills: dict[CognitiveComplexity, ContextualBeliefState] = field(default_factory=dict)
 
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -100,7 +100,7 @@ class OmniCognitiveRouter:
     The Router.
     """
     def __init__(self):
-        self.nodes: Dict[str, OmniNodeState] = {}
+        self.nodes: dict[str, OmniNodeState] = {}
         self._lock = threading.Lock()
 
     def reset(self):
@@ -133,7 +133,7 @@ class OmniCognitiveRouter:
 
         return CognitiveComplexity.REFLEX
 
-    def get_ranked_nodes(self, available_model_ids: List[str], prompt: str) -> List[str]:
+    def get_ranked_nodes(self, available_model_ids: list[str], prompt: str) -> list[str]:
         """
         Context-Aware Ranking.
         """

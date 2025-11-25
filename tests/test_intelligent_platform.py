@@ -5,8 +5,6 @@ Tests for Intelligent Service Platform
 
 from datetime import UTC, datetime
 
-import pytest
-
 from app.services.aiops_self_healing_service import (
     MetricType,
     TelemetryData,

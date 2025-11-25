@@ -1,9 +1,11 @@
-import pytest
 import json
-from app.models import Task, Mission, User
-from app.core.database import get_db
-from tests.conftest import TestingSessionLocal
+
+import pytest
 from sqlalchemy import select
+
+from app.models import Mission, Task, User
+from tests.conftest import TestingSessionLocal
+
 
 async def override_get_db():
     async with TestingSessionLocal() as session:

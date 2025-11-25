@@ -4,9 +4,10 @@ Admin-facing API endpoints for the CogniForge platform.
 This has been migrated to use the new Reality Kernel engines.
 """
 
+import asyncio
 import json
-import jwt
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -15,7 +16,7 @@ from sqlalchemy import select
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
-from app.models import AdminConversation, AdminMessage, MessageRole, User
+from app.models import AdminConversation, AdminMessage, MessageRole
 
 # --- Configuration ---
 ALGORITHM = "HS256"
@@ -58,8 +59,8 @@ def get_current_user_id(request: Request) -> int:
         return int(user_id)
     except jwt.PyJWTError as e:
         raise HTTPException(status_code=401, detail="Invalid token") from e
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid user ID in token")
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
 
 
 @router.post("/api/chat/stream", summary="Admin Chat Streaming Endpoint")
@@ -106,8 +107,6 @@ async def chat_stream(
     await db.commit()
 
     # 3. Prepare Context
-    # Retrieve conversation history (limit to last 20 messages for context window)
-    # To get the LAST 20 messages ordered by time ascending, we sort by time DESC, limit, then reverse.
     stmt = (
         select(AdminMessage)
         .where(AdminMessage.conversation_id == conversation.id)
@@ -115,28 +114,22 @@ async def chat_stream(
         .limit(20)
     )
     result = await db.execute(stmt)
-    # Convert to list to support reversal
     history_messages = list(result.scalars().all())
-
-    # Reverse to get chronological order (ASC)
-    # The DB query returned them DESC (newest first)
     history_messages.reverse()
 
-    # Format messages for AI Client
     messages = []
     for msg in history_messages:
         role = msg.role
-        # Enum values are already lowercase "user", "assistant"
         messages.append({"role": role.value, "content": msg.content})
 
-    # Ensure the current question is included.
-    # Since we just saved 'user_message', it might be in 'history_messages' if the limit wasn't reached
-    # or if it was recent enough.
     if not messages or messages[-1]["content"] != question:
         messages.append({"role": "user", "content": question})
 
+    # --- SUPERHUMAN STREAMING & QUANTUM PERSISTENCE SHIELD ---
+    # streaming_service = get_streaming_service() # Reserved for V4 integration
+
     async def response_generator():
-        # Send the conversation ID immediately so the client can update its state
+        # Send init event
         init_payload = {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -144,58 +137,16 @@ async def chat_stream(
         yield f"event: conversation_init\ndata: {json.dumps(init_payload)}\n\n"
 
         full_response = []
-        try:
-            # Stream the response from AI
-            async for chunk in ai_client.stream_chat(messages):
-                # Expecting chunk to be a dict, potentially with 'content' or similar structure
-                # Adjust based on actual AIClient output structure.
-                # Assuming chunk is a dict representing partial response or full object.
 
-                # We assume chunk has a structure that json.dumps handles.
-                # If we need to extract content for persistence, we need to know the structure.
-                # Looking at mock in conftest: yield {"role": "assistant", "content": "Mocked response"}
-                # Looking at OpenRouterAIClient: yield chunk (json from API)
-
-                # We'll try to extract content if possible, or just dump it.
-                # For persistence, we need the text content.
-
-                content_part = ""
-                if isinstance(chunk, dict):
-                    # Try standard OpenAI/OpenRouter format
-                    choices = chunk.get("choices", [])
-                    if choices and len(choices) > 0:
-                        delta = choices[0].get("delta", {})
-                        content_part = delta.get("content", "")
-                    else:
-                        # Fallback or direct content
-                        content_part = chunk.get("content", "")
-
-                if content_part:
-                    full_response.append(content_part)
-
-                yield f"data: {json.dumps(chunk)}\n\n"
-
-        except Exception as e:
-            error_payload = {
-                "type": "error",
-                "payload": {"error": f"Failed to connect to AI service: {e}"},
-            }
-            yield f"data: {json.dumps(error_payload)}\n\n"
-
-        finally:
-            # 3. Save Assistant Message (after stream completes or disconnects)
-            # This 'finally' block ensures we save what we have generated so far,
-            # even if the client disconnects (GeneratorExit) or an error occurs.
-            # CRITICAL FIX: We must use a NEW session, as the request-scoped 'db' session
-            # might already be closed by FastAPI if the client disconnected.
+        # QUANTUM SHIELD: Atomic persistence function
+        async def safe_persist():
             assistant_content = "".join(full_response)
-
-            # If content is empty (e.g. error or empty stream), save a fallback message
-            # so the conversation history isn't left in a broken state.
             if not assistant_content:
                 assistant_content = "Error: No response received from AI service."
 
             try:
+                # Use a FRESH session because the original 'db' dependency
+                # might be closed if the request was cancelled.
                 async with async_session_factory() as session:
                     assistant_msg = AdminMessage(
                         conversation_id=conversation.id,
@@ -205,7 +156,50 @@ async def chat_stream(
                     session.add(assistant_msg)
                     await session.commit()
             except Exception as db_e:
-                # Log error but don't crash the generator close
+                # Log error but ensure we don't crash the loop (though this is end of life anyway)
                 print(f"Failed to save assistant message: {db_e}")
+
+        try:
+            # Use the AI client directly but format output to match what StreamingService might expect if we used it fully.
+            # For now, we keep the iteration logic here but could use service.stream_response if we adapted it.
+            # The key request was to fix the weakness (persistence), so we focus on that.
+
+            # However, to use the "Superhuman" service for chunking (if we wanted), we would pipe it.
+            # Given the time constraint and "one weakness" directive, fixing persistence is the priority.
+
+            async for chunk in ai_client.stream_chat(messages):
+                content_part = ""
+                if isinstance(chunk, dict):
+                    choices = chunk.get("choices", [])
+                    if choices and len(choices) > 0:
+                        delta = choices[0].get("delta", {})
+                        content_part = delta.get("content", "")
+                    else:
+                        content_part = chunk.get("content", "")
+
+                if content_part:
+                    full_response.append(content_part)
+
+                yield f"data: {json.dumps(chunk)}\n\n"
+
+        except GeneratorExit:
+            # Client disconnected!
+            # Activate Quantum Shield to save what we have.
+            # We use asyncio.shield to protect the save operation from the cancellation.
+            await asyncio.shield(safe_persist())
+            raise # Re-raise to let the server handle the close properly
+
+        except Exception as e:
+            error_payload = {
+                "type": "error",
+                "payload": {"error": f"Failed to connect to AI service: {e}"},
+            }
+            yield f"data: {json.dumps(error_payload)}\n\n"
+            # Also persist on error
+            await asyncio.shield(safe_persist())
+
+        else:
+            # Normal completion
+            await asyncio.shield(safe_persist())
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")

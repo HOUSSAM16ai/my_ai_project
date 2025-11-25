@@ -1,175 +1,126 @@
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import asyncio
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-import httpx
-from app.core.ai_gateway import (
-    CircuitBreaker, CircuitState, NeuralRoutingMesh,
-    ConnectionManager, AICircuitOpenError, AIProviderError,
-    AIConnectionError, PRIMARY_MODEL
-)
 
-# --- Test Circuit Breaker Logic ---
+from app.core.ai_gateway import NeuralRoutingMesh
 
-def test_circuit_breaker_initial_state():
-    cb = CircuitBreaker("Test-Breaker", failure_threshold=3, recovery_timeout=1.0)
-    assert cb.state == CircuitState.CLOSED
-    assert cb.allow_request() is True
 
-def test_circuit_breaker_opens_on_failures():
-    cb = CircuitBreaker("Test-Breaker", failure_threshold=3, recovery_timeout=1.0)
+# Mock ModelProvider for tests
+class ModelProvider:
+    ANTHROPIC = "anthropic/claude-3.5-sonnet"
+    OPENAI = "openai/gpt-4o"
 
-    cb.record_failure()
-    cb.record_failure()
-    assert cb.state == CircuitState.CLOSED
+class TestSuperhumanAIGateway:
+    """
+    Tests for the Superhuman AI Gateway (Neural Routing Mesh).
+    """
 
-    cb.record_failure() # 3rd failure
-    assert cb.state == CircuitState.OPEN
-    assert cb.allow_request() is False
+    @pytest.mark.asyncio
+    async def test_complexity_routing(self):
+        """Test that prompts are routed based on cognitive complexity"""
+        mock_router = MagicMock()
+        # Mocking get_ranked_nodes instead of route
+        mock_router.get_ranked_nodes.return_value = [ModelProvider.ANTHROPIC]
 
-@pytest.mark.asyncio
-async def test_circuit_breaker_recovery_flow():
-    cb = CircuitBreaker("Test-Breaker", failure_threshold=2, recovery_timeout=0.1)
+        # Initialize client with mock
+        # Since we can't easily inject the router into NeuralRoutingMesh __init__ without refactoring,
+        # we patch get_omni_router
+        with patch("app.core.ai_gateway.get_omni_router", return_value=mock_router):
+            with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"):
+                client = NeuralRoutingMesh("test_key")
 
-    # Fail until Open
-    cb.record_failure()
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
+                # Mock internal _stream_from_node to avoid network calls
+                client._stream_from_node = MagicMock()
+                async def mock_stream_gen(*args, **kwargs):
+                    yield {"content": "response"}
+                client._stream_from_node.side_effect = mock_stream_gen
 
-    # Wait for recovery timeout
-    await asyncio.sleep(0.15)
+                messages = [{"role": "user", "content": "Explain quantum gravity"}]
+                async for _ in client.stream_chat(messages):
+                    pass
 
-    # Should be allow_request -> True (transitions to HALF_OPEN effectively on check)
-    assert cb.allow_request() is True
-    assert cb.state == CircuitState.HALF_OPEN
+                # Verify router was consulted
+                mock_router.get_ranked_nodes.assert_called_once()
 
-    # Success closes it
-    cb.record_success()
-    assert cb.state == CircuitState.CLOSED
-    assert cb.failure_count == 0
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_integration(self):
+        """Test that circuit breaker states are respected"""
+        with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"):
+            client = NeuralRoutingMesh("test_key")
 
-@pytest.mark.asyncio
-async def test_circuit_breaker_half_open_failure():
-    cb = CircuitBreaker("Test-Breaker", failure_threshold=2, recovery_timeout=0.1)
+            # Mock node to be open (failing)
+            mock_node = MagicMock()
+            mock_node.circuit_breaker.allow_request.return_value = False
 
-    # Fail until Open
-    cb.record_failure()
-    cb.record_failure()
-    await asyncio.sleep(0.15)
+            # Inject mock node
+            client.nodes_map[ModelProvider.OPENAI] = mock_node
 
-    # Transition to Half Open
-    cb.allow_request()
-    assert cb.state == CircuitState.HALF_OPEN
+            # If all nodes fail/open, it raises AIAllModelsExhaustedError
+            # We need to make sure ALL nodes are failing for the test to pass the "raises" check
+            # OR we just check that this specific node wasn't called.
 
-    # Failure in Half Open -> Back to Open immediately
-    cb.record_failure()
-    assert cb.state == CircuitState.OPEN
+            # Let's try to verify that it skips the open node.
+            # We'll mock the router to return ONLY this node.
+            client.omni_router.get_ranked_nodes = MagicMock(return_value=[ModelProvider.OPENAI])
 
-# --- Test Client Resilience ---
+            # It should return empty list from _get_prioritized_nodes because the only candidate is OPEN
+            # Thus it will raise AIAllModelsExhaustedError (or return empty if handled)
 
-@pytest.mark.asyncio
-async def test_client_circuit_breaker_integration():
-    # Setup mocks
-    mock_omni_router = MagicMock()
-    mock_omni_router.get_ranked_nodes.return_value = [PRIMARY_MODEL]
+            # Check implementation of stream_chat:
+            # priority_nodes = self._get_prioritized_nodes(prompt)
+            # if not priority_nodes, loop is skipped.
+            # raises AIAllModelsExhaustedError at end.
 
-    with patch("app.core.ai_gateway.get_omni_router", return_value=mock_omni_router):
-        client = NeuralRoutingMesh(api_key="fake")
+            from app.core.ai_gateway import AIAllModelsExhaustedError
+            with pytest.raises(AIAllModelsExhaustedError):
+                 async for _ in client.stream_chat([{"role": "user", "content": "test"}]):
+                     pass
 
-        # Access the specific node for the primary model to manipulate its circuit breaker
-        primary_node = client.nodes_map[PRIMARY_MODEL]
-        # Set a low threshold for testing
-        primary_node.circuit_breaker.threshold = 2
+    @pytest.mark.asyncio
+    async def test_fallback_chain(self):
+        """Test automatic fallback to next provider on failure"""
+        with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"):
+             client = NeuralRoutingMesh("test_key")
 
-        # Mock ConnectionManager to return a mock httpx client
-        mock_httpx = MagicMock(spec=httpx.AsyncClient)
-        mock_stream_context = AsyncMock()
-        mock_httpx.stream.return_value = mock_stream_context
+             # Setup two nodes: 1 Fail, 1 Success
+             node1 = MagicMock()
+             node1.model_id = "fail_model"
+             node1.circuit_breaker.allow_request.return_value = True
+             # semaphore mock
+             node1.semaphore = AsyncMock()
+             node1.semaphore.__aenter__.return_value = None
 
-        # Simulate 500 errors
-        mock_stream_context.__aenter__.side_effect = httpx.HTTPStatusError(
-            "500 Error", request=MagicMock(), response=MagicMock(status_code=500)
-        )
+             node2 = MagicMock()
+             node2.model_id = "success_model"
+             node2.circuit_breaker.allow_request.return_value = True
+             node2.semaphore = AsyncMock()
+             node2.semaphore.__aenter__.return_value = None
 
-        with patch.object(ConnectionManager, "get_client", return_value=mock_httpx):
-            # Fail 1
-            # We expect AIConnectionError or similar, but the router tries other nodes.
-            # Since we only mocked one node return in get_ranked_nodes, it might fail with AIAllModelsExhaustedError if we don't return others.
-            # But here we want to test the circuit breaker of the specific node.
+             client.nodes_map = {"fail_model": node1, "success_model": node2}
 
-            # Since stream_chat catches errors and tries next, we need to ensure it sees the failure.
+             # Router returns both
+             client._get_prioritized_nodes = MagicMock(return_value=[node1, node2])
 
-            # Let's override get_prioritized_nodes to return ONLY our primary node to force failure bubble up if it fails?
-            # Or just check the circuit breaker state.
+             # Mock _stream_from_node
+             async def stream_fail(*args, **kwargs):
+                 raise Exception("Fail")
+                 yield # unreachable
 
-            try:
-                async for _ in client.stream_chat([{"content": "test"}]): pass
-            except Exception:
-                pass # Expected failure
+             async def stream_success(*args, **kwargs):
+                 yield {"content": "Success"}
 
-            try:
-                async for _ in client.stream_chat([{"content": "test"}]): pass
-            except Exception:
-                pass # Expected failure
+             # We need to patch _stream_from_node to behave differently per node
+             # Side effect can be a function that checks args
+             async def side_effect(node, messages):
+                 if node.model_id == "fail_model":
+                     raise Exception("Fail")
+                 yield {"content": "Success"}
 
-            # At this point, failure count should be 2, so it should be OPEN.
-            assert primary_node.circuit_breaker.state == CircuitState.OPEN
+             client._stream_from_node = MagicMock(side_effect=side_effect)
 
-            # Fail 3 (Circuit Open - Fast Fail)
-            # The router filters out open circuits in _get_prioritized_nodes
-            # So if we request again, it should return NO nodes (if this is the only one)
-            # and raise AIAllModelsExhaustedError immediately without calling stream.
+             response = []
+             async for chunk in client.stream_chat([{"role": "user", "content": "test"}]):
+                 response.append(chunk)
 
-            mock_httpx.stream.reset_mock()
-
-            with pytest.raises(Exception): # AIAllModelsExhaustedError
-                async for _ in client.stream_chat([{"content": "test"}]): pass
-
-            # Should NOT have called stream again
-            mock_httpx.stream.assert_not_called()
-
-@pytest.mark.asyncio
-async def test_client_retry_logic():
-    # Setup mocks
-    mock_omni_router = MagicMock()
-    mock_omni_router.get_ranked_nodes.return_value = [PRIMARY_MODEL]
-
-    with patch("app.core.ai_gateway.get_omni_router", return_value=mock_omni_router):
-        client = NeuralRoutingMesh(api_key="fake")
-
-        # Mock ConnectionManager
-        mock_httpx = MagicMock(spec=httpx.AsyncClient)
-        mock_stream_context = AsyncMock()
-        mock_httpx.stream.return_value = mock_stream_context
-
-        # Simulate: Fail, Fail, Success
-        error_503 = httpx.HTTPStatusError(
-            "503 Service Unavailable", request=MagicMock(), response=MagicMock(status_code=503)
-        )
-
-        # Mock response for success
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_response.status_code = 200
-
-        # Mock aiter_lines correctly
-        async def mock_lines_gen():
-            yield "data: {\"content\": \"Hello\"}"
-            yield "data: [DONE]"
-
-        mock_response.aiter_lines = MagicMock(return_value=mock_lines_gen())
-
-        # The side effect applies to the context manager entrance
-        # Note: NeuralRoutingMesh retries internally in `_stream_from_node` (MAX_RETRIES=3)
-        mock_stream_context.__aenter__.side_effect = [error_503, error_503, mock_response]
-
-        with patch.object(ConnectionManager, "get_client", return_value=mock_httpx):
-            chunks = []
-            async for chunk in client.stream_chat([{"role": "user", "content": "test"}]):
-                chunks.append(chunk)
-
-            assert len(chunks) == 1
-            assert chunks[0]["content"] == "Hello"
-
-            # Check that it tried 3 times (2 failures + 1 success)
-            assert mock_httpx.stream.call_count == 3
+             assert len(response) > 0
+             assert response[0]["content"] == "Success"

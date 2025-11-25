@@ -1,5 +1,7 @@
-import pytest
 import json
+
+import pytest
+
 from app.core.database import get_db
 from tests.conftest import TestingSessionLocal
 
