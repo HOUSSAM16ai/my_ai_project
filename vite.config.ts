@@ -9,6 +9,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        maximumFileSizeToCacheInBytes: 10000000, // 10 MB
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'CogniForge - AI-Powered Educational Platform',
@@ -75,14 +78,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-          // لا تضع اسم الحزمة المصغّرة هنا؛ alias يوجه الملف تلقائيًا
-          'chart-vendor': ['recharts', 'react-plotly.js', 'chart.js'],
-          'ai-vendor': ['@tensorflow/tfjs', 'tone'],
-          'editor-vendor': ['monaco-editor', '@monaco-editor/react']
-        }
       }
     }
   },

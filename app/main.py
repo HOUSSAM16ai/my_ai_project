@@ -1,169 +1,94 @@
-import inspect
-import logging
+# Corrected app/main.py
+
+import os
 from contextlib import asynccontextmanager
-from datetime import UTC
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-# --- Routers ---
-from app.api.routers import (
-    admin,
-    crud,
-    gateway,
-    intelligent_platform,
-    observability,
-    system,
-)
-from app.api.routers import (
-    security as auth,
-)
-from app.core.di import get_settings
-import app.models
-from app.core.startup_diagnostics import run_diagnostics
+# This must be done before other app imports to ensure settings are loaded
+from app.config import get_config, get_settings
+
+from app.api.v1.endpoints.admin.routes import router as admin_router
+from app.api.v1.endpoints.auth.routes import router as auth_router
+from app.api.v1.endpoints.demo.routes import router as demo_router
+from app.api.v1.endpoints.user.routes import router as user_router
+from app.core.di import get_db_session_context
 from app.kernel import RealityKernel
 
-# from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
-from app.middleware.fastapi_error_handlers import add_error_handlers
-from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
-from app.middleware.security.security_headers import SecurityHeadersMiddleware
+# ======================================================================================
+# reality_kernel IoC container, application factory and dependency injection setup
+# ======================================================================================
 
-logger = logging.getLogger(__name__)
+# 1. Create the RealityKernel instance
+kernel = RealityKernel()
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
-    """
-    # Startup
-    settings = get_settings()
-    logger.info(f"Starting CogniForge (Environment: {settings.ENVIRONMENT})")
-
-    # Run diagnostics
-    await run_diagnostics()
-
-    yield
-
-    # Shutdown
-    logger.info("Shutting down CogniForge...")
-
-
+# 2. Application factory
 def create_app() -> FastAPI:
     """
-    Factory function to create the FastAPI application.
-    This ensures a fresh instance for every test/run.
+    The application factory. It creates the FastAPI application, initializes the kernel,
+    and sets up the necessary components.
     """
     settings = get_settings()
+    config = get_config()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Startup
+        print("--- Startup ---")
+        kernel.init_app(config)
+        kernel.add_singleton(get_db_session_context)
+        yield
+        # Shutdown
+        print("--- Shutdown ---")
 
     app = FastAPI(
         title=settings.PROJECT_NAME,
-        version="v3.0-hyper",
-        description="CogniForge Unified AI Platform",
+        version=settings.VERSION,
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
         lifespan=lifespan,
-        docs_url="/docs" if settings.ENVIRONMENT == "development" else None,
-        redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
     )
 
-    # --- Middleware Stack ---
-    # 1. Trusted Host (Security)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
+    # Set all CORS enabled origins
+    if settings.BACKEND_CORS_ORIGINS:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
-    # 2. CORS (Connectivity)
-    # Allow all in dev, restrict in prod
-    allow_origins = ["*"] if settings.ENVIRONMENT == "development" else [settings.FRONTEND_URL]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allow_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # 3. Security Headers (Hardening)
-    app.add_middleware(SecurityHeadersMiddleware)
-
-    # 4. Rate Limiting (Protection) - Conditional
-    if settings.ENVIRONMENT != "testing":
-        app.add_middleware(RateLimitMiddleware)
-
-    # 5. Compression (Performance)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # 6. Flask Compatibility (Legacy Support)
-    # app.add_middleware(FlaskCompatMiddleware)
+    # Mount API routers
+    app.include_router(auth_router, prefix=settings.API_V1_STR)
+    app.include_router(user_router, prefix=settings.API_V1_STR)
+    app.include_router(admin_router, prefix=settings.API_V1_STR)
+    app.include_router(demo_router, prefix=settings.API_V1_STR)
 
-    # --- Router Mounting ---
-    app.include_router(system.router)
-    app.include_router(auth.router)
-    app.include_router(admin.router)
-    app.include_router(intelligent_platform.router)
-    app.include_router(crud.router)
-    app.include_router(gateway.router)
-    app.include_router(observability.router)
+    # Mount static files
+    # The Vite build generates files in app/static/dist
+    static_files_path = os.path.join(os.path.dirname(__file__), "static/dist")
+    app.mount("/static", StaticFiles(directory=static_files_path), name="static")
 
-    # --- API v1 Health Check (Legacy Support) ---
-    @app.get("/api/v1/health", tags=["System"])
-    async def health_check_v1():
-        from datetime import datetime
-
-        return {
-            "status": "success",
-            "message": "System operational",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "data": {"status": "healthy", "database": "connected", "version": "v3.0-hyper"},
-        }
-
-    # --- Static Files (Frontend) ---
-    import os
-
-    static_dir = os.path.join(os.getcwd(), "app/static")
-    dist_dir = os.path.join(static_dir, "dist")
-
-    if os.path.exists(dist_dir):
-        app.mount("/static", StaticFiles(directory=dist_dir), name="static")
-    elif os.path.exists(static_dir):
-        # Fallback to source if dist not built (dev mode)
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-    # --- SPA Catch-All ---
-    @app.get("/{full_path:path}")
-    async def catch_all(full_path: str):
-        if full_path.startswith("api/"):
-            return JSONResponse({"error": "Not Found"}, status_code=404)
-
-        # Serve index.html
-        index_path = os.path.join(
-            dist_dir if os.path.exists(dist_dir) else static_dir, "index.html"
-        )
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return JSONResponse({"error": "Frontend not built"}, status_code=503)
-
-    # --- Error Handlers ---
-    add_error_handlers(app)
+    # Serve the main React app for any other route
+    @app.get("/{full_path:path}", response_class=HTMLResponse)
+    async def serve_react_app(full_path: str):
+        # This catch-all route should serve the index.html from the static build
+        index_html_path = os.path.join(static_files_path, "index.html")
+        if os.path.exists(index_html_path):
+            with open(index_html_path) as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse(content="<h1>Frontend not found</h1><p>Please build the frontend first.</p>", status_code=404)
 
     return app
 
-
-# --- Reality Kernel Integration ---
-# Ensure the kernel has a valid app reference for singletons
-kernel = RealityKernel()
+# 3. Create the application instance by calling the factory
 kernel.app = create_app()
 
-# Runtime Assertion
-if not isinstance(kernel.app, FastAPI):
-    # Fallback check for valid callables (wrappers) that are not coroutines
-    if callable(kernel.app) and not inspect.iscoroutinefunction(kernel.app):
-        pass  # It is a valid callable wrapper
-    else:
-        # If it's not a FastAPI instance and not a callable wrapper, panic.
-        raise RuntimeError("CRITICAL: Reality Kernel failed to initialize FastAPI instance.")
-
-# --- ASGI App Export ---
-# Expose the kernel's app instance for ASGI servers like Uvicorn
+# 4. Expose the FastAPI app instance for ASGI servers - THE CRITICAL FIX
 app = kernel.app
