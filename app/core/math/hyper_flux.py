@@ -20,6 +20,7 @@ class HyperFluxCapacitor:
     """
     Manages the Flux State of the system.
     """
+
     # The Event Horizon (Z-Score Threshold)
     # If the flux exceeds this, we are in a volatility storm.
     event_horizon: float = 2.5

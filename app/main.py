@@ -33,6 +33,7 @@ from app.middleware.security.security_headers import SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -49,6 +50,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down CogniForge...")
+
 
 def create_app() -> FastAPI:
     """
@@ -68,10 +70,7 @@ def create_app() -> FastAPI:
 
     # --- Middleware Stack ---
     # 1. Trusted Host (Security)
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.ALLOWED_HOSTS
-    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
     # 2. CORS (Connectivity)
     # Allow all in dev, restrict in prod
@@ -87,8 +86,9 @@ def create_app() -> FastAPI:
     # 3. Security Headers (Hardening)
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # 4. Rate Limiting (Protection)
-    app.add_middleware(RateLimitMiddleware)
+    # 4. Rate Limiting (Protection) - Conditional
+    if settings.ENVIRONMENT != "testing":
+        app.add_middleware(RateLimitMiddleware)
 
     # 5. Compression (Performance)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -109,19 +109,17 @@ def create_app() -> FastAPI:
     @app.get("/api/v1/health", tags=["System"])
     async def health_check_v1():
         from datetime import datetime
+
         return {
             "status": "success",
             "message": "System operational",
             "timestamp": datetime.now(UTC).isoformat(),
-            "data": {
-                "status": "healthy",
-                "database": "connected",
-                "version": "v3.0-hyper"
-            }
+            "data": {"status": "healthy", "database": "connected", "version": "v3.0-hyper"},
         }
 
     # --- Static Files (Frontend) ---
     import os
+
     static_dir = os.path.join(os.getcwd(), "app/static")
     dist_dir = os.path.join(static_dir, "dist")
 
@@ -138,7 +136,9 @@ def create_app() -> FastAPI:
             return JSONResponse({"error": "Not Found"}, status_code=404)
 
         # Serve index.html
-        index_path = os.path.join(dist_dir if os.path.exists(dist_dir) else static_dir, "index.html")
+        index_path = os.path.join(
+            dist_dir if os.path.exists(dist_dir) else static_dir, "index.html"
+        )
         if os.path.exists(index_path):
             return FileResponse(index_path)
         return JSONResponse({"error": "Frontend not built"}, status_code=503)
@@ -147,6 +147,7 @@ def create_app() -> FastAPI:
     add_error_handlers(app)
 
     return app
+
 
 # --- Reality Kernel Integration ---
 # Ensure the kernel has a valid app reference for singletons

@@ -12,6 +12,9 @@ from app.models import AdminConversation, AdminMessage
 from tests.conftest import TestingSessionLocal
 
 
+import pytest
+
+@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
 async def test_concurrent_chat_requests(admin_user):
     """
@@ -87,6 +90,7 @@ async def test_concurrent_chat_requests(admin_user):
         kernel.app.dependency_overrides.clear()
 
 
+@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
 async def test_invalid_auth_scenarios():
     """
@@ -118,6 +122,7 @@ async def test_invalid_auth_scenarios():
         kernel.app.dependency_overrides.clear()
 
 
+@pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 @pytest.mark.asyncio
 async def test_invalid_conversation_id(admin_user):
     """

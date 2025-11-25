@@ -15,9 +15,9 @@ async def debug_connection(database_url):
         is_postgres = "postgresql" in database_url
 
         if is_postgres:
-             print("Mode: PostgreSQL (Async)")
+            print("Mode: PostgreSQL (Async)")
         else:
-             print("Mode: SQLite/Other")
+            print("Mode: SQLite/Other")
 
         # 3. Attempt Connection
         print("Attempting connection...")
@@ -27,13 +27,16 @@ async def debug_connection(database_url):
             # 4. Run simple query
             # Use text() for raw sql
             from sqlalchemy import text
+
             await conn.execute(text("SELECT 1"))
             print("✓ Query 'SELECT 1' successful!")
 
     except Exception as e:
         print(f"❌ Connection failed: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

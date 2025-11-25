@@ -15,25 +15,31 @@ from app.models import User
 router = APIRouter(prefix="/api/security", tags=["Security"])
 logger = logging.getLogger(__name__)
 
+
 class TokenRequest(BaseModel):
     user_id: int | None = None
     scopes: list[str] = []
 
+
 class LoginRequest(BaseModel):
     email: str
     password: str
+
 
 class RegisterRequest(BaseModel):
     full_name: str
     email: str
     password: str
 
+
 class TokenVerifyRequest(BaseModel):
     token: str | None = None
+
 
 @router.get("/health")
 async def health_check():
     return {"status": "success", "data": {"status": "healthy", "features": ["jwt", "argon2"]}}
+
 
 @router.post("/register", summary="Register a New User")
 async def register(register_data: RegisterRequest, db: AsyncSession = Depends(get_db)):
@@ -50,11 +56,7 @@ async def register(register_data: RegisterRequest, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Create new user
-    new_user = User(
-        full_name=register_data.full_name,
-        email=register_data.email,
-        is_admin=False
-    )
+    new_user = User(full_name=register_data.full_name, email=register_data.email, is_admin=False)
     new_user.set_password(register_data.password)
 
     db.add(new_user)
@@ -64,11 +66,9 @@ async def register(register_data: RegisterRequest, db: AsyncSession = Depends(ge
     return {
         "status": "success",
         "message": "User registered successfully",
-        "data": {
-            "id": new_user.id,
-            "email": new_user.email
-        }
+        "data": {"id": new_user.id, "email": new_user.email},
     }
+
 
 @router.post("/login", summary="Authenticate User and Get Token")
 async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
@@ -96,7 +96,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "sub": str(user.id),
         "email": user.email,
         "role": role,
-        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24),
     }
 
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
@@ -106,13 +106,10 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "data": {
             "access_token": token,
             "token_type": "Bearer",
-            "user": {
-                "id": user.id,
-                "name": user.full_name,
-                "email": user.email
-            }
-        }
+            "user": {"id": user.id, "name": user.full_name, "email": user.email},
+        },
     }
+
 
 @router.post("/token/generate")
 async def generate_token(request: TokenRequest):
@@ -127,6 +124,7 @@ async def generate_token(request: TokenRequest):
             "token_type": "Bearer",
         },
     }
+
 
 @router.post("/token/verify")
 async def verify_token(request: TokenVerifyRequest):

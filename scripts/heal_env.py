@@ -31,8 +31,8 @@ def heal_env_file(filepath=".env"):
             # Simple check: starts and ends with same quote type
             is_quoted = False
             if len(value) >= 2 and (
-                (value.startswith('"') and value.endswith('"')) or
-                (value.startswith("'") and value.endswith("'"))
+                (value.startswith('"') and value.endswith('"'))
+                or (value.startswith("'") and value.endswith("'"))
             ):
                 is_quoted = True
 
@@ -50,6 +50,7 @@ def heal_env_file(filepath=".env"):
         f.writelines(new_lines)
 
     print(f"Fixed {fixed_count} lines in {filepath}.")
+
 
 if __name__ == "__main__":
     heal_env_file()

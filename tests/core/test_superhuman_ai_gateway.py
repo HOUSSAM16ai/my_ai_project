@@ -10,6 +10,7 @@ class ModelProvider:
     ANTHROPIC = "anthropic/claude-3.5-sonnet"
     OPENAI = "openai/gpt-4o"
 
+
 class TestSuperhumanAIGateway:
     """
     Tests for the Superhuman AI Gateway (Neural Routing Mesh).
@@ -31,8 +32,10 @@ class TestSuperhumanAIGateway:
 
                 # Mock internal _stream_from_node to avoid network calls
                 client._stream_from_node = MagicMock()
+
                 async def mock_stream_gen(*args, **kwargs):
                     yield {"content": "response"}
+
                 client._stream_from_node.side_effect = mock_stream_gen
 
                 messages = [{"role": "user", "content": "Explain quantum gravity"}]
@@ -72,55 +75,56 @@ class TestSuperhumanAIGateway:
             # raises AIAllModelsExhaustedError at end.
 
             from app.core.ai_gateway import AIAllModelsExhaustedError
+
             with pytest.raises(AIAllModelsExhaustedError):
-                 async for _ in client.stream_chat([{"role": "user", "content": "test"}]):
-                     pass
+                async for _ in client.stream_chat([{"role": "user", "content": "test"}]):
+                    pass
 
     @pytest.mark.asyncio
     async def test_fallback_chain(self):
         """Test automatic fallback to next provider on failure"""
         with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"):
-             client = NeuralRoutingMesh("test_key")
+            client = NeuralRoutingMesh("test_key")
 
-             # Setup two nodes: 1 Fail, 1 Success
-             node1 = MagicMock()
-             node1.model_id = "fail_model"
-             node1.circuit_breaker.allow_request.return_value = True
-             # semaphore mock
-             node1.semaphore = AsyncMock()
-             node1.semaphore.__aenter__.return_value = None
+            # Setup two nodes: 1 Fail, 1 Success
+            node1 = MagicMock()
+            node1.model_id = "fail_model"
+            node1.circuit_breaker.allow_request.return_value = True
+            # semaphore mock
+            node1.semaphore = AsyncMock()
+            node1.semaphore.__aenter__.return_value = None
 
-             node2 = MagicMock()
-             node2.model_id = "success_model"
-             node2.circuit_breaker.allow_request.return_value = True
-             node2.semaphore = AsyncMock()
-             node2.semaphore.__aenter__.return_value = None
+            node2 = MagicMock()
+            node2.model_id = "success_model"
+            node2.circuit_breaker.allow_request.return_value = True
+            node2.semaphore = AsyncMock()
+            node2.semaphore.__aenter__.return_value = None
 
-             client.nodes_map = {"fail_model": node1, "success_model": node2}
+            client.nodes_map = {"fail_model": node1, "success_model": node2}
 
-             # Router returns both
-             client._get_prioritized_nodes = MagicMock(return_value=[node1, node2])
+            # Router returns both
+            client._get_prioritized_nodes = MagicMock(return_value=[node1, node2])
 
-             # Mock _stream_from_node
-             async def stream_fail(*args, **kwargs):
-                 raise Exception("Fail")
-                 yield # unreachable
+            # Mock _stream_from_node
+            async def stream_fail(*args, **kwargs):
+                raise Exception("Fail")
+                yield  # unreachable
 
-             async def stream_success(*args, **kwargs):
-                 yield {"content": "Success"}
+            async def stream_success(*args, **kwargs):
+                yield {"content": "Success"}
 
-             # We need to patch _stream_from_node to behave differently per node
-             # Side effect can be a function that checks args
-             async def side_effect(node, messages):
-                 if node.model_id == "fail_model":
-                     raise Exception("Fail")
-                 yield {"content": "Success"}
+            # We need to patch _stream_from_node to behave differently per node
+            # Side effect can be a function that checks args
+            async def side_effect(node, messages):
+                if node.model_id == "fail_model":
+                    raise Exception("Fail")
+                yield {"content": "Success"}
 
-             client._stream_from_node = MagicMock(side_effect=side_effect)
+            client._stream_from_node = MagicMock(side_effect=side_effect)
 
-             response = []
-             async for chunk in client.stream_chat([{"role": "user", "content": "test"}]):
-                 response.append(chunk)
+            response = []
+            async for chunk in client.stream_chat([{"role": "user", "content": "test"}]):
+                response.append(chunk)
 
-             assert len(response) > 0
-             assert response[0]["content"] == "Success"
+            assert len(response) > 0
+            assert response[0]["content"] == "Success"

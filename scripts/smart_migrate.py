@@ -4,6 +4,7 @@ import sys
 
 logger = logging.getLogger(__name__)
 
+
 async def run_migrations(args):
     """
     Runs alembic migrations in a subprocess to avoid
@@ -13,9 +14,7 @@ async def run_migrations(args):
     logger.info(f"Executing command: {' '.join(cmd)}")
 
     process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
 
     stdout, stderr = await process.communicate()
@@ -27,6 +26,7 @@ async def run_migrations(args):
 
     if process.returncode != 0:
         raise RuntimeError(f"Alembic command failed with exit code {process.returncode}")
+
 
 if __name__ == "__main__":
     # Simple wrapper to run migrations

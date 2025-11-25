@@ -2,6 +2,7 @@ from app.config.settings import get_settings
 
 # app/core/startup_diagnostics.py
 
+
 async def run_diagnostics():
     """
     Runs startup diagnostics.
@@ -17,7 +18,7 @@ async def run_diagnostics():
         "SECRET_KEY": settings.SECRET_KEY,
         "DATABASE_URL": settings.DATABASE_URL,
         "OPENAI_API_KEY": settings.OPENAI_API_KEY,
-        "OPENROUTER_API_KEY": settings.OPENROUTER_API_KEY
+        "OPENROUTER_API_KEY": settings.OPENROUTER_API_KEY,
     }
 
     for name, value in secrets_map.items():

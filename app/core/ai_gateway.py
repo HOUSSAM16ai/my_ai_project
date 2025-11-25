@@ -38,10 +38,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # The "Holographic Registry" of Models
 PRIMARY_MODEL = "anthropic/claude-3.5-sonnet"
-FALLBACK_MODELS = [
-    "openai/gpt-4o",
-    "anthropic/claude-instant-1.2"
-]
+FALLBACK_MODELS = ["openai/gpt-4o", "anthropic/claude-instant-1.2"]
 
 MAX_RETRIES = 3
 BASE_TIMEOUT = 30.0
@@ -67,15 +64,17 @@ class AICircuitOpenError(AIError):
 class AIConnectionError(AIError):
     """Network or connection failure."""
 
+
 class AIAllModelsExhaustedError(AIError):
     """All available AI models in the Neural Mesh have failed."""
 
 
 # --- Resilience Algorithms ---
 
+
 class CircuitState(Enum):
-    CLOSED = "CLOSED"      # Normal operation
-    OPEN = "OPEN"          # Failing, reject requests
+    CLOSED = "CLOSED"  # Normal operation
+    OPEN = "OPEN"  # Failing, reject requests
     HALF_OPEN = "HALF_OPEN"  # Testing recovery
 
 
@@ -118,7 +117,9 @@ class CircuitBreaker:
 
     def _open_circuit(self):
         self.state = CircuitState.OPEN
-        logger.error(f"Circuit Breaker [{self.name}]: OPENED. Blocking requests for {self.recovery_timeout}s.")
+        logger.error(
+            f"Circuit Breaker [{self.name}]: OPENED. Blocking requests for {self.recovery_timeout}s."
+        )
 
     def allow_request(self) -> bool:
         """Check if request should be allowed to proceed."""
@@ -141,6 +142,7 @@ class NeuralNode:
     Represents a single node in the AI Intelligence Mesh.
     Combines Model Identity with its Resilience State and Performance Metrics.
     """
+
     model_id: str
     circuit_breaker: CircuitBreaker
 
@@ -154,10 +156,12 @@ class NeuralNode:
 
 # --- Connection Management ---
 
+
 class ConnectionManager:
     """
     Manages a singleton HTTP client to ensure TCP connection reuse.
     """
+
     _instance: httpx.AsyncClient | None = None
 
     @classmethod
@@ -166,7 +170,7 @@ class ConnectionManager:
             logger.info("Initializing new global AI HTTP Client.")
             cls._instance = httpx.AsyncClient(
                 timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
-                limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
+                limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
             )
         return cls._instance
 
@@ -179,14 +183,14 @@ class ConnectionManager:
 # --- Protocols ---
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
-        ...
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
 
     async def __aiter__(self):
         return self
 
 
 # --- The Omniscient Router ---
+
 
 class NeuralRoutingMesh:
     """
@@ -204,7 +208,7 @@ class NeuralRoutingMesh:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://cogniforge.local",
-            "X-Title": "CogniForge Reality Kernel"
+            "X-Title": "CogniForge Reality Kernel",
         }
 
         # Initialize the Neural Nodes (The Brains)
@@ -213,14 +217,18 @@ class NeuralRoutingMesh:
         # 1. Primary Cortex
         self.nodes_map[PRIMARY_MODEL] = NeuralNode(
             model_id=PRIMARY_MODEL,
-            circuit_breaker=CircuitBreaker("Primary-Cortex", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
+            circuit_breaker=CircuitBreaker(
+                "Primary-Cortex", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+            ),
         )
 
         # 2. Backup Synapses (Fallbacks)
         for idx, model_id in enumerate(FALLBACK_MODELS):
             self.nodes_map[model_id] = NeuralNode(
                 model_id=model_id,
-                circuit_breaker=CircuitBreaker(f"Backup-Synapse-{idx+1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
+                circuit_breaker=CircuitBreaker(
+                    f"Backup-Synapse-{idx + 1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+                ),
             )
 
         self.omni_router = get_omni_router()
@@ -265,7 +273,9 @@ class NeuralRoutingMesh:
         if prompt and messages[-1].get("role") == "user":
             cached_memory = cognitive_engine.recall(prompt, context_hash)
             if cached_memory:
-                logger.info(f"⚡ Neural Resonance: Serving cached reflection for '{prompt[:20]}...'")
+                logger.info(
+                    f"⚡ Neural Resonance: Serving cached reflection for '{prompt[:20]}...'"
+                )
                 for chunk in cached_memory:
                     yield chunk
                 return
@@ -273,7 +283,7 @@ class NeuralRoutingMesh:
         # --- PHASE 2: SYNAPTIC ROUTING ---
         errors = []
         global_has_yielded = False
-        full_response_accumulator = [] # To memorize later
+        full_response_accumulator = []  # To memorize later
 
         # Dynamic Priority List based on Contextual Analysis
         priority_nodes = self._get_prioritized_nodes(prompt)
@@ -302,16 +312,13 @@ class NeuralRoutingMesh:
 
                     # FEED THE OMNI BRAIN (Contextual Feedback)
                     self.omni_router.record_outcome(
-                        model_id=node.model_id,
-                        prompt=prompt,
-                        success=True,
-                        latency_ms=duration_ms
+                        model_id=node.model_id, prompt=prompt, success=True, latency_ms=duration_ms
                     )
 
                     # --- PHASE 3: MEMORIZATION ---
                     # Store the experience in the Cognitive Engine
                     if prompt and full_response_accumulator:
-                         cognitive_engine.memorize(prompt, context_hash, full_response_accumulator)
+                        cognitive_engine.memorize(prompt, context_hash, full_response_accumulator)
 
                     return
 
@@ -321,7 +328,9 @@ class NeuralRoutingMesh:
                 self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
                 if global_has_yielded:
-                    logger.critical(f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely.")
+                    logger.critical(
+                        f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely."
+                    )
                     raise e
 
                 logger.error(f"Node [{node.model_id}] Connection Failed: {e!s}. Rerouting...")
@@ -334,8 +343,10 @@ class NeuralRoutingMesh:
                 self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
                 if global_has_yielded:
-                     logger.critical(f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely.")
-                     raise e
+                    logger.critical(
+                        f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely."
+                    )
+                    raise e
 
                 logger.error(f"Node [{node.model_id}] Unexpected Error: {e!s}. Rerouting...")
                 errors.append(f"{node.model_id}: {e!s}")
@@ -345,7 +356,9 @@ class NeuralRoutingMesh:
         logger.critical("All Neural Nodes Exhausted. System Collapse.")
         raise AIAllModelsExhaustedError(f"Complete Failure. Errors: {errors}")
 
-    async def _stream_from_node(self, node: NeuralNode, messages: list[dict]) -> AsyncGenerator[dict, None]:
+    async def _stream_from_node(
+        self, node: NeuralNode, messages: list[dict]
+    ) -> AsyncGenerator[dict, None]:
         """
         Internal generator for a specific node with Retry Logic.
         """
@@ -364,16 +377,19 @@ class NeuralRoutingMesh:
                     f"{self.base_url}/chat/completions",
                     headers=self.headers,
                     json={"model": node.model_id, "messages": messages, "stream": True},
-                    timeout=httpx.Timeout(current_timeout, connect=10.0)
+                    timeout=httpx.Timeout(current_timeout, connect=10.0),
                 ) as response:
-
                     if response.status_code >= 500:
-                         response.read()
-                         raise httpx.HTTPStatusError("Server Error", request=response.request, response=response)
+                        response.read()
+                        raise httpx.HTTPStatusError(
+                            "Server Error", request=response.request, response=response
+                        )
 
                     if response.status_code == 429:
                         response.read()
-                        raise httpx.HTTPStatusError("Rate Limited", request=response.request, response=response)
+                        raise httpx.HTTPStatusError(
+                            "Rate Limited", request=response.request, response=response
+                        )
 
                     response.raise_for_status()
 
@@ -391,7 +407,12 @@ class NeuralRoutingMesh:
                                 continue
                 return
 
-            except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
+            except (
+                httpx.ConnectError,
+                httpx.ReadTimeout,
+                httpx.ConnectTimeout,
+                httpx.HTTPStatusError,
+            ) as e:
                 if stream_started:
                     raise AIConnectionError("Stream severed mid-transmission.") from e
 
@@ -401,6 +422,7 @@ class NeuralRoutingMesh:
                 # Backoff
                 sleep_time = (2 ** (attempt - 1)) * 0.5 + random.uniform(0, 0.5)
                 await asyncio.sleep(sleep_time)
+
 
 # --- Dependency Injectable Gateway ---
 def get_ai_client() -> AIClient:

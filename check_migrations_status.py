@@ -36,9 +36,9 @@ def get_database_url():
 
 
 async def check_status():
-    print(f"\n{B}{'='*60}{E}")
+    print(f"\n{B}{'=' * 60}{E}")
     print(f"{B}🔄 MIGRATION STATUS CHECKER (Async/Unified){E}")
-    print(f"{B}{'='*60}{E}\n")
+    print(f"{B}{'=' * 60}{E}\n")
 
     db_url = get_database_url()
 

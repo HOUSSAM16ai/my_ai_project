@@ -39,7 +39,7 @@ def setup_test_environment():
     env_vars = {
         "DATABASE_URL": "sqlite+aiosqlite:///:memory:",
         "LOG_LEVEL": "DEBUG",
-        "SECRET_KEY": "test-secret-key-for-smoke-test"
+        "SECRET_KEY": "test-secret-key-for-smoke-test",
     }
 
     with mock.patch.dict(os.environ, env_vars):

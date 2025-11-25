@@ -9,8 +9,14 @@ from app.config.settings import AppSettings
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseService:
-    def __init__(self, session: AsyncSession, settings: AppSettings | None = None, logger: logging.Logger | None = None):
+    def __init__(
+        self,
+        session: AsyncSession,
+        settings: AppSettings | None = None,
+        logger: logging.Logger | None = None,
+    ):
         self.session = session
         self.settings = settings
         self.logger = logger or logging.getLogger(__name__)
@@ -56,7 +62,9 @@ class DatabaseService:
     async def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
         return data
 
-    async def update_record(self, table_name: str, record_id: int, data: dict[str, Any]) -> dict[str, Any]:
+    async def update_record(
+        self, table_name: str, record_id: int, data: dict[str, Any]
+    ) -> dict[str, Any]:
         return data
 
     async def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]:

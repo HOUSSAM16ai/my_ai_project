@@ -187,7 +187,7 @@ async def chat_stream(
             # Activate Quantum Shield to save what we have.
             # We use asyncio.shield to protect the save operation from the cancellation.
             await asyncio.shield(safe_persist())
-            raise # Re-raise to let the server handle the close properly
+            raise  # Re-raise to let the server handle the close properly
 
         except Exception as e:
             error_payload = {

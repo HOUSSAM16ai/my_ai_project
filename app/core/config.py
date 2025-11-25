@@ -5,6 +5,7 @@ COMPATIBILITY LAYER.
 This module is deprecated. Use app.config.settings instead.
 It redirects calls to the new Superhuman Configuration Nexus.
 """
+
 from app.config.settings import AppSettings as Settings
 from app.config.settings import get_settings
 

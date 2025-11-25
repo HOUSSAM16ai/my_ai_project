@@ -1,4 +1,3 @@
-
 import threading
 
 import pytest
@@ -50,6 +49,7 @@ def test_cache_oversized_item_prevention():
     assert stats["entry_count"] == 0
     assert stats["cache_size_mb"] == 0.0
 
+
 def test_cache_eviction_safety():
     """
     Verifies that we can fill the cache and then evict correctly
@@ -69,4 +69,4 @@ def test_cache_eviction_safety():
     cache.put({"k": 2}, {"d": data2})
 
     assert cache.get({"k": 2}) is not None
-    assert cache.get({"k": 1}) is None # Evicted
+    assert cache.get({"k": 1}) is None  # Evicted

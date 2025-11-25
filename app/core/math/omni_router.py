@@ -15,25 +15,29 @@ from app.core.math.kalman import KalmanFilter
 
 
 class CognitiveComplexity(Enum):
-    REFLEX = 0       # Simple (< 100 chars, no complex keywords)
-    THOUGHT = 1      # Moderate
-    DEEP_THOUGHT = 2 # Complex (Code, Long context)
+    REFLEX = 0  # Simple (< 100 chars, no complex keywords)
+    THOUGHT = 1  # Moderate
+    DEEP_THOUGHT = 2  # Complex (Code, Long context)
+
 
 @dataclass
 class ContextualBeliefState:
     """
     Belief state for a specific Context Bucket.
     """
+
     alpha: float = 1.0
     beta: float = 1.0
     failure_streak: int = 0
     last_decay: float = field(default_factory=time.time)
+
 
 @dataclass
 class OmniNodeState:
     """
     The brain of a single provider.
     """
+
     model_id: str
     kalman_filter: KalmanFilter = field(default_factory=KalmanFilter)
 
@@ -95,10 +99,12 @@ class OmniNodeState:
         belief = self.skills.get(complexity, self.skills[CognitiveComplexity.REFLEX])
         return random.betavariate(belief.alpha, belief.beta)
 
+
 class OmniCognitiveRouter:
     """
     The Router.
     """
+
     def __init__(self):
         self.nodes: dict[str, OmniNodeState] = {}
         self._lock = threading.Lock()
@@ -123,7 +129,7 @@ class OmniCognitiveRouter:
         is_code = any(k in prompt for k in code_keywords)
 
         if length > 2000:
-             return CognitiveComplexity.DEEP_THOUGHT
+            return CognitiveComplexity.DEEP_THOUGHT
 
         if length > 500 and is_code:
             return CognitiveComplexity.DEEP_THOUGHT
@@ -158,8 +164,10 @@ class OmniCognitiveRouter:
         complexity = self.assess_complexity(prompt)
         self.nodes[model_id].update(complexity, success, latency_ms)
 
+
 # Singleton
 _omni_router = OmniCognitiveRouter()
+
 
 def get_omni_router() -> OmniCognitiveRouter:
     return _omni_router

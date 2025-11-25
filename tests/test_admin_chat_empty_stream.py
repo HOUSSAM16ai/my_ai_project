@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,10 +13,12 @@ async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
 
+
 # Mock AI client that yields nothing (empty stream)
 async def mock_empty_stream(messages):
     if False:
         yield "nothing"
+
 
 @pytest.mark.asyncio
 async def test_admin_chat_empty_response_persistence(
@@ -58,7 +59,6 @@ async def test_admin_chat_empty_response_persistence(
 
     # We need to patch where it is imported in admin.py
     with patch("app.api.routers.admin.async_session_factory", side_effect=mock_session_factory):
-
         # 1. Send chat request
         async with async_client.stream(
             "POST",
@@ -84,7 +84,11 @@ async def test_admin_chat_empty_response_persistence(
         conversation = conversations[-1]
 
         # Get messages
-        stmt = select(AdminMessage).where(AdminMessage.conversation_id == conversation.id).order_by(AdminMessage.created_at)
+        stmt = (
+            select(AdminMessage)
+            .where(AdminMessage.conversation_id == conversation.id)
+            .order_by(AdminMessage.created_at)
+        )
         result = await db_session.execute(stmt)
         messages = result.scalars().all()
 
@@ -98,7 +102,9 @@ async def test_admin_chat_empty_response_persistence(
 
         # Asserting that we EXPECT an assistant message (error or empty)
         # If this fails, it confirms the bug that no feedback is saved.
-        assert len(asst_msgs) > 0, "Expected an assistant message (even if empty or error) to be persisted."
+        assert len(asst_msgs) > 0, (
+            "Expected an assistant message (even if empty or error) to be persisted."
+        )
 
         # With the fix, we expect the specific error message
         assert asst_msgs[0].content == "Error: No response received from AI service."

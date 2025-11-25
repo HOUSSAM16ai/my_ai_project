@@ -20,14 +20,20 @@ class AppSettings(BaseSettings):
     # --- Core Identity & Environment ---
     PROJECT_NAME: str = Field("CogniForge Reality Kernel V3", description="The project name.")
     VERSION: str = Field("3.0-hyper", description="The application version.")
-    ENVIRONMENT: str = Field("development", description="The deployment environment (development, staging, production).")
+    ENVIRONMENT: str = Field(
+        "development", description="The deployment environment (development, staging, production)."
+    )
     DEBUG: bool = Field(False, description="Enable debug mode.")
     API_V1_STR: str = "/api/v1"
 
     # --- Codespaces & Cloud Native Identity ---
-    CODESPACES: bool = Field(False, description="Auto-detected: True if running in GitHub Codespaces.")
+    CODESPACES: bool = Field(
+        False, description="Auto-detected: True if running in GitHub Codespaces."
+    )
     CODESPACE_NAME: str | None = Field(None, description="The name of the Codespace environment.")
-    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None, description="Domain suffix for port forwarding.")
+    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(
+        None, description="Domain suffix for port forwarding."
+    )
 
     # --- Core Infrastructure Settings ---
     DATABASE_URL: str | None = Field(
@@ -44,18 +50,18 @@ class AppSettings(BaseSettings):
         ...,
         description="Master cryptographic key. MUST be set in production.",
     )
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="JWT expiration time in minutes.")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        60 * 24 * 8, description="JWT expiration time in minutes."
+    )
     BACKEND_CORS_ORIGINS: list[str] | str = Field(
         default=["*"],
         description="List of allowed CORS origins. Supports comma-separated string injection.",
     )
     ALLOWED_HOSTS: list[str] = Field(
-        default=["*"],
-        description="List of allowed hosts for TrustedHostMiddleware."
+        default=["*"], description="List of allowed hosts for TrustedHostMiddleware."
     )
     FRONTEND_URL: str = Field(
-        default="http://localhost:5000",
-        description="URL of the frontend application."
+        default="http://localhost:5000", description="URL of the frontend application."
     )
 
     # --- Service Integration (AI & LLM) ---
@@ -104,7 +110,10 @@ class AppSettings(BaseSettings):
         if not v:
             # Fallback for testing or local dev if completely missing
             # In CI/Codespaces without secrets, this prevents crash-on-import, though app will fail later if DB needed.
-            print("WARNING: No DATABASE_URL found. Injecting SQLite fallback for stability.", file=sys.stderr)
+            print(
+                "WARNING: No DATABASE_URL found. Injecting SQLite fallback for stability.",
+                file=sys.stderr,
+            )
             return "sqlite+aiosqlite:///./test.db"
 
         # 1. Auto-fix Scheme: sync -> async
@@ -121,7 +130,7 @@ class AppSettings(BaseSettings):
 
         # 3. Handle 'disable' mode for local dev to avoid asyncpg errors
         if "sslmode=disable" in v:
-             v = v.replace("sslmode=disable", "ssl=disable")
+            v = v.replace("sslmode=disable", "ssl=disable")
 
         return v
 
@@ -149,6 +158,7 @@ class AppSettings(BaseSettings):
             pass
 
         return missing
+
 
 @functools.lru_cache
 def get_settings() -> AppSettings:
