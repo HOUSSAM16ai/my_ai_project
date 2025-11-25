@@ -256,37 +256,52 @@ class NeuralRoutingMesh:
         # 3. Map back to NeuralNodes
         return [self.nodes_map[mid] for mid in ranked_ids]
 
+    def _calculate_quality_score(self, full_content: str) -> float:
+        """
+        Calculates a 'Cognitive Resonance' score based on response content.
+        This is a heuristic to judge the quality/depth of the response.
+        """
+        if not full_content:
+            return 0.0
+
+        # Heuristic 1: Length (longer is generally better, up to a point)
+        length_score = min(1.0, len(full_content) / 500)  # Normalize around 500 chars
+
+        # Heuristic 2: Information Density (e.g., unique words)
+        words = full_content.split()
+        if not words:
+            return 0.0
+        unique_words = set(words)
+        density_score = len(unique_words) / len(words)
+
+        # Combine scores (weighted)
+        # We value density more than raw length.
+        final_score = (0.4 * length_score) + (0.6 * density_score)
+        return max(0.0, min(1.0, final_score))
+
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
         """
         Executes the 'Synaptic Fallback Strategy' with Omni-Cognitive Optimization.
-        Now Enhanced with COGNITIVE RESONANCE (Semantic Caching).
+        Now Enhanced with COGNITIVE RESONANCE (Semantic Caching & Quality Feedback).
         """
         # --- PHASE 1: COGNITIVE RECALL ---
-        # Extract the prompt for semantic analysis
         prompt = messages[-1].get("content", "") if messages else ""
         cognitive_engine = get_cognitive_engine()
-
-        # Calculate Context Hash (All messages EXCEPT the last user prompt)
         context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         context_hash = hashlib.sha256(context_str.encode()).hexdigest()
 
-        # specific to user messages only to avoid caching system prompts incorrectly
         if prompt and messages[-1].get("role") == "user":
             cached_memory = cognitive_engine.recall(prompt, context_hash)
             if cached_memory:
-                logger.info(
-                    f"⚡ Neural Resonance: Serving cached reflection for '{prompt[:20]}...'"
-                )
+                logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
                 for chunk in cached_memory:
                     yield chunk
                 return
 
-        # --- PHASE 2: SYNAPTIC ROUTING ---
+        # --- PHASE 2: SYNAPTIC ROUTING & QUALITY ASSESSMENT ---
         errors = []
         global_has_yielded = False
-        full_response_accumulator = []  # To memorize later
-
-        # Dynamic Priority List based on Contextual Analysis
+        full_response_chunks = []
         priority_nodes = self._get_prioritized_nodes(prompt)
 
         if not priority_nodes:
@@ -297,66 +312,70 @@ class NeuralRoutingMesh:
                 continue
 
             try:
-                # Acquire Semaphore for Concurrency Control
                 async with node.semaphore:
                     logger.info(f"Engaging Neural Node via Omni Choice: {node.model_id}")
                     start_time = time.time()
 
-                    # We yield from the internal generator.
                     async for chunk in self._stream_from_node(node, messages):
                         yield chunk
-                        full_response_accumulator.append(chunk)
+                        full_response_chunks.append(chunk)
                         global_has_yielded = True
 
-                    # Success!
                     duration_ms = (time.time() - start_time) * 1000
-
-                    # Update Circuit Breaker
                     node.circuit_breaker.record_success()
 
-                    # FEED THE OMNI BRAIN (Contextual Feedback)
+                    # --- ENHANCED FEEDBACK LOOP ---
+                    # 1. Assemble full response content
+                    full_content = "".join(
+                        chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                        for chunk in full_response_chunks
+                    ).strip()
+
+                    # 2. Calculate Cognitive Resonance (Quality)
+                    quality_score = self._calculate_quality_score(full_content)
+                    logger.info(
+                        f"Cognitive Resonance Score for [{node.model_id}]: {quality_score:.2f}"
+                    )
+
+                    # 3. FEED THE OMNI BRAIN (with quality score)
                     self.omni_router.record_outcome(
-                        model_id=node.model_id, prompt=prompt, success=True, latency_ms=duration_ms
+                        model_id=node.model_id,
+                        prompt=prompt,
+                        success=True,
+                        latency_ms=duration_ms,
+                        quality_score=quality_score,
                     )
 
                     # --- PHASE 3: MEMORIZATION ---
-                    # Store the experience in the Cognitive Engine
-                    if prompt and full_response_accumulator:
-                        cognitive_engine.memorize(prompt, context_hash, full_response_accumulator)
+                    if prompt and full_response_chunks:
+                        cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
 
                     return
 
             except AIConnectionError as e:
-                # Failure!
                 node.circuit_breaker.record_failure()
                 self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
-
                 if global_has_yielded:
                     logger.critical(
                         f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely."
                     )
                     raise e
-
                 logger.error(f"Node [{node.model_id}] Connection Failed: {e!s}. Rerouting...")
                 errors.append(f"{node.model_id}: {e!s}")
                 continue
 
             except Exception as e:
-                # Failure!
                 node.circuit_breaker.record_failure()
                 self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
-
                 if global_has_yielded:
                     logger.critical(
                         f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely."
                     )
                     raise e
-
                 logger.error(f"Node [{node.model_id}] Unexpected Error: {e!s}. Rerouting...")
                 errors.append(f"{node.model_id}: {e!s}")
                 continue
 
-        # If we get here, ALL nodes failed.
         logger.critical("All Neural Nodes Exhausted. System Collapse.")
         raise AIAllModelsExhaustedError(f"Complete Failure. Errors: {errors}")
 
