@@ -22,7 +22,7 @@ if [ ! -f .env ]; then
 fi
 
 print_header "Phase 3: Building Frontend (with increased memory)"
-export NODE_OPTIONS="--max-old-space-size=4096"
+export NODE_OPTIONS="--max-old-space-size=8192"
 npm run build
 unset NODE_OPTIONS
 

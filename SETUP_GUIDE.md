@@ -75,16 +75,13 @@ docker-compose up -d
 
 ```bash
 # Apply database migrations to Supabase
-docker-compose run --rm web flask db upgrade
-
-# Or create new migration
-docker-compose run --rm web flask db migrate -m "Your migration message"
+docker-compose run --rm web python -m cli db-migrate
 ```
 
-### Step 5: Create Admin User
+### Step 5: Seed Database (Create Admin User)
 
 ```bash
-docker-compose run --rm web flask users create-admin
+docker-compose run --rm web python -m cli db seed --confirm
 ```
 
 ---
@@ -174,7 +171,7 @@ cp .env.example .env
 **Solution:**
 ```bash
 # Apply migrations to Supabase
-docker-compose run --rm web flask db upgrade
+docker-compose run --rm web python -m cli db-migrate
 
 # If that fails, check your connection first
 docker-compose run --rm web python3 -c "
@@ -192,8 +189,7 @@ print('DATABASE_URL:', os.getenv('DATABASE_URL'))
 ### Required Variables
 
 ```bash
-# Flask Configuration
-FLASK_DEBUG=1
+# Application Configuration
 SECRET_KEY=your-secret-key-here
 
 # Database (LOCAL)
@@ -233,9 +229,8 @@ After successful setup:
 
 4. **Run CLI commands:**
    ```bash
-   docker-compose run --rm web flask db health
-   docker-compose run --rm web flask db stats
-   docker-compose run --rm web flask db tables
+   # Example: Create all tables (if not using migrations)
+   docker-compose run --rm web python -m cli db create-all
    ```
 
 ---

@@ -18,13 +18,12 @@
 
 #### في Docker (مفضل):
 ```bash
-docker-compose run --rm web flask db upgrade
+docker-compose run --rm web python -m cli db-migrate
 ```
 
 #### في البيئة المحلية:
 ```bash
-export FLASK_APP=run:app
-flask db upgrade
+python -m cli db-migrate
 ```
 
 ---
@@ -33,10 +32,9 @@ flask db upgrade
 
 ### 1. التحقق السريع (Quick Check)
 ```bash
-# التحقق من الترحيل الحالي
-docker-compose run --rm web flask db current
-
-# يجب أن تظهر: 20251016_prompt_engineering
+# لا يوجد أمر مباشر لعرض الترحيل الحالي في cli.py،
+# ولكن يمكن التحقق من ذلك في قاعدة البيانات مباشرة أو باستخدام أدوات مثل pgAdmin.
+# بعد تشغيل الترحيل بنجاح، يمكنك التأكد من أن التطبيق يعمل بشكل صحيح.
 ```
 
 ### 2. استخدام أداة التحقق المدمجة (Use Built-in Validator)
@@ -110,21 +108,10 @@ c670e137ea84
 # 1. التحقق من صحة الترحيلات
 python3 validate_migration_chain.py
 
-# 2. عرض رؤوس الترحيلات
-export FLASK_APP=run:app
-flask db heads
-
-# 3. عرض تاريخ الترحيلات
-flask db history
-
-# 4. تطبيق الترحيلات
-docker-compose run --rm web flask db upgrade
-
-# 5. التحقق من الترحيل الحالي
-docker-compose run --rm web flask db current
-
-# 6. عرض جداول قاعدة البيانات (بعد التطبيق)
-docker-compose run --rm web flask db tables
+# الأوامر القديمة مثل heads, history, current, tables غير متوفرة بشكل مباشر في cli.py.
+# التركيز الآن على أمر الترحيل الموحد.
+# 2. تطبيق الترحيلات
+docker-compose run --rm web python -m cli db-migrate
 ```
 
 ---
@@ -141,8 +128,8 @@ python3 validate_migration_chain.py
 
 ### عند إنشاء ترحيلات جديدة
 ```bash
-# دائماً استخدم flask db migrate (لا تنشئ يدوياً)
-flask db migrate -m "وصف الترحيل"
+# استخدم alembic مباشرة لإنشاء ترحيلات جديدة
+export SECRET_KEY=dummy && alembic revision --autogenerate -m "وصف الترحيل"
 
 # ثم راجع الملف المُنشأ
 # ثم تحقق
