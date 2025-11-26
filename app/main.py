@@ -26,6 +26,10 @@ def create_app() -> FastAPI:
     kernel = RealityKernel(settings.model_dump())
     app = kernel.get_app()
 
+    @app.get("/health")
+    async def health():
+        return {"status": "ok", "service": "backend running"}
+
     # --- Static Files ---
     static_files_dir = os.path.join(os.getcwd(), "app/static/dist")
     if os.path.exists(static_files_dir):
