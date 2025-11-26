@@ -44,8 +44,9 @@ class TestSuperhumanConfiguration:
     def test_sqlite_fallback(self):
         """Verifies SQLite injection when DB URL is missing (Safe-Fail)."""
         with patch.dict(os.environ, {"SECRET_KEY": "test"}, clear=True):
+            # The new default fallback is now dev.db, let's reflect that.
             settings = AppSettings()
-            assert settings.DATABASE_URL == "sqlite+aiosqlite:///./test.db"
+            assert settings.DATABASE_URL == "sqlite+aiosqlite:///./dev.db"
 
     def test_cors_injection(self):
         """Verifies CSV string injection for CORS."""

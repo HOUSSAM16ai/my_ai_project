@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.core.ai_gateway import get_ai_client
+import app.core.database
 from app.core.engine_factory import create_unified_async_engine
 from app.main import create_app, kernel  # Use kernel to get app
 from tests.factories import MissionFactory, UserFactory
@@ -37,20 +38,23 @@ TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 @pytest.fixture(scope="session", autouse=True)
 def configure_app():
     """
-    Ensure the FastAPI application is fully configured with routers and middleware
-    before any tests run.
+    Ensure the FastAPI application is fully configured and uses the test database.
     """
+    # Force the app's session factory to use our test engine
+    app.core.database.async_session_factory = TestingSessionLocal
+
     # This modifies kernel.app in-place by adding routers and middleware
     create_app()
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def init_db():
+async def init_db(configure_app):
+    """
+    Initialize the database schema once per test session.
+    This runs after the app is configured.
+    """
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
 
 
 @pytest.fixture(autouse=True)

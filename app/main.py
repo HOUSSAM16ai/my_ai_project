@@ -1,7 +1,7 @@
 import inspect
 import logging
+import os
 from contextlib import asynccontextmanager
-from datetime import UTC
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,95 +9,103 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import SQLModel
 
-# --- Routers ---
-from app.api.routers import (
-    admin,
-    crud,
-    gateway,
-    intelligent_platform,
-    observability,
-    system,
-)
-from app.api.routers import (
-    security as auth,
-)
+# Import routers and other components
+from app.api.routers import admin, crud, gateway, intelligent_platform, observability, system
+from app.api.routers import security as auth
 from app.core.di import get_settings
-import app.models
-from app.core.startup_diagnostics import run_diagnostics
+from app.core.security import get_password_hash
 from app.kernel import RealityKernel
-
-# from app.middleware.adapters.flask_compat import FlaskCompatMiddleware
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
+from app.models import User
+import app.models  # Ensure all models are imported and registered with SQLModel
 
 logger = logging.getLogger(__name__)
 
+async def init_database():
+    """Initializes the database by creating tables. This is idempotent."""
+    logger.info("Initializing database...")
+    settings = get_settings()
+    database_url = settings.DATABASE_URL
+
+    if not database_url:
+        logger.error("DATABASE_URL is not configured. Cannot initialize database.")
+        return
+
+    if "sqlite" not in database_url and not database_url.startswith("postgresql+asyncpg"):
+        if database_url.startswith("postgresql"):
+            database_url = database_url.replace("postgresql", "postgresql+asyncpg", 1)
+
+    try:
+        engine = create_async_engine(database_url, echo=False)
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+        await engine.dispose()
+        logger.info("Database tables verified/created successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+
+async def seed_initial_admin():
+    """Ensures the default admin user exists. This is idempotent."""
+    logger.info("Seeding initial admin user...")
+    settings = get_settings()
+
+    from app.core.database import async_session_factory
+
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(select(User).where(User.email == settings.ADMIN_EMAIL))
+            if result.scalar_one_or_none():
+                logger.info(f"Admin user '{settings.ADMIN_EMAIL}' already exists.")
+                return
+
+            hashed_password = get_password_hash(settings.ADMIN_PASSWORD)
+            new_admin = User(
+                email=settings.ADMIN_EMAIL,
+                password_hash=hashed_password,
+                full_name=settings.ADMIN_NAME,
+                is_admin=True,
+            )
+            session.add(new_admin)
+            await session.commit()
+            logger.info(f"Admin user '{settings.ADMIN_EMAIL}' created successfully.")
+    except Exception as e:
+        logger.error(f"Failed to seed admin user: {e}", exc_info=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
-    """
-    # Startup
+    """Application lifespan manager for startup and shutdown events."""
     settings = get_settings()
     logger.info(f"Starting CogniForge (Environment: {settings.ENVIRONMENT})")
-
-    # Run diagnostics
-    await run_diagnostics()
-
+    await init_database()
+    await seed_initial_admin()
     yield
-
-    # Shutdown
     logger.info("Shutting down CogniForge...")
 
-
 def create_app() -> FastAPI:
-    """
-    Factory function to create the FastAPI application.
-    This ensures a fresh instance for every test/run.
-    """
     settings = get_settings()
-
     app = FastAPI(
-        title=settings.PROJECT_NAME,
-        version="v3.0-hyper",
-        description="CogniForge Unified AI Platform",
-        lifespan=lifespan,
+        title=settings.PROJECT_NAME, version="v3.0-hyper", lifespan=lifespan,
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,
         redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
     )
 
-    # --- Middleware Stack ---
-    # 1. Trusted Host (Security)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
-
-    # 2. CORS (Connectivity)
-    # Allow all in dev, restrict in prod
-    allow_origins = ["*"] if settings.ENVIRONMENT == "development" else [settings.FRONTEND_URL]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allow_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=["*"] if settings.ENVIRONMENT == "development" else [settings.FRONTEND_URL],
+        allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
     )
-
-    # 3. Security Headers (Hardening)
     app.add_middleware(SecurityHeadersMiddleware)
-
-    # 4. Rate Limiting (Protection) - Conditional
     if settings.ENVIRONMENT != "testing":
         app.add_middleware(RateLimitMiddleware)
-
-    # 5. Compression (Performance)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # 6. Flask Compatibility (Legacy Support)
-    # app.add_middleware(FlaskCompatMiddleware)
-
-    # --- Router Mounting ---
     app.include_router(system.router)
     app.include_router(auth.router)
     app.include_router(admin.router)
@@ -106,11 +114,10 @@ def create_app() -> FastAPI:
     app.include_router(gateway.router)
     app.include_router(observability.router)
 
-    # --- API v1 Health Check (Legacy Support) ---
+    # --- API v1 Health Check (for test compatibility) ---
     @app.get("/api/v1/health", tags=["System"])
     async def health_check_v1():
-        from datetime import datetime
-
+        from datetime import datetime, UTC
         return {
             "status": "success",
             "message": "System operational",
@@ -118,56 +125,27 @@ def create_app() -> FastAPI:
             "data": {"status": "healthy", "database": "connected", "version": "v3.0-hyper"},
         }
 
-    # --- Static Files (Frontend) ---
-    import os
+    static_files_dir = os.path.join(os.getcwd(), "app/static/dist")
+    if os.path.exists(static_files_dir):
+        app.mount("/static", StaticFiles(directory=static_files_dir), name="static")
+        spa_entry_point = os.path.join(static_files_dir, "index.html")
 
-    static_dir = os.path.join(os.getcwd(), "app/static")
-    dist_dir = os.path.join(static_dir, "dist")
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            if full_path.startswith("api/"):
+                return JSONResponse(status_code=404, content={"detail": "Not Found"})
+            return FileResponse(spa_entry_point) if os.path.exists(spa_entry_point) else \
+                   JSONResponse(status_code=503, content={"detail": "SPA entry point not found."})
+    else:
+        logger.warning(f"Static files directory not found: {static_files_dir}. Frontend will not be served.")
 
-    if os.path.exists(dist_dir):
-        app.mount("/static", StaticFiles(directory=dist_dir), name="static")
-    elif os.path.exists(static_dir):
-        # Fallback to source if dist not built (dev mode)
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-    # --- SPA Catch-All ---
-    @app.get("/{full_path:path}")
-    async def catch_all(full_path: str):
-        if full_path.startswith("api/"):
-            return JSONResponse({"error": "Not Found"}, status_code=404)
-
-        # Serve index.html
-        index_path = os.path.join(
-            dist_dir if os.path.exists(dist_dir) else static_dir, "index.html"
-        )
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return JSONResponse({"error": "Frontend not built"}, status_code=503)
-
-    # --- Error Handlers ---
     add_error_handlers(app)
-
     return app
 
-
-# --- Reality Kernel Integration ---
-# Ensure the kernel has a valid app reference for singletons
 kernel = RealityKernel()
 kernel.app = create_app()
 
-# Runtime Assertion
 if not isinstance(kernel.app, FastAPI):
-    # Fallback check for valid callables (wrappers) that are not coroutines
-    if callable(kernel.app) and not inspect.iscoroutinefunction(kernel.app):
-        pass  # It is a valid callable wrapper
-    else:
-        # If it's not a FastAPI instance and not a callable wrapper, panic.
-        raise RuntimeError("CRITICAL: Reality Kernel failed to initialize FastAPI instance.")
+    raise RuntimeError("CRITICAL: Reality Kernel failed to initialize FastAPI instance.")
 
-# --- ASGI App Export ---
-# Expose the kernel's app instance for ASGI servers like Uvicorn
-app = kernel.app
-
-# --- ASGI App Export ---
-# Expose the kernel's app instance for ASGI servers like Uvicorn
 app = kernel.app
