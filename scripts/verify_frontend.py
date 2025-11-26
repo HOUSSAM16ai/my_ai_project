@@ -9,7 +9,7 @@ RETRY_DELAY = 5  # seconds
 
 def check_health():
     """Checks the health endpoint."""
-    url = f"{BASE_URL}/api/v1/health"
+    url = f"{BASE_URL}/system/health"
     print(f"Checking health endpoint: {url}...")
     response = requests.get(url)
     response.raise_for_status()
