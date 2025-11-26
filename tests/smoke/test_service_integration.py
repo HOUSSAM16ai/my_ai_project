@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.factories import get_db_service
-from app.kernel import app
+from app.main import app
 from app.services.database_service import DatabaseService
 
 

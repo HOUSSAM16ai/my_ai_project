@@ -15,7 +15,7 @@ import pytest
 import requests
 
 from app.core.ai_gateway import get_ai_client
-from app.main import kernel
+from app.main import app
 
 
 def test_chat_stream_gateway_connection_error(
@@ -69,7 +69,7 @@ def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_heade
     def mock_get_client_error():
         raise ValueError("OPENROUTER_API_KEY is not set.")
 
-    kernel.app.dependency_overrides[get_ai_client] = mock_get_client_error
+    app.dependency_overrides[get_ai_client] = mock_get_client_error
 
     try:
         with pytest.raises(ValueError, match="OPENROUTER_API_KEY is not set"):
@@ -79,8 +79,8 @@ def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_heade
                 headers=admin_auth_headers,
             )
     finally:
-        if get_ai_client in kernel.app.dependency_overrides:
-            del kernel.app.dependency_overrides[get_ai_client]
+        if get_ai_client in app.dependency_overrides:
+            del app.dependency_overrides[get_ai_client]
 
 
 def test_chat_stream_missing_question_payload(

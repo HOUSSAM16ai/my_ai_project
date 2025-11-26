@@ -12,7 +12,7 @@ from sqlmodel import SQLModel
 from app.core.ai_gateway import get_ai_client
 import app.core.database
 from app.core.engine_factory import create_unified_async_engine
-from app.main import create_app, kernel  # Use kernel to get app
+from app.main import app
 from tests.factories import MissionFactory, UserFactory
 
 # Ensure we use an in-memory SQLite DB for tests
@@ -50,10 +50,10 @@ def configure_app():
     (static_dir / "index.html").write_text("<!DOCTYPE html>")
 
     # Force the app's session factory to use our test engine
+    import app.core.database
     app.core.database.async_session_factory = TestingSessionLocal
 
-    # This modifies kernel.app in-place by adding routers and middleware
-    create_app()
+    # App is already created at import time in the new architecture
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -127,15 +127,15 @@ def client() -> Generator[TestClient, None, None]:
         async with TestingSessionLocal() as session:
             yield session
 
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
 
-    with TestClient(kernel.app) as c:
+    with TestClient(app) as c:
         yield c
 
     # A single, targeted clear is better than a global clear,
     # which can inadvertently remove other important overrides (like the AI client mock).
-    if get_db in kernel.app.dependency_overrides:
-        del kernel.app.dependency_overrides[get_db]
+    if get_db in app.dependency_overrides:
+        del app.dependency_overrides[get_db]
 
 
 @pytest.fixture
@@ -149,7 +149,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
     from httpx import ASGITransport
 
-    async with AsyncClient(transport=ASGITransport(app=kernel.app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
@@ -205,11 +205,11 @@ def mock_ai_client_global():
     def mock_get_client():
         return mock_gateway
 
-    kernel.app.dependency_overrides[get_ai_client] = mock_get_client
+    app.dependency_overrides[get_ai_client] = mock_get_client
     yield mock_gateway
     # Cleanup
-    if get_ai_client in kernel.app.dependency_overrides:
-        del kernel.app.dependency_overrides[get_ai_client]
+    if get_ai_client in app.dependency_overrides:
+        del app.dependency_overrides[get_ai_client]
 
 
 def pytest_addoption(parser):

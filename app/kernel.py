@@ -1,59 +1,79 @@
 # app/kernel.py
-"""
-The Reality Kernel V3 for the CogniForge project.
-
-This is the central execution spine of the system, providing autonomous
-state management, a universal dependency registry, and adaptive
-configuration layers. It is designed to be fully framework-agnostic.
-"""
-
-from collections.abc import Callable
+import importlib
+import inspect
+import logging
+import os
 from typing import Any
 
 from fastapi import FastAPI
 
-from app.middleware.fastapi_error_handlers import add_error_handlers
+from app.blueprints import Blueprint
 
+logger = logging.getLogger(__name__)
 
 class RealityKernel:
-    def __init__(self):
-        self.app = FastAPI(
-            title="CogniForge - Reality Kernel V3",
-            description="The central execution spine of the system.",
-            version="3.0.0",
+    """
+    Cognitive Reality Weaver V4.
+    Dynamically discovers and weaves application blueprints into a cohesive FastAPI application.
+    This kernel is the true central execution spine.
+    """
+
+    def __init__(self, settings: dict[str, Any]):
+        self.settings = settings
+        self.app: FastAPI = self._create_pristine_app()
+        self._discover_and_weave_blueprints()
+
+    def _create_pristine_app(self) -> FastAPI:
+        """Creates the core FastAPI instance with essential middleware."""
+        from app.middleware.fastapi_error_handlers import add_error_handlers
+        from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
+        from app.middleware.security.security_headers import SecurityHeadersMiddleware
+        from fastapi.middleware.cors import CORSMiddleware
+        from fastapi.middleware.gzip import GZipMiddleware
+        from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
+        app = FastAPI(
+            title=self.settings.get("PROJECT_NAME", "CogniForge"),
+            version="v4.0-woven",
+            docs_url="/docs" if self.settings.get("ENVIRONMENT") == "development" else None,
+            redoc_url="/redoc" if self.settings.get("ENVIRONMENT") == "development" else None,
         )
 
-        # Ensure error handlers are registered on initialization
-        add_error_handlers(self.app)
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=self.settings.get("ALLOWED_HOSTS", []))
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"] if self.settings.get("ENVIRONMENT") == "development" else [self.settings.get("FRONTEND_URL")],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        app.add_middleware(SecurityHeadersMiddleware)
+        if self.settings.get("ENVIRONMENT") != "testing":
+            app.add_middleware(RateLimitMiddleware)
+        app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-        self._state: dict[str, Any] = {}
-        self._dependencies: dict[str, Callable] = {}
-        # Load config lazily to avoid import loops
-        self._config_cache = None
+        add_error_handlers(app)
 
-    @property
-    def config(self) -> dict[str, Any]:
-        if self._config_cache is None:
-            from app.core.config import settings
+        return app
 
-            self._config_cache = settings.model_dump()
-        return self._config_cache
+    def _discover_and_weave_blueprints(self):
+        """Discovers and registers all blueprints from the app.blueprints package."""
+        blueprints_path = os.path.join(os.path.dirname(__file__), "blueprints")
+        logger.info(f"Reality Kernel: Weaving blueprints from {blueprints_path}")
 
-    def set_state(self, key: str, value: Any):
-        self._state[key] = value
+        for root, _, files in os.walk(blueprints_path):
+            for filename in files:
+                if filename.endswith("_blueprint.py"):
+                    module_name = f"app.blueprints.{filename[:-3]}"
+                    try:
+                        module = importlib.import_module(module_name)
+                        for _, obj in inspect.getmembers(module):
+                            if isinstance(obj, Blueprint):
+                                logger.info(f"Weaving blueprint: {obj.name}")
+                                self.app.include_router(obj.router, prefix=f"/{obj.name}", tags=[obj.name.capitalize()])
+                    except ImportError as e:
+                        logger.error(f"Failed to import blueprint module {module_name}: {e}")
 
-    def get_state(self, key: str) -> Any:
-        return self._state.get(key)
-
-    def register_dependency(self, name: str, provider: Callable):
-        self._dependencies[name] = provider
-
-    def get_dependency(self, name: str) -> Any:
-        provider = self._dependencies.get(name)
-        if not provider:
-            raise KeyError(f"Dependency '{name}' not found.")
-        return provider()
-
-
-kernel = RealityKernel()
-app = kernel.app
+    def get_app(self) -> FastAPI:
+        """Returns the fully woven FastAPI application."""
+        return self.app
