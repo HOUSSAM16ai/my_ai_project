@@ -35,11 +35,20 @@ TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 # REMOVED: Custom event_loop fixture to allow pytest-asyncio to handle it.
 
 
+import os
+from pathlib import Path
+
+
 @pytest.fixture(scope="session", autouse=True)
 def configure_app():
     """
     Ensure the FastAPI application is fully configured and uses the test database.
     """
+    # Create dummy SPA files with minimal content to satisfy the smoke tests
+    static_dir = Path("app/static/dist")
+    static_dir.mkdir(parents=True, exist_ok=True)
+    (static_dir / "index.html").write_text("<!DOCTYPE html>")
+
     # Force the app's session factory to use our test engine
     app.core.database.async_session_factory = TestingSessionLocal
 
@@ -123,7 +132,10 @@ def client() -> Generator[TestClient, None, None]:
     with TestClient(kernel.app) as c:
         yield c
 
-    kernel.app.dependency_overrides.clear()
+    # A single, targeted clear is better than a global clear,
+    # which can inadvertently remove other important overrides (like the AI client mock).
+    if get_db in kernel.app.dependency_overrides:
+        del kernel.app.dependency_overrides[get_db]
 
 
 @pytest.fixture
