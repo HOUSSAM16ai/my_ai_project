@@ -33,7 +33,8 @@
   "portsAttributes": {
       "8000": { 
         "label": "Unified AI Interface (Backend)",
-        "onAutoForward": "silent"
+        "onAutoForward": "silent",
+        "visibility": "public"
       },
       "5000": {
         "label": "CogniForge Frontend",
