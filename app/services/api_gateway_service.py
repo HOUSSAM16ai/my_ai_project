@@ -393,7 +393,8 @@ class IntelligentRouter:
                     continue
 
                 # Get provider health
-                stats = self.provider_stats[provider_name]
+                with self.lock:
+                    stats = self.provider_stats[provider_name]
                 health_score = 1.0 if stats.is_healthy else 0.0
 
                 # Calculate composite score
