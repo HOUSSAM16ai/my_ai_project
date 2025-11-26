@@ -28,6 +28,13 @@ chmod +x scripts/setup_dev.sh
 
 The application will be available at `http://localhost:8000`.
 
+### ❗️ Important Note for GitHub Codespaces Users
+
+When you start the application in a GitHub Codespace, the backend server will run on port 8000. For you to be able to access it from your browser, the port's visibility must be set to **Public**.
+
+- **Automated Configuration:** The repository is already configured to do this automatically.
+- **Manual Verification:** If you are unable to access the application, please go to the **PORTS** tab in your Codespace and ensure that port 8000 has its "Visibility" set to "Public". If it is "Private", you can click on it to change the setting.
+
 ### 2️⃣ Manual Setup (For Advanced Users) | الإعداد اليدوي
 
 If you prefer to set up the environment manually, follow these steps:
