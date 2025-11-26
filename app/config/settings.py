@@ -81,6 +81,11 @@ class AppSettings(BaseSettings):
         description="The logging level (e.g., 'DEBUG', 'INFO').",
     )
 
+    # --- Admin User Seeding ---
+    ADMIN_EMAIL: str = Field(default="admin@example.com", description="Default admin email.")
+    ADMIN_PASSWORD: str = Field(default="password", description="Default admin password.")
+    ADMIN_NAME: str = Field(default="Admin User", description="Default admin name.")
+
     # --- Pydantic Model Configuration ---
     model_config = SettingsConfigDict(
         env_file=".env",

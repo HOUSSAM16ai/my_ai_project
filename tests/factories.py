@@ -13,7 +13,7 @@ class UserFactory(SQLAlchemyModelFactory):
         # The session is now managed by the fixture in conftest.py
         # sqlalchemy_session_persistence = "flush" # Set in fixture
 
-    id = factory.Sequence(lambda n: n + 1)
+    id = factory.Sequence(lambda n: n + 1000) # Start from 1000 to avoid conflicts
     email = factory.LazyAttribute(lambda obj: f"user{obj.id}@example.com")
     full_name = factory.Faker("name")
     # password hash will be set by the model's default setter or method
