@@ -167,3 +167,7 @@ if not isinstance(kernel.app, FastAPI):
 # --- ASGI App Export ---
 # Expose the kernel's app instance for ASGI servers like Uvicorn
 app = kernel.app
+
+# --- ASGI App Export ---
+# Expose the kernel's app instance for ASGI servers like Uvicorn
+app = kernel.app
