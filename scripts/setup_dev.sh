@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script provides a comprehensive setup for the development environment.
 set -e
 
 print_header() {
