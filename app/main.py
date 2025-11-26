@@ -127,15 +127,7 @@ def create_app() -> FastAPI:
 
     static_files_dir = os.path.join(os.getcwd(), "app/static/dist")
     if os.path.exists(static_files_dir):
-        app.mount("/static", StaticFiles(directory=static_files_dir), name="static")
-        spa_entry_point = os.path.join(static_files_dir, "index.html")
-
-        @app.get("/{full_path:path}")
-        async def serve_spa(full_path: str):
-            if full_path.startswith("api/"):
-                return JSONResponse(status_code=404, content={"detail": "Not Found"})
-            return FileResponse(spa_entry_point) if os.path.exists(spa_entry_point) else \
-                   JSONResponse(status_code=503, content={"detail": "SPA entry point not found."})
+        app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
     else:
         logger.warning(f"Static files directory not found: {static_files_dir}. Frontend will not be served.")
 
