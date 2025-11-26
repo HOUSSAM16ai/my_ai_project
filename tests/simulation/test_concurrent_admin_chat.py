@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.security import generate_service_token
-from app.main import kernel
+from app.main import app
 from app.models import AdminConversation, AdminMessage
 from tests.conftest import TestingSessionLocal
 
@@ -28,7 +28,7 @@ async def test_concurrent_chat_requests(admin_user):
         async with TestingSessionLocal() as session:
             yield session
 
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
 
     try:
 
@@ -36,7 +36,7 @@ async def test_concurrent_chat_requests(admin_user):
             from httpx import ASGITransport
 
             async with AsyncClient(
-                transport=ASGITransport(app=kernel.app), base_url="http://test"
+                transport=ASGITransport(app=app), base_url="http://test"
             ) as ac:
                 response = await ac.post(
                     "/admin/api/chat/stream",
@@ -88,7 +88,7 @@ async def test_concurrent_chat_requests(admin_user):
             assert count == 10
 
     finally:
-        kernel.app.dependency_overrides.clear()
+        app.dependency_overrides.clear()
 
 
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
@@ -103,13 +103,13 @@ async def test_invalid_auth_scenarios():
         async with TestingSessionLocal() as session:
             yield session
 
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
 
     try:
         from httpx import ASGITransport
 
         async with AsyncClient(
-            transport=ASGITransport(app=kernel.app), base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             # 1. No Header
             resp = await ac.post("/admin/api/chat/stream", json={"question": "Hi"})
@@ -123,7 +123,7 @@ async def test_invalid_auth_scenarios():
             )
             assert resp.status_code == 401
     finally:
-        kernel.app.dependency_overrides.clear()
+        app.dependency_overrides.clear()
 
 
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
@@ -140,13 +140,13 @@ async def test_invalid_conversation_id(admin_user):
         async with TestingSessionLocal() as session:
             yield session
 
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
 
     try:
         from httpx import ASGITransport
 
         async with AsyncClient(
-            transport=ASGITransport(app=kernel.app), base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             # 1. Non-integer ID
             resp = await ac.post(
@@ -164,4 +164,4 @@ async def test_invalid_conversation_id(admin_user):
             )
             assert resp.status_code == 200
     finally:
-        kernel.app.dependency_overrides.clear()
+        app.dependency_overrides.clear()
