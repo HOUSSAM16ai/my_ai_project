@@ -96,17 +96,23 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "sub": str(user.id),
         "email": user.email,
         "role": role,
+        "is_admin": user.is_admin,  # Add is_admin to the JWT payload
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24),
     }
 
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+    token = jwt.encode(payload, settings.SECRET_key, algorithm="HS256")
 
     return {
         "status": "success",
         "data": {
             "access_token": token,
             "token_type": "Bearer",
-            "user": {"id": user.id, "name": user.full_name, "email": user.email},
+            "user": {
+                "id": user.id,
+                "name": user.full_name,
+                "email": user.email,
+                "is_admin": user.is_admin,
+            },
         },
     }
 

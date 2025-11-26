@@ -1,21 +1,41 @@
 #!/bin/bash
+# Self-healing start script
+
+# Exit immediately if a command exits with a non-zero status.
 set -e
 
-# --- SUPERHUMAN STARTUP SCRIPT ---
-
-# 1. Load Environment
-if [ -f .env ]; then
-  set -a
-  source .env
-  set +a
+# --- Environment Self-Healing ---
+# Ensure a .env file exists to prevent startup failures.
+if [ ! -f .env ]; then
+  echo "INFO: .env file not found. Creating a default fallback."
+  echo "DATABASE_URL=sqlite+aiosqlite:///./dev.db" > .env
+  echo "SECRET_KEY=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" >> .env
+  echo "ALLOWED_HOSTS=[\"*\"]" >> .env
+  echo "ENVIRONMENT=development" >> .env
+  echo "ADMIN_EMAIL=admin@cogniforge.com" >> .env
+  echo "ADMIN_PASSWORD=secureadminpassword" >> .env
+  echo "ADMIN_NAME=Admin" >> .env
 fi
 
-# 2. Run Magic Access/Cleanup
-python3 scripts/magic_access.py
+# --- CRITICAL FIX: Load Environment Variables ---
+# Export the variables from .env so that subsequent scripts can see them.
+echo "INFO: Exporting environment variables from .env file..."
+export $(grep -v '^#' .env | xargs)
 
-# 3. Launch Application
-echo "🚀 Igniting Reality Kernel V3..."
+# --- Dependency Installation ---
+echo "INFO: Installing Python dependencies..."
+pip --cache-dir ./.pip_cache install -r requirements.txt > /dev/null
 
-# Use python3 -m uvicorn for correct path resolution
-# Bind to 0.0.0.0 to ensure external access in containers
-exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# --- Database Migration ---
+echo "INFO: Running database migrations..."
+alembic upgrade head
+
+# --- Admin User Seeding ---
+echo "INFO: Seeding admin user..."
+python scripts/seed_admin.py
+
+# --- Start Server ---
+# Now, run the application using the standard ASGI entry point.
+# The --reload flag is removed to ensure stability in automated environments.
+echo "INFO: Starting Uvicorn server on port 8000..."
+uvicorn app.main:app --host 0.0.0.0 --port 8000
