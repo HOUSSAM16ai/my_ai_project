@@ -14,38 +14,44 @@ CogniForge is an advanced, AI-powered educational platform built on a next-gener
 
 ## 🎯 Quick Start | البدء السريع
 
-### 1️⃣ Installation | التثبيت
+### 1️⃣ Automated Setup & Run | الإعداد والتشغيل الآلي
+
+To get started, simply run the development setup script. This will handle everything: installing dependencies, creating the `.env` file, building the frontend, and starting the server.
 
 ```bash
-# Clone repository
-git clone https://github.com/HOUSSAM16ai/my_ai_project.git
-cd my_ai_project
+# Make the script executable (only needs to be done once)
+chmod +x scripts/setup_dev.sh
 
-# Setup environment (IMPORTANT!)
-cp .env.example .env
-# Edit .env and configure your Supabase connection:
-# DATABASE_URL=postgresql://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:5432/postgres
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run migrations
-python -m cli db-migrate
-
-# Seed the database (optional)
-python -m cli db seed --confirm
+# Run the setup script
+./scripts/setup_dev.sh
 ```
 
-### 2️⃣ Run Application | تشغيل التطبيق
+The application will be available at `http://localhost:8000`.
 
-```bash
-# Run with Uvicorn
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+### 2️⃣ Manual Setup (For Advanced Users) | الإعداد اليدوي
 
-# Access the application
-# Application: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
+If you prefer to set up the environment manually, follow these steps:
+
+1.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    npm install
+    ```
+2.  **Configure Environment:**
+    -   Copy `.env.example` to `.env`.
+    -   Update `DATABASE_URL` and other critical variables.
+3.  **Build Frontend:**
+    ```bash
+    npm run build
+    ```
+4.  **Run Migrations:**
+    ```bash
+    python -m cli db-migrate
+    ```
+5.  **Run Application:**
+    ```bash
+    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+    ```
 
 ---
 
