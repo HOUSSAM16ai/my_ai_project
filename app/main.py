@@ -3,20 +3,24 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+# Load .env file before anything else
+load_dotenv()
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
 
 # Import routers and other components
 from app.api.routers import admin, crud, gateway, intelligent_platform, observability, system
 from app.api.routers import security as auth
 from app.core.di import get_settings
+from app.core.engine_factory import create_unified_async_engine
 from app.core.security import get_password_hash
 from app.kernel import RealityKernel
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -42,7 +46,7 @@ async def init_database():
             database_url = database_url.replace("postgresql", "postgresql+asyncpg", 1)
 
     try:
-        engine = create_async_engine(database_url, echo=False)
+        engine = create_unified_async_engine(database_url, echo=False)
         async with engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
         await engine.dispose()
