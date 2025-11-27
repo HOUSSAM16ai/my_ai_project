@@ -1,55 +1,41 @@
 #!/usr/bin/env bash
-set -euo pipefail
-# Guardian: clean zombies, start dev server, wait for port, open visibility
-BRANCH="fix/ui-whitepage-guardian"
-PORT=8000
-LOG=/tmp/jules_guardian.log
+set -e
 
-echo ">>> Starting Guardian at $(date)" | tee $LOG
+# 1) Start server in background
+export ENVIRONMENT=development
+# We use uvicorn directly or the project's start script.
+# Assuming uvicorn app.main:app is the standard way.
+# Adding reload for development.
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
 
-# cleanup function
-cleanup() {
-  echo ">>> Cleanup: killing uvicorn/gunicorn processes" | tee -a $LOG
-  pkill -f uvicorn || true
-  pkill -f gunicorn || true
-}
-trap cleanup EXIT
+SERVER_PID=$!
 
-# ensure no stale servers
-cleanup
+# 2) Verify Health
+echo "Waiting for server to start..."
+sleep 5
 
-# start the dev server (use project's setup script if present)
-if [ -f "./scripts/setup_dev.sh" ]; then
-    ./scripts/setup_dev.sh || true
+if curl -sS -f http://127.0.0.1:8000/health >/dev/null; then
+  echo "HEALTH OK"
 else
-    # Fallback if setup_dev.sh doesn't exist
-    export ENVIRONMENT=development
-    export DATABASE_URL="sqlite+aiosqlite:///./test.db"
-    python3 -m uvicorn app.main:app --host 0.0.0.0 --port $PORT &
+  echo "HEALTH FAILED"
+  kill $SERVER_PID || true
+  exit 1
 fi
 
-# wait for port to be live (socket check)
-python3 - <<PY
-import socket, time, sys
-for i in range(30):
-    s = socket.socket()
-    try:
-        s.connect(("127.0.0.1", $PORT))
-        print("port $PORT is ready")
-        s.close()
-        sys.exit(0)
-    except Exception:
-        time.sleep(1)
-print("port check timed out", file=sys.stderr)
-sys.exit(1)
-PY
-
-# Verify health endpoint
-curl -sS http://127.0.0.1:$PORT/health | tee -a $LOG
-
-# set codespace port visibility (if gh CLI available)
-if command -v gh >/dev/null 2>&1; then
-  gh codespace ports visibility $PORT:public --repo "${CODESPACE_REPO:-}" || true
+# 3) Ensure X-Frame-Options is ABSENT
+if curl -sI http://127.0.0.1:8000 | grep -i 'x-frame-options'; then
+  echo "WARNING: x-frame-options still present"
+else
+  echo "SUCCESS: X-Frame-Options removed"
 fi
 
-echo ">>> Guardian complete" | tee -a $LOG
+# 4) Ensure CSP allows framing
+if curl -sI http://127.0.0.1:8000 | grep -i 'content-security-policy' | grep -i 'frame-ancestors *'; then
+  echo "SUCCESS: CSP frame-ancestors * present"
+else
+  echo "WARNING: CSP might restrict framing (check output)"
+  curl -sI http://127.0.0.1:8000 | grep -i 'content-security-policy' || echo "No CSP found (which is also OK for framing usually)"
+fi
+
+# Keep process running
+wait $SERVER_PID
