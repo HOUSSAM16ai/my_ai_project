@@ -458,5 +458,6 @@ def monitor_performance(func: Callable[..., Any]) -> Callable[..., Any]:
 
     return wrapper  # type: ignore
 
+
 def get_observability_service():
     return observability_service
