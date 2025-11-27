@@ -56,10 +56,12 @@ def create_app(static_dir: str | None = None) -> FastAPI:
 app = create_app()
 kernel = app.kernel  # Expose for legacy tests
 
-if os.environ.get("ENVIRONMENT", "") == "development":
-    from app.dev_frame_middleware import DevAllowIframeMiddleware
+from app.middleware.remove_csp_dev import RemoveBlockingHeadersMiddleware
 
-    app.add_middleware(DevAllowIframeMiddleware)
+app.add_middleware(RemoveBlockingHeadersMiddleware)
+# log startup
+if hasattr(app, "logger"):
+    app.logger.info("RemoveBlockingHeadersMiddleware enabled=%s", RemoveBlockingHeadersMiddleware(None).enabled)
 
 if not isinstance(app, FastAPI):
     raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")

@@ -35,6 +35,16 @@ When you start the application in a GitHub Codespace, the backend server will ru
 - **Automated Configuration:** The repository is already configured to do this automatically.
 - **Manual Verification:** If you are unable to access the application, please go to the **PORTS** tab in your Codespace and ensure that port 8000 has its "Visibility" set to "Public". If it is "Private", you can click on it to change the setting.
 
+### Codespaces / Preview Troubleshooting
+
+If you see a **White Page** or blank screen in the Codespaces preview, but the `/health` endpoint is working:
+1.  Ensure you are in a dev environment (`ENVIRONMENT=development` or running inside Codespaces).
+2.  Run the verification script to check for header issues:
+    ```bash
+    ./scripts/codespace_guardian.sh
+    ```
+    This script verifies that the security headers blocking iframe embedding (`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`) are correctly relaxed for the preview environment.
+
 ### 2️⃣ Manual Setup (For Advanced Users) | الإعداد اليدوي
 
 If you prefer to set up the environment manually, follow these steps:
