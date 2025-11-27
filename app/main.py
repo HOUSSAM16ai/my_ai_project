@@ -58,6 +58,7 @@ kernel = app.kernel  # Expose for legacy tests
 
 if os.environ.get("ENVIRONMENT", "") == "development":
     from app.dev_frame_middleware import DevAllowIframeMiddleware
+
     app.add_middleware(DevAllowIframeMiddleware)
 
 if not isinstance(app, FastAPI):
