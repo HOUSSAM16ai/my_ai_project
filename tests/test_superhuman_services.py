@@ -169,12 +169,8 @@ def test_config_service_environment_separation():
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_secret_creation_and_retrieval():
     """Test secret creation, storage, and retrieval"""
-    from app.services.api_config_secrets_service import (
-        Environment,
-        RotationPolicy,
-        SecretType,
-        get_config_secrets_service,
-    )
+    from app.services.api_config_secrets_service import (Environment, RotationPolicy, SecretType,
+                                                         get_config_secrets_service)
 
     config = get_config_secrets_service()
 
@@ -197,11 +193,8 @@ def test_secret_creation_and_retrieval():
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_secret_rotation():
     """Test secret rotation functionality"""
-    from app.services.api_config_secrets_service import (
-        Environment,
-        SecretType,
-        get_config_secrets_service,
-    )
+    from app.services.api_config_secrets_service import (Environment, SecretType,
+                                                         get_config_secrets_service)
 
     config = get_config_secrets_service()
 
@@ -242,10 +235,8 @@ def test_dr_service_initialization():
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_backup_registration():
     """Test backup registration and verification"""
-    from app.services.api_disaster_recovery_service import (
-        BackupMetadata,
-        get_disaster_recovery_service,
-    )
+    from app.services.api_disaster_recovery_service import (BackupMetadata,
+                                                            get_disaster_recovery_service)
 
     dr = get_disaster_recovery_service()
 
@@ -270,10 +261,8 @@ def test_backup_registration():
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_incident_creation():
     """Test incident creation and tracking"""
-    from app.services.api_disaster_recovery_service import (
-        IncidentSeverity,
-        get_oncall_incident_service,
-    )
+    from app.services.api_disaster_recovery_service import (IncidentSeverity,
+                                                            get_oncall_incident_service)
 
     incidents = get_oncall_incident_service()
 
@@ -453,10 +442,8 @@ def test_slo_tracking_with_governance():
 @pytest.mark.skip(reason="Legacy test for an old architecture. Needs complete rewrite.")
 def test_event_driven_with_incident_management():
     """Test integration between event-driven architecture and incident management"""
-    from app.services.api_disaster_recovery_service import (
-        IncidentSeverity,
-        get_oncall_incident_service,
-    )
+    from app.services.api_disaster_recovery_service import (IncidentSeverity,
+                                                            get_oncall_incident_service)
     from app.services.api_event_driven_service import EventPriority, get_event_driven_service
 
     events = get_event_driven_service()

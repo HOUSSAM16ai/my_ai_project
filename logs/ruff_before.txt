@@ -1,0 +1,2 @@
+::error title=Ruff (I001),file=/app/tests/blueprints/test_admin_blueprint.py,line=2,col=1,endLine=4,endColumn=25::tests/blueprints/test_admin_blueprint.py:2:1: I001 Import block is un-sorted or un-formatted
+::error title=Ruff (F401),file=/app/tests/blueprints/test_admin_blueprint.py,line=2,col=8,endLine=2,endColumn=14::tests/blueprints/test_admin_blueprint.py:2:8: F401 `pytest` imported but unused

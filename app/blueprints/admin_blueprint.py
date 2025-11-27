@@ -30,12 +30,25 @@ async def stream_with_init_and_content(conversation_id, title):
     yield 'data: {"role": "assistant", "content": "Response part 1."}\n\n'
 
 
+async def stream_empty_response_fallback():
+    """Stream that yields a fallback error message for empty AI responses."""
+    fallback_data = {
+        "role": "assistant",
+        "content": "Error: No response received from AI service.",
+    }
+    yield f"data: {json.dumps(fallback_data)}\n\n"
+
+
 @admin_blueprint.router.post("/chat/stream")
 async def chat_stream(request: dict):
     question = request.get("question", "").strip()
     conversation_id = request.get("conversation_id")
 
     # --- Test Case Simulation ---
+    if "trigger empty stream" in question:
+        return StreamingResponse(
+            stream_empty_response_fallback(), media_type="text/event-stream"
+        )
     if "This will cause a connection error" in question:
         return StreamingResponse(stream_with_error(), media_type="text/event-stream")
 

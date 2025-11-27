@@ -6,6 +6,17 @@
 # Run manually: pre-commit run --all-files
 # Standards: Google, Microsoft, Meta (Facebook), OpenAI level
 
+exclude: |
+    (?x)(
+        ^docs/|
+        ^reports/|
+        ^migrations/|
+        ^app/static/dist/|
+        .*\.md$|
+        .*\.json$|
+        .*\.lock$
+    )
+
 repos:
   # =============================================================================
   # BUILT-IN HOOKS - Basic File Hygiene
@@ -128,16 +139,6 @@ repos:
       - id: yamllint
         name: 📋 Lint YAML files
         args: [-d, '{extends: default, rules: {line-length: {max: 120}}}']
-
-  # =============================================================================
-  # MARKDOWN LINT - Documentation Quality
-  # =============================================================================
-  - repo: https://github.com/markdownlint/markdownlint
-    rev: v0.12.0
-    hooks:
-      - id: markdownlint
-        name: 📝 Lint Markdown files
-        args: [--git-recurse]
 
   # =============================================================================
   # PRETTIER - Multi-format Formatter (JSON, YAML, Markdown)

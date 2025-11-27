@@ -20,11 +20,7 @@ maintain and modify without touching code logic.
 from decimal import Decimal
 from typing import Any, ClassVar
 
-from ..api.subscription_routes import (
-    BillingCycle,
-    SubscriptionPlan,
-    SubscriptionTier,
-)
+from ..api.subscription_routes import BillingCycle, SubscriptionPlan, SubscriptionTier
 
 
 class SubscriptionPlanFactory:

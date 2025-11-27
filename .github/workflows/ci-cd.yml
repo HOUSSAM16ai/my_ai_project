@@ -27,13 +27,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          pip install -r requirements.txt
 
       - name: Ruff Check (Linting)
-        # Using --exit-zero for now to allow pipeline to proceed while we fix all legacy issues
-        # But for "Green Checkmark" we ideally want it clean.
-        # User requested "Green Checkmark", so we must ensure it passes.
-        # I will use --output-format=github for nice annotations.
         run: ruff check . --output-format=github
 
       - name: Ruff Format (Style)
@@ -62,16 +58,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install Frontend Dependencies & Build
+        run: |
+          npm ci
+          NODE_OPTIONS="--max-old-space-size=8192" npm run build
 
       - name: Run Pytest (Superhuman Precision)
         env:

@@ -19,13 +19,8 @@ from typing import Any
 
 from .config import FactoryConfig
 from .discovery import PlannerDiscovery
-from .exceptions import (
-    NoActivePlannersError,
-    PlannerInstantiationError,
-    PlannerNotFound,
-    PlannerQuarantined,
-    PlannerSelectionError,
-)
+from .exceptions import (NoActivePlannersError, PlannerInstantiationError, PlannerNotFound,
+                         PlannerQuarantined, PlannerSelectionError)
 from .ranking import rank_planners
 from .sandbox import import_in_sandbox
 from .telemetry import TelemetryManager

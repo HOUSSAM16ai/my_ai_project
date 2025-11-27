@@ -5,36 +5,16 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from app.services.aiops_self_healing_service import (
-    AIOpsService,
-    MetricType,
-    TelemetryData,
-    get_aiops_service,
-)
-from app.services.data_mesh_service import (
-    DataContract,
-    DataDomainType,
-    DataMeshService,
-    DataProductStatus,
-    SchemaCompatibility,
-    get_data_mesh_service,
-)
-from app.services.edge_multicloud_service import (
-    EdgeMultiCloudService,
-    get_edge_multicloud_service,
-)
-from app.services.gitops_policy_service import (
-    GitOpsService,
-    get_gitops_service,
-)
-from app.services.sre_error_budget_service import (
-    SREErrorBudgetService,
-    get_sre_service,
-)
-from app.services.workflow_orchestration_service import (
-    WorkflowOrchestrationService,
-    get_workflow_orchestration_service,
-)
+from app.services.aiops_self_healing_service import (AIOpsService, MetricType, TelemetryData,
+                                                     get_aiops_service)
+from app.services.data_mesh_service import (DataContract, DataDomainType, DataMeshService,
+                                            DataProductStatus, SchemaCompatibility,
+                                            get_data_mesh_service)
+from app.services.edge_multicloud_service import EdgeMultiCloudService, get_edge_multicloud_service
+from app.services.gitops_policy_service import GitOpsService, get_gitops_service
+from app.services.sre_error_budget_service import SREErrorBudgetService, get_sre_service
+from app.services.workflow_orchestration_service import (WorkflowOrchestrationService,
+                                                         get_workflow_orchestration_service)
 
 router = APIRouter(
     prefix="/api/v1/platform",

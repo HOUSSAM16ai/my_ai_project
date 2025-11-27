@@ -4,10 +4,7 @@ import time
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.telemetry.unified_observability import (
-    TraceContext,
-    get_unified_observability,
-)
+from app.telemetry.unified_observability import TraceContext, get_unified_observability
 
 
 class FastAPIObservabilityMiddleware(BaseHTTPMiddleware):

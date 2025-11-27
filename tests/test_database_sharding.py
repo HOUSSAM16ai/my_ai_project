@@ -3,19 +3,12 @@
 Tests for Database Sharding & Multi-Master Replication Services
 """
 
-from app.services.database_sharding_service import (
-    ConnectionPool,
-    ConnectionPoolManager,
-    DatabaseShard,
-    DatabaseShardingManager,
-    ReplicationRole,
-    ShardingConfig,
-    ShardingStrategy,
-    ShardQuery,
-    ShardState,
-    get_connection_pool_manager,
-    get_sharding_manager,
-)
+from app.services.database_sharding_service import (ConnectionPool, ConnectionPoolManager,
+                                                    DatabaseShard, DatabaseShardingManager,
+                                                    ReplicationRole, ShardingConfig,
+                                                    ShardingStrategy, ShardQuery, ShardState,
+                                                    get_connection_pool_manager,
+                                                    get_sharding_manager)
 
 
 class TestDatabaseShardingManager:

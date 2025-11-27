@@ -10,13 +10,9 @@ import time
 
 import pytest
 
-from app.services.deployment_orchestrator_service import (
-    CircuitState,
-    DeploymentOrchestrator,
-    DeploymentPhase,
-    ServiceVersion,
-    get_deployment_orchestrator,
-)
+from app.services.deployment_orchestrator_service import (CircuitState, DeploymentOrchestrator,
+                                                          DeploymentPhase, ServiceVersion,
+                                                          get_deployment_orchestrator)
 
 
 class TestDeploymentOrchestrator:

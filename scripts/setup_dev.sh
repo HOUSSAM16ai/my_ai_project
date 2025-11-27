@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script provides a comprehensive setup for the development environment.
-set -e
+set -euo pipefail
 
 print_header() {
     echo ""
@@ -13,12 +13,14 @@ npm install
 
 print_header "Phase 2: Configuring Environment"
 if [ ! -f .env ]; then
-    SECRET_KEY=$(openssl rand -hex 32)
-    echo "SECRET_KEY=${SECRET_KEY}" > .env
-    echo "DATABASE_URL=sqlite+aiosqlite:///./dev.db" >> .env
-    echo "ADMIN_EMAIL=admin@example.com" >> .env
-    echo "ADMIN_PASSWORD=password" >> .env
-    echo "ADMIN_NAME=AdminUser" >> .env
+  cat > .env <<EOF
+DATABASE_URL=sqlite+aiosqlite:///./dev.db
+SECRET_KEY=dev-secret
+TESTING=1
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=password
+ADMIN_NAME=AdminUser
+EOF
 fi
 
 print_header "Phase 3: Building Frontend (with increased memory)"
