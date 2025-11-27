@@ -2,14 +2,30 @@
 
 import pytest
 
-from app.services.api_gateway_chaos import (ChaosEngineeringService, ChaosExperiment,
-                                            CircuitBreakerService, FaultType)
-from app.services.api_gateway_deployment import (ABTestExperiment, ABTestingService,
-                                                 CanaryDeployment, CanaryDeploymentService,
-                                                 FeatureFlag, FeatureFlagService, FeatureFlagStatus)
-from app.services.api_gateway_service import (GraphQLAdapter, IntelligentCache, IntelligentRouter,
-                                              PolicyEngine, PolicyRule, RESTAdapter,
-                                              RoutingStrategy)
+from app.services.api_gateway_chaos import (
+    ChaosEngineeringService,
+    ChaosExperiment,
+    CircuitBreakerService,
+    FaultType,
+)
+from app.services.api_gateway_deployment import (
+    ABTestExperiment,
+    ABTestingService,
+    CanaryDeployment,
+    CanaryDeploymentService,
+    FeatureFlag,
+    FeatureFlagService,
+    FeatureFlagStatus,
+)
+from app.services.api_gateway_service import (
+    GraphQLAdapter,
+    IntelligentCache,
+    IntelligentRouter,
+    PolicyEngine,
+    PolicyRule,
+    RESTAdapter,
+    RoutingStrategy,
+)
 
 
 class TestIntelligentRouter:

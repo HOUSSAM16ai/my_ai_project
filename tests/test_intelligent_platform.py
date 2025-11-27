@@ -6,14 +6,23 @@ Tests for Intelligent Service Platform
 from datetime import UTC, datetime
 
 from app.services.aiops_self_healing_service import MetricType, TelemetryData, get_aiops_service
-from app.services.data_mesh_service import (BoundedContext, DataContract, DataDomainType,
-                                            DataProduct, DataQualityMetrics, SchemaCompatibility,
-                                            get_data_mesh_service)
+from app.services.data_mesh_service import (
+    BoundedContext,
+    DataContract,
+    DataDomainType,
+    DataProduct,
+    DataQualityMetrics,
+    SchemaCompatibility,
+    get_data_mesh_service,
+)
 from app.services.edge_multicloud_service import PlacementStrategy, get_edge_multicloud_service
 from app.services.gitops_policy_service import GitOpsApp, get_gitops_service
 from app.services.sre_error_budget_service import SLO, DeploymentStrategy, get_sre_service
-from app.services.workflow_orchestration_service import (WorkflowActivity, WorkflowDefinition,
-                                                         get_workflow_orchestration_service)
+from app.services.workflow_orchestration_service import (
+    WorkflowActivity,
+    WorkflowDefinition,
+    get_workflow_orchestration_service,
+)
 
 
 class TestDataMeshService:

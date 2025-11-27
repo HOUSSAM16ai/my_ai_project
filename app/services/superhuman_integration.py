@@ -24,8 +24,11 @@ except ImportError:
     MICROSERVICES_AVAILABLE = False
 
 try:
-    from app.services.ai_intelligent_testing import (AITestGenerator, CoverageOptimizer,
-                                                     SmartTestSelector)
+    from app.services.ai_intelligent_testing import (
+        AITestGenerator,
+        CoverageOptimizer,
+        SmartTestSelector,
+    )
 
     TESTING_AVAILABLE = True
 except ImportError:

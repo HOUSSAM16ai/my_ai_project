@@ -24,13 +24,30 @@ from datetime import datetime
 
 import pytest
 
-from app.boundaries.data_boundaries import (DataBoundary, InMemoryEventStore, StoredEvent,
-                                            get_data_boundary)
-from app.boundaries.policy_boundaries import (ComplianceRegulation, ComplianceRule,
-                                              DataClassification, Effect, Policy, PolicyBoundary,
-                                              PolicyRule, Principal, get_policy_boundary)
-from app.boundaries.service_boundaries import (CircuitBreakerConfig, DomainEvent, EventType,
-                                               ServiceBoundary, get_service_boundary)
+from app.boundaries.data_boundaries import (
+    DataBoundary,
+    InMemoryEventStore,
+    StoredEvent,
+    get_data_boundary,
+)
+from app.boundaries.policy_boundaries import (
+    ComplianceRegulation,
+    ComplianceRule,
+    DataClassification,
+    Effect,
+    Policy,
+    PolicyBoundary,
+    PolicyRule,
+    Principal,
+    get_policy_boundary,
+)
+from app.boundaries.service_boundaries import (
+    CircuitBreakerConfig,
+    DomainEvent,
+    EventType,
+    ServiceBoundary,
+    get_service_boundary,
+)
 
 # ======================================================================================
 # SERVICE BOUNDARIES TESTS

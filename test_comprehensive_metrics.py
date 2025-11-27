@@ -48,26 +48,36 @@ except ImportError as e:
 # Test 3: Check data structures
 print("\n[TEST 3] Checking data structures...")
 try:
-    from app.services.infrastructure_metrics_service import (CPUMetrics, DiskMetrics,  # noqa: F401
-                                                             MemoryMetrics, NetworkMetrics)
+    from app.services.infrastructure_metrics_service import (  # noqa: F401
+        CPUMetrics,
+        DiskMetrics,
+        MemoryMetrics,
+        NetworkMetrics,
+    )
 
     print("✅ Infrastructure data structures OK")
 except ImportError as e:
     print(f"❌ Failed to import infrastructure data structures: {e}")
 
 try:
-    from app.services.ai_model_metrics_service import (AccuracyMetrics,  # noqa: F401
-                                                       InferenceMetrics, ModelDriftMetrics,
-                                                       NLPMetrics)
+    from app.services.ai_model_metrics_service import (  # noqa: F401
+        AccuracyMetrics,
+        InferenceMetrics,
+        ModelDriftMetrics,
+        NLPMetrics,
+    )
 
     print("✅ AI model data structures OK")
 except ImportError as e:
     print(f"❌ Failed to import AI model data structures: {e}")
 
 try:
-    from app.services.user_analytics_metrics_service import (ConversionMetrics,  # noqa: F401
-                                                             EngagementMetrics, RetentionMetrics,
-                                                             UserEvent)
+    from app.services.user_analytics_metrics_service import (  # noqa: F401
+        ConversionMetrics,
+        EngagementMetrics,
+        RetentionMetrics,
+        UserEvent,
+    )
 
     print("✅ User analytics data structures OK")
 except ImportError as e:
@@ -76,8 +86,11 @@ except ImportError as e:
 # Test 4: Check enums
 print("\n[TEST 4] Checking enumerations...")
 try:
-    from app.services.ai_model_metrics_service import (DriftStatus, MetricType,  # noqa: F401
-                                                       ModelType)
+    from app.services.ai_model_metrics_service import (  # noqa: F401
+        DriftStatus,
+        MetricType,
+        ModelType,
+    )
     from app.services.infrastructure_metrics_service import HealthStatus, ResourceType  # noqa: F401
     from app.services.user_analytics_metrics_service import EventType, UserSegment  # noqa: F401
 

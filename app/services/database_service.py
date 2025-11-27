@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DatabaseService:
     def __init__(
         self,
-        session: AsyncSession,
+        session: AsyncSession | None = None,
         settings: AppSettings | None = None,
         logger: logging.Logger | None = None,
     ):
@@ -76,3 +76,5 @@ class DatabaseService:
             return {"status": "success", "rowcount": result.rowcount}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+
+database_service = DatabaseService()

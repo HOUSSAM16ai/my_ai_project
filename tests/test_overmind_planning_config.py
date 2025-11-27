@@ -1,5 +1,10 @@
-from app.overmind.planning.config import (DEFAULT_CONFIG, _parse_bool, _parse_csv, _parse_float,
-                                          _parse_int)
+from app.overmind.planning.config import (
+    DEFAULT_CONFIG,
+    _parse_bool,
+    _parse_csv,
+    _parse_float,
+    _parse_int,
+)
 
 
 def test_default_config_values():

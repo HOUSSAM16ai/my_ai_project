@@ -1,17 +1,14 @@
-# Verification and Manual Steps
+# Verification Steps
 
-This document provides instructions for verifying the application's status and performing necessary manual configurations in GitHub Codespaces.
+This document outlines the manual verification steps required to ensure the application is running correctly in a GitHub Codespaces environment.
 
-## How to Make Port 8000 Public in GitHub Codespaces
+## 1. Making Port 8000 Public
 
-To access the application from your browser, you must ensure that the forwarded port `8000` is set to "Public".
+After the application server starts, GitHub Codespaces will automatically forward port 8000. However, by default, it might be private. To make it accessible to everyone, follow these steps:
 
-1.  **Open the Ports Tab:** In your GitHub Codespaces window, look for the "PORTS" tab. It is usually located in the terminal panel at the bottom of the screen. Click on it to view the list of forwarded ports.
+1.  **Open the Ports Tab**: In the bottom panel of your Codespaces window, click on the "Ports" tab.
+2.  **Find Port 8000**: Locate the entry for port 8000 in the list.
+3.  **Change Visibility**: Right-click on the port entry or click on the globe icon. Change the "Port Visibility" from "Private" to "**Public**".
+4.  **Access the Application**: Use the "Local Address" URL provided in the same panel to access the running application. It should look something like `https://<your-codespace-name>-8000.app.github.dev/`.
 
-2.  **Locate Port 8000:** Find the entry for port `8000` in the list.
-
-3.  **Check Visibility:** Look at the "Visibility" column for that port. If it says "Private", you need to change it.
-
-4.  **Change to Public:** Right-click on the port `8000` entry and select "Change Port Visibility" -> "Public".
-
-5.  **Verify:** The visibility should now show "Public". You can now access the application by clicking the "Local Address" URL (the one that looks like `https://*.app.github.dev`).
+By following these steps, the frontend of the CogniForge platform will be publicly accessible.

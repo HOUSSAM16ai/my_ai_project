@@ -648,12 +648,4 @@ class APIContractService:
 # GLOBAL SERVICE INSTANCE
 # ======================================================================================
 
-_contract_service: APIContractService | None = None
-
-
-def get_contract_service() -> APIContractService:
-    """Get or create global contract service instance"""
-    global _contract_service
-    if _contract_service is None:
-        _contract_service = APIContractService()
-    return _contract_service
+contract_service = APIContractService()

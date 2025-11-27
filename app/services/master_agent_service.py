@@ -38,8 +38,16 @@ from sqlalchemy.orm import joinedload
 # The original code was sync (threading). We will keep it sync for now but use proper session handling.
 # Assuming 'app.core.database' has a SessionLocal
 from app.core.database import SessionLocal
-from app.models import (Mission, MissionEventType, MissionPlan, MissionStatus, PlanStatus, Task,
-                        TaskStatus, User)
+from app.models import (
+    Mission,
+    MissionEventType,
+    MissionPlan,
+    MissionStatus,
+    PlanStatus,
+    Task,
+    TaskStatus,
+    User,
+)
 from app.overmind.planning.factory import get_all_planners
 from app.overmind.planning.schemas import MissionPlanSchema
 

@@ -8,9 +8,15 @@ import time
 
 import pytest
 
-from app.services.kubernetes_orchestration_service import (AutoScalingConfig, ConsensusRole,
-                                                           KubernetesOrchestrator, NodeState, Pod,
-                                                           PodPhase, get_kubernetes_orchestrator)
+from app.services.kubernetes_orchestration_service import (
+    AutoScalingConfig,
+    ConsensusRole,
+    KubernetesOrchestrator,
+    NodeState,
+    Pod,
+    PodPhase,
+    get_kubernetes_orchestrator,
+)
 
 
 class TestKubernetesOrchestrator:

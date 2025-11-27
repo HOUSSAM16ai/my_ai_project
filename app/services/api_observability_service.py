@@ -407,15 +407,7 @@ class APIObservabilityService:
 # GLOBAL SERVICE INSTANCE
 # ======================================================================================
 
-_observability_service: APIObservabilityService | None = None
-
-
-def get_observability_service() -> APIObservabilityService:
-    """Get or create global observability service instance"""
-    global _observability_service
-    if _observability_service is None:
-        _observability_service = APIObservabilityService(sla_target_ms=20.0)
-    return _observability_service
+observability_service = APIObservabilityService(sla_target_ms=20.0)
 
 
 # ======================================================================================
@@ -424,7 +416,7 @@ def get_observability_service() -> APIObservabilityService:
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def monitor_performance[F: Callable[..., Any]](func: F) -> F:
+def monitor_performance(func: F) -> F:
     """
     Decorator to monitor the performance of an endpoint.
     Records metrics to the global observability service.

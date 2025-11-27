@@ -20,8 +20,14 @@ try:
 except Exception:
     db = None
 try:
-    from app.models import (Mission, MissionEventType, Task, TaskStatus, finalize_task,
-                            log_mission_event)
+    from app.models import (
+        Mission,
+        MissionEventType,
+        Task,
+        TaskStatus,
+        finalize_task,
+        log_mission_event,
+    )
 except Exception:
     Mission = Task = object
 

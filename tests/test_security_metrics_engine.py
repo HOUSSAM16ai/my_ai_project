@@ -8,8 +8,11 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from app.services.security_metrics_engine import (SecurityFinding, SecurityMetrics,
-                                                  SecurityMetricsEngine)
+from app.services.security_metrics_engine import (
+    SecurityFinding,
+    SecurityMetrics,
+    SecurityMetricsEngine,
+)
 
 
 class TestSecurityFinding:

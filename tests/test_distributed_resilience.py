@@ -8,19 +8,33 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.services.distributed_resilience_service import (AdaptiveTimeout, Bulkhead, BulkheadConfig,
-                                                         BulkheadFullError, CircuitBreaker,
-                                                         CircuitBreakerConfig,
-                                                         CircuitBreakerOpenError, CircuitState,
-                                                         DistributedResilienceService,
-                                                         FallbackChain, FallbackLevel,
-                                                         HealthCheckConfig, HealthChecker,
-                                                         HealthCheckType, LeakyBucket, RetryBudget,
-                                                         RetryBudgetExhaustedError, RetryConfig,
-                                                         RetryManager, RetryStrategy,
-                                                         SlidingWindowCounter, TimeoutConfig,
-                                                         TokenBucket, get_resilience_service,
-                                                         resilient)
+from app.services.distributed_resilience_service import (
+    AdaptiveTimeout,
+    Bulkhead,
+    BulkheadConfig,
+    BulkheadFullError,
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerOpenError,
+    CircuitState,
+    DistributedResilienceService,
+    FallbackChain,
+    FallbackLevel,
+    HealthCheckConfig,
+    HealthChecker,
+    HealthCheckType,
+    LeakyBucket,
+    RetryBudget,
+    RetryBudgetExhaustedError,
+    RetryConfig,
+    RetryManager,
+    RetryStrategy,
+    SlidingWindowCounter,
+    TimeoutConfig,
+    TokenBucket,
+    get_resilience_service,
+    resilient,
+)
 
 # ======================================================================================
 # CIRCUIT BREAKER TESTS
