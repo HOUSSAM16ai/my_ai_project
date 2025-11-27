@@ -9,6 +9,7 @@ Adds comprehensive security headers to all responses.
 Implements OWASP best practices for HTTP security headers.
 """
 
+import os
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
@@ -54,6 +55,29 @@ class SecurityHeadersMiddleware(BaseMiddleware):
         # Add custom headers
         custom_headers = self.config.get("custom_headers", {})
         self.headers.update(custom_headers)
+
+        # --- PREVIEW GUARD ---
+        # Allow embedding in GitHub Codespaces Preview when in development mode
+        # This fixes the "White Page" issue in VS Code Preview
+        env = os.environ.get("ENVIRONMENT", "production")
+        if env == "development":
+            # Remove X-Frame-Options to allow framing
+            if "X-Frame-Options" in self.headers:
+                del self.headers["X-Frame-Options"]
+
+            # Update CSP to allow GitHub domains
+            csp = self.headers.get("Content-Security-Policy", "")
+            # If no CSP is present, we don't need to add one, but if frame-ancestors is in it, we modify it.
+            # If frame-ancestors is NOT present, but CSP IS, it defaults to allowed (unless default-src 'none').
+            # The issue usually comes when a restrictive CSP is set.
+            # However, looking at diagnostics, we saw:
+            # content-security-policy: default-src 'self'; ... frame-ancestors 'none';
+            # So CSP IS present and RESTRICTIVE.
+            if csp:
+                allowed_ancestors = "frame-ancestors 'self' https://*.github.dev https://*.github.com http://localhost:* http://127.0.0.1:*"
+                if "frame-ancestors 'none'" in csp:
+                    csp = csp.replace("frame-ancestors 'none'", allowed_ancestors)
+                self.headers["Content-Security-Policy"] = csp
 
         self.headers_added_count = 0
 
