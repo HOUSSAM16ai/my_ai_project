@@ -8,6 +8,28 @@ from app.core.ai_gateway import get_ai_client
 from app.models import AdminConversation, AdminMessage, MessageRole, User
 
 
+@pytest.fixture
+def app_with_local_mock(app):
+    """
+    Provides an app instance with a cleared dependency override for the AI client,
+    allowing local mocks to be set without interference from the global mock.
+    """
+    if get_ai_client in app.dependency_overrides:
+        del app.dependency_overrides[get_ai_client]
+    return app
+
+
+@pytest.fixture
+def client(app_with_local_mock):
+    """
+    Override the default client fixture to use the app with the cleared mock.
+    """
+    from fastapi.testclient import TestClient
+
+    with TestClient(app_with_local_mock) as c:
+        yield c
+
+
 # Helper for async iterator
 async def mock_stream_chat_generator(messages):
     yield {"choices": [{"delta": {"content": "AI"}}]}
@@ -16,7 +38,7 @@ async def mock_stream_chat_generator(messages):
 
 @pytest.mark.asyncio
 async def test_chat_stream_message_ordering_fixed(
-    client: TestClient, admin_auth_headers, db_session
+    client: TestClient, app_with_local_mock, admin_auth_headers, db_session
 ):
     """
     Test that message ordering is correctly handled using ID as secondary sort key
@@ -60,8 +82,6 @@ async def test_chat_stream_message_ordering_fixed(
     # 2. Request
     payload = {"question": "New Question", "conversation_id": str(conversation.id)}
 
-    from app.main import kernel
-
     # Setup Mock - Use the generator function directly!
     mock_ai = MagicMock()
 
@@ -73,7 +93,7 @@ async def test_chat_stream_message_ordering_fixed(
             yield chunk
 
     mock_ai.stream_chat = spy_stream_chat
-    kernel.app.dependency_overrides[get_ai_client] = lambda: mock_ai
+    app_with_local_mock.dependency_overrides[get_ai_client] = lambda: mock_ai
 
     response = client.post("/admin/api/chat/stream", json=payload, headers=admin_auth_headers)
 

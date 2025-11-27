@@ -4,6 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 import sqlalchemy as sa
+from fastapi.routing import Mount
+from fastapi.staticfiles import StaticFiles
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +15,6 @@ from sqlmodel import SQLModel
 import app.core.database
 from app.core.ai_gateway import get_ai_client
 from app.core.engine_factory import create_unified_async_engine
-from app.main import app
 from tests.factories import MissionFactory, UserFactory
 
 # Ensure we use an in-memory SQLite DB for tests
@@ -36,8 +37,19 @@ TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 # REMOVED: Custom event_loop fixture to allow pytest-asyncio to handle it.
 
 
+@pytest.fixture(scope="session")
+def app():
+    """
+    Main application fixture.
+    """
+    # This import needs to be inside the fixture to avoid premature app creation.
+    from app.main import create_app
+
+    return create_app()
+
+
 @pytest.fixture(scope="session", autouse=True)
-def configure_app():
+def configure_app(app):
     """
     Ensure the FastAPI application is fully configured and uses the test database.
     """
@@ -46,12 +58,15 @@ def configure_app():
     static_dir.mkdir(parents=True, exist_ok=True)
     (static_dir / "index.html").write_text("<!DOCTYPE html>")
 
+    # Manually add the static files mount if it's missing
+    # This is necessary because the app is created on import, before this fixture runs.
+    if not any(isinstance(route, Mount) and route.path == "/" for route in app.routes):
+        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+
     # Force the app's session factory to use our test engine
     import app.core.database
 
     app.core.database.async_session_factory = TestingSessionLocal
-
-    # App is already created at import time in the new architecture
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -117,7 +132,7 @@ def mission_factory(db_session):
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
+def client(app) -> Generator[TestClient, None, None]:
     """Synchronous client for standard tests"""
     from app.core.database import get_db
 
@@ -137,14 +152,8 @@ def client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture
-async def async_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_client(app) -> AsyncGenerator[AsyncClient, None]:
     """Asynchronous client for async tests"""
-    # httpx.AsyncClient signature change: use 'transport' or 'app' depends on version
-    # For newer httpx with fastapi/starlette, we use ASGITransport explicitly or just pass transport=
-    # But usually 'app=' works if using starlette.testclient patterns, but here we use raw httpx.
-    # The error 'got an unexpected keyword argument app' implies httpx > 0.18 but usage is tricky.
-    # Safe fix: Use transport=ASGITransport(app=app) if available, or just standard fix.
-
     from httpx import ASGITransport
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -187,7 +196,7 @@ def admin_auth_headers(admin_user):
 
 
 @pytest.fixture(autouse=True)
-def mock_ai_client_global():
+def mock_ai_client_global(app):
     """
     Global fixture to mock the AI Client dependency for all tests.
     Prevents tests from hitting the real AI API.
@@ -214,3 +223,20 @@ def pytest_addoption(parser):
     parser.addoption(
         "--run-integration", action="store_true", default=False, help="run integration tests"
     )
+
+
+@pytest.fixture(scope="session")
+def parse_response_json():
+    """
+    Provides a unified JSON parsing helper for TestClient responses.
+    """
+    import json
+    from typing import Any
+
+    def _parse(response: Any) -> Any:
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            return response.text
+
+    return _parse

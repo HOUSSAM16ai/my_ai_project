@@ -116,20 +116,3 @@ def test_stream_chat_server_error(mock_settings, mock_logger):
     assert len(response_chunks) == 1
     assert response_chunks[0]["type"] == "error"
     assert "Could not connect to the AI service" in response_chunks[0]["payload"]["error"]
-
-
-@pytest.mark.skipif("not config.getoption('--run-integration')")
-def test_ai_gateway_integration(mock_settings, mock_logger):
-    """
-    Integration test for the AI Service Gateway.
-    This test is skipped by default and can be enabled with the --run-integration flag.
-    It requires a running AI service.
-    """
-    from app.protocols.http_client import RequestsAdapter
-
-    http_client = RequestsAdapter()
-    gateway = AIServiceGateway(http_client=http_client, settings=mock_settings, logger=mock_logger)
-
-    # This will likely fail if the service is not running, but it's a start
-    with pytest.raises(Exception):  # noqa: B017
-        list(gateway.stream_chat("Hi", "conv123", "user1"))

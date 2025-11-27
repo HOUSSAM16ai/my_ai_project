@@ -14,7 +14,6 @@ from app.services.gitops_policy_service import GitOpsApp, get_gitops_service
 from app.services.sre_error_budget_service import SLO, DeploymentStrategy, get_sre_service
 from app.services.workflow_orchestration_service import (WorkflowActivity, WorkflowDefinition,
                                                          get_workflow_orchestration_service)
-from tests._helpers import parse_response_json
 
 
 class TestDataMeshService:
@@ -294,7 +293,7 @@ class TestSREService:
 class TestIntelligentPlatformAPI:
     """Test Intelligent Platform API endpoints"""
 
-    def test_data_mesh_metrics_endpoint(self, client):
+    def test_data_mesh_metrics_endpoint(self, client, parse_response_json):
         """Test Data Mesh metrics endpoint"""
         response = client.get("/api/v1/platform/data-mesh/metrics")
         assert response.status_code == 200
@@ -302,21 +301,21 @@ class TestIntelligentPlatformAPI:
         assert data["ok"] is True
         assert "data" in data
 
-    def test_aiops_metrics_endpoint(self, client):
+    def test_aiops_metrics_endpoint(self, client, parse_response_json):
         """Test AIOps metrics endpoint"""
         response = client.get("/api/v1/platform/aiops/metrics")
         assert response.status_code == 200
         data = parse_response_json(response)
         assert data["ok"] is True
 
-    def test_gitops_metrics_endpoint(self, client):
+    def test_gitops_metrics_endpoint(self, client, parse_response_json):
         """Test GitOps metrics endpoint"""
         response = client.get("/api/v1/platform/gitops/metrics")
         assert response.status_code == 200
         data = parse_response_json(response)
         assert data["ok"] is True
 
-    def test_platform_overview_endpoint(self, client):
+    def test_platform_overview_endpoint(self, client, parse_response_json):
         """Test platform overview endpoint"""
         response = client.get("/api/v1/platform/overview")
         assert response.status_code == 200
@@ -329,7 +328,7 @@ class TestIntelligentPlatformAPI:
         assert "edge_multicloud" in data["data"]
         assert "sre" in data["data"]
 
-    def test_create_data_contract_endpoint(self, client):
+    def test_create_data_contract_endpoint(self, client, parse_response_json):
         """Test creating data contract via API"""
         response = client.post(
             "/api/v1/platform/data-mesh/contracts",
@@ -348,7 +347,7 @@ class TestIntelligentPlatformAPI:
         data = parse_response_json(response)
         assert data["ok"] is True
 
-    def test_collect_telemetry_endpoint(self, client):
+    def test_collect_telemetry_endpoint(self, client, parse_response_json):
         """Test collecting telemetry via API"""
         response = client.post(
             "/api/v1/platform/aiops/telemetry",

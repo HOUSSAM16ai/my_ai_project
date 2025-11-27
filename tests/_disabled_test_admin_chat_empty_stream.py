@@ -1,11 +1,36 @@
 from unittest.mock import MagicMock
 
 import pytest
+from httpx import AsyncClient
 
 from app.core.ai_gateway import get_ai_client
 from app.core.database import get_db
 from app.models import AdminMessage, MessageRole
 from tests.conftest import TestingSessionLocal
+
+
+@pytest.fixture
+def app_with_local_mock(app):
+    """
+    Provides an app instance with a cleared dependency override for the AI client,
+    allowing local mocks to be set without interference from the global mock.
+    """
+    if get_ai_client in app.dependency_overrides:
+        del app.dependency_overrides[get_ai_client]
+    return app
+
+
+@pytest.fixture
+async def async_client(app_with_local_mock):
+    """
+    Override the default async_client fixture to use the app with the cleared mock.
+    """
+    from httpx import ASGITransport
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_local_mock), base_url="http://test"
+    ) as ac:
+        yield ac
 
 
 # Override get_db to ensure we use the same engine/session factory as the test fixtures
@@ -22,7 +47,7 @@ async def mock_empty_stream(messages):
 
 @pytest.mark.asyncio
 async def test_admin_chat_empty_response_persistence(
-    async_client, admin_user, admin_auth_headers, db_session
+    async_client, app_with_local_mock, admin_user, admin_auth_headers, db_session
 ):
     """
     Test that an empty response from the AI is handled gracefully.
@@ -34,15 +59,13 @@ async def test_admin_chat_empty_response_persistence(
     """
     from unittest.mock import patch
 
-    from app.main import kernel
-
     # Apply override to async_client's app
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app_with_local_mock.dependency_overrides[get_db] = override_get_db
 
     # Mock the AI client to return empty stream
     mock_gateway = MagicMock()
     mock_gateway.stream_chat = mock_empty_stream
-    kernel.app.dependency_overrides[get_ai_client] = lambda: mock_gateway
+    app_with_local_mock.dependency_overrides[get_ai_client] = lambda: mock_gateway
 
     # CRITICAL: We must patch async_session_factory in the router module
     # because the router calls it directly in the `finally` block.
@@ -110,4 +133,4 @@ async def test_admin_chat_empty_response_persistence(
         assert asst_msgs[0].content == "Error: No response received from AI service."
 
     # Cleanup
-    kernel.app.dependency_overrides.clear()
+    app_with_local_mock.dependency_overrides.clear()
