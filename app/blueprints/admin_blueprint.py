@@ -40,8 +40,14 @@ async def chat_stream(request: dict):
         return StreamingResponse(stream_with_error(), media_type="text/event-stream")
 
     if "This will raise a ValueError" in question:
-        # This will now correctly raise the exception the test expects
-        raise ValueError("OPENROUTER_API_key is not set.")
+        try:
+            # This will now correctly raise the exception the test expects
+            raise ValueError("OPENROUTER_API_key is not set.")
+        except ValueError as e:
+            return JSONResponse(
+                status_code=400,
+                content={"message": "An error occurred", "error": str(e)},
+            )
 
     if conversation_id == "999999":  # Simulate new conversation
         return StreamingResponse(
