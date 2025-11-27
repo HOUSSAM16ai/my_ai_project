@@ -180,9 +180,7 @@ class TestMissionsCRUD:
         assert data["status"] == "success"
         assert data["data"]["objective"] == sample_mission.objective
 
-    def test_get_missions_with_status_filter(
-        self, client, sample_mission, parse_response_json
-    ):
+    def test_get_missions_with_status_filter(self, client, sample_mission, parse_response_json):
         """Test filtering missions by status"""
         response = client.get("/api/v1/missions?status=PENDING")
         assert response.status_code == 200
@@ -208,9 +206,7 @@ class TestTasksCRUD:
         assert data["status"] == "success"
         assert "items" in data["data"]
 
-    def test_get_tasks_with_mission_filter(
-        self, client, sample_mission, parse_response_json
-    ):
+    def test_get_tasks_with_mission_filter(self, client, sample_mission, parse_response_json):
         """Test filtering tasks by mission_id"""
         response = client.get(f"/api/v1/tasks?mission_id={sample_mission.id}")
         assert response.status_code == 200

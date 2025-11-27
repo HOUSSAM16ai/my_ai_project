@@ -842,7 +842,7 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool 
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         async def decorated_function(request: Request, *args, **kwargs):
-            gateway = get_gateway_service()
+            gateway = api_gateway_service
 
             # Process through gateway
             response_data, status_code = await gateway.process_request(request, protocol=protocol)
@@ -863,3 +863,8 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool 
         return decorated_function
 
     return decorator
+
+
+def get_gateway_service() -> APIGatewayService:
+    """Get the singleton instance of APIGatewayService"""
+    return api_gateway_service

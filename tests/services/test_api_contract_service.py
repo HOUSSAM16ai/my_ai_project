@@ -1,11 +1,12 @@
 # tests/services/test_api_contract_service.py
-from app.services.api_contract_service import APIContractService, contract_service
+from app.services.api_contract_service import APIContractService
 
 
 def test_singleton():
     """Test that the contract_service is a singleton instance"""
     from app.services.api_contract_service import contract_service as instance1
     from app.services.api_contract_service import contract_service as instance2
+
     assert instance1 is instance2
 
 

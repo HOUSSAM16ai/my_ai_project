@@ -1,6 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.skip(reason="These tests are outdated and need to be rewritten for the new architecture.")
+pytestmark = pytest.mark.skip(
+    reason="These tests are outdated and need to be rewritten for the new architecture."
+)
 
 # Original content commented out below
 

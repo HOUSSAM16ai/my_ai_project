@@ -59,7 +59,9 @@ class ServiceLocator:
             # elif service_name == "api_security_service":
             #     from app.services.api_security_service import security_service as service_module
             elif service_name == "api_observability_service":
-                from app.services.api_observability_service import observability_service as service_module
+                from app.services.api_observability_service import (
+                    observability_service as service_module,
+                )
             elif service_name == "api_contract_service":
                 from app.services.api_contract_service import contract_service as service_module
             # elif service_name == "api_governance_service":
@@ -67,9 +69,13 @@ class ServiceLocator:
             elif service_name == "api_slo_sli_service":
                 from app.services.api_slo_sli_service import slo_service as service_module
             elif service_name == "api_config_secrets_service":
-                from app.services.api_config_secrets_service import config_secrets_service as service_module
+                from app.services.api_config_secrets_service import (
+                    config_secrets_service as service_module,
+                )
             elif service_name == "api_disaster_recovery_service":
-                from app.services.api_disaster_recovery_service import disaster_recovery_service as service_module
+                from app.services.api_disaster_recovery_service import (
+                    disaster_recovery_service as service_module,
+                )
             elif service_name == "api_gateway_chaos":
                 from app.services.api_gateway_chaos import chaos_service as service_module
             elif service_name == "api_gateway_deployment":
