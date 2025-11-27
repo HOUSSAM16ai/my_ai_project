@@ -1,6 +1,8 @@
 import os
 import re
+
 from starlette.middleware.base import BaseHTTPMiddleware
+
 
 class DevAllowIframeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -17,13 +19,13 @@ class DevAllowIframeMiddleware(BaseHTTPMiddleware):
                 if "frame-ancestors" in existing:
                     # Replace existing frame-ancestors directive with a permissive one
                     response.headers["content-security-policy"] = re.sub(
-                        r"frame-ancestors[^;]+",
-                        "frame-ancestors *",
-                        existing
+                        r"frame-ancestors[^;]+", "frame-ancestors *", existing
                     )
                 else:
                     # Append it if not present
-                    response.headers["content-security-policy"] = existing.rstrip(";") + "; frame-ancestors *;"
+                    response.headers["content-security-policy"] = (
+                        existing.rstrip(";") + "; frame-ancestors *;"
+                    )
             else:
                 response.headers["content-security-policy"] = "frame-ancestors *;"
 
