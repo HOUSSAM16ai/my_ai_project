@@ -9,7 +9,7 @@ from sqlalchemy.engine.url import make_url
 # Ensure project root is in sys.path
 sys.path.append(os.getcwd())
 
-from app.core.engine_factory import create_unified_async_engine
+from app.core.engine_factory import create_unified_async_engine  # noqa: E402
 
 # --- 1. LOGGING SETUP (STRICTLY STDERR) ---
 # Prevent any logs from going to stdout
