@@ -12,7 +12,7 @@ from sqlalchemy import pool
 sys.path.append(os.getcwd())
 
 from app.core.config import settings
-from app.core.engine_factory import create_unified_async_engine, FatalEngineError
+from app.core.engine_factory import FatalEngineError, create_unified_async_engine
 from app.models import SQLModel  # Import SQLModel to get metadata
 
 # --- 2. LOGGING CONFIGURATION ---

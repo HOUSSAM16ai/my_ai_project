@@ -14,10 +14,7 @@ import time
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-from app.telemetry.unified_observability import (
-    TraceContext,
-    get_unified_observability,
-)
+from app.telemetry.unified_observability import TraceContext, get_unified_observability
 
 
 class ObservabilityMiddleware(BaseMiddleware):

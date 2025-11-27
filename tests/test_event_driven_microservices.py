@@ -18,30 +18,13 @@ import time
 
 import pytest
 
-from app.services.distributed_tracing import (
-    DistributedTracer,
-    SpanKind,
-    TraceContextPropagator,
-)
-from app.services.domain_events import (
-    BoundedContext,
-    DomainEventRegistry,
-    MissionCreated,
-    TaskAssigned,
-    UserCreated,
-)
+from app.services.distributed_tracing import DistributedTracer, SpanKind, TraceContextPropagator
+from app.services.domain_events import (BoundedContext, DomainEventRegistry, MissionCreated,
+                                        TaskAssigned, UserCreated)
 from app.services.graphql_federation import GraphQLFederationManager
-from app.services.saga_orchestrator import (
-    SagaOrchestrator,
-    SagaStatus,
-    SagaType,
-)
-from app.services.service_mesh_integration import (
-    CircuitBreakerConfig,
-    RetryPolicy,
-    ServiceMeshManager,
-    TrafficSplitStrategy,
-)
+from app.services.saga_orchestrator import SagaOrchestrator, SagaStatus, SagaType
+from app.services.service_mesh_integration import (CircuitBreakerConfig, RetryPolicy,
+                                                   ServiceMeshManager, TrafficSplitStrategy)
 
 
 # ======================================================================================

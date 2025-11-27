@@ -12,12 +12,8 @@ os.environ["PLANNER_DEEP_INDEX_MD"] = "1"
 os.environ["PLANNER_COMPREHENSIVE_MODE"] = "1"
 
 try:
-    from app.overmind.planning.llm_planner import (
-        COMPREHENSIVE_MODE,
-        DEEP_INDEX_JSON_EN,
-        DEEP_INDEX_MD_EN,
-        INDEX_FILE_EN,
-    )
+    from app.overmind.planning.llm_planner import (COMPREHENSIVE_MODE, DEEP_INDEX_JSON_EN,
+                                                   DEEP_INDEX_MD_EN, INDEX_FILE_EN)
 
     print("=== TESTING WITH USER'S ENV CONFIGURATION ===")
     print(f"PLANNER_INDEX_FILE env var: {os.environ.get('PLANNER_INDEX_FILE')}")

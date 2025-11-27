@@ -11,13 +11,8 @@
 #   - توثيق تلقائي للـ API schemas
 
 from app.validators.base import BaseValidator
-from app.validators.schemas import (
-    MissionSchema,
-    PaginationSchema,
-    QuerySchema,
-    TaskSchema,
-    UserSchema,
-)
+from app.validators.schemas import (MissionSchema, PaginationSchema, QuerySchema, TaskSchema,
+                                    UserSchema)
 
 __all__ = [
     "BaseValidator",

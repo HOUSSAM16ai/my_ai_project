@@ -24,11 +24,8 @@ def test_streaming_service():
     print("=" * 60)
 
     try:
-        from app.services.admin_chat_streaming_service import (
-            SmartTokenChunker,
-            StreamingConfig,
-            get_streaming_service,
-        )
+        from app.services.admin_chat_streaming_service import (SmartTokenChunker, StreamingConfig,
+                                                               get_streaming_service)
 
         service = get_streaming_service()
         print("✅ Streaming service initialized successfully")

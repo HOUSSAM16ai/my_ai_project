@@ -20,11 +20,8 @@ Tests for the world-class observability system covering:
 import time
 import unittest
 
-from app.telemetry.unified_observability import (
-    TraceContext,
-    UnifiedObservabilityService,
-    get_unified_observability,
-)
+from app.telemetry.unified_observability import (TraceContext, UnifiedObservabilityService,
+                                                 get_unified_observability)
 
 
 class TestTraceContext(unittest.TestCase):

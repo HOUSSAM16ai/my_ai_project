@@ -11,10 +11,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from app.core.math.cognitive_fingerprint import (
-    CognitiveComplexity,
-    assess_cognitive_complexity,
-)
+from app.core.math.cognitive_fingerprint import CognitiveComplexity, assess_cognitive_complexity
 from app.core.math.kalman import KalmanFilter
 
 
