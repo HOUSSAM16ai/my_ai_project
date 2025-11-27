@@ -73,9 +73,9 @@ def test_ring_buffer_functions():
     """Test 4: Ring buffer helper functions exist"""
     factory = load_factory_module()
     assert hasattr(factory, "_push_selection_profile"), "Should have _push_selection_profile"
-    assert hasattr(
-        factory, "_push_instantiation_profile"
-    ), "Should have _push_instantiation_profile"
+    assert hasattr(factory, "_push_instantiation_profile"), (
+        "Should have _push_instantiation_profile"
+    )
 
     # Test ring buffer behavior
     sample = {"test": 1, "ts": time.time()}

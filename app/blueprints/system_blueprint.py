@@ -10,6 +10,7 @@ from app.services.system_service import system_service
 # Create a blueprint instance
 system_blueprint = Blueprint("system")
 
+
 @system_blueprint.router.get(
     "/health",
     summary="Application Health Check",
@@ -24,6 +25,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         content={"application": "ok", "database": db_status, "version": "v4.0-woven"},
         status_code=status_code,
     )
+
 
 @system_blueprint.router.get(
     "/healthz",

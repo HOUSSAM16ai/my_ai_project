@@ -1,4 +1,3 @@
-import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -52,7 +51,6 @@ async def test_admin_chat_persistence_flow():
 
     # Consume stream fully
     _ = [chunk async for chunk in response.body_iterator]
-
 
     # Assertions
     # Check that user message was added

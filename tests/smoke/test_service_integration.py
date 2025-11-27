@@ -1,7 +1,6 @@
 # tests/smoke/test_service_integration.py
 from unittest.mock import AsyncMock
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.core.factories import get_db_service

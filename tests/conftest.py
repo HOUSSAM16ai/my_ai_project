@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-from app.core.ai_gateway import get_ai_client
 import app.core.database
+from app.core.ai_gateway import get_ai_client
 from app.core.engine_factory import create_unified_async_engine
 from app.main import app
 from tests.factories import MissionFactory, UserFactory
@@ -35,10 +36,6 @@ TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 # REMOVED: Custom event_loop fixture to allow pytest-asyncio to handle it.
 
 
-import os
-from pathlib import Path
-
-
 @pytest.fixture(scope="session", autouse=True)
 def configure_app():
     """
@@ -51,6 +48,7 @@ def configure_app():
 
     # Force the app's session factory to use our test engine
     import app.core.database
+
     app.core.database.async_session_factory = TestingSessionLocal
 
     # App is already created at import time in the new architecture
