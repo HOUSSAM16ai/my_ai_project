@@ -28,6 +28,5 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 npm run build
 unset NODE_OPTIONS
 
-print_header "Phase 4: Starting Application"
-# Removed 'exec' to run as a subprocess
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+print_header "Phase 4: Handing over to The Guardian"
+exec ./scripts/codespace_guardian.sh
