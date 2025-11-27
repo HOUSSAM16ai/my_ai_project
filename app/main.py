@@ -15,16 +15,25 @@ from app.kernel import RealityKernel
 
 logger = logging.getLogger(__name__)
 
+# --- Kernel Singleton ---
+# This ensures the kernel is created only once.
+_kernel_instance = None
+
+def get_kernel():
+    global _kernel_instance
+    if _kernel_instance is None:
+        settings = get_settings()
+        _kernel_instance = RealityKernel(settings.model_dump())
+    return _kernel_instance
+
 def create_app() -> FastAPI:
     """
     Application factory. Creates and configures the FastAPI application
     by invoking the RealityKernel.
     """
-    settings = get_settings()
-
-    # The Kernel is now the sole authority for app creation.
-    kernel = RealityKernel(settings.model_dump())
+    kernel = get_kernel()
     app = kernel.get_app()
+    app.kernel = kernel # type: ignore
 
     @app.get("/health")
     async def health():
@@ -41,6 +50,7 @@ def create_app() -> FastAPI:
 
 # The final, woven application instance.
 app = create_app()
+kernel = app.kernel # Expose for legacy tests
 
 if not isinstance(app, FastAPI):
     raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")
