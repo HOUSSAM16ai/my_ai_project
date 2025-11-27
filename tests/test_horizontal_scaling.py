@@ -3,10 +3,16 @@
 Tests for Horizontal Scaling & SPOF Elimination Services
 """
 
-from app.services.horizontal_scaling_service import (ChaosMonkey, HorizontalScalingOrchestrator,
-                                                     LoadBalancingAlgorithm, RegionZone,
-                                                     ScalingEvent, Server, ServerState,
-                                                     get_scaling_orchestrator)
+from app.services.horizontal_scaling_service import (
+    ChaosMonkey,
+    HorizontalScalingOrchestrator,
+    LoadBalancingAlgorithm,
+    RegionZone,
+    ScalingEvent,
+    Server,
+    ServerState,
+    get_scaling_orchestrator,
+)
 
 
 class TestHorizontalScalingOrchestrator:

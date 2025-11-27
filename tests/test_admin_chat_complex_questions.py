@@ -10,7 +10,7 @@ potentially problematic questions gracefully by using the POST method.
 
 
 def test_chat_stream_handles_complex_question_via_post(
-    admin_user, client, admin_auth_headers, mock_ai_client_global
+    mock_ai_client, client, admin_auth_headers
 ):
     """
     Tests that a complex, multi-part question is handled correctly via a POST request.
@@ -29,7 +29,7 @@ def test_chat_stream_handles_complex_question_via_post(
         else:
             yield {"role": "assistant", "content": "Understood long question. "}
 
-    mock_ai_client_global.stream_chat = mock_stream_chat
+    mock_ai_client.stream_chat = mock_stream_chat
 
     response = client.post(
         "/admin/api/chat/stream",
@@ -45,7 +45,7 @@ def test_chat_stream_handles_complex_question_via_post(
 
 
 def test_chat_stream_handles_long_question_via_post(
-    admin_user, client, admin_auth_headers, mock_ai_client_global
+    mock_ai_client, client, admin_auth_headers
 ):
     """
     Tests that a very long question is handled correctly without errors via a POST request.

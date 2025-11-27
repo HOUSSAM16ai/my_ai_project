@@ -9,8 +9,12 @@ sys.path.insert(0, "/home/ubuntu/repos/my_ai_project")
 os.environ["PLANNER_COMPREHENSIVE_MODE"] = "1"
 
 try:
-    from app.overmind.planning.llm_planner import (COMPREHENSIVE_MODE, DEEP_INDEX_JSON_EN,
-                                                   DEEP_INDEX_MD_EN, INDEX_FILE_EN)
+    from app.overmind.planning.llm_planner import (
+        COMPREHENSIVE_MODE,
+        DEEP_INDEX_JSON_EN,
+        DEEP_INDEX_MD_EN,
+        INDEX_FILE_EN,
+    )
 
     print("=== COMPREHENSIVE MODE FIX VERIFICATION ===")
     print(f"COMPREHENSIVE_MODE: {COMPREHENSIVE_MODE}")

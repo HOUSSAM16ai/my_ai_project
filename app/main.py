@@ -27,7 +27,7 @@ def get_kernel():
     return _kernel_instance
 
 
-def create_app() -> FastAPI:
+def create_app(static_dir: str | None = None) -> FastAPI:
     """
     Application factory. Creates and configures the FastAPI application
     by invoking the RealityKernel.
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "service": "backend running"}
 
     # --- Static Files ---
-    static_files_dir = os.path.join(os.getcwd(), "app/static/dist")
+    static_files_dir = static_dir or os.path.join(os.getcwd(), "app/static/dist")
     if os.path.exists(static_files_dir):
         app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
     else:

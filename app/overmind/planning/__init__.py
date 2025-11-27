@@ -204,13 +204,27 @@ def __dir__() -> list[str]:  # pragma: no cover
 if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only)
     # Optional module (may not always be present)
     from app.overmind.planning import llm_planner
-    from app.overmind.planning.base_planner import (BasePlanner, PlannerAdmissionError,
-                                                    PlannerError, PlannerTimeoutError,
-                                                    PlanValidationError)
-    from app.overmind.planning.factory import (discover, get_all_planners, get_planner,
-                                               list_planner_metadata)
-    from app.overmind.planning.schemas import (MissionPlanSchema, PlanGenerationResult, PlannedTask,
-                                               PlanningContext, PlanValidationIssue, PlanWarning)
+    from app.overmind.planning.base_planner import (
+        BasePlanner,
+        PlannerAdmissionError,
+        PlannerError,
+        PlannerTimeoutError,
+        PlanValidationError,
+    )
+    from app.overmind.planning.factory import (
+        discover,
+        get_all_planners,
+        get_planner,
+        list_planner_metadata,
+    )
+    from app.overmind.planning.schemas import (
+        MissionPlanSchema,
+        PlanGenerationResult,
+        PlannedTask,
+        PlanningContext,
+        PlanValidationIssue,
+        PlanWarning,
+    )
 
 
 # --------------------------------------------------------------------------------------

@@ -46,61 +46,40 @@ class ServiceLocator:
         try:
             # Lazy import to avoid circular dependencies
             if service_name == "master_agent_service":
-                from app.services import master_agent_service as svc
+                from app.services import master_agent_service as service_module
             elif service_name == "generation_service":
-                from app.services import generation_service as svc
+                from app.services import generation_service as service_module
             elif service_name == "admin_ai_service":
-                from app.services.admin_ai_service import get_admin_ai_service
-
-                svc = get_admin_ai_service()
+                from app.services.admin_ai_service import admin_ai_service as service_module
             elif service_name == "database_service":
-                from app.services import database_service as svc
+                from app.services.database_service import database_service as service_module
             elif service_name == "api_gateway_service":
-                from app.services.api_gateway_service import get_gateway_service
-
-                svc = get_gateway_service()
-            elif service_name == "api_security_service":
-                from app.services.api_security_service import get_security_service
-
-                svc = get_security_service()
+                from app.services.api_gateway_service import api_gateway_service as service_module
+            # TODO: The following services are not yet implemented or have been removed.
+            # elif service_name == "api_security_service":
+            #     from app.services.api_security_service import security_service as service_module
             elif service_name == "api_observability_service":
-                from app.services.api_observability_service import get_observability_service
-
-                svc = get_observability_service()
+                from app.services.api_observability_service import observability_service as service_module
             elif service_name == "api_contract_service":
-                from app.services.api_contract_service import get_contract_service
-
-                svc = get_contract_service()
-            elif service_name == "api_governance_service":
-                from app.services.api_governance_service import get_governance_service
-
-                svc = get_governance_service()
+                from app.services.api_contract_service import contract_service as service_module
+            # elif service_name == "api_governance_service":
+            #     from app.services.api_governance_service import governance_service as service_module
             elif service_name == "api_slo_sli_service":
-                from app.services.api_slo_sli_service import get_slo_service
-
-                svc = get_slo_service()
+                from app.services.api_slo_sli_service import slo_service as service_module
             elif service_name == "api_config_secrets_service":
-                from app.services.api_config_secrets_service import get_config_secrets_service
-
-                svc = get_config_secrets_service()
+                from app.services.api_config_secrets_service import config_secrets_service as service_module
             elif service_name == "api_disaster_recovery_service":
-                from app.services.api_disaster_recovery_service import get_disaster_recovery_service
-
-                svc = get_disaster_recovery_service()
+                from app.services.api_disaster_recovery_service import disaster_recovery_service as service_module
             elif service_name == "api_gateway_chaos":
-                from app.services.api_gateway_chaos import get_chaos_service
-
-                svc = get_chaos_service()
+                from app.services.api_gateway_chaos import chaos_service as service_module
             elif service_name == "api_gateway_deployment":
-                from app.services.api_gateway_deployment import get_deployment_service
-
-                svc = get_deployment_service()
+                from app.services.api_gateway_deployment import deployment_service as service_module
             else:
                 logger.warning(f"Unknown service: {service_name}")
                 return None
 
-            cls._services_cache[service_name] = svc
-            return svc
+            cls._services_cache[service_name] = service_module
+            return service_module
 
         except ImportError as e:
             logger.debug(f"Service '{service_name}' not available: {e}")

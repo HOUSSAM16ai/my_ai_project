@@ -46,8 +46,11 @@ def test_slo_service():
 def test_config_secrets_service():
     """Test Config & Secrets Management Service"""
     print("\nTesting Config & Secrets Management Service...")
-    from app.services.api_config_secrets_service import (Environment, SecretType,
-                                                         get_config_secrets_service)
+    from app.services.api_config_secrets_service import (
+        Environment,
+        SecretType,
+        get_config_secrets_service,
+    )
 
     config = get_config_secrets_service()
     assert config is not None, "Config service should initialize"
@@ -77,8 +80,10 @@ def test_disaster_recovery_service():
     print("\nTesting Disaster Recovery Service...")
     from datetime import datetime
 
-    from app.services.api_disaster_recovery_service import (BackupMetadata,
-                                                            get_disaster_recovery_service)
+    from app.services.api_disaster_recovery_service import (
+        BackupMetadata,
+        get_disaster_recovery_service,
+    )
 
     dr = get_disaster_recovery_service()
     assert dr is not None, "DR service should initialize"
@@ -103,8 +108,10 @@ def test_disaster_recovery_service():
 def test_incident_service():
     """Test On-Call Incident Service"""
     print("\nTesting On-Call Incident Service...")
-    from app.services.api_disaster_recovery_service import (IncidentSeverity,
-                                                            get_oncall_incident_service)
+    from app.services.api_disaster_recovery_service import (
+        IncidentSeverity,
+        get_oncall_incident_service,
+    )
 
     incidents = get_oncall_incident_service()
     assert incidents is not None, "Incident service should initialize"

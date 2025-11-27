@@ -14,8 +14,14 @@ from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.error_handling import ErrorHandlerMiddleware, RecoveryMiddleware
 from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware
 from app.middleware.observability import PerformanceProfiler, RequestLoggerMiddleware
-from app.middleware.security import (AIThreatMiddleware, PolicyEnforcer, RateLimitMiddleware,
-                                     SecurityHeadersMiddleware, TelemetryGuard, WAFMiddleware)
+from app.middleware.security import (
+    AIThreatMiddleware,
+    PolicyEnforcer,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    TelemetryGuard,
+    WAFMiddleware,
+)
 
 
 class MiddlewareFactory:

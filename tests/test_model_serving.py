@@ -8,9 +8,13 @@ import time
 
 import pytest
 
-from app.services.model_serving_infrastructure import (ModelServingInfrastructure, ModelStatus,
-                                                       ModelType, ModelVersion,
-                                                       get_model_serving_infrastructure)
+from app.services.model_serving_infrastructure import (
+    ModelServingInfrastructure,
+    ModelStatus,
+    ModelType,
+    ModelVersion,
+    get_model_serving_infrastructure,
+)
 
 
 class TestModelServingInfrastructure:

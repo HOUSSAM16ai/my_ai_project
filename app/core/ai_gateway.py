@@ -29,6 +29,7 @@ from typing import Protocol, runtime_checkable
 import httpx
 
 from app.core.cognitive_cache import get_cognitive_engine
+
 # Use the new Omni Router
 from app.core.math.omni_router import get_omni_router
 

@@ -1,34 +1,70 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
   pull_request:
-    branches: [ main ]
+    branches: ["main"]
 
 jobs:
-  build:
+  quality-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # Use a current LTS version
+
+      - name: Cache Pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint with ruff
-        run: |
-          pip install ruff
-          ruff format --check .
-          ruff check .
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Test with pytest
+      - name: Build Frontend
+        run: |
+          export NODE_OPTIONS="--max-old-space-size=8192"
+          npm run build
+
+      - name: Lint and Format Check with Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Type Check with MyPy
+        run: |
+          mypy . --exclude apps
+
+      - name: Run Pytest
         run: |
           python -m pytest

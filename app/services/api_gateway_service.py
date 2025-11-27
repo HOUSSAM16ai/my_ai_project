@@ -818,20 +818,7 @@ class APIGatewayService:
 # SINGLETON INSTANCE
 # ======================================================================================
 
-_gateway_service_instance: APIGatewayService | None = None
-_gateway_lock = threading.Lock()
-
-
-def get_gateway_service() -> APIGatewayService:
-    """Get singleton API Gateway service instance"""
-    global _gateway_service_instance
-
-    if _gateway_service_instance is None:
-        with _gateway_lock:
-            if _gateway_service_instance is None:
-                _gateway_service_instance = APIGatewayService()
-
-    return _gateway_service_instance
+api_gateway_service = APIGatewayService()
 
 
 # ======================================================================================

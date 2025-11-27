@@ -1,8 +1,12 @@
 import pytest
 
-from app.services.admin_chat_streaming_service import (AdminChatStreamingService, SmartTokenChunker,
-                                                       SpeculativeDecoder, StreamingMetrics,
-                                                       get_streaming_service)
+from app.services.admin_chat_streaming_service import (
+    AdminChatStreamingService,
+    SmartTokenChunker,
+    SpeculativeDecoder,
+    StreamingMetrics,
+    get_streaming_service,
+)
 
 # --- Unit Tests for Components ---
 

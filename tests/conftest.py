@@ -1,30 +1,54 @@
-from collections.abc import AsyncGenerator, Generator
-from pathlib import Path
-from unittest.mock import MagicMock
-
+# tests/conftest.py
 import pytest
-import sqlalchemy as sa
-from fastapi.routing import Mount
-from fastapi.staticfiles import StaticFiles
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+import os
+import tempfile
+import shutil
+from pathlib import Path
+
+# Set environment variables for testing
+os.environ["ENVIRONMENT"] = "testing"
+os.environ["SECRET_KEY"] = "test-secret-key"
+
+@pytest.fixture(scope="session")
+def test_app():
+    """
+    Creates a FastAPI application instance for the test session.
+    """
+    from app.main import create_app
+
+    # Create a temporary directory for static files
+    tmpdir = tempfile.mkdtemp()
+    static_dir = Path(tmpdir)
+    (static_dir / "index.html").write_text("<!DOCTYPE html><html><body>TEST</body></html>")
+
+    app = create_app(static_dir=str(static_dir))
+
+    yield app
+
+    # Cleanup the temporary directory
+    shutil.rmtree(tmpdir)
+
+
+@pytest.fixture
+def client(test_app):
+    """
+    Provides a TestClient for making requests to the app.
+    """
+    with TestClient(test_app) as test_client:
+        yield test_client
+
+# --- Database Fixtures ---
+
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
-
-import app.core.database
-from app.core.ai_gateway import get_ai_client
 from app.core.engine_factory import create_unified_async_engine
-from tests.factories import MissionFactory, UserFactory
+from app.core.database import get_db
 
-# Ensure we use an in-memory SQLite DB for tests
-# Using shared cache to allow multiple connections to same memory db
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-# 🔥 UNIFIED ENGINE ENFORCEMENT 🔥
-# We use the global factory even for tests to ensure consistency.
-# The factory is smart enough to detect SQLite and NOT apply Postgres-specific args
-# (like statement_cache_size=0), preventing errors while maintaining standard.
 engine = create_unified_async_engine(
     TEST_DATABASE_URL,
     echo=False,
@@ -33,149 +57,62 @@ engine = create_unified_async_engine(
 
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-
-# REMOVED: Custom event_loop fixture to allow pytest-asyncio to handle it.
-
-
-@pytest.fixture(scope="session")
-def app():
-    """
-    Main application fixture.
-    """
-    # This import needs to be inside the fixture to avoid premature app creation.
-    from app.main import create_app
-
-    return create_app()
-
-
 @pytest.fixture(scope="session", autouse=True)
-def configure_app(app):
-    """
-    Ensure the FastAPI application is fully configured and uses the test database.
-    """
-    # Create dummy SPA files with minimal content to satisfy the smoke tests
-    static_dir = Path("app/static/dist")
-    static_dir.mkdir(parents=True, exist_ok=True)
-    (static_dir / "index.html").write_text("<!DOCTYPE html>")
-
-    # Manually add the static files mount if it's missing
-    # This is necessary because the app is created on import, before this fixture runs.
-    if not any(isinstance(route, Mount) and route.path == "/" for route in app.routes):
-        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
-
-    # Force the app's session factory to use our test engine
-    import app.core.database
-
-    app.core.database.async_session_factory = TestingSessionLocal
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def init_db(configure_app):
-    """
-    Initialize the database schema once per test session.
-    This runs after the app is configured.
-    """
+async def init_db(test_app):
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-
-
-@pytest.fixture(autouse=True)
-async def clean_db():
-    """
-    Fixture to clean up the database after each test.
-    This ensures test isolation by deleting all data.
-    """
-    yield
-    async with engine.begin() as conn:
-        # Disable foreign key checks to allow deletion in any order
-        # Note: SQLite syntax for disabling FKs
-        await conn.execute(sa.text("PRAGMA foreign_keys=OFF;"))
-
-        for table in SQLModel.metadata.tables.values():
-            await conn.execute(table.delete())
-
-        await conn.execute(sa.text("PRAGMA foreign_keys=ON;"))
-
-
-@pytest.fixture
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with TestingSessionLocal() as session:
-        yield session
-
-
-@pytest.fixture
-def user_factory(db_session):
-    """
-    Fixture to provide a UserFactory bound to the current async session.
-    """
-
-    class AsyncUserFactory(UserFactory):
-        class Meta:
-            sqlalchemy_session = db_session
-            sqlalchemy_session_persistence = "commit"
-
-    return AsyncUserFactory
-
-
-@pytest.fixture
-def mission_factory(db_session):
-    """
-    Fixture to provide a MissionFactory bound to the current async session.
-    """
-
-    class AsyncMissionFactory(MissionFactory):
-        class Meta:
-            sqlalchemy_session = db_session
-            sqlalchemy_session_persistence = "commit"
-
-    return AsyncMissionFactory
-
-
-@pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
-    """Synchronous client for standard tests"""
-    from app.core.database import get_db
-
+    # Override the get_db dependency for all tests
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
+    test_app.dependency_overrides[get_db] = override_get_db
 
-    app.dependency_overrides[get_db] = override_get_db
-
-    with TestClient(app) as c:
-        yield c
-
-    # A single, targeted clear is better than a global clear,
-    # which can inadvertently remove other important overrides (like the AI client mock).
-    if get_db in app.dependency_overrides:
-        del app.dependency_overrides[get_db]
-
+@pytest.fixture(autouse=True)
+async def clean_db():
+    yield
+    async with engine.begin() as conn:
+        await conn.execute(sa.text("PRAGMA foreign_keys=OFF;"))
+        for table in SQLModel.metadata.tables.values():
+            await conn.execute(table.delete())
+        await conn.execute(sa.text("PRAGMA foreign_keys=ON;"))
 
 @pytest.fixture
-async def async_client(app) -> AsyncGenerator[AsyncClient, None]:
-    """Asynchronous client for async tests"""
-    from httpx import ASGITransport
+async def db_session() -> AsyncSession:
+    async with TestingSessionLocal() as session:
+        yield session
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac
+# --- Auth & Mocking Fixtures ---
 
+from unittest.mock import MagicMock
+from app.core.ai_gateway import get_ai_client
+from app.models import User
+from app.core.security import generate_service_token
+
+@pytest.fixture
+def mock_ai_client(test_app):
+    mock_gateway = MagicMock()
+    async def default_stream(messages):
+        yield {"role": "assistant", "content": "Mocked response"}
+    mock_gateway.stream_chat = default_stream
+    def mock_get_client():
+        return mock_gateway
+    original_override = test_app.dependency_overrides.get(get_ai_client)
+    test_app.dependency_overrides[get_ai_client] = mock_get_client
+    yield mock_gateway
+    if original_override:
+        test_app.dependency_overrides[get_ai_client] = original_override
+    else:
+        if get_ai_client in test_app.dependency_overrides:
+            del test_app.dependency_overrides[get_ai_client]
 
 @pytest.fixture
 async def admin_user(db_session: AsyncSession):
-    """
-    Fixture to create an admin user.
-    """
     from sqlalchemy import select
-
-    from app.models import User
-
     stmt = select(User).where(User.email == "admin@test.com")
     result = await db_session.execute(stmt)
     existing_user = result.scalar_one_or_none()
-
     if existing_user:
         return existing_user
-
     admin = User(email="admin@test.com", full_name="Admin User", is_admin=True)
     admin.set_password("password123")
     db_session.add(admin)
@@ -183,60 +120,48 @@ async def admin_user(db_session: AsyncSession):
     await db_session.refresh(admin)
     return admin
 
-
 @pytest.fixture
 def admin_auth_headers(admin_user):
-    """
-    Fixture to provide authentication headers for the admin user.
-    """
-    from app.core.security import generate_service_token
-
     token = generate_service_token(str(admin_user.id))
     return {"Authorization": f"Bearer {token}"}
 
+from httpx import AsyncClient
 
-@pytest.fixture(autouse=True)
-def mock_ai_client_global(app):
+@pytest.fixture
+async def async_client(test_app):
     """
-    Global fixture to mock the AI Client dependency for all tests.
-    Prevents tests from hitting the real AI API.
+    Provides an asynchronous client for making requests to the app.
     """
-    mock_gateway = MagicMock()
+    async with AsyncClient(app=test_app, base_url="http://test") as client:
+        yield client
 
-    # Default behavior: yield a simple response
-    async def default_stream(messages):
-        yield {"role": "assistant", "content": "Mocked response"}
+# --- Factory & Helper Fixtures ---
 
-    mock_gateway.stream_chat = default_stream
+from tests.factories import UserFactory, MissionFactory
+import json
+from typing import Any
 
-    def mock_get_client():
-        return mock_gateway
+@pytest.fixture
+def user_factory(db_session: AsyncSession):
+    class AsyncUserFactory(UserFactory):
+        class Meta:
+            sqlalchemy_session = db_session
+            sqlalchemy_session_persistence = "commit"
+    return AsyncUserFactory
 
-    app.dependency_overrides[get_ai_client] = mock_get_client
-    yield mock_gateway
-    # Cleanup
-    if get_ai_client in app.dependency_overrides:
-        del app.dependency_overrides[get_ai_client]
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--run-integration", action="store_true", default=False, help="run integration tests"
-    )
-
+@pytest.fixture
+def mission_factory(db_session: AsyncSession):
+    class AsyncMissionFactory(MissionFactory):
+        class Meta:
+            sqlalchemy_session = db_session
+            sqlalchemy_session_persistence = "commit"
+    return AsyncMissionFactory
 
 @pytest.fixture(scope="session")
 def parse_response_json():
-    """
-    Provides a unified JSON parsing helper for TestClient responses.
-    """
-    import json
-    from typing import Any
-
     def _parse(response: Any) -> Any:
         try:
             return response.json()
         except json.JSONDecodeError:
             return response.text
-
     return _parse
