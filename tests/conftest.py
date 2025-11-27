@@ -1,14 +1,16 @@
 # tests/conftest.py
+import os
+import shutil
+import tempfile
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
-import os
-import tempfile
-import shutil
-from pathlib import Path
 
 # Set environment variables for testing
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["SECRET_KEY"] = "test-secret-key"
+
 
 @pytest.fixture(scope="session")
 def test_app():
@@ -38,14 +40,16 @@ def client(test_app):
     with TestClient(test_app) as test_client:
         yield test_client
 
+
 # --- Database Fixtures ---
 
-import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel
-from app.core.engine_factory import create_unified_async_engine
-from app.core.database import get_db
+import sqlalchemy as sa  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
+from sqlmodel import SQLModel  # noqa: E402
+
+from app.core.database import get_db  # noqa: E402
+from app.core.engine_factory import create_unified_async_engine  # noqa: E402
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -57,15 +61,19 @@ engine = create_unified_async_engine(
 
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def init_db(test_app):
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+
     # Override the get_db dependency for all tests
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
+
     test_app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture(autouse=True)
 async def clean_db():
@@ -76,26 +84,34 @@ async def clean_db():
             await conn.execute(table.delete())
         await conn.execute(sa.text("PRAGMA foreign_keys=ON;"))
 
+
 @pytest.fixture
 async def db_session() -> AsyncSession:
     async with TestingSessionLocal() as session:
         yield session
 
+
 # --- Auth & Mocking Fixtures ---
 
-from unittest.mock import MagicMock
-from app.core.ai_gateway import get_ai_client
-from app.models import User
-from app.core.security import generate_service_token
+from unittest.mock import MagicMock  # noqa: E402
+
+from app.core.ai_gateway import get_ai_client  # noqa: E402
+from app.core.security import generate_service_token  # noqa: E402
+from app.models import User  # noqa: E402
+
 
 @pytest.fixture
 def mock_ai_client(test_app):
     mock_gateway = MagicMock()
+
     async def default_stream(messages):
         yield {"role": "assistant", "content": "Mocked response"}
+
     mock_gateway.stream_chat = default_stream
+
     def mock_get_client():
         return mock_gateway
+
     original_override = test_app.dependency_overrides.get(get_ai_client)
     test_app.dependency_overrides[get_ai_client] = mock_get_client
     yield mock_gateway
@@ -105,9 +121,11 @@ def mock_ai_client(test_app):
         if get_ai_client in test_app.dependency_overrides:
             del test_app.dependency_overrides[get_ai_client]
 
+
 @pytest.fixture
 async def admin_user(db_session: AsyncSession):
     from sqlalchemy import select
+
     stmt = select(User).where(User.email == "admin@test.com")
     result = await db_session.execute(stmt)
     existing_user = result.scalar_one_or_none()
@@ -120,12 +138,15 @@ async def admin_user(db_session: AsyncSession):
     await db_session.refresh(admin)
     return admin
 
+
 @pytest.fixture
 def admin_auth_headers(admin_user):
     token = generate_service_token(str(admin_user.id))
     return {"Authorization": f"Bearer {token}"}
 
-from httpx import AsyncClient
+
+from httpx import AsyncClient  # noqa: E402
+
 
 @pytest.fixture
 async def async_client(test_app):
@@ -135,11 +156,14 @@ async def async_client(test_app):
     async with AsyncClient(app=test_app, base_url="http://test") as client:
         yield client
 
+
 # --- Factory & Helper Fixtures ---
 
-from tests.factories import UserFactory, MissionFactory
-import json
-from typing import Any
+import json  # noqa: E402
+from typing import Any  # noqa: E402
+
+from tests.factories import MissionFactory, UserFactory  # noqa: E402
+
 
 @pytest.fixture
 def user_factory(db_session: AsyncSession):
@@ -147,7 +171,9 @@ def user_factory(db_session: AsyncSession):
         class Meta:
             sqlalchemy_session = db_session
             sqlalchemy_session_persistence = "commit"
+
     return AsyncUserFactory
+
 
 @pytest.fixture
 def mission_factory(db_session: AsyncSession):
@@ -155,7 +181,9 @@ def mission_factory(db_session: AsyncSession):
         class Meta:
             sqlalchemy_session = db_session
             sqlalchemy_session_persistence = "commit"
+
     return AsyncMissionFactory
+
 
 @pytest.fixture(scope="session")
 def parse_response_json():
@@ -164,4 +192,5 @@ def parse_response_json():
             return response.json()
         except json.JSONDecodeError:
             return response.text
+
     return _parse

@@ -424,7 +424,7 @@ def monitor_performance(func: F) -> F:
 
     @functools.wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        service = get_observability_service()
+        service = observability_service
         endpoint = func.__name__
         method = "UNKNOWN"
 
@@ -460,3 +460,6 @@ def monitor_performance(func: F) -> F:
             )
 
     return wrapper  # type: ignore
+
+def get_observability_service():
+    return observability_service

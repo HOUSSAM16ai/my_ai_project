@@ -9,9 +9,7 @@ potentially problematic questions gracefully by using the POST method.
 """
 
 
-def test_chat_stream_handles_complex_question_via_post(
-    mock_ai_client, client, admin_auth_headers
-):
+def test_chat_stream_handles_complex_question_via_post(mock_ai_client, client, admin_auth_headers):
     """
     Tests that a complex, multi-part question is handled correctly via a POST request.
     """
@@ -44,9 +42,7 @@ def test_chat_stream_handles_complex_question_via_post(
     assert len(lines) > 0
 
 
-def test_chat_stream_handles_long_question_via_post(
-    mock_ai_client, client, admin_auth_headers
-):
+def test_chat_stream_handles_long_question_via_post(mock_ai_client, client, admin_auth_headers):
     """
     Tests that a very long question is handled correctly without errors via a POST request.
     """

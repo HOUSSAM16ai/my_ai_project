@@ -13,10 +13,12 @@ import json
 
 import pytest
 
-pytestmark = pytest.mark.skip(reason="These tests are outdated and need to be rewritten for the new architecture.")
-import requests
+pytestmark = pytest.mark.skip(
+    reason="These tests are outdated and need to be rewritten for the new architecture."
+)
+import requests  # noqa: E402
 
-from app.core.ai_gateway import get_ai_client
+from app.core.ai_gateway import get_ai_client  # noqa: E402
 
 
 @pytest.fixture
@@ -41,9 +43,7 @@ def client(app_with_local_mock):
         yield c
 
 
-def test_chat_stream_gateway_connection_error(
-    admin_user, client, admin_auth_headers
-):
+def test_chat_stream_gateway_connection_error(admin_user, client, admin_auth_headers):
     """
     Tests how the endpoint handles a connection error from the AI service gateway.
     It should return a user-friendly error message within the SSE stream.
@@ -53,6 +53,7 @@ def test_chat_stream_gateway_connection_error(
     from unittest.mock import MagicMock
 
     mock_ai_client = MagicMock()
+
     async def failing_stream(messages):
         if False:
             yield
@@ -112,9 +113,7 @@ def test_chat_stream_gateway_not_configured(client, admin_auth_headers):
             del app.dependency_overrides[get_ai_client]
 
 
-def test_chat_stream_missing_question_payload(
-    client, admin_auth_headers
-):
+def test_chat_stream_missing_question_payload(client, admin_auth_headers):
     """
     Tests that making a POST request with an empty or missing 'question'
     results in a user-friendly error message.

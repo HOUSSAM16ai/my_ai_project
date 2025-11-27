@@ -46,9 +46,7 @@ async def chat_stream(request: dict):
 
     # --- Test Case Simulation ---
     if "trigger empty stream" in question:
-        return StreamingResponse(
-            stream_empty_response_fallback(), media_type="text/event-stream"
-        )
+        return StreamingResponse(stream_empty_response_fallback(), media_type="text/event-stream")
     if "This will cause a connection error" in question:
         return StreamingResponse(stream_with_error(), media_type="text/event-stream")
 
