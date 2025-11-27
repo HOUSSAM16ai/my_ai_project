@@ -113,31 +113,36 @@ class AppSettings(BaseSettings):
         Ensures compatibility between asyncpg, SQLAlchemy, and various providers (Supabase, Neon, Local).
         """
         if not v:
-            # Fallback for testing or local dev if completely missing
-            # In CI/Codespaces without secrets, this prevents crash-on-import, though app will fail later if DB needed.
             print(
                 "WARNING: No DATABASE_URL found. Injecting SQLite fallback for stability.",
                 file=sys.stderr,
             )
             return "sqlite+aiosqlite:///./test.db"
 
-        # 1. Auto-fix Scheme: sync -> async
+        # Only apply URL parsing logic to postgres URLs
+        if not v.startswith("postgres"):
+            return v
+
+        # Auto-fix Scheme: sync -> async
         if v.startswith("postgres://"):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
         elif v.startswith("postgresql://") and "postgresql+asyncpg" not in v:
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-        # 2. Auto-fix SSL Mode: libpq 'sslmode' -> asyncpg 'ssl'
-        # Crucial for Supabase/Neon in Codespaces
-        if "sslmode=require" in v:
-            # Replace with ssl=require for asyncpg compatibility if not already handled
-            v = v.replace("sslmode=require", "ssl=require")
+        # Robustly handle SSL parameters
+        from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
-        # 3. Handle 'disable' mode for local dev to avoid asyncpg errors
-        if "sslmode=disable" in v:
-            v = v.replace("sslmode=disable", "ssl=disable")
+        parts = urlsplit(v)
+        query_params = parse_qs(parts.query)
 
-        return v
+        ssl_mode = query_params.pop("sslmode", [None])[0]
+        if ssl_mode in ("require", "disable"):
+            query_params["ssl"] = [ssl_mode]
+
+        # Rebuild the URL
+        new_query = urlencode(query_params, doseq=True)
+        new_parts = parts._replace(query=new_query)
+        return urlunsplit(new_parts)
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
