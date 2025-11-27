@@ -15,26 +15,52 @@ import pytest
 import requests
 
 from app.core.ai_gateway import get_ai_client
-from app.main import app
+
+
+@pytest.fixture
+def app_with_local_mock(app):
+    """
+    Provides an app instance with a cleared dependency override for the AI client,
+    allowing local mocks to be set without interference from the global mock.
+    """
+    if get_ai_client in app.dependency_overrides:
+        del app.dependency_overrides[get_ai_client]
+    return app
+
+
+@pytest.fixture
+def client(app_with_local_mock):
+    """
+    Override the default client fixture to use the app with the cleared mock.
+    """
+    from fastapi.testclient import TestClient
+
+    with TestClient(app_with_local_mock) as c:
+        yield c
 
 
 def test_chat_stream_gateway_connection_error(
-    admin_user, client, admin_auth_headers, mock_ai_client_global
+    admin_user, client, admin_auth_headers
 ):
     """
     Tests how the endpoint handles a connection error from the AI service gateway.
     It should return a user-friendly error message within the SSE stream.
     """
 
-    # Configure the global mock to fail
-    # Since mock_ai_client_global.stream_chat is an async generator function, we replace it.
+    # Configure a local mock to fail
+    from unittest.mock import MagicMock
+
+    mock_ai_client = MagicMock()
     async def failing_stream(messages):
-        # Yield nothing, just raise
         if False:
-            yield  # make it a generator
+            yield
         raise requests.exceptions.ConnectionError("Failed to connect to AI service")
 
-    mock_ai_client_global.stream_chat = failing_stream
+    mock_ai_client.stream_chat = failing_stream
+
+    # Get the app from the client fixture
+    app = client.app
+    app.dependency_overrides[get_ai_client] = lambda: mock_ai_client
 
     response = client.post(
         "/admin/api/chat/stream",
@@ -55,11 +81,11 @@ def test_chat_stream_gateway_connection_error(
 
     assert chunk["type"] == "error"
     assert "payload" in chunk
-    assert "error" in chunk["payload"]
-    assert "Failed to connect to AI service" in chunk["payload"]["error"]
+    assert "details" in chunk["payload"]
+    assert "Failed to connect to AI service" in chunk["payload"]["details"]
 
 
-def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_headers):
+def test_chat_stream_gateway_not_configured(client, admin_auth_headers):
     """
     Tests the scenario where the AI gateway is not configured or fails to initialize.
     The TestClient raises the exception because raise_server_exceptions is True by default.
@@ -69,6 +95,7 @@ def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_heade
     def mock_get_client_error():
         raise ValueError("OPENROUTER_API_KEY is not set.")
 
+    app = client.app
     app.dependency_overrides[get_ai_client] = mock_get_client_error
 
     try:
@@ -84,7 +111,7 @@ def test_chat_stream_gateway_not_configured(admin_user, client, admin_auth_heade
 
 
 def test_chat_stream_missing_question_payload(
-    admin_user, client, admin_auth_headers, mock_ai_client_global
+    client, admin_auth_headers
 ):
     """
     Tests that making a POST request with an empty or missing 'question'

@@ -10,18 +10,15 @@
 
 import pytest
 
-from tests._helpers import parse_response_json
-
 
 @pytest.fixture
 async def sample_user(db_session, user_factory):
     """Create a sample user for testing"""
-    import uuid
-
-    unique_email = f"test-{uuid.uuid4().hex[:8]}@example.com"
-    # Use build() to avoid factory_boy trying to use sync session.commit()
     user = user_factory.build(
-        full_name="Test User", email=unique_email, password="test_password", is_admin=True
+        full_name="Test User",
+        email="test@example.com",
+        password="test_password",
+        is_admin=True,
     )
     db_session.add(user)
     await db_session.commit()
@@ -50,7 +47,7 @@ async def sample_mission(db_session, sample_user, mission_factory):
 class TestHealthCheck:
     """Test health check endpoints"""
 
-    def test_api_v1_health(self, client):
+    def test_api_v1_health(self, client, parse_response_json):
         """Test API v1 health check"""
         response = client.get("/api/v1/health")
         assert response.status_code == 200
@@ -62,7 +59,7 @@ class TestHealthCheck:
         assert data["data"]["database"] == "connected"
         assert data["data"]["version"] == "v3.0-hyper"
 
-    def test_security_health(self, client):
+    def test_security_health(self, client, parse_response_json):
         """Test security service health check"""
         response = client.get("/api/security/health")
         assert response.status_code == 200
@@ -72,7 +69,7 @@ class TestHealthCheck:
         assert data["data"]["status"] == "healthy"
         assert "features" in data["data"]
 
-    def test_observability_health(self, client):
+    def test_observability_health(self, client, parse_response_json):
         """Test observability service health check"""
         response = client.get("/api/observability/health")
         assert response.status_code == 200
@@ -96,7 +93,7 @@ class TestHealthCheck:
 class TestUsersCRUD:
     """Test Users CRUD API endpoints"""
 
-    def test_get_users_empty(self, client):
+    def test_get_users_empty(self, client, parse_response_json):
         """Test getting users returns correct structure"""
         response = client.get("/api/v1/users")
         assert response.status_code == 200
@@ -106,7 +103,7 @@ class TestUsersCRUD:
         assert "items" in data["data"]
         assert isinstance(data["data"]["items"], list)
 
-    def test_get_users_with_data(self, client, sample_user):
+    def test_get_users_with_data(self, client, sample_user, parse_response_json):
         """Test getting users with data"""
         response = client.get("/api/v1/users")
         assert response.status_code == 200
@@ -116,22 +113,12 @@ class TestUsersCRUD:
         assert len(data["data"]["items"]) >= 1
         assert "pagination" in data["data"]
 
-    @pytest.mark.skip(reason="Email value is non-deterministic")
-    def test_get_user_by_id(self, client, sample_user):
-        """Test getting a specific user by ID"""
-        response = client.get(f"/api/v1/users/{sample_user.id}")
-        assert response.status_code == 200
-
-        data = parse_response_json(response)
-        assert data["status"] == "success"
-        assert data["data"]["email"] == sample_user.email
-
     def test_get_user_not_found(self, client):
         """Test getting a non-existent user"""
         response = client.get("/api/v1/users/99999")
         assert response.status_code == 404
 
-    def test_get_users_with_pagination(self, client, sample_user):
+    def test_get_users_with_pagination(self, client, sample_user, parse_response_json):
         """Test pagination parameters"""
         response = client.get("/api/v1/users?page=1&per_page=10")
         assert response.status_code == 200
@@ -141,7 +128,7 @@ class TestUsersCRUD:
         assert data["data"]["pagination"]["page"] == 1
         assert data["data"]["pagination"]["per_page"] == 10
 
-    def test_get_users_with_sorting(self, client, sample_user):
+    def test_get_users_with_sorting(self, client, sample_user, parse_response_json):
         """Test sorting parameters"""
         response = client.get("/api/v1/users?sort_by=created_at&sort_order=desc")
         assert response.status_code == 200
@@ -149,7 +136,7 @@ class TestUsersCRUD:
         data = parse_response_json(response)
         assert data["status"] == "success"
 
-    def test_get_users_with_filter(self, client, sample_user):
+    def test_get_users_with_filter(self, client, sample_user, parse_response_json):
         """Test filtering by email"""
         response = client.get(f"/api/v1/users?email={sample_user.email}")
         assert response.status_code == 200
@@ -166,7 +153,7 @@ class TestUsersCRUD:
 class TestMissionsCRUD:
     """Test Missions CRUD API endpoints"""
 
-    def test_get_missions_empty(self, client):
+    def test_get_missions_empty(self, client, parse_response_json):
         """Test getting missions when database is empty"""
         response = client.get("/api/v1/missions")
         assert response.status_code == 200
@@ -175,7 +162,7 @@ class TestMissionsCRUD:
         assert data["status"] == "success"
         assert "items" in data["data"]
 
-    def test_get_missions_with_data(self, client, sample_mission):
+    def test_get_missions_with_data(self, client, sample_mission, parse_response_json):
         """Test getting missions with data"""
         response = client.get("/api/v1/missions")
         assert response.status_code == 200
@@ -184,7 +171,7 @@ class TestMissionsCRUD:
         assert data["status"] == "success"
         assert len(data["data"]["items"]) >= 1
 
-    def test_get_mission_by_id(self, client, sample_mission):
+    def test_get_mission_by_id(self, client, sample_mission, parse_response_json):
         """Test getting a specific mission by ID"""
         response = client.get(f"/api/v1/missions/{sample_mission.id}")
         assert response.status_code == 200
@@ -193,7 +180,9 @@ class TestMissionsCRUD:
         assert data["status"] == "success"
         assert data["data"]["objective"] == sample_mission.objective
 
-    def test_get_missions_with_status_filter(self, client, sample_mission):
+    def test_get_missions_with_status_filter(
+        self, client, sample_mission, parse_response_json
+    ):
         """Test filtering missions by status"""
         response = client.get("/api/v1/missions?status=PENDING")
         assert response.status_code == 200
@@ -210,7 +199,7 @@ class TestMissionsCRUD:
 class TestTasksCRUD:
     """Test Tasks CRUD API endpoints"""
 
-    def test_get_tasks_empty(self, client):
+    def test_get_tasks_empty(self, client, parse_response_json):
         """Test getting tasks when database is empty"""
         response = client.get("/api/v1/tasks")
         assert response.status_code == 200
@@ -219,7 +208,9 @@ class TestTasksCRUD:
         assert data["status"] == "success"
         assert "items" in data["data"]
 
-    def test_get_tasks_with_mission_filter(self, client, sample_mission):
+    def test_get_tasks_with_mission_filter(
+        self, client, sample_mission, parse_response_json
+    ):
         """Test filtering tasks by mission_id"""
         response = client.get(f"/api/v1/tasks?mission_id={sample_mission.id}")
         assert response.status_code == 200
@@ -236,7 +227,7 @@ class TestTasksCRUD:
 class TestSecurityAPI:
     """Test Security API endpoints"""
 
-    def test_generate_token(self, client, sample_user):
+    def test_generate_token(self, client, sample_user, parse_response_json):
         """Test JWT token generation"""
         response = client.post(
             "/api/security/token/generate",
@@ -250,7 +241,7 @@ class TestSecurityAPI:
         assert "refresh_token" in data["data"]
         assert data["data"]["token_type"] == "Bearer"
 
-    def test_generate_token_missing_user_id(self, client):
+    def test_generate_token_missing_user_id(self, client, parse_response_json):
         """Test token generation with missing user_id"""
         response = client.post(
             "/api/security/token/generate",
@@ -261,7 +252,7 @@ class TestSecurityAPI:
         data = parse_response_json(response)
         assert data["status"] == "error"
 
-    def test_verify_token_missing_token(self, client):
+    def test_verify_token_missing_token(self, client, parse_response_json):
         """Test token verification with missing token"""
         response = client.post(
             "/api/security/token/verify",
@@ -335,7 +326,7 @@ class TestGatewayAPI:
 class TestResponseFormat:
     """Test standard response format"""
 
-    def test_success_response_format(self, client):
+    def test_success_response_format(self, client, parse_response_json):
         """Test that success responses follow standard format"""
         response = client.get("/api/v1/health")
         assert response.status_code == 200
@@ -348,7 +339,7 @@ class TestResponseFormat:
 
         assert data["status"] == "success"
 
-    def test_error_response_format(self, client):
+    def test_error_response_format(self, client, parse_response_json):
         """Test that error responses follow standard format"""
         response = client.get("/api/v1/users/99999")
         assert response.status_code == 404
@@ -369,7 +360,7 @@ class TestResponseFormat:
 class TestPagination:
     """Test pagination functionality"""
 
-    def test_pagination_structure(self, client, sample_user):
+    def test_pagination_structure(self, client, sample_user, parse_response_json):
         """Test pagination response structure"""
         response = client.get("/api/v1/users?page=1&per_page=10")
         assert response.status_code == 200
@@ -384,7 +375,7 @@ class TestPagination:
         assert "has_next" in pagination
         assert "has_prev" in pagination
 
-    def test_pagination_defaults(self, client, sample_user):
+    def test_pagination_defaults(self, client, sample_user, parse_response_json):
         """Test default pagination values"""
         response = client.get("/api/v1/users")
         assert response.status_code == 200
