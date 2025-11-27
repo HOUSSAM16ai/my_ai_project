@@ -24,7 +24,7 @@ from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any, TypeVar
+from typing import Any
 
 from fastapi import Request, Response
 
@@ -413,10 +413,7 @@ observability_service = APIObservabilityService(sla_target_ms=20.0)
 # ======================================================================================
 # DECORATORS (Moved from legacy/flask or added for completeness)
 # ======================================================================================
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-def monitor_performance(func: F) -> F:
+def monitor_performance(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator to monitor the performance of an endpoint.
     Records metrics to the global observability service.
