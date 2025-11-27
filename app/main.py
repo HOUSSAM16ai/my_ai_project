@@ -4,20 +4,20 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
-# Load .env file before anything else
-load_dotenv()
 
 from app.core.di import get_settings
 from app.kernel import RealityKernel
+
+# Load .env file before anything else
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 # --- Kernel Singleton ---
 # This ensures the kernel is created only once.
 _kernel_instance = None
+
 
 def get_kernel():
     global _kernel_instance
@@ -26,6 +26,7 @@ def get_kernel():
         _kernel_instance = RealityKernel(settings.model_dump())
     return _kernel_instance
 
+
 def create_app() -> FastAPI:
     """
     Application factory. Creates and configures the FastAPI application
@@ -33,7 +34,7 @@ def create_app() -> FastAPI:
     """
     kernel = get_kernel()
     app = kernel.get_app()
-    app.kernel = kernel # type: ignore
+    app.kernel = kernel  # type: ignore
 
     @app.get("/health")
     async def health():
@@ -44,13 +45,16 @@ def create_app() -> FastAPI:
     if os.path.exists(static_files_dir):
         app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
     else:
-        logger.warning(f"Static files directory not found: {static_files_dir}. Frontend will not be served.")
+        logger.warning(
+            f"Static files directory not found: {static_files_dir}. Frontend will not be served."
+        )
 
     return app
 
+
 # The final, woven application instance.
 app = create_app()
-kernel = app.kernel # Expose for legacy tests
+kernel = app.kernel  # Expose for legacy tests
 
 if not isinstance(app, FastAPI):
     raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")

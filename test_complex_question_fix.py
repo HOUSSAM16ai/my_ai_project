@@ -84,9 +84,9 @@ def test_forge_new_code_with_mock_error():
             # Short question
             short_result = service.forge_new_code("Short question")
             assert short_result.get("status") == "success"
-            assert (
-                short_result["meta"]["max_tokens_used"] == 4000
-            ), "Expected 4000 tokens for short question"
+            assert short_result["meta"]["max_tokens_used"] == 4000, (
+                "Expected 4000 tokens for short question"
+            )
             assert short_result["meta"]["is_complex"] is False
             print("      ✅ Short question uses 4000 tokens")
 
@@ -94,9 +94,9 @@ def test_forge_new_code_with_mock_error():
             complex_question = "Complex question " * 300  # ~5100 chars
             complex_result = service.forge_new_code(complex_question)
             assert complex_result.get("status") == "success"
-            assert (
-                complex_result["meta"]["max_tokens_used"] == 16000
-            ), "Expected 16000 tokens for complex question"
+            assert complex_result["meta"]["max_tokens_used"] == 16000, (
+                "Expected 16000 tokens for complex question"
+            )
             assert complex_result["meta"]["is_complex"] is True
             print("      ✅ Complex question uses 16000 tokens")
 

@@ -1,6 +1,7 @@
-
 import asyncio
+
 from playwright.async_api import async_playwright, expect
+
 
 async def main():
     async with async_playwright() as p:
@@ -22,7 +23,9 @@ async def main():
             await page.click('button[type="submit"]')
 
             print("Waiting for admin dashboard...")
-            await expect(page.locator("h2:has-text('Overmind CLI Mindgate')")).to_be_visible(timeout=10000)
+            await expect(page.locator("h2:has-text('Overmind CLI Mindgate')")).to_be_visible(
+                timeout=10000
+            )
             print("SUCCESS: Admin dashboard is visible!")
 
             await page.screenshot(path="final_verification.png")
@@ -34,6 +37,7 @@ async def main():
             raise
         finally:
             await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

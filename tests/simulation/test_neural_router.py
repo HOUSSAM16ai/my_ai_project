@@ -83,9 +83,9 @@ async def test_adaptive_routing_logic():
     score_a = node_a.reliability_score
     score_b = node_b.reliability_score
 
-    assert (
-        score_b > score_a
-    ), f"Reliable node should outscore failing node. A: {score_a}, B: {score_b}"
+    assert score_b > score_a, (
+        f"Reliable node should outscore failing node. A: {score_a}, B: {score_b}"
+    )
     assert prioritized_v2[0].model_id == "node-b"
 
 

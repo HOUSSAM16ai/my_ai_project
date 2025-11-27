@@ -1,5 +1,4 @@
 # tests/smoke/test_api_smoke.py
-import pytest
 from fastapi.testclient import TestClient
 
 

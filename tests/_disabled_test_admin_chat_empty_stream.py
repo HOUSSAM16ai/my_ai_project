@@ -102,9 +102,9 @@ async def test_admin_chat_empty_response_persistence(
 
         # Asserting that we EXPECT an assistant message (error or empty)
         # If this fails, it confirms the bug that no feedback is saved.
-        assert (
-            len(asst_msgs) > 0
-        ), "Expected an assistant message (even if empty or error) to be persisted."
+        assert len(asst_msgs) > 0, (
+            "Expected an assistant message (even if empty or error) to be persisted."
+        )
 
         # With the fix, we expect the specific error message
         assert asst_msgs[0].content == "Error: No response received from AI service."
