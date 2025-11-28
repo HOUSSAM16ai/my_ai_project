@@ -62,16 +62,15 @@ jobs:
   preview-check:
     name: Preview & Codespaces Guardian
     runs-on: ubuntu-latest
-    needs: quality-and-test # Run after quality checks to save resources if they fail, or parallel if speed preferred. Parallel is better for speed.
-    if: always() # Run even if quality fails? Maybe not. Let's remove 'needs' for parallel execution.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Build frontend
         run: |
@@ -81,35 +80,37 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
-      - name: Install Python deps
-        run: pip install -r requirements.txt
-
-      - name: Start backend (dev)
-        env:
-          ENVIRONMENT: development
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
-          SECRET_KEY: dummy
-          # Ensure uvicorn runs in dev mode
+      - name: Install Python dependencies
         run: |
-          # Start uvicorn in background
-          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &
-          echo $! > /tmp/uvicorn.pid
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run codespace guardian
+      - name: Export ENV (dev)
+        run: |
+          echo "ENVIRONMENT=development" >> $GITHUB_ENV
+          echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> $GITHUB_ENV
+          echo "SECRET_KEY=ci-dummy" >> $GITHUB_ENV
+
+      - name: Start backend (uvicorn) and capture logs/pid
+        run: |
+          mkdir -p /tmp
+          # Start uvicorn on 127.0.0.1 to match guardian default
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/uvicorn.log 2>&1 &
+          echo $! > /tmp/uvicorn.pid
+          # give uvicorn a short moment before checks begin
+          sleep 1
+
+      - name: Run guardian checks
         run: |
           chmod +x scripts/codespace_guardian.sh
-          ./scripts/codespace_guardian.sh 8000
+          ./scripts/codespace_guardian.sh 127.0.0.1 8000 /tmp/uvicorn.log
 
-      - name: Stop backend
+      - name: Always cleanup and show logs (on failure/info)
         if: always()
-        run: if [ -f /tmp/uvicorn.pid ]; then kill $(cat /tmp/uvicorn.pid) || true; fi
-
-      - name: Upload Uvicorn Logs on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: uvicorn-logs
-          path: /tmp/uvicorn.log
+        run: |
+          echo "=== uvicorn log (last 200 lines) ==="
+          test -f /tmp/uvicorn.log && tail -n 200 /tmp/uvicorn.log || echo "(no uvicorn log)"
+          if [ -f /tmp/uvicorn.pid ]; then kill $(cat /tmp/uvicorn.pid) || true; fi
