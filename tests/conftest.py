@@ -17,7 +17,11 @@ def test_app():
     """
     Creates a FastAPI application instance for the test session.
     """
+    import app.main
     from app.main import create_app
+
+    # Force reset of the kernel singleton to ensure we use test settings
+    app.main._kernel_instance = None
 
     # Create a temporary directory for static files
     tmpdir = tempfile.mkdtemp()

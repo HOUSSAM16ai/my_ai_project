@@ -17,8 +17,10 @@ def test_root(client: TestClient):
 
 def test_openapi_docs(client: TestClient):
     response = client.get("/docs")
-    # This endpoint should now return a 404, as it's not part of the SPA's catch-all.
-    assert response.status_code == 404
+    # The SPA catch-all now handles all non-API routes, so /docs serves index.html (200 OK)
+    # even when FastAPI docs are disabled.
+    assert response.status_code == 200
+    assert "<!DOCTYPE html>" in response.text
 
 
 def test_api_health_v1(client: TestClient):

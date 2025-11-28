@@ -5,6 +5,9 @@ from app.main import create_app
 
 @pytest.fixture
 def client():
+    # Force reset of the kernel singleton to ensure we use real static files
+    import app.main
+    app.main._kernel_instance = None
     app = create_app()
     return TestClient(app)
 

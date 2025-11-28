@@ -53,12 +53,12 @@ def create_app(static_dir: str | None = None) -> FastAPI:
                 app.mount(f"/{folder}", StaticFiles(directory=folder_path), name=folder)
 
         # 2. Serve index.html at root
-        @app.get("/")
+        @app.api_route("/", methods=["GET", "HEAD"])
         async def serve_root():
             return FileResponse(os.path.join(static_files_dir, "index.html"))
 
         # 3. SPA Fallback: serve index.html for non-API routes
-        @app.get("/{full_path:path}")
+        @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
         async def spa_fallback(full_path: str):
             # If path starts with api, return 404 (don't serve HTML)
             if full_path.startswith("api"):
