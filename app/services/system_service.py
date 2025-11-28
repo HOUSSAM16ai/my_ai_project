@@ -11,5 +11,10 @@ class SystemService:
         except Exception:
             return "unhealthy"
 
+    async def is_database_connected(self, db: AsyncSession) -> bool:
+        """Checks if the database is connected."""
+        status = await self.check_database_status(db)
+        return status == "healthy"
+
 
 system_service = SystemService()
