@@ -16,7 +16,10 @@ from sqlalchemy import select
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
+from app.core.di import get_logger
 from app.models import AdminConversation, AdminMessage, MessageRole
+
+logger = get_logger(__name__)
 
 # --- Configuration ---
 ALGORITHM = "HS256"
@@ -36,6 +39,11 @@ router = APIRouter(
 
 
 # --- Security ---
+def get_session_factory():
+    """Dependency to get the global session factory."""
+    return async_session_factory
+
+
 def get_current_user_id(request: Request) -> int:
     """
     Retrieves the current user ID from the Authorization header.
@@ -69,6 +77,7 @@ async def chat_stream(
     ai_client: AIClient = Depends(get_ai_client),
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
+    session_factory=Depends(get_session_factory),
 ):
     """
     Handles POST requests to initiate a chat stream.
@@ -147,7 +156,7 @@ async def chat_stream(
             try:
                 # Use a FRESH session because the original 'db' dependency
                 # might be closed if the request was cancelled.
-                async with async_session_factory() as session:
+                async with session_factory() as session:
                     assistant_msg = AdminMessage(
                         conversation_id=conversation.id,
                         role=MessageRole.ASSISTANT,
@@ -157,7 +166,7 @@ async def chat_stream(
                     await session.commit()
             except Exception as db_e:
                 # Log error but ensure we don't crash the loop (though this is end of life anyway)
-                print(f"Failed to save assistant message: {db_e}")
+                logger.error(f"Failed to save assistant message: {db_e}")
 
         try:
             # Use the AI client directly but format output to match what StreamingService might expect if we used it fully.
