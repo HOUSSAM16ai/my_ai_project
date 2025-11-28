@@ -56,12 +56,13 @@ def create_app(static_dir: str | None = None) -> FastAPI:
 app = create_app()
 kernel = app.kernel  # Expose for legacy tests
 
-from app.middleware.remove_csp_dev import RemoveBlockingHeadersMiddleware
+from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 
 app.add_middleware(RemoveBlockingHeadersMiddleware)
 # log startup
 if hasattr(app, "logger"):
-    app.logger.info("RemoveBlockingHeadersMiddleware enabled=%s", RemoveBlockingHeadersMiddleware(None).enabled)
+    # Instantiate with app to avoid None, though Pure ASGI logic tolerates None for 'app' during check
+    app.logger.info("RemoveBlockingHeadersMiddleware enabled=%s", RemoveBlockingHeadersMiddleware(app).enabled)
 
 if not isinstance(app, FastAPI):
     raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")
