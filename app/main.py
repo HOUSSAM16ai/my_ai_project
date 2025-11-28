@@ -1,10 +1,12 @@
 # app/main.py
 import logging
 import os
+import pathlib
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from app.core.di import get_settings
 from app.kernel import RealityKernel
@@ -40,14 +42,44 @@ def create_app(static_dir: str | None = None) -> FastAPI:
     async def health():
         return {"status": "ok", "service": "backend running"}
 
-    # --- Static Files ---
-    static_files_dir = static_dir or os.path.join(os.getcwd(), "app/static/dist")
-    if os.path.exists(static_files_dir):
-        app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
+    # --- Static Files & SPA Support ---
+    # Determine the directory where built assets are located (e.g., app/static/dist)
+    base_dir = pathlib.Path(__file__).parent.resolve()
+    # If static_dir is provided (e.g. testing), use it. Otherwise default to app/static/dist
+    dist_dir = pathlib.Path(static_dir) if static_dir else base_dir / "static" / "dist"
+
+    # 1. Mount assets explicitly. Vite builds assets to /assets, so we serve them at /assets.
+    assets_dir = dist_dir / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        logger.info(f"Mounted /assets from {assets_dir}")
     else:
-        logger.warning(
-            f"Static files directory not found: {static_files_dir}. Frontend will not be served."
-        )
+        logger.warning(f"Assets directory not found: {assets_dir}. SPA may not render correctly.")
+
+    # 2. Serve index.html at root
+    index_file = dist_dir / "index.html"
+
+    @app.get("/", response_class=HTMLResponse)
+    async def read_index():
+        if index_file.exists():
+            return FileResponse(index_file)
+        return HTMLResponse("<h1>Backend Running. Frontend not built.</h1>", status_code=404)
+
+    # 3. SPA Catch-All: For any other path, check if it's a file in dist, else serve index.html
+    @app.get("/{full_path:path}", response_class=HTMLResponse)
+    async def spa_catch_all(full_path: str):
+        # Prevent accessing API routes via catch-all (though specific routes match first)
+        if full_path.startswith("api/") or full_path.startswith("system/"):
+             return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+        candidate = dist_dir / full_path
+        if candidate.exists() and candidate.is_file():
+            return FileResponse(candidate)
+
+        # Fallback to index.html for client-side routing
+        if index_file.exists():
+            return FileResponse(index_file)
+        return JSONResponse({"detail": "Frontend not found"}, status_code=404)
 
     return app
 

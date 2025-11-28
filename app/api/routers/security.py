@@ -3,7 +3,7 @@ import datetime
 import logging
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,8 @@ from app.config.settings import get_settings
 from app.core.database import get_db
 from app.models import User
 
-router = APIRouter(prefix="/api/security", tags=["Security"])
+# Prefix is handled by the blueprint ("api/security")
+router = APIRouter(tags=["Security"])
 logger = logging.getLogger(__name__)
 
 
@@ -100,7 +101,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24),
     }
 
-    token = jwt.encode(payload, settings.SECRET_key, algorithm="HS256")
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
     return {
         "status": "success",
@@ -137,3 +138,36 @@ async def verify_token(request: TokenVerifyRequest):
     if not request.token:
         raise HTTPException(status_code=400, detail="token required")
     return {"status": "success", "data": {"valid": True}}
+
+@router.get("/user/me", summary="Get Current User")
+async def get_current_user_me(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Get the currently logged-in user based on Authorization header.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+
+    token = auth_header.split(" ")[1]
+
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id = int(payload.get("sub"))
+    except Exception as e:
+        logger.error(f"Token validation failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "is_admin": user.is_admin
+    }
