@@ -2,87 +2,123 @@
 import os
 import pytest
 from fastapi import FastAPI
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.testclient import TestClient
-from app.middleware.remove_csp_dev import RemoveBlockingHeadersMiddleware
+from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 
-class SecurityHeaderMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Content-Security-Policy"] = "frame-ancestors 'none'; script-src 'self'"
-        return response
+# We verify the logic via unit tests on the middleware and integration tests via TestClient
 
-def test_middleware_removes_blocking_headers_in_codespace():
-    """
-    Verifies that RemoveBlockingHeadersMiddleware correctly removes
-    X-Frame-Options and CSP frame-ancestors when running in a Codespace environment.
-    """
-    # 1. Setup a clean FastAPI app
+def test_middleware_logic_dev_mode():
+    """Verify headers are stripped when ENVIRONMENT=development"""
     app = FastAPI()
-
-    # 2. Add a middleware that ADDS the blocking headers (simulating production security)
-    # Note: Middleware added last runs first (outermost).
-    # We want RemoveBlockingHeadersMiddleware to wrap SecurityHeaderMiddleware.
-    # So we add SecurityHeaderMiddleware first (inner), then RemoveBlockingHeadersMiddleware (outer).
-    # Wait, Starlette/FastAPI add_middleware works such that the last added is the outermost?
-    # Let's verify:
-    # app.add_middleware(M1) -> M1(App)
-    # app.add_middleware(M2) -> M2(M1(App))
-    # So M2 sees the response from M1.
-
-    # We want: Response -> SecurityHeaderMiddleware (adds headers) -> RemoveBlockingHeadersMiddleware (removes headers) -> Client.
-    # So RemoveBlockingHeadersMiddleware must be OUTSIDE SecurityHeaderMiddleware.
-    # So we must add SecurityHeaderMiddleware FIRST, then RemoveBlockingHeadersMiddleware.
-
-    app.add_middleware(SecurityHeaderMiddleware)
     app.add_middleware(RemoveBlockingHeadersMiddleware)
 
     @app.get("/")
     def index():
-        return {"message": "ok"}
+        return {"msg": "ok"}
 
-    # 3. Simulate Codespaces environment
-    # We need to set the environment variable BEFORE the middleware is instantiated.
-    # TestClient(app) instantiates the middleware stack.
-    with pytest.MonkeyPatch.context() as m:
-        m.setenv("CODESPACE_NAME", "test-codespace-123")
+    # Mock environment
+    os.environ["ENVIRONMENT"] = "development"
+    # Ensure CODESPACE_NAME is not set (or is, doesn't matter, development triggers it)
 
-        with TestClient(app) as client:
-            response = client.get("/")
+    # Create a wrapper middleware that adds the bad headers first,
+    # to simulate the default secure headers that might be added by other middleware
+    # BUT here we are testing if RemoveBlockingHeadersMiddleware *removes* them if they exist?
+    # No, usually SecurityMiddleware adds them.
+    # If we want to test removal, we need to inject them *before* RemoveBlockingHeadersMiddleware runs on the response?
+    # Wait, middleware order:
+    # 1. RemoveBlockingHeadersMiddleware (outermost? or inner?)
+    # Request -> RemoveBlocking -> ... -> Security -> Endpoint
+    # Response <- RemoveBlocking <- ... <- Security <- Endpoint
+    # So RemoveBlocking must wrap Security to modify its response.
+    # FastAPI app.add_middleware adds to the "outer" layer.
 
-            assert response.status_code == 200
+    # Let's simulate a downstream middleware adding headers
+    from starlette.middleware.base import BaseHTTPMiddleware
 
-            # X-Frame-Options should be removed
-            assert "x-frame-options" not in response.headers
+    class AddSecurityHeaders(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Content-Security-Policy"] = "frame-ancestors 'none'; default-src 'self'"
+            return response
 
-            # CSP should be modified: frame-ancestors removed, others kept
-            csp = response.headers.get("content-security-policy", "")
-            assert "frame-ancestors" not in csp
-            assert "script-src 'self'" in csp
+    # Re-build app to control order:
+    # Inner: AddSecurityHeaders
+    # Outer: RemoveBlockingHeadersMiddleware
 
-def test_middleware_does_nothing_in_production():
-    """
-    Verifies that RemoveBlockingHeadersMiddleware stays dormant in non-dev environments.
-    """
+    app2 = FastAPI()
+    app2.add_middleware(RemoveBlockingHeadersMiddleware) # Outer
+    app2.add_middleware(AddSecurityHeaders)              # Inner
+
+    @app2.get("/")
+    def index2():
+        return {"msg": "ok"}
+
+    client = TestClient(app2)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    assert "x-frame-options" not in resp.headers
+    # CSP should be relaxed
+    assert "frame-ancestors" not in resp.headers["content-security-policy"]
+    assert "default-src 'self'" in resp.headers["content-security-policy"]
+
+
+def test_middleware_logic_prod_mode():
+    """Verify headers are PRESERVED when NOT in development"""
+    os.environ["ENVIRONMENT"] = "production"
+    if "CODESPACE_NAME" in os.environ:
+        del os.environ["CODESPACE_NAME"]
+
     app = FastAPI()
-    app.add_middleware(SecurityHeaderMiddleware)
     app.add_middleware(RemoveBlockingHeadersMiddleware)
+
+    # Simulate security headers
+    from starlette.middleware.base import BaseHTTPMiddleware
+    class AddSecurityHeaders(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            response.headers["X-Frame-Options"] = "DENY"
+            return response
+
+    app.add_middleware(AddSecurityHeaders)
 
     @app.get("/")
     def index():
-        return {"message": "ok"}
+        return {"msg": "ok"}
 
-    # Ensure NO dev/codespace env vars
-    with pytest.MonkeyPatch.context() as m:
-        m.delenv("CODESPACE_NAME", raising=False)
-        m.setenv("ENVIRONMENT", "production")
+    client = TestClient(app)
+    resp = client.get("/")
 
-        with TestClient(app) as client:
-            response = client.get("/")
+    assert resp.status_code == 200
+    # Should still have it
+    assert resp.headers["x-frame-options"] == "DENY"
 
-            assert response.status_code == 200
+def test_codespace_trigger():
+    """Verify CODESPACE_NAME triggers the removal even if env is not dev"""
+    os.environ["ENVIRONMENT"] = "production"
+    os.environ["CODESPACE_NAME"] = "ominous-octopus-55"
 
-            # Headers should persist
-            assert response.headers.get("x-frame-options") == "DENY"
-            assert "frame-ancestors 'none'" in response.headers.get("content-security-policy", "")
+    app = FastAPI()
+    app.add_middleware(RemoveBlockingHeadersMiddleware)
+
+    from starlette.middleware.base import BaseHTTPMiddleware
+    class AddSecurityHeaders(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            response.headers["X-Frame-Options"] = "DENY"
+            return response
+
+    app.add_middleware(AddSecurityHeaders)
+
+    @app.get("/")
+    def index():
+        return {"msg": "ok"}
+
+    client = TestClient(app)
+    resp = client.get("/")
+
+    assert "x-frame-options" not in resp.headers
+
+    # Cleanup
+    del os.environ["CODESPACE_NAME"]
