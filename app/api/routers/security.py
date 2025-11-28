@@ -12,7 +12,8 @@ from app.config.settings import get_settings
 from app.core.database import get_db
 from app.models import User
 
-router = APIRouter(prefix="/api/security", tags=["Security"])
+# Prefix removed because the blueprint handles it
+router = APIRouter(prefix="", tags=["Security"])
 logger = logging.getLogger(__name__)
 
 
