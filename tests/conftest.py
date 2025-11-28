@@ -153,7 +153,8 @@ async def async_client(test_app):
     """
     Provides an asynchronous client for making requests to the app.
     """
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    from httpx import ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         yield client
 
 
