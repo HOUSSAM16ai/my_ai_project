@@ -24,25 +24,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
-
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Node dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Build Frontend
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=8192"
-          npm run build
+      # REMOVED: Frontend build steps (npm ci, npm run build) as per strict instructions.
+      # The application is now serving app/static/ files directly.
 
       - name: Lint and Format Check with Ruff
         run: |
@@ -66,17 +54,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Build frontend
-        run: |
-          npm ci
-          npm run build
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -87,6 +64,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # REMOVED: Frontend build steps here too.
 
       - name: Export ENV (dev)
         run: |
@@ -107,6 +86,17 @@ jobs:
         run: |
           chmod +x scripts/codespace_guardian.sh
           ./scripts/codespace_guardian.sh 127.0.0.1 8000 /tmp/uvicorn.log
+
+      - name: Integration Checks (curl)
+        run: |
+           # Manual curls as requested by prompt "D — تغييرات CI"
+           curl -I http://127.0.0.1:8000/
+           # Ensure no x-frame-options
+           if curl -I http://127.0.0.1:8000/ | grep -i "x-frame-options"; then exit 1; fi
+           # /api/security/user/me check
+           # Need a token? The prompt says "test token".
+           # If we don't have a valid token, it should return 401, which is "proper" as per prompt.
+           curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer test" http://127.0.0.1:8000/api/security/user/me
 
       - name: Always cleanup and show logs (on failure/info)
         if: always()

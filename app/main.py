@@ -1,10 +1,11 @@
 # app/main.py
 import logging
 import os
+import pathlib
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.di import get_settings
@@ -43,44 +44,61 @@ def create_app(static_dir: str | None = None) -> FastAPI:
 
     # --- Static Files & SPA Support ---
     # User requirement: Serve app/static directly. No dist/. No build.
-    static_files_dir = static_dir or os.path.join(os.getcwd(), "app/static")
+    # 1. Resolve static_dir
+    static_files_dir = pathlib.Path(static_dir or os.path.join(os.getcwd(), "app/static")).resolve()
 
-    if os.path.exists(static_files_dir):
-        # 1. Mount specific assets folders (css, js, src) so they are accessible
+    if static_files_dir.exists() and static_files_dir.is_dir():
+        # 2. Mount explicitly subfolders if they exist
         for folder in ["css", "js", "src"]:
-            folder_path = os.path.join(static_files_dir, folder)
-            if os.path.isdir(folder_path):
-                app.mount(f"/{folder}", StaticFiles(directory=folder_path), name=folder)
+            folder_path = static_files_dir / folder
+            if folder_path.is_dir():
+                app.mount(f"/{folder}", StaticFiles(directory=str(folder_path)), name=folder)
 
-        # 2. Serve index.html at root
-        @app.get("/")
-        async def serve_root():
-            return FileResponse(os.path.join(static_files_dir, "index.html"))
+        # 3. Serve index.html at root - Support HEAD for availability checks
+        @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
+        async def serve_root(request: Request):
+            index_path = static_files_dir / "index.html"
+            if index_path.exists() and index_path.is_file():
+                return FileResponse(str(index_path))
+            return HTMLResponse("<html><body><h1>404 - index.html not found</h1></body></html>", status_code=404)
 
-        # 3. SPA Fallback: serve index.html for non-API routes
-        @app.get("/{full_path:path}")
-        async def spa_fallback(full_path: str):
-            # If path starts with api, return 404 (don't serve HTML)
-            if full_path.startswith("api"):
+        # 4. SPA catch-all route - Support HEAD
+        @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], response_class=HTMLResponse)
+        async def spa_fallback(request: Request, full_path: str):
+            # If path starts with /api/ (or full_path.lstrip("/").startswith("api")) -> raise HTTPException(404)
+            if full_path.startswith("api") or full_path.lstrip("/").startswith("api"):
+                # Use JSON 404 for API
                 raise HTTPException(status_code=404, detail="Not Found")
 
-            # Safety check for directory traversal
-            potential_path = os.path.normpath(os.path.join(static_files_dir, full_path))
-            if not potential_path.startswith(static_files_dir):
-                # traversal attempt
+            # Normalize requested path and reject directory traversal
+            try:
+                requested_path = (static_files_dir / full_path).resolve()
+            except Exception:
+                 raise HTTPException(status_code=404, detail="Not Found")
+
+            if not str(requested_path).startswith(str(static_files_dir)):
                 raise HTTPException(status_code=404, detail="Not Found")
 
-            # If a specific file exists in static (e.g. /superhuman_dashboard.html), serve it
-            if os.path.isfile(potential_path):
-                return FileResponse(potential_path)
+            # If resolved path is a file -> return that file
+            if requested_path.is_file():
+                return FileResponse(str(requested_path))
 
-            # Otherwise serve index.html
-            return FileResponse(os.path.join(static_files_dir, "index.html"))
+            # Else -> return index.html (if exists)
+            index_path = static_files_dir / "index.html"
+            if index_path.exists() and index_path.is_file():
+                return FileResponse(str(index_path))
+
+            # Else return clear HTML 404 message
+            return HTMLResponse("<html><body><h1>404 - Not Found</h1></body></html>", status_code=404)
 
     else:
         logger.warning(
             f"Static files directory not found: {static_files_dir}. Frontend will not be served."
         )
+        @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
+        async def serve_root_missing():
+             return HTMLResponse("<html><body><h1>Static directory missing</h1></body></html>", status_code=404)
+
 
     return app
 
