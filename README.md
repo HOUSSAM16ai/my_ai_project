@@ -45,6 +45,16 @@ If you see a **White Page** or blank screen in the Codespaces preview, but the `
     ```
     This script verifies that the security headers blocking iframe embedding (`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`) are correctly relaxed for the preview environment.
 
+**How it works:**
+The application includes a development-only middleware (`app/middleware/remove_blocking_headers.py`) that:
+*   Removes `X-Frame-Options`.
+*   Relaxes `Content-Security-Policy` by removing `frame-ancestors`.
+
+This allows the application to be embedded in the Codespaces preview iframe. **This relaxation is strictly disabled in production.**
+
+**Rollback:**
+To disable this behavior, set `ENVIRONMENT=production` or remove `RemoveBlockingHeadersMiddleware` from `app/main.py`.
+
 ### 2️⃣ Manual Setup (For Advanced Users) | الإعداد اليدوي
 
 If you prefer to set up the environment manually, follow these steps:

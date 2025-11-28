@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "fix/*"]
   pull_request:
     branches: ["main"]
 
@@ -58,3 +58,58 @@ jobs:
       - name: Run Pytest
         run: |
           python -m pytest -v --cov=app --cov-report=xml --durations=10 --maxfail=5
+
+  preview-check:
+    name: Preview & Codespaces Guardian
+    runs-on: ubuntu-latest
+    needs: quality-and-test # Run after quality checks to save resources if they fail, or parallel if speed preferred. Parallel is better for speed.
+    if: always() # Run even if quality fails? Maybe not. Let's remove 'needs' for parallel execution.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          cache: 'pip'
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Start backend (dev)
+        env:
+          ENVIRONMENT: development
+          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          SECRET_KEY: dummy
+          # Ensure uvicorn runs in dev mode
+        run: |
+          # Start uvicorn in background
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &
+          echo $! > /tmp/uvicorn.pid
+
+      - name: Run codespace guardian
+        run: |
+          chmod +x scripts/codespace_guardian.sh
+          ./scripts/codespace_guardian.sh 8000
+
+      - name: Stop backend
+        if: always()
+        run: if [ -f /tmp/uvicorn.pid ]; then kill $(cat /tmp/uvicorn.pid) || true; fi
+
+      - name: Upload Uvicorn Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uvicorn-logs
+          path: /tmp/uvicorn.log
