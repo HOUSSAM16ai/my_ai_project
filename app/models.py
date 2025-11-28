@@ -207,9 +207,9 @@ class JSONText(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        if isinstance(value, dict | list):
-            return json.dumps(value)
-        return str(value)
+        # Always serialize to JSON string to preserve type info
+        # This handles dict, list, int, bool, and str correctly
+        return json.dumps(value)
 
     def process_result_value(self, value, dialect):
         if value is None:
