@@ -68,14 +68,14 @@ class FingerprintAnalyzer:
         length = len(prompt)
 
         # 1. Check for high-complexity indicators first
-        if self.math_keywords.search(prompt_lower):
-            return CognitiveComplexity.LOGICAL_REASONING
-
         if self.creative_keywords.search(prompt_lower):
             return CognitiveComplexity.CREATIVE
 
         if self.code_keywords.search(prompt) or "```" in prompt:
             return CognitiveComplexity.DEEP_THOUGHT
+
+        if self.math_keywords.search(prompt_lower):
+            return CognitiveComplexity.LOGICAL_REASONING
 
         # 2. Check for mid-level complexity
         if self.reasoning_keywords.search(prompt_lower) or length > 700:
