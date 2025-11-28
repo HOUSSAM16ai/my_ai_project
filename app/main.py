@@ -3,7 +3,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.di import get_settings
@@ -40,10 +41,42 @@ def create_app(static_dir: str | None = None) -> FastAPI:
     async def health():
         return {"status": "ok", "service": "backend running"}
 
-    # --- Static Files ---
-    static_files_dir = static_dir or os.path.join(os.getcwd(), "app/static/dist")
+    # --- Static Files & SPA Support ---
+    # User requirement: Serve app/static directly. No dist/. No build.
+    static_files_dir = static_dir or os.path.join(os.getcwd(), "app/static")
+
     if os.path.exists(static_files_dir):
-        app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
+        # 1. Mount specific assets folders (css, js, src) so they are accessible
+        for folder in ["css", "js", "src"]:
+            folder_path = os.path.join(static_files_dir, folder)
+            if os.path.isdir(folder_path):
+                app.mount(f"/{folder}", StaticFiles(directory=folder_path), name=folder)
+
+        # 2. Serve index.html at root
+        @app.get("/")
+        async def serve_root():
+            return FileResponse(os.path.join(static_files_dir, "index.html"))
+
+        # 3. SPA Fallback: serve index.html for non-API routes
+        @app.get("/{full_path:path}")
+        async def spa_fallback(full_path: str):
+            # If path starts with api, return 404 (don't serve HTML)
+            if full_path.startswith("api"):
+                raise HTTPException(status_code=404, detail="Not Found")
+
+            # Safety check for directory traversal
+            potential_path = os.path.normpath(os.path.join(static_files_dir, full_path))
+            if not potential_path.startswith(static_files_dir):
+                # traversal attempt
+                raise HTTPException(status_code=404, detail="Not Found")
+
+            # If a specific file exists in static (e.g. /superhuman_dashboard.html), serve it
+            if os.path.isfile(potential_path):
+                return FileResponse(potential_path)
+
+            # Otherwise serve index.html
+            return FileResponse(os.path.join(static_files_dir, "index.html"))
+
     else:
         logger.warning(
             f"Static files directory not found: {static_files_dir}. Frontend will not be served."
