@@ -67,7 +67,9 @@ def register_db_commands(root):
                     session.add(user)
                     logger.info(f"User with email {admin_email} created.")
                 else:
-                    logger.info(f"User with email {admin_email} already exists. Updating password...")
+                    logger.info(
+                        f"User with email {admin_email} already exists. Updating password..."
+                    )
                     user.set_password(admin_password)
                     if not user.is_admin:
                         user.is_admin = True

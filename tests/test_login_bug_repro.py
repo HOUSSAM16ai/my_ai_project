@@ -24,5 +24,7 @@ async def test_login_bug_reproduction(async_client: AsyncClient):
     assert response.status_code == 200, f"Login failed: {response.text}"
 
     data = response.json()
+    # The response was flattened to support frontend requirements.
+    # Verify the flat structure: { access_token: "...", status: "success", ... }
     assert data["status"] == "success"
-    assert "access_token" in data["data"]
+    assert "access_token" in data

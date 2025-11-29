@@ -1,15 +1,13 @@
-
 import asyncio
 import json
 import os
 import sys
-from typing import AsyncGenerator
-
-import pytest
-from httpx import ASGITransport, AsyncClient
+from collections.abc import AsyncGenerator
 
 # --- SETUP PATH ---
 sys.path.append(os.getcwd())
+
+from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 # --- ENV CONFIG ---
 # Use file-based DB for robust verification
@@ -23,17 +21,19 @@ os.environ["SECRET_KEY"] = "dummy_verify_key"
 if os.path.exists(DB_FILE):
     os.remove(DB_FILE)
 
-from app.main import create_app
-from app.core.database import async_session_factory, engine as global_engine
-from app.core.engine_factory import create_unified_async_engine
-from app.models import SQLModel, User
-from app.core.ai_gateway import get_ai_client
-from sqlalchemy import select
-from passlib.context import CryptContext
+from passlib.context import CryptContext  # noqa: E402
+from sqlalchemy import select  # noqa: E402
+
+from app.core.ai_gateway import get_ai_client  # noqa: E402
+from app.core.database import async_session_factory  # noqa: E402
+from app.core.engine_factory import create_unified_async_engine  # noqa: E402
+from app.main import create_app  # noqa: E402
+from app.models import SQLModel, User  # noqa: E402
 
 # --- CONSTANTS ---
 TEST_EMAIL = "admin_verify@example.com"
 TEST_PASSWORD = "supersecret_verify"
+
 
 # --- MOCKS ---
 class MockAIClient:
@@ -44,7 +44,9 @@ class MockAIClient:
         await asyncio.sleep(0.01)
         yield {"choices": [{"delta": {"content": "!"}}]}
 
+
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
 
 async def init_db():
     """Initializes the database."""
@@ -61,6 +63,7 @@ async def init_db():
         await conn.run_sync(SQLModel.metadata.create_all)
     await init_engine.dispose()
 
+
 async def seed_admin():
     """Seeds the admin user using the application's session factory."""
     # We use the app's factory to ensure we are using the same config/engine behavior as the app
@@ -74,11 +77,12 @@ async def seed_admin():
                 password_hash=pwd_context.hash(TEST_PASSWORD),
                 is_active=True,
                 is_superuser=True,
-                is_admin=True
+                is_admin=True,
             )
             session.add(user)
             await session.commit()
             print("    Admin seeded.")
+
 
 async def verify_flow():
     print(f">>> STARTING VERIFICATION PROTOCOL (DB: {DB_FILE}) <<<")
@@ -99,10 +103,7 @@ async def verify_flow():
 
         # 4. Login
         print("[4/5] Testing Login...")
-        login_payload = {
-            "email": TEST_EMAIL,
-            "password": TEST_PASSWORD
-        }
+        login_payload = {"email": TEST_EMAIL, "password": TEST_PASSWORD}
 
         response = await client.post("/api/security/login", json=login_payload)
 
@@ -115,16 +116,16 @@ async def verify_flow():
 
         # VERIFY FLATTENED RESPONSE
         if "access_token" not in token_data:
-             print(f"!!! LOGIN RESPONSE FORMAT INVALID. Expected 'access_token' at root.")
-             print(f"    Got: {token_data}")
-             sys.exit(1)
+            print("!!! LOGIN RESPONSE FORMAT INVALID. Expected 'access_token' at root.")
+            print(f"    Got: {token_data}")
+            sys.exit(1)
 
         if "user" not in token_data:
-             print(f"!!! LOGIN RESPONSE FORMAT INVALID. Expected 'user' object at root.")
-             sys.exit(1)
+            print("!!! LOGIN RESPONSE FORMAT INVALID. Expected 'user' object at root.")
+            sys.exit(1)
 
         access_token = token_data["access_token"]
-        print(f"    Login Successful. Token obtained.")
+        print("    Login Successful. Token obtained.")
 
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -134,7 +135,9 @@ async def verify_flow():
         chat_payload = {"question": "Test Question"}
         stream_response = ""
 
-        async with client.stream("POST", "/admin/api/chat/stream", json=chat_payload, headers=headers) as r:
+        async with client.stream(
+            "POST", "/admin/api/chat/stream", json=chat_payload, headers=headers
+        ) as r:
             if r.status_code != 200:
                 print(f"!!! CHAT STREAM FAILED: {r.status_code} {r.text}")
                 sys.exit(1)
@@ -147,7 +150,7 @@ async def verify_flow():
                         if "choices" in data:
                             content = data["choices"][0]["delta"].get("content", "")
                             stream_response += content
-                    except:
+                    except Exception:
                         pass
 
         print(f"    Stream Response: '{stream_response}'")
@@ -176,11 +179,13 @@ async def verify_flow():
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
 
+
 if __name__ == "__main__":
     try:
         asyncio.run(verify_flow())
     except Exception as e:
         print(f"!!! FATAL ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
