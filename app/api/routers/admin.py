@@ -184,7 +184,7 @@ async def chat_stream(
                     if exc_type is asyncio.CancelledError:
                         logger.warning(
                             "Client disconnected during chat stream. Persisting partial response.",
-                            extra={"conversation_id": conversation.id}
+                            extra={"conversation_id": conversation.id},
                         )
 
                     # Ensure persistence

@@ -1,6 +1,7 @@
-import pytest
 from passlib.context import CryptContext
+
 from app.models import pwd_context
+
 
 def test_legacy_hash_support():
     # Test that pwd_context supports legacy schemes

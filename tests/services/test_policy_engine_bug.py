@@ -1,5 +1,5 @@
-import pytest
 from app.services.api_gateway_service import PolicyEngine, PolicyRule
+
 
 class TestPolicyEngineBug:
     def test_default_auth_policy_enforcement(self):

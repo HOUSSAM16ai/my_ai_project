@@ -1,10 +1,7 @@
 # app/blueprints/admin_blueprint.py
-import asyncio
-import json
 
-from fastapi.responses import JSONResponse, StreamingResponse
 
-from app.api.routers.admin import get_latest_chat, chat_stream
+from app.api.routers.admin import chat_stream, get_latest_chat
 from app.blueprints import Blueprint
 
 # Create the blueprint object
