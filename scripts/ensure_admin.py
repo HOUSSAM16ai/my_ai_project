@@ -18,27 +18,33 @@ from app.models import User, pwd_context  # noqa: E402
 
 async def ensure_admin():
     async with async_session_factory() as session:
-        result = await session.execute(select(User).where(User.email == "admin@example.com"))
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@cogniforge.com")
+        # Use ADMIN_PASSWORD or RECOVERY_ADMIN_PASSWORD, default to "supersecret"
+        admin_password = os.environ.get("ADMIN_PASSWORD",
+                            os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret"))
+
+        result = await session.execute(select(User).where(User.email == admin_email))
         admin = result.scalars().first()
 
         if not admin:
-            print("Admin user not found. Creating new admin...")
-            admin = User(email="admin@example.com", full_name="Admin User", is_admin=True)
-            # Use explicit hashing instead of assuming a mixin method is available
-            admin.password_hash = pwd_context.hash(
-                os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret")
-            )
+            print(f"Admin user {admin_email} not found. Creating new admin...")
+            admin = User(email=admin_email, full_name="Admin User", is_admin=True)
+            admin.password_hash = pwd_context.hash(admin_password)
             session.add(admin)
             await session.commit()
             print("Admin created successfully.")
         else:
-            print("Admin user already exists.")
-            # Optional: Ensure it has admin rights if it was somehow demoted
+            print(f"Admin user {admin_email} already exists. Updating credentials...")
+            # Repair password hash if needed or just always update to ensure consistency
+            admin.password_hash = pwd_context.hash(admin_password)
+
             if not admin.is_admin:
                 print("User exists but is not admin. Promoting...")
                 admin.is_admin = True
-                await session.commit()
-                print("Promoted to admin.")
+
+            session.add(admin)
+            await session.commit()
+            print("Admin credentials updated and promoted.")
 
 
 if __name__ == "__main__":

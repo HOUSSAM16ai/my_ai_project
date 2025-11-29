@@ -63,10 +63,11 @@ async def register(register_data: RegisterRequest, db: AsyncSession = Depends(ge
     await db.commit()
     await db.refresh(new_user)
 
+    # Return flat response to satisfy frontend expectations
     return {
         "status": "success",
         "message": "User registered successfully",
-        "data": {"id": new_user.id, "email": new_user.email},
+        "user": {"id": new_user.id, "email": new_user.email},
     }
 
 
@@ -102,18 +103,20 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
+    # CRITICAL FIX: Flatten the response.
+    # Frontend expects: { access_token: "...", user: { ... } }
+    # Previous backend sent: { status: "success", data: { access_token: "...", ... } }
     return {
-        "status": "success",
-        "data": {
-            "access_token": token,
-            "token_type": "Bearer",
-            "user": {
-                "id": user.id,
-                "name": user.full_name,
-                "email": user.email,
-                "is_admin": user.is_admin,
-            },
+        "access_token": token,
+        "token_type": "Bearer",
+        "user": {
+            "id": user.id,
+            "name": user.full_name,
+            "email": user.email,
+            "is_admin": user.is_admin,
         },
+        # Keep status for any other consumers checking it, but ensure critical data is at root
+        "status": "success"
     }
 
 
@@ -123,12 +126,9 @@ async def generate_token(request: TokenRequest):
     if not request.user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     return {
-        "status": "success",
-        "data": {
-            "access_token": "mock_token",
-            "refresh_token": "mock_refresh",
-            "token_type": "Bearer",
-        },
+        "access_token": "mock_token",
+        "refresh_token": "mock_refresh",
+        "token_type": "Bearer",
     }
 
 

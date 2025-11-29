@@ -42,7 +42,8 @@ def register_db_commands(root):
     @click.pass_context
     def seed(ctx, confirm, dry_run):
         logger = ctx.obj["logger"]
-        admin_email = os.getenv("ADMIN_EMAIL")
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@cogniforge.com")
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
 
         if not admin_email:
             logger.error("ADMIN_EMAIL environment variable not set.")
@@ -62,11 +63,18 @@ def register_db_commands(root):
 
                 if not user:
                     user = models.User(email=admin_email, is_admin=True, full_name="Admin User")
+                    user.set_password(admin_password)
                     session.add(user)
-                    # We must commit/flush to generate ID if needed, but transactional_session handles commit
                     logger.info(f"User with email {admin_email} created.")
                 else:
-                    logger.info(f"User with email {admin_email} already exists.")
+                    logger.info(f"User with email {admin_email} already exists. Updating password...")
+                    user.set_password(admin_password)
+                    if not user.is_admin:
+                        user.is_admin = True
+                        logger.info("Promoted user to admin.")
+                    session.add(user)
+                    logger.info("Password updated to match current ADMIN_PASSWORD.")
+
                 logger.info("seed: completed")
 
         asyncio.run(_seed())
