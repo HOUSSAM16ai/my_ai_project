@@ -357,7 +357,7 @@
                     const response = await fetch('/api/security/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password, is_admin: false })
+                        body: JSON.stringify({ full_name: name, email, password, is_admin: false })
                     });
                     if (response.ok) {
                         setSuccess('Registration successful! Please login.');
@@ -397,6 +397,7 @@
 
         const AdminDashboard = ({ user, onLogout }) => {
             const [messages, setMessages] = useState([]);
+            const [conversationId, setConversationId] = useState(null);
             const [input, setInput] = useState('');
             const messagesEndRef = useRef(null);
 
@@ -406,6 +407,29 @@
 
             useEffect(scrollToBottom, [messages]);
 
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch('/admin/api/chat/latest', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.messages && Array.isArray(data.messages)) {
+                                setMessages(data.messages);
+                            }
+                            if (data.conversation_id) {
+                                setConversationId(data.conversation_id);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch history", e);
+                    }
+                };
+                fetchHistory();
+            }, []);
+
             const handleSend = async () => {
                 if (input.trim()) {
                     const newMessages = [...messages, { role: 'user', content: input }];
@@ -413,13 +437,18 @@
                     setInput('');
 
                     try {
+                        const payload = { message: input };
+                        if (conversationId) {
+                            payload.conversation_id = conversationId;
+                        }
+
                         const response = await fetch('/admin/api/chat/stream', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`
                             },
-                            body: JSON.stringify({ message: input })
+                            body: JSON.stringify(payload)
                         });
 
                         if (!response.ok) throw new Error('Network response was not ok');
@@ -445,6 +474,7 @@
                                     try {
                                         const parsed = JSON.parse(dataContent);
                                         if (parsed.event === 'conversation_init') {
+                                             setConversationId(parsed.conversation_id);
                                              setMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
                                              isNewMessage = true;
                                         } else if (parsed.event === 'message_chunk') {

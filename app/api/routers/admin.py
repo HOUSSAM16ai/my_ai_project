@@ -212,3 +212,41 @@ async def chat_stream(
             await asyncio.shield(safe_persist())
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
+
+
+@router.get("/api/chat/latest", summary="Get Latest Conversation")
+async def get_latest_chat(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Retrieves the latest conversation for the current user.
+    """
+    stmt = (
+        select(AdminConversation)
+        .where(AdminConversation.user_id == user_id)
+        .order_by(AdminConversation.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    conversation = result.scalar_one_or_none()
+
+    if not conversation:
+        return {"conversation_id": None, "messages": []}
+
+    stmt = (
+        select(AdminMessage)
+        .where(AdminMessage.conversation_id == conversation.id)
+        .order_by(AdminMessage.created_at)
+    )
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+
+    return {
+        "conversation_id": conversation.id,
+        "title": conversation.title,
+        "messages": [
+            {"role": msg.role.value, "content": msg.content, "created_at": msg.created_at.isoformat()}
+            for msg in messages
+        ],
+    }
