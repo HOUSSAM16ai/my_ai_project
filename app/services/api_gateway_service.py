@@ -652,6 +652,11 @@ class PolicyEngine:
         """Evaluate policy condition (simplified)"""
         # In production, use a proper expression engine
         # For now, support basic checks
+
+        # Check for the default authentication policy
+        if "not authenticated" in condition:
+            return not context.get("authenticated", False)
+
         return bool("user_id" in condition and "user_id" not in context)
 
     def _record_violation(self, policy: PolicyRule, context: dict[str, Any]):
