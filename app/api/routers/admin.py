@@ -135,7 +135,6 @@ async def chat_stream(
         messages.append({"role": "user", "content": question})
 
     # --- SUPERHUMAN STREAMING & QUANTUM PERSISTENCE SHIELD ---
-    # streaming_service = get_streaming_service() # Reserved for V4 integration
 
     async def response_generator():
         # Send init event
@@ -149,6 +148,10 @@ async def chat_stream(
 
         # QUANTUM SHIELD: Atomic persistence function
         async def safe_persist():
+            """
+            Safely persists the assistant's message to the database.
+            Uses a fresh session to ensure robustness against request cancellation.
+            """
             assistant_content = "".join(full_response)
             if not assistant_content:
                 assistant_content = "Error: No response received from AI service."
@@ -165,38 +168,45 @@ async def chat_stream(
                     session.add(assistant_msg)
                     await session.commit()
             except Exception as db_e:
-                # Log error but ensure we don't crash the loop (though this is end of life anyway)
                 logger.error(f"Failed to save assistant message: {db_e}")
 
+        # Context manager for guaranteed persistence
+        class StreamingPersistenceContext:
+            def __init__(self):
+                self.is_persisted = False
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                if not self.is_persisted:
+                    # Log cancellation if applicable
+                    if exc_type is asyncio.CancelledError:
+                        logger.warning(
+                            "Client disconnected during chat stream. Persisting partial response.",
+                            extra={"conversation_id": conversation.id}
+                        )
+
+                    # Ensure persistence
+                    await asyncio.shield(safe_persist())
+                    self.is_persisted = True
+
         try:
-            # Use the AI client directly but format output to match what StreamingService might expect if we used it fully.
-            # For now, we keep the iteration logic here but could use service.stream_response if we adapted it.
-            # The key request was to fix the weakness (persistence), so we focus on that.
+            async with StreamingPersistenceContext():
+                async for chunk in ai_client.stream_chat(messages):
+                    content_part = ""
+                    if isinstance(chunk, dict):
+                        choices = chunk.get("choices", [])
+                        if choices and len(choices) > 0:
+                            delta = choices[0].get("delta", {})
+                            content_part = delta.get("content", "")
+                        else:
+                            content_part = chunk.get("content", "")
 
-            # However, to use the "Superhuman" service for chunking (if we wanted), we would pipe it.
-            # Given the time constraint and "one weakness" directive, fixing persistence is the priority.
+                    if content_part:
+                        full_response.append(content_part)
 
-            async for chunk in ai_client.stream_chat(messages):
-                content_part = ""
-                if isinstance(chunk, dict):
-                    choices = chunk.get("choices", [])
-                    if choices and len(choices) > 0:
-                        delta = choices[0].get("delta", {})
-                        content_part = delta.get("content", "")
-                    else:
-                        content_part = chunk.get("content", "")
-
-                if content_part:
-                    full_response.append(content_part)
-
-                yield f"data: {json.dumps(chunk)}\n\n"
-
-        except GeneratorExit:
-            # Client disconnected!
-            # Activate Quantum Shield to save what we have.
-            # We use asyncio.shield to protect the save operation from the cancellation.
-            await asyncio.shield(safe_persist())
-            raise  # Re-raise to let the server handle the close properly
+                    yield f"data: {json.dumps(chunk)}\n\n"
 
         except Exception as e:
             error_payload = {
@@ -204,12 +214,11 @@ async def chat_stream(
                 "payload": {"error": f"Failed to connect to AI service: {e}"},
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
-            # Also persist on error
-            await asyncio.shield(safe_persist())
-
-        else:
-            # Normal completion
-            await asyncio.shield(safe_persist())
+            # Context manager handles persistence even here if it bubbled up,
+            # but since we yield error data, we might exit cleanly from the try block
+            # or raise. If we yield, we are still inside the generator.
+            # Actually, if Exception is caught here, we yield data.
+            # The context manager's __aexit__ will run after this block finishes (generator close).
 
     return StreamingResponse(response_generator(), media_type="text/event-stream")
 
