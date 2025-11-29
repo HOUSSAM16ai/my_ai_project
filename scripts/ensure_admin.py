@@ -20,8 +20,9 @@ async def ensure_admin():
     async with async_session_factory() as session:
         admin_email = os.environ.get("ADMIN_EMAIL", "admin@cogniforge.com")
         # Use ADMIN_PASSWORD or RECOVERY_ADMIN_PASSWORD, default to "supersecret"
-        admin_password = os.environ.get("ADMIN_PASSWORD",
-                            os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret"))
+        admin_password = os.environ.get(
+            "ADMIN_PASSWORD", os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret")
+        )
 
         result = await session.execute(select(User).where(User.email == admin_email))
         admin = result.scalars().first()

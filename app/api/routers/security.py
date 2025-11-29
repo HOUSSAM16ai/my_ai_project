@@ -116,7 +116,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
             "is_admin": user.is_admin,
         },
         # Keep status for any other consumers checking it, but ensure critical data is at root
-        "status": "success"
+        "status": "success",
     }
 
 
