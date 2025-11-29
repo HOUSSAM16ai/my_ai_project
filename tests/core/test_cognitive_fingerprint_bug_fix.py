@@ -1,5 +1,7 @@
 import pytest
-from app.core.math.cognitive_fingerprint import assess_cognitive_complexity, CognitiveComplexity
+
+from app.core.math.cognitive_fingerprint import CognitiveComplexity, assess_cognitive_complexity
+
 
 @pytest.mark.parametrize(
     "prompt, expected_complexity",

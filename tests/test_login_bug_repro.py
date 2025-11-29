@@ -2,6 +2,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_login_bug_reproduction(async_client: AsyncClient):
     # 1. Register a user

@@ -1,8 +1,9 @@
-from app.models import AdminConversation, AdminMessage, MessageRole, User
 from datetime import datetime
+
 import pytest
-from app.api.routers.admin import get_latest_chat
-from sqlalchemy import select
+
+from app.models import AdminConversation
+
 
 @pytest.mark.asyncio
 async def test_get_latest_chat_deterministic_order(client, db_session, admin_user, admin_auth_headers):

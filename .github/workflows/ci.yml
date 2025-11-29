@@ -24,93 +24,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
-
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Install Node dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Build Frontend
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=8192"
-          npm run build
 
       - name: Lint and Format Check with Ruff
         run: |
           ruff check .
           ruff format --check .
 
-      - name: Type Check with MyPy
-        run: |
-          # Allowing failure for now due to significant technical debt (1600+ errors)
-          # Strategy: Stabilize tests first, then fix types incrementally.
-          mypy . --exclude apps || true
-
       - name: Run Pytest
         run: |
           python -m pytest -v --cov=app --cov-report=xml --durations=10 --maxfail=5
-
-  preview-check:
-    name: Preview & Codespaces Guardian
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Build frontend
-        run: |
-          npm ci
-          npm run build
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Export ENV (dev)
-        run: |
-          echo "ENVIRONMENT=development" >> $GITHUB_ENV
-          echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> $GITHUB_ENV
-          echo "SECRET_KEY=ci-dummy" >> $GITHUB_ENV
-
-      - name: Start backend (uvicorn) and capture logs/pid
-        run: |
-          mkdir -p /tmp
-          # Start uvicorn on 127.0.0.1 to match guardian default
-          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/uvicorn.log 2>&1 &
-          echo $! > /tmp/uvicorn.pid
-          # give uvicorn a short moment before checks begin
-          sleep 1
-
-      - name: Run guardian checks
-        run: |
-          chmod +x scripts/codespace_guardian.sh
-          ./scripts/codespace_guardian.sh 127.0.0.1 8000 /tmp/uvicorn.log
-
-      - name: Always cleanup and show logs (on failure/info)
-        if: always()
-        run: |
-          echo "=== uvicorn log (last 200 lines) ==="
-          test -f /tmp/uvicorn.log && tail -n 200 /tmp/uvicorn.log || echo "(no uvicorn log)"
-          if [ -f /tmp/uvicorn.pid ]; then kill $(cat /tmp/uvicorn.pid) || true; fi

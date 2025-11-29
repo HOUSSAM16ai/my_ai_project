@@ -1,8 +1,8 @@
-import json
 import pytest
 from sqlalchemy import select
-from app.models import Task, User, Mission, JSONText
-from tests.conftest import TestingSessionLocal
+
+from app.models import Mission, Task, User
+
 
 @pytest.mark.asyncio
 async def test_json_text_primitive_persistence_bug(db_session):
