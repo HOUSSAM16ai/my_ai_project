@@ -1,8 +1,11 @@
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from app.api.routers.admin import get_latest_chat
 from app.models import AdminConversation
+
 
 @pytest.mark.asyncio
 async def test_get_latest_chat_sort_order_bug():

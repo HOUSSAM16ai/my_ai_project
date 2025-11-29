@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.di import get_settings
 from app.kernel import RealityKernel
+from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 
 # Load .env file before anything else
 load_dotenv()
@@ -88,8 +89,6 @@ def create_app(static_dir: str | None = None) -> FastAPI:
 # The final, woven application instance.
 app = create_app()
 kernel = app.kernel  # Expose for legacy tests
-
-from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 
 app.add_middleware(RemoveBlockingHeadersMiddleware)
 # log startup

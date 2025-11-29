@@ -1,6 +1,6 @@
 
-import pytest
 from fastapi.testclient import TestClient
+
 
 def test_head_root_endpoint(client: TestClient):
     """

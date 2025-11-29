@@ -1,6 +1,6 @@
 # app/blueprints/security_blueprint.py
-from app.blueprints import Blueprint
 from app.api.routers.security import router as security_router
+from app.blueprints import Blueprint
 
 # Create the blueprint object
 # The kernel uses the name as the prefix, so "api/security" becomes "/api/security"
