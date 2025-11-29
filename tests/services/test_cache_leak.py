@@ -1,4 +1,5 @@
 import json
+import time
 
 from app.services.api_gateway_service import IntelligentCache
 
@@ -80,3 +81,30 @@ class TestIntelligentCacheLeak:
 
         expected_increase = len(json.dumps(resp_large)) - len(json.dumps(resp))
         assert cache.current_size_bytes == initial_size + expected_increase
+
+    def test_cache_size_leak_on_get_expiry(self):
+        """
+        Test that retrieving an expired item removes it and updates the size.
+        """
+        cache = IntelligentCache(max_size_mb=1)
+        request_data = {"key": "expire_me"}
+        response_data = {"data": "foo"}
+        size = len(json.dumps(response_data))
+
+        # 1. Put item with extremely short TTL
+        cache.put(request_data, response_data, ttl_seconds=0.01)
+
+        assert cache.current_size_bytes == size
+
+        # 2. Wait for expiration
+        time.sleep(0.05)
+
+        # 3. Get item (triggers lazy expiration check)
+        result = cache.get(request_data)
+        assert result is None
+
+        # 4. Check size
+        # If size is not decremented, this will fail
+        assert (
+            cache.current_size_bytes == 0
+        ), f"Cache size leak detected on expiry! Expected 0, got {cache.current_size_bytes}"

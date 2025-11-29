@@ -518,6 +518,8 @@ class IntelligentCache:
 
                 # Check if expired
                 if datetime.now(UTC) > entry["expires_at"]:
+                    # CRITICAL FIX: Decrement size before deletion to prevent memory leak
+                    self.current_size_bytes -= entry["size_bytes"]
                     del self.cache[key]
                     del self.access_times[key]
                     self.miss_count += 1
