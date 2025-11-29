@@ -6,7 +6,7 @@ import sys
 # Ensure the app can be imported
 sys.path.append(os.getcwd())
 
-from dotenv import load_dotenv  # noqa: E402
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -23,13 +23,11 @@ async def ensure_admin():
 
         if not admin:
             print("Admin user not found. Creating new admin...")
-            admin = User(
-                email="admin@example.com",
-                full_name="Admin User",
-                is_admin=True
-            )
+            admin = User(email="admin@example.com", full_name="Admin User", is_admin=True)
             # Use explicit hashing instead of assuming a mixin method is available
-            admin.password_hash = pwd_context.hash(os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret"))
+            admin.password_hash = pwd_context.hash(
+                os.environ.get("RECOVERY_ADMIN_PASSWORD", "supersecret")
+            )
             session.add(admin)
             await session.commit()
             print("Admin created successfully.")
@@ -41,6 +39,7 @@ async def ensure_admin():
                 admin.is_admin = True
                 await session.commit()
                 print("Promoted to admin.")
+
 
 if __name__ == "__main__":
     try:

@@ -59,9 +59,9 @@ def create_app(static_dir: str | None = None) -> FastAPI:
         return {
             "status": "ok",
             "service": "backend running",
-            "secrets_ok": True, # Implied if app started
+            "secrets_ok": True,  # Implied if app started
             "admin_present": admin_present,
-            "db": "ok" if admin_present else "unknown"
+            "db": "ok" if admin_present else "unknown",
         }
 
     # --- Static Files & SPA Support ---
