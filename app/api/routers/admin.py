@@ -225,7 +225,7 @@ async def get_latest_chat(
     stmt = (
         select(AdminConversation)
         .where(AdminConversation.user_id == user_id)
-        .order_by(AdminConversation.created_at.desc())
+        .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
         .limit(1)
     )
     result = await db.execute(stmt)
