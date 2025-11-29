@@ -123,9 +123,10 @@ def create_unified_async_engine(
         # RADICAL FIX: Force unnamed prepared statements
         # This prevents asyncpg from generating named statements (e.g., __asyncpg_stmt_1__)
         # which collide when sharing connections in transaction mode.
-        engine_kwargs["connect_args"][
-            "prepared_statement_name_func"
-        ] = _pg_prepared_statement_name_func
+        # Note: prepared_statement_name_func is a Dialect argument (passed to create_engine/create_async_engine),
+        # NOT a connect_args argument (passed to the driver's connect method).
+        # Incorrect placement triggers "TypeError: connect() got an unexpected keyword argument 'prepared_statement_name_func'"
+        engine_kwargs["prepared_statement_name_func"] = _pg_prepared_statement_name_func
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
         if pool_class != pool.NullPool:
