@@ -12,6 +12,7 @@ try:
 except ImportError:
     DevAllowIframeMiddleware = None
 
+
 @pytest.mark.skipif(DevAllowIframeMiddleware is None, reason="DevAllowIframeMiddleware not found")
 def test_dev_frame_middleware_development():
     """Verify that in development mode, security headers are relaxed to allow framing."""

@@ -10,11 +10,13 @@ def test_middleware_enabled_in_dev(monkeypatch):
     middleware = RemoveBlockingHeadersMiddleware(None)
     assert middleware.enabled is True
 
+
 def test_middleware_enabled_in_codespaces(monkeypatch):
     """Verify middleware identifies Codespaces environment correctly."""
     monkeypatch.setenv("CODESPACE_NAME", "my-codespace")
     middleware = RemoveBlockingHeadersMiddleware(None)
     assert middleware.enabled is True
+
 
 def test_middleware_disabled_in_production(monkeypatch):
     """Verify middleware is disabled in production."""
@@ -24,6 +26,7 @@ def test_middleware_disabled_in_production(monkeypatch):
     middleware = RemoveBlockingHeadersMiddleware(None)
     assert middleware.enabled is False
 
+
 def test_headers_removed_in_dev_client(monkeypatch):
     """
     Integration-like test using TestClient.
@@ -31,15 +34,17 @@ def test_headers_removed_in_dev_client(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "development")
 
     async def simple_app(scope, receive, send):
-        await send({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [
-                (b"content-type", b"text/plain"),
-                (b"x-frame-options", b"DENY"),
-                (b"content-security-policy", b"default-src 'self'; frame-ancestors 'none';"),
-            ],
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [
+                    (b"content-type", b"text/plain"),
+                    (b"x-frame-options", b"DENY"),
+                    (b"content-security-policy", b"default-src 'self'; frame-ancestors 'none';"),
+                ],
+            }
+        )
         await send({"type": "http.response.body", "body": b"ok"})
 
     middleware = RemoveBlockingHeadersMiddleware(simple_app)
@@ -56,20 +61,23 @@ def test_headers_removed_in_dev_client(monkeypatch):
     # Other parts of CSP should remain (if our logic preserves them)
     assert "default-src 'self'" in csp
 
+
 def test_headers_preserved_in_prod_client(monkeypatch):
     """Verify headers are NOT removed in production."""
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.delenv("CODESPACE_NAME", raising=False)
 
     async def simple_app(scope, receive, send):
-        await send({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [
-                (b"x-frame-options", b"DENY"),
-                (b"content-security-policy", b"frame-ancestors 'none'"),
-            ],
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [
+                    (b"x-frame-options", b"DENY"),
+                    (b"content-security-policy", b"frame-ancestors 'none'"),
+                ],
+            }
+        )
         await send({"type": "http.response.body", "body": b"ok"})
 
     middleware = RemoveBlockingHeadersMiddleware(simple_app)
