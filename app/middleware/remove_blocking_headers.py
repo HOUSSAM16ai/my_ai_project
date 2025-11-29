@@ -8,11 +8,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 logger = logging.getLogger("remove_blocking_headers")
 logger.setLevel(logging.INFO)
 
+
 def running_in_dev_or_codespace() -> bool:
     # Detect Codespaces or explicit development
     if os.getenv("CODESPACES") == "true" or os.getenv("CODESPACE_NAME"):
         return True
     return os.getenv("ENVIRONMENT", "").lower() == "development"
+
 
 class RemoveBlockingHeadersMiddleware:
     def __init__(self, app: ASGIApp):

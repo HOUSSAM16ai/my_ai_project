@@ -1,4 +1,3 @@
-
 import pytest
 from httpx import AsyncClient
 
@@ -9,17 +8,14 @@ async def test_login_bug_reproduction(async_client: AsyncClient):
     register_payload = {
         "full_name": "Test User",
         "email": "test_bug@example.com",
-        "password": "password123"
+        "password": "password123",
     }
 
     response = await async_client.post("/api/security/register", json=register_payload)
     assert response.status_code == 200, f"Registration failed: {response.text}"
 
     # 2. Login with the user
-    login_payload = {
-        "email": "test_bug@example.com",
-        "password": "password123"
-    }
+    login_payload = {"email": "test_bug@example.com", "password": "password123"}
 
     # This should succeed with 200 OK.
     # If the bug (AttributeError: 'AppSettings' object has no attribute 'SECRET_key') is present,

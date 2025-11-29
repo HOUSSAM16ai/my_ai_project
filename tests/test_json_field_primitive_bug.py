@@ -23,10 +23,7 @@ async def test_json_text_primitive_persistence_bug(db_session):
     numeric_string = "12345"
 
     task1 = Task(
-        mission_id=mission.id,
-        task_key="task-1",
-        tool_name="test",
-        tool_args_json=numeric_string
+        mission_id=mission.id, task_key="task-1", tool_name="test", tool_args_json=numeric_string
     )
     db_session.add(task1)
     await db_session.commit()
@@ -47,10 +44,7 @@ async def test_json_text_primitive_persistence_bug(db_session):
     # 4. Store a boolean
     bool_value = True
     task2 = Task(
-        mission_id=mission.id,
-        task_key="task-2",
-        tool_name="test",
-        tool_args_json=bool_value
+        mission_id=mission.id, task_key="task-2", tool_name="test", tool_args_json=bool_value
     )
     db_session.add(task2)
     await db_session.commit()

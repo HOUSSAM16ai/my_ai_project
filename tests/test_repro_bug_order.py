@@ -6,7 +6,9 @@ from app.models import AdminConversation
 
 
 @pytest.mark.asyncio
-async def test_get_latest_chat_deterministic_order(client, db_session, admin_user, admin_auth_headers):
+async def test_get_latest_chat_deterministic_order(
+    client, db_session, admin_user, admin_auth_headers
+):
     """
     Verifies that get_latest_chat correctly returns the conversation with the higher ID
     when timestamps are identical, ensuring deterministic ordering.
@@ -16,9 +18,7 @@ async def test_get_latest_chat_deterministic_order(client, db_session, admin_use
 
     # Create first conversation (ID 1)
     conv1 = AdminConversation(
-        user_id=admin_user.id,
-        title="First Conversation",
-        created_at=fixed_time
+        user_id=admin_user.id, title="First Conversation", created_at=fixed_time
     )
     db_session.add(conv1)
     await db_session.commit()
@@ -26,9 +26,7 @@ async def test_get_latest_chat_deterministic_order(client, db_session, admin_use
 
     # Create second conversation (ID 2)
     conv2 = AdminConversation(
-        user_id=admin_user.id,
-        title="Second Conversation",
-        created_at=fixed_time
+        user_id=admin_user.id, title="Second Conversation", created_at=fixed_time
     )
     db_session.add(conv2)
     await db_session.commit()
@@ -44,5 +42,6 @@ async def test_get_latest_chat_deterministic_order(client, db_session, admin_use
     data = response.json()
 
     # Assert that the returned conversation is the second one (higher ID)
-    assert data["conversation_id"] == conv2.id, \
-        f"Expected conversation {conv2.id} but got {data['conversation_id']}"
+    assert (
+        data["conversation_id"] == conv2.id
+    ), f"Expected conversation {conv2.id} but got {data['conversation_id']}"

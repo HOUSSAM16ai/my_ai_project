@@ -1,4 +1,3 @@
-
 from fastapi.testclient import TestClient
 
 
@@ -11,6 +10,7 @@ def test_head_root_endpoint(client: TestClient):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
 
+
 def test_head_spa_fallback(client: TestClient):
     """
     Verifies that the SPA fallback route supports the HEAD method.
@@ -20,6 +20,7 @@ def test_head_spa_fallback(client: TestClient):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
 
+
 def test_static_file_head(client: TestClient):
     """
     Verifies that static files served via fallback support HEAD method.
@@ -28,6 +29,7 @@ def test_static_file_head(client: TestClient):
     response = client.head("/index.html")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+
 
 def test_js_file_head(client: TestClient):
     """

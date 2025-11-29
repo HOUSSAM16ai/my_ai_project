@@ -246,7 +246,11 @@ async def get_latest_chat(
         "conversation_id": conversation.id,
         "title": conversation.title,
         "messages": [
-            {"role": msg.role.value, "content": msg.content, "created_at": msg.created_at.isoformat()}
+            {
+                "role": msg.role.value,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat(),
+            }
             for msg in messages
         ],
     }

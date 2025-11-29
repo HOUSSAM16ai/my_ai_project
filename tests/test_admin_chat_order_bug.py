@@ -1,4 +1,3 @@
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -48,4 +47,6 @@ async def test_get_latest_chat_sort_order_bug():
 
     # The bug: only created_at is present
     if "admin_messages.id" not in order_by_clause:
-         pytest.fail(f"Bug Detected: ORDER BY clause '{order_by_clause.strip()}' missing 'admin_messages.id' as secondary sort key.")
+        pytest.fail(
+            f"Bug Detected: ORDER BY clause '{order_by_clause.strip()}' missing 'admin_messages.id' as secondary sort key."
+        )

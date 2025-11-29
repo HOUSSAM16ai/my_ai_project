@@ -17,7 +17,7 @@ async def test_frontend_smoke_flow(init_db, test_app):
         # 1. Check Root
         response = await ac.get("/")
         assert response.status_code == 200
-        assert "<div id=\"root\"" in response.text or "<!doctype html" in response.text.lower()
+        assert '<div id="root"' in response.text or "<!doctype html" in response.text.lower()
 
         # 2. Check Assets
         # Note: We rely on the app mounting StaticFiles.
@@ -35,21 +35,24 @@ async def test_frontend_smoke_flow(init_db, test_app):
         # 3. Check Login Endpoint (Smoke Check)
         # We expect 422 (Validation Error) or 401 (Unauthorized) or 200.
         # We definitely DO NOT want 404 or 405.
-        login_payload = {
-            "email": "admin@cogniforge.com",
-            "password": "wrongpassword"
-        }
+        login_payload = {"email": "admin@cogniforge.com", "password": "wrongpassword"}
         # Because conftest overrides StaticFiles with a temp dir,
         # the app routing logic might be slightly different than live,
         # but the API routers are still mounted by the Kernel.
         # The key is that test_app dependency_overrides[get_db] is set.
         login_resp = await ac.post("/api/security/login", json=login_payload)
-        assert login_resp.status_code in [200, 400, 401, 422], \
-            f"Login endpoint returned unexpected status: {login_resp.status_code}"
+        assert login_resp.status_code in [
+            200,
+            400,
+            401,
+            422,
+        ], f"Login endpoint returned unexpected status: {login_resp.status_code}"
 
         # 4. Check Admin Latest Chat Endpoint (Smoke Check)
         # Without a valid token, this should return 401.
         # If it returns 404, the route is missing.
         chat_resp = await ac.get("/admin/api/chat/latest")
-        assert chat_resp.status_code in [200, 401], \
-            f"Admin chat endpoint returned unexpected status: {chat_resp.status_code}"
+        assert chat_resp.status_code in [
+            200,
+            401,
+        ], f"Admin chat endpoint returned unexpected status: {chat_resp.status_code}"
