@@ -16,7 +16,10 @@ if TYPE_CHECKING:
     pass
 
 # Setup password hashing
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2", "bcrypt", "pbkdf2_sha256", "sha256_crypt"],
+    deprecated="auto",
+)
 
 
 def utc_now() -> datetime:
