@@ -546,12 +546,34 @@ class IntelligentCache:
             if data_size > max_size_bytes:
                 return
 
+            # If overwriting, remove old size first
+            if key in self.cache:
+                self.current_size_bytes -= self.cache[key]["size_bytes"]
+                # We also want to remove it from eviction candidates temporarily so we don't pick it as LRU
+                # while we are updating it, although re-setting access_times later handles the LRU logic.
+
             # Evict if needed
             while (self.current_size_bytes + data_size) > max_size_bytes:
                 # Safety check: if cache is empty but we still can't fit it, break
                 # (This shouldn't happen due to the check above, but good for robustness)
                 if not self.cache:
                     break
+
+                # IMPORTANT: If the LRU item is the key we are about to update (and we just subtracted its size),
+                # we should skip evicting it because we are replacing it anyway.
+                # However, since we already subtracted its size above, 'current_size_bytes' reflects the state
+                # without this key. So checking (current + new) > max is correct.
+                # If we are overwriting, the key is still in self.cache but not contributing to current_size_bytes.
+
+                # To avoid complex edge cases, if we are overwriting, we can just delete the old entry fully first.
+                if key in self.cache:
+                    # We already subtracted size, now remove from dicts to be clean
+                    del self.cache[key]
+                    if key in self.access_times:
+                        del self.access_times[key]
+                    # Loop continues, now 'key' is treated as a new insertion
+                    continue
+
                 self._evict_lru()
 
             # Store
