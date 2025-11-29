@@ -100,7 +100,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24),
     }
 
-    token = jwt.encode(payload, settings.SECRET_key, algorithm="HS256")
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
     return {
         "status": "success",
