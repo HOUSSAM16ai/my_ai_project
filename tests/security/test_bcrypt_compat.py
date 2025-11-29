@@ -1,6 +1,6 @@
+import logging
 
 import pytest
-import logging
 from passlib.context import CryptContext
 
 # Configure logger
@@ -12,6 +12,7 @@ pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
 )
+
 
 def test_bcrypt_hashing_and_verification():
     """
@@ -42,6 +43,7 @@ def test_bcrypt_hashing_and_verification():
     except Exception as e:
         pytest.fail(f"Failed to verify bcrypt hash: {e}")
 
+
 def test_bcrypt_backend_attributes():
     """
     Directly verify that the bcrypt backend loaded by passlib is functional.
@@ -55,17 +57,20 @@ def test_bcrypt_backend_attributes():
 
     # Check if the handler thinks it has a backend
     if hasattr(bcrypt_handler, "has_backend") and not bcrypt_handler.has_backend():
-         pytest.fail("Passlib reports bcrypt backend is not available.")
+        pytest.fail("Passlib reports bcrypt backend is not available.")
 
     # Additional check: Verify we are using the 'bcrypt' library and not os_crypt or others
     # (passlib tries to use the 'bcrypt' library first if available)
     try:
         import bcrypt
+
         # Verify the version is safe (optional, but good for regression check)
         # We expect < 4.0.0 for passlib 1.7.4 compatibility
         version = getattr(bcrypt, "__version__", "")
         # Note: bcrypt 3.2.0 puts version in __version__, 4.0.0 changed things.
         if version and version.startswith("4."):
-             logger.warning("Running with bcrypt 4.x - this is known to be problematic with passlib 1.7.4")
+            logger.warning(
+                "Running with bcrypt 4.x - this is known to be problematic with passlib 1.7.4"
+            )
     except ImportError:
         pass
