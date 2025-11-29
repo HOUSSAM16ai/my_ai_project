@@ -4,10 +4,16 @@ import json
 
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app.api.routers.admin import get_latest_chat
 from app.blueprints import Blueprint
 
 # Create the blueprint object
 admin_blueprint = Blueprint(name="admin/api")
+
+# Explicitly register the real get_latest_chat endpoint
+admin_blueprint.router.add_api_route(
+    "/chat/latest", get_latest_chat, methods=["GET"], summary="Get Latest Conversation"
+)
 
 
 async def stream_with_error():
