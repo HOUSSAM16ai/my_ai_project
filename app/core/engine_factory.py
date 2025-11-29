@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import uuid
 from typing import Any
 
 from sqlalchemy import create_engine, pool
@@ -50,16 +51,6 @@ def _sanitize_database_url(url: str) -> str:
         url = url.replace("sslmode=verify-full", "ssl=verify-full")
 
     return url
-
-
-def _pg_prepared_statement_name_func(*args: Any) -> str:
-    """
-    Force asyncpg to use the unnamed prepared statement.
-    This bypasses the statement cache and prevents DuplicatePreparedStatementError
-    when using PgBouncer in transaction mode, as the unnamed statement
-    is effectively transient and overwritten on every execution.
-    """
-    return ""
 
 
 def create_unified_async_engine(
@@ -120,13 +111,10 @@ def create_unified_async_engine(
         # We OVERRIDE whatever was passed to ensure safety.
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-        # RADICAL FIX: Force unnamed prepared statements
-        # This prevents asyncpg from generating named statements (e.g., __asyncpg_stmt_1__)
-        # which collide when sharing connections in transaction mode.
-        # Note: prepared_statement_name_func is a Dialect argument (passed to create_engine/create_async_engine),
-        # NOT a connect_args argument (passed to the driver's connect method).
-        # Incorrect placement triggers "TypeError: connect() got an unexpected keyword argument 'prepared_statement_name_func'"
-        engine_kwargs["prepared_statement_name_func"] = _pg_prepared_statement_name_func
+        # Use dynamic prepared statement names to avoid collisions with PgBouncer
+        # See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#sqlalchemy.dialects.postgresql.asyncpg.dialect.prepared_statement_name_func
+        engine_kwargs["connect_args"]["prepared_statement_name_func"] = lambda: f"cogni_{uuid.uuid4().hex[:8]}"
+        engine_kwargs["connect_args"]["command_timeout"] = 60
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
         if pool_class != pool.NullPool:
