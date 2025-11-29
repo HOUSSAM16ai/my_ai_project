@@ -34,6 +34,16 @@ jobs:
           ruff check .
           ruff format --check .
 
+      - name: Verify Secrets (Pre-check)
+        run: |
+           # Create dummy secrets for CI check to pass if not provided
+           export DATABASE_URL=${DATABASE_URL:-"sqlite+aiosqlite:///:memory:"}
+           export SECRET_KEY=${SECRET_KEY:-"dummy-secret-key-for-ci"}
+           export SUPABASE_URL=${SUPABASE_URL:-"https://dummy.supabase.co"}
+           export SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-"dummy-key"}
+           export RECOVERY_ADMIN_PASSWORD=${RECOVERY_ADMIN_PASSWORD:-"dummy-pass"}
+           python scripts/verify_secrets.py
+
       - name: Run Pytest
         run: |
           python -m pytest -v --cov=app --cov-report=xml --durations=10 --maxfail=5
