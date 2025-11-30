@@ -111,10 +111,12 @@ def create_unified_async_engine(
         # We OVERRIDE whatever was passed to ensure safety.
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-        # NOTE: We DO NOT use prepared_statement_name_func here.
-        # While it was previously thought to avoid collisions, it causes 'InvalidSQLStatementNameError'
-        # when statement_cache_size=0 because asyncpg tries to use named statements that PgBouncer forgets.
-        # By removing it, we revert to asyncpg's safe behavior for disabled caches.
+        # RESTORING prepared_statement_name_func as per 'Memory' instructions
+        # to fix persistent InvalidSQLStatementNameError in production.
+        # Even with cache=0, asyncpg may need unique names if statements are ever created.
+        engine_kwargs["connect_args"]["prepared_statement_name_func"] = (
+            lambda: f"__asyncpg_{uuid.uuid4().hex}__"
+        )
 
         engine_kwargs["connect_args"]["command_timeout"] = 60
 
