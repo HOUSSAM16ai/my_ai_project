@@ -273,9 +273,6 @@
                 return <AuthScreen onLogin={handleLogin} />;
             }
 
-            // This is the CRITICAL FIX.
-            // The frontend MUST check for user.is_admin. If it doesn't,
-            // even an admin user will see the non-admin page.
             if (user.is_admin) {
                return <AdminDashboard user={user} onLogout={logout} />;
             } else {
@@ -442,9 +439,11 @@
                     setInput('');
 
                     try {
-                        const payload = { message: input };
+                        // FIX 1: Send 'question' instead of 'message'
+                        const payload = { question: input };
                         if (conversationId) {
-                            payload.conversation_id = conversationId;
+                            // FIX 2: Ensure conversation_id is a string
+                            payload.conversation_id = String(conversationId);
                         }
 
                         const response = await fetch('/admin/api/chat/stream', {
@@ -478,12 +477,39 @@
                                     }
                                     try {
                                         const parsed = JSON.parse(dataContent);
-                                        if (parsed.event === 'conversation_init') {
+
+                                        // FIX 3: Robust Event Detection
+                                        // The backend sends `event: conversation_init` separately, but typical fetch readers
+                                        // might not see it if we only look at `data: ` lines.
+                                        // However, the `conversation_init` payload has unique keys.
+                                        if (parsed.conversation_id && parsed.title) {
                                              setConversationId(parsed.conversation_id);
                                              setMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
                                              isNewMessage = true;
-                                        } else if (parsed.event === 'message_chunk') {
-                                             if (isNewMessage) {
+                                        }
+                                        // Handle OpenAI-style chunks or error payloads
+                                        else if (parsed.choices && parsed.choices[0]) {
+                                             const delta = parsed.choices[0].delta || {};
+                                             const content = delta.content || '';
+
+                                             if (content) {
+                                                 if (isNewMessage) {
+                                                     assistantMessage = content;
+                                                     setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                                                     isNewMessage = false;
+                                                 } else {
+                                                     assistantMessage += content;
+                                                     setMessages(prev =>
+                                                         prev.map((msg, index) =>
+                                                             index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                                         )
+                                                     );
+                                                 }
+                                             }
+                                        }
+                                        else if (parsed.content) {
+                                            // Fallback for simple content objects if structure changes
+                                            if (isNewMessage) {
                                                  assistantMessage = parsed.content;
                                                  setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
                                                  isNewMessage = false;
@@ -496,6 +522,10 @@
                                                  );
                                              }
                                         }
+                                        else if (parsed.type === 'error') {
+                                            setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
+                                        }
+
                                     } catch (e) {
                                         console.error('Error parsing stream data:', e);
                                     }
