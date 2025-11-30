@@ -111,11 +111,11 @@ def create_unified_async_engine(
         # We OVERRIDE whatever was passed to ensure safety.
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-        # Use dynamic prepared statement names to avoid collisions with PgBouncer
-        # See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#sqlalchemy.dialects.postgresql.asyncpg.dialect.prepared_statement_name_func
-        engine_kwargs["connect_args"]["prepared_statement_name_func"] = (
-            lambda: f"cogni_{uuid.uuid4().hex[:8]}"
-        )
+        # NOTE: We DO NOT use prepared_statement_name_func here.
+        # While it was previously thought to avoid collisions, it causes 'InvalidSQLStatementNameError'
+        # when statement_cache_size=0 because asyncpg tries to use named statements that PgBouncer forgets.
+        # By removing it, we revert to asyncpg's safe behavior for disabled caches.
+
         engine_kwargs["connect_args"]["command_timeout"] = 60
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
