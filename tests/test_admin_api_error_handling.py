@@ -12,24 +12,20 @@ feedback to the client.
 import json
 
 import pytest
-
-pytestmark = pytest.mark.skip(
-    reason="These tests are outdated and need to be rewritten for the new architecture."
-)
 import requests  # noqa: E402
 
 from app.core.ai_gateway import get_ai_client  # noqa: E402
 
 
 @pytest.fixture
-def app_with_local_mock(app):
+def app_with_local_mock(test_app):
     """
     Provides an app instance with a cleared dependency override for the AI client,
     allowing local mocks to be set without interference from the global mock.
     """
-    if get_ai_client in app.dependency_overrides:
-        del app.dependency_overrides[get_ai_client]
-    return app
+    if get_ai_client in test_app.dependency_overrides:
+        del test_app.dependency_overrides[get_ai_client]
+    return test_app
 
 
 @pytest.fixture
@@ -121,12 +117,16 @@ def test_chat_stream_missing_question_payload(client, admin_auth_headers):
     # Test with empty JSON payload (Pydantic validation error)
     response = client.post("/admin/api/chat/stream", json={}, headers=admin_auth_headers)
     assert response.status_code == 422
-    # Validation error response format check
-    assert response.json()["message"] == "Validation Error"
+    # Updated assertion to match Actual behavior of custom exception handler
+    data = response.json()
+    assert data["message"] == "Validation Error"
+    assert "errors" in data["data"]
+    assert data["data"]["errors"][0]["loc"] == ["body", "question"]
 
     # Test with question being an empty string (Custom logic check)
     response = client.post(
         "/admin/api/chat/stream", json={"question": "  "}, headers=admin_auth_headers
     )
     assert response.status_code == 400
-    assert response.json()["message"] == "Question is required."
+    data = response.json()
+    assert data["message"] == "Question is required."

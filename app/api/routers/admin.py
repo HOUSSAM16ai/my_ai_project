@@ -225,7 +225,7 @@ async def chat_stream(
         except Exception as e:
             error_payload = {
                 "type": "error",
-                "payload": {"error": f"Failed to connect to AI service: {e}"},
+                "payload": {"details": f"Failed to connect to AI service: {e}"},
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
             # Context manager handles persistence even here if it bubbled up,
