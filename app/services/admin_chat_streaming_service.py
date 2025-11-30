@@ -25,6 +25,7 @@ CORE CAPABILITIES:
 import asyncio
 import json
 import logging
+import re
 import time
 from collections import deque
 from collections.abc import AsyncGenerator, Generator
@@ -70,7 +71,7 @@ class SmartTokenChunker:
     @staticmethod
     def chunk_text(text: str, chunk_size: int = StreamingConfig.OPTIMAL_CHUNK_SIZE) -> list[str]:
         """
-        Split text into optimal chunks for streaming.
+        Split text into optimal chunks for streaming while STRICTLY preserving whitespace.
 
         Args:
             text: Text to chunk
@@ -82,13 +83,32 @@ class SmartTokenChunker:
         if not text:
             return []
 
-        # Split into words while preserving whitespace
-        words = text.split()
+        # Split into words while preserving delimiters (whitespace) using regex capture groups
+        # This returns [word, whitespace, word, whitespace, ...]
+        tokens = re.split(r"(\s+)", text)
         chunks = []
+        current_chunk = []
+        current_word_count = 0
 
-        for i in range(0, len(words), chunk_size):
-            chunk = " ".join(words[i : i + chunk_size])
-            chunks.append(chunk)
+        for token in tokens:
+            if not token:
+                continue
+
+            current_chunk.append(token)
+
+            # Count words (non-whitespace)
+            if not token.isspace():
+                current_word_count += 1
+
+            # If we reached the chunk size, flush
+            if current_word_count >= chunk_size:
+                chunks.append("".join(current_chunk))
+                current_chunk = []
+                current_word_count = 0
+
+        # Flush remaining tokens
+        if current_chunk:
+            chunks.append("".join(current_chunk))
 
         return chunks
 
@@ -105,13 +125,13 @@ class SmartTokenChunker:
             for i, part in enumerate(parts):
                 if i % 2 == 0:  # Regular text
                     for chunk in SmartTokenChunker.chunk_text(part):
-                        yield chunk + " "
+                        yield chunk
                 else:  # Code block
                     yield f"```{part}```"
         else:
             # Regular text chunking
             for chunk in SmartTokenChunker.chunk_text(text):
-                yield chunk + " "
+                yield chunk
 
 
 class SpeculativeDecoder:
