@@ -3,7 +3,7 @@ import datetime
 import logging
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -137,3 +137,46 @@ async def verify_token(request: TokenVerifyRequest):
     if not request.token:
         raise HTTPException(status_code=400, detail="token required")
     return {"status": "success", "data": {"valid": True}}
+
+
+def get_current_user_token(request: Request) -> str:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+    return parts[1]
+
+
+@router.get("/user/me", summary="Get Current User")
+async def get_current_user_endpoint(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Get the current authenticated user's details.
+    Used by frontend to persist session state.
+    """
+    token = get_current_user_token(request)
+    settings = get_settings()
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    stmt = select(User).where(User.id == int(user_id))
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "id": user.id,
+        "name": user.full_name,
+        "email": user.email,
+        "is_admin": user.is_admin,
+    }
