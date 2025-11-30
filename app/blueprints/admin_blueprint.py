@@ -1,7 +1,7 @@
 # app/blueprints/admin_blueprint.py
 
 
-from app.api.routers.admin import chat_stream, get_latest_chat, list_conversations, get_conversation
+from app.api.routers.admin import chat_stream, get_conversation, get_latest_chat, list_conversations
 from app.blueprints import Blueprint
 
 # Create the blueprint object
@@ -24,5 +24,8 @@ admin_blueprint.router.add_api_route(
 
 # Explicitly register the get conversation details endpoint
 admin_blueprint.router.add_api_route(
-    "/conversations/{conversation_id}", get_conversation, methods=["GET"], summary="Get Conversation Details"
+    "/conversations/{conversation_id}",
+    get_conversation,
+    methods=["GET"],
+    summary="Get Conversation Details",
 )

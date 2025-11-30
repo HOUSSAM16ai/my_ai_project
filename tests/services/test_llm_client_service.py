@@ -1,25 +1,26 @@
 import json
 import os
-import time
-import pytest
 from unittest import mock
-from app.services import llm_client_service
+
+import pytest
+
 from app.services.llm_client_service import (
-    get_llm_client,
-    reset_llm_client,
-    is_mock_client,
-    invoke_chat,
-    invoke_chat_stream,
-    llm_health,
-    register_llm_pre_hook,
-    register_llm_post_hook,
     _BREAKER_STATE,
     _LLMTOTAL,
-    _PRE_HOOKS,
     _POST_HOOKS,
+    _PRE_HOOKS,
     MockLLMClient,
     _HttpFallbackClient,
+    get_llm_client,
+    invoke_chat,
+    invoke_chat_stream,
+    is_mock_client,
+    llm_health,
+    register_llm_post_hook,
+    register_llm_pre_hook,
+    reset_llm_client,
 )
+
 
 @pytest.fixture(autouse=True)
 def reset_llm_service_state():
@@ -44,6 +45,7 @@ def reset_llm_service_state():
     # Also clear env vars that might affect the tests
     with mock.patch.dict(os.environ, {}, clear=True):
         yield
+
 
 class TestLLMInitialization:
     def test_get_llm_client_defaults_to_mock(self):
@@ -82,12 +84,9 @@ class TestLLMInitialization:
 
     def test_openrouter_http_fallback(self):
         """Test OpenRouter with HTTP fallback enabled."""
-        env_vars = {
-            "OPENROUTER_API_KEY": "sk-or-test",
-            "LLM_HTTP_FALLBACK": "1"
-        }
+        env_vars = {"OPENROUTER_API_KEY": "sk-or-test", "LLM_HTTP_FALLBACK": "1"}
         with mock.patch.dict(os.environ, env_vars):
-            with mock.patch("app.services.llm_client_service.requests") as mock_requests:
+            with mock.patch("app.services.llm_client_service.requests"):
                 # Mock openai to be None so it skips to fallback check or fails
                 with mock.patch("app.services.llm_client_service.openai", None):
                     reset_llm_client()
@@ -115,6 +114,7 @@ class TestLLMInitialization:
                 assert is_mock_client(client)
                 assert client.meta()["reason"] == "real-client-init-failure"
 
+
 class TestMockClient:
     def test_mock_client_chat_completion(self):
         client = MockLLMClient("test")
@@ -129,6 +129,7 @@ class TestMockClient:
         assert "User: Hello world" in content
         assert hasattr(response, "usage")
 
+
 class TestHttpFallbackClient:
     def test_http_fallback_chat_completion_success(self):
         client = _HttpFallbackClient("key", "http://base.url", 10.0)
@@ -138,13 +139,12 @@ class TestHttpFallbackClient:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "choices": [{"message": {"content": "Response"}}],
-                "usage": {"total_tokens": 10}
+                "usage": {"total_tokens": 10},
             }
             mock_requests.post.return_value = mock_response
 
             response = client.chat.completions.create(
-                model="test-model",
-                messages=[{"role": "user", "content": "Hi"}]
+                model="test-model", messages=[{"role": "user", "content": "Hi"}]
             )
 
             assert response.choices[0].message.content == "Response"
@@ -172,6 +172,7 @@ class TestHttpFallbackClient:
 
                 with pytest.raises(RuntimeError, match=error_substr):
                     client.chat.completions.create(model="m", messages=[])
+
 
 class TestInvocationLogic:
     def test_invoke_chat_success_mock(self):
@@ -209,7 +210,7 @@ class TestInvocationLogic:
     def test_invoke_chat_retry_logic(self):
         """Test that retries happen on failure."""
         with mock.patch.dict(os.environ, {"LLM_MAX_RETRIES": "3", "LLM_RETRY_BACKOFF_BASE": "1.0"}):
-            client = get_llm_client() # Mock client
+            client = get_llm_client()  # Mock client
 
             # Since client.chat returns new wrapper each time, we patch the class method
             # MockLLMClient._ChatWrapper._CompletionsWrapper.create
@@ -226,10 +227,14 @@ class TestInvocationLogic:
             mock_create.side_effect = [
                 RuntimeError("timeout error"),
                 RuntimeError("timeout error"),
-                success_resp
+                success_resp,
             ]
 
-            with mock.patch.object(MockLLMClient._ChatWrapper._CompletionsWrapper, 'create', side_effect=mock_create.side_effect):
+            with mock.patch.object(
+                MockLLMClient._ChatWrapper._CompletionsWrapper,
+                "create",
+                side_effect=mock_create.side_effect,
+            ):
                 with mock.patch("time.sleep"):
                     result = invoke_chat("m", [{"role": "user", "content": "test"}])
 
@@ -241,13 +246,17 @@ class TestInvocationLogic:
         env = {
             "LLM_BREAKER_ERROR_THRESHOLD": "2",
             "LLM_BREAKER_WINDOW": "60",
-            "LLM_MAX_RETRIES": "0" # Don't retry, just fail fast
+            "LLM_MAX_RETRIES": "0",  # Don't retry, just fail fast
         }
         with mock.patch.dict(os.environ, env):
-            client = get_llm_client()
+            get_llm_client()
 
-            with mock.patch.object(MockLLMClient._ChatWrapper._CompletionsWrapper, 'create', side_effect=RuntimeError("server_error_500")):
-                 with mock.patch("time.sleep"):
+            with mock.patch.object(
+                MockLLMClient._ChatWrapper._CompletionsWrapper,
+                "create",
+                side_effect=RuntimeError("server_error_500"),
+            ):
+                with mock.patch("time.sleep"):
                     # Call 1 -> Fail
                     with pytest.raises(RuntimeError):
                         invoke_chat("m", [])
@@ -270,12 +279,8 @@ class TestInvocationLogic:
 
     def test_cost_estimation(self):
         """Test cost calculation."""
-        cost_table = {
-            "gpt-4": {"prompt": 0.03, "completion": 0.06}
-        }
-        env = {
-            "MODEL_COST_TABLE_JSON": json.dumps(cost_table)
-        }
+        cost_table = {"gpt-4": {"prompt": 0.03, "completion": 0.06}}
+        env = {"MODEL_COST_TABLE_JSON": json.dumps(cost_table)}
         with mock.patch.dict(os.environ, env):
             result = invoke_chat("gpt-4", [{"role": "user", "content": "test"}])
             assert result["cost"] is not None
@@ -283,12 +288,9 @@ class TestInvocationLogic:
 
     def test_sanitization(self):
         """Test output sanitization."""
-        env = {
-            "LLM_SANITIZE_OUTPUT": "1",
-            "OPENAI_API_KEY": "sk-secret"
-        }
+        env = {"LLM_SANITIZE_OUTPUT": "1", "OPENAI_API_KEY": "sk-secret"}
         with mock.patch.dict(os.environ, env):
-            client = get_llm_client()
+            get_llm_client()
 
             mock_resp = mock.Mock()
             mock_choice = mock.Mock()
@@ -297,13 +299,15 @@ class TestInvocationLogic:
             mock_resp.choices = [mock_choice]
             mock_resp.usage = {}
 
-            with mock.patch.object(MockLLMClient._ChatWrapper._CompletionsWrapper, 'create', return_value=mock_resp):
+            with mock.patch.object(
+                MockLLMClient._ChatWrapper._CompletionsWrapper, "create", return_value=mock_resp
+            ):
                 result = invoke_chat("m", [])
                 assert "[REDACTED:sk-]" in result["content"]
 
     def test_llm_health(self):
         """Test health check output."""
-        get_llm_client() # Ensure initialized
+        get_llm_client()  # Ensure initialized
         health = llm_health()
         assert health["initialized"] is True
         assert health["client_kind"] == "mock"

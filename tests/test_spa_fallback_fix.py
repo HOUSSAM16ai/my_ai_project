@@ -1,6 +1,5 @@
-
-import pytest
 from fastapi.testclient import TestClient
+
 
 def test_spa_fallback_nested_api_fix(client: TestClient):
     """
@@ -14,8 +13,9 @@ def test_spa_fallback_nested_api_fix(client: TestClient):
 
     # 2. Verify that /admin/api/nonexistent returns 404 (Fixed behavior)
     response_admin_api = client.get("/admin/api/nonexistent")
-    assert response_admin_api.status_code == 404, \
-        f"Expected 404 for /admin/api/nonexistent, got {response_admin_api.status_code}"
+    assert (
+        response_admin_api.status_code == 404
+    ), f"Expected 404 for /admin/api/nonexistent, got {response_admin_api.status_code}"
 
     # 3. Verify that a legitimate frontend route still works (returns 200/HTML)
     # Assuming 'dashboard' is not an API route

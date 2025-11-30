@@ -1,7 +1,6 @@
 import os
 from unittest import mock
 
-import pytest
 from fastapi.testclient import TestClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware

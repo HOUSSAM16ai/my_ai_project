@@ -12,9 +12,9 @@ feedback to the client.
 import json
 
 import pytest
-import requests  # noqa: E402
+import requests
 
-from app.core.ai_gateway import get_ai_client  # noqa: E402
+from app.core.ai_gateway import get_ai_client
 
 
 @pytest.fixture

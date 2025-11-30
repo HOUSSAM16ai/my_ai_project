@@ -1,12 +1,16 @@
-import pytest
 from datetime import datetime
-from sqlmodel import select
-from app.models import AdminConversation, User
-from sqlalchemy.ext.asyncio import AsyncSession
+
+import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import AdminConversation, User
+
 
 @pytest.mark.asyncio
-async def test_get_latest_chat_determinism(async_client: AsyncClient, admin_user: User, db_session: AsyncSession):
+async def test_get_latest_chat_determinism(
+    async_client: AsyncClient, admin_user: User, db_session: AsyncSession
+):
     """
     Verifies that get_latest_chat returns the conversation with the higher ID
     when multiple conversations exist with the exact same timestamp.
@@ -16,20 +20,14 @@ async def test_get_latest_chat_determinism(async_client: AsyncClient, admin_user
 
     # Create first conversation
     conv1 = AdminConversation(
-        user_id=admin_user.id,
-        title="Conversation 1",
-        created_at=now,
-        updated_at=now
+        user_id=admin_user.id, title="Conversation 1", created_at=now, updated_at=now
     )
     db_session.add(conv1)
-    await db_session.flush() # ensure ID is assigned
+    await db_session.flush()  # ensure ID is assigned
 
     # Create second conversation - this should have a higher ID
     conv2 = AdminConversation(
-        user_id=admin_user.id,
-        title="Conversation 2",
-        created_at=now,
-        updated_at=now
+        user_id=admin_user.id, title="Conversation 2", created_at=now, updated_at=now
     )
     db_session.add(conv2)
     await db_session.flush()
@@ -44,6 +42,7 @@ async def test_get_latest_chat_determinism(async_client: AsyncClient, admin_user
 
     # Get the admin token
     from app.core.security import generate_service_token
+
     token = generate_service_token(str(admin_user.id))
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -54,4 +53,6 @@ async def test_get_latest_chat_determinism(async_client: AsyncClient, admin_user
     # The bug is that it might return conv1 because timestamps are equal.
     # We expect conv2 because it has the higher ID.
     # The response payload has 'conversation_id' not 'id'
-    assert data["conversation_id"] == conv2_id, f"Expected conversation {conv2_id} (higher ID), but got {data['conversation_id']}"
+    assert (
+        data["conversation_id"] == conv2_id
+    ), f"Expected conversation {conv2_id} (higher ID), but got {data['conversation_id']}"

@@ -1,6 +1,5 @@
-
-import pytest
 from app.services.admin_chat_streaming_service import SmartTokenChunker
+
 
 def test_chunk_text_preserves_newlines():
     """Test that chunk_text preserves newlines which are critical for Markdown formatting."""
@@ -13,6 +12,7 @@ def test_chunk_text_preserves_newlines():
     # The current implementation joins with " ", so it becomes "Line 1 Line 2 Line 3"
     joined = "".join(chunks)
     assert "Line 1\nLine 2\nLine 3" in joined
+
 
 def test_chunk_text_preserves_indentation():
     """Test that chunk_text preserves indentation (multiple spaces)."""

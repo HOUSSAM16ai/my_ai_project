@@ -1,5 +1,5 @@
-import pytest
 from app.services.api_gateway_service import PolicyEngine, PolicyRule
+
 
 class TestPolicyEngineBug:
     def test_user_id_policy_enforcement(self):
@@ -14,7 +14,7 @@ class TestPolicyEngineBug:
             condition="user_id required",
             action="deny",
             priority=100,
-            enabled=True
+            enabled=True,
         )
         engine.add_policy(policy)
 
@@ -23,7 +23,7 @@ class TestPolicyEngineBug:
             "user_id": None,
             "endpoint": "/api/test",
             "method": "GET",
-            "authenticated": False
+            "authenticated": False,
         }
 
         allowed, reason = engine.evaluate(context)
@@ -41,7 +41,7 @@ class TestPolicyEngineBug:
             condition="user_id required",
             action="deny",
             priority=100,
-            enabled=True
+            enabled=True,
         )
         engine.add_policy(policy)
 
@@ -49,7 +49,7 @@ class TestPolicyEngineBug:
             "user_id": "123",
             "endpoint": "/api/test",
             "method": "GET",
-            "authenticated": True
+            "authenticated": True,
         }
 
         allowed, reason = engine.evaluate(context)
