@@ -18,6 +18,7 @@ from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
 from app.core.di import get_logger
+from app.core.prompts import get_system_prompt
 from app.models import AdminConversation, AdminMessage, MessageRole
 
 logger = get_logger(__name__)
@@ -146,6 +147,11 @@ async def chat_stream(
     history_messages.reverse()
 
     messages = []
+
+    # 0. INJECT OVERMIND SYSTEM PROMPT (The Mindgate Connection)
+    # This connects the AI to the project context, making it "The Overmind"
+    messages.append({"role": "system", "content": get_system_prompt()})
+
     for msg in history_messages:
         role = msg.role
         messages.append({"role": role.value, "content": msg.content})
@@ -277,7 +283,7 @@ async def get_latest_chat(
             {
                 "role": msg.role.value,
                 "content": msg.content,
-                "created_at": msg.created_at.isoformat(),
+                "created_at": msg.created_at.isoformat() if msg.created_at else "",
             }
             for msg in messages
         ],
@@ -300,20 +306,20 @@ async def list_conversations(
     result = await db.execute(stmt)
     conversations = result.scalars().all()
 
-    return [
-        {
+    results = []
+    for conv in conversations:
+        c_at = conv.created_at.isoformat() if conv.created_at else ""
+        u_at = c_at
+        if hasattr(conv, "updated_at") and conv.updated_at:
+             u_at = conv.updated_at.isoformat()
+
+        results.append({
             "id": conv.id,
             "title": conv.title,
-            "created_at": conv.created_at.isoformat(),
-            # Fallback to created_at if updated_at is not available/set
-            "updated_at": (
-                conv.created_at.isoformat()
-                if not hasattr(conv, "updated_at")
-                else conv.updated_at.isoformat()
-            ),
-        }
-        for conv in conversations
-    ]
+            "created_at": c_at,
+            "updated_at": u_at
+        })
+    return results
 
 
 @router.get("/api/conversations/{conversation_id}", summary="Get Conversation Details")
@@ -350,7 +356,7 @@ async def get_conversation(
             {
                 "role": msg.role.value,
                 "content": msg.content,
-                "created_at": msg.created_at.isoformat(),
+                "created_at": msg.created_at.isoformat() if msg.created_at else "",
             }
             for msg in messages
         ],

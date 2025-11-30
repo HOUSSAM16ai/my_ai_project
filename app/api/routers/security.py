@@ -88,7 +88,15 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # 2. Verify Password (using the model's helper)
-    if not user.verify_password(login_data.password):
+    try:
+        is_valid = user.verify_password(login_data.password)
+    except Exception as e:
+        logger.error(f"Password verification error for user {user.id}: {e}")
+        # Fail safe
+        raise HTTPException(status_code=401, detail="Authentication failed (System Error)")
+
+    if not is_valid:
+        logger.warning(f"Failed login attempt for {login_data.email}")
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # 3. Generate JWT
