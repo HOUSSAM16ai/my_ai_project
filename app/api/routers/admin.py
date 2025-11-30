@@ -277,3 +277,76 @@ async def get_latest_chat(
             for msg in messages
         ],
     }
+
+
+@router.get("/api/conversations", summary="List Conversations")
+async def list_conversations(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Retrieves a list of conversations for the current user.
+    """
+    stmt = (
+        select(AdminConversation)
+        .where(AdminConversation.user_id == user_id)
+        .order_by(AdminConversation.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    conversations = result.scalars().all()
+
+    return [
+        {
+            "id": conv.id,
+            "title": conv.title,
+            "created_at": conv.created_at.isoformat(),
+            # Fallback to created_at if updated_at is not available/set
+            "updated_at": (
+                conv.created_at.isoformat()
+                if not hasattr(conv, "updated_at")
+                else conv.updated_at.isoformat()
+            ),
+        }
+        for conv in conversations
+    ]
+
+
+@router.get("/api/conversations/{conversation_id}", summary="Get Conversation Details")
+async def get_conversation(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Retrieves messages for a specific conversation.
+    """
+    # Verify ownership
+    stmt = select(AdminConversation).where(
+        AdminConversation.id == conversation_id, AdminConversation.user_id == user_id
+    )
+    result = await db.execute(stmt)
+    conversation = result.scalar_one_or_none()
+
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    stmt = (
+        select(AdminMessage)
+        .where(AdminMessage.conversation_id == conversation.id)
+        .order_by(AdminMessage.created_at, AdminMessage.id)
+    )
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+
+    return {
+        "conversation_id": conversation.id,
+        "title": conversation.title,
+        "messages": [
+            {
+                "role": msg.role.value,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat(),
+            }
+            for msg in messages
+        ],
+    }
