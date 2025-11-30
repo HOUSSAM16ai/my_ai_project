@@ -60,9 +60,10 @@ try:
 except Exception:
 
     class _DummyToolResult:
-        def __init__(self, ok: bool, result=None, error: str = ""):
+        def __init__(self, ok: bool, result=None, error: str = "", data=None):
             self.ok = ok
-            self.result = result
+            self.result = result if result is not None else data
+            self.data = self.result
             self.error = error
             self.meta = {}
 
@@ -75,8 +76,8 @@ except Exception:
         _TOOL_REGISTRY: ClassVar[dict[str, dict[str, Any]]] = {}
 
         @staticmethod
-        def ToolResult(ok: bool, result=None, error=""):
-            return _DummyToolResult(ok=ok, result=result, error=error)
+        def ToolResult(ok: bool, result=None, error="", data=None):
+            return _DummyToolResult(ok=ok, result=result, error=error, data=data)
 
         @staticmethod
         def get_tools_schema():
@@ -330,7 +331,7 @@ def _ensure_file_tools():
             os.makedirs(os.path.dirname(norm), exist_ok=True)
             with open(norm, "w", encoding="utf-8") as f:
                 f.write(content)
-            return agent_tools.ToolResult(ok=True, result={"written": norm})
+            return agent_tools.ToolResult(ok=True, data={"written": norm})
 
         reg["write_file"] = {
             "name": "write_file",
@@ -358,13 +359,13 @@ def _ensure_file_tools():
                     ok=False, result=None, error="INVALID_PATH_OUTSIDE_APP"
                 )
             if not os.path.exists(norm):
-                return agent_tools.ToolResult(ok=False, result=None, error="FILE_NOT_FOUND")
+                return agent_tools.ToolResult(ok=False, data=None, error="FILE_NOT_FOUND")
             with open(norm, encoding="utf-8", errors="replace") as f:
                 data = f.read(max_bytes + 10)
             snippet = data[:max_bytes]
             truncated = len(data) > max_bytes
             return agent_tools.ToolResult(
-                ok=True, result={"path": norm, "content": snippet, "truncated": truncated}
+                ok=True, data={"path": norm, "content": snippet, "truncated": truncated}
             )
 
         reg["read_file"] = {
