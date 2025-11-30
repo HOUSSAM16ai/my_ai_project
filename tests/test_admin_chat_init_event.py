@@ -36,7 +36,10 @@ async def test_admin_chat_returns_conversation_init_event(
     async with async_client.stream(
         "POST",
         "/admin/api/chat/stream",
-        json={"question": "New conversation please", "conversation_id": None}, # Explicitly None for new chat
+        json={
+            "question": "New conversation please",
+            "conversation_id": None,
+        },  # Explicitly None for new chat
         headers=admin_auth_headers,
     ) as response:
         assert response.status_code == 200

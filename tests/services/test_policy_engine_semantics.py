@@ -1,5 +1,5 @@
-import pytest
 from app.services.api_gateway_service import PolicyEngine, PolicyRule
+
 
 class TestPolicyEngineSemantics:
     def test_confusing_policy_condition(self):
@@ -17,7 +17,7 @@ class TestPolicyEngineSemantics:
             condition="user_id not required",
             action="deny",
             priority=100,
-            enabled=True
+            enabled=True,
         )
         engine.add_policy(policy)
 
@@ -26,7 +26,7 @@ class TestPolicyEngineSemantics:
             "user_id": None,
             "endpoint": "/public/resource",
             "method": "GET",
-            "authenticated": False
+            "authenticated": False,
         }
 
         # Expectation: This policy should NOT deny the request, because the condition

@@ -1,10 +1,14 @@
+from datetime import datetime
 
 import pytest
-from datetime import datetime
+
 from app.models import AdminConversation
 
+
 @pytest.mark.asyncio
-async def test_list_conversations_deterministic_order(client, db_session, admin_user, admin_auth_headers):
+async def test_list_conversations_deterministic_order(
+    client, db_session, admin_user, admin_auth_headers
+):
     """
     Verifies that list_conversations correctly returns the conversations with a deterministic order
     when timestamps are identical, by sorting by ID as a secondary key.
@@ -44,8 +48,10 @@ async def test_list_conversations_deterministic_order(client, db_session, admin_
     assert len(data) >= 2
 
     # Filter for our test conversations in case there are others
-    test_convs = [c for c in data if c['id'] in (conv1.id, conv2.id)]
+    test_convs = [c for c in data if c["id"] in (conv1.id, conv2.id)]
 
     assert len(test_convs) == 2
-    assert test_convs[0]['id'] == conv2.id, f"Expected conversation {conv2.id} first (newer ID), but got {test_convs[0]['id']}"
-    assert test_convs[1]['id'] == conv1.id
+    assert (
+        test_convs[0]["id"] == conv2.id
+    ), f"Expected conversation {conv2.id} first (newer ID), but got {test_convs[0]['id']}"
+    assert test_convs[1]["id"] == conv1.id

@@ -6,11 +6,10 @@ This has been migrated to use the new Reality Kernel engines.
 
 import asyncio
 import json
+from typing import Any
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import Any
-
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
 from sqlalchemy import select
@@ -118,9 +117,9 @@ async def chat_stream(
                 # If specific ID was requested but not found, return 404 to avoid confusion
                 raise HTTPException(status_code=404, detail="Conversation not found")
 
-        except ValueError:
-             # Invalid ID format
-             raise HTTPException(status_code=404, detail="Conversation not found")
+        except ValueError as e:
+            # Invalid ID format
+            raise HTTPException(status_code=404, detail="Conversation not found") from e
 
     if not conversation:
         conversation = AdminConversation(title=question[:50], user_id=user_id)
