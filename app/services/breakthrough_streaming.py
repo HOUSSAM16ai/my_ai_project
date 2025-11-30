@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import json
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable
@@ -29,13 +30,16 @@ class BreakthroughStreamingService:
         async for token in generator:
             buffer += token
             if len(buffer.split()) >= StreamingConfig.OPTIMAL_CHUNK_SIZE:
-                yield f'event: delta\ndata: {{"text": "{buffer}"}}\n\n'
+                # Use json.dumps to handle special characters correctly
+                data = json.dumps({"text": buffer})
+                yield f"event: delta\ndata: {data}\n\n"
                 buffer = ""
                 # Non-blocking sleep
                 await asyncio.sleep(StreamingConfig.MIN_CHUNK_DELAY_MS / 1000.0)
 
         if buffer:
-            yield f'event: delta\ndata: {{"text": "{buffer}"}}\n\n'
+            data = json.dumps({"text": buffer})
+            yield f"event: delta\ndata: {data}\n\n"
 
         yield "event: complete\ndata: {}\n\n"
 
