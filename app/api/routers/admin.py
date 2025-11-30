@@ -113,8 +113,14 @@ async def chat_stream(
             )
             result = await db.execute(stmt)
             conversation = result.scalar_one_or_none()
+
+            if not conversation:
+                # If specific ID was requested but not found, return 404 to avoid confusion
+                raise HTTPException(status_code=404, detail="Conversation not found")
+
         except ValueError:
-            pass  # Invalid ID format, treat as new
+             # Invalid ID format
+             raise HTTPException(status_code=404, detail="Conversation not found")
 
     if not conversation:
         conversation = AdminConversation(title=question[:50], user_id=user_id)
