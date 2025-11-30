@@ -9,9 +9,10 @@ Usage:
 Note: Ensure you have a backup before running.
 """
 
+import argparse
 import os
 import sys
-import argparse
+
 import psycopg2
 from passlib.context import CryptContext
 
@@ -26,12 +27,14 @@ TABLE_NAME = "users"
 EMAIL_COLUMN = "email"
 PASSWORD_COLUMN = "password_hash"
 
+
 def get_conn():
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         print("ERROR: DATABASE_URL env var not set. Exiting.")
         sys.exit(1)
     return psycopg2.connect(db_url)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -48,7 +51,10 @@ def main():
 
     try:
         # 1) Fetch existing row
-        cur.execute(f"SELECT {PASSWORD_COLUMN}, id FROM {TABLE_NAME} WHERE {EMAIL_COLUMN} = %s", (args.email,))
+        cur.execute(
+            f"SELECT {PASSWORD_COLUMN}, id FROM {TABLE_NAME} WHERE {EMAIL_COLUMN} = %s",
+            (args.email,),
+        )
         row = cur.fetchone()
         if not row:
             print(f"[!] No user found with email {args.email} in table {TABLE_NAME}")
@@ -56,26 +62,29 @@ def main():
             sys.exit(2)
 
         existing_hash, user_id = row
-        print(f"[i] Found user id={user_id}. Existing password column starts with: {str(existing_hash)[:30]}")
+        print(
+            f"[i] Found user id={user_id}. Existing password column starts with: {str(existing_hash)[:30]}"
+        )
 
         # 2) Detect if existing hash is known to passlib
-        known = False
         try:
             if existing_hash:
-                _ = pwd_context.identify(existing_hash)
-                known = True
-                print("[i] passlib recognized existing hash scheme:", pwd_context.identify(existing_hash))
+                print(
+                    "[i] passlib recognized existing hash scheme:",
+                    pwd_context.identify(existing_hash),
+                )
             else:
                 print("[i] Existing hash is empty/None.")
         except Exception as e:
             print("[i] passlib could not identify existing hash (Unknown or plain text).", repr(e))
-            known = False
 
         # 3) Create new hash for new_password using the preferred scheme (first in list: argon2)
         # Note: The original prompt suggested bcrypt, but app/models.py lists argon2 first.
         # Using pwd_context.hash() typically uses the default (first) scheme.
         new_hash = pwd_context.hash(args.new_password)
-        print("[i] New hash generated (length: {}). Scheme: {}".format(len(new_hash), pwd_context.identify(new_hash)))
+        print(
+            f"[i] New hash generated (length: {len(new_hash)}). Scheme: {pwd_context.identify(new_hash)}"
+        )
 
         # 4) Update DB
         cur.execute(
@@ -83,7 +92,9 @@ def main():
             (new_hash, user_id),
         )
         conn.commit()
-        print(f"[+] Updated password_hash for user id={user_id}. You can now try to login with the new password.")
+        print(
+            f"[+] Updated password_hash for user id={user_id}. You can now try to login with the new password."
+        )
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -91,6 +102,7 @@ def main():
     finally:
         cur.close()
         conn.close()
+
 
 if __name__ == "__main__":
     main()

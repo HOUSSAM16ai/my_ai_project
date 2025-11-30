@@ -164,8 +164,9 @@ async def get_current_user_endpoint(request: Request, db: AsyncSession = Depends
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError as e:
+        logger.warning(f"Token decoding failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token") from e
 
     stmt = select(User).where(User.id == int(user_id))
     result = await db.execute(stmt)
