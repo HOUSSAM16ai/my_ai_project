@@ -681,7 +681,11 @@ class PolicyEngine:
         if "not authenticated" in condition:
             return not context.get("authenticated", False)
 
-        return bool("user_id" in condition and "user_id" not in context)
+        # Check if user_id is required but missing/None in context
+        if "user_id" in condition:
+            return not context.get("user_id")
+
+        return False
 
     def _record_violation(self, policy: PolicyRule, context: dict[str, Any]):
         """Record policy violation"""
