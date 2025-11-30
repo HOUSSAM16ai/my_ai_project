@@ -682,7 +682,7 @@ class PolicyEngine:
             return not context.get("authenticated", False)
 
         # Check if user_id is required but missing/None in context
-        if "user_id" in condition:
+        if "user_id" in condition and "not required" not in condition:
             return not context.get("user_id")
 
         return False
