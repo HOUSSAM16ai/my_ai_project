@@ -290,7 +290,7 @@ async def list_conversations(
     stmt = (
         select(AdminConversation)
         .where(AdminConversation.user_id == user_id)
-        .order_by(AdminConversation.created_at.desc())
+        .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
     )
     result = await db.execute(stmt)
     conversations = result.scalars().all()
