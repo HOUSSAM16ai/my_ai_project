@@ -1,7 +1,8 @@
-
 import pytest
 from httpx import AsyncClient
+
 from app.models import User
+
 
 @pytest.mark.asyncio
 async def test_user_me_endpoint(async_client: AsyncClient, admin_user: User, db_session):
@@ -11,7 +12,9 @@ async def test_user_me_endpoint(async_client: AsyncClient, admin_user: User, db_
     db_session.add(admin_user)
     await db_session.commit()
 
-    login_response = await async_client.post("/api/security/login", json={"email": admin_user.email, "password": "testpassword123"})
+    login_response = await async_client.post(
+        "/api/security/login", json={"email": admin_user.email, "password": "testpassword123"}
+    )
     assert login_response.status_code == 200
     token = login_response.json()["access_token"]
 
@@ -25,6 +28,7 @@ async def test_user_me_endpoint(async_client: AsyncClient, admin_user: User, db_
     assert data["is_admin"] is True
     assert "id" in data
     assert "name" in data
+
 
 @pytest.mark.asyncio
 async def test_user_me_endpoint_invalid_token(async_client: AsyncClient):
