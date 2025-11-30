@@ -107,26 +107,22 @@ def create_unified_async_engine(
             engine_kwargs["connect_args"] = {}
 
         # STRICTLY DISABLE PREPARED STATEMENTS for PgBouncer compatibility
-        # This fixes the "DuplicatePreparedStatementError"
-        # We OVERRIDE whatever was passed to ensure safety.
+        # We enforce this rigidly. No exceptions.
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
 
-        # REMOVED prepared_statement_name_func:
-        # The previous "UUID hack" caused 'InvalidSQLStatementNameError' in transaction pooling
-        # because connection switching made the uniquely named statement invisible.
-        # With statement_cache_size=0, asyncpg uses anonymous/unnamed statements (or deallocates immediately),
-        # which is the correct way to handle PgBouncer.
-
-        engine_kwargs["connect_args"]["command_timeout"] = 60
+        # Also enforce command_timeout to avoid hanging queries
+        engine_kwargs["connect_args"].setdefault("command_timeout", 60)
 
         # Enforce safe pooling defaults if not provided AND not using NullPool
         if pool_class != pool.NullPool:
             engine_kwargs.setdefault("pool_pre_ping", True)
             engine_kwargs.setdefault("pool_size", 20)
             engine_kwargs.setdefault("max_overflow", 10)
+            # Enable automatic reconnection
+            engine_kwargs.setdefault("pool_recycle", 300)
 
         logger.info(
-            f"Creating Unified Async Engine for Postgres. Cache Disabled. Pool: {pool_class or 'Default'}"
+            f"Creating Unified Async Engine for Postgres. Connect Args: {engine_kwargs['connect_args']}. Pool: {pool_class or 'Default'}"
         )
 
     elif is_sqlite:
