@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import time
 import traceback
 import uuid
@@ -741,7 +742,11 @@ class MaestroGenerationService:
                 f"**Technical Details:**\n"
                 f"- Error: {error}"
             )
-        if "500" in error_lower or "server" in error_lower or "server_error" in error_lower:
+        if (
+            "500" in error_lower
+            or re.search(r"\bserver\b", error_lower)
+            or "server_error" in error_lower
+        ):
             ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
             extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
 
