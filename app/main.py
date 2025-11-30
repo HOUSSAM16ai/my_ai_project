@@ -83,8 +83,9 @@ def create_app(static_dir: str | None = None) -> FastAPI:
         # 3. SPA Fallback: serve index.html for non-API routes
         @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
         async def spa_fallback(full_path: str):
-            # If path starts with api, return 404 (don't serve HTML)
-            if full_path.startswith("api"):
+            # If path starts with api or contains /api/, return 404 (don't serve HTML)
+            # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found
+            if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
                 raise HTTPException(status_code=404, detail="Not Found")
 
             # Safety check for directory traversal
