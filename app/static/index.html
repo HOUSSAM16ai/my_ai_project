@@ -19,6 +19,7 @@
             --border-color: #555;
             --input-bg-color: #2c2c2c;
             --error-color: #ff4d4d;
+            --sidebar-bg: #252525;
         }
         body, html {
             height: 100%;
@@ -102,6 +103,61 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        /* Dashboard Layout */
+        .dashboard-layout {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+        .new-chat-btn {
+            background-color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        .conversation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .conversation-item {
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #ccc;
+        }
+        .conversation-item:hover {
+            background-color: var(--border-color);
+        }
+        .conversation-item.active {
+            background-color: #333;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
         .chat-container {
             flex-grow: 1;
             display: flex;
@@ -399,6 +455,7 @@
 
         const AdminDashboard = ({ user, onLogout }) => {
             const [messages, setMessages] = useState([]);
+            const [conversations, setConversations] = useState([]);
             const [conversationId, setConversationId] = useState(null);
             const [input, setInput] = useState('');
             const messagesEndRef = useRef(null);
@@ -409,9 +466,42 @@
 
             useEffect(scrollToBottom, [messages]);
 
+            const fetchConversations = async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('/admin/api/conversations', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setConversations(data);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch conversations", e);
+                }
+            };
+
+            const loadConversation = async (id) => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`/admin/api/conversations/${id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setMessages(data.messages || []);
+                        setConversationId(data.conversation_id);
+                    }
+                } catch (e) {
+                    console.error("Failed to load conversation", e);
+                }
+            };
+
             useEffect(() => {
-                const fetchHistory = async () => {
-                    try {
+                fetchConversations();
+                // Load latest chat by default or new chat
+                const fetchLatest = async () => {
+                     try {
                         const token = localStorage.getItem('token');
                         const res = await fetch('/admin/api/chat/latest', {
                             headers: { 'Authorization': `Bearer ${token}` }
@@ -426,11 +516,16 @@
                             }
                         }
                     } catch (e) {
-                        console.error("Failed to fetch history", e);
+                        console.error("Failed to fetch latest", e);
                     }
                 };
-                fetchHistory();
+                fetchLatest();
             }, []);
+
+            const handleNewChat = () => {
+                setMessages([]);
+                setConversationId(null);
+            };
 
             const handleSend = async () => {
                 if (input.trim()) {
@@ -439,10 +534,8 @@
                     setInput('');
 
                     try {
-                        // FIX 1: Send 'question' instead of 'message'
                         const payload = { question: input };
                         if (conversationId) {
-                            // FIX 2: Ensure conversation_id is a string
                             payload.conversation_id = String(conversationId);
                         }
 
@@ -478,16 +571,13 @@
                                     try {
                                         const parsed = JSON.parse(dataContent);
 
-                                        // FIX 3: Robust Event Detection
-                                        // The backend sends `event: conversation_init` separately, but typical fetch readers
-                                        // might not see it if we only look at `data: ` lines.
-                                        // However, the `conversation_init` payload has unique keys.
                                         if (parsed.conversation_id && parsed.title) {
                                              setConversationId(parsed.conversation_id);
                                              setMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
                                              isNewMessage = true;
+                                             // Refresh conversation list to show new chat
+                                             fetchConversations();
                                         }
-                                        // Handle OpenAI-style chunks or error payloads
                                         else if (parsed.choices && parsed.choices[0]) {
                                              const delta = parsed.choices[0].delta || {};
                                              const content = delta.content || '';
@@ -508,7 +598,6 @@
                                              }
                                         }
                                         else if (parsed.content) {
-                                            // Fallback for simple content objects if structure changes
                                             if (isNewMessage) {
                                                  assistantMessage = parsed.content;
                                                  setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
@@ -552,38 +641,63 @@
                         <h2>Overmind CLI Mindgate - Welcome, {user.name}</h2>
                         <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
                     </div>
-                    <div className="chat-container">
-                        <div className="messages">
-                            {messages.length === 0 ? (
-                                <div className="welcome-message">
-                                    <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                    <p>Welcome to the Overmind Interface. Start a new conversation.</p>
-                                </div>
-                            ) : (
-                                messages.map((msg, index) => {
-                                    if (msg.role === 'init') {
-                                        return <div key={index} className="conversation-init">{msg.content}</div>;
-                                    }
-                                    return (
-                                        <div key={index} className={`message ${msg.role}`}>
-                                            <div className="message-bubble">
-                                                <Markdown content={msg.content} />
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                            <div ref={messagesEndRef} />
+
+                    <div className="dashboard-layout">
+                        <div className="sidebar">
+                             <div className="sidebar-header">
+                                 <button className="new-chat-btn" onClick={handleNewChat}>
+                                     <i className="fas fa-plus"></i> New Chat
+                                 </button>
+                             </div>
+                             <div className="conversation-list">
+                                 {conversations.map(conv => (
+                                     <div
+                                         key={conv.id}
+                                         className={`conversation-item ${conversationId === conv.id ? 'active' : ''}`}
+                                         onClick={() => loadConversation(conv.id)}
+                                     >
+                                         <i className="fas fa-comment-alt" style={{marginRight: '8px'}}></i>
+                                         {conv.title || `Conversation ${conv.id}`}
+                                     </div>
+                                 ))}
+                             </div>
                         </div>
-                        <div className="input-area">
-                            <textarea
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Enter your command..."
-                                rows="1"
-                            />
-                            <button onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
+
+                        <div className="chat-area">
+                            <div className="chat-container">
+                                <div className="messages">
+                                    {messages.length === 0 ? (
+                                        <div className="welcome-message">
+                                            <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
+                                            <p>Welcome to the Overmind Interface. Start a new conversation.</p>
+                                        </div>
+                                    ) : (
+                                        messages.map((msg, index) => {
+                                            if (msg.role === 'init') {
+                                                return <div key={index} className="conversation-init">{msg.content}</div>;
+                                            }
+                                            return (
+                                                <div key={index} className={`message ${msg.role}`}>
+                                                    <div className="message-bubble">
+                                                        <Markdown content={msg.content} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                                <div className="input-area">
+                                    <textarea
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="Enter your command..."
+                                        rows="1"
+                                    />
+                                    <button onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
