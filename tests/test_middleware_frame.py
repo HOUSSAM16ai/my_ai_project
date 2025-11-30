@@ -7,17 +7,13 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.responses import Response
 
-try:
-    from app.dev_frame_middleware import DevAllowIframeMiddleware
-except ImportError:
-    DevAllowIframeMiddleware = None
+from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 
 
-@pytest.mark.skipif(DevAllowIframeMiddleware is None, reason="DevAllowIframeMiddleware not found")
 def test_dev_frame_middleware_development():
     """Verify that in development mode, security headers are relaxed to allow framing."""
     with mock.patch.dict(os.environ, {"ENVIRONMENT": "development"}, clear=True):
-        app = Starlette(middleware=[Middleware(DevAllowIframeMiddleware)])
+        app = Starlette(middleware=[Middleware(RemoveBlockingHeadersMiddleware)])
 
         @app.route("/")
         async def homepage(request):
@@ -34,14 +30,14 @@ def test_dev_frame_middleware_development():
 
         # Assertions
         assert "x-frame-options" not in response.headers
-        assert "frame-ancestors *" in response.headers["content-security-policy"]
+        # The new middleware removes "frame-ancestors" part, so only "default-src 'self'" should remain
+        assert response.headers["content-security-policy"] == "default-src 'self'"
 
 
-@pytest.mark.skipif(DevAllowIframeMiddleware is None, reason="DevAllowIframeMiddleware not found")
 def test_dev_frame_middleware_production():
     """Verify that in production mode, security headers remain strict."""
     with mock.patch.dict(os.environ, {"ENVIRONMENT": "production"}, clear=True):
-        app = Starlette(middleware=[Middleware(DevAllowIframeMiddleware)])
+        app = Starlette(middleware=[Middleware(RemoveBlockingHeadersMiddleware)])
 
         @app.route("/")
         async def homepage(request):
