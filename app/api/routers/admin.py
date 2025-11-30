@@ -9,8 +9,10 @@ import json
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Any
+
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from sqlalchemy import select
 
 from app.config.settings import get_settings
@@ -30,6 +32,18 @@ class ChatRequest(BaseModel):
 
     question: str
     conversation_id: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Map 'message' to 'question' for legacy compatibility
+            if "message" in data and "question" not in data:
+                data["question"] = data["message"]
+            # Ensure conversation_id is string if present
+            if "conversation_id" in data and data["conversation_id"] is not None:
+                data["conversation_id"] = str(data["conversation_id"])
+        return data
 
 
 router = APIRouter(
