@@ -257,12 +257,16 @@
                 localStorage.setItem('token', newToken);
                 setToken(newToken);
                 setUser(userData);
+                if (userData && userData.is_admin) {
+                     window.location.href = '/admin';
+                }
             };
 
             const logout = () => {
                 localStorage.removeItem('token');
                 setToken(null);
                 setUser(null);
+                window.location.href = '/';
             };
 
             if (!token || !user) {
