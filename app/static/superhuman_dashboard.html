@@ -171,7 +171,7 @@
 
         const NeuralChat = () => {
             const [messages, setMessages] = useState([
-                { role: 'assistant', content: 'CogniForge Neural Interface ready. How can I assist with system administration today?' }
+                { role: 'assistant', content: '🧠 **OVERMIND CLI MINDGATE** جاهز للعمل.\n\nأنا المُنسق الذكي الأعلى - مرتبط بنظام وكلاء متكامل:\n• **Agent Tools**: قراءة/كتابة/بحث في الكود\n• **Deep Indexer**: تحليل عميق من جذور المشروع\n• **Planning System**: تخطيط المهام المعقدة\n\nكيف يمكنني مساعدتك اليوم؟ 🚀' }
             ]);
             const [input, setInput] = useState('');
             const [isStreaming, setIsStreaming] = useState(false);
@@ -186,27 +186,76 @@
 
                 const userMsg = { role: 'user', content: input };
                 setMessages(prev => [...prev, userMsg]);
+                const currentInput = input;
                 setInput('');
                 setIsStreaming(true);
-
-                // Simulate Streaming for Demo (since we don't have a real token in this static context)
-                // In production, this would hit /admin/api/chat/stream
 
                 const assistantMsg = { role: 'assistant', content: '' };
                 setMessages(prev => [...prev, assistantMsg]);
 
-                // Demo simulation text
-                const responseText = "I have analyzed the system request. Based on the current telemetry, the Reality Kernel is operating within optimal parameters. I can proceed with the requested architectural modification if you provide the necessary authorization codes.";
-                const chunks = responseText.split(' ');
+                try {
+                    // Get auth token from localStorage or session
+                    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                    
+                    // Real API call to OVERMIND CLI MINDGATE
+                    const response = await fetch('/admin/api/chat/stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token && { 'Authorization': `Bearer ${token}` })
+                        },
+                        body: JSON.stringify({ 
+                            question: currentInput,
+                            conversation_id: null 
+                        })
+                    });
 
-                let currentText = "";
-                for (let i = 0; i < chunks.length; i++) {
-                    await new Promise(r => setTimeout(r, 50 + Math.random() * 50));
-                    currentText += (i > 0 ? ' ' : '') + chunks[i];
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
 
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullContent = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    const content = data?.choices?.[0]?.delta?.content || data?.content || '';
+                                    if (content) {
+                                        fullContent += content;
+                                        setMessages(prev => {
+                                            const newMsgs = [...prev];
+                                            newMsgs[newMsgs.length - 1] = { 
+                                                ...newMsgs[newMsgs.length - 1], 
+                                                content: fullContent 
+                                            };
+                                            return newMsgs;
+                                        });
+                                    }
+                                } catch (e) {
+                                    // Skip non-JSON lines
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    // Fallback: Show error message
                     setMessages(prev => {
                         const newMsgs = [...prev];
-                        newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], content: currentText };
+                        newMsgs[newMsgs.length - 1] = { 
+                            ...newMsgs[newMsgs.length - 1], 
+                            content: `⚠️ خطأ في الاتصال: ${error.message}\n\nتأكد من:\n1. تسجيل الدخول\n2. إعداد OPENROUTER_API_KEY\n3. تشغيل الخادم بشكل صحيح` 
+                        };
                         return newMsgs;
                     });
                 }
