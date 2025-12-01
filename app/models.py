@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func
-from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -44,6 +43,53 @@ class CaseInsensitiveEnum(str, enum.Enum):
                 if member.value == value.lower():
                     return member
         return None
+
+
+class FlexibleEnum(TypeDecorator):
+    """
+    A SQLAlchemy TypeDecorator that handles Enum persistence more robustly than Native Enum.
+    It stores values as Text (compatible with VARCHAR), ensuring that:
+    1. Writes are always normalized to the Enum's canonical value (lowercase).
+    2. Reads are case-insensitive (healing 'USER' -> 'user' on the fly).
+    This prevents LookupError when the database contains legacy uppercase values.
+    """
+    impl = Text
+    cache_ok = True
+
+    def __init__(self, enum_cls, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enum_cls = enum_cls
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, self.enum_cls):
+            return value.value
+        # If it's a string, try to convert to Enum then value, or just lower it
+        if isinstance(value, str):
+             # Try to normalize via Enum
+            try:
+                return self.enum_cls(value).value
+            except ValueError:
+                return value.lower()
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        # rely on CaseInsensitiveEnum to handle 'USER', 'User', etc.
+        try:
+            return self.enum_cls(value)
+        except ValueError:
+            # Last ditch effort: force lower
+            try:
+                return self.enum_cls(value.lower())
+            except ValueError:
+                # If it's truly invalid, let it bubble up or return None?
+                # Bubble up is better than silent failure for data integrity,
+                # but we want to avoid crashes.
+                # Given the prompt, we should try hard to return something valid.
+                return None
 
 
 class MessageRole(CaseInsensitiveEnum):
@@ -166,13 +212,7 @@ class AdminMessage(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole = Field(
-        sa_column=Column(
-            SAEnum(
-                MessageRole,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        )
+        sa_column=Column(FlexibleEnum(MessageRole))
     )
     content: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
@@ -192,13 +232,7 @@ class Mission(SQLModel, table=True):
     objective: str = Field(sa_column=Column(Text))
     status: MissionStatus = Field(
         default=MissionStatus.PENDING,
-        sa_column=Column(
-            SAEnum(
-                MissionStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(MissionStatus)),
     )
     initiator_id: int = Field(foreign_key="users.id", index=True)
     active_plan_id: int | None = Field(
@@ -266,13 +300,7 @@ class MissionPlan(SQLModel, table=True):
     planner_name: str = Field(max_length=100)
     status: PlanStatus = Field(
         default=PlanStatus.DRAFT,
-        sa_column=Column(
-            SAEnum(
-                PlanStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(PlanStatus)),
     )
     score: float = Field(default=0.0)
     rationale: str | None = Field(sa_column=Column(Text))
@@ -310,13 +338,7 @@ class Task(SQLModel, table=True):
     )  # Postgres specific or use string
     status: TaskStatus = Field(
         default=TaskStatus.PENDING,
-        sa_column=Column(
-            SAEnum(
-                TaskStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(TaskStatus)),
     )
     attempt_count: int = Field(default=0)
     max_attempts: int = Field(default=3)
@@ -360,13 +382,7 @@ class MissionEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     event_type: MissionEventType = Field(
-        sa_column=Column(
-            SAEnum(
-                MissionEventType,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        )
+        sa_column=Column(FlexibleEnum(MissionEventType))
     )
     payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
