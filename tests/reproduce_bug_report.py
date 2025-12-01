@@ -53,6 +53,6 @@ async def test_get_latest_chat_determinism(
     # The bug is that it might return conv1 because timestamps are equal.
     # We expect conv2 because it has the higher ID.
     # The response payload has 'conversation_id' not 'id'
-    assert data["conversation_id"] == conv2_id, (
-        f"Expected conversation {conv2_id} (higher ID), but got {data['conversation_id']}"
-    )
+    assert (
+        data["conversation_id"] == conv2_id
+    ), f"Expected conversation {conv2_id} (higher ID), but got {data['conversation_id']}"

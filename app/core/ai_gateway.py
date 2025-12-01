@@ -183,7 +183,8 @@ class ConnectionManager:
 # --- Protocols ---
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        ...
 
     async def __aiter__(self):
         return self

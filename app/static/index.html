@@ -498,8 +498,9 @@
                         setConversationId(data.conversation_id);
                     } else {
                         // Handle error - show error message to user
-                        const errorData = await res.json().catch(() => ({ detail: 'Failed to load conversation' }));
-                        setMessages([{ role: 'assistant', content: `Error: ${errorData.detail || 'Failed to load conversation'}` }]);
+                        const errorData = await res.json().catch(() => ({}));
+                        const errorMessage = errorData.detail || 'Failed to load conversation';
+                        setMessages([{ role: 'assistant', content: `Error: ${errorMessage}` }]);
                     }
                 } catch (e) {
                     console.error("Failed to load conversation", e);
@@ -662,16 +663,21 @@
                                  </button>
                              </div>
                              <div className="conversation-list">
-                                 {conversations.map(conv => (
-                                     <div
-                                         key={conv.id}
-                                         className={`conversation-item ${conversationId === conv.id ? 'active' : ''}`}
-                                         onClick={() => loadConversation(conv.id)}
-                                     >
-                                         <i className={`fas ${conversationId === conv.id && isLoadingConversation ? 'fa-spinner fa-spin' : 'fa-comment-alt'}`} style={{marginRight: '8px'}}></i>
-                                         {conv.title || `Conversation ${conv.id}`}
-                                     </div>
-                                 ))}
+                                 {conversations.map(conv => {
+                                     const isActive = conversationId === conv.id;
+                                     const isLoading = isActive && isLoadingConversation;
+                                     const iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-comment-alt';
+                                     return (
+                                         <div
+                                             key={conv.id}
+                                             className={`conversation-item ${isActive ? 'active' : ''}`}
+                                             onClick={() => loadConversation(conv.id)}
+                                         >
+                                             <i className={`fas ${iconClass}`} style={{marginRight: '8px'}}></i>
+                                             {conv.title || `Conversation ${conv.id}`}
+                                         </div>
+                                     );
+                                 })}
                              </div>
                         </div>
 

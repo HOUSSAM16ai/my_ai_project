@@ -72,9 +72,9 @@ async def test_admin_chat_returns_conversation_init_event(
 
     # Assertions
     # Note: found_init_event is set to False after finding the data, so we check new_conversation_id instead
-    assert new_conversation_id is not None, (
-        "The init event payload did not contain 'conversation_id'."
-    )
+    assert (
+        new_conversation_id is not None
+    ), "The init event payload did not contain 'conversation_id'."
     assert new_conversation_title is not None, "The init event payload did not contain 'title'."
 
     # Cleanup

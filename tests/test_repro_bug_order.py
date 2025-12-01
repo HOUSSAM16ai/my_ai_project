@@ -42,6 +42,6 @@ async def test_get_latest_chat_deterministic_order(
     data = response.json()
 
     # Assert that the returned conversation is the second one (higher ID)
-    assert data["conversation_id"] == conv2.id, (
-        f"Expected conversation {conv2.id} but got {data['conversation_id']}"
-    )
+    assert (
+        data["conversation_id"] == conv2.id
+    ), f"Expected conversation {conv2.id} but got {data['conversation_id']}"
