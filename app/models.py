@@ -413,9 +413,7 @@ class GeneratedPrompt(SQLModel, table=True):
 def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None):
     # Note: payload_json uses JSONText TypeDecorator which handles json.dumps() internally.
     # Do NOT call json.dumps(payload) here as it would cause double encoding.
-    evt = MissionEvent(
-        mission_id=mission.id, event_type=event_type, payload_json=payload
-    )
+    evt = MissionEvent(mission_id=mission.id, event_type=event_type, payload_json=payload)
     if session:
         session.add(evt)
 

@@ -21,20 +21,18 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import contextlib
 import functools
 import logging
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, TypeVar
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Thread pool for sync operations
 # Size = 4 to limit concurrent blocking operations
 _TOOL_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tool_bridge_")
-
-
-import contextlib
 
 
 def _shutdown_executor():
@@ -46,10 +44,8 @@ def _shutdown_executor():
 # Register cleanup on application exit
 atexit.register(_shutdown_executor)
 
-T = TypeVar("T")
 
-
-async def run_sync_tool(
+async def run_sync_tool[T](
     func: Callable[..., T],
     *args,
     timeout: float = 30.0,

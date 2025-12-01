@@ -1,7 +1,0 @@
-      3 app/static/src/components/ArtifactRenderer.tsx
-      2 app/static/src/components/ThreeDScene.tsx
-      2 app/static/src/components/MathRenderer.tsx
-      2 app/static/src/components/InteractiveChart.tsx
-      2 app/static/src/components/DataVisualizationDemo.tsx
-      2 app/static/src/App.tsx
-      1 app/static/src/components/AICodePlayground.tsx

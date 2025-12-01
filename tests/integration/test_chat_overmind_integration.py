@@ -37,7 +37,10 @@ class TestIntentDetection:
             ("search AdminMessage", ChatIntent.CODE_SEARCH),
             ("find SessionLocal", ChatIntent.CODE_SEARCH),
             ("ابحث عن User", ChatIntent.CODE_SEARCH),
-            ("analyze the project", ChatIntent.PROJECT_INDEX),  # Matched by PROJECT_INDEX pattern first
+            (
+                "analyze the project",
+                ChatIntent.PROJECT_INDEX,
+            ),  # Matched by PROJECT_INDEX pattern first
             ("refactor the codebase", ChatIntent.MISSION_COMPLEX),
             ("حلل المشروع", ChatIntent.PROJECT_INDEX),  # Matched by PROJECT_INDEX pattern first
             ("create a mission to fix bugs", ChatIntent.MISSION_COMPLEX),
