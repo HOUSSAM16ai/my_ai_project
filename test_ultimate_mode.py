@@ -72,41 +72,41 @@ def test_token_allocation():
 
     # Test 1: Short question (< 5K chars)
     service.forge_new_code("Short question", conversation_id="test-1")
-    assert (
-        captured_tokens[-1] == 4000
-    ), f"Expected 4000 tokens for short question, got {captured_tokens[-1]}"
+    assert captured_tokens[-1] == 4000, (
+        f"Expected 4000 tokens for short question, got {captured_tokens[-1]}"
+    )
     print("✅ Short question: 4,000 tokens allocated")
 
     # Test 2: Long question (5K-20K chars)
     long_question = "x" * 10000
     service.forge_new_code(long_question, conversation_id="test-2")
-    assert (
-        captured_tokens[-1] == 16000
-    ), f"Expected 16000 tokens for long question, got {captured_tokens[-1]}"
+    assert captured_tokens[-1] == 16000, (
+        f"Expected 16000 tokens for long question, got {captured_tokens[-1]}"
+    )
     print("✅ Long question (10K chars): 16,000 tokens allocated")
 
     # Test 3: Very long question (20K-50K chars)
     very_long_question = "x" * 30000
     service.forge_new_code(very_long_question, conversation_id="test-3")
-    assert (
-        captured_tokens[-1] == 64000
-    ), f"Expected 64000 tokens for very long question, got {captured_tokens[-1]}"
+    assert captured_tokens[-1] == 64000, (
+        f"Expected 64000 tokens for very long question, got {captured_tokens[-1]}"
+    )
     print("✅ Very long question (30K chars): 64,000 tokens allocated")
 
     # Test 4: Extremely long question (50K+ chars)
     extreme_question = "x" * 60000
     service.forge_new_code(extreme_question, conversation_id="test-4")
-    assert (
-        captured_tokens[-1] == 128000
-    ), f"Expected 128000 tokens for extreme question, got {captured_tokens[-1]}"
+    assert captured_tokens[-1] == 128000, (
+        f"Expected 128000 tokens for extreme question, got {captured_tokens[-1]}"
+    )
     print("✅ Extreme question (60K chars): 128,000 tokens allocated")
 
     # Test 5: ULTIMATE mode enabled (even for short questions)
     os.environ["LLM_ULTIMATE_COMPLEXITY_MODE"] = "1"
     service.forge_new_code("Short question", conversation_id="test-5")
-    assert (
-        captured_tokens[-1] == 128000
-    ), f"Expected 128000 tokens in ULTIMATE mode, got {captured_tokens[-1]}"
+    assert captured_tokens[-1] == 128000, (
+        f"Expected 128000 tokens in ULTIMATE mode, got {captured_tokens[-1]}"
+    )
     print("✅ ULTIMATE mode (short question): 128,000 tokens allocated")
 
     # Clean up

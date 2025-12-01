@@ -23,9 +23,9 @@ def test_database_url_fixer_handles_duplicates_gracefully():
             # The 'sslmode' should be removed.
             assert "sslmode" not in settings.DATABASE_URL
             assert "ssl=true" not in settings.DATABASE_URL
-            assert (
-                settings.DATABASE_URL.count("ssl=require") == 1
-            ), f"URL should contain 'ssl=require' exactly once. Got: {settings.DATABASE_URL}"
+            assert settings.DATABASE_URL.count("ssl=require") == 1, (
+                f"URL should contain 'ssl=require' exactly once. Got: {settings.DATABASE_URL}"
+            )
         except ValidationError as e:
             pytest.fail(f"AppSettings validation failed unexpectedly: {e}")
 
@@ -40,8 +40,8 @@ def test_database_url_fixer_handles_simple_sslmode():
         try:
             settings = AppSettings()
             assert "sslmode" not in settings.DATABASE_URL
-            assert settings.DATABASE_URL.endswith(
-                "?ssl=require"
-            ), f"URL should end with '?ssl=require'. Got: {settings.DATABASE_URL}"
+            assert settings.DATABASE_URL.endswith("?ssl=require"), (
+                f"URL should end with '?ssl=require'. Got: {settings.DATABASE_URL}"
+            )
         except ValidationError as e:
             pytest.fail(f"AppSettings validation failed unexpectedly: {e}")

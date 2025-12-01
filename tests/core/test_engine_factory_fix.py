@@ -1,7 +1,9 @@
-import uuid
 from unittest import mock
+
 import pytest
+
 from app.core.engine_factory import create_unified_async_engine
+
 
 @pytest.mark.asyncio
 async def test_engine_factory_pgbouncer_config():

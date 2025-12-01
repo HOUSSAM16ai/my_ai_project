@@ -458,6 +458,7 @@
             const [conversations, setConversations] = useState([]);
             const [conversationId, setConversationId] = useState(null);
             const [input, setInput] = useState('');
+            const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
 
             const scrollToBottom = () => {
@@ -482,6 +483,10 @@
             };
 
             const loadConversation = async (id) => {
+                // Set active state immediately for visual feedback
+                setConversationId(id);
+                setIsLoadingConversation(true);
+                setMessages([]);
                 try {
                     const token = localStorage.getItem('token');
                     const res = await fetch(`/admin/api/conversations/${id}`, {
@@ -491,9 +496,16 @@
                         const data = await res.json();
                         setMessages(data.messages || []);
                         setConversationId(data.conversation_id);
+                    } else {
+                        // Handle error - show error message to user
+                        const errorData = await res.json().catch(() => ({ detail: 'Failed to load conversation' }));
+                        setMessages([{ role: 'assistant', content: `Error: ${errorData.detail || 'Failed to load conversation'}` }]);
                     }
                 } catch (e) {
                     console.error("Failed to load conversation", e);
+                    setMessages([{ role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
+                } finally {
+                    setIsLoadingConversation(false);
                 }
             };
 
@@ -656,7 +668,7 @@
                                          className={`conversation-item ${conversationId === conv.id ? 'active' : ''}`}
                                          onClick={() => loadConversation(conv.id)}
                                      >
-                                         <i className="fas fa-comment-alt" style={{marginRight: '8px'}}></i>
+                                         <i className={`fas ${conversationId === conv.id && isLoadingConversation ? 'fa-spinner fa-spin' : 'fa-comment-alt'}`} style={{marginRight: '8px'}}></i>
                                          {conv.title || `Conversation ${conv.id}`}
                                      </div>
                                  ))}
@@ -666,7 +678,12 @@
                         <div className="chat-area">
                             <div className="chat-container">
                                 <div className="messages">
-                                    {messages.length === 0 ? (
+                                    {isLoadingConversation ? (
+                                        <div className="welcome-message">
+                                            <i className="fas fa-spinner fa-spin" style={{fontSize: '2em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
+                                            <p>Loading conversation...</p>
+                                        </div>
+                                    ) : messages.length === 0 ? (
                                         <div className="welcome-message">
                                             <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
                                             <p>Welcome to the Overmind Interface. Start a new conversation.</p>

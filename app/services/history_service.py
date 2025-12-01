@@ -43,9 +43,7 @@ async def get_recent_conversations(user_id: int, limit: int = 5):
             conversations = result.scalars().all()
             return list(conversations)
     except Exception as e:
-        logger.error(
-            f"Failed to fetch recent conversations for user {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Failed to fetch recent conversations for user {user_id}: {e}", exc_info=True)
         return []
 
 
@@ -62,7 +60,7 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int):
     Returns:
         Dict with 'status' and 'message' keys indicating success or error.
     """
-    from app.models import AdminConversation, AdminMessage as Message
+    from app.models import AdminMessage as Message
 
     if rating not in ["good", "bad", "neutral"]:
         return {"status": "error", "message": "Invalid rating value provided."}
@@ -96,25 +94,17 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int):
                 message_to_rate.rating = rating
                 await session.commit()
             else:
-                logger.warning(
-                    "Message model has no rating field. Skipping update."
-                )
+                logger.warning("Message model has no rating field. Skipping update.")
 
-            logger.info(
-                f"User {user_id} rated message {message_id} as '{rating}'."
-            )
+            logger.info(f"User {user_id} rated message {message_id} as '{rating}'.")
             return {
                 "status": "success",
                 "message": f"Message {message_id} has been rated as '{rating}'.",
             }
 
     except sqlalchemy_exc.SQLAlchemyError as e:
-        logger.error(
-            f"Database error while rating message {message_id}: {e}", exc_info=True
-        )
+        logger.error(f"Database error while rating message {message_id}: {e}", exc_info=True)
         return {"status": "error", "message": "A database error occurred."}
     except Exception as e:
-        logger.error(
-            f"Unexpected error while rating message {message_id}: {e}", exc_info=True
-        )
+        logger.error(f"Unexpected error while rating message {message_id}: {e}", exc_info=True)
         return {"status": "error", "message": "An unexpected error occurred."}

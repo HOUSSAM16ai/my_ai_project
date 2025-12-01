@@ -1,6 +1,7 @@
-
 import pytest
+
 from app.services.fastapi_generation_service import get_generation_service
+
 
 def test_misleading_server_error_classification_bug():
     """
@@ -16,10 +17,11 @@ def test_misleading_server_error_classification_bug():
 
     # Assert that it is NOT classified as Server Error 500
     if "Server Error 500" in response:
-         pytest.fail("Bug persist: 'Observer' error was classified as Server Error 500")
+        pytest.fail("Bug persist: 'Observer' error was classified as Server Error 500")
 
     # We expect the generic fallback error message
     assert "Error Occurred" in response
+
 
 def test_correct_server_error_classification():
     """
