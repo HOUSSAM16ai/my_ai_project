@@ -79,7 +79,10 @@ class FlexibleEnum(TypeDecorator):
         if value is None:
             return None
         # This leverages CaseInsensitiveEnum._missing_
-        return self._enum_type(value)
+        try:
+            return self._enum_type(value)
+        except ValueError:
+            return value
 
 
 class MessageRole(CaseInsensitiveEnum):
