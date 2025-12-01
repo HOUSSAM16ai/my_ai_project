@@ -20,6 +20,7 @@ from app.core.database import AsyncSession, async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.prompts import get_system_prompt
 from app.models import AdminConversation, AdminMessage, MessageRole
+from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
 
 logger = get_logger(__name__)
 
@@ -161,6 +162,10 @@ async def chat_stream(
 
     # --- SUPERHUMAN STREAMING & QUANTUM PERSISTENCE SHIELD ---
 
+    # Get orchestrator and detect intent
+    orchestrator = get_chat_orchestrator()
+    intent_result = orchestrator.detect_intent(question)
+
     async def response_generator():
         # Send init event
         init_payload = {
@@ -218,20 +223,57 @@ async def chat_stream(
 
         try:
             async with StreamingPersistenceContext():
-                async for chunk in ai_client.stream_chat(messages):
-                    content_part = ""
-                    if isinstance(chunk, dict):
-                        choices = chunk.get("choices", [])
-                        if choices and len(choices) > 0:
-                            delta = choices[0].get("delta", {})
-                            content_part = delta.get("content", "")
-                        else:
-                            content_part = chunk.get("content", "")
+                # Check for tool-capable intents
+                tool_intents = {
+                    ChatIntent.FILE_READ,
+                    ChatIntent.CODE_SEARCH,
+                    ChatIntent.MISSION_COMPLEX,
+                    ChatIntent.HELP,
+                }
 
-                    if content_part:
-                        full_response.append(content_part)
+                if intent_result.intent in tool_intents:
+                    # Log intent detection
+                    logger.info(
+                        f"Routing to orchestrator: intent={intent_result.intent.value}, "
+                        f"confidence={intent_result.confidence}"
+                    )
 
-                    yield f"data: {json.dumps(chunk)}\n\n"
+                    # Emit intent metadata for client
+                    intent_meta = {
+                        "type": "intent_detected",
+                        "intent": intent_result.intent.value,
+                        "confidence": intent_result.confidence,
+                    }
+                    yield f"event: intent\ndata: {json.dumps(intent_meta)}\n\n"
+
+                    # Stream from orchestrator (passing user_id, not User object)
+                    async for content_part in orchestrator.orchestrate(
+                        question=question,
+                        user_id=user_id,
+                        conversation_id=conversation.id,
+                        ai_client=ai_client,
+                        history_messages=messages,
+                    ):
+                        if content_part:
+                            full_response.append(content_part)
+                            chunk_data = {"choices": [{"delta": {"content": content_part}}]}
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                else:
+                    # Simple LLM chat - unchanged behavior
+                    async for chunk in ai_client.stream_chat(messages):
+                        content_part = ""
+                        if isinstance(chunk, dict):
+                            choices = chunk.get("choices", [])
+                            if choices and len(choices) > 0:
+                                delta = choices[0].get("delta", {})
+                                content_part = delta.get("content", "")
+                            else:
+                                content_part = chunk.get("content", "")
+
+                        if content_part:
+                            full_response.append(content_part)
+
+                        yield f"data: {json.dumps(chunk)}\n\n"
 
         except Exception as e:
             error_payload = {
