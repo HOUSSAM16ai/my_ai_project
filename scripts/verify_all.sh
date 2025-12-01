@@ -8,9 +8,6 @@ ruff check .
 echo "--- Running isort Check ---"
 isort --check-only .
 
-echo "--- Building Frontend ---"
-(cd app/static && npm ci && NODE_OPTIONS="--max-old-space-size=8192" npm run build)
-
 echo "--- Starting Server in Background ---"
 export DATABASE_URL='sqlite+aiosqlite:///./test.db'
 export SECRET_KEY='dev-secret-key'

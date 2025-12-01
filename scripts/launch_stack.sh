@@ -54,22 +54,6 @@ else
     warn "Python dependency check had issues. See logs."
 fi
 
-# --- Step 1.5: Frontend Build ---
-log "Step 1.5/4: Installing Frontend Dependencies & Building UI..."
-if npm install >> "$LOG_FILE" 2>&1; then
-    log "✅ Frontend dependencies installed."
-    # Increase memory limit for the build process, which is critical in constrained environments
-    export NODE_OPTIONS="--max-old-space-size=8192"
-    if npm run build >> "$LOG_FILE" 2>&1; then
-        log "✅ Frontend UI built successfully."
-    else
-        err "❌ Frontend UI build failed. The application might show a white screen."
-    fi
-    unset NODE_OPTIONS
-else
-    err "❌ npm install failed. Frontend will be unavailable."
-fi
-
 # --- Step 2: Migrations ---
 log "Step 2/4: Smart Migrations..."
 if [ -f "scripts/smart_migrate.py" ]; then

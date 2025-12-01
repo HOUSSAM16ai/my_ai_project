@@ -214,11 +214,11 @@ class ProjectContextService:
             "frameworks_detected": [],
             "design_patterns": [],
         }
-        
+
         app_dir = self.project_root / "app"
         if not app_dir.exists():
             return analysis
-            
+
         for py_file in app_dir.rglob("*.py"):
             if "__pycache__" in str(py_file):
                 continue
@@ -230,7 +230,7 @@ class ProjectContextService:
                 analysis["total_functions"] += content.count("\ndef ") + content.count("\nasync def ")
                 # Count imports
                 analysis["total_imports"] += content.count("\nimport ") + content.count("\nfrom ")
-                
+
                 # Detect frameworks
                 if "fastapi" in content.lower() and "FastAPI" not in analysis["frameworks_detected"]:
                     analysis["frameworks_detected"].append("FastAPI")
@@ -238,21 +238,20 @@ class ProjectContextService:
                     analysis["frameworks_detected"].append("SQLAlchemy")
                 if "pydantic" in content.lower() and "Pydantic" not in analysis["frameworks_detected"]:
                     analysis["frameworks_detected"].append("Pydantic")
-                    
+
                 # Detect design patterns
                 if "Factory" in content and "Factory Pattern" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Factory Pattern")
                 if "@dataclass" in content and "Dataclass" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Dataclass")
-                if "Singleton" in content or "_instance" in content:
-                    if "Singleton Pattern" not in analysis["design_patterns"]:
-                        analysis["design_patterns"].append("Singleton Pattern")
+                if ("Singleton" in content or "_instance" in content) and "Singleton Pattern" not in analysis["design_patterns"]:
+                    analysis["design_patterns"].append("Singleton Pattern")
                 if "async def" in content and "Async/Await" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Async/Await")
-                    
+
             except Exception:
                 pass
-                
+
         return analysis
 
     def get_architecture_layers(self) -> dict[str, list[str]]:
@@ -267,11 +266,11 @@ class ProjectContextService:
             "infrastructure": [], # Database, external services
             "core": [],          # Core utilities, DI
         }
-        
+
         app_dir = self.project_root / "app"
         if not app_dir.exists():
             return layers
-            
+
         # Categorize directories
         dir_mapping = {
             "api": "presentation",
@@ -286,14 +285,14 @@ class ProjectContextService:
             "middleware": "infrastructure",
             "config": "infrastructure",
         }
-        
+
         for item in app_dir.iterdir():
             if item.is_dir() and not item.name.startswith("__"):
                 layer = dir_mapping.get(item.name, "business")
                 py_count = len(list(item.glob("*.py")))
                 if py_count > 0:
                     layers[layer].append(f"{item.name}/ ({py_count} files)")
-                    
+
         return layers
 
     def get_key_components(self) -> list[dict[str, str]]:
@@ -302,7 +301,7 @@ class ProjectContextService:
         Identifies the most important components of the system.
         """
         components = []
-        
+
         key_files = [
             ("app/main.py", "Application Entry Point", "FastAPI app creation"),
             ("app/models.py", "Database Models", "SQLAlchemy/SQLModel entities"),
@@ -315,7 +314,7 @@ class ProjectContextService:
             ("app/overmind/planning/deep_indexer.py", "Deep Indexer", "Code structure analysis"),
             ("app/overmind/planning/factory.py", "Planner Factory", "Multi-planner orchestration"),
         ]
-        
+
         for file_path, name, description in key_files:
             full_path = self.project_root / file_path
             if full_path.exists():
@@ -329,7 +328,7 @@ class ProjectContextService:
                     })
                 except Exception:
                     pass
-                    
+
         return components
 
     def generate_context_for_ai(self) -> str:
@@ -418,14 +417,14 @@ class ProjectContextService:
     # 🔬 SUPERHUMAN SEARCH ALGORITHMS - خوارزميات بحث فائقة الذكاء
     # =========================================================================
 
-    def deep_search_issues(self, search_pattern: str = None) -> dict[str, Any]:
+    def deep_search_issues(self, search_pattern: str | None = None) -> dict[str, Any]:
         """
         🔍 SUPERHUMAN ISSUE DETECTION
         خوارزمية فائقة الذكاء للبحث عن المشاكل في ملايين الملفات.
         تستخدم تقنيات متقدمة للعثور على أصغر المشاكل.
         """
         import re
-        
+
         issues = {
             "syntax_errors": [],
             "missing_imports": [],
@@ -437,11 +436,11 @@ class ProjectContextService:
             "total_files_scanned": 0,
             "total_issues_found": 0,
         }
-        
+
         app_dir = self.project_root / "app"
         if not app_dir.exists():
             return issues
-            
+
         # Patterns for common issues
         issue_patterns = {
             "trailing_comma_missing": r'\([^)]*[a-zA-Z0-9_]\s*\n\s*\)',
@@ -453,16 +452,15 @@ class ProjectContextService:
             "long_line": r'^.{120,}$',
             "multiple_statements": r';\s*\w',
         }
-        
+
         for py_file in app_dir.rglob("*.py"):
             if "__pycache__" in str(py_file):
                 continue
             issues["total_files_scanned"] += 1
-            
+
             try:
                 content = py_file.read_text(encoding="utf-8")
-                lines = content.splitlines()
-                
+
                 for pattern_name, pattern in issue_patterns.items():
                     matches = re.finditer(pattern, content, re.MULTILINE)
                     for match in matches:
@@ -475,7 +473,7 @@ class ProjectContextService:
                             "snippet": match.group()[:50]
                         })
                         issues["total_issues_found"] += 1
-                        
+
                 # Check for syntax errors using AST
                 try:
                     import ast
@@ -487,10 +485,10 @@ class ProjectContextService:
                         "message": str(e.msg),
                     })
                     issues["total_issues_found"] += 1
-                    
+
             except Exception:
                 pass
-                
+
         return issues
 
     def intelligent_code_search(self, query: str, max_results: int = 20) -> list[dict]:
@@ -499,29 +497,28 @@ class ProjectContextService:
         بحث ذكي في الكود باستخدام خوارزميات متقدمة.
         يمكنه العثور على أي شيء حتى في مليار ملف.
         """
-        import re
-        
+
         results = []
         app_dir = self.project_root / "app"
-        
+
         if not app_dir.exists():
             return results
-            
+
         # Normalize query for fuzzy matching
         query_lower = query.lower()
         query_words = set(query_lower.split())
-        
+
         for py_file in app_dir.rglob("*.py"):
             if "__pycache__" in str(py_file):
                 continue
-                
+
             try:
                 content = py_file.read_text(encoding="utf-8")
                 lines = content.splitlines()
-                
+
                 for i, line in enumerate(lines):
                     line_lower = line.lower()
-                    
+
                     # Exact match
                     if query_lower in line_lower:
                         results.append({
@@ -543,13 +540,13 @@ class ProjectContextService:
                                 "match_type": "fuzzy",
                                 "relevance": overlap
                             })
-                            
+
                     if len(results) >= max_results * 2:
                         break
-                        
+
             except Exception:
                 pass
-                
+
         # Sort by relevance and return top results
         results.sort(key=lambda x: x["relevance"], reverse=True)
         return results[:max_results]
@@ -568,26 +565,26 @@ class ProjectContextService:
             "duplicate_logic": [],
             "total_smells": 0,
         }
-        
+
         app_dir = self.project_root / "app"
         if not app_dir.exists():
             return smells
-            
+
         for py_file in app_dir.rglob("*.py"):
             if "__pycache__" in str(py_file):
                 continue
-                
+
             try:
                 content = py_file.read_text(encoding="utf-8")
                 lines = content.splitlines()
                 rel_path = str(py_file.relative_to(self.project_root))
-                
+
                 # Detect long methods (>50 lines)
                 import re
                 method_pattern = r'^\s*(async\s+)?def\s+(\w+)'
                 current_method = None
                 method_start = 0
-                
+
                 for i, line in enumerate(lines):
                     match = re.match(method_pattern, line)
                     if match:
@@ -600,7 +597,7 @@ class ProjectContextService:
                             smells["total_smells"] += 1
                         current_method = match.group(2)
                         method_start = i
-                        
+
                 # Detect magic numbers
                 magic_pattern = r'[=<>!]=?\s*(\d{2,})'
                 for i, line in enumerate(lines):
@@ -611,7 +608,7 @@ class ProjectContextService:
                             "content": line.strip()[:60]
                         })
                         smells["total_smells"] += 1
-                        
+
                 # Detect deep nesting (>4 levels)
                 max_indent = 0
                 for line in lines:
@@ -619,17 +616,17 @@ class ProjectContextService:
                         indent = len(line) - len(line.lstrip())
                         if indent > max_indent:
                             max_indent = indent
-                            
+
                 if max_indent > 16:  # 4 levels * 4 spaces
                     smells["deep_nesting"].append({
                         "file": rel_path,
                         "max_indent_level": max_indent // 4
                     })
                     smells["total_smells"] += 1
-                    
+
             except Exception:
                 pass
-                
+
         return smells
 
     def get_comprehensive_analysis(self) -> dict[str, Any]:
