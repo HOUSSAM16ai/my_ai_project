@@ -79,22 +79,63 @@ def _get_deep_index_summary() -> str:
     """
     Get deep structural analysis from Deep Indexer.
     Provides root-level understanding of project architecture.
+    SUPERHUMAN: Provides extremely detailed project inspection.
     """
     try:
         from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
 
         index = build_index(".")
         if index:
-            summary = summarize_for_prompt(index, max_len=2000)
+            summary = summarize_for_prompt(index, max_len=2500)
+            
+            # Extract additional metrics for superhuman analysis
+            global_metrics = index.get('global_metrics', {})
+            layers = index.get('layers', {})
+            duplicates = index.get('duplicate_function_bodies', [])
+            hotspots = index.get('complexity_hotspots_top50', [])
+            
+            # Build layer analysis
+            layer_info = ""
+            if layers:
+                layer_info = "\n### 🏗️ Architecture Layers:\n"
+                for layer_name, files in list(layers.items())[:5]:
+                    layer_info += f"- **{layer_name}**: {len(files)} files\n"
+            
+            # Build complexity analysis
+            complexity_info = ""
+            if hotspots:
+                complexity_info = "\n### ⚠️ Complexity Hotspots (Top 5):\n"
+                for hs in hotspots[:5]:
+                    file_path = hs.get('file', 'unknown').split('/')[-1]
+                    func_name = hs.get('name', 'unknown')
+                    cx = hs.get('complexity', 0)
+                    loc = hs.get('loc', 0)
+                    complexity_info += f"- `{file_path}::{func_name}` - Complexity: {cx}, Lines: {loc}\n"
+            
+            # Build duplicate detection
+            dup_info = ""
+            if duplicates:
+                dup_info = f"\n### 🔄 Code Duplication: {len(duplicates)} duplicate patterns detected\n"
+            
             return f"""
-## 🔬 DEEP STRUCTURAL ANALYSIS (من جذور المشروع)
+## 🔬 DEEP STRUCTURAL ANALYSIS - فحص خارق لبنية المشروع
 
 {summary}
 
-### 📊 Index Metrics:
-- Files Scanned: {index.get('files_scanned', 0)}
-- Total Modules: {len(index.get('modules', {}))}
-- Complexity Hotspots: {len(index.get('complexity_hotspots_top50', []))}
+### 📊 Index Metrics (قياسات الفهرسة):
+- **Files Scanned**: {index.get('files_scanned', 0)} ملف
+- **Total Modules**: {len(index.get('modules', {}))} وحدة
+- **Total Functions**: {global_metrics.get('total_functions', 'N/A')} دالة
+- **Avg Complexity**: {global_metrics.get('avg_complexity', 'N/A')}
+- **Max Complexity**: {global_metrics.get('max_complexity', 'N/A')}
+- **Complexity Hotspots**: {len(hotspots)} نقطة ساخنة
+{layer_info}{complexity_info}{dup_info}
+### 🎯 Deep Analysis Capabilities:
+- فحص كامل لهيكل المشروع من الجذور
+- تحليل التعقيد لكل دالة
+- كشف التكرار في الكود
+- تحديد الطبقات المعمارية
+- تتبع الاستدعاءات بين الملفات
 """
     except Exception as e:
         logger.debug(f"Deep indexer not available: {e}")
