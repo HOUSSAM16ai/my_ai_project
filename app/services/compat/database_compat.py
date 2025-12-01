@@ -12,43 +12,31 @@ Do not use these functions in new code.
 """
 
 import asyncio
+import logging
 import warnings
 from typing import Any
 
-from app.core.di import get_logger, get_session, get_settings
+from app.config.settings import get_settings
+from app.core.database import async_session_factory
 from app.services.database_service import DatabaseService
+
+logger = logging.getLogger(__name__)
 
 # ======================================================================================
 # ==                      TEMPORARY LEGACY DI FACTORY (DEPRECATED)                      ==
 # ======================================================================================
 
-_database_service_singleton = None
 
-
-def get_legacy_database_service() -> DatabaseService:
+async def get_database_service_async() -> DatabaseService:
     """
-    Deprecated factory function to get the singleton instance of the DatabaseService.
+    Creates a DatabaseService instance with a fresh async session.
+    This is the proper async way to get a database service.
     """
-    global _database_service_singleton
-    warnings.warn(
-        "The singleton `get_legacy_database_service` is deprecated. Use FastAPI Depends instead.",
-        DeprecationWarning,
-        stacklevel=2,
+    return DatabaseService(
+        session=None,  # Will use async_session_factory internally
+        logger=logger,
+        settings=get_settings(),
     )
-    if _database_service_singleton is None:
-        # NOTE: get_session() returns the FACTORY, so we call it to get a session.
-        # BUT wait, DatabaseService might expect a session FACTORY or INSTANCE?
-        # Checking usage: DatabaseService(session=...)
-        # Usually services take a session instance.
-        # get_session() returns `async_session_factory`.
-        # calling `get_session()()` creates a new session instance.
-
-        _database_service_singleton = DatabaseService(
-            session=get_session()(),
-            logger=get_logger(),
-            settings=get_settings(),
-        )
-    return _database_service_singleton
 
 
 def _run_async(coro):
@@ -60,20 +48,18 @@ def _run_async(coro):
 
     if loop and loop.is_running():
         # If we are already in an event loop (e.g. pytest-asyncio), creating a new one is bad.
-        # But we cannot await here because this is a sync function.
         # This is a known issue with mixing sync/async.
         # For CLI (no loop running), asyncio.run works.
-        # For Tests (loop running), we use run_coroutine_threadsafe if possible,
-        # but that requires a separate thread usually.
-
-        # HACK: If loop is running, we might be in a test.
-        # We can try to just return the coro if the caller can handle it,
-        # but this function signature says it returns dict.
-
-        # Attempt to create a new task if possible, but we need the result.
-        # Use a new loop in a new thread? Overkill.
-        # We'll trust that legacy code is mostly CLI.
-        pass
+        warnings.warn(
+            "Running async code in sync context while event loop is already running. "
+            "This may cause issues.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(asyncio.run, coro)
+            return future.result()
 
     return asyncio.run(coro)
 
@@ -84,18 +70,45 @@ def _run_async(coro):
 
 
 def get_database_health() -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.get_database_health."""
-    return _run_async(get_legacy_database_service().get_database_health())
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "get_database_health is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.get_database_health()
+    return _run_async(_inner())
 
 
 def get_table_schema(table_name: str) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.get_table_schema."""
-    return _run_async(get_legacy_database_service().get_table_schema(table_name))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "get_table_schema is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.get_table_schema(table_name)
+    return _run_async(_inner())
 
 
 def get_all_tables() -> list[dict[str, Any]]:
-    """Deprecated: replaced by DatabaseService.get_all_tables."""
-    return _run_async(get_legacy_database_service().get_all_tables())
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "get_all_tables is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.get_all_tables()
+    return _run_async(_inner())
 
 
 def get_table_data(
@@ -106,34 +119,86 @@ def get_table_data(
     order_by: str | None = None,
     order_dir: str = "asc",
 ) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.get_table_data."""
-    return _run_async(
-        get_legacy_database_service().get_table_data(
-            table_name, page, per_page, search, order_by, order_dir
-        )
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "get_table_data is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
     )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.get_table_data(
+                table_name, page, per_page, search, order_by, order_dir
+            )
+    return _run_async(_inner())
 
 
 def get_record(table_name: str, record_id: int) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.get_record."""
-    return _run_async(get_legacy_database_service().get_record(table_name, record_id))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "get_record is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.get_record(table_name, record_id)
+    return _run_async(_inner())
 
 
 def create_record(table_name: str, data: dict[str, Any]) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.create_record."""
-    return _run_async(get_legacy_database_service().create_record(table_name, data))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "create_record is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.create_record(table_name, data)
+    return _run_async(_inner())
 
 
 def update_record(table_name: str, record_id: int, data: dict[str, Any]) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.update_record."""
-    return _run_async(get_legacy_database_service().update_record(table_name, record_id, data))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "update_record is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.update_record(table_name, record_id, data)
+    return _run_async(_inner())
 
 
 def delete_record(table_name: str, record_id: int) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.delete_record."""
-    return _run_async(get_legacy_database_service().delete_record(table_name, record_id))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "delete_record is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.delete_record(table_name, record_id)
+    return _run_async(_inner())
 
 
 def execute_query(sql: str) -> dict[str, Any]:
-    """Deprecated: replaced by DatabaseService.execute_query."""
-    return _run_async(get_legacy_database_service().execute_query(sql))
+    """Deprecated: Use DatabaseService directly with FastAPI Depends."""
+    warnings.warn(
+        "execute_query is deprecated. Use DatabaseService with FastAPI Depends.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    async def _inner():
+        async with async_session_factory() as session:
+            service = DatabaseService(session=session, logger=logger, settings=get_settings())
+            return await service.execute_query(sql)
+    return _run_async(_inner())
