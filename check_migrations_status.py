@@ -15,7 +15,7 @@ from sqlalchemy import text
 # FIX: Ensure app modules are importable
 sys.path.append(os.getcwd())
 
-from app.core.engine_factory import create_unified_async_engine  # noqa: E402
+from app.core.engine_factory import create_unified_async_engine
 
 # Load environment variables
 load_dotenv()

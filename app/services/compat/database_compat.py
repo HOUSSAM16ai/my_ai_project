@@ -12,6 +12,7 @@ Do not use these functions in new code.
 """
 
 import asyncio
+import concurrent.futures
 import logging
 import warnings
 from typing import Any
@@ -39,16 +40,13 @@ async def get_database_service_async() -> DatabaseService:
     )
 
 
-import concurrent.futures
-
-
 def _run_async(coro):
     """
     Helper to run async methods in sync context.
-    
+
     This is a compatibility layer for legacy sync code that needs to call
     async database operations. For new code, use async functions directly.
-    
+
     Note: This function handles the case where an event loop is already running
     (e.g., in pytest-asyncio) by running the coroutine in a separate thread.
     """
@@ -86,10 +84,12 @@ def get_database_health() -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.get_database_health()
+
     return _run_async(_inner())
 
 
@@ -100,10 +100,12 @@ def get_table_schema(table_name: str) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.get_table_schema(table_name)
+
     return _run_async(_inner())
 
 
@@ -114,10 +116,12 @@ def get_all_tables() -> list[dict[str, Any]]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.get_all_tables()
+
     return _run_async(_inner())
 
 
@@ -135,12 +139,14 @@ def get_table_data(
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.get_table_data(
                 table_name, page, per_page, search, order_by, order_dir
             )
+
     return _run_async(_inner())
 
 
@@ -151,10 +157,12 @@ def get_record(table_name: str, record_id: int) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.get_record(table_name, record_id)
+
     return _run_async(_inner())
 
 
@@ -165,10 +173,12 @@ def create_record(table_name: str, data: dict[str, Any]) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.create_record(table_name, data)
+
     return _run_async(_inner())
 
 
@@ -179,10 +189,12 @@ def update_record(table_name: str, record_id: int, data: dict[str, Any]) -> dict
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.update_record(table_name, record_id, data)
+
     return _run_async(_inner())
 
 
@@ -193,10 +205,12 @@ def delete_record(table_name: str, record_id: int) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.delete_record(table_name, record_id)
+
     return _run_async(_inner())
 
 
@@ -207,8 +221,10 @@ def execute_query(sql: str) -> dict[str, Any]:
         DeprecationWarning,
         stacklevel=2,
     )
+
     async def _inner():
         async with async_session_factory() as session:
             service = DatabaseService(session=session, logger=logger, settings=get_settings())
             return await service.execute_query(sql)
+
     return _run_async(_inner())

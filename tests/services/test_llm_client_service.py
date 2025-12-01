@@ -149,7 +149,7 @@ class TestHttpFallbackClient:
 
             assert response.choices[0].message.content == "Response"
             mock_requests.post.assert_called_once()
-            args, kwargs = mock_requests.post.call_args
+            _args, kwargs = mock_requests.post.call_args
             assert kwargs["headers"]["Authorization"] == "Bearer key"
             assert kwargs["json"]["model"] == "test-model"
 

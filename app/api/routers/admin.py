@@ -311,14 +311,9 @@ async def list_conversations(
         c_at = conv.created_at.isoformat() if conv.created_at else ""
         u_at = c_at
         if hasattr(conv, "updated_at") and conv.updated_at:
-             u_at = conv.updated_at.isoformat()
+            u_at = conv.updated_at.isoformat()
 
-        results.append({
-            "id": conv.id,
-            "title": conv.title,
-            "created_at": c_at,
-            "updated_at": u_at
-        })
+        results.append({"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at})
     return results
 
 

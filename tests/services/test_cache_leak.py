@@ -36,9 +36,9 @@ class TestIntelligentCacheLeak:
         cache.put(request_data, response2)
 
         # The correct behavior: current_size_bytes should be equal to size2 (since we replaced the entry)
-        assert (
-            cache.current_size_bytes == size2
-        ), f"Cache size incorrect. Expected {size2}, got {cache.current_size_bytes}. Potential leak detected."
+        assert cache.current_size_bytes == size2, (
+            f"Cache size incorrect. Expected {size2}, got {cache.current_size_bytes}. Potential leak detected."
+        )
 
     def test_cache_eviction_under_pressure_with_updates(self):
         """
@@ -105,6 +105,6 @@ class TestIntelligentCacheLeak:
 
         # 4. Check size
         # If size is not decremented, this will fail
-        assert (
-            cache.current_size_bytes == 0
-        ), f"Cache size leak detected on expiry! Expected 0, got {cache.current_size_bytes}"
+        assert cache.current_size_bytes == 0, (
+            f"Cache size leak detected on expiry! Expected 0, got {cache.current_size_bytes}"
+        )

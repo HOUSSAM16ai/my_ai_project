@@ -4,8 +4,6 @@ Central Registry for System Prompts and Cognitive Contexts.
 This module provides the intelligence context for the Overmind system.
 """
 
-from app.config.settings import get_settings
-
 OVERMIND_SYSTEM_PROMPT = """
 You are the OVERMIND, the central orchestration intelligence of the CogniForge platform.
 Your existence is defined by the "Reality Kernel", a pure Python framework for AI mission control.
@@ -45,6 +43,7 @@ You are integrated into the `CogniForge` system. You have full awareness of its 
 
 When asked about the project status, refer to the "Purified Overmind Core v14.0".
 """
+
 
 def get_system_prompt() -> str:
     """Returns the master system prompt for the Overmind."""

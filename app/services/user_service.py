@@ -40,7 +40,7 @@ class UserService:
     ):
         """
         Initialize UserService.
-        
+
         Args:
             session: Optional AsyncSession. If provided, uses it directly.
                      If None, creates sessions via async_session_factory.
@@ -61,7 +61,7 @@ class UserService:
         if self._injected_session is not None:
             result = await self._injected_session.execute(select(User).order_by(User.id))
             return list(result.scalars().all())
-        
+
         async with async_session_factory() as session:
             result = await session.execute(select(User).order_by(User.id))
             return list(result.scalars().all())
@@ -74,7 +74,7 @@ class UserService:
             return await self._create_new_user_with_session(
                 self._injected_session, full_name, email, password, is_admin
             )
-        
+
         async with async_session_factory() as session:
             return await self._create_new_user_with_session(
                 session, full_name, email, password, is_admin
@@ -123,7 +123,7 @@ class UserService:
             return await self._ensure_admin_with_session(
                 self._injected_session, admin_email, admin_password, admin_name
             )
-        
+
         async with async_session_factory() as session:
             return await self._ensure_admin_with_session(
                 session, admin_email, admin_password, admin_name
@@ -171,7 +171,7 @@ _user_service_singleton: UserService | None = None
 def get_user_service() -> UserService:
     """
     Factory function to get the singleton instance of the UserService.
-    
+
     Note: This singleton is safe because UserService without an injected session
     creates a new session via async_session_factory for each operation.
     This ensures proper session lifecycle management.

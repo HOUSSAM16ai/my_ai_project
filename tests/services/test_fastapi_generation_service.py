@@ -38,9 +38,10 @@ def mock_llm_client():
 
 @pytest.fixture
 def mock_db_models():
-    with patch("app.services.fastapi_generation_service.log_mission_event") as log_mock, patch(
-        "app.services.fastapi_generation_service.finalize_task"
-    ) as finalize_mock:
+    with (
+        patch("app.services.fastapi_generation_service.log_mission_event") as log_mock,
+        patch("app.services.fastapi_generation_service.finalize_task") as finalize_mock,
+    ):
         yield log_mock, finalize_mock
 
 
@@ -204,11 +205,15 @@ def test_execute_task_with_tools(service, mock_llm_client, mock_db_models):
 
     with patch("app.services.fastapi_generation_service._invoke_tool") as mock_invoke:
         mock_invoke.return_value = MagicMock(to_dict=lambda: {"ok": True})
-        with patch(
-            "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
-            side_effect=lambda x: x,
-        ), patch(
-            "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+        with (
+            patch(
+                "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
+                side_effect=lambda x: x,
+            ),
+            patch(
+                "app.services.fastapi_generation_service.agent_tools.get_tools_schema",
+                return_value=[],
+            ),
         ):
             service.execute_task(task)
             mock_invoke.assert_called_with("read_file", {"path": "p"})
@@ -218,7 +223,7 @@ def test_execute_task_with_tools(service, mock_llm_client, mock_db_models):
 
 
 def test_execute_task_max_steps_exhausted(service, mock_llm_client, mock_db_models):
-    _, finalize_task_mock = mock_db_models
+    _, _finalize_task_mock = mock_db_models
     task = MagicMock()
 
     class MockToolCall:
@@ -235,13 +240,16 @@ def test_execute_task_max_steps_exhausted(service, mock_llm_client, mock_db_mode
         MagicMock(choices=[MagicMock(message=MagicMock(tool_calls=[MockToolCall("3", "t3")]))]),
     ]
 
-    with patch("app.services.fastapi_generation_service._cfg", return_value=2), patch(
-        "app.services.fastapi_generation_service._invoke_tool"
-    ) as invoke_mock, patch(
-        "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
-        side_effect=lambda x: x,
-    ), patch(
-        "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+    with (
+        patch("app.services.fastapi_generation_service._cfg", return_value=2),
+        patch("app.services.fastapi_generation_service._invoke_tool") as invoke_mock,
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
+            side_effect=lambda x: x,
+        ),
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+        ),
     ):
         invoke_mock.return_value = MagicMock(to_dict=lambda: {"ok": True})
         service.execute_task(task)
@@ -249,7 +257,7 @@ def test_execute_task_max_steps_exhausted(service, mock_llm_client, mock_db_mode
 
 
 def test_execute_task_stagnation(service, mock_llm_client, mock_db_models):
-    _, finalize_task_mock = mock_db_models
+    _, _finalize_task_mock = mock_db_models
     task = MagicMock()
 
     class MockToolCall:
@@ -264,12 +272,17 @@ def test_execute_task_stagnation(service, mock_llm_client, mock_db_models):
         MockToolCall()
     ]
 
-    with patch("app.services.fastapi_generation_service._invoke_tool") as invoke_mock, patch(
-        "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
-        side_effect=lambda x: x,
-    ), patch(
-        "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
-    ), patch.dict(os.environ, {"MAESTRO_STAGNATION_ENFORCE": "1"}):
+    with (
+        patch("app.services.fastapi_generation_service._invoke_tool") as invoke_mock,
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
+            side_effect=lambda x: x,
+        ),
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+        ),
+        patch.dict(os.environ, {"MAESTRO_STAGNATION_ENFORCE": "1"}),
+    ):
         invoke_mock.return_value = MagicMock(to_dict=lambda: {"ok": True})
         service.execute_task(task)
         assert task.result["final_reason"] == "stagnation_detected"
@@ -296,8 +309,9 @@ def test_ensure_file_tools():
 
         # Read handler
         read_handler = reg["read_file"]["handler"]
-        with patch("builtins.open", mock_open(read_data="content")) as m_open, patch(
-            "os.path.exists", return_value=True
+        with (
+            patch("builtins.open", mock_open(read_data="content")) as m_open,
+            patch("os.path.exists", return_value=True),
         ):
             res = read_handler("test.txt")
             assert res.ok is True
@@ -366,13 +380,16 @@ def test_execute_task_tool_call_limit(service, mock_llm_client, mock_db_models):
         MagicMock(choices=[MagicMock(message=MagicMock(tool_calls=[MockToolCall("2", "t2")]))]),
     ]
 
-    with patch.dict(os.environ, {"MAESTRO_TOOL_CALL_LIMIT": "1"}), patch(
-        "app.services.fastapi_generation_service._invoke_tool"
-    ) as mock_invoke, patch(
-        "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
-        side_effect=lambda x: x,
-    ), patch(
-        "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+    with (
+        patch.dict(os.environ, {"MAESTRO_TOOL_CALL_LIMIT": "1"}),
+        patch("app.services.fastapi_generation_service._invoke_tool") as mock_invoke,
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
+            side_effect=lambda x: x,
+        ),
+        patch(
+            "app.services.fastapi_generation_service.agent_tools.get_tools_schema", return_value=[]
+        ),
     ):
         mock_invoke.return_value = MagicMock(to_dict=lambda: {"ok": True})
 
@@ -397,6 +414,6 @@ def test_execute_task_catastrophic_failure(service, mock_llm_client, mock_db_mod
     # We check if called with status=FAILED and result_text containing the error
     call_args = finalize_task_mock.call_args
     assert call_args is not None
-    args, kwargs = call_args
+    _args, kwargs = call_args
     assert kwargs["status"] == TaskStatus.FAILED
     assert "Catastrophic failure" in kwargs["result_text"]

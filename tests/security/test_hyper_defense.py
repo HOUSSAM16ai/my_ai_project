@@ -1,9 +1,10 @@
+from unittest.mock import MagicMock, patch
 
 import pytest
-import asyncio
-from unittest.mock import MagicMock, patch
 from fastapi import HTTPException, Request, status
-from app.security.chrono_shield import ChronoShield, chrono_shield
+
+from app.security.chrono_shield import ChronoShield
+
 
 @pytest.fixture
 def mock_request():
@@ -11,16 +12,19 @@ def mock_request():
     req.client.host = "192.168.1.100"
     return req
 
+
 @pytest.fixture
 def fresh_shield():
     """Returns a fresh instance of ChronoShield for testing."""
     return ChronoShield()
+
 
 @pytest.mark.asyncio
 async def test_chrono_shield_allowance_under_limit(fresh_shield, mock_request):
     """Test that requests are allowed when under the limit."""
     # Should pass without exception
     await fresh_shield.check_allowance(mock_request, "test@example.com")
+
 
 @pytest.mark.asyncio
 async def test_chrono_shield_exponential_backoff(fresh_shield, mock_request):
@@ -42,7 +46,7 @@ async def test_chrono_shield_exponential_backoff(fresh_shield, mock_request):
         # Actually, python 3.8+ asyncio.sleep is a coroutine function.
         # Let's use an AsyncMock.
         async def async_sleep_mock(delay):
-             return None
+            return None
 
         mock_sleep.side_effect = async_sleep_mock
 
@@ -54,6 +58,7 @@ async def test_chrono_shield_exponential_backoff(fresh_shield, mock_request):
         # Exponent = 6 - 5 = 1.
         # Delay = 0.1 * (2^1) = 0.2s.
         mock_sleep.assert_called_with(0.2)
+
 
 @pytest.mark.asyncio
 async def test_chrono_shield_hard_lockout(fresh_shield, mock_request):
@@ -71,6 +76,7 @@ async def test_chrono_shield_hard_lockout(fresh_shield, mock_request):
     assert excinfo.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
     assert "suspended" in excinfo.value.detail
 
+
 @pytest.mark.asyncio
 async def test_chrono_shield_reset(fresh_shield, mock_request):
     """Test that successful login resets the target counter."""
@@ -87,11 +93,12 @@ async def test_chrono_shield_reset(fresh_shield, mock_request):
     # Should be empty
     assert f"target:{identifier}" not in fresh_shield._failures
 
+
 @pytest.mark.asyncio
 async def test_chrono_shield_ip_persistence(fresh_shield, mock_request):
     """Test that IP failures persist even if target is reset (Anti-Rotation)."""
     identifier = "user1@example.com"
-    ip = "192.168.1.100" # defined in mock_request
+    ip = "192.168.1.100"  # defined in mock_request
 
     fresh_shield.record_failure(mock_request, identifier)
 
@@ -115,7 +122,10 @@ async def test_chrono_shield_ip_persistence(fresh_shield, mock_request):
     # Should trigger delay
 
     with patch("asyncio.sleep", new_callable=MagicMock) as mock_sleep:
-        async def async_sleep_mock(delay): return None
+
+        async def async_sleep_mock(delay):
+            return None
+
         mock_sleep.side_effect = async_sleep_mock
 
         await fresh_shield.check_allowance(mock_request, identifier2)

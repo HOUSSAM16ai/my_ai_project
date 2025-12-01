@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator
 # --- SETUP PATH ---
 sys.path.append(os.getcwd())
 
-from httpx import ASGITransport, AsyncClient  # noqa: E402
+from httpx import ASGITransport, AsyncClient
 
 # --- ENV CONFIG ---
 # Use file-based DB for robust verification

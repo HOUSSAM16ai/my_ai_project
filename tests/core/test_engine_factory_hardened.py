@@ -1,8 +1,10 @@
-import os
-import pytest
 from unittest import mock
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
-from app.core.engine_factory import create_unified_async_engine, FatalEngineError
+
+from app.core.engine_factory import FatalEngineError, create_unified_async_engine
+
 
 @pytest.mark.asyncio
 async def test_create_unified_async_engine_postgres_hardening():
@@ -31,13 +33,13 @@ async def test_create_unified_async_engine_postgres_hardening():
 
         # 2. Attempt to override (Should be ignored/overwritten)
         create_unified_async_engine(
-            database_url=postgres_url,
-            connect_args={"statement_cache_size": 100}
+            database_url=postgres_url, connect_args={"statement_cache_size": 100}
         )
 
         call_args = mock_create.call_args
         _, kwargs = call_args
         assert kwargs["connect_args"]["statement_cache_size"] == 0
+
 
 @pytest.mark.asyncio
 async def test_create_unified_async_engine_sqlite():
@@ -54,6 +56,7 @@ async def test_create_unified_async_engine_sqlite():
 
         assert kwargs["connect_args"]["check_same_thread"] is False
         assert "pool_size" not in kwargs
+
 
 @pytest.mark.asyncio
 async def test_sanitize_database_url():
@@ -75,8 +78,9 @@ async def test_sanitize_database_url():
     assert sanitized2.startswith("postgresql://")
 
     # Test Missing URL
-    with pytest.raises(Exception): # FatalEngineError
+    with pytest.raises(FatalEngineError):
         _sanitize_database_url("")
+
 
 @pytest.mark.asyncio
 async def test_create_unified_async_engine_protocol_upgrade():

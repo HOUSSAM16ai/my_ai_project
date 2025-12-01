@@ -1,9 +1,9 @@
-
 import asyncio
-import time
 import logging
+import time
 from collections import defaultdict
-from fastapi import Request, HTTPException, status
+
+from fastapi import HTTPException, Request, status
 from passlib.context import CryptContext
 
 # Use standard logging as per project convention in security module
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 # A pre-computed hash for dummy verification to ensure CPU work is done
 DUMMY_HASH = pwd_context.hash("phantom_verification_string_for_timing_protection")
+
 
 class ChronoShield:
     """
@@ -33,14 +34,14 @@ class ChronoShield:
 
         # Configuration - "The Physics Constants of the Shield"
         self.WINDOW = 300.0  # 5 minutes memory horizon
-        self.MAX_FREE_ATTEMPTS = 5 # Attempts before Temporal Dilation begins
-        self.LOCKOUT_THRESHOLD = 20 # Attempts before Event Horizon (Hard Block)
-        self.MAX_DELAY = 5.0 # Maximum time dilation in seconds
+        self.MAX_FREE_ATTEMPTS = 5  # Attempts before Temporal Dilation begins
+        self.LOCKOUT_THRESHOLD = 20  # Attempts before Event Horizon (Hard Block)
+        self.MAX_DELAY = 5.0  # Maximum time dilation in seconds
 
         # Memory Management
-        self.MAX_KEYS = 10000 # Max number of tracked keys before forced purge
+        self.MAX_KEYS = 10000  # Max number of tracked keys before forced purge
         self.last_cleanup = time.time()
-        self.CLEANUP_INTERVAL = 60.0 # Cleanup every minute
+        self.CLEANUP_INTERVAL = 60.0  # Cleanup every minute
 
     def _manage_entropy(self) -> None:
         """
@@ -92,17 +93,17 @@ class ChronoShield:
 
         # Phase 1: Event Horizon (Hard Lockout)
         if threat_level >= self.LOCKOUT_THRESHOLD:
-             logger.warning(f"ChronoShield: EVENT HORIZON REACHED for IP={ip} Target={identifier}")
-             raise HTTPException(
-                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                 detail="Security protocol activated. Access suspended due to anomalous kinetic energy."
-             )
+            logger.warning(f"ChronoShield: EVENT HORIZON REACHED for IP={ip} Target={identifier}")
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Security protocol activated. Access suspended due to anomalous kinetic energy.",
+            )
 
         # Phase 2: Temporal Dilation (Exponential Backoff)
         if threat_level > self.MAX_FREE_ATTEMPTS:
             # Formula: 0.1 * 2^(overage)
             exponent = threat_level - self.MAX_FREE_ATTEMPTS
-            delay = 0.1 * (2 ** exponent)
+            delay = 0.1 * (2**exponent)
             delay = min(delay, self.MAX_DELAY)
 
             logger.info(f"ChronoShield: Dilating time by {delay:.2f}s for IP={ip}")
@@ -116,12 +117,12 @@ class ChronoShield:
         self._failures[f"target:{identifier}"].append(now)
 
     def reset_target(self, identifier: str) -> None:
-         """
-         Resets the threat level for a specific target upon success.
-         """
-         target_key = f"target:{identifier}"
-         if target_key in self._failures:
-             del self._failures[target_key]
+        """
+        Resets the threat level for a specific target upon success.
+        """
+        target_key = f"target:{identifier}"
+        if target_key in self._failures:
+            del self._failures[target_key]
 
     def phantom_verify(self, password: str) -> bool:
         """
@@ -131,6 +132,7 @@ class ChronoShield:
         # Verify against the dummy hash. Always returns False (hopefully),
         # but takes the same time as a real verify.
         return pwd_context.verify(password, DUMMY_HASH)
+
 
 # Singleton Instance
 chrono_shield = ChronoShield()
