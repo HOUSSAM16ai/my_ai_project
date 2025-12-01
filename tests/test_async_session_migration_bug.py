@@ -47,8 +47,8 @@ class TestAsyncSessionMigrationBug:
         assert inspect.isasyncgen(result), (
             "get_session() should return an async generator, not a session"
         )
-        # Clean up
-        result.aclose()
+        # Note: aclose() returns a coroutine that we don't need to await in sync test
+        # The generator will be garbage collected anyway
 
 
 class TestHistoryServiceFix:

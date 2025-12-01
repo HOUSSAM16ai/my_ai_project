@@ -169,7 +169,13 @@ _user_service_singleton: UserService | None = None
 
 
 def get_user_service() -> UserService:
-    """Factory function to get the singleton instance of the UserService."""
+    """
+    Factory function to get the singleton instance of the UserService.
+    
+    Note: This singleton is safe because UserService without an injected session
+    creates a new session via async_session_factory for each operation.
+    This ensures proper session lifecycle management.
+    """
     global _user_service_singleton
     if _user_service_singleton is None:
         _user_service_singleton = UserService()
