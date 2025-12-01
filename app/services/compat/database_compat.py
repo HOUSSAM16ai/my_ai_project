@@ -39,8 +39,19 @@ async def get_database_service_async() -> DatabaseService:
     )
 
 
+import concurrent.futures
+
+
 def _run_async(coro):
-    """Helper to run async methods in sync context."""
+    """
+    Helper to run async methods in sync context.
+    
+    This is a compatibility layer for legacy sync code that needs to call
+    async database operations. For new code, use async functions directly.
+    
+    Note: This function handles the case where an event loop is already running
+    (e.g., in pytest-asyncio) by running the coroutine in a separate thread.
+    """
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -52,11 +63,10 @@ def _run_async(coro):
         # For CLI (no loop running), asyncio.run works.
         warnings.warn(
             "Running async code in sync context while event loop is already running. "
-            "This may cause issues.",
+            "This may cause issues. Consider using async functions directly.",
             RuntimeWarning,
             stacklevel=3,
         )
-        import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(asyncio.run, coro)
             return future.result()
