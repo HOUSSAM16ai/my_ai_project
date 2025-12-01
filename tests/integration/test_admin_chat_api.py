@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 # Assuming app factory or app instance availability.
@@ -6,6 +5,7 @@ from fastapi.testclient import TestClient
 # However, integration tests usually need a fixture from conftest.
 # Since I cannot see `tests/conftest.py` completely, I will assume `client` fixture exists
 # and provides a TestClient for the app.
+
 
 class TestAdminChatAPI:
     """Test Admin Chat API for Enum handling verification"""
@@ -16,7 +16,7 @@ class TestAdminChatAPI:
         response = client.get("/system/health")
         # If /system/health is not available, try /health or /
         if response.status_code == 404:
-             response = client.get("/health")
+            response = client.get("/health")
 
         # Accept 200 OK.
         # If it returns 404, the test fails, which is good.

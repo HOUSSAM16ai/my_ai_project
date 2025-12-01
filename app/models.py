@@ -50,6 +50,7 @@ class FlexibleEnum(TypeDecorator):
     TypeDecorator that ensures case-insensitive lookup using the Enum's _missing_ method.
     Stored as TEXT in database.
     """
+
     impl = Text
     cache_ok = True
 
@@ -61,17 +62,17 @@ class FlexibleEnum(TypeDecorator):
         if value is None:
             return None
         if isinstance(value, self._enum_type):
-             return value.value
+            return value.value
         # If it's a string, try to resolve it to the enum first to ensure validity, then return value
         # Or just return it if we want to allow flexibility (but safer to normalize)
         if isinstance(value, str):
-             # Leverage _missing_ logic if possible by converting to enum then accessing value
-             try:
-                 return self._enum_type(value).value
-             except ValueError:
-                 # Fallback: store as is (lowercase) if not found, or let it fail?
-                 # Given this is 'Flexible', maybe store as lower?
-                 return value.lower()
+            # Leverage _missing_ logic if possible by converting to enum then accessing value
+            try:
+                return self._enum_type(value).value
+            except ValueError:
+                # Fallback: store as is (lowercase) if not found, or let it fail?
+                # Given this is 'Flexible', maybe store as lower?
+                return value.lower()
         return value
 
     def process_result_value(self, value, dialect):
@@ -200,9 +201,7 @@ class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
     id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
-    role: MessageRole = Field(
-        sa_column=Column(FlexibleEnum(MessageRole))
-    )
+    role: MessageRole = Field(sa_column=Column(FlexibleEnum(MessageRole)))
     content: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -370,9 +369,7 @@ class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    event_type: MissionEventType = Field(
-        sa_column=Column(FlexibleEnum(MissionEventType))
-    )
+    event_type: MissionEventType = Field(sa_column=Column(FlexibleEnum(MissionEventType)))
     payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
     created_at: datetime = Field(

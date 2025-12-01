@@ -6,11 +6,12 @@ exclude = ["legacy/flask", "migrations"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF"]
 # E501: Line too long
+# E402: Module level import not at top of file (scripts need sys.path.append first)
 # RUF001/2/3: Unicode characters (Arabic)
 # B008: Do not perform function call `Depends` in argument defaults (FastAPI pattern)
 # B027: Empty method in abstract base class (Hooks pattern)
 # SIM117: Use a single `with` statement with multiple contexts (Avoid httpx bug)
-ignore = ["E501", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117"]
+ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

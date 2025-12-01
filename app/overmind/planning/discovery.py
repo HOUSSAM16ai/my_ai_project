@@ -7,15 +7,41 @@ This module contains the PlannerDiscovery class, which is responsible for
 discovering planners from the filesystem and metadata registries.
 """
 
+from __future__ import annotations
+
 import importlib
 import importlib.util
 import logging
 import pkgutil
-from types import ModuleType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .config import FactoryConfig
-from .factory_core import BasePlanner, PlannerRecord
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    from .factory_core import PlannerRecord
+
+# Import BasePlanner at runtime with fallback
+try:
+    from .base_planner import BasePlanner
+except Exception:
+
+    class BasePlanner:  # type: ignore
+        @staticmethod
+        def live_planner_classes():
+            return {}
+
+        @staticmethod
+        def planner_metadata():
+            return {}
+
+
+def _get_planner_record_class():
+    """Lazy import of PlannerRecord to avoid circular import."""
+    from .factory_core import PlannerRecord
+
+    return PlannerRecord
 
 
 class PlannerDiscovery:
@@ -42,6 +68,7 @@ class PlannerDiscovery:
         """
         Discover planners from a root package and manual modules.
         """
+        PlannerRecord = _get_planner_record_class()
         self._import_failures.clear()
         self._log(f"Starting planner discovery in '{root_package}'", "INFO")
 
@@ -69,6 +96,7 @@ class PlannerDiscovery:
         """
         Sync the discovered planner records with the BasePlanner metadata registry.
         """
+        PlannerRecord = _get_planner_record_class()
         metadata_map = self._get_planner_metadata()
         live_classes = self._get_live_planner_classes()
 

@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator
 # --- SETUP PATH ---
 sys.path.append(os.getcwd())
 
-from httpx import ASGITransport, AsyncClient  # noqa: E402
+from httpx import ASGITransport, AsyncClient
 
 # --- ENV CONFIG ---
 # Use file-based DB for robust verification
@@ -21,14 +21,14 @@ os.environ["SECRET_KEY"] = "dummy_verify_key"
 if os.path.exists(DB_FILE):
     os.remove(DB_FILE)
 
-from passlib.context import CryptContext  # noqa: E402
-from sqlalchemy import select  # noqa: E402
+from passlib.context import CryptContext
+from sqlalchemy import select
 
-from app.core.ai_gateway import get_ai_client  # noqa: E402
-from app.core.database import async_session_factory  # noqa: E402
-from app.core.engine_factory import create_unified_async_engine  # noqa: E402
-from app.main import create_app  # noqa: E402
-from app.models import SQLModel, User  # noqa: E402
+from app.core.ai_gateway import get_ai_client
+from app.core.database import async_session_factory
+from app.core.engine_factory import create_unified_async_engine
+from app.main import create_app
+from app.models import SQLModel, User
 
 # --- CONSTANTS ---
 TEST_EMAIL = "admin_verify@example.com"

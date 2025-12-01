@@ -1,19 +1,17 @@
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel, select
-from sqlalchemy import text
 
+from app.core.engine_factory import create_unified_async_engine
 from app.models import (
+    AdminConversation,
     AdminMessage,
     MessageRole,
-    Mission,
     MissionStatus,
-    Task,
     TaskStatus,
-    AdminConversation,
     User,
 )
-from app.core.engine_factory import create_unified_async_engine
 
 
 @pytest.fixture
@@ -55,8 +53,16 @@ class TestMissionStatusEnum:
     """Tests for MissionStatus ENUM"""
 
     def test_all_statuses(self):
-        statuses = ["pending", "planning", "planned", "running",
-                    "adapting", "success", "failed", "canceled"]
+        statuses = [
+            "pending",
+            "planning",
+            "planned",
+            "running",
+            "adapting",
+            "success",
+            "failed",
+            "canceled",
+        ]
         for status in statuses:
             assert MissionStatus(status.upper()) == MissionStatus(status)
 
@@ -89,23 +95,16 @@ class TestDatabaseIntegration:
         await async_session.refresh(conv)
 
         # Create message
-        msg = AdminMessage(
-            conversation_id=conv.id,
-            role=MessageRole.USER,
-            content="Test message"
-        )
+        msg = AdminMessage(conversation_id=conv.id, role=MessageRole.USER, content="Test message")
         async_session.add(msg)
         await async_session.commit()
 
         # Read it back
-        result = await async_session.execute(
-            select(AdminMessage).where(AdminMessage.id == msg.id)
-        )
+        result = await async_session.execute(select(AdminMessage).where(AdminMessage.id == msg.id))
         loaded_msg = result.scalars().first()
 
         assert loaded_msg is not None
         assert loaded_msg.role == MessageRole.USER
-
 
     @pytest.mark.asyncio
     async def test_simulate_supabase_uppercase(self, async_session: AsyncSession):
@@ -118,27 +117,31 @@ class TestDatabaseIntegration:
         # SQLite uses 0/1.
 
         await async_session.execute(
-            text("INSERT INTO users (id, full_name, email, is_admin) VALUES (1, 'Test', 'test@x.com', 0)")
+            text(
+                "INSERT INTO users (id, full_name, email, is_admin) VALUES (1, 'Test', 'test@x.com', 0)"
+            )
         )
 
         # Also need conversation_type (default='general')
         await async_session.execute(
-            text("INSERT INTO admin_conversations (id, title, user_id, conversation_type) VALUES (1, 'Test', 1, 'general')")
+            text(
+                "INSERT INTO admin_conversations (id, title, user_id, conversation_type) VALUES (1, 'Test', 1, 'general')"
+            )
         )
 
         # Insert message with UPPERCASE role (Simulating Supabase)
         await async_session.execute(
-            text("""
+            text(
+                """
                 INSERT INTO admin_messages (id, conversation_id, role, content)
                 VALUES (1, 1, 'USER', 'Test content')
-            """)
+            """
+            )
         )
         await async_session.commit()
 
         # Read via ORM
-        result = await async_session.execute(
-            select(AdminMessage).where(AdminMessage.id == 1)
-        )
+        result = await async_session.execute(select(AdminMessage).where(AdminMessage.id == 1))
         msg = result.scalars().first()
 
         # Should work without LookupError!
