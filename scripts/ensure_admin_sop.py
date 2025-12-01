@@ -9,10 +9,10 @@ load_dotenv()
 # Check if DATABASE_URL is loaded
 print(f"DEBUG: DATABASE_URL={os.getenv('DATABASE_URL')}")
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import select
 
-from app.core.database import async_session_factory  # noqa: E402
-from app.models import User  # noqa: E402
+from app.core.database import async_session_factory
+from app.models import User
 
 
 async def main():

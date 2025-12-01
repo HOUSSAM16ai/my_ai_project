@@ -47,13 +47,13 @@ def client(test_app):
 
 # --- Database Fixtures ---
 
-import sqlalchemy as sa  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
-from sqlalchemy.orm import sessionmaker  # noqa: E402
-from sqlmodel import SQLModel  # noqa: E402
+import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
 
-from app.core.database import get_db  # noqa: E402
-from app.core.engine_factory import create_unified_async_engine  # noqa: E402
+from app.core.database import get_db
+from app.core.engine_factory import create_unified_async_engine
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -97,11 +97,11 @@ async def db_session() -> AsyncSession:
 
 # --- Auth & Mocking Fixtures ---
 
-from unittest.mock import MagicMock  # noqa: E402
+from unittest.mock import MagicMock
 
-from app.core.ai_gateway import get_ai_client  # noqa: E402
-from app.core.security import generate_service_token  # noqa: E402
-from app.models import User  # noqa: E402
+from app.core.ai_gateway import get_ai_client
+from app.core.security import generate_service_token
+from app.models import User
 
 
 @pytest.fixture
@@ -149,7 +149,7 @@ def admin_auth_headers(admin_user):
     return {"Authorization": f"Bearer {token}"}
 
 
-from httpx import AsyncClient  # noqa: E402
+from httpx import AsyncClient
 
 
 @pytest.fixture
@@ -165,10 +165,10 @@ async def async_client(test_app):
 
 # --- Factory & Helper Fixtures ---
 
-import json  # noqa: E402
-from typing import Any  # noqa: E402
+import json
+from typing import Any
 
-from tests.factories import MissionFactory, UserFactory  # noqa: E402
+from tests.factories import MissionFactory, UserFactory
 
 
 @pytest.fixture

@@ -6,14 +6,14 @@ import sys
 # Ensure the app can be imported
 sys.path.append(os.getcwd())
 
-from dotenv import load_dotenv  # noqa: E402
+from dotenv import load_dotenv
 
 load_dotenv()
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import select
 
-from app.core.database import async_session_factory  # noqa: E402
-from app.models import User, pwd_context  # noqa: E402
+from app.core.database import async_session_factory
+from app.models import User, pwd_context
 
 
 async def ensure_admin():

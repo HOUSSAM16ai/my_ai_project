@@ -8,7 +8,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 # الآن نقدر نستورد run.py
-from run import app  # run.py يحتوي Flask app اسمه app  # noqa: E402
+from run import app  # run.py يحتوي Flask app اسمه app
 
 out = {}
 reports = ROOT / "reports"

@@ -302,13 +302,10 @@ class DatabaseURLSanitizer:
         if not url:
             # Check for test environment
             if cls._is_test_environment():
-                logger.warning(
-                    "⚠️ DATABASE_URL not set. Using SQLite fallback for testing."
-                )
+                logger.warning("⚠️ DATABASE_URL not set. Using SQLite fallback for testing.")
                 return "sqlite+aiosqlite:///:memory:"
             raise FatalEngineError(
-                "🚨 CRITICAL: DATABASE_URL is not set. "
-                "Please configure your database connection."
+                "🚨 CRITICAL: DATABASE_URL is not set. Please configure your database connection."
             )
 
         # Stage 1: Protocol normalization
@@ -378,14 +375,10 @@ class DatabaseURLSanitizer:
             # SQLite URLs don't have netloc (e.g., sqlite:///./test.db)
             is_sqlite = "sqlite" in url.lower()
             if not parts.scheme:
-                raise FatalEngineError(
-                    "🚨 Invalid DATABASE_URL structure: missing scheme"
-                )
+                raise FatalEngineError("🚨 Invalid DATABASE_URL structure: missing scheme")
             # Only require netloc for non-SQLite databases
             if not is_sqlite and not parts.netloc:
-                raise FatalEngineError(
-                    "🚨 Invalid DATABASE_URL structure: missing host"
-                )
+                raise FatalEngineError("🚨 Invalid DATABASE_URL structure: missing host")
         except Exception as e:
             if isinstance(e, FatalEngineError):
                 raise
@@ -450,9 +443,7 @@ def create_unified_async_engine(
     # --- Phase 3: Adaptive Pooler Detection ---
     pooler_type = AdaptivePoolerDetector.detect(database_url)
 
-    logger.info(
-        f"🧠 Quantum Engine Factory: DB={db_type.name}, Pooler={pooler_type.name}"
-    )
+    logger.info(f"🧠 Quantum Engine Factory: DB={db_type.name}, Pooler={pooler_type.name}")
 
     # --- Phase 4: Deep Copy kwargs for Immutability ---
     engine_kwargs = copy.deepcopy(kwargs)
@@ -472,9 +463,7 @@ def create_unified_async_engine(
             database_url, engine_kwargs, pooler_type, pool_class
         )
     elif db_type == DatabaseType.SQLITE:
-        database_url, engine_kwargs = _configure_sqlite_engine(
-            database_url, engine_kwargs
-        )
+        database_url, engine_kwargs = _configure_sqlite_engine(database_url, engine_kwargs)
 
     # --- Phase 7: Security Validation ---
     if db_type == DatabaseType.POSTGRESQL:
@@ -552,9 +541,9 @@ def _configure_postgres_engine(
     # - Multiple threads
     # - Connection reuse in pooling
     # - Distributed deployments
-    connect_args["prepared_statement_name_func"] = (
-        QuantumStatementNameGenerator.get_generator_func()
-    )
+    connect_args[
+        "prepared_statement_name_func"
+    ] = QuantumStatementNameGenerator.get_generator_func()
 
     # LEVEL 4: Command Timeout Protection
     # Prevents hanging queries from blocking connections indefinitely
@@ -759,19 +748,13 @@ class EngineDiagnostics:
 # =============================================================================
 
 __all__ = [
-    # Main factory functions
+    "AdaptivePoolerDetector",
+    "DatabaseType",
+    "DatabaseURLSanitizer",
+    "EngineDiagnostics",
+    "FatalEngineError",
+    "PoolerType",
+    "QuantumStatementNameGenerator",
     "create_unified_async_engine",
     "create_unified_sync_engine",
-    # Exceptions
-    "FatalEngineError",
-    # Detection utilities
-    "AdaptivePoolerDetector",
-    "PoolerType",
-    "DatabaseType",
-    # Diagnostics
-    "EngineDiagnostics",
-    # Name generator
-    "QuantumStatementNameGenerator",
-    # URL utilities
-    "DatabaseURLSanitizer",
 ]

@@ -96,6 +96,7 @@ async def test_sanitize_database_url():
 
     # Test Missing URL in non-test environment (mocked)
     import os
+
     original_env = os.environ.copy()
     try:
         # Clear test environment indicators
@@ -140,7 +141,9 @@ async def test_pgbouncer_compatibility_settings():
     using PgBouncer in transaction pooling mode (like Supabase Pooler).
     """
     # Simulate Supabase Pooler URL (port 6543 indicates pooler)
-    supabase_pooler_url = "postgresql+asyncpg://user:pass@project.pooler.supabase.com:6543/postgres?ssl=require"
+    supabase_pooler_url = (
+        "postgresql+asyncpg://user:pass@project.pooler.supabase.com:6543/postgres?ssl=require"
+    )
 
     with mock.patch("app.core.engine_factory.create_async_engine") as mock_create:
         mock_create.return_value = mock.Mock(spec=AsyncEngine)
@@ -152,12 +155,13 @@ async def test_pgbouncer_compatibility_settings():
         connect_args = kwargs["connect_args"]
 
         # All three levels of prepared statement protection must be active
-        assert connect_args["statement_cache_size"] == 0, \
-            "asyncpg statement cache must be disabled"
-        assert connect_args["prepared_statement_cache_size"] == 0, \
-            "SQLAlchemy dialect prepared statement cache must be disabled"
-        assert "prepared_statement_name_func" in connect_args, \
-            "Quantum-safe prepared statement names must be configured"
+        assert connect_args["statement_cache_size"] == 0, "asyncpg statement cache must be disabled"
+        assert (
+            connect_args["prepared_statement_cache_size"] == 0
+        ), "SQLAlchemy dialect prepared statement cache must be disabled"
+        assert (
+            "prepared_statement_name_func" in connect_args
+        ), "Quantum-safe prepared statement names must be configured"
 
         # Verify the name function produces valid, unique names
         name_func = connect_args["prepared_statement_name_func"]

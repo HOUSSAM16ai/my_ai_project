@@ -16,8 +16,11 @@ from typing import Any
 from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
 from app.utils.text_processing import strip_markdown_fences as _strip_markdown_fences
 
+# Database session factory - migrated from Flask to FastAPI
 try:
-    from app.extensions import db
+    from app.core.database import SessionLocal
+
+    db = SessionLocal  # Compatibility alias
 except Exception:
     db = None
 try:
