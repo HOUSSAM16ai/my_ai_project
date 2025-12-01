@@ -20,6 +20,7 @@ DESIGN PRINCIPLES:
 from __future__ import annotations
 
 import asyncio
+import atexit
 import functools
 import logging
 from collections.abc import Callable
@@ -31,6 +32,19 @@ logger = logging.getLogger(__name__)
 # Thread pool for sync operations
 # Size = 4 to limit concurrent blocking operations
 _TOOL_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tool_bridge_")
+
+
+import contextlib
+
+
+def _shutdown_executor():
+    """Cleanup executor on application shutdown."""
+    with contextlib.suppress(Exception):
+        _TOOL_EXECUTOR.shutdown(wait=False)
+
+
+# Register cleanup on application exit
+atexit.register(_shutdown_executor)
 
 T = TypeVar("T")
 

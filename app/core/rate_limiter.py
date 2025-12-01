@@ -26,16 +26,56 @@ class RateLimitConfig:
 class ToolRateLimiter:
     """Thread-safe rate limiter for tool execution."""
 
+    # Maximum number of unique user:tool keys to track (prevents unbounded growth)
+    _MAX_KEYS = 10000
+
     def __init__(self, config: RateLimitConfig | None = None):
         self.config = config or RateLimitConfig()
         self._calls: dict[str, list[float]] = defaultdict(list)
         self._cooldowns: dict[str, float] = {}
         self._lock = threading.Lock()
+        self._last_cleanup = time.time()
 
     def _cleanup_old_calls(self, key: str, now: float):
         """Remove calls outside the time window."""
         cutoff = now - self.config.window_seconds
         self._calls[key] = [t for t in self._calls[key] if t > cutoff]
+
+    def _periodic_cleanup(self, now: float):
+        """Periodic cleanup to prevent memory leaks from abandoned keys."""
+        # Only run cleanup every 5 minutes
+        if now - self._last_cleanup < 300:
+            return
+
+        self._last_cleanup = now
+        cutoff = now - self.config.window_seconds
+
+        # Remove keys with no recent calls
+        keys_to_remove = []
+        for key, calls in list(self._calls.items()):
+            # Remove old timestamps
+            fresh_calls = [t for t in calls if t > cutoff]
+            if not fresh_calls:
+                keys_to_remove.append(key)
+            else:
+                self._calls[key] = fresh_calls
+
+        for key in keys_to_remove:
+            self._calls.pop(key, None)
+
+        # Remove expired cooldowns
+        for key in list(self._cooldowns.keys()):
+            if self._cooldowns[key] < now:
+                self._cooldowns.pop(key, None)
+
+        # If still too many keys, remove oldest ones (LRU-style)
+        if len(self._calls) > self._MAX_KEYS:
+            # Sort by most recent call and keep only the newest
+            sorted_keys = sorted(
+                self._calls.keys(), key=lambda k: max(self._calls[k]) if self._calls[k] else 0
+            )
+            for key in sorted_keys[: len(sorted_keys) - self._MAX_KEYS]:
+                self._calls.pop(key, None)
 
     def check(self, user_id: int, tool_name: str) -> tuple[bool, str]:
         """
@@ -48,6 +88,9 @@ class ToolRateLimiter:
         now = time.time()
 
         with self._lock:
+            # Run periodic cleanup to prevent memory leaks
+            self._periodic_cleanup(now)
+
             # Check cooldown
             if key in self._cooldowns:
                 cooldown_end = self._cooldowns[key]
