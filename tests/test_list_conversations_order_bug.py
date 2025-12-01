@@ -51,7 +51,7 @@ async def test_list_conversations_deterministic_order(
     test_convs = [c for c in data if c["id"] in (conv1.id, conv2.id)]
 
     assert len(test_convs) == 2
-    assert (
-        test_convs[0]["id"] == conv2.id
-    ), f"Expected conversation {conv2.id} first (newer ID), but got {test_convs[0]['id']}"
+    assert test_convs[0]["id"] == conv2.id, (
+        f"Expected conversation {conv2.id} first (newer ID), but got {test_convs[0]['id']}"
+    )
     assert test_convs[1]["id"] == conv1.id

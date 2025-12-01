@@ -35,9 +35,9 @@ class TestAsyncSessionMigrationBug:
         Verify that get_session from app.core.di is an async generator function.
         This was the root cause of the bug - code was treating it as a factory.
         """
-        assert inspect.isasyncgenfunction(
-            get_session
-        ), "get_session should be an async generator function, not a regular function"
+        assert inspect.isasyncgenfunction(get_session), (
+            "get_session should be an async generator function, not a regular function"
+        )
 
     def test_get_session_returns_async_generator(self):
         """
@@ -45,9 +45,9 @@ class TestAsyncSessionMigrationBug:
         Old code was doing get_session()() which is incorrect.
         """
         result = get_session()
-        assert inspect.isasyncgen(
-            result
-        ), "get_session() should return an async generator, not a session"
+        assert inspect.isasyncgen(result), (
+            "get_session() should return an async generator, not a session"
+        )
         # Note: aclose() returns a coroutine that we don't need to await in sync test
         # The generator will be garbage collected anyway
 
@@ -59,17 +59,17 @@ class TestHistoryServiceFix:
         """Verify that get_recent_conversations is now async."""
         from app.services.history_service import get_recent_conversations
 
-        assert inspect.iscoroutinefunction(
-            get_recent_conversations
-        ), "get_recent_conversations should be an async function after the fix"
+        assert inspect.iscoroutinefunction(get_recent_conversations), (
+            "get_recent_conversations should be an async function after the fix"
+        )
 
     def test_rate_message_in_db_is_async(self):
         """Verify that rate_message_in_db is now async."""
         from app.services.history_service import rate_message_in_db
 
-        assert inspect.iscoroutinefunction(
-            rate_message_in_db
-        ), "rate_message_in_db should be an async function after the fix"
+        assert inspect.iscoroutinefunction(rate_message_in_db), (
+            "rate_message_in_db should be an async function after the fix"
+        )
 
     @pytest.mark.asyncio
     async def test_get_recent_conversations_handles_errors_gracefully(self):
@@ -162,6 +162,6 @@ class TestDatabaseCompatFix:
 
             # Check if deprecation warning was issued
             deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
-            assert (
-                len(deprecation_warnings) > 0
-            ), "Deprecated functions should issue DeprecationWarning"
+            assert len(deprecation_warnings) > 0, (
+                "Deprecated functions should issue DeprecationWarning"
+            )

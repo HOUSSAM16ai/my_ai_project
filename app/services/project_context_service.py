@@ -227,16 +227,27 @@ class ProjectContextService:
                 # Count classes
                 analysis["total_classes"] += content.count("\nclass ")
                 # Count functions
-                analysis["total_functions"] += content.count("\ndef ") + content.count("\nasync def ")
+                analysis["total_functions"] += content.count("\ndef ") + content.count(
+                    "\nasync def "
+                )
                 # Count imports
                 analysis["total_imports"] += content.count("\nimport ") + content.count("\nfrom ")
 
                 # Detect frameworks
-                if "fastapi" in content.lower() and "FastAPI" not in analysis["frameworks_detected"]:
+                if (
+                    "fastapi" in content.lower()
+                    and "FastAPI" not in analysis["frameworks_detected"]
+                ):
                     analysis["frameworks_detected"].append("FastAPI")
-                if "sqlalchemy" in content.lower() and "SQLAlchemy" not in analysis["frameworks_detected"]:
+                if (
+                    "sqlalchemy" in content.lower()
+                    and "SQLAlchemy" not in analysis["frameworks_detected"]
+                ):
                     analysis["frameworks_detected"].append("SQLAlchemy")
-                if "pydantic" in content.lower() and "Pydantic" not in analysis["frameworks_detected"]:
+                if (
+                    "pydantic" in content.lower()
+                    and "Pydantic" not in analysis["frameworks_detected"]
+                ):
                     analysis["frameworks_detected"].append("Pydantic")
 
                 # Detect design patterns
@@ -244,7 +255,9 @@ class ProjectContextService:
                     analysis["design_patterns"].append("Factory Pattern")
                 if "@dataclass" in content and "Dataclass" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Dataclass")
-                if ("Singleton" in content or "_instance" in content) and "Singleton Pattern" not in analysis["design_patterns"]:
+                if (
+                    "Singleton" in content or "_instance" in content
+                ) and "Singleton Pattern" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Singleton Pattern")
                 if "async def" in content and "Async/Await" not in analysis["design_patterns"]:
                     analysis["design_patterns"].append("Async/Await")
@@ -261,10 +274,10 @@ class ProjectContextService:
         """
         layers = {
             "presentation": [],  # API routes, templates
-            "business": [],      # Services, business logic
-            "data": [],          # Models, repositories
-            "infrastructure": [], # Database, external services
-            "core": [],          # Core utilities, DI
+            "business": [],  # Services, business logic
+            "data": [],  # Models, repositories
+            "infrastructure": [],  # Database, external services
+            "core": [],  # Core utilities, DI
         }
 
         app_dir = self.project_root / "app"
@@ -320,12 +333,14 @@ class ProjectContextService:
             if full_path.exists():
                 try:
                     lines = len(full_path.read_text(encoding="utf-8").splitlines())
-                    components.append({
-                        "name": name,
-                        "path": file_path,
-                        "description": description,
-                        "lines": lines
-                    })
+                    components.append(
+                        {
+                            "name": name,
+                            "path": file_path,
+                            "description": description,
+                            "lines": lines,
+                        }
+                    )
                 except Exception:
                     pass
 
@@ -443,14 +458,14 @@ class ProjectContextService:
 
         # Patterns for common issues
         issue_patterns = {
-            "trailing_comma_missing": r'\([^)]*[a-zA-Z0-9_]\s*\n\s*\)',
-            "unused_import": r'^import\s+\w+\s*$',
-            "bare_except": r'except\s*:',
-            "mutable_default": r'def\s+\w+\([^)]*=\s*(\[\]|\{\})',
-            "print_statement": r'\bprint\s*\(',
-            "todo_fixme": r'#\s*(TODO|FIXME|XXX|HACK)',
-            "long_line": r'^.{120,}$',
-            "multiple_statements": r';\s*\w',
+            "trailing_comma_missing": r"\([^)]*[a-zA-Z0-9_]\s*\n\s*\)",
+            "unused_import": r"^import\s+\w+\s*$",
+            "bare_except": r"except\s*:",
+            "mutable_default": r"def\s+\w+\([^)]*=\s*(\[\]|\{\})",
+            "print_statement": r"\bprint\s*\(",
+            "todo_fixme": r"#\s*(TODO|FIXME|XXX|HACK)",
+            "long_line": r"^.{120,}$",
+            "multiple_statements": r";\s*\w",
         }
 
         for py_file in app_dir.rglob("*.py"):
@@ -465,25 +480,30 @@ class ProjectContextService:
                     matches = re.finditer(pattern, content, re.MULTILINE)
                     for match in matches:
                         # Find line number
-                        line_num = content[:match.start()].count('\n') + 1
-                        issues["style_issues"].append({
-                            "file": str(py_file.relative_to(self.project_root)),
-                            "line": line_num,
-                            "type": pattern_name,
-                            "snippet": match.group()[:50]
-                        })
+                        line_num = content[: match.start()].count("\n") + 1
+                        issues["style_issues"].append(
+                            {
+                                "file": str(py_file.relative_to(self.project_root)),
+                                "line": line_num,
+                                "type": pattern_name,
+                                "snippet": match.group()[:50],
+                            }
+                        )
                         issues["total_issues_found"] += 1
 
                 # Check for syntax errors using AST
                 try:
                     import ast
+
                     ast.parse(content)
                 except SyntaxError as e:
-                    issues["syntax_errors"].append({
-                        "file": str(py_file.relative_to(self.project_root)),
-                        "line": e.lineno,
-                        "message": str(e.msg),
-                    })
+                    issues["syntax_errors"].append(
+                        {
+                            "file": str(py_file.relative_to(self.project_root)),
+                            "line": e.lineno,
+                            "message": str(e.msg),
+                        }
+                    )
                     issues["total_issues_found"] += 1
 
             except Exception:
@@ -521,25 +541,29 @@ class ProjectContextService:
 
                     # Exact match
                     if query_lower in line_lower:
-                        results.append({
-                            "file": str(py_file.relative_to(self.project_root)),
-                            "line": i + 1,
-                            "content": line.strip()[:100],
-                            "match_type": "exact",
-                            "relevance": 1.0
-                        })
+                        results.append(
+                            {
+                                "file": str(py_file.relative_to(self.project_root)),
+                                "line": i + 1,
+                                "content": line.strip()[:100],
+                                "match_type": "exact",
+                                "relevance": 1.0,
+                            }
+                        )
                     # Fuzzy match - word overlap
                     elif query_words:
                         line_words = set(line_lower.split())
                         overlap = len(query_words & line_words) / len(query_words)
                         if overlap > 0.5:
-                            results.append({
-                                "file": str(py_file.relative_to(self.project_root)),
-                                "line": i + 1,
-                                "content": line.strip()[:100],
-                                "match_type": "fuzzy",
-                                "relevance": overlap
-                            })
+                            results.append(
+                                {
+                                    "file": str(py_file.relative_to(self.project_root)),
+                                    "line": i + 1,
+                                    "content": line.strip()[:100],
+                                    "match_type": "fuzzy",
+                                    "relevance": overlap,
+                                }
+                            )
 
                     if len(results) >= max_results * 2:
                         break
@@ -581,7 +605,8 @@ class ProjectContextService:
 
                 # Detect long methods (>50 lines)
                 import re
-                method_pattern = r'^\s*(async\s+)?def\s+(\w+)'
+
+                method_pattern = r"^\s*(async\s+)?def\s+(\w+)"
                 current_method = None
                 method_start = 0
 
@@ -589,24 +614,24 @@ class ProjectContextService:
                     match = re.match(method_pattern, line)
                     if match:
                         if current_method and (i - method_start) > 50:
-                            smells["long_methods"].append({
-                                "file": rel_path,
-                                "method": current_method,
-                                "lines": i - method_start
-                            })
+                            smells["long_methods"].append(
+                                {
+                                    "file": rel_path,
+                                    "method": current_method,
+                                    "lines": i - method_start,
+                                }
+                            )
                             smells["total_smells"] += 1
                         current_method = match.group(2)
                         method_start = i
 
                 # Detect magic numbers
-                magic_pattern = r'[=<>!]=?\s*(\d{2,})'
+                magic_pattern = r"[=<>!]=?\s*(\d{2,})"
                 for i, line in enumerate(lines):
-                    if re.search(magic_pattern, line) and 'def ' not in line:
-                        smells["magic_numbers"].append({
-                            "file": rel_path,
-                            "line": i + 1,
-                            "content": line.strip()[:60]
-                        })
+                    if re.search(magic_pattern, line) and "def " not in line:
+                        smells["magic_numbers"].append(
+                            {"file": rel_path, "line": i + 1, "content": line.strip()[:60]}
+                        )
                         smells["total_smells"] += 1
 
                 # Detect deep nesting (>4 levels)
@@ -618,10 +643,9 @@ class ProjectContextService:
                             max_indent = indent
 
                 if max_indent > 16:  # 4 levels * 4 spaces
-                    smells["deep_nesting"].append({
-                        "file": rel_path,
-                        "max_indent_level": max_indent // 4
-                    })
+                    smells["deep_nesting"].append(
+                        {"file": rel_path, "max_indent_level": max_indent // 4}
+                    )
                     smells["total_smells"] += 1
 
             except Exception:

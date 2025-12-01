@@ -89,10 +89,10 @@ def _get_deep_index_summary() -> str:
             summary = summarize_for_prompt(index, max_len=2500)
 
             # Extract additional metrics for superhuman analysis
-            global_metrics = index.get('global_metrics', {})
-            layers = index.get('layers', {})
-            duplicates = index.get('duplicate_function_bodies', [])
-            hotspots = index.get('complexity_hotspots_top50', [])
+            global_metrics = index.get("global_metrics", {})
+            layers = index.get("layers", {})
+            duplicates = index.get("duplicate_function_bodies", [])
+            hotspots = index.get("complexity_hotspots_top50", [])
 
             # Build layer analysis
             layer_info = ""
@@ -106,16 +106,20 @@ def _get_deep_index_summary() -> str:
             if hotspots:
                 complexity_info = "\n### ⚠️ Complexity Hotspots (Top 5):\n"
                 for hs in hotspots[:5]:
-                    file_path = hs.get('file', 'unknown').split('/')[-1]
-                    func_name = hs.get('name', 'unknown')
-                    cx = hs.get('complexity', 0)
-                    loc = hs.get('loc', 0)
-                    complexity_info += f"- `{file_path}::{func_name}` - Complexity: {cx}, Lines: {loc}\n"
+                    file_path = hs.get("file", "unknown").split("/")[-1]
+                    func_name = hs.get("name", "unknown")
+                    cx = hs.get("complexity", 0)
+                    loc = hs.get("loc", 0)
+                    complexity_info += (
+                        f"- `{file_path}::{func_name}` - Complexity: {cx}, Lines: {loc}\n"
+                    )
 
             # Build duplicate detection
             dup_info = ""
             if duplicates:
-                dup_info = f"\n### 🔄 Code Duplication: {len(duplicates)} duplicate patterns detected\n"
+                dup_info = (
+                    f"\n### 🔄 Code Duplication: {len(duplicates)} duplicate patterns detected\n"
+                )
 
             return f"""
 ## 🔬 DEEP STRUCTURAL ANALYSIS - فحص خارق لبنية المشروع
@@ -123,11 +127,11 @@ def _get_deep_index_summary() -> str:
 {summary}
 
 ### 📊 Index Metrics (قياسات الفهرسة):
-- **Files Scanned**: {index.get('files_scanned', 0)} ملف
-- **Total Modules**: {len(index.get('modules', {}))} وحدة
-- **Total Functions**: {global_metrics.get('total_functions', 'N/A')} دالة
-- **Avg Complexity**: {global_metrics.get('avg_complexity', 'N/A')}
-- **Max Complexity**: {global_metrics.get('max_complexity', 'N/A')}
+- **Files Scanned**: {index.get("files_scanned", 0)} ملف
+- **Total Modules**: {len(index.get("modules", {}))} وحدة
+- **Total Functions**: {global_metrics.get("total_functions", "N/A")} دالة
+- **Avg Complexity**: {global_metrics.get("avg_complexity", "N/A")}
+- **Max Complexity**: {global_metrics.get("max_complexity", "N/A")}
 - **Complexity Hotspots**: {len(hotspots)} نقطة ساخنة
 {layer_info}{complexity_info}{dup_info}
 ### 🎯 Deep Analysis Capabilities:
@@ -155,10 +159,16 @@ def _get_agent_tools_status() -> str:
             tools_list = agent_tools.__all__
             tools_info.append(f"### 🔧 Available Agent Tools ({len(tools_list)} tools):")
             # Group tools by category
-            file_tools = [t for t in tools_list if "file" in t.lower() or "read" in t.lower() or "write" in t.lower()]
+            file_tools = [
+                t
+                for t in tools_list
+                if "file" in t.lower() or "read" in t.lower() or "write" in t.lower()
+            ]
             search_tools = [t for t in tools_list if "search" in t.lower() or "index" in t.lower()]
             think_tools = [t for t in tools_list if "think" in t.lower()]
-            other_tools = [t for t in tools_list if t not in file_tools + search_tools + think_tools]
+            other_tools = [
+                t for t in tools_list if t not in file_tools + search_tools + think_tools
+            ]
 
             if file_tools:
                 tools_info.append(f"- **File Operations**: {', '.join(file_tools)}")
@@ -228,11 +238,13 @@ def _get_master_agent_status() -> str:
         if planner_names:
             status_parts.append(f"- **Planner Types**: {', '.join(planner_names)}")
 
-        status_parts.extend([
-            "- **Mission Lifecycle**: Active ✅",
-            "- **Task Orchestration**: Ready ✅",
-            "- **Adaptive Replanning**: Enabled ✅",
-        ])
+        status_parts.extend(
+            [
+                "- **Mission Lifecycle**: Active ✅",
+                "- **Task Orchestration**: Ready ✅",
+                "- **Adaptive Replanning**: Enabled ✅",
+            ]
+        )
 
         return "\n".join(status_parts)
     except Exception as e:

@@ -156,12 +156,12 @@ async def test_pgbouncer_compatibility_settings():
 
         # All three levels of prepared statement protection must be active
         assert connect_args["statement_cache_size"] == 0, "asyncpg statement cache must be disabled"
-        assert (
-            connect_args["prepared_statement_cache_size"] == 0
-        ), "SQLAlchemy dialect prepared statement cache must be disabled"
-        assert (
-            "prepared_statement_name_func" in connect_args
-        ), "Quantum-safe prepared statement names must be configured"
+        assert connect_args["prepared_statement_cache_size"] == 0, (
+            "SQLAlchemy dialect prepared statement cache must be disabled"
+        )
+        assert "prepared_statement_name_func" in connect_args, (
+            "Quantum-safe prepared statement names must be configured"
+        )
 
         # Verify the name function produces valid, unique names
         name_func = connect_args["prepared_statement_name_func"]

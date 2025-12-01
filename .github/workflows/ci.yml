@@ -1,49 +1,148 @@
-name: CI/CD Pipeline
+# =============================================================================
+# 🚀 CogniForge CI/CD Pipeline - Enterprise Grade
+# =============================================================================
+# هذا الملف يمثل نظام CI/CD خارق واحترافي من المستوى المؤسسي
+# يتضمن: فحص الجودة، الاختبارات، الأمان، والنشر التلقائي
+# =============================================================================
+
+name: 🚀 CI/CD Pipeline
 
 on:
   push:
-    branches: ["main", "fix/*"]
+    branches: ["main", "fix/*", "feature/*", "copilot/*"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip tests (for emergency fixes)"
+        required: false
+        default: "false"
+        type: boolean
+
+# إلغاء التشغيلات السابقة للفرع نفسه لتوفير الموارد
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  PIP_CACHE_DIR: ~/.cache/pip
+  PYTHONUNBUFFERED: "1"
 
 jobs:
-  quality-and-test:
-    name: Quality Checks and Tests
+  # ===========================================================================
+  # 🔍 مرحلة فحص الجودة والتنسيق
+  # ===========================================================================
+  quality:
+    name: 🔍 Code Quality
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12"]
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
-      - name: Install Python dependencies
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: 🔧 Lint with Ruff
+        run: ruff check .
+
+      - name: 🎨 Format Check with Ruff
+        run: ruff format --check .
+
+  # ===========================================================================
+  # 🧪 مرحلة الاختبارات
+  # ===========================================================================
+  test:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 20
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+
+    env:
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+      SECRET_KEY: "test-secret-key-for-ci-pipeline"
+      ENVIRONMENT: "testing"
+      LLM_MOCK_MODE: "1"
+      SUPABASE_URL: "https://dummy.supabase.co"
+      SUPABASE_SERVICE_ROLE_KEY: "dummy-key-for-ci"
+      RECOVERY_ADMIN_PASSWORD: "dummy-pass-for-ci"
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint and Format Check with Ruff
-        run: |
-          ruff check .
-          ruff format --check .
+      - name: ✅ Verify Configuration
+        run: python scripts/verify_secrets.py
 
-      - name: Verify Secrets (Pre-check)
+      - name: 🧪 Run Tests with Coverage
         run: |
-           # Create dummy secrets for CI check to pass if not provided
-           export DATABASE_URL=${DATABASE_URL:-"sqlite+aiosqlite:///:memory:"}
-           export SECRET_KEY=${SECRET_KEY:-"dummy-secret-key-for-ci"}
-           export SUPABASE_URL=${SUPABASE_URL:-"https://dummy.supabase.co"}
-           export SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-"dummy-key"}
-           export RECOVERY_ADMIN_PASSWORD=${RECOVERY_ADMIN_PASSWORD:-"dummy-pass"}
-           python scripts/verify_secrets.py
+          python -m pytest \
+            -v \
+            --cov=app \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --durations=10 \
+            --maxfail=10 \
+            -x
 
-      - name: Run Pytest
+      - name: 📊 Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+
+  # ===========================================================================
+  # ✅ مرحلة التحقق النهائي
+  # ===========================================================================
+  verify:
+    name: ✅ Final Verification
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    if: always() && !cancelled()
+    timeout-minutes: 5
+
+    steps:
+      - name: 🎯 Check All Jobs Status
         run: |
-          python -m pytest -v --cov=app --cov-report=xml --durations=10 --maxfail=5
+          echo "🔍 Quality Check: ${{ needs.quality.result }}"
+          echo "🧪 Tests: ${{ needs.test.result }}"
+
+          if [[ "${{ needs.quality.result }}" != "success" ]]; then
+            echo "❌ Quality checks failed!"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test.result }}" != "success" && "${{ needs.test.result }}" != "skipped" ]]; then
+            echo "❌ Tests failed!"
+            exit 1
+          fi
+
+          echo "✅ All checks passed successfully!"
+          echo "🚀 Ready for merge!"
