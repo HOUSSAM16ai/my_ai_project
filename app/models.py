@@ -12,6 +12,8 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.enum_types import FlexibleEnum
+
 if TYPE_CHECKING:
     pass
 
@@ -166,13 +168,7 @@ class AdminMessage(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole = Field(
-        sa_column=Column(
-            SAEnum(
-                MessageRole,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        )
+        sa_column=Column(FlexibleEnum(MessageRole))
     )
     content: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
@@ -192,13 +188,7 @@ class Mission(SQLModel, table=True):
     objective: str = Field(sa_column=Column(Text))
     status: MissionStatus = Field(
         default=MissionStatus.PENDING,
-        sa_column=Column(
-            SAEnum(
-                MissionStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(MissionStatus)),
     )
     initiator_id: int = Field(foreign_key="users.id", index=True)
     active_plan_id: int | None = Field(
@@ -266,13 +256,7 @@ class MissionPlan(SQLModel, table=True):
     planner_name: str = Field(max_length=100)
     status: PlanStatus = Field(
         default=PlanStatus.DRAFT,
-        sa_column=Column(
-            SAEnum(
-                PlanStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(PlanStatus)),
     )
     score: float = Field(default=0.0)
     rationale: str | None = Field(sa_column=Column(Text))
@@ -310,13 +294,7 @@ class Task(SQLModel, table=True):
     )  # Postgres specific or use string
     status: TaskStatus = Field(
         default=TaskStatus.PENDING,
-        sa_column=Column(
-            SAEnum(
-                TaskStatus,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        ),
+        sa_column=Column(FlexibleEnum(TaskStatus)),
     )
     attempt_count: int = Field(default=0)
     max_attempts: int = Field(default=3)
@@ -360,13 +338,7 @@ class MissionEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     event_type: MissionEventType = Field(
-        sa_column=Column(
-            SAEnum(
-                MissionEventType,
-                values_callable=lambda x: [m.value for m in x],
-                native_enum=False,
-            )
-        )
+        sa_column=Column(FlexibleEnum(MissionEventType))
     )
     payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
