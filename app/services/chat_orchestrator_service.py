@@ -75,7 +75,7 @@ class IntentDetector:
     """
 
     # File path regex - handles quotes, spaces, relative paths
-    _PATH_PATTERN = r"""['\"]?([a-zA-Z0-9_./\\-]+\.[a-zA-Z0-9]+)['\"]?"""
+    _PATH_PATTERN = r"['\"]?([a-zA-Z0-9_./\\-]+\.[a-zA-Z0-9]+)['\"]?"
 
     # Intent patterns with named groups
     PATTERNS: ClassVar[dict[ChatIntent, list[str]]] = {
@@ -209,10 +209,19 @@ class PathValidator:
             if re.search(pattern, path):
                 return False, "Path contains blocked pattern"
 
-        # Check extension
-        ext = "." + path.split(".")[-1].lower() if "." in path else ""
-        if ext and ext not in cls.ALLOWED_EXTENSIONS:
-            return False, f"Extension not allowed: {ext}"
+        # Check extension using pathlib for proper handling of compound extensions
+        from pathlib import Path
+
+        path_obj = Path(path)
+        suffixes = path_obj.suffixes  # Gets all suffixes like ['.tar', '.gz']
+        if suffixes:
+            # Check all suffixes (handles .tar.gz, .env.example, etc.)
+            ext = suffixes[-1].lower()  # Last suffix
+            full_ext = "".join(s.lower() for s in suffixes)  # Full compound extension
+
+            # Allow if either the last extension or full compound extension is allowed
+            if ext not in cls.ALLOWED_EXTENSIONS and full_ext not in cls.ALLOWED_EXTENSIONS:
+                return False, f"Extension not allowed: {ext}"
 
         return True, "ok"
 

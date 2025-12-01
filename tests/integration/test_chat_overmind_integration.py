@@ -8,9 +8,12 @@ This tests the ChatOrchestratorService which bridges:
 - Agent Tools (app/services/agent_tools.py)
 """
 
-import pytest
-from unittest.mock import MagicMock
+import time
 
+import pytest
+
+from app.core.rate_limiter import RateLimitConfig, ToolRateLimiter
+from app.services.async_tool_bridge import AsyncAgentTools, run_sync_tool
 from app.services.chat_orchestrator_service import (
     ChatIntent,
     ChatOrchestratorService,
@@ -20,7 +23,6 @@ from app.services.chat_orchestrator_service import (
     PathValidator,
     get_chat_orchestrator,
 )
-from app.core.rate_limiter import RateLimitConfig, ToolRateLimiter
 
 
 class TestIntentDetection:
@@ -260,9 +262,6 @@ class TestAsyncToolBridge:
     @pytest.mark.asyncio
     async def test_run_sync_tool_handles_timeout(self):
         """Test that run_sync_tool handles timeout correctly."""
-        import asyncio
-        from app.services.async_tool_bridge import run_sync_tool
-        import time
 
         def slow_function():
             time.sleep(10)
@@ -274,8 +273,6 @@ class TestAsyncToolBridge:
     @pytest.mark.asyncio
     async def test_async_tools_reports_unavailable(self):
         """Test AsyncAgentTools reports unavailable when tools not loaded."""
-        from app.services.async_tool_bridge import AsyncAgentTools
-
         tools = AsyncAgentTools()
         tools._tools = None
         tools._loaded = True
