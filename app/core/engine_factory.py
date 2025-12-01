@@ -541,9 +541,9 @@ def _configure_postgres_engine(
     # - Multiple threads
     # - Connection reuse in pooling
     # - Distributed deployments
-    connect_args[
-        "prepared_statement_name_func"
-    ] = QuantumStatementNameGenerator.get_generator_func()
+    connect_args["prepared_statement_name_func"] = (
+        QuantumStatementNameGenerator.get_generator_func()
+    )
 
     # LEVEL 4: Command Timeout Protection
     # Prevents hanging queries from blocking connections indefinitely

@@ -28,7 +28,6 @@ from app.middleware.core.hooks import (
 from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.core.result import MiddlewareResult
 
-
 # =============================================================================
 # MIDDLEWARE RESULT TESTS
 # =============================================================================
@@ -161,9 +160,9 @@ class TestMiddlewareResultChaining:
 
     def test_with_details(self):
         """Test with_details() chainable method."""
-        result = MiddlewareResult.failure(
-            status_code=400, message="Error"
-        ).with_details(field="email", reason="invalid format")
+        result = MiddlewareResult.failure(status_code=400, message="Error").with_details(
+            field="email", reason="invalid format"
+        )
 
         assert result.details["field"] == "email"
         assert result.details["reason"] == "invalid format"
@@ -826,9 +825,7 @@ class TestRequestContext:
 
     def test_get_header_case_insensitive(self):
         """Test get_header() is case-insensitive."""
-        ctx = RequestContext(
-            headers={"Content-Type": "application/json", "X-Request-ID": "abc"}
-        )
+        ctx = RequestContext(headers={"Content-Type": "application/json", "X-Request-ID": "abc"})
 
         assert ctx.get_header("content-type") == "application/json"
         assert ctx.get_header("CONTENT-TYPE") == "application/json"

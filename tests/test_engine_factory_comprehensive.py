@@ -34,7 +34,6 @@ from app.core.engine_factory import (
     create_unified_async_engine,
 )
 
-
 # =============================================================================
 # QUANTUM STATEMENT NAME GENERATOR TESTS
 # =============================================================================
@@ -142,21 +141,15 @@ class TestAdaptivePoolerDetector:
 
     def test_requires_prepared_statement_protection(self):
         """All known poolers require prepared statement protection."""
-        assert AdaptivePoolerDetector.requires_prepared_statement_protection(
-            PoolerType.PGBOUNCER
-        )
+        assert AdaptivePoolerDetector.requires_prepared_statement_protection(PoolerType.PGBOUNCER)
         assert AdaptivePoolerDetector.requires_prepared_statement_protection(
             PoolerType.SUPABASE_POOLER
         )
-        assert AdaptivePoolerDetector.requires_prepared_statement_protection(
-            PoolerType.NEON_POOLER
-        )
+        assert AdaptivePoolerDetector.requires_prepared_statement_protection(PoolerType.NEON_POOLER)
         assert AdaptivePoolerDetector.requires_prepared_statement_protection(
             PoolerType.UNKNOWN_POOLER
         )
-        assert not AdaptivePoolerDetector.requires_prepared_statement_protection(
-            PoolerType.NONE
-        )
+        assert not AdaptivePoolerDetector.requires_prepared_statement_protection(PoolerType.NONE)
 
 
 # =============================================================================
@@ -484,13 +477,15 @@ class TestPoolerSignature:
 
     def test_pooler_signature_immutable(self):
         """PoolerSignature is immutable (frozen dataclass)."""
+        from dataclasses import FrozenInstanceError
+
         sig = PoolerSignature(
             pattern=r"test",
             pooler_type=PoolerType.PGBOUNCER,
             default_port=6432,
             requires_prepared_stmt_disable=True,
         )
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             sig.pattern = "changed"
 
     def test_pooler_signatures_list_populated(self):
@@ -498,7 +493,9 @@ class TestPoolerSignature:
         from app.core.engine_factory import POOLER_SIGNATURES
 
         assert len(POOLER_SIGNATURES) >= 5
-        supabase_sigs = [s for s in POOLER_SIGNATURES if s.pooler_type == PoolerType.SUPABASE_POOLER]
+        supabase_sigs = [
+            s for s in POOLER_SIGNATURES if s.pooler_type == PoolerType.SUPABASE_POOLER
+        ]
         assert len(supabase_sigs) >= 2
 
 

@@ -11,17 +11,11 @@ This module tests critical business logic including:
 - Edge cases in data handling
 """
 
-import json
 from datetime import UTC, datetime
-
-import pytest
-from sqlalchemy import Column, Text, create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
 from app.models import (
     AdminConversation,
     AdminMessage,
-    CaseInsensitiveEnum,
     FlexibleEnum,
     GeneratedPrompt,
     JSONText,
@@ -40,7 +34,6 @@ from app.models import (
     update_mission_status,
     utc_now,
 )
-
 
 # =============================================================================
 # UTC NOW HELPER TESTS
@@ -78,8 +71,8 @@ class TestCaseInsensitiveEnum:
 
     def test_lookup_by_uppercase_name(self):
         """Can lookup enum by uppercase name."""
-        assert MessageRole.USER == MessageRole["USER"]
-        assert MissionStatus.PENDING == MissionStatus["PENDING"]
+        assert MessageRole["USER"] == MessageRole.USER
+        assert MissionStatus["PENDING"] == MissionStatus.PENDING
 
     def test_lookup_by_lowercase_value(self):
         """Can lookup enum by lowercase value."""
@@ -260,7 +253,7 @@ class TestJSONText:
     def test_process_result_value_with_list(self):
         """Result value deserializes list from JSON."""
         decorator = JSONText()
-        result = decorator.process_result_value('[1, 2, 3]', None)
+        result = decorator.process_result_value("[1, 2, 3]", None)
         assert result == [1, 2, 3]
 
     def test_process_result_value_with_none(self):
@@ -370,11 +363,7 @@ class TestAdminConversationModel:
 
     def test_conversation_custom_type(self):
         """AdminConversation can have custom type."""
-        conv = AdminConversation(
-            title="Debug Session",
-            user_id=1,
-            conversation_type="debug"
-        )
+        conv = AdminConversation(title="Debug Session", user_id=1, conversation_type="debug")
         assert conv.conversation_type == "debug"
 
 
@@ -388,11 +377,7 @@ class TestAdminMessageModel:
 
     def test_message_creation(self):
         """AdminMessage can be created with required fields."""
-        msg = AdminMessage(
-            conversation_id=1,
-            role=MessageRole.USER,
-            content="Hello, world!"
-        )
+        msg = AdminMessage(conversation_id=1, role=MessageRole.USER, content="Hello, world!")
         assert msg.conversation_id == 1
         assert msg.role == MessageRole.USER
         assert msg.content == "Hello, world!"
@@ -549,12 +534,7 @@ class TestLogMissionEvent:
         """log_mission_event creates event without session."""
         mission = Mission(id=1, objective="Test", initiator_id=1)
         # Should not raise even without session
-        log_mission_event(
-            mission,
-            MissionEventType.CREATED,
-            {"detail": "test"},
-            session=None
-        )
+        log_mission_event(mission, MissionEventType.CREATED, {"detail": "test"}, session=None)
 
 
 class TestUpdateMissionStatus:

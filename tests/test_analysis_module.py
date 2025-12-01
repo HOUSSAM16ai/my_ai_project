@@ -12,8 +12,6 @@ at 0% coverage. These tests verify:
 
 import time
 
-import pytest
-
 from app.analysis.anomaly_detector import (
     Anomaly,
     AnomalyDetector,
@@ -25,7 +23,6 @@ from app.analysis.pattern_recognizer import (
     PatternRecognizer,
     PatternType,
 )
-
 
 # =============================================================================
 # ANOMALY DETECTOR TESTS
@@ -126,7 +123,9 @@ class TestZScoreDetection:
 
         # Add normal values (mean=50, small stdev)
         for i in range(50):
-            detector.metric_history["test"].append({"value": 50 + (i % 5), "timestamp": time.time()})
+            detector.metric_history["test"].append(
+                {"value": 50 + (i % 5), "timestamp": time.time()}
+            )
 
         # Test extreme value (should be anomalous)
         is_anomaly, score = detector._detect_zscore_anomaly("test", 200)
@@ -215,7 +214,9 @@ class TestMovingAverageDetection:
 
         # Add stable values
         for i in range(30):
-            detector.metric_history["test"].append({"value": 50 + (i % 3), "timestamp": time.time()})
+            detector.metric_history["test"].append(
+                {"value": 50 + (i % 3), "timestamp": time.time()}
+            )
 
         # Test extreme deviation
         is_anomaly, score = detector._detect_moving_average_anomaly("test", 200)
@@ -246,10 +247,12 @@ class TestMLDetection:
 
         # Add clustered values around 50
         for i in range(50):
-            detector.metric_history["test"].append({"value": 50 + (i % 5), "timestamp": time.time()})
+            detector.metric_history["test"].append(
+                {"value": 50 + (i % 5), "timestamp": time.time()}
+            )
 
         # Test extremely isolated value
-        is_anomaly, score = detector._detect_ml_anomaly("test", 500)
+        _is_anomaly, score = detector._detect_ml_anomaly("test", 500)
 
         # The value 500 should be highly isolated
         assert score > 0.5
@@ -593,7 +596,7 @@ class TestPeriodicPatternDetection:
         recognizer = PatternRecognizer()
 
         # Create a repeating pattern (period=24)
-        for cycle in range(5):  # 5 complete cycles
+        for _cycle in range(5):  # 5 complete cycles
             for hour in range(24):
                 # Value follows daily pattern (higher in day, lower at night)
                 value = 100 + 50 * (1 if 8 <= hour <= 20 else 0)
@@ -617,7 +620,7 @@ class TestErrorPatternDetection:
         now = time.time()
 
         # Simulate 15 errors in 1 minute (threshold is 10)
-        for i in range(15):
+        for _i in range(15):
             pattern = recognizer.detect_error_pattern("500_error", now)
 
         # Last call should detect clustering
@@ -633,7 +636,7 @@ class TestErrorPatternDetection:
 
         # Only 5 errors (below threshold of 10)
         pattern = None
-        for i in range(5):
+        for _i in range(5):
             pattern = recognizer.detect_error_pattern("404_error", now)
 
         assert pattern is None
@@ -650,7 +653,7 @@ class TestSecurityPatternDetection:
 
         # Simulate 25 login attempts from same IP (threshold is 20)
         pattern = None
-        for i in range(25):
+        for _i in range(25):
             pattern = recognizer.detect_security_pattern("192.168.1.100", "login_attempt", now)
 
         # Should detect brute force
@@ -667,7 +670,7 @@ class TestSecurityPatternDetection:
 
         # Only 10 attempts (below threshold of 20)
         pattern = None
-        for i in range(10):
+        for _i in range(10):
             pattern = recognizer.detect_security_pattern("10.0.0.1", "login_attempt", now)
 
         assert pattern is None
@@ -740,8 +743,8 @@ class TestAnalysisIntegration:
 
         # Simulate anomalous traffic spike
         anomaly_value = 1000.0
-        is_anomaly, anomaly_obj = detector.check_value("requests_per_second", anomaly_value)
-        patterns = recognizer.analyze_traffic_pattern("requests_per_second", anomaly_value)
+        detector.check_value("requests_per_second", anomaly_value)
+        recognizer.analyze_traffic_pattern("requests_per_second", anomaly_value)
 
         # Both should detect something
         detector_stats = detector.get_statistics()
