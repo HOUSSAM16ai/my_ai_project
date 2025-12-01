@@ -12,7 +12,9 @@ Features:
 - Dynamic context generation for AI prompts
 """
 
+import ast
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -493,8 +495,6 @@ class ProjectContextService:
 
                 # Check for syntax errors using AST
                 try:
-                    import ast
-
                     ast.parse(content)
                 except SyntaxError as e:
                     issues["syntax_errors"].append(
@@ -604,8 +604,6 @@ class ProjectContextService:
                 rel_path = str(py_file.relative_to(self.project_root))
 
                 # Detect long methods (>50 lines)
-                import re
-
                 method_pattern = r"^\s*(async\s+)?def\s+(\w+)"
                 current_method = None
                 method_start = 0
