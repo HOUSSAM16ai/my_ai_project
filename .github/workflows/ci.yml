@@ -20,6 +20,10 @@ on:
         default: "false"
         type: boolean
 
+# الحد الأدنى من الصلاحيات للأمان
+permissions:
+  contents: read
+
 # إلغاء التشغيلات السابقة للفرع نفسه لتوفير الموارد
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,6 +42,8 @@ jobs:
     name: 🔍 Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: 📥 Checkout Repository
@@ -71,6 +77,8 @@ jobs:
     needs: quality
     timeout-minutes: 20
     if: ${{ github.event.inputs.skip_tests != 'true' }}
+    permissions:
+      contents: read
 
     env:
       DATABASE_URL: "sqlite+aiosqlite:///:memory:"
@@ -127,6 +135,7 @@ jobs:
     needs: [quality, test]
     if: always() && !cancelled()
     timeout-minutes: 5
+    permissions: {}
 
     steps:
       - name: 🎯 Check All Jobs Status
