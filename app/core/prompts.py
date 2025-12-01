@@ -87,20 +87,20 @@ def _get_deep_index_summary() -> str:
         index = build_index(".")
         if index:
             summary = summarize_for_prompt(index, max_len=2500)
-            
+
             # Extract additional metrics for superhuman analysis
             global_metrics = index.get('global_metrics', {})
             layers = index.get('layers', {})
             duplicates = index.get('duplicate_function_bodies', [])
             hotspots = index.get('complexity_hotspots_top50', [])
-            
+
             # Build layer analysis
             layer_info = ""
             if layers:
                 layer_info = "\n### 🏗️ Architecture Layers:\n"
                 for layer_name, files in list(layers.items())[:5]:
                     layer_info += f"- **{layer_name}**: {len(files)} files\n"
-            
+
             # Build complexity analysis
             complexity_info = ""
             if hotspots:
@@ -111,12 +111,12 @@ def _get_deep_index_summary() -> str:
                     cx = hs.get('complexity', 0)
                     loc = hs.get('loc', 0)
                     complexity_info += f"- `{file_path}::{func_name}` - Complexity: {cx}, Lines: {loc}\n"
-            
+
             # Build duplicate detection
             dup_info = ""
             if duplicates:
                 dup_info = f"\n### 🔄 Code Duplication: {len(duplicates)} duplicate patterns detected\n"
-            
+
             return f"""
 ## 🔬 DEEP STRUCTURAL ANALYSIS - فحص خارق لبنية المشروع
 

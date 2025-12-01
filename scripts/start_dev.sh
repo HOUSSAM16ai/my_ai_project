@@ -12,24 +12,15 @@ if [ ! -f .env ]; then
   # add other defaults as needed
 fi
 
-# 3) build frontend
-if [ -d app/static ]; then
-  echo "Building frontend..."
-  pushd app/static
-  if [ -f package-lock.json ]; then npm ci; else npm install; fi
-  NODE_OPTIONS="--max-old-space-size=8192" npm run build
-  popd
-fi
-
-# 4) run migrations (optional)
+# 3) run migrations (optional)
 # alembic upgrade head || true
 
-# 5) start backend
+# 4) start backend
 echo "Starting uvicorn..."
 uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload > uvicorn.log 2>&1 &
 sleep 2
 
-# 6) show status
+# 5) show status
 ss -lntp | grep :${PORT:-8000} || true
 tail -n 50 uvicorn.log || true
 

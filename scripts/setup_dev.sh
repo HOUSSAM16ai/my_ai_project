@@ -7,9 +7,8 @@ print_header() {
     echo "--- $1 ---"
 }
 
-print_header "Phase 1: Installing Dependencies"
+print_header "Phase 1: Installing Python Dependencies"
 pip install -r requirements.txt
-npm install
 
 print_header "Phase 2: Configuring Environment"
 if [ ! -f .env ]; then
@@ -23,10 +22,5 @@ ADMIN_NAME=AdminUser
 EOF
 fi
 
-print_header "Phase 3: Building Frontend (with increased memory)"
-export NODE_OPTIONS="--max-old-space-size=8192"
-npm run build
-unset NODE_OPTIONS
-
-print_header "Phase 4: Handing over to The Guardian"
+print_header "Phase 3: Handing over to The Guardian"
 exec ./scripts/codespace_guardian.sh
