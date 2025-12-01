@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 # Import BasePlanner at runtime with fallback
 try:
     from .base_planner import BasePlanner
-except Exception:
+except (ImportError, ModuleNotFoundError):
 
     class BasePlanner:  # type: ignore
         @staticmethod
