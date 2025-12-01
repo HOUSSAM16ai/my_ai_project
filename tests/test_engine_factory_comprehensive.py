@@ -14,6 +14,7 @@ These tests verify edge cases, error conditions, and security guarantees.
 
 import os
 import threading
+from dataclasses import FrozenInstanceError
 from unittest.mock import patch
 
 import pytest
@@ -477,8 +478,6 @@ class TestPoolerSignature:
 
     def test_pooler_signature_immutable(self):
         """PoolerSignature is immutable (frozen dataclass)."""
-        from dataclasses import FrozenInstanceError
-
         sig = PoolerSignature(
             pattern=r"test",
             pooler_type=PoolerType.PGBOUNCER,
