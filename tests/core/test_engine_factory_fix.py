@@ -10,8 +10,13 @@ async def test_engine_factory_pgbouncer_config():
     """
     Verify that the unified engine factory correctly configures the engine
     for PgBouncer compatibility by:
-    1. Setting statement_cache_size=0
-    2. NOT setting prepared_statement_name_func (which causes InvalidSQLStatementNameError)
+    1. Setting statement_cache_size=0 (asyncpg level)
+    2. Setting prepared_statement_cache_size=0 (SQLAlchemy dialect level)
+    3. Setting prepared_statement_name_func with UUID generator (prevents collisions)
+
+    Note: The UUID-based prepared_statement_name_func is SAFE with PgBouncer because
+    it ensures each prepared statement has a unique name, preventing collisions
+    when connections are reused across different sessions.
     """
 
     # We mock create_async_engine to inspect arguments
@@ -30,9 +35,20 @@ async def test_engine_factory_pgbouncer_config():
         # Check connect_args
         connect_args = kwargs.get("connect_args", {})
 
-        # CRITICAL: statement_cache_size MUST be 0
+        # CRITICAL: statement_cache_size MUST be 0 (asyncpg native cache)
         assert connect_args.get("statement_cache_size") == 0
 
-        # CRITICAL: prepared_statement_name_func MUST NOT be present
-        # If it is present, it causes InvalidSQLStatementNameError with PgBouncer
-        assert "prepared_statement_name_func" not in connect_args
+        # CRITICAL: prepared_statement_cache_size MUST be 0 (SQLAlchemy dialect cache)
+        # This is the fix for "prepared statement '_asyncpg_stmt_X' does not exist"
+        assert connect_args.get("prepared_statement_cache_size") == 0
+
+        # CRITICAL: prepared_statement_name_func MUST be present with UUID generator
+        # This ensures unique names for any prepared statements, preventing collisions
+        assert "prepared_statement_name_func" in connect_args
+
+        # Verify the function generates unique UUID-based names
+        name_func = connect_args["prepared_statement_name_func"]
+        name1 = name_func()
+        name2 = name_func()
+        assert name1 != name2, "Names should be unique (UUID-based)"
+        assert "__asyncpg_" in name1, "Names should have the asyncpg prefix"

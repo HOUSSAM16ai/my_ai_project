@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Engine
@@ -105,9 +106,42 @@ def create_unified_async_engine(
         if "connect_args" not in engine_kwargs:
             engine_kwargs["connect_args"] = {}
 
-        # STRICTLY DISABLE PREPARED STATEMENTS for PgBouncer compatibility
-        # We enforce this rigidly. No exceptions.
+        # =============================================================================
+        # CRITICAL FIX FOR PgBouncer TRANSACTION POOLING COMPATIBILITY
+        # =============================================================================
+        # Problem: PgBouncer in transaction pooling mode shares connections between
+        # different sessions. Server-side prepared statements created in one session
+        # may not exist when the connection is reused by another session, causing:
+        # "InvalidSQLStatementNameError: prepared statement '_asyncpg_stmt_X' does not exist"
+        #
+        # Solution: Disable ALL prepared statement caching at TWO levels:
+        #
+        # 1. asyncpg level (statement_cache_size=0):
+        #    Disables asyncpg's internal prepared statement cache on the raw connection.
+        #
+        # 2. SQLAlchemy asyncpg dialect level (prepared_statement_cache_size=0):
+        #    Disables SQLAlchemy's DBAPI-level prepared statement cache.
+        #    This is the cache that causes "_asyncpg_stmt_X" errors with PgBouncer.
+        #
+        # 3. Unique prepared statement names (prepared_statement_name_func):
+        #    As an additional safety measure, we use UUID-based names for any
+        #    prepared statements that might still be created, preventing collisions
+        #    across different sessions sharing the same connection.
+        # =============================================================================
+
+        # Level 1: Disable asyncpg's native prepared statement cache
         engine_kwargs["connect_args"]["statement_cache_size"] = 0
+
+        # Level 2: Disable SQLAlchemy asyncpg dialect's prepared statement cache
+        # This is the CRITICAL fix for the "_asyncpg_stmt_X does not exist" error
+        engine_kwargs["connect_args"]["prepared_statement_cache_size"] = 0
+
+        # Level 3: Use unique prepared statement names to prevent collisions
+        # Even with caching disabled, some operations might create prepared statements.
+        # Using UUID-based names ensures no conflicts when connections are reused.
+        engine_kwargs["connect_args"]["prepared_statement_name_func"] = (
+            lambda: f"__asyncpg_{uuid4()}__"
+        )
 
         # Also enforce command_timeout to avoid hanging queries
         engine_kwargs["connect_args"].setdefault("command_timeout", 60)
@@ -121,7 +155,9 @@ def create_unified_async_engine(
             engine_kwargs.setdefault("pool_recycle", 300)
 
         logger.info(
-            f"Creating Unified Async Engine for Postgres. Connect Args: {engine_kwargs['connect_args']}. Pool: {pool_class or 'Default'}"
+            f"Creating Unified Async Engine for Postgres with PgBouncer-safe settings. "
+            f"Connect Args: statement_cache_size=0, prepared_statement_cache_size=0, "
+            f"prepared_statement_name_func=UUID. Pool: {pool_class or 'Default'}"
         )
 
     elif is_sqlite:
@@ -143,11 +179,28 @@ def create_unified_async_engine(
 
     # --- 3. SECURITY & SAFETY CHECK ---
     if is_postgres:
-        # Double check that statement_cache_size is indeed 0
-        cache_setting = engine_kwargs.get("connect_args", {}).get("statement_cache_size")
+        connect_args = engine_kwargs.get("connect_args", {})
+
+        # Verify statement_cache_size is 0
+        cache_setting = connect_args.get("statement_cache_size")
         if cache_setting != 0:
             raise FatalEngineError(
                 f"Security Violation: statement_cache_size is {cache_setting}. MUST be 0 for Postgres/PgBouncer."
+            )
+
+        # Verify prepared_statement_cache_size is 0
+        prepared_cache_setting = connect_args.get("prepared_statement_cache_size")
+        if prepared_cache_setting != 0:
+            raise FatalEngineError(
+                f"Security Violation: prepared_statement_cache_size is {prepared_cache_setting}. "
+                "MUST be 0 for Postgres/PgBouncer compatibility."
+            )
+
+        # Verify prepared_statement_name_func is set
+        if "prepared_statement_name_func" not in connect_args:
+            raise FatalEngineError(
+                "Security Violation: prepared_statement_name_func is not set. "
+                "Required for PgBouncer compatibility."
             )
 
     return create_async_engine(database_url, **engine_kwargs)
