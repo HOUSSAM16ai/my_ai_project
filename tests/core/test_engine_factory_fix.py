@@ -12,9 +12,9 @@ async def test_engine_factory_pgbouncer_config():
     for PgBouncer compatibility by:
     1. Setting statement_cache_size=0 (asyncpg level)
     2. Setting prepared_statement_cache_size=0 (SQLAlchemy dialect level)
-    3. Setting prepared_statement_name_func with UUID generator (prevents collisions)
+    3. Setting prepared_statement_name_func with quantum generator (prevents collisions)
 
-    Note: The UUID-based prepared_statement_name_func is SAFE with PgBouncer because
+    Note: The quantum-safe prepared_statement_name_func is SAFE with PgBouncer because
     it ensures each prepared statement has a unique name, preventing collisions
     when connections are reused across different sessions.
     """
@@ -42,13 +42,14 @@ async def test_engine_factory_pgbouncer_config():
         # This is the fix for "prepared statement '_asyncpg_stmt_X' does not exist"
         assert connect_args.get("prepared_statement_cache_size") == 0
 
-        # CRITICAL: prepared_statement_name_func MUST be present with UUID generator
+        # CRITICAL: prepared_statement_name_func MUST be present with quantum generator
         # This ensures unique names for any prepared statements, preventing collisions
         assert "prepared_statement_name_func" in connect_args
 
-        # Verify the function generates unique UUID-based names
+        # Verify the function generates unique quantum-safe names
         name_func = connect_args["prepared_statement_name_func"]
         name1 = name_func()
         name2 = name_func()
-        assert name1 != name2, "Names should be unique (UUID-based)"
-        assert "__asyncpg_" in name1, "Names should have the asyncpg prefix"
+        assert name1 != name2, "Names should be unique (quantum-safe)"
+        # Verify the cogniforge prefix (our quantum naming system)
+        assert "__cogniforge_" in name1, "Names should have the cogniforge quantum prefix"
