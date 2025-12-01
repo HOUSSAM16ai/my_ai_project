@@ -205,7 +205,9 @@ class TestDatabaseURLSanitizer:
         """Invalid URL structure raises FatalEngineError."""
         with pytest.raises(FatalEngineError) as exc_info:
             DatabaseURLSanitizer.sanitize("not-a-valid-url")
-        assert "Invalid DATABASE_URL" in str(exc_info.value) or "missing" in str(exc_info.value).lower()
+        error_message = str(exc_info.value)
+        assert "Invalid DATABASE_URL structure" in error_message
+        assert "missing scheme" in error_message
 
     def test_sanitize_accepts_sqlite_without_host(self):
         """SQLite URLs without host are valid."""
