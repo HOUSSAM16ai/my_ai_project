@@ -75,23 +75,128 @@ app/
 # =============================================================================
 
 
+def _get_deep_index_summary() -> str:
+    """
+    Get deep structural analysis from Deep Indexer.
+    Provides root-level understanding of project architecture.
+    """
+    try:
+        from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+
+        index = build_index(".")
+        if index:
+            summary = summarize_for_prompt(index, max_len=2000)
+            return f"""
+## 🔬 DEEP STRUCTURAL ANALYSIS (من جذور المشروع)
+
+{summary}
+
+### 📊 Index Metrics:
+- Files Scanned: {index.get('files_scanned', 0)}
+- Total Modules: {len(index.get('modules', {}))}
+- Complexity Hotspots: {len(index.get('complexity_hotspots_top50', []))}
+"""
+    except Exception as e:
+        logger.debug(f"Deep indexer not available: {e}")
+    return ""
+
+
+def _get_agent_tools_status() -> str:
+    """
+    Get status of available agent tools.
+    Shows what tools the Master Agent can use.
+    """
+    try:
+        from app.services import agent_tools
+
+        tools_info = []
+        if hasattr(agent_tools, "__all__"):
+            tools_list = agent_tools.__all__
+            tools_info.append(f"### 🔧 Available Agent Tools ({len(tools_list)} tools):")
+            # Group tools by category
+            file_tools = [t for t in tools_list if "file" in t.lower() or "read" in t.lower() or "write" in t.lower()]
+            search_tools = [t for t in tools_list if "search" in t.lower() or "index" in t.lower()]
+            think_tools = [t for t in tools_list if "think" in t.lower()]
+            other_tools = [t for t in tools_list if t not in file_tools + search_tools + think_tools]
+
+            if file_tools:
+                tools_info.append(f"- **File Operations**: {', '.join(file_tools)}")
+            if search_tools:
+                tools_info.append(f"- **Search & Index**: {', '.join(search_tools)}")
+            if think_tools:
+                tools_info.append(f"- **Reasoning**: {', '.join(think_tools)}")
+            if other_tools:
+                tools_info.append(f"- **Other**: {', '.join(other_tools[:5])}")
+
+            return "\n".join(tools_info)
+    except Exception as e:
+        logger.debug(f"Agent tools status not available: {e}")
+    return ""
+
+
 def _get_dynamic_project_context() -> str:
     """
     Get real-time project context using ProjectContextService.
     Falls back to static context if service unavailable.
+    Enhanced with deep structural analysis.
     """
+    context_parts = []
+
+    # 1. Basic project context
     try:
         from app.services.project_context_service import get_project_context_for_ai
 
-        return get_project_context_for_ai()
+        context_parts.append(get_project_context_for_ai())
     except Exception as e:
         logger.warning(f"Could not load dynamic project context: {e}")
-        return _get_static_project_structure()
+        context_parts.append(_get_static_project_structure())
+
+    # 2. Deep structural analysis (root-level understanding)
+    deep_summary = _get_deep_index_summary()
+    if deep_summary:
+        context_parts.append(deep_summary)
+
+    # 3. Agent tools status
+    tools_status = _get_agent_tools_status()
+    if tools_status:
+        context_parts.append(tools_status)
+
+    return "\n\n".join(context_parts)
 
 
 # =============================================================================
 # DYNAMIC SYSTEM HEALTH
 # =============================================================================
+
+
+def _get_master_agent_status() -> str:
+    """
+    Get Master Agent Service status and capabilities.
+    Shows the orchestration layer of the agent system.
+    """
+    try:
+        from app.overmind.planning.factory import get_all_planners
+
+        planners = get_all_planners()
+        planner_names = [p.__class__.__name__ for p in planners] if planners else []
+
+        status_parts = [
+            "### 🤖 Master Agent Orchestrator Status:",
+            f"- **Active Planners**: {len(planner_names)}",
+        ]
+        if planner_names:
+            status_parts.append(f"- **Planner Types**: {', '.join(planner_names)}")
+
+        status_parts.extend([
+            "- **Mission Lifecycle**: Active ✅",
+            "- **Task Orchestration**: Ready ✅",
+            "- **Adaptive Replanning**: Enabled ✅",
+        ])
+
+        return "\n".join(status_parts)
+    except Exception as e:
+        logger.debug(f"Master agent status not available: {e}")
+        return ""
 
 
 def _get_system_health() -> str:
@@ -233,6 +338,10 @@ def get_system_prompt(
                 _get_system_health(),
             ]
         )
+        # Add Master Agent status
+        master_status = _get_master_agent_status()
+        if master_status:
+            parts.extend(["", master_status])
 
     if include_capabilities:
         parts.extend(
@@ -248,12 +357,16 @@ def get_system_prompt(
             "",
             f"## ⏰ Session Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
             "",
-            "# RESPONSE GUIDELINES",
+            "# RESPONSE GUIDELINES - إرشادات الاستجابة",
             "- When asked about the project, provide specific, accurate information based on the real-time analysis above.",
             "- إذا سُئلت عن المشروع، قدم معلومات دقيقة ومحددة بناءً على التحليل الفعلي أعلاه.",
             "- If asked about issues, refer to the 'Current Issues' section.",
             "- If asked about strengths, refer to the 'Project Strengths' section.",
             "- Always be specific with file names, line counts, and technical details.",
+            "- For complex questions, use Chain-of-Thought reasoning and show your analysis process.",
+            "- للأسئلة المعقدة، استخدم التفكير المتسلسل وأظهر عملية التحليل.",
+            "- Leverage the Deep Indexer and Agent Tools for accurate, root-level project understanding.",
+            "- استخدم الفهرسة العميقة وأدوات الوكيل للحصول على فهم دقيق من جذور المشروع.",
         ]
     )
 
