@@ -100,7 +100,7 @@ class FactoryConfig:
         # Parse allowed planners
         allowed_str = os.getenv(
             "FACTORY_ALLOWED_PLANNERS",
-            "llm_planner,risk_planner,structural_planner,multi_pass_arch_planner",
+            "llm_planner,risk_planner,structural_planner,multi_pass_arch_planner,adaptive_multi_pass_arch_planner",
         )
         allowed_planners = _parse_csv(allowed_str)
 
@@ -111,6 +111,7 @@ class FactoryConfig:
         # Add official manual modules
         official_manual = [
             "app.overmind.planning.llm_planner",
+            "app.overmind.planning.multi_pass_arch_planner",
         ]
         manual_modules = list(dict.fromkeys(official_manual + manual_modules))
 
