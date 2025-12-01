@@ -18,7 +18,6 @@ from app.models import (
     Mission,
     MissionEvent,
     MissionEventType,
-    MissionStatus,
     User,
     log_mission_event,
 )
