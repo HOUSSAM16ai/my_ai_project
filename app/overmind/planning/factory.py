@@ -367,7 +367,7 @@ def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
             continue
         records.append(r.to_public_dict())
 
-    telemetry_data = _GLOBAL_FACTORY.get_telemetry_samples(limit=25)
+    telemetry_data = _GLOBAL_FACTORY.get_telemetry_samples(selection_limit=25, instantiation_limit=25)
 
     return {
         "version": FACTORY_VERSION,

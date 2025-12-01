@@ -85,8 +85,14 @@ __planning_api_map__: dict[str, tuple[str, str]] = {
     # Factory Functions
     "get_planner": ("app.overmind.planning.factory", "get_planner"),
     "get_all_planners": ("app.overmind.planning.factory", "get_all_planners"),
+    "list_planners": ("app.overmind.planning.factory", "list_planners"),
+    "select_best_planner": ("app.overmind.planning.factory", "select_best_planner"),
     "discover": ("app.overmind.planning.factory", "discover"),
     "list_planner_metadata": ("app.overmind.planning.factory", "list_planner_metadata"),
+    "self_heal": ("app.overmind.planning.factory", "self_heal"),
+    "health_check": ("app.overmind.planning.factory", "health_check"),
+    "diagnostics_json": ("app.overmind.planning.factory", "diagnostics_json"),
+    "diagnostics_report": ("app.overmind.planning.factory", "diagnostics_report"),
     # Optional heavy module (side-effects / LLM registration)
     # NOTE: We expose the module object itself for advanced introspection.
     "llm_planner": ("app.overmind.planning", "_lazy_load_llm_planner_module"),
@@ -231,9 +237,8 @@ if TYPE_CHECKING:  # These imports won't execute at runtime (mypy / pyright only
 # CANONICAL __all__
 # --------------------------------------------------------------------------------------
 __all__ = [
-    # Abstractions & Errors
+    # Schemas & Data Contracts (alphabetically sorted)
     "BasePlanner",
-    # Schemas & Data Contracts
     "MissionPlanSchema",
     "PlanGenerationResult",
     "PlanValidationError",
@@ -246,16 +251,22 @@ __all__ = [
     "PlanningContext",
     # Version / Metadata
     "__version__",
-    "base_planner",
-    "discover",
     # Core Modules (advanced direct use)
+    "base_planner",
+    # Factory Functions (alphabetically sorted)
+    "diagnostics_json",
+    "diagnostics_report",
+    "discover",
     "factory",
     "get_all_planners",
-    # Factory Functions
     "get_planner",
+    "health_check",
     "list_planner_metadata",
+    "list_planners",
     "llm_planner",
     "schemas",
+    "select_best_planner",
+    "self_heal",
 ]
 
 # --------------------------------------------------------------------------------------
