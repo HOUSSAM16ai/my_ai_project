@@ -1,20 +1,22 @@
-
-import pytest
 from sqlalchemy import Column, Integer, create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from app.models import FlexibleEnum, CaseInsensitiveEnum
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from app.models import CaseInsensitiveEnum, FlexibleEnum
 
 # Define test models inline to avoid affecting the main app models
 Base = declarative_base()
+
 
 class TestStatus(CaseInsensitiveEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
 
+
 class TestModel(Base):
-    __tablename__ = 'test_model_flexible_enum'
+    __tablename__ = "test_model_flexible_enum"
     id = Column(Integer, primary_key=True)
     status = Column(FlexibleEnum(TestStatus))
+
 
 def test_flexible_enum_resilience():
     """
@@ -22,7 +24,7 @@ def test_flexible_enum_resilience():
     It should return the raw value instead.
     """
     # Use in-memory SQLite
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
