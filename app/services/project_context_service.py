@@ -201,10 +201,142 @@ class ProjectContextService:
 
         return strengths
 
+    def get_deep_file_analysis(self) -> dict[str, Any]:
+        """
+        🔬 SUPERHUMAN DEEP FILE ANALYSIS
+        Analyzes every file in the project for complete understanding.
+        """
+        analysis = {
+            "total_classes": 0,
+            "total_functions": 0,
+            "total_imports": 0,
+            "key_patterns": [],
+            "frameworks_detected": [],
+            "design_patterns": [],
+        }
+        
+        app_dir = self.project_root / "app"
+        if not app_dir.exists():
+            return analysis
+            
+        for py_file in app_dir.rglob("*.py"):
+            if "__pycache__" in str(py_file):
+                continue
+            try:
+                content = py_file.read_text(encoding="utf-8")
+                # Count classes
+                analysis["total_classes"] += content.count("\nclass ")
+                # Count functions
+                analysis["total_functions"] += content.count("\ndef ") + content.count("\nasync def ")
+                # Count imports
+                analysis["total_imports"] += content.count("\nimport ") + content.count("\nfrom ")
+                
+                # Detect frameworks
+                if "fastapi" in content.lower() and "FastAPI" not in analysis["frameworks_detected"]:
+                    analysis["frameworks_detected"].append("FastAPI")
+                if "sqlalchemy" in content.lower() and "SQLAlchemy" not in analysis["frameworks_detected"]:
+                    analysis["frameworks_detected"].append("SQLAlchemy")
+                if "pydantic" in content.lower() and "Pydantic" not in analysis["frameworks_detected"]:
+                    analysis["frameworks_detected"].append("Pydantic")
+                    
+                # Detect design patterns
+                if "Factory" in content and "Factory Pattern" not in analysis["design_patterns"]:
+                    analysis["design_patterns"].append("Factory Pattern")
+                if "@dataclass" in content and "Dataclass" not in analysis["design_patterns"]:
+                    analysis["design_patterns"].append("Dataclass")
+                if "Singleton" in content or "_instance" in content:
+                    if "Singleton Pattern" not in analysis["design_patterns"]:
+                        analysis["design_patterns"].append("Singleton Pattern")
+                if "async def" in content and "Async/Await" not in analysis["design_patterns"]:
+                    analysis["design_patterns"].append("Async/Await")
+                    
+            except Exception:
+                pass
+                
+        return analysis
+
+    def get_architecture_layers(self) -> dict[str, list[str]]:
+        """
+        🏗️ ARCHITECTURAL LAYER DETECTION
+        Identifies the architectural layers of the project.
+        """
+        layers = {
+            "presentation": [],  # API routes, templates
+            "business": [],      # Services, business logic
+            "data": [],          # Models, repositories
+            "infrastructure": [], # Database, external services
+            "core": [],          # Core utilities, DI
+        }
+        
+        app_dir = self.project_root / "app"
+        if not app_dir.exists():
+            return layers
+            
+        # Categorize directories
+        dir_mapping = {
+            "api": "presentation",
+            "routers": "presentation",
+            "templates": "presentation",
+            "static": "presentation",
+            "services": "business",
+            "overmind": "business",
+            "models": "data",
+            "core": "core",
+            "utils": "core",
+            "middleware": "infrastructure",
+            "config": "infrastructure",
+        }
+        
+        for item in app_dir.iterdir():
+            if item.is_dir() and not item.name.startswith("__"):
+                layer = dir_mapping.get(item.name, "business")
+                py_count = len(list(item.glob("*.py")))
+                if py_count > 0:
+                    layers[layer].append(f"{item.name}/ ({py_count} files)")
+                    
+        return layers
+
+    def get_key_components(self) -> list[dict[str, str]]:
+        """
+        🎯 KEY COMPONENTS IDENTIFICATION
+        Identifies the most important components of the system.
+        """
+        components = []
+        
+        key_files = [
+            ("app/main.py", "Application Entry Point", "FastAPI app creation"),
+            ("app/models.py", "Database Models", "SQLAlchemy/SQLModel entities"),
+            ("app/core/database.py", "Database Engine", "Async database connections"),
+            ("app/core/ai_gateway.py", "AI Gateway", "Neural routing mesh for AI"),
+            ("app/core/prompts.py", "System Prompts", "OVERMIND identity and context"),
+            ("app/services/master_agent_service.py", "Master Agent", "Mission orchestration"),
+            ("app/services/agent_tools.py", "Agent Tools", "File ops, search, reasoning"),
+            ("app/api/routers/admin.py", "Admin API", "Chat and admin endpoints"),
+            ("app/overmind/planning/deep_indexer.py", "Deep Indexer", "Code structure analysis"),
+            ("app/overmind/planning/factory.py", "Planner Factory", "Multi-planner orchestration"),
+        ]
+        
+        for file_path, name, description in key_files:
+            full_path = self.project_root / file_path
+            if full_path.exists():
+                try:
+                    lines = len(full_path.read_text(encoding="utf-8").splitlines())
+                    components.append({
+                        "name": name,
+                        "path": file_path,
+                        "description": description,
+                        "lines": lines
+                    })
+                except Exception:
+                    pass
+                    
+        return components
+
     def generate_context_for_ai(self) -> str:
         """
         Generate comprehensive context for the AI.
         This is the main method that makes Overmind intelligent!
+        🚀 SUPERHUMAN VERSION - Knows EVERYTHING about the project!
         """
         # Check cache
         now = datetime.now()
