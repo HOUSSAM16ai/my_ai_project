@@ -26,18 +26,14 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class MessageRole(str, enum.Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    TOOL = "tool"
-    SYSTEM = "system"
+class CaseInsensitiveEnum(str, enum.Enum):
+    """
+    Base enum class that handles case-insensitive lookups.
+    This allows the enum to accept both 'user' and 'USER' from the database.
+    """
 
     @classmethod
     def _missing_(cls, value):
-        """
-        Handle case-insensitive enum lookup.
-        This allows the enum to accept both 'user' and 'USER' from the database.
-        """
         if isinstance(value, str):
             # Try uppercase lookup (e.g., 'user' -> 'USER')
             upper_value = value.upper()
@@ -50,7 +46,14 @@ class MessageRole(str, enum.Enum):
         return None
 
 
-class MissionStatus(str, enum.Enum):
+class MessageRole(CaseInsensitiveEnum):
+    USER = "user"
+    ASSISTANT = "assistant"
+    TOOL = "tool"
+    SYSTEM = "system"
+
+
+class MissionStatus(CaseInsensitiveEnum):
     PENDING = "pending"
     PLANNING = "planning"
     PLANNED = "planned"
@@ -60,40 +63,16 @@ class MissionStatus(str, enum.Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
-    @classmethod
-    def _missing_(cls, value):
-        """Handle case-insensitive enum lookup."""
-        if isinstance(value, str):
-            upper_value = value.upper()
-            if upper_value in cls.__members__:
-                return cls[upper_value]
-            for member in cls:
-                if member.value == value.lower():
-                    return member
-        return None
 
-
-class PlanStatus(str, enum.Enum):
+class PlanStatus(CaseInsensitiveEnum):
     DRAFT = "draft"
     VALID = "valid"
     INVALID = "invalid"
     SELECTED = "selected"
     ABANDONED = "abandoned"
 
-    @classmethod
-    def _missing_(cls, value):
-        """Handle case-insensitive enum lookup."""
-        if isinstance(value, str):
-            upper_value = value.upper()
-            if upper_value in cls.__members__:
-                return cls[upper_value]
-            for member in cls:
-                if member.value == value.lower():
-                    return member
-        return None
 
-
-class TaskStatus(str, enum.Enum):
+class TaskStatus(CaseInsensitiveEnum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -101,20 +80,8 @@ class TaskStatus(str, enum.Enum):
     RETRY = "retry"
     SKIPPED = "skipped"
 
-    @classmethod
-    def _missing_(cls, value):
-        """Handle case-insensitive enum lookup."""
-        if isinstance(value, str):
-            upper_value = value.upper()
-            if upper_value in cls.__members__:
-                return cls[upper_value]
-            for member in cls:
-                if member.value == value.lower():
-                    return member
-        return None
 
-
-class MissionEventType(str, enum.Enum):
+class MissionEventType(CaseInsensitiveEnum):
     CREATED = "mission_created"
     ARCHITECTURE_CLASSIFIED = "architecture_classified"
     PLAN_SELECTED = "plan_selected"
@@ -128,18 +95,6 @@ class MissionEventType(str, enum.Enum):
     MISSION_COMPLETED = "mission_completed"
     MISSION_FAILED = "mission_failed"
     FINALIZED = "mission_finalized"
-
-    @classmethod
-    def _missing_(cls, value):
-        """Handle case-insensitive enum lookup."""
-        if isinstance(value, str):
-            upper_value = value.upper()
-            if upper_value in cls.__members__:
-                return cls[upper_value]
-            for member in cls:
-                if member.value == value.lower():
-                    return member
-        return None
 
 
 # ==============================================================================
