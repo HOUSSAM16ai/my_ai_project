@@ -692,7 +692,21 @@
                                     ) : messages.length === 0 ? (
                                         <div className="welcome-message">
                                             <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                            <p>Welcome to the Overmind Interface. Start a new conversation.</p>
+                                            <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>🧠 OVERMIND CLI MINDGATE</h3>
+                                            <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
+                                                <strong>الهوية:</strong> المُنسق الذكي الأعلى لمنصة CogniForge
+                                            </p>
+                                            <div style={{textAlign: 'right', fontSize: '0.85em', color: '#555', maxWidth: '500px', margin: '0 auto', padding: '15px', background: 'rgba(74, 144, 226, 0.05)', borderRadius: '10px', border: '1px solid rgba(74, 144, 226, 0.2)'}}>
+                                                <p><strong>📊 القدرات:</strong></p>
+                                                <ul style={{textAlign: 'right', paddingRight: '20px', margin: '10px 0'}}>
+                                                    <li>تحليل المشاكل المعمارية المعقدة</li>
+                                                    <li>اقتراح حلول كود جاهزة للتنفيذ</li>
+                                                    <li>فهم سياق المحادثة السابقة</li>
+                                                    <li>التواصل بالعربية والإنجليزية</li>
+                                                </ul>
+                                                <p style={{marginTop: '10px'}}><strong>🏗️ النظام:</strong> FastAPI + SQLAlchemy + Pydantic v2</p>
+                                            </div>
+                                            <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة جديدة للتفاعل مع Overmind...</p>
                                         </div>
                                     ) : (
                                         messages.map((msg, index) => {
