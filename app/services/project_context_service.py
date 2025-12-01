@@ -13,8 +13,6 @@ Features:
 """
 
 import logging
-import os
-import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -129,7 +127,7 @@ class ProjectContextService:
                 content = models_file.read_text(encoding="utf-8")
                 # Simple regex-free extraction
                 for line in content.splitlines():
-                    if line.startswith("class ") and "(SQLModel" in line or "(Base)" in line:
+                    if line.startswith("class ") and ("(SQLModel" in line or "(Base)" in line):
                         class_name = line.split("class ")[1].split("(")[0].strip()
                         models.append(class_name)
             except Exception as e:
@@ -173,20 +171,8 @@ class ProjectContextService:
         if (app_dir / "extensions.py").exists():
             issues.append("⚠️ Flask remnant: app/extensions.py exists")
 
-        # Check for circular imports indicators
-        try:
-            result = subprocess.run(
-                ["python", "-c", "from app.services.master_agent_service import OvermindService"],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-                timeout=10,
-                env={**os.environ, "SECRET_KEY": "test"},
-            )
-            if result.returncode != 0 and "circular" in result.stderr.lower():
-                issues.append("🔴 Circular import detected in Overmind")
-        except Exception:
-            pass
+        # Note: Circular import check removed for performance
+        # The circular import was already fixed in discovery.py
 
         if not issues:
             issues.append("✅ No critical issues detected")
