@@ -8,11 +8,8 @@ from typing import TYPE_CHECKING, Any
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func
-from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
-
-from app.core.enum_types import FlexibleEnum
 
 if TYPE_CHECKING:
     pass
@@ -46,6 +43,42 @@ class CaseInsensitiveEnum(str, enum.Enum):
                 if member.value == value.lower():
                     return member
         return None
+
+
+class FlexibleEnum(TypeDecorator):
+    """
+    TypeDecorator that ensures case-insensitive lookup using the Enum's _missing_ method.
+    Stored as TEXT in database.
+    """
+    impl = Text
+    cache_ok = True
+
+    def __init__(self, enum_type: type[enum.Enum], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._enum_type = enum_type
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, self._enum_type):
+             return value.value
+        # If it's a string, try to resolve it to the enum first to ensure validity, then return value
+        # Or just return it if we want to allow flexibility (but safer to normalize)
+        if isinstance(value, str):
+             # Leverage _missing_ logic if possible by converting to enum then accessing value
+             try:
+                 return self._enum_type(value).value
+             except ValueError:
+                 # Fallback: store as is (lowercase) if not found, or let it fail?
+                 # Given this is 'Flexible', maybe store as lower?
+                 return value.lower()
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        # This leverages CaseInsensitiveEnum._missing_
+        return self._enum_type(value)
 
 
 class MessageRole(CaseInsensitiveEnum):
