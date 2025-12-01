@@ -32,6 +32,23 @@ class MessageRole(str, enum.Enum):
     TOOL = "tool"
     SYSTEM = "system"
 
+    @classmethod
+    def _missing_(cls, value):
+        """
+        Handle case-insensitive enum lookup.
+        This allows the enum to accept both 'user' and 'USER' from the database.
+        """
+        if isinstance(value, str):
+            # Try uppercase lookup (e.g., 'user' -> 'USER')
+            upper_value = value.upper()
+            if upper_value in cls.__members__:
+                return cls[upper_value]
+            # Try matching by value (e.g., 'user' matches USER.value)
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
+
 
 class MissionStatus(str, enum.Enum):
     PENDING = "pending"
@@ -43,6 +60,18 @@ class MissionStatus(str, enum.Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case-insensitive enum lookup."""
+        if isinstance(value, str):
+            upper_value = value.upper()
+            if upper_value in cls.__members__:
+                return cls[upper_value]
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
+
 
 class PlanStatus(str, enum.Enum):
     DRAFT = "draft"
@@ -50,6 +79,18 @@ class PlanStatus(str, enum.Enum):
     INVALID = "invalid"
     SELECTED = "selected"
     ABANDONED = "abandoned"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case-insensitive enum lookup."""
+        if isinstance(value, str):
+            upper_value = value.upper()
+            if upper_value in cls.__members__:
+                return cls[upper_value]
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
 
 
 class TaskStatus(str, enum.Enum):
@@ -59,6 +100,18 @@ class TaskStatus(str, enum.Enum):
     FAILED = "failed"
     RETRY = "retry"
     SKIPPED = "skipped"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case-insensitive enum lookup."""
+        if isinstance(value, str):
+            upper_value = value.upper()
+            if upper_value in cls.__members__:
+                return cls[upper_value]
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
 
 
 class MissionEventType(str, enum.Enum):
@@ -75,6 +128,18 @@ class MissionEventType(str, enum.Enum):
     MISSION_COMPLETED = "mission_completed"
     MISSION_FAILED = "mission_failed"
     FINALIZED = "mission_finalized"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case-insensitive enum lookup."""
+        if isinstance(value, str):
+            upper_value = value.upper()
+            if upper_value in cls.__members__:
+                return cls[upper_value]
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
 
 
 # ==============================================================================
@@ -145,7 +210,15 @@ class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
     id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
-    role: MessageRole = Field(sa_column=Column(SAEnum(MessageRole)))
+    role: MessageRole = Field(
+        sa_column=Column(
+            SAEnum(
+                MessageRole,
+                values_callable=lambda x: [m.value for m in x],
+                native_enum=False,
+            )
+        )
+    )
     content: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
         default_factory=utc_now,
@@ -163,7 +236,14 @@ class Mission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     objective: str = Field(sa_column=Column(Text))
     status: MissionStatus = Field(
-        default=MissionStatus.PENDING, sa_column=Column(SAEnum(MissionStatus))
+        default=MissionStatus.PENDING,
+        sa_column=Column(
+            SAEnum(
+                MissionStatus,
+                values_callable=lambda x: [m.value for m in x],
+                native_enum=False,
+            )
+        ),
     )
     initiator_id: int = Field(foreign_key="users.id", index=True)
     active_plan_id: int | None = Field(
@@ -229,7 +309,16 @@ class MissionPlan(SQLModel, table=True):
     mission_id: int = Field(foreign_key="missions.id", index=True)
     version: int = Field(default=1)
     planner_name: str = Field(max_length=100)
-    status: PlanStatus = Field(default=PlanStatus.DRAFT, sa_column=Column(SAEnum(PlanStatus)))
+    status: PlanStatus = Field(
+        default=PlanStatus.DRAFT,
+        sa_column=Column(
+            SAEnum(
+                PlanStatus,
+                values_callable=lambda x: [m.value for m in x],
+                native_enum=False,
+            )
+        ),
+    )
     score: float = Field(default=0.0)
     rationale: str | None = Field(sa_column=Column(Text))
     # Avoid JSONB for SQLite compat
@@ -264,7 +353,16 @@ class Task(SQLModel, table=True):
     tool_args_json: Any | None = Field(
         default=None, sa_column=Column(JSONText)
     )  # Postgres specific or use string
-    status: TaskStatus = Field(default=TaskStatus.PENDING, sa_column=Column(SAEnum(TaskStatus)))
+    status: TaskStatus = Field(
+        default=TaskStatus.PENDING,
+        sa_column=Column(
+            SAEnum(
+                TaskStatus,
+                values_callable=lambda x: [m.value for m in x],
+                native_enum=False,
+            )
+        ),
+    )
     attempt_count: int = Field(default=0)
     max_attempts: int = Field(default=3)
     priority: int = Field(default=0)
@@ -306,7 +404,15 @@ class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    event_type: MissionEventType = Field(sa_column=Column(SAEnum(MissionEventType)))
+    event_type: MissionEventType = Field(
+        sa_column=Column(
+            SAEnum(
+                MissionEventType,
+                values_callable=lambda x: [m.value for m in x],
+                native_enum=False,
+            )
+        )
+    )
     payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
     created_at: datetime = Field(
