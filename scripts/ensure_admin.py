@@ -6,7 +6,7 @@ import sys
 # Ensure the app can be imported
 sys.path.append(os.getcwd())
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv()
 

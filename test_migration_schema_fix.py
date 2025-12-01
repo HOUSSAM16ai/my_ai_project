@@ -172,9 +172,9 @@ def test_integration():
         with open(apply_migrations_path, encoding="utf-8") as f:
             content = f.read()
 
-        assert "fix_supabase_migration_schema.py" in content, (
-            "NOT integrated with apply_migrations.py"
-        )
+        assert (
+            "fix_supabase_migration_schema.py" in content
+        ), "NOT integrated with apply_migrations.py"
         print_success("Integrated with apply_migrations.py")
 
     # Check quick_start script integration
@@ -184,9 +184,9 @@ def test_integration():
         with open(quick_start_path, encoding="utf-8") as f:
             content = f.read()
 
-        assert "fix_supabase_migration_schema.py" in content, (
-            "NOT integrated with quick_start script"
-        )
+        assert (
+            "fix_supabase_migration_schema.py" in content
+        ), "NOT integrated with quick_start script"
         print_success("Integrated with quick_start_supabase_verification.sh")
 
     # Check tools listing

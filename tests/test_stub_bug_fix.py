@@ -22,6 +22,6 @@ def test_chat_stream_is_real_implementation():
 
     # If the stub is active (BUG), it returns 200 OK.
     # If the real implementation is active (FIXED), it returns 401 Unauthorized.
-    assert response.status_code == 401, (
-        f"Expected 401 Unauthorized, but got {response.status_code}. The stub implementation might still be active."
-    )
+    assert (
+        response.status_code == 401
+    ), f"Expected 401 Unauthorized, but got {response.status_code}. The stub implementation might still be active."

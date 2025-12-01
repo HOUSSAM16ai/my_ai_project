@@ -17,7 +17,7 @@ from sqlalchemy.orm import sessionmaker
 # تأكد من إضافة المسار الصحيح
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.core.engine_factory import create_unified_sync_engine
+from app.core.engine_factory import create_unified_sync_engine  # noqa: E402
 
 
 # الألوان للتقارير
