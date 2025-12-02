@@ -426,9 +426,9 @@ _ensure_file_tools()
 def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     """
     Select AI model with proper priority chain.
-    
+
     Priority: MAESTRO_FORCE_MODEL > explicit > task.model_name > AI_MODEL_OVERRIDE > ActiveModels.PRIMARY
-    
+
     Central config location: app/config/ai_models.py → class ActiveModels
     """
     forced = os.getenv("MAESTRO_FORCE_MODEL")
@@ -443,9 +443,10 @@ def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     override = os.getenv("AI_MODEL_OVERRIDE")
     if override and override.strip():
         return override.strip()
-    
+
     # Read from central config (app/config/ai_models.py)
     from app.config.ai_models import get_ai_config
+
     return get_ai_config().primary_model
 
 
@@ -1194,6 +1195,7 @@ class MaestroGenerationService:
 
     def diagnostics(self) -> dict[str, Any]:
         from app.config.ai_models import get_ai_config
+
         ai_config = get_ai_config()
         return {
             "version": self.version,

@@ -3,6 +3,7 @@
 Legacy settings file - kept for backward compatibility.
 AI models are now configured in: app/config/ai_models.py
 """
+
 from pydantic import BaseSettings
 
 
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     @property
     def DEFAULT_AI_MODEL(self) -> str:
         from app.config.ai_models import get_ai_config
+
         return get_ai_config().primary_model
 
     class Config:

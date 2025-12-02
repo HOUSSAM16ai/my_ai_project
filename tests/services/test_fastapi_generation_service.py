@@ -89,6 +89,7 @@ def test_is_stagnation():
 def test_select_model():
     # Test should use the central config value
     from app.config.ai_models import get_ai_config
+
     expected_model = get_ai_config().primary_model
     with patch.dict(os.environ, {}, clear=True):
         assert _select_model() == expected_model

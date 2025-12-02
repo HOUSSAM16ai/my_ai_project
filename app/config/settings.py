@@ -22,6 +22,7 @@
 ║     - meta-llama/llama-3-70b (Open source)                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
+
 import functools
 import os
 import sys
