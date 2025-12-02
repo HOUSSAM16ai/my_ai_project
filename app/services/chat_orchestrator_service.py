@@ -187,6 +187,7 @@ class ChatIntent(Enum):
     CODE_SEARCH = "code_search"
     PROJECT_INDEX = "project_index"
     MISSION_COMPLEX = "mission"
+    DEEP_ANALYSIS = "deep_analysis"  # NEW: For analytical questions requiring Overmind
     HELP = "help"
 
 
@@ -209,7 +210,7 @@ class IntentDetector:
 
     _PATH_PATTERN = r"['\"]?([a-zA-Z0-9_./\\-]+\.[a-zA-Z0-9]+)['\"]?"
 
-    # ORDER MATTERS: PROJECT_INDEX before MISSION_COMPLEX
+    # ORDER MATTERS: PROJECT_INDEX and DEEP_ANALYSIS before MISSION_COMPLEX
     PATTERNS: ClassVar[dict[ChatIntent, list[str]]] = {
         ChatIntent.FILE_READ: [
             rf"(?:read|show|display|view|cat|open|get)\s+(?:file\s+)?{_PATH_PATTERN}",
@@ -233,10 +234,40 @@ class IntentDetector:
             r"(?:فهرس|حلل|امسح)\s+(?:المشروع|الكود)",
             r"(?:أظهر|اعرض)\s+(?:هيكل|بنية)\s+المشروع",
         ],
+        # NEW: DEEP_ANALYSIS - Analytical questions that need Overmind's deep understanding
+        ChatIntent.DEEP_ANALYSIS: [
+            # Architecture & Design Analysis
+            r"(?:explain|describe|what is|how does|how do)\s+(?:the\s+)?(?:architecture|design|structure|system|flow|pattern)",
+            r"(?:how\s+(?:does|do|is|are))\s+(?:.+?)\s+(?:work|working|implemented|structured|organized|designed)",
+            r"(?:what(?:'s| is| are))\s+(?:the\s+)?(?:purpose|role|function|responsibility)\s+(?:of|for)",
+            r"(?:analyze|review|assess|evaluate|examine)\s+(?:the\s+)?(?:code|system|architecture|implementation|design|database)",
+            # Code Quality & Issues
+            r"(?:what(?:'s| is| are))\s+(?:the\s+)?(?:issues?|problems?|bugs?|errors?|warnings?)\s+(?:in|with|of)",
+            r"(?:why\s+(?:is|are|does|do))\s+.+?\s+(?:not\s+working|failing|broken|wrong)",
+            r"(?:find|identify|detect|locate)\s+(?:the\s+)?(?:bug|issue|problem|error|bottleneck)",
+            # Improvement & Optimization
+            r"(?:how\s+(?:can|should|do))\s+(?:we|i)\s+(?:improve|optimize|enhance|refactor|fix)",
+            r"(?:suggest|recommend|propose)\s+(?:improvements?|optimizations?|changes?|fixes?)",
+            r"(?:what\s+(?:can|should))\s+(?:be|we)\s+(?:improved|optimized|changed|fixed)",
+            # Complexity & Dependencies
+            r"(?:what(?:'s| is| are))\s+(?:the\s+)?(?:complexity|dependencies|relationships?|coupling)",
+            r"(?:show|list|display)\s+(?:the\s+)?(?:dependencies|imports|calls|relationships?)",
+            r"(?:which\s+(?:functions?|classes?|modules?|files?))\s+(?:use|depend on|call|import)",
+            # Best Practices & Patterns
+            r"(?:is|are)\s+(?:this|these|the)\s+(?:.+?)\s+(?:following|using|implementing)\s+(?:best practices?|patterns?|principles?)",
+            r"(?:does|do)\s+(?:this|these|the)\s+(?:.+?)\s+(?:follow|adhere to|comply with|violate)",
+            # Arabic patterns
+            r"(?:اشرح|وضح|صف|كيف)\s+(?:يعمل|تعمل|بنية|هيكل|تصميم|نظام)",
+            r"(?:ما\s+(?:هو|هي|هم))\s+(?:الغرض|الدور|الوظيفة|المسؤولية|المشاكل|الأخطاء)",
+            r"(?:حلل|راجع|قيّم|افحص)\s+(?:الكود|النظام|الهيكل|التصميم|التنفيذ|قاعدة\s+البيانات)",
+            r"(?:كيف\s+(?:يمكن|ينبغي|نستطيع))\s+(?:تحسين|تطوير|إصلاح|تعديل)",
+            r"(?:اقترح|أوصي)\s+(?:تحسينات|تطويرات|تعديلات|إصلاحات)",
+        ],
         ChatIntent.MISSION_COMPLEX: [
-            r"(?:refactor|fix|improve|optimize|implement|debug)\s+(?:the\s+)?(?:project|codebase|system|architecture|code)",
+            r"(?:refactor|fix|improve|optimize|implement|debug)\s+(?:the\s+)?(?:entire\s+)?(?:project|codebase|system|architecture|code)",
             r"(?:create|start|begin)\s+(?:a\s+)?mission\s+(?:to\s+)?(.+)",
-            r"(?:أصلح|حسّن|طور|نفذ)\s+(?:المشروع|الكود|النظام)",
+            r"(?:build|develop|add)\s+(?:a\s+)?(?:new\s+)?(?:feature|module|component|service)",
+            r"(?:أصلح|حسّن|طور|نفذ)\s+(?:المشروع|الكود|النظام)\s+(?:بالكامل|كله)",
             r"(?:أنشئ|ابدأ)\s+مهمة\s+(.+)",
         ],
         ChatIntent.HELP: [
@@ -264,6 +295,8 @@ class IntentDetector:
                         params["query"] = param
                     elif intent == ChatIntent.MISSION_COMPLEX:
                         params["objective"] = text_clean
+                    elif intent == ChatIntent.DEEP_ANALYSIS:
+                        params["question"] = text_clean
 
                     return IntentResult(
                         intent=intent,
@@ -696,6 +729,93 @@ class ChatOrchestratorService:
     # -------------------------------------------------------------------------
     # HANDLER: MISSION
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # HANDLER: DEEP ANALYSIS (using Master Agent + Overmind Deep Context)
+    # -------------------------------------------------------------------------
+    async def handle_deep_analysis(
+        self,
+        question: str,
+        user_id: int,
+        ai_client: AIClient,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Handle deep analytical questions using Overmind's deep understanding.
+        This uses Master Agent with project indexing for comprehensive analysis.
+        """
+        self._ensure_initialized()
+        start_time = time.time()
+
+        yield "🧠 **تحليل عميق باستخدام Overmind Master Agent**\n\n"
+
+        # Step 1: Build project index for context
+        yield "📊 جارٍ فهرسة المشروع للحصول على سياق عميق...\n"
+        
+        try:
+            from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+            
+            async def _build_index_async():
+                return await asyncio.to_thread(build_index, root=".")
+            
+            index = await asyncio.wait_for(_build_index_async(), timeout=30.0)
+            summary = summarize_for_prompt(index, max_len=3000)
+            yield "✅ تم بناء فهرس المشروع\n\n"
+        except TimeoutError:
+            yield "⚠️ انتهت مهلة الفهرسة، سأستخدم معرفتي الحالية\n\n"
+            summary = None
+        except Exception as e:
+            logger.warning(f"Failed to build index for deep analysis: {e}")
+            yield "⚠️ لم أتمكن من فهرسة المشروع بالكامل\n\n"
+            summary = None
+
+        # Step 2: Build enhanced prompt with deep context
+        system_prompt = """أنت Overmind Master Agent - نظام ذكاء اصطناعي متقدم متخصص في التحليل العميق للمشاريع البرمجية.
+
+لديك قدرات خاصة:
+- تحليل البنية المعمارية والأنماط البرمجية
+- فهم التبعيات والعلاقات بين الوحدات
+- تقييم جودة الكود وتحديد نقاط التحسين
+- اكتشاف المشاكل المحتملة والثغرات
+- تقديم توصيات مبنية على أفضل الممارسات
+
+قم بتحليل السؤال بعمق واستخدم معرفتك ببنية المشروع لتقديم إجابة شاملة ودقيقة."""
+
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if summary:
+            context_msg = f"""**سياق المشروع:**
+
+{summary}
+
+---
+
+الآن، بناءً على هذا السياق العميق للمشروع، أجب على السؤال التالي بدقة وشمولية:
+
+{question}"""
+            messages.append({"role": "user", "content": context_msg})
+        else:
+            messages.append({"role": "user", "content": question})
+
+        # Step 3: Stream response from AI with enhanced context
+        yield "💡 **التحليل:**\n\n"
+        
+        try:
+            async for chunk in ai_client.stream_chat(messages):
+                if isinstance(chunk, dict):
+                    choices = chunk.get("choices", [])
+                    if choices:
+                        content = choices[0].get("delta", {}).get("content", "")
+                        if content:
+                            yield content
+                elif isinstance(chunk, str):
+                    yield chunk
+        except Exception as e:
+            yield f"\n\n❌ خطأ في التحليل: {ErrorSanitizer.sanitize(str(e))}\n"
+
+        logger.debug(f"Deep analysis completed in {(time.time() - start_time) * 1000:.2f}ms")
+
+    # -------------------------------------------------------------------------
+    # HANDLER: MISSION (Complex tasks)
+    # -------------------------------------------------------------------------
     async def handle_mission(
         self,
         objective: str,
@@ -932,6 +1052,12 @@ class ChatOrchestratorService:
 
         elif intent_result.intent == ChatIntent.PROJECT_INDEX:
             async for chunk in self.handle_project_index(user_id):
+                yield chunk
+            return
+
+        elif intent_result.intent == ChatIntent.DEEP_ANALYSIS:
+            # NEW: Route analytical questions to Overmind-powered deep analysis
+            async for chunk in self.handle_deep_analysis(question, user_id, ai_client):
                 yield chunk
             return
 
