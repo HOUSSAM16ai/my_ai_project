@@ -1,4 +1,27 @@
 # app/config/settings.py
+"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🧠 AI MODEL CONFIGURATION CENTER                          ║
+║                    ─────────────────────────────────────                     ║
+║  This is the SINGLE SOURCE OF TRUTH for all AI model configurations.        ║
+║  Change your AI models HERE and they will be applied everywhere.            ║
+║                                                                              ║
+║  🔧 How to change models:                                                   ║
+║     Option 1: Set environment variables in .env file                        ║
+║     Option 2: Set GitHub Codespaces Secrets                                 ║
+║     Option 3: Modify the defaults below (not recommended for production)    ║
+║                                                                              ║
+║  📋 Available Models (via OpenRouter):                                      ║
+║     - openai/gpt-4o          (Most capable, multimodal)                     ║
+║     - openai/gpt-4o-mini     (Fast, cost-effective)                         ║
+║     - openai/gpt-4-turbo     (Optimized GPT-4)                              ║
+║     - anthropic/claude-3.5-sonnet  (Excellent reasoning)                    ║
+║     - anthropic/claude-3-opus      (Most capable Claude)                    ║
+║     - anthropic/claude-3.7-sonnet:thinking  (Advanced reasoning)            ║
+║     - google/gemini-pro      (Google's flagship)                            ║
+║     - meta-llama/llama-3-70b (Open source)                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"""
 import functools
 import os
 import sys
@@ -64,14 +87,18 @@ class AppSettings(BaseSettings):
         default="http://localhost:5000", description="URL of the frontend application."
     )
 
-    # --- Service Integration (AI & LLM) ---
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🧠 AI MODEL CONFIGURATION
+    # ══════════════════════════════════════════════════════════════════════════
+    # ⚠️  ALL AI MODELS ARE CONFIGURED IN: app/config/ai_models.py
+    # ⚠️  To change models, edit: app/config/ai_models.py → class ActiveModels
+    # ══════════════════════════════════════════════════════════════════════════
+
     AI_SERVICE_URL: str | None = Field(
         None, description="The URL for the external AI inference service."
     )
-    DEFAULT_AI_MODEL: str = Field(
-        default="openai/gpt-4o",
-        description="The default AI model to use for inference.",
-    )
+
+    # --- API Keys (These are secrets - NOT models) ---
     OPENAI_API_KEY: str | None = Field(None, description="API Key for OpenAI.")
     OPENROUTER_API_KEY: str | None = Field(None, description="API Key for OpenRouter.")
 
