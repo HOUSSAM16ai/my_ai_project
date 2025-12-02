@@ -1,12 +1,14 @@
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+
+from app.api.routers.admin import get_current_user_id, get_session_factory
 from app.core.ai_gateway import get_ai_client
 from app.core.database import get_db
-from app.api.routers.admin import get_current_user_id, get_session_factory
 
 # We will use the 'client' and 'test_app' fixtures provided by conftest.py
 # This ensures we are testing against the correctly configured application instance.
+
 
 @pytest.mark.asyncio
 async def test_chat_stream_missing_event_type(client, test_app):
@@ -59,7 +61,7 @@ async def test_chat_stream_missing_event_type(client, test_app):
         get_ai_client: override_get_ai_client,
         get_db: override_get_db,
         get_current_user_id: override_get_current_user_id,
-        get_session_factory: override_get_session_factory
+        get_session_factory: override_get_session_factory,
     }
 
     with patch.dict(test_app.dependency_overrides, overrides):
@@ -67,7 +69,7 @@ async def test_chat_stream_missing_event_type(client, test_app):
         response = client.post(
             "/admin/api/chat/stream",
             json={"question": "Test question"},
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
 
         # 5. Assertions
