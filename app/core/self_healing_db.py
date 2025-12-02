@@ -9,15 +9,16 @@
 # ✅ مزامنة Schema بين الكود وقاعدة البيانات
 # ✅ حماية من الأخطاء قبل حدوثها
 # ✅ تسجيل شامل لكل عملية
-# ✅ دعم Async و Sync
+# ✅ حماية من SQL Injection
 # =============================================================================
 
 from __future__ import annotations
 
 import logging
 import os
+import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import create_engine, text
@@ -28,7 +29,34 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# 🎯 SCHEMA DEFINITION — تعريف Schema المطلوب
+# 🛡️ SECURITY — حماية من SQL Injection
+# =============================================================================
+
+# نمط آمن لأسماء الجداول والأعمدة
+_SAFE_IDENTIFIER = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
+
+# قائمة بيضاء للجداول المسموح بها
+_ALLOWED_TABLES = frozenset({"admin_conversations", "admin_messages"})
+
+
+def _validate_table_name(name: str) -> str:
+    """التحقق من صحة اسم الجدول ضد SQL Injection."""
+    if name not in _ALLOWED_TABLES:
+        raise ValueError(f"Table '{name}' is not in the allowed whitelist")
+    if not _SAFE_IDENTIFIER.match(name):
+        raise ValueError(f"Invalid table name: {name}")
+    return name
+
+
+def _validate_column_name(name: str) -> str:
+    """التحقق من صحة اسم العمود ضد SQL Injection."""
+    if not _SAFE_IDENTIFIER.match(name):
+        raise ValueError(f"Invalid column name: {name}")
+    return name
+
+
+# =============================================================================
+# 🎯 SCHEMA DEFINITIONS
 # =============================================================================
 
 
@@ -53,8 +81,9 @@ class ColumnDefinition:
     nullable: bool = True
     default: str | None = None
     index: bool = False
-    unique: bool = False
-    foreign_key: str | None = None
+
+    def __post_init__(self):
+        _validate_column_name(self.name)
 
 
 @dataclass
@@ -64,8 +93,10 @@ class TableSchema:
     name: str
     columns: list[ColumnDefinition] = field(default_factory=list)
 
+    def __post_init__(self):
+        _validate_table_name(self.name)
+
     def get_column(self, name: str) -> ColumnDefinition | None:
-        """الحصول على تعريف عمود بالاسم."""
         for col in self.columns:
             if col.name == name:
                 return col
@@ -73,7 +104,7 @@ class TableSchema:
 
 
 # =============================================================================
-# 🗄️ REQUIRED SCHEMA — Schema المطلوب للنظام
+# 🗄️ REQUIRED SCHEMA
 # =============================================================================
 
 REQUIRED_SCHEMA: dict[str, TableSchema] = {
@@ -83,9 +114,7 @@ REQUIRED_SCHEMA: dict[str, TableSchema] = {
             ColumnDefinition("id", ColumnType.INTEGER, nullable=False),
             ColumnDefinition("title", ColumnType.VARCHAR, nullable=False),
             ColumnDefinition("user_id", ColumnType.INTEGER, nullable=False, index=True),
-            ColumnDefinition(
-                "conversation_type", ColumnType.VARCHAR, nullable=True, default="'general'"
-            ),
+            ColumnDefinition("conversation_type", ColumnType.VARCHAR, nullable=True),
             ColumnDefinition("linked_mission_id", ColumnType.INTEGER, nullable=True, index=True),
             ColumnDefinition("created_at", ColumnType.TIMESTAMP, nullable=True),
         ],
@@ -104,147 +133,67 @@ REQUIRED_SCHEMA: dict[str, TableSchema] = {
 
 
 # =============================================================================
-# 🔧 SQL GENERATORS — مولدات SQL
+# 🔧 SQL GENERATORS — مع حماية أمنية
 # =============================================================================
 
 
 class SQLGenerator:
-    """مولد أوامر SQL للإصلاح التلقائي."""
+    """مولد أوامر SQL الآمنة."""
 
     @staticmethod
     def add_column(table: str, column: ColumnDefinition) -> str:
-        """إنشاء أمر SQL لإضافة عمود."""
-        sql = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column.name} {column.type.value}"
+        """إنشاء أمر SQL آمن لإضافة عمود."""
+        table = _validate_table_name(table)
+        col_name = _validate_column_name(column.name)
 
+        sql = f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{col_name}" {column.type.value}'
         if not column.nullable:
             sql += " NOT NULL"
-
         if column.default:
+            # Default values are from our code, not user input
             sql += f" DEFAULT {column.default}"
-
         return sql
 
     @staticmethod
     def create_index(table: str, column: str) -> str:
-        """إنشاء أمر SQL لإضافة فهرس."""
-        index_name = f"ix_{table}_{column}"
-        return f"CREATE INDEX IF NOT EXISTS {index_name} ON {table}({column})"
+        """إنشاء أمر SQL آمن لإضافة فهرس."""
+        table = _validate_table_name(table)
+        col_name = _validate_column_name(column)
+        index_name = f"ix_{table}_{col_name}"
+        return f'CREATE INDEX IF NOT EXISTS "{index_name}" ON "{table}"("{col_name}")'
 
     @staticmethod
-    def drop_column(table: str, column: str) -> str:
-        """إنشاء أمر SQL لحذف عمود."""
-        return f"ALTER TABLE {table} DROP COLUMN IF EXISTS {column}"
-
-
-# =============================================================================
-# 🔬 SCHEMA ANALYZER — محلل Schema
-# =============================================================================
-
-
-@dataclass
-class SchemaAnalysisResult:
-    """نتيجة تحليل Schema."""
-
-    table: str
-    existing_columns: set[str]
-    required_columns: set[str]
-    missing_columns: set[str]
-    extra_columns: set[str]
-    is_valid: bool
-
-    def to_dict(self) -> dict:
-        return {
-            "table": self.table,
-            "existing_columns": list(self.existing_columns),
-            "required_columns": list(self.required_columns),
-            "missing_columns": list(self.missing_columns),
-            "extra_columns": list(self.extra_columns),
-            "is_valid": self.is_valid,
-        }
-
-
-class SchemaAnalyzer:
-    """محلل Schema ذكي."""
-
-    def __init__(self, engine: Engine | AsyncEngine):
-        self.engine = engine
-        self._is_async = isinstance(engine, AsyncEngine)
-
-    async def analyze_table_async(self, table_name: str) -> SchemaAnalysisResult:
-        """تحليل جدول (async)."""
-        async with self.engine.connect() as conn:
-            result = await conn.execute(
-                text(f"""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = '{table_name}'
-            """)
-            )
-            existing = {row[0] for row in result.fetchall()}
-
-        return self._create_analysis_result(table_name, existing)
-
-    def analyze_table_sync(self, conn, table_name: str) -> SchemaAnalysisResult:
-        """تحليل جدول (sync)."""
-        result = conn.execute(
-            text(f"""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{table_name}'
-        """)
-        )
-        existing = {row[0] for row in result.fetchall()}
-
-        return self._create_analysis_result(table_name, existing)
-
-    def _create_analysis_result(self, table_name: str, existing: set[str]) -> SchemaAnalysisResult:
-        """إنشاء نتيجة التحليل."""
-        schema = REQUIRED_SCHEMA.get(table_name)
-        if not schema:
-            return SchemaAnalysisResult(
-                table=table_name,
-                existing_columns=existing,
-                required_columns=set(),
-                missing_columns=set(),
-                extra_columns=existing,
-                is_valid=True,
-            )
-
-        required = {col.name for col in schema.columns}
-        missing = required - existing
-        extra = existing - required
-
-        return SchemaAnalysisResult(
-            table=table_name,
-            existing_columns=existing,
-            required_columns=required,
-            missing_columns=missing,
-            extra_columns=extra,
-            is_valid=len(missing) == 0,
+    def get_columns_query(table: str) -> tuple[str, dict]:
+        """إنشاء استعلام آمن للحصول على الأعمدة."""
+        _validate_table_name(table)
+        # Use parameterized query for safety
+        return (
+            "SELECT column_name FROM information_schema.columns WHERE table_name = :table_name",
+            {"table_name": table},
         )
 
 
 # =============================================================================
-# 🏥 SELF-HEALING ENGINE — محرك الإصلاح الذاتي
+# 📊 HEALING REPORTS
 # =============================================================================
 
 
 @dataclass
 class HealingOperation:
-    """عملية إصلاح."""
+    """عملية إصلاح واحدة."""
 
     table: str
     column: str
-    operation: str  # "add_column", "create_index", etc.
+    operation: str
     sql: str
     success: bool = False
     error: str | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
 class HealingReport:
-    """تقرير الإصلاح."""
+    """تقرير الإصلاح الكامل."""
 
     started_at: datetime
     completed_at: datetime | None = None
@@ -261,89 +210,62 @@ class HealingReport:
             "tables_checked": self.tables_checked,
             "tables_healed": self.tables_healed,
             "operations": [
-                {
-                    "table": op.table,
-                    "column": op.column,
-                    "operation": op.operation,
-                    "success": op.success,
-                    "error": op.error,
-                }
+                {"table": op.table, "column": op.column, "success": op.success}
                 for op in self.operations
             ],
-            "errors": self.errors,
             "status": self.status,
         }
 
 
-class SelfHealingEngine:
-    """
-    🧬 محرك الإصلاح الذاتي الخارق
+# =============================================================================
+# 🏥 SELF-HEALING ENGINE
+# =============================================================================
 
-    يكتشف ويصلح مشاكل Schema تلقائياً:
-    - أعمدة مفقودة
-    - فهارس ناقصة
-    - أنواع بيانات خاطئة
-    """
+
+class SelfHealingEngine:
+    """محرك الإصلاح الذاتي الخارق."""
 
     def __init__(self, engine: Engine | AsyncEngine):
         self.engine = engine
-        self.analyzer = SchemaAnalyzer(engine)
         self._is_async = isinstance(engine, AsyncEngine)
         self._report: HealingReport | None = None
 
     async def heal_async(self, auto_fix: bool = True) -> HealingReport:
-        """
-        🏥 تشغيل الإصلاح الذاتي (async).
-
-        Args:
-            auto_fix: إصلاح تلقائي للمشاكل
-
-        Returns:
-            تقرير الإصلاح
-        """
-        self._report = HealingReport(started_at=datetime.utcnow())
-
+        """تشغيل الإصلاح الذاتي (async)."""
+        self._report = HealingReport(started_at=datetime.now(UTC))
         logger.info("🧬 Self-Healing Engine: Starting diagnosis...")
 
         async with self.engine.connect() as conn:
             for table_name, schema in REQUIRED_SCHEMA.items():
                 self._report.tables_checked += 1
 
-                # تحليل الجدول
+                # Get existing columns using parameterized query
                 try:
-                    result = await conn.execute(
-                        text(f"""
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_name = '{table_name}'
-                    """)
-                    )
+                    query, params = SQLGenerator.get_columns_query(table_name)
+                    result = await conn.execute(text(query), params)
                     existing = {row[0] for row in result.fetchall()}
                 except Exception as e:
-                    logger.warning(f"⚠️ Table {table_name} might not exist: {e}")
+                    logger.warning(f"⚠️ Table {table_name} check failed: {e}")
                     continue
 
-                # البحث عن الأعمدة المفقودة
+                # Find and fix missing columns
                 for column in schema.columns:
                     if column.name not in existing:
-                        logger.warning(f"🔍 Missing column: {table_name}.{column.name}")
-
+                        logger.warning(f"🔍 Missing: {table_name}.{column.name}")
                         if auto_fix:
-                            await self._fix_missing_column_async(conn, table_name, column)
+                            await self._fix_column_async(conn, table_name, column)
 
-            # Commit التغييرات
             if auto_fix and self._report.operations:
                 await conn.commit()
 
-        self._report.completed_at = datetime.utcnow()
+        self._report.completed_at = datetime.now(UTC)
         self._report.status = "success" if not self._report.errors else "partial"
-
         self._log_report()
         return self._report
 
-    async def _fix_missing_column_async(self, conn, table: str, column: ColumnDefinition):
+    async def _fix_column_async(self, conn, table: str, column: ColumnDefinition):
         """إصلاح عمود مفقود (async)."""
-        operation = HealingOperation(
+        op = HealingOperation(
             table=table,
             column=column.name,
             operation="add_column",
@@ -351,37 +273,32 @@ class SelfHealingEngine:
         )
 
         try:
-            await conn.execute(text(operation.sql))
-            operation.success = True
-            logger.info(f"✅ Added column: {table}.{column.name}")
+            await conn.execute(text(op.sql))
+            op.success = True
+            logger.info(f"✅ Added: {table}.{column.name}")
 
-            # إضافة الفهرس إذا كان مطلوباً
             if column.index:
                 index_sql = SQLGenerator.create_index(table, column.name)
                 await conn.execute(text(index_sql))
-                logger.info(f"✅ Created index for: {table}.{column.name}")
+                logger.info(f"✅ Indexed: {table}.{column.name}")
 
             self._report.tables_healed += 1
 
         except Exception as e:
-            operation.success = False
-            operation.error = str(e)
-            self._report.errors.append(f"Failed to add {table}.{column.name}: {e}")
-            logger.error(f"❌ Failed to add {table}.{column.name}: {e}")
+            op.success = False
+            op.error = str(e)
+            self._report.errors.append(f"{table}.{column.name}: {e}")
+            logger.error(f"❌ Failed: {table}.{column.name} - {e}")
 
-        self._report.operations.append(operation)
+        self._report.operations.append(op)
 
     def heal_sync(self, auto_fix: bool = True) -> HealingReport:
-        """
-        🏥 تشغيل الإصلاح الذاتي (sync).
-        """
+        """تشغيل الإصلاح الذاتي (sync)."""
         from app.core.engine_factory import DatabaseURLSanitizer
 
-        self._report = HealingReport(started_at=datetime.utcnow())
-
+        self._report = HealingReport(started_at=datetime.now(UTC))
         logger.info("🧬 Self-Healing Engine: Starting diagnosis (sync)...")
 
-        # إنشاء sync engine
         db_url = os.getenv("DATABASE_URL", "")
         db_url = DatabaseURLSanitizer.sanitize(db_url, for_async=False)
         if "asyncpg" in db_url:
@@ -394,13 +311,8 @@ class SelfHealingEngine:
                 self._report.tables_checked += 1
 
                 try:
-                    result = conn.execute(
-                        text(f"""
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_name = '{table_name}'
-                    """)
-                    )
+                    query, params = SQLGenerator.get_columns_query(table_name)
+                    result = conn.execute(text(query), params)
                     existing = {row[0] for row in result.fetchall()}
                 except Exception as e:
                     logger.warning(f"⚠️ Table {table_name} check failed: {e}")
@@ -408,23 +320,21 @@ class SelfHealingEngine:
 
                 for column in schema.columns:
                     if column.name not in existing:
-                        logger.warning(f"🔍 Missing column: {table_name}.{column.name}")
-
+                        logger.warning(f"🔍 Missing: {table_name}.{column.name}")
                         if auto_fix:
-                            self._fix_missing_column_sync(conn, table_name, column)
+                            self._fix_column_sync(conn, table_name, column)
 
             if auto_fix and self._report.operations:
                 conn.commit()
 
-        self._report.completed_at = datetime.utcnow()
+        self._report.completed_at = datetime.now(UTC)
         self._report.status = "success" if not self._report.errors else "partial"
-
         self._log_report()
         return self._report
 
-    def _fix_missing_column_sync(self, conn, table: str, column: ColumnDefinition):
+    def _fix_column_sync(self, conn, table: str, column: ColumnDefinition):
         """إصلاح عمود مفقود (sync)."""
-        operation = HealingOperation(
+        op = HealingOperation(
             table=table,
             column=column.name,
             operation="add_column",
@@ -432,48 +342,40 @@ class SelfHealingEngine:
         )
 
         try:
-            conn.execute(text(operation.sql))
-            operation.success = True
-            logger.info(f"✅ Added column: {table}.{column.name}")
+            conn.execute(text(op.sql))
+            op.success = True
+            logger.info(f"✅ Added: {table}.{column.name}")
 
             if column.index:
                 index_sql = SQLGenerator.create_index(table, column.name)
                 conn.execute(text(index_sql))
-                logger.info(f"✅ Created index for: {table}.{column.name}")
+                logger.info(f"✅ Indexed: {table}.{column.name}")
 
             self._report.tables_healed += 1
 
         except Exception as e:
-            operation.success = False
-            operation.error = str(e)
-            self._report.errors.append(f"Failed to add {table}.{column.name}: {e}")
-            logger.error(f"❌ Failed to add {table}.{column.name}: {e}")
+            op.success = False
+            op.error = str(e)
+            self._report.errors.append(f"{table}.{column.name}: {e}")
+            logger.error(f"❌ Failed: {table}.{column.name} - {e}")
 
-        self._report.operations.append(operation)
+        self._report.operations.append(op)
 
     def _log_report(self):
         """تسجيل تقرير الإصلاح."""
         if not self._report:
             return
-
-        logger.info("=" * 60)
+        logger.info("=" * 50)
         logger.info("🧬 SELF-HEALING REPORT")
-        logger.info("=" * 60)
         logger.info(f"   Status: {self._report.status}")
-        logger.info(f"   Tables Checked: {self._report.tables_checked}")
-        logger.info(f"   Tables Healed: {self._report.tables_healed}")
+        logger.info(f"   Checked: {self._report.tables_checked} tables")
+        logger.info(f"   Healed: {self._report.tables_healed} tables")
         logger.info(f"   Operations: {len(self._report.operations)}")
-
-        if self._report.errors:
-            logger.error(f"   Errors: {len(self._report.errors)}")
-            for error in self._report.errors:
-                logger.error(f"      - {error}")
-
-        logger.info("=" * 60)
+        logger.info("=" * 50)
 
 
 # =============================================================================
-# 🚀 PUBLIC API — واجهة برمجية عامة
+# 🚀 PUBLIC API
 # =============================================================================
 
 _healing_engine: SelfHealingEngine | None = None
@@ -490,71 +392,45 @@ def get_healing_engine() -> SelfHealingEngine:
 
 
 async def run_self_healing(auto_fix: bool = True) -> HealingReport:
-    """
-    🏥 تشغيل الإصلاح الذاتي.
-
-    Args:
-        auto_fix: إصلاح تلقائي للمشاكل
-
-    Returns:
-        تقرير الإصلاح
-    """
+    """تشغيل الإصلاح الذاتي (async)."""
     engine = get_healing_engine()
     return await engine.heal_async(auto_fix=auto_fix)
 
 
 def run_self_healing_sync(auto_fix: bool = True) -> HealingReport:
-    """
-    🏥 تشغيل الإصلاح الذاتي (sync version).
-    """
+    """تشغيل الإصلاح الذاتي (sync)."""
     engine = get_healing_engine()
     return engine.heal_sync(auto_fix=auto_fix)
 
 
 # =============================================================================
-# 🧪 QUICK FIX FUNCTION — دالة الإصلاح السريع
+# ⚡ QUICK FIX
 # =============================================================================
 
 
 def quick_fix_linked_mission_id() -> bool:
-    """
-    ⚡ إصلاح سريع لمشكلة linked_mission_id.
-
-    يمكن استدعاؤها مباشرة من أي مكان لإصلاح المشكلة فوراً.
-
-    Returns:
-        True إذا نجح الإصلاح
-    """
-
+    """إصلاح سريع لمشكلة linked_mission_id."""
     db_url = os.getenv("DATABASE_URL", "")
     if not db_url:
         logger.error("❌ DATABASE_URL not set")
         return False
 
-    # تحويل URL للـ sync
     if "asyncpg" in db_url:
         db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
 
     try:
         engine = create_engine(db_url)
 
+        # Use validated SQL
+        add_col_sql = SQLGenerator.add_column(
+            "admin_conversations",
+            ColumnDefinition("linked_mission_id", ColumnType.INTEGER, nullable=True, index=True),
+        )
+        index_sql = SQLGenerator.create_index("admin_conversations", "linked_mission_id")
+
         with engine.connect() as conn:
-            # إضافة العمود
-            conn.execute(
-                text("""
-                ALTER TABLE admin_conversations
-                ADD COLUMN IF NOT EXISTS linked_mission_id INTEGER
-            """)
-            )
-
-            # إضافة الفهرس
-            conn.execute(
-                text("""
-                CREATE INDEX IF NOT EXISTS ix_admin_conversations_linked_mission_id
-                ON admin_conversations(linked_mission_id)
-            """)
-            )
-
+            conn.execute(text(add_col_sql))
+            conn.execute(text(index_sql))
             conn.commit()
 
         logger.info("✅ quick_fix_linked_mission_id: SUCCESS!")
