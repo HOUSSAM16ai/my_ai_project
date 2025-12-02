@@ -98,9 +98,12 @@ class FactoryConfig:
         }
 
         # Parse allowed planners
+        # NOTE: These names must match the 'name' class attribute of each planner,
+        # NOT the module filename. UltraHyperPlanner uses 'ultra_hyper_semantic_planner',
+        # and AdaptiveMultiPassArchPlanner uses 'adaptive_multi_pass_arch_planner'.
         allowed_str = os.getenv(
             "FACTORY_ALLOWED_PLANNERS",
-            "llm_planner,risk_planner,structural_planner,multi_pass_arch_planner,adaptive_multi_pass_arch_planner",
+            "ultra_hyper_semantic_planner,risk_planner,structural_planner,adaptive_multi_pass_arch_planner",
         )
         allowed_planners = _parse_csv(allowed_str)
 
