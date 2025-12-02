@@ -80,19 +80,14 @@ async def test_chat_stream_missing_event_type(client, test_app):
         lines = content.split("\n\n")
 
         has_delta_event = False
-        has_default_message_event = False
 
         for line in lines:
             if not line.strip():
                 continue
 
-            if "data: " in line and "Hello" in line:
-                # Check if this block has "event: delta"
-                if "event: delta" in line:
-                    has_delta_event = True
-                else:
-                    has_default_message_event = True
+            # Check if this block has "event: delta" with content
+            if "data: " in line and "Hello" in line and "event: delta" in line:
+                has_delta_event = True
 
-        # The test verifies the bug exists (regression test behavior)
-        assert has_default_message_event, "Expected default message events (bug reproduction)"
-        assert not has_delta_event, "Did not expect 'event: delta' (bug reproduction)"
+        # After the fix, we expect 'event: delta' events for content chunks
+        assert has_delta_event, "Expected 'event: delta' for content chunks (fix verified)"

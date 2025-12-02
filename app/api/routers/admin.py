@@ -259,7 +259,7 @@ async def chat_stream(
                         if content_part:
                             full_response.append(content_part)
                             chunk_data = {"choices": [{"delta": {"content": content_part}}]}
-                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
                 else:
                     # Simple LLM chat - unchanged behavior
                     async for chunk in ai_client.stream_chat(messages):
@@ -275,7 +275,7 @@ async def chat_stream(
                         if content_part:
                             full_response.append(content_part)
 
-                        yield f"data: {json.dumps(chunk)}\n\n"
+                        yield f"event: delta\ndata: {json.dumps(chunk)}\n\n"
 
         except Exception as e:
             error_payload = {
