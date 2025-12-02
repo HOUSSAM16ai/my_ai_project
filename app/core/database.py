@@ -37,6 +37,9 @@ AsyncSessionLocal = async_session_factory
 # يكتشف الأعمدة المفقودة ويحاول إصلاحها تلقائياً
 # =============================================================================
 
+# قائمة الجداول المسموح بها (whitelist للأمان)
+_ALLOWED_TABLES = frozenset({"admin_conversations"})
+
 # قائمة الأعمدة المطلوبة لكل جدول
 REQUIRED_SCHEMA = {
     "admin_conversations": {
@@ -49,10 +52,10 @@ REQUIRED_SCHEMA = {
             "created_at",
         ],
         "auto_fix": {
-            "linked_mission_id": "ALTER TABLE admin_conversations ADD COLUMN IF NOT EXISTS linked_mission_id INTEGER"
+            "linked_mission_id": 'ALTER TABLE "admin_conversations" ADD COLUMN IF NOT EXISTS "linked_mission_id" INTEGER'
         },
         "indexes": {
-            "linked_mission_id": "CREATE INDEX IF NOT EXISTS ix_admin_conversations_linked_mission_id ON admin_conversations(linked_mission_id)"
+            "linked_mission_id": 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
         },
     }
 }
@@ -79,15 +82,21 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
     try:
         async with engine.connect() as conn:
             for table_name, schema_info in REQUIRED_SCHEMA.items():
+                # Security: validate table name against whitelist
+                if table_name not in _ALLOWED_TABLES:
+                    logger.warning(f"⚠️ Skipping unknown table: {table_name}")
+                    continue
+
                 results["checked_tables"].append(table_name)
 
-                # الحصول على الأعمدة الموجودة
+                # الحصول على الأعمدة الموجودة باستخدام parameterized query
                 try:
                     result = await conn.execute(
-                        text(f"""
-                        SELECT column_name FROM information_schema.columns
-                        WHERE table_name = '{table_name}'
-                    """)
+                        text(
+                            "SELECT column_name FROM information_schema.columns "
+                            "WHERE table_name = :table_name"
+                        ),
+                        {"table_name": table_name},
                     )
                     existing_columns = {row[0] for row in result.fetchall()}
                 except Exception as e:
@@ -102,13 +111,14 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                     results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
 
                     if auto_fix:
-                        # محاولة إصلاح الأعمدة المفقودة
+                        # محاولة إصلاح الأعمدة المفقودة (SQL مُعرّف مسبقاً)
                         auto_fix_queries = schema_info.get("auto_fix", {})
                         index_queries = schema_info.get("indexes", {})
 
                         for col in missing:
                             if col in auto_fix_queries:
                                 try:
+                                    # SQL is predefined, not from user input
                                     await conn.execute(text(auto_fix_queries[col]))
                                     logger.info(f"✅ Added missing column: {table_name}.{col}")
                                     results["fixed_columns"].append(f"{table_name}.{col}")
@@ -147,9 +157,6 @@ async def validate_schema_on_startup() -> None:
 
     يُنفذ تلقائياً عند بدء التطبيق للتأكد من تطابق Schema.
     يحاول إصلاح المشاكل البسيطة تلقائياً.
-
-    Raises:
-        RuntimeError: إذا فشل الإصلاح التلقائي
     """
     logger.info("🔍 Validating database schema...")
 
@@ -163,8 +170,6 @@ async def validate_schema_on_startup() -> None:
         missing = ", ".join(results["missing_columns"])
         logger.error(f"❌ CRITICAL: Missing columns could not be fixed: {missing}")
         logger.error("   Run: flask db upgrade OR alembic upgrade head")
-        # في بيئة الإنتاج، يمكن رفع استثناء هنا
-        # raise RuntimeError(f"Schema mismatch: missing {missing}")
 
     if results["errors"]:
         for error in results["errors"]:
