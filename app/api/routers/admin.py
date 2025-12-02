@@ -226,7 +226,9 @@ async def chat_stream(
                 # Check for tool-capable intents
                 tool_intents = {
                     ChatIntent.FILE_READ,
+                    ChatIntent.FILE_WRITE,
                     ChatIntent.CODE_SEARCH,
+                    ChatIntent.PROJECT_INDEX,
                     ChatIntent.MISSION_COMPLEX,
                     ChatIntent.HELP,
                 }
