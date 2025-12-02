@@ -91,14 +91,23 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
 
                 # الحصول على الأعمدة الموجودة باستخدام parameterized query
                 try:
-                    result = await conn.execute(
-                        text(
-                            "SELECT column_name FROM information_schema.columns "
-                            "WHERE table_name = :table_name"
-                        ),
-                        {"table_name": table_name},
-                    )
-                    existing_columns = {row[0] for row in result.fetchall()}
+                    # Check dialect to support both PostgreSQL and SQLite
+                    dialect_name = conn.dialect.name
+                    if dialect_name == "sqlite":
+                        # SQLite does not have information_schema, use PRAGMA table_info
+                        result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+                        # Row format: (cid, name, type, notnull, dflt_value, pk)
+                        existing_columns = {row[1] for row in result.fetchall()}
+                    else:
+                        # Default to PostgreSQL standard information_schema
+                        result = await conn.execute(
+                            text(
+                                "SELECT column_name FROM information_schema.columns "
+                                "WHERE table_name = :table_name"
+                            ),
+                            {"table_name": table_name},
+                        )
+                        existing_columns = {row[0] for row in result.fetchall()}
                 except Exception as e:
                     results["errors"].append(f"Error checking table {table_name}: {e}")
                     continue
