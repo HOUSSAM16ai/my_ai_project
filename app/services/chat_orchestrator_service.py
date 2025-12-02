@@ -749,13 +749,13 @@ class ChatOrchestratorService:
 
         # Step 1: Build project index for context
         yield "📊 جارٍ فهرسة المشروع للحصول على سياق عميق...\n"
-        
+
         try:
             from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
-            
+
             async def _build_index_async():
                 return await asyncio.to_thread(build_index, root=".")
-            
+
             index = await asyncio.wait_for(_build_index_async(), timeout=30.0)
             summary = summarize_for_prompt(index, max_len=3000)
             yield "✅ تم بناء فهرس المشروع\n\n"
@@ -780,7 +780,7 @@ class ChatOrchestratorService:
 قم بتحليل السؤال بعمق واستخدم معرفتك ببنية المشروع لتقديم إجابة شاملة ودقيقة."""
 
         messages = [{"role": "system", "content": system_prompt}]
-        
+
         if summary:
             context_msg = f"""**سياق المشروع:**
 
@@ -797,7 +797,7 @@ class ChatOrchestratorService:
 
         # Step 3: Stream response from AI with enhanced context
         yield "💡 **التحليل:**\n\n"
-        
+
         try:
             async for chunk in ai_client.stream_chat(messages):
                 if isinstance(chunk, dict):
