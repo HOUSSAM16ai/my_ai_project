@@ -64,7 +64,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import logging
 import os
 import queue
@@ -94,7 +93,6 @@ from ._self_test_runner import run_self_test as _run_self_test_impl
 from ._structural_scoring import (
     compute_final_selection_score,
     compute_structural_enrichment,
-    safe_numeric,
 )
 
 # =============================================================================
@@ -213,7 +211,6 @@ _SELF_TEST_CONFIG = SelfTestConfig(
 )
 
 
-
 # =============================================================================
 # Reliability State (exponential decay laplace-smoothed)
 # =============================================================================
@@ -327,7 +324,7 @@ class BasePlanner:
                 logger.debug("Planner '%s' already registered.", key)
                 return
             state = _ReliabilityState(
-                quarantined=not _DISABLE_QUARANTINE,
+                quarantined=not _SELF_TEST_CONFIG.disable_quarantine,
                 production_ready=getattr(planner_cls, "production_ready", False),
                 tier=getattr(planner_cls, "tier", "experimental"),
                 risk_rating=getattr(planner_cls, "risk_rating", "medium"),

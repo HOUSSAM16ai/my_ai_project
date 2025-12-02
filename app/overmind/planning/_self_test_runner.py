@@ -130,9 +130,7 @@ def update_quarantine_state(
         if not config.disable_quarantine:
             state.quarantined = True
         else:
-            logger.warning(
-                f"Quarantine disabled; allowing planner '{key}' after failed self-test."
-            )
+            logger.warning(f"Quarantine disabled; allowing planner '{key}' after failed self-test.")
     else:
         state.self_test_passed = True
         if production_ready or env != "prod" or config.disable_quarantine:

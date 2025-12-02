@@ -114,9 +114,7 @@ def compute_structural_enrichment(
     """
     struct_base, grade = compute_structural_base_score(plan_meta, config)
     struct_bonus = compute_grade_bonus(grade, config)
-    nudge_applied, apparent_score = apply_reliability_adjustments(
-        grade, reliability_score, config
-    )
+    nudge_applied, apparent_score = apply_reliability_adjustments(grade, reliability_score, config)
 
     return StructuralEnrichmentResult(
         struct_base_score=struct_base,
