@@ -189,7 +189,7 @@ class _GenerationServiceAdapter:
     ) -> str:
         """
         Returns plain string. If fail_hard=False returns "" on failure.
-        
+
         SUPERHUMAN ENHANCEMENTS V2.5.1:
         - Better error context and categorization
         - Empty response handling
@@ -212,7 +212,7 @@ class _GenerationServiceAdapter:
                         fail_hard=fail_hard,
                         model=model_name,
                     )
-                    
+
                     # SUPERHUMAN CHECK: Validate non-empty response
                     if not result or (isinstance(result, str) and result.strip() == ""):
                         _LOG.warning(
@@ -222,14 +222,14 @@ class _GenerationServiceAdapter:
                         if attempt <= attempts:
                             time.sleep(0.15 * attempt)  # Increasing backoff
                             continue
-                    
+
                     return result
 
                 # 2) forge_new_code path
                 if self._base and hasattr(self._base, "forge_new_code"):
                     merged = f"{system_prompt.strip()}\n\nUSER:\n{user_prompt}"
                     resp = self._base.forge_new_code(merged, model=model_name)
-                    
+
                     if isinstance(resp, dict) and resp.get("status") == "success":
                         answer = (resp.get("answer") or "").strip()
                         if not answer:
@@ -241,7 +241,7 @@ class _GenerationServiceAdapter:
                                 time.sleep(0.15 * attempt)
                                 continue
                         return answer
-                        
+
                     last_err = resp.get("error") if isinstance(resp, dict) else "forge_failure"
                     raise RuntimeError(f"forge_new_code_failed: {last_err}")
 
@@ -258,17 +258,16 @@ class _GenerationServiceAdapter:
                         max_tokens=max_tokens,
                     )
                     content = completion.choices[0].message.content or ""
-                    
+
                     # SUPERHUMAN CHECK: Validate content
                     if not content or content.strip() == "":
                         _LOG.warning(
-                            f"LLM client returned empty content "
-                            f"(attempt {attempt}/{attempts + 1})"
+                            f"LLM client returned empty content (attempt {attempt}/{attempts + 1})"
                         )
                         if attempt <= attempts:
                             time.sleep(0.15 * attempt)
                             continue
-                    
+
                     return content.strip()
 
                 raise RuntimeError("No underlying generation method available.")
@@ -288,7 +287,7 @@ class _GenerationServiceAdapter:
         if fail_hard:
             error_msg = f"{type(last_err).__name__}: {last_err}" if last_err else "Unknown error"
             raise RuntimeError(f"text_completion_failed after {attempts + 1} attempts: {error_msg}")
-        
+
         _LOG.error(
             f"text_completion exhausted all retries. Returning empty string. "
             f"Last error: {type(last_err).__name__ if last_err else 'None'}"
@@ -308,7 +307,7 @@ class _GenerationServiceAdapter:
     ) -> dict | None:
         """
         Returns dict or None (unless fail_hard=True).
-        
+
         SUPERHUMAN ENHANCEMENTS V2.5.1:
         - Better JSON extraction and validation
         - Enhanced error messages
@@ -334,7 +333,7 @@ class _GenerationServiceAdapter:
                     fail_hard=fail_hard,
                     model=model,
                 )
-                
+
                 # SUPERHUMAN CHECK: Validate result
                 if result is None or not isinstance(result, dict):
                     _LOG.warning(
@@ -343,7 +342,7 @@ class _GenerationServiceAdapter:
                     )
                 else:
                     return result
-                    
+
             except Exception as e:
                 _LAST_ERRORS["structured_json_direct"] = f"{type(e).__name__}: {e!s}"
                 _LOG.warning(
@@ -368,7 +367,7 @@ class _GenerationServiceAdapter:
                     fail_hard=False,
                     model=model,
                 )
-                
+
                 if not raw or (isinstance(raw, str) and raw.strip() == ""):
                     last_err = "empty_response_from_text_completion"
                     _LOG.warning(
@@ -431,15 +430,12 @@ class _GenerationServiceAdapter:
                     time.sleep(min(backoff_time, 2.5))
 
         if fail_hard:
-            error_msg = f"{type(last_err).__name__ if isinstance(last_err, Exception) else last_err}"
-            raise RuntimeError(
-                f"structured_json_failed after {attempts + 1} attempts: {error_msg}"
+            error_msg = (
+                f"{type(last_err).__name__ if isinstance(last_err, Exception) else last_err}"
             )
-        
-        _LOG.error(
-            f"structured_json exhausted all retries. Returning None. "
-            f"Last error: {last_err}"
-        )
+            raise RuntimeError(f"structured_json_failed after {attempts + 1} attempts: {error_msg}")
+
+        _LOG.error(f"structured_json exhausted all retries. Returning None. Last error: {last_err}")
         return None
 
 

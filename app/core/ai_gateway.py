@@ -285,7 +285,7 @@ class NeuralRoutingMesh:
         """
         Executes the 'Synaptic Fallback Strategy' with Omni-Cognitive Optimization.
         Now Enhanced with COGNITIVE RESONANCE (Semantic Caching & Quality Feedback).
-        
+
         SUPERHUMAN ENHANCEMENTS V6.1:
         - Empty response validation and intelligent fallback
         - Enhanced error context and categorization
@@ -296,7 +296,7 @@ class NeuralRoutingMesh:
         if not messages or len(messages) == 0:
             logger.error("stream_chat called with empty messages list")
             raise ValueError("Messages list cannot be empty")
-        
+
         # --- PHASE 1: COGNITIVE RECALL ---
         prompt = messages[-1].get("content", "") if messages else ""
         cognitive_engine = get_cognitive_engine()
@@ -424,8 +424,7 @@ class NeuralRoutingMesh:
         )
         error_summary = " | ".join(errors) if errors else "No specific errors recorded"
         raise AIAllModelsExhaustedError(
-            f"Complete Failure across all available models. "
-            f"Error summary: {error_summary}"
+            f"Complete Failure across all available models. Error summary: {error_summary}"
         )
 
     async def _stream_from_node(
@@ -433,7 +432,7 @@ class NeuralRoutingMesh:
     ) -> AsyncGenerator[dict, None]:
         """
         Internal generator for a specific node with Retry Logic.
-        
+
         SUPERHUMAN ENHANCEMENTS V6.1:
         - Enhanced error classification and logging
         - Intelligent backoff with jitter
@@ -443,8 +442,7 @@ class NeuralRoutingMesh:
         client = ConnectionManager.get_client()
 
         attempt = 0
-        last_error = None
-        
+
         while attempt <= MAX_RETRIES:
             attempt += 1
             try:
@@ -461,40 +459,38 @@ class NeuralRoutingMesh:
                     # Enhanced status code handling with detailed error messages
                     if response.status_code >= 500:
                         error_body = await response.aread()
-                        error_text = error_body.decode('utf-8', errors='ignore')[:500]
+                        error_text = error_body.decode("utf-8", errors="ignore")[:500]
                         logger.error(
                             f"Server error from {node.model_id}: "
                             f"Status {response.status_code}, Body: {error_text}"
                         )
                         raise httpx.HTTPStatusError(
-                            f"Server Error (HTTP {response.status_code})", 
-                            request=response.request, 
-                            response=response
+                            f"Server Error (HTTP {response.status_code})",
+                            request=response.request,
+                            response=response,
                         )
 
                     if response.status_code == 429:
                         error_body = await response.aread()
-                        error_text = error_body.decode('utf-8', errors='ignore')[:200]
-                        logger.warning(
-                            f"Rate limit hit for {node.model_id}: {error_text}"
-                        )
+                        error_text = error_body.decode("utf-8", errors="ignore")[:200]
+                        logger.warning(f"Rate limit hit for {node.model_id}: {error_text}")
                         raise httpx.HTTPStatusError(
-                            "Rate Limited - will retry with backoff", 
-                            request=response.request, 
-                            response=response
+                            "Rate Limited - will retry with backoff",
+                            request=response.request,
+                            response=response,
                         )
-                    
+
                     if response.status_code == 401 or response.status_code == 403:
                         error_body = await response.aread()
-                        error_text = error_body.decode('utf-8', errors='ignore')[:200]
+                        error_text = error_body.decode("utf-8", errors="ignore")[:200]
                         logger.error(
                             f"Authentication error for {node.model_id}: "
                             f"Status {response.status_code}, Body: {error_text}"
                         )
                         raise httpx.HTTPStatusError(
-                            f"Authentication Error (HTTP {response.status_code})", 
-                            request=response.request, 
-                            response=response
+                            f"Authentication Error (HTTP {response.status_code})",
+                            request=response.request,
+                            response=response,
                         )
 
                     response.raise_for_status()
@@ -517,11 +513,9 @@ class NeuralRoutingMesh:
                                     f"Error: {je}"
                                 )
                                 continue
-                    
+
                     # Log successful stream completion
-                    logger.debug(
-                        f"Successfully streamed {chunk_count} chunks from {node.model_id}"
-                    )
+                    logger.debug(f"Successfully streamed {chunk_count} chunks from {node.model_id}")
                 return
 
             except (
@@ -530,8 +524,6 @@ class NeuralRoutingMesh:
                 httpx.ConnectTimeout,
                 httpx.HTTPStatusError,
             ) as e:
-                last_error = e
-                
                 if stream_started:
                     logger.error(
                         f"Stream severed mid-transmission from {node.model_id} "
@@ -553,7 +545,7 @@ class NeuralRoutingMesh:
                 base_sleep = (2 ** (attempt - 1)) * 0.5
                 jitter = random.uniform(0, 0.5)
                 sleep_time = base_sleep + jitter
-                
+
                 logger.warning(
                     f"Retry attempt {attempt}/{MAX_RETRIES} for {node.model_id} "
                     f"after {sleep_time:.2f}s. Error: {type(e).__name__}: {e!s}"
@@ -565,7 +557,7 @@ class NeuralRoutingMesh:
 def get_ai_client() -> AIClient:
     """
     Factory function to get AI client instance.
-    
+
     SUPERHUMAN ENHANCEMENTS:
     - Better logging for initialization states
     - Validates API key format before initialization
@@ -585,5 +577,5 @@ def get_ai_client() -> AIClient:
             f"OPENROUTER_API_KEY detected (length: {len(OPENROUTER_API_KEY)}). "
             "Neural Mesh initializing in full operational mode."
         )
-    
+
     return NeuralRoutingMesh(api_key=OPENROUTER_API_KEY or "dummy_key")

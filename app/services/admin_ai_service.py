@@ -71,7 +71,7 @@ class AdminAIService:
     ):
         """
         Answer a question using AI.
-        
+
         SUPERHUMAN ENHANCEMENTS:
         - Better empty response handling
         - Detailed error categorization
@@ -81,7 +81,7 @@ class AdminAIService:
         # So we need to call that.
         client = self.get_llm_client()
         max_retries = 2
-        
+
         for attempt in range(max_retries):
             try:
                 response = client.chat.completions.create()
@@ -91,7 +91,7 @@ class AdminAIService:
                 tool_calls = getattr(response.choices[0].message, "tool_calls", None)
                 usage = getattr(response, "usage", None)
                 model = getattr(response, "model", "unknown")
-                
+
                 # Get token usage safely
                 tokens_used = 0
                 if usage:
@@ -110,14 +110,14 @@ class AdminAIService:
                             "model_used": model,
                             "error_type": "empty_with_tools",
                         }
-                    
+
                     # Empty response with no tool calls
                     if attempt < max_retries - 1:
                         logger.warning(
                             f"Empty response (attempt {attempt + 1}/{max_retries}). Retrying..."
                         )
                         continue
-                    
+
                     logger.error(
                         f"Empty response after {max_retries} attempts. "
                         "This may indicate an API or model issue."
@@ -149,17 +149,17 @@ class AdminAIService:
                     "answer": f"Invalid response structure from AI model: {e!s}",
                     "error_type": "invalid_structure",
                 }
-                
+
             except Exception as e:
                 logger.error(
                     f"Error in answer_question (attempt {attempt + 1}/{max_retries}): "
                     f"{type(e).__name__}: {e}",
-                    exc_info=True
+                    exc_info=True,
                 )
-                
+
                 if attempt < max_retries - 1:
                     continue
-                    
+
                 return {
                     "status": "error",
                     "answer": f"Failed to get response from AI: {type(e).__name__}: {e!s}",
