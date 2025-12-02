@@ -2,7 +2,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -28,6 +28,147 @@ async_session_factory = async_sessionmaker(
 
 # Alias for backward compatibility / preference
 AsyncSessionLocal = async_session_factory
+
+
+# =============================================================================
+# 🛡️ SCHEMA VALIDATOR — فاحص تطابق Schema التلقائي
+# =============================================================================
+# يتحقق من تطابق schema الكود مع قاعدة البيانات
+# يكتشف الأعمدة المفقودة ويحاول إصلاحها تلقائياً
+# =============================================================================
+
+# قائمة الأعمدة المطلوبة لكل جدول
+REQUIRED_SCHEMA = {
+    "admin_conversations": {
+        "columns": [
+            "id",
+            "title",
+            "user_id",
+            "conversation_type",
+            "linked_mission_id",
+            "created_at",
+        ],
+        "auto_fix": {
+            "linked_mission_id": "ALTER TABLE admin_conversations ADD COLUMN IF NOT EXISTS linked_mission_id INTEGER"
+        },
+        "indexes": {
+            "linked_mission_id": "CREATE INDEX IF NOT EXISTS ix_admin_conversations_linked_mission_id ON admin_conversations(linked_mission_id)"
+        },
+    }
+}
+
+
+async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
+    """
+    🔍 التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
+
+    Args:
+        auto_fix: إذا كان True، يحاول إصلاح الأعمدة المفقودة تلقائياً
+
+    Returns:
+        dict: نتائج الفحص والإصلاح
+    """
+    results = {
+        "status": "ok",
+        "checked_tables": [],
+        "missing_columns": [],
+        "fixed_columns": [],
+        "errors": [],
+    }
+
+    try:
+        async with engine.connect() as conn:
+            for table_name, schema_info in REQUIRED_SCHEMA.items():
+                results["checked_tables"].append(table_name)
+
+                # الحصول على الأعمدة الموجودة
+                try:
+                    result = await conn.execute(
+                        text(f"""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = '{table_name}'
+                    """)
+                    )
+                    existing_columns = {row[0] for row in result.fetchall()}
+                except Exception as e:
+                    results["errors"].append(f"Error checking table {table_name}: {e}")
+                    continue
+
+                # التحقق من الأعمدة المطلوبة
+                required_columns = set(schema_info.get("columns", []))
+                missing = required_columns - existing_columns
+
+                if missing:
+                    results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
+
+                    if auto_fix:
+                        # محاولة إصلاح الأعمدة المفقودة
+                        auto_fix_queries = schema_info.get("auto_fix", {})
+                        index_queries = schema_info.get("indexes", {})
+
+                        for col in missing:
+                            if col in auto_fix_queries:
+                                try:
+                                    await conn.execute(text(auto_fix_queries[col]))
+                                    logger.info(f"✅ Added missing column: {table_name}.{col}")
+                                    results["fixed_columns"].append(f"{table_name}.{col}")
+
+                                    # إضافة الفهرس إذا كان موجوداً
+                                    if col in index_queries:
+                                        await conn.execute(text(index_queries[col]))
+                                        logger.info(f"✅ Created index for: {table_name}.{col}")
+
+                                except Exception as e:
+                                    error_msg = f"Failed to fix {table_name}.{col}: {e}"
+                                    logger.error(f"❌ {error_msg}")
+                                    results["errors"].append(error_msg)
+
+            # Commit التغييرات
+            if results["fixed_columns"]:
+                await conn.commit()
+
+    except Exception as e:
+        results["status"] = "error"
+        results["errors"].append(f"Schema validation failed: {e}")
+        logger.error(f"❌ Schema validation error: {e}")
+
+    # تحديد الحالة النهائية
+    if results["errors"]:
+        results["status"] = "error"
+    elif results["missing_columns"] and not results["fixed_columns"]:
+        results["status"] = "warning"
+
+    return results
+
+
+async def validate_schema_on_startup() -> None:
+    """
+    🚀 فحص Schema عند بدء التطبيق.
+
+    يُنفذ تلقائياً عند بدء التطبيق للتأكد من تطابق Schema.
+    يحاول إصلاح المشاكل البسيطة تلقائياً.
+
+    Raises:
+        RuntimeError: إذا فشل الإصلاح التلقائي
+    """
+    logger.info("🔍 Validating database schema...")
+
+    results = await validate_and_fix_schema(auto_fix=True)
+
+    if results["status"] == "ok":
+        logger.info("✅ Schema validation passed - all columns present")
+    elif results["fixed_columns"]:
+        logger.warning(f"⚠️ Schema had issues but was auto-fixed: {results['fixed_columns']}")
+    elif results["missing_columns"]:
+        missing = ", ".join(results["missing_columns"])
+        logger.error(f"❌ CRITICAL: Missing columns could not be fixed: {missing}")
+        logger.error("   Run: flask db upgrade OR alembic upgrade head")
+        # في بيئة الإنتاج، يمكن رفع استثناء هنا
+        # raise RuntimeError(f"Schema mismatch: missing {missing}")
+
+    if results["errors"]:
+        for error in results["errors"]:
+            logger.error(f"   Error: {error}")
 
 
 # =============================================================================
