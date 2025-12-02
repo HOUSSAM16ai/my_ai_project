@@ -3,6 +3,7 @@ import importlib
 import inspect
 import logging
 import os
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
@@ -34,11 +35,35 @@ class RealityKernel:
         from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
         from app.middleware.security.security_headers import SecurityHeadersMiddleware
 
+        # إنشاء lifespan context manager للتحقق من Schema عند البدء
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            """Application lifespan handler - validates schema on startup."""
+            # === STARTUP ===
+            logger.info("🚀 CogniForge starting up...")
+
+            # التحقق من Schema وإصلاح الأعمدة المفقودة تلقائياً
+            if self.settings.get("ENVIRONMENT") != "testing":
+                try:
+                    from app.core.database import validate_schema_on_startup
+
+                    await validate_schema_on_startup()
+                except Exception as e:
+                    logger.warning(f"⚠️ Schema validation skipped: {e}")
+
+            logger.info("✅ CogniForge ready to serve requests")
+
+            yield  # Application is running
+
+            # === SHUTDOWN ===
+            logger.info("👋 CogniForge shutting down...")
+
         app = FastAPI(
             title=self.settings.get("PROJECT_NAME", "CogniForge"),
             version="v4.0-woven",
             docs_url="/docs" if self.settings.get("ENVIRONMENT") == "development" else None,
             redoc_url="/redoc" if self.settings.get("ENVIRONMENT") == "development" else None,
+            lifespan=lifespan,
         )
 
         app.add_middleware(

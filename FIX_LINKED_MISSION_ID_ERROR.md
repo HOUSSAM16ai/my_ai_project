@@ -11,6 +11,19 @@ column admin_conversations.linked_mission_id does not exist
 
 ---
 
+## 🧬 الحل الخارق — نظام Self-Healing Database
+
+تم تطبيق نظام **Self-Healing Database** الذي يصلح المشاكل تلقائياً عند بدء التطبيق!
+
+### كيف يعمل؟
+
+1. **عند بدء التطبيق**: يتحقق النظام من تطابق Schema
+2. **اكتشاف المشاكل**: يحدد الأعمدة المفقودة
+3. **الإصلاح التلقائي**: يضيف الأعمدة والفهارس تلقائياً
+4. **التسجيل**: يوثق كل عملية في السجلات
+
+---
+
 ## ✅ الحل الفوري — خطوة واحدة!
 
 ### الخيار 1: تنفيذ SQL مباشرة في Supabase
@@ -19,10 +32,10 @@ column admin_conversations.linked_mission_id does not exist
 2. انسخ والصق هذا الكود:
 
 ```sql
-ALTER TABLE admin_conversations 
+ALTER TABLE admin_conversations
 ADD COLUMN IF NOT EXISTS linked_mission_id INTEGER;
 
-CREATE INDEX IF NOT EXISTS ix_admin_conversations_linked_mission_id 
+CREATE INDEX IF NOT EXISTS ix_admin_conversations_linked_mission_id
 ON admin_conversations(linked_mission_id);
 ```
 
@@ -30,16 +43,7 @@ ON admin_conversations(linked_mission_id);
 
 ---
 
-### الخيار 2: استخدام Flask-Migrate
-
-```bash
-# في Terminal الخاص بـ Codespace أو Gitpod
-flask db upgrade
-```
-
----
-
-### الخيار 3: استخدام Alembic مباشرة
+### الخيار 2: استخدام Alembic
 
 ```bash
 alembic upgrade head
@@ -47,10 +51,17 @@ alembic upgrade head
 
 ---
 
-### الخيار 4: تشغيل السكربت الجاهز
+### الخيار 3: استخدام سكربت Python
 
 ```bash
-# تشغيل ملف SQL عبر psql
+python scripts/fix_linked_mission_id_check.py
+```
+
+---
+
+### الخيار 4: تشغيل ملف SQL
+
+```bash
 psql "$DATABASE_URL" -f scripts/fix_linked_mission_id.sql
 ```
 
@@ -58,20 +69,42 @@ psql "$DATABASE_URL" -f scripts/fix_linked_mission_id.sql
 
 ## 🔍 التحقق من نجاح الإصلاح
 
-بعد تنفيذ أي خيار، تحقق من وجود العمود:
-
 ```sql
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'admin_conversations' 
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'admin_conversations'
 AND column_name = 'linked_mission_id';
 ```
 
-يجب أن تحصل على:
+---
+
+## 🧬 نظام Self-Healing Database
+
+### الملفات الجديدة:
+
+| الملف | الوظيفة |
+|-------|---------|
+| `app/core/self_healing_db.py` | محرك الإصلاح الذاتي |
+| `app/core/database.py` | تم تحديثه مع Schema Validator |
+| `app/kernel.py` | يفحص Schema عند البدء |
+
+### كيفية الاستخدام:
+
+```python
+from app.core.self_healing_db import quick_fix_linked_mission_id
+
+# إصلاح فوري
+quick_fix_linked_mission_id()
 ```
-column_name       | data_type
-------------------+-----------
-linked_mission_id | integer
+
+أو:
+
+```python
+from app.core.self_healing_db import run_self_healing
+import asyncio
+
+# إصلاح شامل
+asyncio.run(run_self_healing(auto_fix=True))
 ```
 
 ---
@@ -81,6 +114,8 @@ linked_mission_id | integer
 - `app/models.py` - تعريف العمود في السطر 190
 - `migrations/versions/20251202_add_linked_mission_id.py` - ملف Migration
 - `scripts/fix_linked_mission_id.sql` - سكربت SQL للإصلاح المباشر
+- `scripts/fix_linked_mission_id_check.py` - سكربت Python للتشخيص والإصلاح
+- `scripts/pre_deploy.sh` - سكربت ما قبل النشر
 
 ---
 
@@ -89,8 +124,8 @@ linked_mission_id | integer
 | الخيار | الصعوبة | السرعة |
 |--------|---------|--------|
 | SQL مباشر في Supabase | ⭐ سهل جداً | ⚡ فوري |
-| flask db upgrade | ⭐⭐ سهل | ⚡ سريع |
 | alembic upgrade head | ⭐⭐ سهل | ⚡ سريع |
-| psql script | ⭐⭐⭐ متوسط | ⚡ سريع |
+| Python script | ⭐⭐ سهل | ⚡ سريع |
+| **Self-Healing (تلقائي)** | 🌟 **لا حاجة لتدخل** | ⚡⚡ **فوري** |
 
-**✅ بعد تنفيذ أي خيار، ستختفي الأخطاء ويعمل النظام بشكل صحيح!**
+**✅ مع نظام Self-Healing، لن تحدث هذه المشكلة مرة أخرى!**
