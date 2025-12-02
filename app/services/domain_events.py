@@ -383,6 +383,111 @@ class RateLimitExceeded(DomainEvent):
 
 
 # ======================================================================================
+# CHAT ORCHESTRATION DOMAIN EVENTS (أحداث تنسيق الدردشة)
+# ======================================================================================
+@dataclass
+class ChatIntentDetected(DomainEvent):
+    """Chat intent detected from user message"""
+
+    def __init__(
+        self,
+        conversation_id: str,
+        user_id: str,
+        intent: str,
+        confidence: float,
+        message_preview: str,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.bounded_context = BoundedContext.ADMIN_OPERATIONS
+        self.aggregate_type = "Conversation"
+        self.aggregate_id = conversation_id
+        self.payload = {
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "intent": intent,
+            "confidence": confidence,
+            "message_preview": message_preview[:100],
+        }
+
+
+@dataclass
+class ToolExecutionStarted(DomainEvent):
+    """Tool execution started"""
+
+    def __init__(
+        self,
+        tool_name: str,
+        user_id: str,
+        conversation_id: str,
+        params: dict[str, Any],
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.bounded_context = BoundedContext.TASK_EXECUTION
+        self.aggregate_type = "ToolExecution"
+        self.payload = {
+            "tool_name": tool_name,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "params": params,
+        }
+
+
+@dataclass
+class ToolExecutionCompleted(DomainEvent):
+    """Tool execution completed"""
+
+    def __init__(
+        self,
+        tool_name: str,
+        user_id: str,
+        conversation_id: str,
+        success: bool,
+        duration_ms: float,
+        result_preview: str | None = None,
+        error: str | None = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.bounded_context = BoundedContext.TASK_EXECUTION
+        self.aggregate_type = "ToolExecution"
+        self.payload = {
+            "tool_name": tool_name,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "success": success,
+            "duration_ms": duration_ms,
+            "result_preview": result_preview[:200] if result_preview else None,
+            "error": error,
+        }
+
+
+@dataclass
+class MissionCreatedFromChat(DomainEvent):
+    """Mission created from chat conversation"""
+
+    def __init__(
+        self,
+        mission_id: str,
+        conversation_id: str,
+        user_id: str,
+        objective: str,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.bounded_context = BoundedContext.MISSION_ORCHESTRATION
+        self.aggregate_type = "Mission"
+        self.aggregate_id = mission_id
+        self.payload = {
+            "mission_id": mission_id,
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "objective": objective[:200],
+        }
+
+
+# ======================================================================================
 # INTEGRATION EVENTS (للتواصل بين الخدمات المصغرة)
 # ======================================================================================
 @dataclass
@@ -480,6 +585,11 @@ _event_classes = [
     RateLimitExceeded,
     NotificationRequested,
     DataExportRequested,
+    # Chat Orchestration Events
+    ChatIntentDetected,
+    ToolExecutionStarted,
+    ToolExecutionCompleted,
+    MissionCreatedFromChat,
 ]
 
 for event_cls in _event_classes:

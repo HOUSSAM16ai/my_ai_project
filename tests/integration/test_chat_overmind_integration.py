@@ -285,3 +285,211 @@ class TestAsyncToolBridge:
         result = await tools.read_file("test.py")
         assert not result["ok"]
         assert "not available" in result["error"]
+
+
+class TestCircuitBreaker:
+    """Test circuit breaker functionality."""
+
+    def test_circuit_starts_closed(self):
+        """Test circuit breaker starts in closed state."""
+        from app.services.chat_orchestrator_service import CircuitBreaker, CircuitState
+
+        breaker = CircuitBreaker(name="test")
+        assert breaker.state == CircuitState.CLOSED
+        can_exec, _ = breaker.can_execute()
+        assert can_exec
+
+    def test_circuit_opens_after_failures(self):
+        """Test circuit opens after threshold failures."""
+        from app.services.chat_orchestrator_service import (
+            CircuitBreaker,
+            CircuitBreakerConfig,
+            CircuitState,
+        )
+
+        config = CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30.0)
+        breaker = CircuitBreaker(name="test", config=config)
+
+        # Record failures
+        for _ in range(3):
+            breaker.record_failure()
+
+        assert breaker.state == CircuitState.OPEN
+        can_exec, msg = breaker.can_execute()
+        assert not can_exec
+        assert "Circuit open" in msg
+
+    def test_circuit_closes_after_success(self):
+        """Test circuit closes after successful recovery."""
+        from app.services.chat_orchestrator_service import CircuitBreaker, CircuitState
+
+        breaker = CircuitBreaker(name="test")
+        breaker.state = CircuitState.HALF_OPEN
+
+        breaker.record_success()
+        assert breaker.state == CircuitState.CLOSED
+
+    def test_circuit_breaker_registry(self):
+        """Test circuit breaker registry returns same instance."""
+        from app.services.chat_orchestrator_service import CircuitBreakerRegistry
+
+        CircuitBreakerRegistry.reset_all()
+
+        breaker1 = CircuitBreakerRegistry.get("test_tool")
+        breaker2 = CircuitBreakerRegistry.get("test_tool")
+
+        assert breaker1 is breaker2
+
+
+class TestChatTelemetry:
+    """Test telemetry functionality."""
+
+    def test_telemetry_to_dict(self):
+        """Test telemetry serialization."""
+        from app.services.chat_orchestrator_service import ChatTelemetry
+
+        telemetry = ChatTelemetry(
+            intent_detection_time_ms=10.5,
+            tool_execution_time_ms=100.0,
+            tool_name="read_file",
+            success=True,
+        )
+
+        data = telemetry.to_dict()
+        assert data["intent_detection_time_ms"] == 10.5
+        assert data["tool_execution_time_ms"] == 100.0
+        assert data["tool_name"] == "read_file"
+        assert data["success"] is True
+
+
+class TestNewHandlers:
+    """Test new handlers added in V4."""
+
+    @pytest.fixture
+    def orchestrator(self):
+        return ChatOrchestratorService()
+
+    @pytest.mark.asyncio
+    async def test_project_index_validates_rate_limit(self, orchestrator):
+        """Test project index respects rate limits."""
+        orchestrator._initialized = True
+        orchestrator._async_tools = None
+
+        chunks = []
+        async for chunk in orchestrator.handle_project_index(user_id=1):
+            chunks.append(chunk)
+
+        response = "".join(chunks)
+        # Should indicate tools unavailable
+        assert "غير متاحة" in response or "📊" in response
+
+    @pytest.mark.asyncio
+    async def test_file_write_validates_path(self, orchestrator):
+        """Test file write validates path."""
+        chunks = []
+        async for chunk in orchestrator.handle_file_write(
+            path="../../../etc/passwd", content="test", user_id=1
+        ):
+            chunks.append(chunk)
+
+        response = "".join(chunks)
+        assert "غير صالح" in response or "blocked" in response.lower()
+
+    @pytest.mark.asyncio
+    async def test_help_includes_new_commands(self, orchestrator):
+        """Test help includes new commands."""
+        chunks = []
+        async for chunk in orchestrator.handle_help():
+            chunks.append(chunk)
+
+        response = "".join(chunks)
+        assert "كتابة الملفات" in response or "📝" in response
+        assert "تحليل المشروع" in response or "📊" in response
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_integration(self, orchestrator):
+        """Test circuit breaker is used in handlers."""
+        from app.services.chat_orchestrator_service import CircuitBreakerRegistry
+
+        CircuitBreakerRegistry.reset_all()
+        orchestrator._ensure_initialized()
+
+        # Get circuit breaker for read_file
+        breaker = orchestrator._get_circuit_breaker("read_file")
+        assert breaker.name == "read_file"
+
+
+class TestDomainEvents:
+    """Test domain events for chat."""
+
+    def test_chat_intent_detected_event(self):
+        """Test ChatIntentDetected event."""
+        from app.services.domain_events import ChatIntentDetected
+
+        event = ChatIntentDetected(
+            conversation_id="123",
+            user_id="456",
+            intent="file_read",
+            confidence=0.9,
+            message_preview="read app/models.py",
+        )
+
+        assert event.payload["conversation_id"] == "123"
+        assert event.payload["intent"] == "file_read"
+        assert event.payload["confidence"] == 0.9
+
+    def test_tool_execution_started_event(self):
+        """Test ToolExecutionStarted event."""
+        from app.services.domain_events import ToolExecutionStarted
+
+        event = ToolExecutionStarted(
+            tool_name="read_file",
+            user_id="123",
+            conversation_id="456",
+            params={"path": "app/models.py"},
+        )
+
+        assert event.payload["tool_name"] == "read_file"
+        assert event.payload["params"]["path"] == "app/models.py"
+
+    def test_tool_execution_completed_event(self):
+        """Test ToolExecutionCompleted event."""
+        from app.services.domain_events import ToolExecutionCompleted
+
+        event = ToolExecutionCompleted(
+            tool_name="read_file",
+            user_id="123",
+            conversation_id="456",
+            success=True,
+            duration_ms=100.5,
+            result_preview="# app/models.py...",
+        )
+
+        assert event.payload["success"] is True
+        assert event.payload["duration_ms"] == 100.5
+
+    def test_mission_created_from_chat_event(self):
+        """Test MissionCreatedFromChat event."""
+        from app.services.domain_events import MissionCreatedFromChat
+
+        event = MissionCreatedFromChat(
+            mission_id="789",
+            conversation_id="456",
+            user_id="123",
+            objective="Fix all bugs in the codebase",
+        )
+
+        assert event.payload["mission_id"] == "789"
+        assert event.payload["conversation_id"] == "456"
+        assert "Fix all bugs" in event.payload["objective"]
+
+    def test_events_registered_in_registry(self):
+        """Test new events are registered."""
+        from app.services.domain_events import DomainEventRegistry
+
+        events = DomainEventRegistry.list_events()
+
+        assert "ChatIntentDetected" in events
+        assert "ToolExecutionStarted" in events
+        assert "ToolExecutionCompleted" in events
+        assert "MissionCreatedFromChat" in events
