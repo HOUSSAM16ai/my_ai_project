@@ -15,6 +15,8 @@ Ultra Deep Structural / Semantic-Oriented Indexer (Enhanced v2)
 6. توفير بيانات قياس (metrics) للتليمتري (عدد ملفات، متوسط تعقيد، أكبر دوال ... إلخ).
 7. تصميم دفاعي (Graceful Degradation) – أي فشل لا يكسر المنظومة بل يُسجل error.
 
+REFACTORED: Tag and layer detection extracted to separate modules using design patterns.
+
 ENV FLAGS (قابلة للضبط)
 ----------------------------------------------------------------
 PLANNER_INDEX_CACHE_ENABLE=0|1        تفعيل الكاش (متوافق مع الـ Planner)
@@ -69,6 +71,10 @@ from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from typing import Any
+
+# Refactored imports
+from ._layer_detection import detect_layer
+from ._tag_detection import categorize_code
 
 # --------------------------------------------------------------------------------------
 # Configuration Helpers
@@ -260,51 +266,19 @@ def _estimate_complexity(node: ast.AST) -> int:
 
 
 def _categorize(code: str) -> list[str]:
-    lower = code.lower()
-    tags: set[str] = set()
-    if "async def " in lower:
-        tags.add("async")
-    if " for " in lower or " while " in lower:
-        tags.add("iterative")
-    if "math." in lower or "import math" in lower:
-        tags.add("numeric")
-    if "re." in lower:
-        tags.add("regex")
-    if any(x in lower for x in ("requests.", "httpx.", "urllib.")):
-        tags.add("network")
-    if any(x in lower for x in ("flask", "fastapi", "django")):
-        tags.add("web")
-    if "os." in lower or "subprocess" in lower:
-        tags.add("system")
-    if any(x in lower for x in ("sklearn", "torch", "tensorflow", "xgboost")):
-        tags.add("ml")
-    if any(x in lower for x in ("openai", "anthropic", "gemini", "langchain", "llama")):
-        tags.add("llm")
-    return sorted(tags)
+    """
+    Refactored: Delegates to extracted tag detection module.
+    Categorize code by detecting technology tags using Strategy pattern.
+    """
+    return categorize_code(code)
 
 
 def _layer_for_path(path: str) -> str | None:
-    if not CONFIG["LAYER_HEURISTICS"]:
-        return None
-    segments = path.replace("\\", "/").split("/")
-    # بسط heuristics
-    if any("test" in s.lower() for s in segments):
-        return "tests"
-    if "migrations" in segments:
-        return "migrations"
-    if "api" in segments or "routes" in segments:
-        return "api"
-    if "services" in segments or "service" in segments:
-        return "service"
-    if "models" in segments or "schemas" in segments:
-        return "model"
-    if "utils" in segments or "helpers" in segments:
-        return "utility"
-    if "scripts" in segments or "cli" in segments:
-        return "script"
-    if "config" in segments or "settings" in segments:
-        return "config"
-    return None
+    """
+    Refactored: Delegates to extracted layer detection module.
+    Detect architectural layer using Chain of Responsibility pattern.
+    """
+    return detect_layer(path, CONFIG["LAYER_HEURISTICS"])
 
 
 def _service_candidate(path: str, code: str) -> bool:

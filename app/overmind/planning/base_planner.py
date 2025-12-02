@@ -86,6 +86,18 @@ except Exception:  # pragma: no cover
     PlanMeta = object  # type: ignore
 
 # =============================================================================
+# Refactored module imports
+# =============================================================================
+from ._configs import DriftDetectionConfig, SelfTestConfig, StructuralScoringConfig
+from ._drift_detection import detect_structural_drift
+from ._self_test_runner import run_self_test as _run_self_test_impl
+from ._structural_scoring import (
+    compute_final_selection_score,
+    compute_structural_enrichment,
+    safe_numeric,
+)
+
+# =============================================================================
 # Logging
 # =============================================================================
 logger = logging.getLogger("overmind.planning.base_planner")
@@ -173,24 +185,33 @@ _ALLOW_LIST = {x.strip().lower() for x in os.getenv("PLANNERS_ALLOW", "").split(
 _BLOCK_LIST = {x.strip().lower() for x in os.getenv("PLANNERS_BLOCK", "").split(",") if x.strip()}
 _DECAY_HALF_LIFE = float(os.getenv("PLANNER_DECAY_HALF_LIFE", "900"))
 _MIN_RELIABILITY = float(os.getenv("PLANNER_MIN_RELIABILITY", "0.05"))
-_SELF_TEST_TIMEOUT = float(os.getenv("PLANNER_SELF_TEST_TIMEOUT", "5"))
 _FALLBACK_DEFAULT_TIMEOUT = float(os.getenv("PLANNER_DEFAULT_TIMEOUT", "40"))
-_DISABLE_QUARANTINE = os.getenv("PLANNER_DISABLE_QUARANTINE", "0") == "1"
 
 _NAME_PATTERN = re.compile(r"^[a-z0-9_][a-z0-9_\-]{2,63}$")
 
-# Structural scoring toggles
+# Configuration objects for refactored modules
 _STRUCT_ENABLE = os.getenv("PLANNER_STRUCT_SCORE_ENABLE", "1") == "1"
-_STRUCT_WEIGHT = float(os.getenv("PLANNER_STRUCT_SCORE_WEIGHT", "0.07") or 0.07)
-_GRADE_BONUS_A = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_A", "0.05") or 0.05)
-_GRADE_BONUS_B = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_B", "0.02") or 0.02)
-_GRADE_BONUS_C = float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_C", "0.0") or 0.0)
-_DRIFT_TASK_RATIO = float(os.getenv("PLANNER_STRUCT_DRIFT_TASK_RATIO", "0.30") or 0.30)
-_DRIFT_GRADE_DROP = int(os.getenv("PLANNER_STRUCT_DRIFT_GRADE_DROP", "2") or 2)
-_RELIABILITY_NUDGE = float(os.getenv("PLANNER_STRUCT_RELIABILITY_NUDGE", "0.01") or 0.01)
 
-# Cache last structural snapshot per planner
-_LAST_STRUCT: dict[str, dict[str, Any]] = {}
+_STRUCT_CONFIG = StructuralScoringConfig(
+    grade_bonuses={
+        "A": float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_A", "0.05") or 0.05),
+        "B": float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_B", "0.02") or 0.02),
+        "C": float(os.getenv("PLANNER_STRUCT_GRADE_BONUS_C", "0.0") or 0.0),
+    },
+    struct_weight=float(os.getenv("PLANNER_STRUCT_SCORE_WEIGHT", "0.07") or 0.07),
+    reliability_nudge=float(os.getenv("PLANNER_STRUCT_RELIABILITY_NUDGE", "0.01") or 0.01),
+)
+
+_DRIFT_CONFIG = DriftDetectionConfig(
+    task_ratio_threshold=float(os.getenv("PLANNER_STRUCT_DRIFT_TASK_RATIO", "0.30") or 0.30),
+    grade_drop_threshold=int(os.getenv("PLANNER_STRUCT_DRIFT_GRADE_DROP", "2") or 2),
+)
+
+_SELF_TEST_CONFIG = SelfTestConfig(
+    timeout_seconds=float(os.getenv("PLANNER_SELF_TEST_TIMEOUT", "5")),
+    disable_quarantine=os.getenv("PLANNER_DISABLE_QUARANTINE", "0") == "1",
+)
+
 
 
 # =============================================================================
@@ -324,58 +345,8 @@ class BasePlanner:
 
     @classmethod
     def _run_self_test(cls, planner_cls: type[BasePlanner], key: str, state: _ReliabilityState):
-        test_method = getattr(planner_cls, "self_test", None)
-        if not callable(test_method):
-            if planner_cls.production_ready or _DISABLE_QUARANTINE:
-                state.quarantined = False
-                state.self_test_passed = True
-            else:
-                state.self_test_passed = None
-            return
-
-        logger.debug("Running self-test for planner '%s'...", key)
-        result: dict[str, Any] = {}
-
-        def runner():
-            try:
-                sig = inspect.signature(test_method)
-                # Support @staticmethod / @classmethod / instance method
-                if isinstance(test_method, classmethod | staticmethod):
-                    test_method()  # type: ignore
-                else:
-                    if len(sig.parameters) == 0:
-                        test_method()
-                    else:
-                        instance = planner_cls()
-                        test_method(instance)
-                result["ok"] = True
-            except Exception as e:
-                result["error"] = e
-
-        th = threading.Thread(target=runner, daemon=True)
-        th.start()
-        th.join(_SELF_TEST_TIMEOUT)
-        if th.is_alive():
-            logger.error("Planner '%s' self-test timeout (>%ss).", key, _SELF_TEST_TIMEOUT)
-            state.self_test_passed = False
-            if not _DISABLE_QUARANTINE:
-                state.quarantined = True
-            return
-
-        if "error" in result:
-            logger.error("Planner '%s' self-test FAILED: %s", key, result["error"])
-            state.self_test_passed = False
-            if not _DISABLE_QUARANTINE:
-                state.quarantined = True
-            else:
-                logger.warning(
-                    "Quarantine disabled; allowing planner '%s' after failed self-test.", key
-                )
-        else:
-            state.self_test_passed = True
-            if planner_cls.production_ready or _ENV != "prod" or _DISABLE_QUARANTINE:
-                state.quarantined = False
-            logger.info("Planner '%s' self-test PASSED (quarantine=%s).", key, state.quarantined)
+        """Refactored: delegates to extracted self-test runner module."""
+        _run_self_test_impl(planner_cls, key, state, _ENV, _SELF_TEST_CONFIG)
 
     # --------------------------------------------------------------
     # Abstract contract
@@ -633,10 +604,14 @@ class BasePlanner:
         extra_metadata: dict[str, Any] | None,
         include_node_count: bool,
     ) -> dict[str, Any]:
-        """Helper to enrich the plan with metadata and structural scores."""
+        """
+        Refactored: Orchestrator calling focused helper modules (reduced complexity).
+        Enriches plan with metadata and structural scores.
+        """
         node_count = self._infer_node_count(plan) if include_node_count else None
         rel_score = self.current_reliability_score()
 
+        # Build base metadata
         meta: dict[str, Any] = {
             "planner": self.name,
             "version": getattr(self, "version", None),
@@ -655,79 +630,27 @@ class BasePlanner:
         if extra_metadata:
             meta.update(extra_metadata)
 
-        # Structural enrichment logic...
-        # (This part remains the same as in the original methods)
+        # Structural enrichment (delegated to extracted module)
         struct_base = 0.0
         struct_bonus = 0.0
-        drift_flag = False
-        grade_used = None
         if _STRUCT_ENABLE and isinstance(plan, MissionPlanSchema) and plan.meta:
-            pm = plan.meta
-            grade_used = getattr(pm, "structural_quality_grade", None)
+            struct_result = compute_structural_enrichment(plan.meta, rel_score, _STRUCT_CONFIG)
+            meta.update(struct_result.to_dict())
+            struct_base = struct_result.struct_base_score
+            struct_bonus = struct_result.struct_bonus
 
-            def _nz(v, default=0.0):
-                return v if isinstance(v, int | float) and v is not None else default
-
-            hotspot_density = _nz(getattr(pm, "hotspot_density", None))
-            layer_div = _nz(getattr(pm, "layer_diversity", None))
-            entropy = _nz(getattr(pm, "structural_entropy", None))
-
-            grade_map = {"A": 1.0, "B": 0.7, "C": 0.4}
-            grade_component = grade_map.get(grade_used, 0.5)
-
-            struct_base = (
-                grade_component + (1 - abs(hotspot_density - 0.25)) + layer_div + entropy
-            ) / 4.0
-            struct_base = max(0.0, min(1.0, struct_base))
-
-            # Grade bonus
-            if grade_used == "A":
-                struct_bonus += _GRADE_BONUS_A
-            elif grade_used == "B":
-                struct_bonus += _GRADE_BONUS_B
-            else:
-                struct_bonus += _GRADE_BONUS_C
-
-            # Drift detection
-            prev = _LAST_STRUCT.get(self.name.lower())
-            task_count = len(getattr(plan, "tasks", []) or [])
-            if prev:
-                prev_tasks = prev.get("tasks", task_count)
-                prev_grade = prev.get("grade")
-                if (
-                    prev_tasks > 0
-                    and abs(task_count - prev_tasks) / prev_tasks >= _DRIFT_TASK_RATIO
-                ):
-                    drift_flag = True
-                if prev_grade and grade_used:
-                    order = {"A": 3, "B": 2, "C": 1}
-                    if (order.get(prev_grade, 2) - order.get(grade_used, 2)) >= _DRIFT_GRADE_DROP:
-                        drift_flag = True
-            _LAST_STRUCT[self.name.lower()] = {
-                "tasks": task_count,
-                "grade": grade_used,
-                "ts": time.time(),
-            }
-
-            meta.update(
-                {
-                    "struct_base_score": round(struct_base, 4),
-                    "struct_grade": grade_used,
-                    "struct_bonus": round(struct_bonus, 4),
-                    "struct_drift": drift_flag,
-                }
+            # Drift detection (delegated to extracted module)
+            drift_detected = detect_structural_drift(
+                self.name, plan, struct_result.grade, _DRIFT_CONFIG
             )
+            if drift_detected:
+                meta["struct_drift"] = True
 
-            if grade_used == "A" and _RELIABILITY_NUDGE > 0:
-                meta["reliability_nudge_applied"] = True
-                meta["reliability_score_apparent"] = min(1.0, rel_score + _RELIABILITY_NUDGE)
-
+        # Final selection score computation
         base_selection = self.compute_selection_score(objective, None)
-        final_selection = base_selection
-        if _STRUCT_ENABLE and struct_base:
-            final_selection = min(
-                1.0, final_selection + struct_base * _STRUCT_WEIGHT + struct_bonus
-            )
+        final_selection = compute_final_selection_score(
+            base_selection, struct_base, struct_bonus, _STRUCT_ENABLE, _STRUCT_CONFIG
+        )
 
         meta["selection_score_base"] = round(base_selection, 4)
         meta["selection_score"] = round(final_selection, 4)
