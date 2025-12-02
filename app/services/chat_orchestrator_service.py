@@ -296,9 +296,22 @@ class PathValidator:
     ]
 
     ALLOWED_EXTENSIONS: ClassVar[set[str]] = {
-        ".py", ".md", ".txt", ".json", ".yaml", ".yml",
-        ".js", ".ts", ".html", ".css", ".sh", ".sql",
-        ".toml", ".cfg", ".ini", ".env.example",
+        ".py",
+        ".md",
+        ".txt",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".js",
+        ".ts",
+        ".html",
+        ".css",
+        ".sh",
+        ".sql",
+        ".toml",
+        ".cfg",
+        ".ini",
+        ".env.example",
     }
 
     @classmethod
@@ -312,6 +325,7 @@ class PathValidator:
                 return False, "Path contains blocked pattern"
 
         from pathlib import Path
+
         path_obj = Path(path)
         suffixes = path_obj.suffixes
         if suffixes:
@@ -374,6 +388,7 @@ class ChatOrchestratorService:
 
         try:
             from app.services.async_tool_bridge import get_async_overmind, get_async_tools
+
             self._async_tools = get_async_tools()
             self._async_overmind = get_async_overmind()
         except ImportError as e:
@@ -381,6 +396,7 @@ class ChatOrchestratorService:
 
         try:
             from app.core.rate_limiter import get_rate_limiter
+
             self._rate_limiter = get_rate_limiter()
         except ImportError as e:
             logger.warning(f"Failed to load rate limiter: {e}")
@@ -774,9 +790,14 @@ class ChatOrchestratorService:
                         task_info += f" {failed} ❌"
 
                 status_emoji = {
-                    "pending": "⏳", "planning": "📋", "planned": "📝",
-                    "running": "🔄", "adapting": "🔧", "success": "✅",
-                    "failed": "❌", "canceled": "🚫",
+                    "pending": "⏳",
+                    "planning": "📋",
+                    "planned": "📝",
+                    "running": "🔄",
+                    "adapting": "🔧",
+                    "success": "✅",
+                    "failed": "❌",
+                    "canceled": "🚫",
                 }.get(status, "❓")
 
                 yield f"{status_emoji} الحالة: **{status}**{task_info}\n"

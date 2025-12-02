@@ -427,15 +427,15 @@ class IntelligentRouter:
             for c in candidates:
                 # Normalize to [0, 1] where 0 is best (min) and 1 is worst (max)
                 norm_cost = (c["cost"] - min_cost) / cost_range if cost_range > 0 else 0.0
-                norm_latency = (c["latency"] - min_latency) / latency_range if latency_range > 0 else 0.0
+                norm_latency = (
+                    (c["latency"] - min_latency) / latency_range if latency_range > 0 else 0.0
+                )
 
                 # Score: Higher is better.
                 # Invert normalized metrics so 1.0 is best, 0.0 is worst.
                 # Use slightly modified weights to emphasize performance quality
                 c["score"] = (
-                    (1.0 - norm_cost) * 0.3
-                    + (1.0 - norm_latency) * 0.5
-                    + c["health_score"] * 0.2
+                    (1.0 - norm_cost) * 0.3 + (1.0 - norm_latency) * 0.5 + c["health_score"] * 0.2
                 )
         else:
             # Legacy/Single-factor strategies
