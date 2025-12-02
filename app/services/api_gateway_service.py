@@ -397,23 +397,11 @@ class IntelligentRouter:
                     stats = self.provider_stats[provider_name]
                 health_score = 1.0 if stats.is_healthy else 0.0
 
-                # Calculate composite score
-                if strategy == RoutingStrategy.COST_OPTIMIZED:
-                    score = 1.0 / (cost + 0.001)  # Lower cost = higher score
-                elif strategy == RoutingStrategy.LATENCY_BASED:
-                    score = 1.0 / (latency + 0.001)  # Lower latency = higher score
-                else:  # INTELLIGENT
-                    # Balanced score considering cost, latency, and health
-                    cost_score = 1.0 / (cost + 0.001)
-                    latency_score = 1.0 / (latency + 0.001)
-                    score = cost_score * 0.3 + latency_score * 0.5 + health_score * 0.2
-
                 candidates.append(
                     {
                         "provider": provider_name,
                         "cost": cost,
                         "latency": latency,
-                        "score": score,
                         "health_score": health_score,
                     }
                 )
@@ -424,6 +412,44 @@ class IntelligentRouter:
 
         if not candidates:
             raise ValueError("No suitable provider found for routing")
+
+        # Calculate scores with normalization for INTELLIGENT strategy
+        if strategy == RoutingStrategy.INTELLIGENT and len(candidates) > 0:
+            # Find min/max for normalization
+            min_cost = min(c["cost"] for c in candidates)
+            max_cost = max(c["cost"] for c in candidates)
+            cost_range = max_cost - min_cost if max_cost > min_cost else 1.0
+
+            min_latency = min(c["latency"] for c in candidates)
+            max_latency = max(c["latency"] for c in candidates)
+            latency_range = max_latency - min_latency if max_latency > min_latency else 1.0
+
+            for c in candidates:
+                # Normalize to [0, 1] where 0 is best (min) and 1 is worst (max)
+                norm_cost = (c["cost"] - min_cost) / cost_range if cost_range > 0 else 0.0
+                norm_latency = (c["latency"] - min_latency) / latency_range if latency_range > 0 else 0.0
+
+                # Score: Higher is better.
+                # Invert normalized metrics so 1.0 is best, 0.0 is worst.
+                # Use slightly modified weights to emphasize performance quality
+                c["score"] = (
+                    (1.0 - norm_cost) * 0.3
+                    + (1.0 - norm_latency) * 0.5
+                    + c["health_score"] * 0.2
+                )
+        else:
+            # Legacy/Single-factor strategies
+            for c in candidates:
+                if strategy == RoutingStrategy.COST_OPTIMIZED:
+                    c["score"] = 1.0 / (c["cost"] + 0.001)
+                elif strategy == RoutingStrategy.LATENCY_BASED:
+                    c["score"] = 1.0 / (c["latency"] + 0.001)
+                else:
+                    # Fallback for INTELLIGENT if only 1 candidate (normalization irrelevant)
+                    # or other future strategies
+                    cost_score = 1.0 / (c["cost"] + 0.001)
+                    latency_score = 1.0 / (c["latency"] + 0.001)
+                    c["score"] = cost_score * 0.3 + latency_score * 0.5 + c["health_score"] * 0.2
 
         # Select best candidate
         best = max(candidates, key=lambda x: x["score"])
