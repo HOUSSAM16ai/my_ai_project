@@ -10,7 +10,8 @@ from app.overmind.planning.config import (
 def test_default_config_values():
     assert DEFAULT_CONFIG.min_reliability == 0.25
     assert DEFAULT_CONFIG.deep_fingerprint is True
-    assert "llm_planner" in DEFAULT_CONFIG.allowed_planners
+    # Check for actual planner names (not module names)
+    assert "ultra_hyper_semantic_planner" in DEFAULT_CONFIG.allowed_planners
 
 
 def test_parse_csv():

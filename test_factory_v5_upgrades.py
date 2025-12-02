@@ -64,7 +64,10 @@ def test_allowed_planners_whitelist():
     """Test 3: ALLOWED_PLANNERS whitelist exists"""
     factory = load_factory_module()
     assert hasattr(factory, "ALLOWED_PLANNERS"), "ALLOWED_PLANNERS should exist"
-    assert "llm_planner" in factory.ALLOWED_PLANNERS, "llm_planner should be allowed"
+    # Check for actual planner names (not module names)
+    assert "ultra_hyper_semantic_planner" in factory.ALLOWED_PLANNERS, (
+        "ultra_hyper_semantic_planner should be allowed"
+    )
     assert len(factory.ALLOWED_PLANNERS) > 0, "Should have at least one allowed planner"
     print("✓ Test 3: ALLOWED_PLANNERS whitelist exists")
 
