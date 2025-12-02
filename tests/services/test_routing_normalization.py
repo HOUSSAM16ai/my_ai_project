@@ -1,7 +1,9 @@
+from app.services.api_gateway_service import (
+    IntelligentRouter,
+    ModelProviderAdapter,
+    RoutingStrategy,
+)
 
-import pytest
-from unittest.mock import Mock
-from app.services.api_gateway_service import IntelligentRouter, RoutingStrategy, ModelProviderAdapter
 
 class MockAdapter(ModelProviderAdapter):
     def __init__(self, cost, latency):
@@ -16,6 +18,7 @@ class MockAdapter(ModelProviderAdapter):
 
     def estimate_latency(self, model: str, tokens: int) -> float:
         return self.latency
+
 
 def test_routing_scale_normalization():
     """
@@ -35,19 +38,14 @@ def test_routing_scale_normalization():
     # Cost: $0.001, Latency: 2000ms
     adapter_b = MockAdapter(cost=0.001, latency=2000.0)
 
-    router.provider_adapters = {
-        "provider_a": adapter_a,
-        "provider_b": adapter_b
-    }
+    router.provider_adapters = {"provider_a": adapter_a, "provider_b": adapter_b}
 
     # Reset stats to healthy
     for p in ["provider_a", "provider_b"]:
         router.provider_stats[p].is_healthy = True
 
     decision = router.route_request(
-        model_type="test-model",
-        estimated_tokens=1000,
-        strategy=RoutingStrategy.INTELLIGENT
+        model_type="test-model", estimated_tokens=1000, strategy=RoutingStrategy.INTELLIGENT
     )
 
     # Provider A should be selected because it excels in Latency (which has 0.5 weight)
