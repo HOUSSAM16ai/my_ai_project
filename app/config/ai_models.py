@@ -33,9 +33,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
-
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
 # 📋 AVAILABLE MODELS CATALOG | كتالوج النماذج المتاحة
@@ -47,47 +45,47 @@ from functools import lru_cache
 class AvailableModels:
     """
     📚 All Available AI Models | جميع النماذج المتاحة
-    
+
     Copy the model ID (the string value) to use in the configuration below.
     انسخ معرف النموذج (القيمة النصية) لاستخدامه في التكوين أدناه.
     """
-    
+
     # ─────────────────────────────────────────────────────────────────────────
     # 🟢 OPENAI MODELS | نماذج OpenAI
     # ─────────────────────────────────────────────────────────────────────────
-    GPT_4O = "openai/gpt-4o"                    # 🏆 الأقوى، متعدد الوسائط
-    GPT_4O_MINI = "openai/gpt-4o-mini"          # ⚡ سريع، موفر التكلفة
-    GPT_4_TURBO = "openai/gpt-4-turbo"          # 🚀 GPT-4 محسّن
-    GPT_4 = "openai/gpt-4"                      # 📚 الكلاسيكي
-    GPT_35_TURBO = "openai/gpt-3.5-turbo"       # 💨 سريع جداً، رخيص
-    
+    GPT_4O = "openai/gpt-4o"  # 🏆 الأقوى، متعدد الوسائط
+    GPT_4O_MINI = "openai/gpt-4o-mini"  # ⚡ سريع، موفر التكلفة
+    GPT_4_TURBO = "openai/gpt-4-turbo"  # 🚀 GPT-4 محسّن
+    GPT_4 = "openai/gpt-4"  # 📚 الكلاسيكي
+    GPT_35_TURBO = "openai/gpt-3.5-turbo"  # 💨 سريع جداً، رخيص
+
     # ─────────────────────────────────────────────────────────────────────────
     # 🟣 ANTHROPIC MODELS | نماذج Anthropic
     # ─────────────────────────────────────────────────────────────────────────
     CLAUDE_37_SONNET_THINKING = "anthropic/claude-3.7-sonnet:thinking"  # 🧠 تفكير متقدم
-    CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"                     # 🎯 استدلال ممتاز
-    CLAUDE_3_OPUS = "anthropic/claude-3-opus"                           # 🎓 الأكثر قدرة
-    CLAUDE_3_HAIKU = "anthropic/claude-3-haiku"                         # ⚡ سريع ورخيص
-    
+    CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"  # 🎯 استدلال ممتاز
+    CLAUDE_3_OPUS = "anthropic/claude-3-opus"  # 🎓 الأكثر قدرة
+    CLAUDE_3_HAIKU = "anthropic/claude-3-haiku"  # ⚡ سريع ورخيص
+
     # ─────────────────────────────────────────────────────────────────────────
     # 🔵 GOOGLE MODELS | نماذج Google
     # ─────────────────────────────────────────────────────────────────────────
-    GEMINI_PRO = "google/gemini-pro"                    # 🌟 الرئيسي
-    GEMINI_PRO_15 = "google/gemini-pro-1.5"            # 🚀 الأحدث
-    
+    GEMINI_PRO = "google/gemini-pro"  # 🌟 الرئيسي
+    GEMINI_PRO_15 = "google/gemini-pro-1.5"  # 🚀 الأحدث
+
     # ─────────────────────────────────────────────────────────────────────────
     # 🟠 META MODELS (Open Source) | نماذج Meta
     # ─────────────────────────────────────────────────────────────────────────
-    LLAMA_3_70B = "meta-llama/llama-3-70b-instruct"    # 🔓 مفتوح المصدر قوي
-    LLAMA_3_8B = "meta-llama/llama-3-8b-instruct"      # 💨 سريع ومجاني
+    LLAMA_3_70B = "meta-llama/llama-3-70b-instruct"  # 🔓 مفتوح المصدر قوي
+    LLAMA_3_8B = "meta-llama/llama-3-8b-instruct"  # 💨 سريع ومجاني
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
 #
 #   ███████╗██████╗ ██╗████████╗    ██╗  ██╗███████╗██████╗ ███████╗
 #   ██╔════╝██╔══██╗██║╚══██╔══╝    ██║  ██║██╔════╝██╔══██╗██╔════╝
-#   █████╗  ██║  ██║██║   ██║       ███████║█████╗  ██████╔╝█████╗  
-#   ██╔══╝  ██║  ██║██║   ██║       ██╔══██║██╔══╝  ██╔══██╗██╔══╝  
+#   █████╗  ██║  ██║██║   ██║       ███████║█████╗  ██████╔╝█████╗
+#   ██╔══╝  ██║  ██║██║   ██║       ██╔══██║██╔══╝  ██╔══██╗██╔══╝
 #   ███████╗██████╔╝██║   ██║       ██║  ██║███████╗██║  ██║███████╗
 #   ╚══════╝╚═════╝ ╚═╝   ╚═╝       ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝
 #
@@ -100,7 +98,7 @@ class AvailableModels:
 class ActiveModels:
     """
     ⚙️ ACTIVE AI MODELS CONFIGURATION | تكوين النماذج النشط
-    
+
     ╔═══════════════════════════════════════════════════════════════════════════════════╗
     ║                                                                                   ║
     ║   🔧 TO CHANGE A MODEL:                                                          ║
@@ -115,7 +113,7 @@ class ActiveModels:
     ║                                                                                   ║
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
-    
+
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 🎯 PRIMARY MODEL | النموذج الرئيسي
     # ═══════════════════════════════════════════════════════════════════════════════════
@@ -125,40 +123,40 @@ class ActiveModels:
     # 👉 CHANGE THIS to switch the main AI model
     # 👉 غيّر هذا لتبديل نموذج الذكاء الاصطناعي الرئيسي
     # ═══════════════════════════════════════════════════════════════════════════════════
-    
+
     PRIMARY = "anthropic/claude-3.7-sonnet:thinking"
-    
+
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 💰 LOW COST MODEL | نموذج منخفض التكلفة
     # ═══════════════════════════════════════════════════════════════════════════════════
     # Used for simple, quick tasks to save money.
     # يُستخدم للمهام البسيطة والسريعة لتوفير المال.
     # ═══════════════════════════════════════════════════════════════════════════════════
-    
+
     LOW_COST = "openai/gpt-4o-mini"
-    
+
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 🌟 GATEWAY MODELS | نماذج البوابة
     # ═══════════════════════════════════════════════════════════════════════════════════
     # Used by the Neural Routing Mesh for intelligent request routing.
     # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
     # ═══════════════════════════════════════════════════════════════════════════════════
-    
-    GATEWAY_PRIMARY = "anthropic/claude-3.5-sonnet"      # Main gateway model
-    GATEWAY_FALLBACK_1 = "openai/gpt-4o"                 # First fallback
-    GATEWAY_FALLBACK_2 = "openai/gpt-4o-mini"            # Second fallback
-    
+
+    GATEWAY_PRIMARY = "anthropic/claude-3.5-sonnet"  # Main gateway model
+    GATEWAY_FALLBACK_1 = "openai/gpt-4o"  # First fallback
+    GATEWAY_FALLBACK_2 = "openai/gpt-4o-mini"  # Second fallback
+
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة
     # ═══════════════════════════════════════════════════════════════════════════════════
     # Different models for different complexity levels (intelligent routing).
     # نماذج مختلفة لمستويات تعقيد مختلفة (التوجيه الذكي).
     # ═══════════════════════════════════════════════════════════════════════════════════
-    
-    TIER_NANO = "openai/gpt-4o-mini"              # ⚡ Ultra-fast (<50ms) | فائق السرعة
-    TIER_FAST = "openai/gpt-4o-mini"              # 🚀 Fast (<200ms) | سريع
-    TIER_SMART = "anthropic/claude-3.5-sonnet"    # 🧠 Smart (<1s) | ذكي
-    TIER_GENIUS = "anthropic/claude-3-opus"       # 🎓 Genius (<5s) | عبقري
+
+    TIER_NANO = "openai/gpt-4o-mini"  # ⚡ Ultra-fast (<50ms) | فائق السرعة
+    TIER_FAST = "openai/gpt-4o-mini"  # 🚀 Fast (<200ms) | سريع
+    TIER_SMART = "anthropic/claude-3.5-sonnet"  # 🧠 Smart (<1s) | ذكي
+    TIER_GENIUS = "anthropic/claude-3-opus"  # 🎓 Genius (<5s) | عبقري
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
@@ -172,35 +170,35 @@ class AIConfig:
     """
     AI Configuration singleton - reads from ActiveModels class.
     """
-    
+
     # Primary
     primary_model: str = ActiveModels.PRIMARY
     low_cost_model: str = ActiveModels.LOW_COST
-    
+
     # Gateway
     gateway_primary: str = ActiveModels.GATEWAY_PRIMARY
     gateway_fallback_1: str = ActiveModels.GATEWAY_FALLBACK_1
     gateway_fallback_2: str = ActiveModels.GATEWAY_FALLBACK_2
-    
+
     # Tiers
     tier_nano: str = ActiveModels.TIER_NANO
     tier_fast: str = ActiveModels.TIER_FAST
     tier_smart: str = ActiveModels.TIER_SMART
     tier_genius: str = ActiveModels.TIER_GENIUS
-    
+
     # API Keys (from environment - these ARE secrets)
     @property
     def openrouter_api_key(self) -> str | None:
         return os.getenv("OPENROUTER_API_KEY")
-    
+
     @property
     def openai_api_key(self) -> str | None:
         return os.getenv("OPENAI_API_KEY")
-    
+
     def get_fallback_models(self) -> list[str]:
         """Get list of fallback models."""
         return [self.gateway_fallback_1, self.gateway_fallback_2]
-    
+
     def get_tier_model(self, tier: str) -> str:
         """Get model for a specific tier."""
         tier_map = {
@@ -210,7 +208,7 @@ class AIConfig:
             "genius": self.tier_genius,
         }
         return tier_map.get(tier.lower(), self.primary_model)
-    
+
     def to_dict(self) -> dict:
         """Export configuration as dictionary."""
         return {
@@ -228,7 +226,7 @@ class AIConfig:
                 "genius": self.tier_genius,
             },
         }
-    
+
     def print_config(self) -> None:
         """Print current configuration."""
         print("""
@@ -260,9 +258,9 @@ ai_config = get_ai_config()
 
 
 __all__ = [
-    "ActiveModels",
-    "AvailableModels", 
     "AIConfig",
+    "ActiveModels",
+    "AvailableModels",
     "ai_config",
     "get_ai_config",
 ]
@@ -281,6 +279,6 @@ if __name__ == "__main__":
     print(f"  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}")
     print(f"  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}")
     print("─" * 60)
-    
+
     config = get_ai_config()
     config.print_config()

@@ -241,8 +241,9 @@ class IntelligentRouter:
         # Model mapping - READ FROM CENTRAL CONFIG (app/config/ai_models.py)
         # To change models, edit: app/config/ai_models.py → class ActiveModels
         from app.config.ai_models import get_ai_config
+
         _ai_config = get_ai_config()
-        
+
         self.model_map = {
             ModelTier.NANO: _ai_config.tier_nano,
             ModelTier.FAST: _ai_config.tier_fast,

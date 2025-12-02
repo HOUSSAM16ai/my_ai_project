@@ -18,7 +18,6 @@ import asyncio
 import hashlib
 import json
 import logging
-import os
 import random
 import time
 from collections.abc import AsyncGenerator
@@ -28,15 +27,14 @@ from typing import Protocol, runtime_checkable
 
 import httpx
 
-from app.core.cognitive_cache import get_cognitive_engine
-
-# Use the new Omni Router
-from app.core.math.omni_router import get_omni_router
-
 # --- Configuration ---
 # All AI models are now configured from the central config (app/config/ai_models.py)
 # You can override these via environment variables or .env file
 from app.config.ai_models import get_ai_config
+from app.core.cognitive_cache import get_cognitive_engine
+
+# Use the new Omni Router
+from app.core.math.omni_router import get_omni_router
 
 _ai_config = get_ai_config()
 OPENROUTER_API_KEY = _ai_config.openrouter_api_key
