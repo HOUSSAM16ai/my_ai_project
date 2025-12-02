@@ -362,13 +362,15 @@ def diagnostics() -> dict:
     """
     Returns adapter status & internal flags (does NOT call external network).
     """
+    from app.config.ai_models import get_ai_config
+    ai_config = get_ai_config()
     return {
         "adapter_version": __version__,
         "mode": _ADAPTER_MODE,
         "base_object_type": _BASE_OBJ_TYPE,
         "has_generation_service_attr": _existing is not None,
         "pass_through": _ADAPTER_MODE == "pass_through",
-        "default_model_env": os.getenv("DEFAULT_AI_MODEL"),
+        "central_config_primary": ai_config.primary_model,
         "force_model_env": os.getenv("MAESTRO_FORCE_MODEL"),
         "override_model_env": os.getenv("AI_MODEL_OVERRIDE"),
         "selected_default_model_now": _select_model(),

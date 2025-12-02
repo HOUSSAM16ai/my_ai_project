@@ -1193,12 +1193,14 @@ class MaestroGenerationService:
             self._finalize_task_safe(task, TaskStatus.FAILED, f"Catastrophic failure: {exc}")
 
     def diagnostics(self) -> dict[str, Any]:
+        from app.config.ai_models import get_ai_config
+        ai_config = get_ai_config()
         return {
             "version": self.version,
             "selected_default_model": _select_model(),
+            "central_config_primary": ai_config.primary_model,
             "force_model": os.getenv("MAESTRO_FORCE_MODEL"),
             "override_model": os.getenv("AI_MODEL_OVERRIDE"),
-            "default_ai_model_env": os.getenv("DEFAULT_AI_MODEL"),
             "max_steps": int(_cfg("AGENT_MAX_STEPS", 5)),
             "tools_registered": list(getattr(agent_tools, "_TOOL_REGISTRY", {}).keys()),
             "emit_events": os.getenv("MAESTRO_EMIT_TASK_EVENTS", "0") == "1",
