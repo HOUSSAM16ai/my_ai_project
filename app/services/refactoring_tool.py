@@ -120,8 +120,12 @@ class RefactorTool:
             ---
             """
 
+            # Read model from central config (app/config/ai_models.py)
+            from app.config.ai_models import get_ai_config
+            _model = get_ai_config().primary_model
+
             completion = self.llm_client.chat.completions.create(
-                model="openai/gpt-4o",
+                model=_model,
                 messages=[{"role": "user", "content": refactor_prompt}],
                 temperature=0.1,
             )

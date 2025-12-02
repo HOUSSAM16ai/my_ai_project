@@ -34,11 +34,16 @@ from app.core.cognitive_cache import get_cognitive_engine
 from app.core.math.omni_router import get_omni_router
 
 # --- Configuration ---
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# All AI models are now configured from the central config (app/config/ai_models.py)
+# You can override these via environment variables or .env file
+from app.config.ai_models import get_ai_config
 
-# The "Holographic Registry" of Models
-PRIMARY_MODEL = "anthropic/claude-3.5-sonnet"
-FALLBACK_MODELS = ["openai/gpt-4o", "anthropic/claude-instant-1.2"]
+_ai_config = get_ai_config()
+OPENROUTER_API_KEY = _ai_config.openrouter_api_key
+
+# The "Holographic Registry" of Models - READ FROM CENTRAL CONFIG
+PRIMARY_MODEL = _ai_config.gateway_primary
+FALLBACK_MODELS = _ai_config.get_fallback_models()
 
 MAX_RETRIES = 3
 BASE_TIMEOUT = 30.0

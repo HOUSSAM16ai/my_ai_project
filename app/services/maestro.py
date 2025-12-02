@@ -117,7 +117,11 @@ def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
 
 def _select_model(explicit: str | None = None) -> str:
     """
-    Priority: explicit > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > DEFAULT_AI_MODEL > fallback
+    Select AI model with proper priority chain.
+    
+    Priority: explicit > MAESTRO_FORCE_MODEL > AI_MODEL_OVERRIDE > ActiveModels.PRIMARY > fallback
+    
+    Central config location: app/config/ai_models.py → class ActiveModels
     """
     if explicit and explicit.strip():
         return explicit.strip()
@@ -127,10 +131,10 @@ def _select_model(explicit: str | None = None) -> str:
     override = os.getenv("AI_MODEL_OVERRIDE")
     if override and override.strip():
         return override.strip()
-    default_m = os.getenv("DEFAULT_AI_MODEL", "").strip()
-    if default_m:
-        return default_m
-    return "openai/gpt-4o"
+    
+    # Read from central config (app/config/ai_models.py)
+    from app.config.ai_models import get_ai_config
+    return get_ai_config().primary_model
 
 
 def _int_env(name: str, default: int) -> int:
