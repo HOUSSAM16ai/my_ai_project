@@ -684,6 +684,7 @@ class PolicyEngine:
         # Check if user_id is required but missing/None in context
         if (
             "user_id" in condition
+            and ("required" in condition or "require" in condition)
             and "not required" not in condition
             and "optional" not in condition
         ):

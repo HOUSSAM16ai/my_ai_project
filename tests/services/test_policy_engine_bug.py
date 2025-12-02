@@ -55,3 +55,32 @@ class TestPolicyEngineBug:
         allowed, reason = engine.evaluate(context)
         assert allowed is True
         assert reason is None
+
+    def test_false_positive_user_id_check(self):
+        """
+        Ensure that a policy condition containing 'user_id' as a substring
+        (without 'required' keyword) does NOT trigger the mandatory user_id check.
+        """
+        engine = PolicyEngine()
+        policy = PolicyRule(
+            rule_id="feature_flag_check",
+            name="Check Feature Flag",
+            condition="check_feature_flag_user_id_segment",
+            action="deny",
+            priority=100,
+            enabled=True,
+        )
+        engine.add_policy(policy)
+
+        # Anonymous context
+        context = {
+            "user_id": None,
+            "endpoint": "/public/feature",
+            "method": "GET",
+            "authenticated": False,
+        }
+
+        allowed, reason = engine.evaluate(context)
+
+        # Should be allowed because 'required' is missing from condition
+        assert allowed is True, f"Policy erroneously denied request: {reason}"
