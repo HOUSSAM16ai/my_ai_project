@@ -124,7 +124,7 @@ class ActiveModels:
     # 👉 غيّر هذا لتبديل نموذج الذكاء الاصطناعي الرئيسي
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    PRIMARY = "deepseek/deepseek-v3.2-exp"
+    PRIMARY = "qwen/qwen3-coder:free"
 
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 💰 LOW COST MODEL | نموذج منخفض التكلفة
@@ -142,9 +142,9 @@ class ActiveModels:
     # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    GATEWAY_PRIMARY = "anthropic/claude-3.5-sonnet"  # Main gateway model
-    GATEWAY_FALLBACK_1 = "openai/gpt-4o"  # First fallback
-    GATEWAY_FALLBACK_2 = "openai/gpt-4o-mini"  # Second fallback
+    GATEWAY_PRIMARY = "qwen/qwen3-coder:free"  # Main gateway model
+    GATEWAY_FALLBACK_1 = "qwen/qwen3-coder:free"  # First fallback
+    GATEWAY_FALLBACK_2 = "qwen/qwen3-coder:free"  # Second fallback
 
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة
