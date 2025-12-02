@@ -794,10 +794,17 @@ class ChatOrchestratorService:
         logger.debug(f"mission handler completed in {(time.time() - start_time) * 1000:.2f}ms")
 
     async def _link_mission_to_conversation(self, conversation_id: int, mission_id: int):
-        """Link mission to conversation for tracking."""
+        """
+        Link mission to conversation for tracking.
+
+        Note: Imports are inside method to prevent circular imports.
+        This is intentional as this service is loaded early in the app lifecycle.
+        """
         try:
+            # Lazy imports to prevent circular dependencies - this is intentional
             from app.core.database import SessionLocal
             from app.models import AdminConversation
+            from app.services.async_tool_bridge import run_sync_tool
 
             def _update():
                 session = SessionLocal()
@@ -814,7 +821,6 @@ class ChatOrchestratorService:
                     session.close()
                 return False
 
-            from app.services.async_tool_bridge import run_sync_tool
             await run_sync_tool(_update, timeout=5.0)
         except Exception as e:
             logger.warning(f"Failed to link mission {mission_id} to conv {conversation_id}: {e}")
