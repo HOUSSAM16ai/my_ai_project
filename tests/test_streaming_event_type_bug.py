@@ -20,6 +20,14 @@ async def test_chat_stream_has_delta_event_type(client, test_app):
     # 1. Define Mocks
     mock_ai_client = MagicMock()
     mock_db_session = AsyncMock()
+    # FIX: Explicitly set synchronous methods as MagicMock to prevent RuntimeWarnings
+    # "coroutine 'AsyncMockMixin._execute_mock_call' was never awaited"
+    mock_db_session.add = MagicMock()
+    mock_db_session.refresh = AsyncMock() # refresh is awaited in admin.py: await db.refresh(conversation)
+
+    # Let's verify admin.py again.
+    # line 128: db.add(conversation) -> sync
+    # line 130: await db.refresh(conversation) -> async
 
     # Mock database execution results
     mock_result = MagicMock()
