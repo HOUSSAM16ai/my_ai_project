@@ -11,10 +11,10 @@ from app.core.database import get_db
 
 
 @pytest.mark.asyncio
-async def test_chat_stream_missing_event_type(client, test_app):
+async def test_chat_stream_has_delta_event_type(client, test_app):
     """
-    Verifies that the chat_stream endpoint yields 'message' events (missing 'event: ...' line)
-    instead of the required 'event: delta' for content chunks.
+    Verifies that the chat_stream endpoint correctly yields 'event: delta' events
+    for content chunks, ensuring proper SSE streaming compatibility with the frontend.
     """
 
     # 1. Define Mocks
