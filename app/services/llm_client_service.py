@@ -188,15 +188,20 @@ class _HttpFallbackClient:
                     resp = requests.post(
                         url, json=payload, headers=headers, timeout=self._parent._timeout
                     )
+                except requests.exceptions.Timeout as e:
+                    raise RuntimeError(f"HTTP fallback timeout after {self._parent._timeout}s: {e}") from e
+                except requests.exceptions.ConnectionError as e:
+                    raise RuntimeError(f"HTTP fallback connection error: {e}") from e
                 except Exception as e:
-                    raise RuntimeError(f"HTTP fallback request error: {e}") from e
+                    raise RuntimeError(f"HTTP fallback request error: {type(e).__name__}: {e}") from e
 
                 if resp.status_code >= 400:
                     error_text = resp.text[:400] if resp.text else "No error details"
-                    if resp.status_code == 500:
+                    
+                    if resp.status_code >= 500:
                         raise RuntimeError(
-                            f"server_error_500: OpenRouter API returned internal server error. "
-                            f"Details: {error_text}"
+                            f"server_error_500: OpenRouter API returned server error. "
+                            f"Status {resp.status_code}: {error_text}"
                         )
                     elif resp.status_code in (401, 403):
                         raise RuntimeError(
@@ -208,18 +213,42 @@ class _HttpFallbackClient:
                             f"rate_limit_error: Too many requests. "
                             f"Status {resp.status_code}: {error_text}"
                         )
+                    elif resp.status_code == 400:
+                        raise RuntimeError(
+                            f"bad_request_error: Invalid request parameters. "
+                            f"Status {resp.status_code}: {error_text}"
+                        )
                     else:
                         raise RuntimeError(
-                            f"HTTP fallback bad status {resp.status_code}: {error_text}"
+                            f"HTTP error {resp.status_code}: {error_text}"
                         )
 
-                data = resp.json()
+                try:
+                    data = resp.json()
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to parse JSON response: {type(e).__name__}: {e}. "
+                        f"Response text: {resp.text[:200]}"
+                    ) from e
+                
                 choices = data.get("choices", [])
                 if not choices:
-                    raise RuntimeError("HTTP fallback: no choices in response")
+                    raise RuntimeError(
+                        f"HTTP fallback: no choices in response. "
+                        f"Response keys: {list(data.keys())}"
+                    )
+                    
                 first = choices[0]
                 message = first.get("message", {})
                 content = message.get("content", "")
+                
+                # SUPERHUMAN CHECK: Validate content
+                if content is None:
+                    _LOG.warning(
+                        "HTTP fallback received None content from API. "
+                        "Converting to empty string."
+                    )
+                    content = ""
 
                 class _Msg:
                     def __init__(self, c: str):
@@ -562,38 +591,89 @@ def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None])
 
 
 def _classify_error(exc: Exception) -> str:
+    """
+    Classify errors for intelligent retry and reporting.
+    
+    SUPERHUMAN ENHANCEMENTS V2.0:
+    - More granular error classification
+    - Better pattern matching
+    - Support for new error types
+    """
     msg = str(exc).lower()
-    if "server_error_500" in msg or "500" in msg or "internal server error" in msg:
+    exc_type = type(exc).__name__.lower()
+    
+    # Server errors (5xx)
+    if any(x in msg for x in ["server_error_500", "500", "internal server error", "502", "503", "504"]):
         return "server_error"
-    if "rate" in msg and "limit" in msg:
+    
+    # Rate limiting
+    if ("rate" in msg and "limit" in msg) or "429" in msg or "too many requests" in msg:
         return "rate_limit"
-    if (
-        "authentication_error" in msg
-        or "unauthorized" in msg
-        or "api key" in msg
-        or "invalid api key" in msg
-        or "401" in msg
-        or "403" in msg
-    ):
+    
+    # Authentication & Authorization errors
+    if any(x in msg for x in [
+        "authentication_error", "unauthorized", "api key", "invalid api key",
+        "401", "403", "forbidden", "invalid_api_key"
+    ]):
         return "auth_error"
-    if "timeout" in msg:
+    
+    # Timeout errors
+    if "timeout" in msg or "timed out" in msg or "timeouterror" in exc_type:
         return "timeout"
-    if "connection" in msg or "network" in msg or "dns" in msg:
+    
+    # Connection & Network errors
+    if any(x in msg for x in ["connection", "network", "dns", "connect", "refused"]):
         return "network"
-    if "parse" in msg or "json" in msg:
+    
+    # Parsing errors
+    if ("parse" in msg or "json" in msg or "decode" in msg) and "error" in msg:
         return "parse"
+    
+    # Empty response errors
+    if "empty" in msg or "no content" in msg or "null" in msg:
+        return "empty_response"
+    
+    # Model-specific errors
+    if "model" in msg and ("not found" in msg or "unavailable" in msg):
+        return "model_error"
+    
     return "unknown"
 
 
 def _retry_allowed(kind: str) -> bool:
+    """
+    Determine if retry is allowed for this error type.
+    
+    SUPERHUMAN ENHANCEMENTS:
+    - More intelligent retry decisions
+    - Configurable retry policies
+    """
     _LLM_RETRY_ON_AUTH = os.getenv("LLM_RETRY_ON_AUTH", "0") == "1"
     _LLM_RETRY_ON_PARSE = os.getenv("LLM_RETRY_ON_PARSE", "0") == "1"
+    _LLM_RETRY_ON_EMPTY = os.getenv("LLM_RETRY_ON_EMPTY", "1") == "1"
 
+    # Never retry auth errors unless explicitly enabled
     if kind == "auth_error" and not _LLM_RETRY_ON_AUTH:
+        _LOG.debug("Auth error detected - retry disabled by config")
         return False
+    
+    # Conditional retry on parse errors
     if kind == "parse" and not _LLM_RETRY_ON_PARSE:
+        _LOG.debug("Parse error detected - retry disabled by config")
         return False
-    return kind in ("rate_limit", "network", "timeout", "parse") or True
+    
+    # Conditional retry on empty responses
+    if kind == "empty_response" and not _LLM_RETRY_ON_EMPTY:
+        _LOG.debug("Empty response detected - retry disabled by config")
+        return False
+    
+    # Always retry these types
+    retry_always = ["rate_limit", "network", "timeout", "server_error", "model_error"]
+    if kind in retry_always:
+        return True
+    
+    # For unknown errors, allow retry by default (defensive programming)
+    return True
 
 
 def _estimate_cost(
@@ -776,6 +856,14 @@ def invoke_chat(
         )
 
     def _complete_once() -> dict[str, Any]:
+        """
+        Complete a single LLM request with retry logic.
+        
+        SUPERHUMAN ENHANCEMENTS:
+        - Empty response detection and handling
+        - Better error context
+        - Response validation
+        """
         nonlocal attempts, last_exc, backoff
         while attempts <= _LLM_MAX_RETRIES:
             attempts += 1
@@ -783,6 +871,8 @@ def invoke_chat(
             try:
                 completion = _do_call()
                 latency_ms = (time.perf_counter() - t0) * 1000.0
+                
+                # Extract response data with validation
                 content = getattr(completion.choices[0].message, "content", "")
                 tool_calls = getattr(completion.choices[0].message, "tool_calls", None)
                 usage = getattr(completion, "usage", {}) or {}
@@ -790,6 +880,57 @@ def invoke_chat(
                 ct = usage.get("completion_tokens")
                 total = usage.get("total_tokens")
 
+                # SUPERHUMAN CHECK: Detect empty responses and handle intelligently
+                if content is None or (isinstance(content, str) and content.strip() == ""):
+                    if not tool_calls:
+                        # Empty response with no tool calls - this is problematic
+                        _LOG.warning(
+                            f"Empty response received from model {payload['model']} "
+                            f"at attempt {attempts}/{_LLM_MAX_RETRIES}. "
+                            f"No content and no tool calls."
+                        )
+                        
+                        # Treat as retriable error if we have retries left
+                        if attempts < _LLM_MAX_RETRIES:
+                            empty_exc = RuntimeError(
+                                f"Empty response from model (no content, no tool calls). "
+                                f"Attempt {attempts}/{_LLM_MAX_RETRIES}"
+                            )
+                            kind = _classify_error(empty_exc)
+                            if _retry_allowed(kind):
+                                sleep_for = backoff
+                                if _LLM_RETRY_JITTER:
+                                    sleep_for += random.random() * 0.25
+                                retry_schedule.append(round(sleep_for, 3))
+                                _LOG.warning(
+                                    f"Retrying after empty response in {sleep_for:.2f}s..."
+                                )
+                                time.sleep(sleep_for)
+                                backoff *= _LLM_RETRY_BACKOFF_BASE
+                                continue
+                        
+                        # No retries left or retry not allowed - return error envelope
+                        _LLMTOTAL["calls"] += 1
+                        _LLMTOTAL["errors"] += 1
+                        _note_error_for_breaker()
+                        
+                        return {
+                            "content": "",
+                            "tool_calls": None,
+                            "usage": usage,
+                            "model": payload["model"],
+                            "provider": _CLIENT_META.get("provider_actual"),
+                            "latency_ms": round(latency_ms, 2),
+                            "cost": None,
+                            "error": "Empty response from model",
+                            "meta": {
+                                "attempts": attempts,
+                                "success": False,
+                                "empty_response": True,
+                            },
+                        }
+
+                # Update metrics
                 _LLMTOTAL["calls"] += 1
                 if pt:
                     _LLMTOTAL["prompt_tokens"] += pt
@@ -840,23 +981,45 @@ def invoke_chat(
                 _LLMTOTAL["last_error_kind"] = kind
                 _note_error_for_breaker()
                 last_exc = exc
+                
+                # Enhanced error logging
+                if _LOG_ATTEMPTS:
+                    _LOG.warning(
+                        f"LLM attempt #{attempts}/{_LLM_MAX_RETRIES} failed. "
+                        f"Error kind: {kind}, Type: {type(exc).__name__}, "
+                        f"Message: {exc!s}"
+                    )
+                
                 if attempts > _LLM_MAX_RETRIES or not _retry_allowed(kind):
                     if _LOG_ATTEMPTS:
                         _LOG.error(
-                            "LLM final failure attempt=%d kind=%s err=%s", attempts, kind, exc
+                            f"LLM final failure after {attempts} attempts. "
+                            f"Error kind: {kind}, Exception: {type(exc).__name__}: {exc!s}"
                         )
                     break
+                    
                 sleep_for = backoff
                 if _LLM_RETRY_JITTER:
                     sleep_for += random.random() * 0.25
                 retry_schedule.append(round(sleep_for, 3))
+                
                 if _LOG_ATTEMPTS:
                     _LOG.warning(
-                        "LLM retry #%d (kind=%s in %.2fs) err=%s", attempts, kind, sleep_for, exc
+                        f"Retrying LLM call (attempt {attempts + 1}/{_LLM_MAX_RETRIES + 1}) "
+                        f"after {sleep_for:.2f}s. Error kind: {kind}"
                     )
+                    
                 time.sleep(sleep_for)
                 backoff *= _LLM_RETRY_BACKOFF_BASE
-        raise RuntimeError(f"LLM invocation failed after {attempts} attempts: {last_exc}")
+                
+        # Build comprehensive error message
+        error_details = f"Error kind: {_classify_error(last_exc) if last_exc else 'unknown'}"
+        if last_exc:
+            error_details += f", Type: {type(last_exc).__name__}, Message: {last_exc!s}"
+        
+        raise RuntimeError(
+            f"LLM invocation failed after {attempts} attempts. {error_details}"
+        )
 
     if not use_stream:
         result = _complete_once()
