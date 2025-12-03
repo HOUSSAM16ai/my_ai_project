@@ -478,44 +478,50 @@ def _collect_python_files(root: str) -> tuple[list[str], list[str]]:
 # --------------------------------------------------------------------------------------
 
 
-def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
-    code = _read_file(path)
-    file_sha = _file_hash(path)
-    if not code:
-        return FileModule(
-            path=path,
-            functions=[],
-            classes=[],
-            imports=[],
-            call_names={},
-            file_hash=file_sha,
-            error="empty_or_unreadable",
-        )
+def _empty_file_module(path: str, file_hash: str, error: str) -> FileModule:
+    return FileModule(
+        path=path,
+        functions=[],
+        classes=[],
+        imports=[],
+        call_names={},
+        file_hash=file_hash,
+        error=error,
+    )
 
-    # If prior hash matches and caching could reuse parse (we still parse again if not using incremental storage)
-    try:
-        tree = ast.parse(code)
-    except Exception as e:
-        return FileModule(
-            path=path,
-            functions=[],
-            classes=[],
-            imports=[],
-            call_names={},
-            file_hash=file_sha,
-            error=f"parse_error:{e}",
-        )
 
-    lines = code.splitlines()
-    entrypoint = False
-
-    # Detect entrypoint (approx)
+def _detect_entrypoint(code: str, lines: list[str]) -> bool:
     if "__name__" in code and "__main__" in code:
         # Cheap pattern
         for ln in lines:
             if "if __name__" in ln and "__main__" in ln:
-                entrypoint = True
-                break
+                return True
+    return False
+
+
+def _parse_ast_safely(code: str) -> ast.AST | str:
+    # Returns AST or error string
+    try:
+        return ast.parse(code)
+    except Exception as e:
+        return f"parse_error:{e}"
+
+
+def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
+    code = _read_file(path)
+    file_sha = _file_hash(path)
+
+    if not code:
+        return _empty_file_module(path, file_sha, "empty_or_unreadable")
+
+    # If prior hash matches and caching could reuse parse (we still parse again if not using incremental storage)
+    result = _parse_ast_safely(code)
+    if isinstance(result, str):
+        return _empty_file_module(path, file_sha, result)
+
+    tree = result
+    lines = code.splitlines()
+    entrypoint = _detect_entrypoint(code, lines)
 
     visitor = _DeepIndexVisitor(lines)
     visitor.visit(tree)

@@ -179,71 +179,9 @@ class AIClientFactory:
         timeout: float,
     ) -> Any:
         """Create a simple HTTP-based fallback client"""
-
         try:
-            import requests
-
-            class SimpleFallbackClient:
-                """Minimal HTTP client for AI API calls"""
-
-                def __init__(self, api_key: str, base_url: str, timeout: float):
-                    self.api_key = api_key
-                    self.base_url = base_url
-                    self.timeout = timeout
-                    self._id = str(uuid.uuid4())
-                    self._created_at = time.time()
-
-                class _ChatWrapper:
-                    def __init__(self, parent):
-                        self._parent = parent
-
-                    class _CompletionsWrapper:
-                        def __init__(self, parent):
-                            self._parent = parent
-
-                        def create(self, model: str, messages: list, **kwargs):
-                            """Make API call using requests"""
-                            headers = {
-                                "Authorization": f"Bearer {self._parent._parent.api_key[:10]}...",  # Masked for logging
-                                "Content-Type": "application/json",
-                            }
-
-                            payload = {
-                                "model": model,
-                                "messages": messages,
-                                **kwargs,
-                            }
-
-                            try:
-                                response = requests.post(
-                                    f"{self._parent._parent.base_url}/chat/completions",
-                                    json=payload,
-                                    headers=headers,
-                                    timeout=self._parent._parent.timeout,
-                                )
-                                response.raise_for_status()
-                                return response.json()
-                            except Exception as e:
-                                logger.error(f"API call failed: {e}")
-                                raise
-
-                    @property
-                    def completions(self):
-                        return self._CompletionsWrapper(self)
-
-                @property
-                def chat(self):
-                    return self._ChatWrapper(self)
-
-                def meta(self) -> dict[str, Any]:
-                    return {
-                        "client_id": self._id,
-                        "created_at": self._created_at,
-                        "type": "fallback",
-                    }
-
+            import requests  # noqa: F401
             return SimpleFallbackClient(api_key, base_url, timeout)
-
         except ImportError:
             logger.error("Neither OpenAI SDK nor requests available")
             return AIClientFactory._create_mock_client("no-dependencies")
@@ -251,68 +189,130 @@ class AIClientFactory:
     @staticmethod
     def _create_mock_client(reason: str) -> Any:
         """Create a mock client for testing/development"""
+        return MockClient(reason)
 
-        class MockClient:
-            """Mock client that returns synthetic responses"""
 
-            def __init__(self, reason: str):
-                self.reason = reason
-                self._id = str(uuid.uuid4())
-                self._created_at = time.time()
-                self._is_mock_client = True  # Protocol marker for detection
+class SimpleFallbackClient:
+    """Minimal HTTP client for AI API calls"""
 
-            class _ChatWrapper:
-                def __init__(self, parent):
-                    self._parent = parent
+    def __init__(self, api_key: str, base_url: str, timeout: float):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.timeout = timeout
+        self._id = str(uuid.uuid4())
+        self._created_at = time.time()
 
-                class _CompletionsWrapper:
-                    def __init__(self, parent):
-                        self._parent = parent
+    class _ChatWrapper:
+        def __init__(self, parent):
+            self._parent = parent
 
-                    def create(self, model: str, messages: list, **kwargs):
-                        """Return mock response"""
+        class _CompletionsWrapper:
+            def __init__(self, parent):
+                self._parent = parent
 
-                        class _Message:
-                            def __init__(self, content: str):
-                                self.content = content
-                                self.tool_calls = None
+            def create(self, model: str, messages: list, **kwargs):
+                """Make API call using requests"""
+                import requests
 
-                        class _Choice:
-                            def __init__(self, message):
-                                self.message = message
-                                self.finish_reason = "stop"
-
-                        class _Response:
-                            def __init__(self, choices):
-                                self.choices = choices
-                                self.id = str(uuid.uuid4())
-                                self.model = model
-                                self.usage = {"total_tokens": 100}
-
-                        mock_content = (
-                            f"[MOCK:{self._parent._parent.reason}] Response for model {model}"
-                        )
-                        message = _Message(mock_content)
-                        choice = _Choice(message)
-                        return _Response([choice])
-
-                @property
-                def completions(self):
-                    return self._CompletionsWrapper(self)
-
-            @property
-            def chat(self):
-                return self._ChatWrapper(self)
-
-            def meta(self) -> dict[str, Any]:
-                return {
-                    "client_id": self._id,
-                    "created_at": self._created_at,
-                    "type": "mock",
-                    "reason": self.reason,
+                headers = {
+                    "Authorization": f"Bearer {self._parent._parent.api_key[:10]}...",  # Masked for logging
+                    "Content-Type": "application/json",
                 }
 
-        return MockClient(reason)
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    **kwargs,
+                }
+
+                try:
+                    response = requests.post(
+                        f"{self._parent._parent.base_url}/chat/completions",
+                        json=payload,
+                        headers=headers,
+                        timeout=self._parent._parent.timeout,
+                    )
+                    response.raise_for_status()
+                    return response.json()
+                except Exception as e:
+                    logger.error(f"API call failed: {e}")
+                    raise
+
+        @property
+        def completions(self):
+            return self._CompletionsWrapper(self)
+
+    @property
+    def chat(self):
+        return self._ChatWrapper(self)
+
+    def meta(self) -> dict[str, Any]:
+        return {
+            "client_id": self._id,
+            "created_at": self._created_at,
+            "type": "fallback",
+        }
+
+
+class MockClient:
+    """Mock client that returns synthetic responses"""
+
+    def __init__(self, reason: str):
+        self.reason = reason
+        self._id = str(uuid.uuid4())
+        self._created_at = time.time()
+        self._is_mock_client = True  # Protocol marker for detection
+
+    class _ChatWrapper:
+        def __init__(self, parent):
+            self._parent = parent
+
+        class _CompletionsWrapper:
+            def __init__(self, parent):
+                self._parent = parent
+
+            def create(self, model: str, messages: list, **kwargs):
+                """Return mock response"""
+
+                class _Message:
+                    def __init__(self, content: str):
+                        self.content = content
+                        self.tool_calls = None
+
+                class _Choice:
+                    def __init__(self, message):
+                        self.message = message
+                        self.finish_reason = "stop"
+
+                class _Response:
+                    def __init__(self, choices):
+                        self.choices = choices
+                        self.id = str(uuid.uuid4())
+                        self.model = model
+                        self.usage = {"total_tokens": 100}
+
+                mock_content = (
+                    f"[MOCK:{self._parent._parent.reason}] Response for model {model}"
+                )
+                message = _Message(mock_content)
+                choice = _Choice(message)
+                return _Response([choice])
+
+        @property
+        def completions(self):
+            return self._CompletionsWrapper(self)
+
+    @property
+    def chat(self):
+        return self._ChatWrapper(self)
+
+    def meta(self) -> dict[str, Any]:
+        return {
+            "client_id": self._id,
+            "created_at": self._created_at,
+            "type": "mock",
+            "reason": self.reason,
+        }
 
     @staticmethod
     def clear_cache():
