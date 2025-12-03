@@ -3,7 +3,6 @@
 The Meta-Kernel, the central nervous system of Reality Kernel v2.
 """
 
-from . import compat_collapse  # Import the module itself
 from .config_v2 import ConfigV2, get_settings
 from .logging_spine import get_logger, setup_logging
 from .state_engine import StateEngine
@@ -22,8 +21,8 @@ class MetaKernel:
         self.config: ConfigV2 = get_settings()
         self.logger = get_logger("reality_kernel")
 
-        # Initialize the compatibility layer by passing 'self' (the kernel instance)
-        compat_collapse.initialize_compat_layer(self)
+        # Compatibility layer removed - Flask is no longer supported
+        # compat_collapse.initialize_compat_layer(self)
 
         self.logger.info("Reality Kernel v2 is online and fully operational.")
 
