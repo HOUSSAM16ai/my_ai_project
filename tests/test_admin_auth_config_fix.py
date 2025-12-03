@@ -2,31 +2,17 @@ from unittest.mock import MagicMock, patch
 
 import jwt
 import pytest
-from fastapi import HTTPException, Request
+from fastapi import HTTPException
 
-# We need to test the logic inside get_current_user_id specifically regarding key usage.
-# Since we modified the code to use get_settings() at runtime (inside the function),
-# we don't need to reload the module!
-# My fix moved `settings = get_settings()` inside `get_current_user_id`.
-# Wait, let me double check my fix.
-# Yes:
-#     token = parts[1]
-#     settings = get_settings()
-#     try:
-#         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-
-# This makes testing MUCH easier. We can just mock get_settings.
-
+from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+from app.config.settings import AppSettings
 
 @pytest.mark.asyncio
 async def test_admin_auth_uses_centralized_config():
     """
-    Verifies that the admin router uses the SECRET_KEY from AppSettings
+    Verifies that the AdminChatBoundaryService uses the SECRET_KEY from AppSettings
     instead of a hardcoded default or local env var.
     """
-    from app.api.routers.admin import get_current_user_id
-    from app.config.settings import AppSettings
-
     # 1. Setup Mock Settings
     mock_secret = "dynamic-settings-secret-key"
     mock_settings = MagicMock(spec=AppSettings)
@@ -39,22 +25,29 @@ async def test_admin_auth_uses_centralized_config():
     old_default_key = "your-super-secret-key"
     invalid_token = jwt.encode({"sub": "123"}, old_default_key, algorithm="HS256")
 
-    # 4. Mock Request
-    req_valid = MagicMock(spec=Request)
-    req_valid.headers = {"Authorization": f"Bearer {valid_token}"}
+    # 4. Patch dependencies in app.services.admin_chat_boundary_service
+    with patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings), \
+         patch("app.services.admin_chat_boundary_service.get_service_boundary") as mock_get_service, \
+         patch("app.services.admin_chat_boundary_service.get_policy_boundary"):
 
-    req_invalid = MagicMock(spec=Request)
-    req_invalid.headers = {"Authorization": f"Bearer {invalid_token}"}
+        # Setup mock service boundary to avoid init failures
+        mock_service_boundary = MagicMock()
+        mock_get_service.return_value = mock_service_boundary
 
-    # 5. Patch get_settings to return our mock
-    with patch("app.api.routers.admin.get_settings", return_value=mock_settings):
-        # Case A: Valid Token (Signed with Settings Key) -> Should Succeed
-        user_id = get_current_user_id(req_valid)
+        # We need a mock DB session for the service init
+        mock_db = MagicMock()
+
+        # Instantiate the service. This calls get_settings() which is now mocked.
+        service = AdminChatBoundaryService(db=mock_db)
+
+        # Case A: Valid Token -> Should Return User ID
+        auth_header_valid = f"Bearer {valid_token}"
+        user_id = service.validate_auth_header(auth_header_valid)
         assert user_id == 123
 
-        # Case B: Invalid Token (Signed with Old Default) -> Should Fail
-        # This proves we are NOT using the hardcoded default anymore.
+        # Case B: Invalid Token -> Should Raise HTTPException
+        auth_header_invalid = f"Bearer {invalid_token}"
         with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(req_invalid)
+            service.validate_auth_header(auth_header_invalid)
         assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Invalid token"
+        assert "Invalid token" in exc_info.value.detail
