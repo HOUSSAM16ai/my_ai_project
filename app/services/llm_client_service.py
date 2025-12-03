@@ -557,11 +557,11 @@ def get_llm_client() -> Any:
     if forced_mock:
         # Bypass factory logic if forced mock is requested via legacy env var
         if _CLIENT_SINGLETON is None or not is_mock_client(_CLIENT_SINGLETON):
-             # We can't easily ask factory for "forced mock", so we use legacy MockLLMClient directly
-             # or better, use factory's _create_mock_client if exposed, but it is private.
-             # We will stick to legacy MockLLMClient for forced mode to satisfy tests
-             _CLIENT_SINGLETON = MockLLMClient("forced-mock-flag")
-             _CLIENT_META.update({"reason": "forced"})
+            # We can't easily ask factory for "forced mock", so we use legacy MockLLMClient directly
+            # or better, use factory's _create_mock_client if exposed, but it is private.
+            # We will stick to legacy MockLLMClient for forced mode to satisfy tests
+            _CLIENT_SINGLETON = MockLLMClient("forced-mock-flag")
+            _CLIENT_META.update({"reason": "forced"})
         return _CLIENT_SINGLETON
 
     if disable_cache:
