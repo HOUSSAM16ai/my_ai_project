@@ -27,6 +27,7 @@ ARCHITECTURE:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 import time
@@ -72,47 +73,63 @@ class AIClientFactory:
     ) -> Any:
         """
         Create or retrieve an AI client.
-
-        Args:
-            provider: Provider name ('openrouter', 'openai', etc.)
-            api_key: API key for the provider
-            base_url: Base URL for API calls
-            timeout: Request timeout in seconds
-            use_cache: Whether to use cached client
-
-        Returns:
-            AI client instance
+        Refactored to reduce complexity.
         """
-        # Get configuration if not provided
+        provider, api_key, base_url = AIClientFactory._resolve_config(provider, api_key, base_url)
+
+        if not api_key:
+            logger.info("No API key available, defaulting to mock client.")
+            return AIClientFactory._create_mock_client("no-api-key")
+
+        cache_key = AIClientFactory._generate_cache_key(provider, api_key, base_url)
+
+        if use_cache:
+            cached = AIClientFactory._get_from_cache(cache_key)
+            if cached:
+                return cached
+
+        return AIClientFactory._create_and_cache(
+            provider, api_key, base_url, timeout, cache_key, use_cache
+        )
+
+    @staticmethod
+    def _resolve_config(
+        provider: str | None, api_key: str | None, base_url: str | None
+    ) -> tuple[str, str | None, str]:
         if not provider or not api_key:
             config = get_ai_config()
             provider = provider or "openrouter"
             api_key = api_key or config.openrouter_api_key
             base_url = base_url or "https://openrouter.ai/api/v1"
+        return provider, api_key, base_url
 
-        # If still no API key, return a mock client (preserve legacy behavior)
-        if not api_key:
-            logger.info("No API key available, defaulting to mock client.")
-            return AIClientFactory._create_mock_client("no-api-key")
-
-        # Create cache key (use hash of API key for security)
-        import hashlib
-
+    @staticmethod
+    def _generate_cache_key(provider: str, api_key: str, base_url: str) -> str:
         api_key_hash = hashlib.sha256(api_key.encode() if api_key else b"none").hexdigest()[:16]
-        cache_key = f"{provider}:{api_key_hash}:{base_url}"
+        return f"{provider}:{api_key_hash}:{base_url}"
 
-        # Check cache
-        if use_cache and cache_key in _CLIENT_CACHE:
-            logger.debug(f"Returning cached client for {provider}")
+    @staticmethod
+    def _get_from_cache(cache_key: str) -> Any | None:
+        if cache_key in _CLIENT_CACHE:
+            logger.debug(f"Returning cached client for {cache_key.split(':')[0]}")
             return _CLIENT_CACHE[cache_key]
+        return None
 
+    @staticmethod
+    def _create_and_cache(
+        provider: str,
+        api_key: str,
+        base_url: str,
+        timeout: float,
+        cache_key: str,
+        use_cache: bool,
+    ) -> Any:
         # Thread-safe client creation
         with _CLIENT_LOCK:
             # Double-check after acquiring lock
             if use_cache and cache_key in _CLIENT_CACHE:
                 return _CLIENT_CACHE[cache_key]
 
-            # Create new client
             client = AIClientFactory._create_new_client(
                 provider=provider,
                 api_key=api_key,
@@ -120,16 +137,13 @@ class AIClientFactory:
                 timeout=timeout,
             )
 
-            # Cache the client
             if use_cache:
                 _CLIENT_CACHE[cache_key] = client
-
-            # Store metadata
-            _CLIENT_META[cache_key] = {
-                "provider": provider,
-                "created_at": time.time(),
-                "client_id": str(uuid.uuid4()),
-            }
+                _CLIENT_META[cache_key] = {
+                    "provider": provider,
+                    "created_at": time.time(),
+                    "client_id": str(uuid.uuid4()),
+                }
 
             logger.info(f"Created new AI client for provider: {provider}")
             return client
@@ -142,7 +156,6 @@ class AIClientFactory:
         timeout: float,
     ) -> Any:
         """Create a new client instance based on provider"""
-
         try:
             # Try to use OpenAI SDK
             import openai
@@ -181,6 +194,7 @@ class AIClientFactory:
         """Create a simple HTTP-based fallback client"""
         try:
             import requests  # noqa: F401
+
             return SimpleFallbackClient(api_key, base_url, timeout)
         except ImportError:
             logger.error("Neither OpenAI SDK nor requests available")
@@ -190,6 +204,19 @@ class AIClientFactory:
     def _create_mock_client(reason: str) -> Any:
         """Create a mock client for testing/development"""
         return MockClient(reason)
+
+    @staticmethod
+    def clear_cache():
+        """Clear the client cache"""
+        with _CLIENT_LOCK:
+            _CLIENT_CACHE.clear()
+            _CLIENT_META.clear()
+            logger.info("Client cache cleared")
+
+    @staticmethod
+    def get_cached_clients() -> dict[str, Any]:
+        """Get information about cached clients"""
+        return dict(_CLIENT_META)
 
 
 class SimpleFallbackClient:
@@ -291,9 +318,7 @@ class MockClient:
                         self.model = model
                         self.usage = {"total_tokens": 100}
 
-                mock_content = (
-                    f"[MOCK:{self._parent._parent.reason}] Response for model {model}"
-                )
+                mock_content = f"[MOCK:{self._parent._parent.reason}] Response for model {model}"
                 message = _Message(mock_content)
                 choice = _Choice(message)
                 return _Response([choice])
@@ -313,19 +338,6 @@ class MockClient:
             "type": "mock",
             "reason": self.reason,
         }
-
-    @staticmethod
-    def clear_cache():
-        """Clear the client cache"""
-        with _CLIENT_LOCK:
-            _CLIENT_CACHE.clear()
-            _CLIENT_META.clear()
-            logger.info("Client cache cleared")
-
-    @staticmethod
-    def get_cached_clients() -> dict[str, Any]:
-        """Get information about cached clients"""
-        return dict(_CLIENT_META)
 
 
 # =============================================================================
