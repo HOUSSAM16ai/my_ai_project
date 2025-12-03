@@ -16,6 +16,7 @@ Ultra Deep Structural / Semantic-Oriented Indexer (Enhanced v2)
 7. تصميم دفاعي (Graceful Degradation) – أي فشل لا يكسر المنظومة بل يُسجل error.
 
 REFACTORED: Tag and layer detection extracted to separate modules using design patterns.
+OPTIMIZED: Single-pass AST Visitor for O(N) complexity analysis.
 
 ENV FLAGS (قابلة للضبط)
 ----------------------------------------------------------------
@@ -238,33 +239,6 @@ def _hash_norm_function(code: str, prefix: int) -> str:
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:prefix]
 
 
-def _estimate_complexity(node: ast.AST) -> int:
-    """
-    بسيط / محسّن قليلاً: حساب فروع التحكم + وزن بسيط للمركبات المنطقية.
-    """
-    complexity = 1
-    for child in ast.walk(node):
-        if isinstance(
-            child,
-            ast.If
-            | ast.For
-            | ast.While
-            | ast.Try
-            | ast.With
-            | ast.AsyncFor
-            | ast.AsyncWith
-            | ast.Match,
-        ):
-            complexity += 1
-        elif isinstance(child, ast.BoolOp):
-            complexity += max(1, len(getattr(child, "values", [])) - 1)
-        elif isinstance(
-            child, ast.ExceptHandler | ast.ListComp | ast.SetComp | ast.GeneratorExp | ast.DictComp
-        ):
-            complexity += 1
-    return complexity
-
-
 def _categorize(code: str) -> list[str]:
     """
     Refactored: Delegates to extracted tag detection module.
@@ -289,6 +263,167 @@ def _service_candidate(path: str, code: str) -> bool:
     if "services" in path or "service" in path:
         return True
     return bool(any(x in lower for x in ("fastapi(", "flask(", "blueprint(", "apirouter(")))
+
+# --------------------------------------------------------------------------------------
+# Visitor Implementation (Optimized O(N))
+# --------------------------------------------------------------------------------------
+
+class _DeepIndexVisitor(ast.NodeVisitor):
+    def __init__(self, lines: list[str]):
+        self.lines = lines
+        self.functions: list[FunctionInfo] = []
+        self.classes: list[ClassInfo] = []
+        self.imports: list[str] = []
+        self.call_counter: Counter = Counter()
+        # Stack of function contexts: {name, lineno, end, hash, tags, complexity, recursive, calls_out}
+        self.func_stack: list[dict[str, Any]] = []
+
+    def _inc_complexity(self, amount: int = 1) -> None:
+        for ctx in self.func_stack:
+            ctx['complexity'] += amount
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        start = node.lineno
+        end = getattr(node, "end_lineno", start)
+        slice_src = "\n".join(self.lines[start - 1 : end])
+        h = _hash_norm_function(slice_src, CONFIG["DUP_HASH_PREFIX"])
+        tags = _categorize(slice_src)
+
+        ctx = {
+            'name': node.name,
+            'lineno': start,
+            'end_lineno': end,
+            'loc': end - start + 1,
+            'hash': h,
+            'tags': tags,
+            'complexity': 1,
+            'recursive': False,
+            'calls_out': []
+        }
+        self.func_stack.append(ctx)
+
+        self.generic_visit(node)
+
+        finished_ctx = self.func_stack.pop()
+        self.functions.append(
+            FunctionInfo(
+                name=finished_ctx['name'],
+                lineno=finished_ctx['lineno'],
+                end_lineno=finished_ctx['end_lineno'],
+                loc=finished_ctx['loc'],
+                hash=finished_ctx['hash'],
+                complexity=finished_ctx['complexity'],
+                recursive=finished_ctx['recursive'],
+                tags=finished_ctx['tags'],
+                calls_out=finished_ctx['calls_out'],
+            )
+        )
+
+    # Complexity increasers
+    def visit_If(self, node: ast.If) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_For(self, node: ast.For) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_While(self, node: ast.While) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_Try(self, node: ast.Try) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_With(self, node: ast.With) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_Match(self, node: ast.Match) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_BoolOp(self, node: ast.BoolOp) -> None:
+        self._inc_complexity(max(1, len(node.values) - 1))
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_ListComp(self, node: ast.ListComp) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_SetComp(self, node: ast.SetComp) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_DictComp(self, node: ast.DictComp) -> None:
+        self._inc_complexity()
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        fn_name = None
+        if isinstance(node.func, ast.Name):
+            fn_name = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            fn_name = node.func.attr
+
+        if fn_name:
+            self.call_counter[fn_name] += 1
+            for ctx in self.func_stack:
+                ctx['calls_out'].append(fn_name)
+                if isinstance(node.func, ast.Name) and fn_name == ctx['name']:
+                    ctx['recursive'] = True
+
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        start = node.lineno
+        end = getattr(node, "end_lineno", start)
+        bases = []
+        for b in node.bases:
+            if isinstance(b, ast.Name):
+                bases.append(b.id)
+            elif isinstance(b, ast.Attribute):
+                bases.append(b.attr)
+            else:
+                bases.append(type(b).__name__)
+
+        self.classes.append(
+            ClassInfo(
+                name=node.name,
+                lineno=start,
+                end_lineno=end,
+                loc=(end - start + 1),
+                bases=bases
+            )
+        )
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            self.imports.append(alias.name)
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.module:
+            self.imports.append(node.module)
+        self.generic_visit(node)
 
 
 # --------------------------------------------------------------------------------------
@@ -374,10 +509,6 @@ def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
         )
 
     lines = code.splitlines()
-    functions: list[FunctionInfo] = []
-    classes: list[ClassInfo] = []
-    imports: list[str] = []
-    call_counter = Counter()
     entrypoint = False
 
     # Detect entrypoint (approx)
@@ -388,79 +519,15 @@ def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
                 entrypoint = True
                 break
 
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            start = node.lineno
-            end = getattr(node, "end_lineno", start)
-            slice_src = "\n".join(lines[start - 1 : end])
-            h = _hash_norm_function(slice_src, CONFIG["DUP_HASH_PREFIX"])
-            cx = _estimate_complexity(node)
-            recursive = any(
-                isinstance(ch, ast.Call)
-                and isinstance(ch.func, ast.Name)
-                and ch.func.id == node.name
-                for ch in ast.walk(node)
-            )
-            tags = _categorize(slice_src)
-            calls_out = []
-            for ch in ast.walk(node):
-                if isinstance(ch, ast.Call):
-                    # capture name / attribute tail
-                    if isinstance(ch.func, ast.Name):
-                        calls_out.append(ch.func.id)
-                    elif isinstance(ch.func, ast.Attribute):
-                        calls_out.append(ch.func.attr)
-            functions.append(
-                FunctionInfo(
-                    name=node.name,
-                    lineno=start,
-                    end_lineno=end,
-                    loc=(end - start + 1),
-                    hash=h,
-                    complexity=cx,
-                    recursive=recursive,
-                    tags=tags,
-                    calls_out=calls_out,
-                )
-            )
-        elif isinstance(node, ast.ClassDef):
-            start = node.lineno
-            end = getattr(node, "end_lineno", start)
-            bases = []
-            for b in node.bases:
-                if isinstance(b, ast.Name):
-                    bases.append(b.id)
-                elif isinstance(b, ast.Attribute):
-                    bases.append(b.attr)
-                else:
-                    bases.append(type(b).__name__)
-            classes.append(
-                ClassInfo(
-                    name=node.name, lineno=start, end_lineno=end, loc=(end - start + 1), bases=bases
-                )
-            )
-        elif isinstance(node, ast.Import | ast.ImportFrom):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.append(alias.name)
-            else:
-                if node.module:
-                    imports.append(node.module)
-        elif isinstance(node, ast.Call):
-            fn_name = None
-            if isinstance(node.func, ast.Name):
-                fn_name = node.func.id
-            elif isinstance(node.func, ast.Attribute):
-                fn_name = node.func.attr
-            if fn_name:
-                call_counter[fn_name] += 1
+    visitor = _DeepIndexVisitor(lines)
+    visitor.visit(tree)
 
     return FileModule(
         path=path,
-        functions=functions,
-        classes=classes,
-        imports=imports,
-        call_names=dict(call_counter),
+        functions=visitor.functions,
+        classes=visitor.classes,
+        imports=visitor.imports,
+        call_names=dict(visitor.call_counter),
         file_hash=file_sha,
         entrypoint=entrypoint,
         loc=len(lines),
