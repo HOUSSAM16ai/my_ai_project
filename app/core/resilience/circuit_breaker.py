@@ -133,6 +133,37 @@ class CircuitBreaker:
                 return True
             return False
     
+    def can_execute(self) -> tuple[bool, str]:
+        """
+        Legacy compatibility method.
+        
+        Returns:
+            Tuple of (can_execute, message)
+        """
+        with self._lock:
+            current_state = self._state
+            now = time.time()
+            
+            if current_state == CircuitState.CLOSED:
+                return True, "ok"
+            
+            if current_state == CircuitState.OPEN:
+                time_since_failure = now - self._last_failure_time
+                if time_since_failure >= self.config.timeout:
+                    logger.info(f"Circuit '{self.name}' entering HALF_OPEN state")
+                    self._state = CircuitState.HALF_OPEN
+                    self._half_open_calls = 0
+                    self._success_count = 0
+                    return True, "ok"
+                remaining = int(self.config.timeout - time_since_failure)
+                return False, f"Circuit open. Retry after {remaining}s"
+            
+            # HALF_OPEN state
+            if self._half_open_calls < self.config.half_open_max_calls:
+                self._half_open_calls += 1
+                return True, "ok"
+            return False, "Circuit half-open, max test calls reached"
+    
     def record_success(self):
         """Record a successful call"""
         with self._lock:

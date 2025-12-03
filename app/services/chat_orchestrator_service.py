@@ -45,6 +45,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
+# Use centralized circuit breaker
+from app.core.resilience import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitState,
+    get_circuit_breaker,
+)
+
 if TYPE_CHECKING:
     from app.core.ai_gateway import AIClient
 
@@ -83,96 +91,27 @@ class ChatTelemetry:
 # =============================================================================
 # CIRCUIT BREAKER (قاطع الدائرة)
 # =============================================================================
-@dataclass
-class CircuitBreakerConfig:
-    """Configuration for circuit breaker."""
-
-    failure_threshold: int = 5
-    recovery_timeout: float = 30.0
-    half_open_max_calls: int = 3
-
-
-class CircuitState(Enum):
-    """Circuit breaker states."""
-
-    CLOSED = "closed"
-    OPEN = "open"
-    HALF_OPEN = "half_open"
-
-
-@dataclass
-class CircuitBreaker:
-    """Circuit breaker for fault tolerance."""
-
-    name: str
-    config: CircuitBreakerConfig = field(default_factory=CircuitBreakerConfig)
-    state: CircuitState = CircuitState.CLOSED
-    failure_count: int = 0
-    last_failure_time: float = 0.0
-    half_open_calls: int = 0
-
-    def can_execute(self) -> tuple[bool, str]:
-        """Check if execution is allowed."""
-        now = time.time()
-
-        if self.state == CircuitState.CLOSED:
-            return True, "ok"
-
-        if self.state == CircuitState.OPEN:
-            if now - self.last_failure_time >= self.config.recovery_timeout:
-                self.state = CircuitState.HALF_OPEN
-                self.half_open_calls = 0
-                logger.info(f"Circuit {self.name} transitioning to HALF_OPEN")
-                return True, "ok"
-            remaining = int(self.config.recovery_timeout - (now - self.last_failure_time))
-            return False, f"Circuit open. Retry after {remaining}s"
-
-        if self.state == CircuitState.HALF_OPEN:
-            if self.half_open_calls < self.config.half_open_max_calls:
-                self.half_open_calls += 1
-                return True, "ok"
-            return False, "Circuit half-open, max test calls reached"
-
-        return True, "ok"
-
-    def record_success(self):
-        """Record successful execution."""
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.CLOSED
-            self.failure_count = 0
-            logger.info(f"Circuit {self.name} CLOSED after successful recovery")
-        elif self.state == CircuitState.CLOSED:
-            self.failure_count = 0
-
-    def record_failure(self):
-        """Record failed execution."""
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.OPEN
-            logger.warning(f"Circuit {self.name} OPEN after half-open failure")
-        elif self.state == CircuitState.CLOSED:
-            if self.failure_count >= self.config.failure_threshold:
-                self.state = CircuitState.OPEN
-                logger.warning(f"Circuit {self.name} OPEN after {self.failure_count} failures")
-
+# NOTE: Circuit breaker logic moved to app/core/resilience/circuit_breaker.py
+# This section is kept for backward compatibility but delegates to centralized module
 
 class CircuitBreakerRegistry:
-    """Registry for circuit breakers per tool."""
-
-    _breakers: ClassVar[dict[str, CircuitBreaker]] = {}
+    """
+    Registry for circuit breakers per tool.
+    
+    DEPRECATED: This class now delegates to the centralized CircuitBreakerRegistry
+    in app.core.resilience. Use get_circuit_breaker() directly instead.
+    """
 
     @classmethod
     def get(cls, name: str) -> CircuitBreaker:
-        if name not in cls._breakers:
-            cls._breakers[name] = CircuitBreaker(name=name)
-        return cls._breakers[name]
+        """Get circuit breaker from centralized registry."""
+        return get_circuit_breaker(name)
 
     @classmethod
     def reset_all(cls):
         """Reset all circuit breakers (for testing)."""
-        cls._breakers.clear()
+        from app.core.resilience import reset_all_circuit_breakers
+        reset_all_circuit_breakers()
 
 
 # =============================================================================

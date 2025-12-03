@@ -110,7 +110,8 @@ class HTTPClientFactory:
                 
             except ImportError:
                 logger.error("httpx not available, cannot create HTTP client")
-                raise RuntimeError("httpx library is required for HTTP clients")
+                # Return a mock client for development/testing
+                return HTTPClientFactory._create_mock_http_client(name)
     
     @staticmethod
     async def close_client(name: str = "default"):
@@ -148,6 +149,34 @@ class HTTPClientFactory:
             key: {"created": True}
             for key in _HTTP_CLIENTS.keys()
         }
+    
+    @staticmethod
+    def _create_mock_http_client(name: str) -> Any:
+        """Create a mock HTTP client for testing/development when httpx unavailable"""
+        
+        class MockHTTPClient:
+            """Mock HTTP client for development"""
+            
+            def __init__(self, name: str):
+                self.name = name
+                self._closed = False
+            
+            async def get(self, url: str, **kwargs):
+                """Mock GET request"""
+                raise RuntimeError("httpx not available - mock client only")
+            
+            async def post(self, url: str, **kwargs):
+                """Mock POST request"""
+                raise RuntimeError("httpx not available - mock client only")
+            
+            async def aclose(self):
+                """Mock close"""
+                self._closed = True
+            
+            def __repr__(self):
+                return f"MockHTTPClient(name={self.name})"
+        
+        return MockHTTPClient(name)
 
 
 # =============================================================================
