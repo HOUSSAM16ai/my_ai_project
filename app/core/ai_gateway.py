@@ -285,12 +285,13 @@ class NeuralRoutingMesh:
         # Ensure we strictly respect the cooldown even if Router suggests it
         final_nodes = []
         for mid in ranked_ids:
-             if mid not in self.nodes_map: continue
-             node = self.nodes_map[mid]
-             # Check Smart Cooldown (Double check for safety)
-             if node.rate_limit_cooldown_until > now:
-                 continue
-             final_nodes.append(node)
+            if mid not in self.nodes_map:
+                continue
+            node = self.nodes_map[mid]
+            # Check Smart Cooldown (Double check for safety)
+            if node.rate_limit_cooldown_until > now:
+                continue
+            final_nodes.append(node)
 
         return final_nodes
 
