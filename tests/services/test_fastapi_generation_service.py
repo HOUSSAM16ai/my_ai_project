@@ -30,24 +30,44 @@ from app.services.fastapi_generation_service import (
 
 @pytest.fixture
 def mock_llm_client():
-    with patch("app.services.fastapi_generation_service.get_llm_client") as mock:
+    # Patch get_llm_client in BOTH consuming modules because they use "from ... import ..."
+    # causing the function to be bound at import time.
+    with patch("app.services.fastapi_generation_service.get_llm_client") as mock1, \
+         patch("app.services.task_executor_refactored.get_llm_client") as mock2:
+
         client_instance = MagicMock()
-        mock.return_value = client_instance
+        # Configure the mock to return a mock response structure by default to avoid NoneType errors
+        # if code tries to access properties immediately
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Default Mock Content", tool_calls=None))]
+        client_instance.chat.completions.create.return_value = mock_response
+
+        mock1.return_value = client_instance
+        mock2.return_value = client_instance
         yield client_instance
 
 
 @pytest.fixture
 def mock_db_models():
+    # Patch in both locations to ensure TaskExecutor uses the mocks
+    # finalize_task is NOT imported in task_executor_refactored, so we don't patch it there.
     with (
-        patch("app.services.fastapi_generation_service.log_mission_event") as log_mock,
-        patch("app.services.fastapi_generation_service.finalize_task") as finalize_mock,
+        patch("app.services.fastapi_generation_service.log_mission_event") as log_mock1,
+        patch("app.services.task_executor_refactored.log_mission_event") as log_mock2,
+        patch("app.services.fastapi_generation_service.finalize_task") as finalize_mock1,
     ):
-        yield log_mock, finalize_mock
+        # We assume TaskExecutor uses the one in task_executor_refactored
+        # And Service uses the one in fastapi_generation_service
+        # We yield the ones that are actually used by the code under test
+        yield log_mock2, finalize_mock1
 
 
 @pytest.fixture
 def service():
-    return MaestroGenerationService()
+    # Patch _commit to prevent DB errors during tests
+    svc = MaestroGenerationService()
+    svc._commit = MagicMock()
+    return svc
 
 
 # --- Existing tests ---
@@ -207,7 +227,8 @@ def test_execute_task_with_tools(service, mock_llm_client, mock_db_models):
         MagicMock(choices=[MagicMock(message=msg2)]),
     ]
 
-    with patch("app.services.fastapi_generation_service._invoke_tool") as mock_invoke:
+    # StepExecutor has its own _invoke_tool method. We should patch that class method.
+    with patch("app.services.task_executor_refactored.StepExecutor._invoke_tool") as mock_invoke:
         mock_invoke.return_value = MagicMock(to_dict=lambda: {"ok": True})
         with (
             patch(
@@ -245,8 +266,8 @@ def test_execute_task_max_steps_exhausted(service, mock_llm_client, mock_db_mode
     ]
 
     with (
-        patch("app.services.fastapi_generation_service._cfg", return_value=2),
-        patch("app.services.fastapi_generation_service._invoke_tool") as invoke_mock,
+        patch("app.services.task_executor_refactored.StepExecutor._invoke_tool") as invoke_mock,
+        patch("app.services.task_executor_refactored.StepExecutor._invoke_tool") as invoke_mock,
         patch(
             "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
             side_effect=lambda x: x,
@@ -256,7 +277,11 @@ def test_execute_task_max_steps_exhausted(service, mock_llm_client, mock_db_mode
         ),
     ):
         invoke_mock.return_value = MagicMock(to_dict=lambda: {"ok": True})
-        service.execute_task(task)
+
+        # Safer way: patch the context initialization or env var
+        with patch.dict(os.environ, {"AGENT_MAX_STEPS": "2"}):
+             service.execute_task(task)
+
         assert task.result["final_reason"] == "max_steps_exhausted"
 
 
@@ -277,7 +302,7 @@ def test_execute_task_stagnation(service, mock_llm_client, mock_db_models):
     ]
 
     with (
-        patch("app.services.fastapi_generation_service._invoke_tool") as invoke_mock,
+        patch("app.services.task_executor_refactored.StepExecutor._invoke_tool") as invoke_mock,
         patch(
             "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
             side_effect=lambda x: x,
@@ -289,6 +314,43 @@ def test_execute_task_stagnation(service, mock_llm_client, mock_db_models):
     ):
         invoke_mock.return_value = MagicMock(to_dict=lambda: {"ok": True})
         service.execute_task(task)
+
+        # Stagnation requires previous tool list to match current.
+        # The test sets up 1 call. It needs a history.
+        # The refactored TaskExecutor initializes context.
+        # We need to simulate a previous state where "t" was used.
+        # But execute_task starts fresh. Stagnation check happens inside the loop
+        # comparing current step tools to previous step tools.
+
+        # If the LLM returns the same tool call twice in a row, it triggers stagnation?
+        # StepExecutor logic:
+        # if _is_stagnation(self.ctx.previous_tools, current_list): ...
+
+        # In the first step, previous_tools is empty. current_list is ["t"]. No stagnation.
+        # We need at least 2 steps for stagnation to trigger (step 1: use T, step 2: use T).
+
+        # The mock setup returns 1 message with tool call.
+        # We need it to return 2 messages, both with same tool call.
+
+        # Wait, the previous test failure was:
+        # E           AssertionError: assert 'exception' == 'stagnation_detected'
+        # E             - stagnation_detected
+        # E             + exception
+
+        # This means an exception occurred. Likely "AttributeError: ... _build_system_prompt"
+        # which I fixed. Now I am fixing logic assuming the exception is gone.
+
+        # Let's verify the stagnation logic in the test.
+        # If the test relies on one step, stagnation won't trigger.
+        # But if the loop runs multiple times?
+        # The mock returns the same thing every time if not side_effect list?
+        # The test setup:
+        # mock_llm_client.chat.completions.create.return_value.choices[0].message.tool_calls = [MockToolCall()]
+        # This implies infinite same response.
+
+        # The loop runs. Step 0: prev=[], curr=["t"]. End step: prev=["t"].
+        # Step 1: prev=["t"], curr=["t"]. Stagnation!
+
         assert task.result["final_reason"] == "stagnation_detected"
 
 
@@ -386,7 +448,7 @@ def test_execute_task_tool_call_limit(service, mock_llm_client, mock_db_models):
 
     with (
         patch.dict(os.environ, {"MAESTRO_TOOL_CALL_LIMIT": "1"}),
-        patch("app.services.fastapi_generation_service._invoke_tool") as mock_invoke,
+        patch("app.services.task_executor_refactored.StepExecutor._invoke_tool") as mock_invoke,
         patch(
             "app.services.fastapi_generation_service.agent_tools.resolve_tool_name",
             side_effect=lambda x: x,
@@ -407,9 +469,46 @@ def test_execute_task_tool_call_limit(service, mock_llm_client, mock_db_models):
 
 def test_execute_task_catastrophic_failure(service, mock_llm_client, mock_db_models):
     task = MagicMock()
+    # We need to ensure that get_llm_client (which is patched) returns the mock
+    # that raises the error.
+    # The fixture mock_llm_client is the instance returned by get_llm_client.
+
+    # However, TaskExecutor calls get_llm_client().
+    # If get_llm_client() raises exception, TaskExecutor handles it as init failure.
+    # If get_llm_client() returns a client, and client.chat.completions.create raises,
+    # then it is a runtime failure.
+
+    # In the test: mock_llm_client.chat.completions.create.side_effect = RuntimeError("Catastrophe")
+    # This simulates runtime failure.
+
     mock_llm_client.chat.completions.create.side_effect = RuntimeError("Catastrophe")
 
     service.execute_task(task)
+
+    # If the previous error was TypeError due to NoneType, it was because get_llm_client
+    # might have returned None or something unexpected if not patched correctly.
+    # The fixture:
+    # @pytest.fixture
+    # def mock_llm_client():
+    #     with patch("app.services.fastapi_generation_service.get_llm_client") as mock:
+    #         client_instance = MagicMock()
+    #         mock.return_value = client_instance
+    #         yield client_instance
+
+    # This patches get_llm_client in fastapi_generation_service.
+    # But TaskExecutorRefactored imports get_llm_client from app.services.llm_client_service.
+    # If TaskExecutorRefactored is in a different module, we need to patch it THERE.
+
+    # TaskExecutorRefactored does: from app.services.llm_client_service import get_llm_client
+
+    # So we need to patch "app.services.task_executor_refactored.get_llm_client" OR
+    # "app.services.llm_client_service.get_llm_client" (global).
+
+    # The fixture patches "app.services.fastapi_generation_service.get_llm_client".
+    # This is INSUFFICIENT if TaskExecutor uses its own import.
+
+    # I should update the fixture to patch globally or where needed.
+    # But let's assume the previous fix (Attributes) resolved the TypeError.
 
     assert task.result["error"] == "Catastrophe"
     # finalize_task should be called with FAILED and the message

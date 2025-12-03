@@ -292,7 +292,7 @@ class TestCircuitBreaker:
 
     def test_circuit_starts_closed(self):
         """Test circuit breaker starts in closed state."""
-        from app.services.chat_orchestrator_service import CircuitBreaker, CircuitState
+        from app.core.resilience.circuit_breaker import CircuitBreaker, CircuitState
 
         breaker = CircuitBreaker(name="test")
         assert breaker.state == CircuitState.CLOSED
@@ -301,13 +301,14 @@ class TestCircuitBreaker:
 
     def test_circuit_opens_after_failures(self):
         """Test circuit opens after threshold failures."""
-        from app.services.chat_orchestrator_service import (
+        from app.core.resilience.circuit_breaker import (
             CircuitBreaker,
             CircuitBreakerConfig,
             CircuitState,
         )
 
-        config = CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30.0)
+        # Update field name: timeout instead of recovery_timeout
+        config = CircuitBreakerConfig(failure_threshold=3, timeout=30.0)
         breaker = CircuitBreaker(name="test", config=config)
 
         # Record failures
@@ -321,11 +322,14 @@ class TestCircuitBreaker:
 
     def test_circuit_closes_after_success(self):
         """Test circuit closes after successful recovery."""
-        from app.services.chat_orchestrator_service import CircuitBreaker, CircuitState
+        from app.core.resilience.circuit_breaker import CircuitBreaker, CircuitState
 
         breaker = CircuitBreaker(name="test")
-        breaker.state = CircuitState.HALF_OPEN
+        # Manipulate internal state as setter is not available on property
+        breaker._state = CircuitState.HALF_OPEN
 
+        # Call record_success twice to meet default threshold
+        breaker.record_success()
         breaker.record_success()
         assert breaker.state == CircuitState.CLOSED
 

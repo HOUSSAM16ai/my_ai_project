@@ -219,6 +219,7 @@ def _is_stagnation(prev_list: list[str], current_list: list[str]) -> bool:
 
 
 def _build_system_prompt(task: Any, context_blob: Any) -> str:
+    """Build the system prompt for the task execution."""
     mission_obj = getattr(task, "mission", None)
     objective = getattr(mission_obj, "objective", "N/A")
     description = getattr(task, "description", "(no description)")
@@ -944,6 +945,12 @@ class MaestroGenerationService:
             "error": res.get("error", "unknown failure"),
             "meta": res.get("meta", {}),
         }
+
+    def _build_system_prompt(self, task: Any, context_blob: Any) -> str:
+        """
+        Wrapper to expose _build_system_prompt as a method for TaskExecutor.
+        """
+        return _build_system_prompt(task, context_blob)
 
     def execute_task(self, task: Task, model: str | None = None) -> None:
         """

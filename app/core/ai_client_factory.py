@@ -90,6 +90,11 @@ class AIClientFactory:
             api_key = api_key or config.openrouter_api_key
             base_url = base_url or "https://openrouter.ai/api/v1"
 
+        # If still no API key, return a mock client (preserve legacy behavior)
+        if not api_key:
+            logger.info("No API key available, defaulting to mock client.")
+            return AIClientFactory._create_mock_client("no-api-key")
+
         # Create cache key (use hash of API key for security)
         import hashlib
 
@@ -222,9 +227,11 @@ class AIClientFactory:
                                 logger.error(f"API call failed: {e}")
                                 raise
 
+                    @property
                     def completions(self):
                         return self._CompletionsWrapper(self)
 
+                @property
                 def chat(self):
                     return self._ChatWrapper(self)
 
@@ -289,9 +296,11 @@ class AIClientFactory:
                         choice = _Choice(message)
                         return _Response([choice])
 
+                @property
                 def completions(self):
                     return self._CompletionsWrapper(self)
 
+            @property
             def chat(self):
                 return self._ChatWrapper(self)
 
