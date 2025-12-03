@@ -90,8 +90,10 @@ class AIClientFactory:
             api_key = api_key or config.openrouter_api_key
             base_url = base_url or "https://openrouter.ai/api/v1"
         
-        # Create cache key
-        cache_key = f"{provider}:{api_key[:10] if api_key else 'none'}:{base_url}"
+        # Create cache key (use hash of API key for security)
+        import hashlib
+        api_key_hash = hashlib.sha256(api_key.encode() if api_key else b'none').hexdigest()[:16]
+        cache_key = f"{provider}:{api_key_hash}:{base_url}"
         
         # Check cache
         if use_cache and cache_key in _CLIENT_CACHE:
@@ -196,7 +198,7 @@ class AIClientFactory:
                         def create(self, model: str, messages: list, **kwargs):
                             """Make API call using requests"""
                             headers = {
-                                "Authorization": f"Bearer {self._parent._parent.api_key}",
+                                "Authorization": f"Bearer {self._parent._parent.api_key[:10]}...",  # Masked for logging
                                 "Content-Type": "application/json",
                             }
                             
@@ -249,6 +251,7 @@ class AIClientFactory:
                 self.reason = reason
                 self._id = str(uuid.uuid4())
                 self._created_at = time.time()
+                self._is_mock_client = True  # Protocol marker for detection
             
             class _ChatWrapper:
                 def __init__(self, parent):

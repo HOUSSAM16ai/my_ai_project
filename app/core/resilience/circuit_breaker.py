@@ -155,7 +155,7 @@ class CircuitBreaker:
                     self._half_open_calls = 0
                     self._success_count = 0
                     return True, "ok"
-                remaining = int(self.config.timeout - time_since_failure)
+                remaining = max(0, int(self.config.timeout - time_since_failure))
                 return False, f"Circuit open. Retry after {remaining}s"
             
             # HALF_OPEN state

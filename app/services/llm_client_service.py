@@ -74,6 +74,7 @@ class MockLLMClient:
         self._calls = 0
         self._model = model_alias
         self._id = str(uuid.uuid4())
+        self._is_mock_client = True  # Protocol marker for detection
 
     class _ChatWrapper:
         def __init__(self, parent: MockLLMClient):
@@ -580,12 +581,29 @@ def reset_llm_client() -> None:
 
 
 def is_mock_client(client: Any | None = None) -> bool:
-    """Check if client is a mock client"""
+    """
+    Check if client is a mock client.
+    
+    Uses multiple strategies to detect mock clients:
+    1. Check if it's our MockLLMClient type
+    2. Check if it has a 'mock' attribute
+    3. Check class name as fallback
+    """
     c = client or _CLIENT_SINGLETON
-    return isinstance(c, MockLLMClient) or (
-        hasattr(c, '__class__') and 
-        'Mock' in c.__class__.__name__
-    )
+    
+    # Strategy 1: Check instanceof MockLLMClient
+    if isinstance(c, MockLLMClient):
+        return True
+    
+    # Strategy 2: Check for mock attribute (protocol-based)
+    if hasattr(c, '_is_mock_client') and c._is_mock_client:
+        return True
+    
+    # Strategy 3: Check class name (fallback, less reliable)
+    if hasattr(c, '__class__') and 'Mock' in c.__class__.__name__:
+        return True
+    
+    return False
 
 
 # ======================================================================================

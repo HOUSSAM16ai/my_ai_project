@@ -116,17 +116,18 @@ class HTTPClientFactory:
     @staticmethod
     async def close_client(name: str = "default"):
         """Close a specific HTTP client"""
-        # Find and close clients matching name
-        keys_to_remove = [k for k in _HTTP_CLIENTS.keys() if k.startswith(f"{name}:")]
-        
-        for key in keys_to_remove:
-            client = _HTTP_CLIENTS.pop(key, None)
-            if client:
-                try:
-                    await client.aclose()
-                    logger.info(f"Closed HTTP client '{key}'")
-                except Exception as e:
-                    logger.error(f"Error closing HTTP client '{key}': {e}")
+        # More efficient: find keys directly without creating list
+        with _CLIENT_LOCK:
+            keys_to_remove = [k for k in _HTTP_CLIENTS if k.startswith(f"{name}:")]
+            
+            for key in keys_to_remove:
+                client = _HTTP_CLIENTS.pop(key, None)
+                if client:
+                    try:
+                        await client.aclose()
+                        logger.info(f"Closed HTTP client '{key}'")
+                    except Exception as e:
+                        logger.error(f"Error closing HTTP client '{key}': {e}")
     
     @staticmethod
     async def close_all():
@@ -160,6 +161,7 @@ class HTTPClientFactory:
             def __init__(self, name: str):
                 self.name = name
                 self._closed = False
+                self._is_mock_client = True  # Protocol marker for detection
             
             async def get(self, url: str, **kwargs):
                 """Mock GET request"""
