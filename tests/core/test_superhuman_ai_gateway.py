@@ -30,6 +30,24 @@ class TestSuperhumanAIGateway:
             with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"):
                 client = NeuralRoutingMesh("test_key")
 
+                # Inject the model ID expected by the mock router into the client's node map
+                # The client initializes only from config, so we must manually add the test model
+                # to the nodes_map to prevent KeyError during the lookup.
+                from app.core.ai_gateway import (
+                    CIRCUIT_FAILURE_THRESHOLD,
+                    CIRCUIT_RECOVERY_TIMEOUT,
+                    CircuitBreaker,
+                    NeuralNode,
+                )
+
+                if ModelProvider.ANTHROPIC not in client.nodes_map:
+                    client.nodes_map[ModelProvider.ANTHROPIC] = NeuralNode(
+                        model_id=ModelProvider.ANTHROPIC,
+                        circuit_breaker=CircuitBreaker(
+                            "Test-Synapse", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+                        ),
+                    )
+
                 # Mock internal _stream_from_node to avoid network calls
                 client._stream_from_node = MagicMock()
 
