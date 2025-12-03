@@ -216,6 +216,7 @@ class AdminChatBoundaryService:
                     ChatIntent.CODE_SEARCH,
                     ChatIntent.PROJECT_INDEX,
                     ChatIntent.MISSION_COMPLEX,
+                    ChatIntent.DEEP_ANALYSIS,
                     ChatIntent.HELP,
                 }
 
