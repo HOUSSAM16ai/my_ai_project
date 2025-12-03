@@ -21,7 +21,22 @@ from collections import defaultdict
 from functools import wraps
 from typing import Callable
 
-from fastapi import HTTPException, Request
+# Conditional imports for testing environments
+try:
+    from fastapi import HTTPException, Request
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+    # Mock classes for testing without FastAPI
+    class Request:
+        pass
+    
+    class HTTPException(Exception):
+        def __init__(self, status_code: int, detail: str, headers: dict | None = None):
+            self.status_code = status_code
+            self.detail = detail
+            self.headers = headers or {}
+            super().__init__(detail)
 
 logger = logging.getLogger(__name__)
 
