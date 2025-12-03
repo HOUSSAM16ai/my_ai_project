@@ -1,9 +1,12 @@
 import pytest
+
 from app.services.api_observability_service import APIObservabilityService
+
 
 @pytest.fixture
 def observability_service():
     return APIObservabilityService(sla_target_ms=20.0)
+
 
 def test_anomaly_detection_false_negative_due_to_baseline_pollution(observability_service):
     """
@@ -57,5 +60,7 @@ def test_anomaly_detection_false_negative_due_to_baseline_pollution(observabilit
     # So I should write the assertion expecting the CORRECT behavior (alert detected).
     # If the bug exists, this test will FAIL.
 
-    assert len(alerts) == 1, "Anomaly should be detected! If 0, the baseline pollution bug masked it."
+    assert len(alerts) == 1, (
+        "Anomaly should be detected! If 0, the baseline pollution bug masked it."
+    )
     assert alerts[0]["anomaly_type"] == "extreme_latency"
