@@ -162,6 +162,9 @@ class NeuralNode:
     # --- Performance Metrics (Legacy Cortex Memory - retained for logging) ---
     ewma_latency: float = 0.5
 
+    # --- Smart Cooldown ---
+    rate_limit_cooldown_until: float = 0.0
+
     # --- Concurrency Control ---
     # Limit max concurrent streams to avoid provider rate limits
     semaphore: asyncio.Semaphore = field(default_factory=lambda: asyncio.Semaphore(10))
@@ -253,11 +256,24 @@ class NeuralRoutingMesh:
         """
         Returns a list of nodes sorted by their Omni-Cognitive Score.
         """
-        # 1. Filter out open circuits
+        # 1. Filter out open circuits AND nodes in Smart Cooldown
         available_ids = []
+        now = time.time()
         for mid, node in self.nodes_map.items():
-            if node.circuit_breaker.allow_request():
-                available_ids.append(mid)
+            # Check Circuit Breaker
+            if not node.circuit_breaker.allow_request():
+                continue
+
+            # Check Smart Cooldown (SUPERHUMAN feature)
+            if node.rate_limit_cooldown_until > now:
+                remaining = int(node.rate_limit_cooldown_until - now)
+                logger.warning(
+                    f"Node [{mid}] is in Smart Cooldown Stasis for {remaining}s. "
+                    "Skipping to preserve Omni-Mesh stability."
+                )
+                continue
+
+            available_ids.append(mid)
 
         if not available_ids:
             return []
@@ -266,7 +282,17 @@ class NeuralRoutingMesh:
         ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
 
         # 3. Map back to NeuralNodes
-        return [self.nodes_map[mid] for mid in ranked_ids]
+        # Ensure we strictly respect the cooldown even if Router suggests it
+        final_nodes = []
+        for mid in ranked_ids:
+             if mid not in self.nodes_map: continue
+             node = self.nodes_map[mid]
+             # Check Smart Cooldown (Double check for safety)
+             if node.rate_limit_cooldown_until > now:
+                 continue
+             final_nodes.append(node)
+
+        return final_nodes
 
     def _calculate_quality_score(self, full_content: str) -> float:
         """
@@ -515,8 +541,15 @@ class NeuralRoutingMesh:
                     if response.status_code == 429:
                         error_body = await response.aread()
                         error_text = error_body.decode("utf-8", errors="ignore")[:200]
+
+                        # SUPERHUMAN: Activate Smart Cooldown
+                        # We lock this node in a temporal stasis field to prevent futility loops.
+                        cooldown_duration = 60.0  # 60 seconds penalty
+                        node.rate_limit_cooldown_until = time.time() + cooldown_duration
+
                         logger.warning(
                             f"Rate limit hit for {node.model_id}: {error_text}. "
+                            f"Activating Smart Cooldown Stasis ({cooldown_duration}s). "
                             f"Aborting internal retries to trigger Mesh Failover."
                         )
                         # We raise AIConnectionError directly to bypass internal retries
