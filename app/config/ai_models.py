@@ -151,8 +151,7 @@ class ActiveModels:
 
     GATEWAY_PRIMARY = "qwen/qwen3-coder:free"  # Main gateway model
     GATEWAY_FALLBACK_1 = "google/gemini-2.0-flash-exp:free"  # First fallback (Gemini Flash 2.0)
-    GATEWAY_FALLBACK_2 = "meta-llama/llama-3.2-11b-vision-instruct:free"  # Second fallback (Llama 3.2 Vision)
-
+    GATEWAY_FALLBACK_2 = "kwaipilot/kat-coder-pro:free"  # Second fallback (kwaipilot/kat-coder-pro)
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة
     # ═══════════════════════════════════════════════════════════════════════════════════
