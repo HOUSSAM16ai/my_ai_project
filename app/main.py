@@ -83,7 +83,10 @@ def create_app(static_dir: str | None = None) -> FastAPI:
         # 3. SPA Fallback: serve index.html for non-API routes
         # We accept ALL methods so that we can return 404 for missing API POST/PUT requests
         # instead of 405 Method Not Allowed.
-        @app.api_route("/{full_path:path}", methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+        @app.api_route(
+            "/{full_path:path}",
+            methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        )
         async def spa_fallback(request: Request, full_path: str):
             # If path starts with api or contains /api/, return 404 (don't serve HTML)
             # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found

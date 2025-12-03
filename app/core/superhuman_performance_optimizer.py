@@ -465,10 +465,10 @@ def reset_optimizer() -> None:
 
 
 __all__ = [
-    "SuperhumanPerformanceOptimizer",
-    "PerformanceMetrics",
-    "IntelligentModelSelector",
     "AdaptiveBatchProcessor",
+    "IntelligentModelSelector",
+    "PerformanceMetrics",
+    "SuperhumanPerformanceOptimizer",
     "get_performance_optimizer",
     "reset_optimizer",
 ]

@@ -892,54 +892,53 @@ def invoke_chat(
                 total = usage.get("total_tokens")
 
                 # SUPERHUMAN CHECK: Detect empty responses and handle intelligently
-                if content is None or (isinstance(content, str) and content.strip() == ""):
-                    if not tool_calls:
-                        # Empty response with no tool calls - this is problematic
-                        _LOG.warning(
-                            f"Empty response received from model {payload['model']} "
-                            f"at attempt {attempts}/{_LLM_MAX_RETRIES}. "
-                            f"No content and no tool calls."
+                if (
+                    content is None or (isinstance(content, str) and content.strip() == "")
+                ) and not tool_calls:
+                    # Empty response with no tool calls - this is problematic
+                    _LOG.warning(
+                        f"Empty response received from model {payload['model']} "
+                        f"at attempt {attempts}/{_LLM_MAX_RETRIES}. "
+                        f"No content and no tool calls."
+                    )
+
+                    # Treat as retriable error if we have retries left
+                    if attempts < _LLM_MAX_RETRIES:
+                        empty_exc = RuntimeError(
+                            f"Empty response from model (no content, no tool calls). "
+                            f"Attempt {attempts}/{_LLM_MAX_RETRIES}"
                         )
+                        kind = _classify_error(empty_exc)
+                        if _retry_allowed(kind):
+                            sleep_for = backoff
+                            if _LLM_RETRY_JITTER:
+                                sleep_for += random.random() * 0.25
+                            retry_schedule.append(round(sleep_for, 3))
+                            _LOG.warning(f"Retrying after empty response in {sleep_for:.2f}s...")
+                            time.sleep(sleep_for)
+                            backoff *= _LLM_RETRY_BACKOFF_BASE
+                            continue
 
-                        # Treat as retriable error if we have retries left
-                        if attempts < _LLM_MAX_RETRIES:
-                            empty_exc = RuntimeError(
-                                f"Empty response from model (no content, no tool calls). "
-                                f"Attempt {attempts}/{_LLM_MAX_RETRIES}"
-                            )
-                            kind = _classify_error(empty_exc)
-                            if _retry_allowed(kind):
-                                sleep_for = backoff
-                                if _LLM_RETRY_JITTER:
-                                    sleep_for += random.random() * 0.25
-                                retry_schedule.append(round(sleep_for, 3))
-                                _LOG.warning(
-                                    f"Retrying after empty response in {sleep_for:.2f}s..."
-                                )
-                                time.sleep(sleep_for)
-                                backoff *= _LLM_RETRY_BACKOFF_BASE
-                                continue
+                    # No retries left or retry not allowed - return error envelope
+                    _LLMTOTAL["calls"] += 1
+                    _LLMTOTAL["errors"] += 1
+                    _note_error_for_breaker()
 
-                        # No retries left or retry not allowed - return error envelope
-                        _LLMTOTAL["calls"] += 1
-                        _LLMTOTAL["errors"] += 1
-                        _note_error_for_breaker()
-
-                        return {
-                            "content": "",
-                            "tool_calls": None,
-                            "usage": usage,
-                            "model": payload["model"],
-                            "provider": _CLIENT_META.get("provider_actual"),
-                            "latency_ms": round(latency_ms, 2),
-                            "cost": None,
-                            "error": "Empty response from model",
-                            "meta": {
-                                "attempts": attempts,
-                                "success": False,
-                                "empty_response": True,
-                            },
-                        }
+                    return {
+                        "content": "",
+                        "tool_calls": None,
+                        "usage": usage,
+                        "model": payload["model"],
+                        "provider": _CLIENT_META.get("provider_actual"),
+                        "latency_ms": round(latency_ms, 2),
+                        "cost": None,
+                        "error": "Empty response from model",
+                        "meta": {
+                            "attempts": attempts,
+                            "success": False,
+                            "empty_response": True,
+                        },
+                    }
 
                 # Update metrics
                 _LLMTOTAL["calls"] += 1
