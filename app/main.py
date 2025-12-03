@@ -88,26 +88,34 @@ def create_app(static_dir: str | None = None) -> FastAPI:
             methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         )
         async def spa_fallback(request: Request, full_path: str):
-            # If path starts with api or contains /api/, return 404 (don't serve HTML)
-            # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found
-            if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
-                raise HTTPException(status_code=404, detail="Not Found")
-
-            # If it is NOT a GET/HEAD request, and it fell through to here, it's a 404
-            if request.method not in ["GET", "HEAD"]:
-                raise HTTPException(status_code=404, detail="Not Found")
+            # 1. First, check if the file physically exists in static directory
+            # This ensures that if we have /documentation/api/guide.html, it gets served
+            # even if it contains "api" in the path.
+            potential_path = os.path.normpath(os.path.join(static_files_dir, full_path))
 
             # Safety check for directory traversal
-            potential_path = os.path.normpath(os.path.join(static_files_dir, full_path))
             if not potential_path.startswith(static_files_dir):
                 # traversal attempt
                 raise HTTPException(status_code=404, detail="Not Found")
 
             # If a specific file exists in static (e.g. /superhuman_dashboard.html), serve it
             if os.path.isfile(potential_path):
+                # Ensure we only serve GET/HEAD for static files unless configured otherwise
+                if request.method not in ["GET", "HEAD"]:
+                    raise HTTPException(status_code=405, detail="Method Not Allowed")
                 return FileResponse(potential_path)
 
-            # Otherwise serve index.html
+            # 2. If file doesn't exist, THEN enforce API restrictions
+            # If path starts with api or contains /api/, return 404 (don't serve HTML)
+            # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found
+            if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
+                raise HTTPException(status_code=404, detail="Not Found")
+
+            # 3. If it is NOT a GET/HEAD request, and it fell through to here, it's a 404
+            if request.method not in ["GET", "HEAD"]:
+                raise HTTPException(status_code=404, detail="Not Found")
+
+            # 4. Otherwise serve index.html (SPA)
             return FileResponse(os.path.join(static_files_dir, "index.html"))
 
     else:
