@@ -1,5 +1,5 @@
-import pytest
 from fastapi.testclient import TestClient
+
 
 def test_missing_api_endpoint_returns_404_not_405(client: TestClient):
     """
