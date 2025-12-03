@@ -3,7 +3,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -81,11 +81,17 @@ def create_app(static_dir: str | None = None) -> FastAPI:
             return FileResponse(os.path.join(static_files_dir, "index.html"))
 
         # 3. SPA Fallback: serve index.html for non-API routes
-        @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
-        async def spa_fallback(full_path: str):
+        # We accept ALL methods so that we can return 404 for missing API POST/PUT requests
+        # instead of 405 Method Not Allowed.
+        @app.api_route("/{full_path:path}", methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+        async def spa_fallback(request: Request, full_path: str):
             # If path starts with api or contains /api/, return 404 (don't serve HTML)
             # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found
             if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
+                raise HTTPException(status_code=404, detail="Not Found")
+
+            # If it is NOT a GET/HEAD request, and it fell through to here, it's a 404
+            if request.method not in ["GET", "HEAD"]:
                 raise HTTPException(status_code=404, detail="Not Found")
 
             # Safety check for directory traversal
