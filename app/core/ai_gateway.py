@@ -27,7 +27,7 @@ import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import httpx
 
@@ -623,7 +623,7 @@ def get_ai_client() -> AIClient:
     return NeuralRoutingMesh(api_key=OPENROUTER_API_KEY or "dummy_key")
 
 
-def get_performance_report() -> dict[str, Any]:
+def get_performance_report() -> dict[str, "Any"]:
     """
     Get comprehensive performance report from the optimizer.
 
