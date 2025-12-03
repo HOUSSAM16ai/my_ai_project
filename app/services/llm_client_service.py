@@ -5,6 +5,10 @@ LLM Client Service - Pure FastAPI/Python Edition
 Central authoritative gateway for all LLM invocations.
 Refactored to be completely independent of Flask globals.
 Uses `pydantic-settings` for configuration via `app.core.config`.
+
+REFACTORED: Now delegates actual client creation to centralized
+app.core.ai_client_factory module. This service maintains backward
+compatibility while using the new centralized infrastructure.
 """
 
 from __future__ import annotations
@@ -20,6 +24,12 @@ import time
 import uuid
 from collections.abc import Callable, Generator
 from typing import Any
+
+# Import centralized AI client factory
+from app.core.ai_client_factory import (
+    get_ai_client as _get_centralized_client,
+    clear_ai_client_cache,
+)
 
 # Use requests for HTTP fallback if available
 try:
@@ -38,12 +48,15 @@ except ImportError:
 _LOG = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------------------
-# GLOBAL SINGLETON STATE
+# GLOBAL SINGLETON STATE (LEGACY - Now delegates to centralized factory)
 # --------------------------------------------------------------------------------------
 _CLIENT_SINGLETON: Any | None = None
 _CLIENT_LOCK = threading.Lock()
 _CLIENT_META: dict[str, Any] = {}
 _CLIENT_BUILD_SEQ = 0
+
+# NOTE: The actual client creation is now handled by app.core.ai_client_factory
+# This module maintains these globals for backward compatibility only
 
 # ======================================================================================
 # MOCK CLIENT
@@ -522,36 +535,57 @@ def _build_client() -> Any:
 
 
 # ======================================================================================
-# PUBLIC CORE ACCESS
+# PUBLIC CORE ACCESS (REFACTORED - Now delegates to centralized factory)
 # ======================================================================================
 
 
 def get_llm_client() -> Any:
+    """
+    Get LLM client instance.
+    
+    REFACTORED: Now delegates to centralized app.core.ai_client_factory.
+    Maintains backward compatibility with legacy code.
+    """
     global _CLIENT_SINGLETON
     disable_cache = _bool_env("LLM_DISABLE_CACHE")
 
     if disable_cache:
-        return _build_client()
+        # Use centralized factory without caching
+        return _get_centralized_client(use_cache=False)
 
     if _CLIENT_SINGLETON is not None:
         return _CLIENT_SINGLETON
 
     with _CLIENT_LOCK:
         if _CLIENT_SINGLETON is None:
-            _CLIENT_SINGLETON = _build_client()
+            # Delegate to centralized factory
+            _CLIENT_SINGLETON = _get_centralized_client(use_cache=True)
+            _LOG.info("LLM client created via centralized factory")
         return _CLIENT_SINGLETON
 
 
 def reset_llm_client() -> None:
+    """
+    Reset the LLM client singleton.
+    
+    REFACTORED: Also clears centralized factory cache.
+    """
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
         _CLIENT_META.clear()
+        # Clear centralized factory cache too
+        clear_ai_client_cache()
+        _LOG.info("LLM client reset (including centralized cache)")
 
 
 def is_mock_client(client: Any | None = None) -> bool:
+    """Check if client is a mock client"""
     c = client or _CLIENT_SINGLETON
-    return isinstance(c, MockLLMClient)
+    return isinstance(c, MockLLMClient) or (
+        hasattr(c, '__class__') and 
+        'Mock' in c.__class__.__name__
+    )
 
 
 # ======================================================================================
