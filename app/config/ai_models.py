@@ -78,6 +78,13 @@ class AvailableModels:
     # ─────────────────────────────────────────────────────────────────────────
     LLAMA_3_70B = "meta-llama/llama-3-70b-instruct"  # 🔓 مفتوح المصدر قوي
     LLAMA_3_8B = "meta-llama/llama-3-8b-instruct"  # 💨 سريع ومجاني
+    LLAMA_3_2_11B_VISION_FREE = "meta-llama/llama-3.2-11b-vision-instruct:free"  # 👁️ رؤية مجانية
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # 🆓 FREE MODELS (High Quality) | نماذج مجانية عالية الجودة
+    # ─────────────────────────────────────────────────────────────────────────
+    GEMINI_2_FLASH_EXP_FREE = "google/gemini-2.0-flash-exp:free"  # ⚡ سريع جداً ومجاني
+    PHI_3_MINI_FREE = "microsoft/phi-3-mini-128k-instruct:free"  # 🤏 صغير جداً ومجاني
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
@@ -143,8 +150,8 @@ class ActiveModels:
     # ═══════════════════════════════════════════════════════════════════════════════════
 
     GATEWAY_PRIMARY = "qwen/qwen3-coder:free"  # Main gateway model
-    GATEWAY_FALLBACK_1 = "qwen/qwen3-coder:free"  # First fallback
-    GATEWAY_FALLBACK_2 = "qwen/qwen3-coder:free"  # Second fallback
+    GATEWAY_FALLBACK_1 = "google/gemini-2.0-flash-exp:free"  # First fallback (Gemini Flash 2.0)
+    GATEWAY_FALLBACK_2 = "meta-llama/llama-3.2-11b-vision-instruct:free"  # Second fallback (Llama 3.2 Vision)
 
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة

@@ -515,11 +515,14 @@ class NeuralRoutingMesh:
                     if response.status_code == 429:
                         error_body = await response.aread()
                         error_text = error_body.decode("utf-8", errors="ignore")[:200]
-                        logger.warning(f"Rate limit hit for {node.model_id}: {error_text}")
-                        raise httpx.HTTPStatusError(
-                            "Rate Limited - will retry with backoff",
-                            request=response.request,
-                            response=response,
+                        logger.warning(
+                            f"Rate limit hit for {node.model_id}: {error_text}. "
+                            f"Aborting internal retries to trigger Mesh Failover."
+                        )
+                        # We raise AIConnectionError directly to bypass internal retries
+                        # and force the parent stream_chat loop to try the next node.
+                        raise AIConnectionError(
+                            f"Rate Limited (429) on {node.model_id}. Triggering immediate failover."
                         )
 
                     if response.status_code == 401 or response.status_code == 403:
