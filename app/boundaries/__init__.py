@@ -29,4 +29,53 @@ VERSION: 1.0.0
 
 from __future__ import annotations
 
+from app.boundaries.data_boundaries import (
+    DataBoundary,
+    DatabaseBoundary,
+    SagaOrchestrator,
+    get_data_boundary,
+)
+from app.boundaries.policy_boundaries import (
+    ComplianceEngine,
+    DataGovernanceFramework,
+    PolicyBoundary,
+    PolicyEngine,
+    Principal,
+    SecurityPipeline,
+    get_policy_boundary,
+)
+from app.boundaries.service_boundaries import (
+    APIGateway,
+    BulkheadExecutor,
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    EventBus,
+    ServiceBoundary,
+    get_service_boundary,
+)
+
 __version__ = "1.0.0"
+
+__all__ = [
+    # Service Boundaries
+    "ServiceBoundary",
+    "get_service_boundary",
+    "EventBus",
+    "APIGateway",
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "BulkheadExecutor",
+    # Data Boundaries
+    "DataBoundary",
+    "get_data_boundary",
+    "DatabaseBoundary",
+    "SagaOrchestrator",
+    # Policy Boundaries
+    "PolicyBoundary",
+    "get_policy_boundary",
+    "PolicyEngine",
+    "Principal",
+    "SecurityPipeline",
+    "ComplianceEngine",
+    "DataGovernanceFramework",
+]
