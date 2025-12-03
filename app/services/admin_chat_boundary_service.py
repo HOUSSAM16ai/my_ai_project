@@ -164,9 +164,6 @@ class AdminChatBoundaryService:
 
         orchestrator = get_chat_orchestrator()
 
-        # Intent Detection protected by boundary logic (conceptually)
-        intent_result = orchestrator.detect_intent(question)
-
         # Yield Init Event
         init_payload = {
             "conversation_id": conversation.id,
@@ -208,6 +205,9 @@ class AdminChatBoundaryService:
                     self.is_persisted = True
 
         try:
+            # Intent Detection protected by boundary logic (conceptually)
+            intent_result = orchestrator.detect_intent(question)
+
             async with StreamingPersistenceContext():
                 tool_intents = {
                     ChatIntent.FILE_READ, ChatIntent.FILE_WRITE, ChatIntent.CODE_SEARCH,
