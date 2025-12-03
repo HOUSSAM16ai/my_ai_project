@@ -1,11 +1,13 @@
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock, ANY
-from fastapi import HTTPException
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
-from app.models import AdminConversation, AdminMessage, MessageRole
-from app.core.ai_gateway import AIClient
-import jwt
 import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import jwt
+import pytest
+from fastapi import HTTPException
+
+from app.models import AdminConversation, AdminMessage, MessageRole
+from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+
 
 # Mock settings
 @pytest.fixture
@@ -14,15 +16,19 @@ def mock_settings():
     settings.SECRET_KEY = "test_secret"
     return settings
 
+
 @pytest.fixture
 def service(mock_settings):
     db_session = AsyncMock()
-    with patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings), \
-         patch("app.services.admin_chat_boundary_service.get_service_boundary"), \
-         patch("app.services.admin_chat_boundary_service.get_policy_boundary"):
+    with (
+        patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings),
+        patch("app.services.admin_chat_boundary_service.get_service_boundary"),
+        patch("app.services.admin_chat_boundary_service.get_policy_boundary"),
+    ):
         service = AdminChatBoundaryService(db_session)
         service.settings = mock_settings  # Ensure settings are set
         return service
+
 
 @pytest.mark.asyncio
 async def test_validate_auth_header_valid(service, mock_settings):
@@ -32,12 +38,14 @@ async def test_validate_auth_header_valid(service, mock_settings):
     user_id = service.validate_auth_header(auth_header)
     assert user_id == 123
 
+
 @pytest.mark.asyncio
 async def test_validate_auth_header_missing(service):
     with pytest.raises(HTTPException) as exc:
         service.validate_auth_header(None)
     assert exc.value.status_code == 401
     assert exc.value.detail == "Authorization header missing"
+
 
 @pytest.mark.asyncio
 async def test_validate_auth_header_invalid_format(service):
@@ -46,6 +54,7 @@ async def test_validate_auth_header_invalid_format(service):
     assert exc.value.status_code == 401
     assert exc.value.detail == "Invalid Authorization header format"
 
+
 @pytest.mark.asyncio
 async def test_validate_auth_header_not_bearer(service):
     with pytest.raises(HTTPException) as exc:
@@ -53,12 +62,14 @@ async def test_validate_auth_header_not_bearer(service):
     assert exc.value.status_code == 401
     assert exc.value.detail == "Invalid Authorization header format"
 
+
 @pytest.mark.asyncio
 async def test_validate_auth_header_invalid_token(service):
     with pytest.raises(HTTPException) as exc:
         service.validate_auth_header("Bearer invalid_token")
     assert exc.value.status_code == 401
     assert exc.value.detail == "Invalid token"
+
 
 @pytest.mark.asyncio
 async def test_validate_auth_header_missing_sub(service, mock_settings):
@@ -68,6 +79,7 @@ async def test_validate_auth_header_missing_sub(service, mock_settings):
     assert exc.value.status_code == 401
     assert exc.value.detail == "Invalid token payload"
 
+
 @pytest.mark.asyncio
 async def test_validate_auth_header_invalid_user_id_type(service, mock_settings):
     token = jwt.encode({"sub": "not_an_int"}, mock_settings.SECRET_KEY, algorithm="HS256")
@@ -75,6 +87,7 @@ async def test_validate_auth_header_invalid_user_id_type(service, mock_settings)
         service.validate_auth_header(f"Bearer {token}")
     assert exc.value.status_code == 401
     assert exc.value.detail == "Invalid user ID in token"
+
 
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_create_new(service):
@@ -91,6 +104,7 @@ async def test_get_or_create_conversation_create_new(service):
     service.db.commit.assert_called_once()
     service.db.refresh.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_existing(service):
     existing_conv = AdminConversation(id=10, user_id=1, title="Test")
@@ -100,10 +114,13 @@ async def test_get_or_create_conversation_existing(service):
     mock_result.scalar_one_or_none.return_value = existing_conv
     service.db.execute = AsyncMock(return_value=mock_result)
 
-    conversation = await service.get_or_create_conversation(user_id=1, question="New Q", conversation_id="10")
+    conversation = await service.get_or_create_conversation(
+        user_id=1, question="New Q", conversation_id="10"
+    )
 
     assert conversation.id == 10
     assert conversation.title == "Test"
+
 
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_not_found(service):
@@ -117,6 +134,7 @@ async def test_get_or_create_conversation_not_found(service):
     assert exc.value.status_code == 404
     assert exc.value.detail == "Conversation not found"
 
+
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_invalid_id(service):
     with pytest.raises(HTTPException) as exc:
@@ -124,6 +142,7 @@ async def test_get_or_create_conversation_invalid_id(service):
 
     assert exc.value.status_code == 404
     assert exc.value.detail == "Conversation not found"
+
 
 @pytest.mark.asyncio
 async def test_save_message(service):
@@ -138,6 +157,7 @@ async def test_save_message(service):
     service.db.add.assert_called_once()
     service.db.commit.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_get_chat_history(service):
     # Mock messages
@@ -149,7 +169,9 @@ async def test_get_chat_history(service):
     mock_result.scalars.return_value.all.return_value = [msg2, msg1]
     service.db.execute = AsyncMock(return_value=mock_result)
 
-    with patch("app.services.admin_chat_boundary_service.get_system_prompt", return_value="System Prompt"):
+    with patch(
+        "app.services.admin_chat_boundary_service.get_system_prompt", return_value="System Prompt"
+    ):
         history = await service.get_chat_history(conversation_id=1)
 
     assert len(history) == 3
@@ -159,6 +181,7 @@ async def test_get_chat_history(service):
     assert history[1]["content"] == "Hi"
     assert history[2]["role"] == "assistant"
     assert history[2]["content"] == "Hello"
+
 
 @pytest.mark.asyncio
 async def test_stream_chat_response_flow(service):
@@ -218,6 +241,7 @@ async def test_stream_chat_response_flow(service):
         saved_msg = args[0]
         assert saved_msg.content == "World!"
         assert saved_msg.role == MessageRole.ASSISTANT
+
 
 @pytest.mark.asyncio
 async def test_stream_chat_response_error_handling(service):

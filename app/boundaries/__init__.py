@@ -30,8 +30,8 @@ VERSION: 1.0.0
 from __future__ import annotations
 
 from app.boundaries.data_boundaries import (
-    DataBoundary,
     DatabaseBoundary,
+    DataBoundary,
     SagaOrchestrator,
     get_data_boundary,
 )
@@ -57,25 +57,25 @@ from app.boundaries.service_boundaries import (
 __version__ = "1.0.0"
 
 __all__ = [
-    # Service Boundaries
-    "ServiceBoundary",
-    "get_service_boundary",
-    "EventBus",
     "APIGateway",
+    "BulkheadExecutor",
     "CircuitBreaker",
     "CircuitBreakerConfig",
-    "BulkheadExecutor",
+    "ComplianceEngine",
     # Data Boundaries
     "DataBoundary",
-    "get_data_boundary",
+    "DataGovernanceFramework",
     "DatabaseBoundary",
-    "SagaOrchestrator",
+    "EventBus",
     # Policy Boundaries
     "PolicyBoundary",
-    "get_policy_boundary",
     "PolicyEngine",
     "Principal",
+    "SagaOrchestrator",
     "SecurityPipeline",
-    "ComplianceEngine",
-    "DataGovernanceFramework",
+    # Service Boundaries
+    "ServiceBoundary",
+    "get_data_boundary",
+    "get_policy_boundary",
+    "get_service_boundary",
 ]

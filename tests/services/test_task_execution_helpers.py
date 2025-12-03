@@ -5,12 +5,17 @@ SUPERHUMAN TESTS FOR TASK EXECUTION HELPERS
 
 These tests ensure every component works with MYTHICAL precision.
 """
-import json
+
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
+from app.services.fastapi_generation_service import (
+    OrchestratorConfig,
+    OrchestratorTelemetry,
+    StepState,
+)
 from app.services.task_execution_helpers import (
     MessageBuilder,
     StagnationDetector,
@@ -20,11 +25,6 @@ from app.services.task_execution_helpers import (
     ToolCallHandler,
     UsageTracker,
 )
-from app.services.fastapi_generation_service import (
-    OrchestratorConfig,
-    OrchestratorTelemetry,
-    StepState,
-)
 
 
 class TestTaskInitializer:
@@ -33,7 +33,7 @@ class TestTaskInitializer:
     def test_initialize_context_basic(self, monkeypatch):
         """✅ Test basic context initialization."""
         monkeypatch.delenv("MAESTRO_TOOL_CALL_LIMIT", raising=False)
-        
+
         task = SimpleNamespace(mission=SimpleNamespace(id=1))
         config_dict = {
             "model_name": "gpt-4",
@@ -65,7 +65,7 @@ class TestTaskInitializer:
     def test_initialize_context_with_tool_limit(self, monkeypatch):
         """✅ Test context initialization with tool call limit."""
         monkeypatch.setenv("MAESTRO_TOOL_CALL_LIMIT", "50")
-        
+
         task = SimpleNamespace(mission=SimpleNamespace(id=1))
         config_dict = {"model_name": "gpt-4", "max_steps": 5}
 
@@ -76,7 +76,7 @@ class TestTaskInitializer:
     def test_initialize_context_invalid_tool_limit(self, monkeypatch):
         """✅ Test context initialization with invalid tool limit."""
         monkeypatch.setenv("MAESTRO_TOOL_CALL_LIMIT", "invalid")
-        
+
         task = SimpleNamespace(mission=SimpleNamespace(id=1))
         config_dict = {"model_name": "gpt-4", "max_steps": 5}
 
@@ -153,7 +153,7 @@ class TestToolCallHandler:
         should_abort = handler.check_repeat_pattern("read_file", {"path": "/test.txt"})
 
         assert should_abort is False
-        assert ctx.repeat_counter["read_file:{\"path\": \"/test.txt\"}"] == 1
+        assert ctx.repeat_counter['read_file:{"path": "/test.txt"}'] == 1
         assert len(ctx.tool_repeat_warnings) == 0
 
     def test_check_repeat_pattern_threshold_reached(self):
@@ -191,7 +191,9 @@ class TestToolCallHandler:
         handler = ToolCallHandler(ctx)
 
         handler.check_repeat_pattern("write_file", {"path": "/test.txt", "content": "data"})
-        should_abort = handler.check_repeat_pattern("write_file", {"path": "/test.txt", "content": "data"})
+        should_abort = handler.check_repeat_pattern(
+            "write_file", {"path": "/test.txt", "content": "data"}
+        )
 
         assert should_abort is False
         assert ctx.telemetry.repeat_pattern_triggered is True
@@ -199,7 +201,7 @@ class TestToolCallHandler:
     def test_tool_signature_generation(self):
         """✅ Test tool signature generation for repeat detection."""
         sig = ToolCallHandler._tool_signature("read_file", {"path": "/test.txt", "lines": [1, 10]})
-        
+
         # Should create consistent signature
         assert "read_file" in sig
         # Order should be consistent due to sort_keys=True
@@ -222,28 +224,28 @@ class TestStagnationDetector:
         """✅ Test no stagnation with different tools."""
         previous = ["read_file", "write_file"]
         current = ["list_directory", "search_code"]
-        
+
         assert StagnationDetector.is_stagnation(previous, current) is False
 
     def test_no_stagnation_different_length(self):
         """✅ Test no stagnation with different list lengths."""
         previous = ["read_file"]
         current = ["read_file", "write_file"]
-        
+
         assert StagnationDetector.is_stagnation(previous, current) is False
 
     def test_stagnation_detected(self):
         """✅ Test stagnation detection with identical tool lists."""
         previous = ["read_file", "write_file", "read_file"]
         current = ["read_file", "write_file", "read_file"]
-        
+
         assert StagnationDetector.is_stagnation(previous, current) is True
 
     def test_stagnation_single_tool(self):
         """✅ Test stagnation with single repeated tool."""
         previous = ["read_file"]
         current = ["read_file"]
-        
+
         assert StagnationDetector.is_stagnation(previous, current) is True
 
 
@@ -304,7 +306,10 @@ class TestTaskFinalizer:
         result = TaskFinalizer.build_result(ctx)
 
         # Should handle division by zero gracefully
-        assert result["usage_rate_tokens_per_step"] is None or result["usage_rate_tokens_per_step"] == 100.0
+        assert (
+            result["usage_rate_tokens_per_step"] is None
+            or result["usage_rate_tokens_per_step"] == 100.0
+        )
 
     def test_determine_final_status_success(self):
         """✅ Test status determination for successful task."""
@@ -502,7 +507,7 @@ class TestIntegration:
     def test_complete_task_execution_flow(self, monkeypatch):
         """✅ Test complete task execution flow with all components."""
         monkeypatch.delenv("MAESTRO_TOOL_CALL_LIMIT", raising=False)
-        
+
         # Initialize task
         task = SimpleNamespace(
             id=1,
@@ -525,7 +530,7 @@ class TestIntegration:
 
         # Step 2: Simulate tool calls
         handler = ToolCallHandler(ctx)
-        
+
         # First tool call
         should_abort = handler.check_repeat_pattern("read_file", {"path": "/test.txt"})
         assert should_abort is False
@@ -544,7 +549,7 @@ class TestIntegration:
         )
         usage = UsageTracker.extract_usage(llm_response)
         UsageTracker.accumulate_usage(ctx.cumulative_usage, usage)
-        
+
         assert ctx.cumulative_usage["total_tokens"] == 150
 
         # Step 4: Add steps
@@ -580,23 +585,24 @@ class TestEdgeCases:
             "options": {"recursive": True, "max_depth": 5},
             "filters": ["*.py", "*.js"],
         }
-        
+
         sig = ToolCallHandler._tool_signature("search_files", args)
-        
+
         # Should handle complex args without errors
         assert "search_files" in sig
         assert isinstance(sig, str)
 
     def test_tool_signature_with_unparseable_args(self):
         """✅ Test tool signature with unparseable arguments."""
+
         # Create an object that can't be JSON serialized
         class UnserializableObject:
             pass
-        
+
         args = {"obj": UnserializableObject()}
-        
+
         sig = ToolCallHandler._tool_signature("test_tool", args)
-        
+
         # Should fallback to tool name only
         assert sig == "test_tool"
 
@@ -604,9 +610,9 @@ class TestEdgeCases:
         """✅ Test message builder with incomplete raw message."""
         # Raw message with missing attributes
         raw_msg = SimpleNamespace()
-        
+
         msg = MessageBuilder.normalize_assistant_message(raw_msg)
-        
+
         # Should handle gracefully
         assert msg["role"] == "assistant"
         assert len(msg) == 1  # Only role field
@@ -619,9 +625,9 @@ class TestEdgeCases:
             "model": "gpt-4",  # String value
             "completion_tokens": "not_a_number",  # String instead of int
         }
-        
+
         UsageTracker.accumulate_usage(cumulative, new_usage)
-        
+
         # Should only accumulate valid integers
         assert cumulative["prompt_tokens"] == 150
         assert "model" not in cumulative

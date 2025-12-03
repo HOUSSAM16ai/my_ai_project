@@ -25,10 +25,13 @@ import uuid
 from collections.abc import Callable, Generator
 from typing import Any
 
+from app.core.ai_client_factory import (
+    clear_ai_client_cache,
+)
+
 # Import centralized AI client factory
 from app.core.ai_client_factory import (
     get_ai_client as _get_centralized_client,
-    clear_ai_client_cache,
 )
 
 # Use requests for HTTP fallback if available
@@ -543,7 +546,7 @@ def _build_client() -> Any:
 def get_llm_client() -> Any:
     """
     Get LLM client instance.
-    
+
     REFACTORED: Now delegates to centralized app.core.ai_client_factory.
     Maintains backward compatibility with legacy code.
     """
@@ -568,7 +571,7 @@ def get_llm_client() -> Any:
 def reset_llm_client() -> None:
     """
     Reset the LLM client singleton.
-    
+
     REFACTORED: Also clears centralized factory cache.
     """
     global _CLIENT_SINGLETON
@@ -583,27 +586,24 @@ def reset_llm_client() -> None:
 def is_mock_client(client: Any | None = None) -> bool:
     """
     Check if client is a mock client.
-    
+
     Uses multiple strategies to detect mock clients:
     1. Check if it's our MockLLMClient type
     2. Check if it has a 'mock' attribute
     3. Check class name as fallback
     """
     c = client or _CLIENT_SINGLETON
-    
+
     # Strategy 1: Check instanceof MockLLMClient
     if isinstance(c, MockLLMClient):
         return True
-    
+
     # Strategy 2: Check for mock attribute (protocol-based)
-    if hasattr(c, '_is_mock_client') and c._is_mock_client:
+    if hasattr(c, "_is_mock_client") and c._is_mock_client:
         return True
-    
+
     # Strategy 3: Check class name (fallback, less reliable)
-    if hasattr(c, '__class__') and 'Mock' in c.__class__.__name__:
-        return True
-    
-    return False
+    return bool(hasattr(c, "__class__") and "Mock" in c.__class__.__name__)
 
 
 # ======================================================================================

@@ -264,9 +264,11 @@ def _service_candidate(path: str, code: str) -> bool:
         return True
     return bool(any(x in lower for x in ("fastapi(", "flask(", "blueprint(", "apirouter(")))
 
+
 # --------------------------------------------------------------------------------------
 # Visitor Implementation (Optimized O(N))
 # --------------------------------------------------------------------------------------
+
 
 class _DeepIndexVisitor(ast.NodeVisitor):
     def __init__(self, lines: list[str]):
@@ -280,7 +282,7 @@ class _DeepIndexVisitor(ast.NodeVisitor):
 
     def _inc_complexity(self, amount: int = 1) -> None:
         for ctx in self.func_stack:
-            ctx['complexity'] += amount
+            ctx["complexity"] += amount
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         start = node.lineno
@@ -290,15 +292,15 @@ class _DeepIndexVisitor(ast.NodeVisitor):
         tags = _categorize(slice_src)
 
         ctx = {
-            'name': node.name,
-            'lineno': start,
-            'end_lineno': end,
-            'loc': end - start + 1,
-            'hash': h,
-            'tags': tags,
-            'complexity': 1,
-            'recursive': False,
-            'calls_out': []
+            "name": node.name,
+            "lineno": start,
+            "end_lineno": end,
+            "loc": end - start + 1,
+            "hash": h,
+            "tags": tags,
+            "complexity": 1,
+            "recursive": False,
+            "calls_out": [],
         }
         self.func_stack.append(ctx)
 
@@ -307,15 +309,15 @@ class _DeepIndexVisitor(ast.NodeVisitor):
         finished_ctx = self.func_stack.pop()
         self.functions.append(
             FunctionInfo(
-                name=finished_ctx['name'],
-                lineno=finished_ctx['lineno'],
-                end_lineno=finished_ctx['end_lineno'],
-                loc=finished_ctx['loc'],
-                hash=finished_ctx['hash'],
-                complexity=finished_ctx['complexity'],
-                recursive=finished_ctx['recursive'],
-                tags=finished_ctx['tags'],
-                calls_out=finished_ctx['calls_out'],
+                name=finished_ctx["name"],
+                lineno=finished_ctx["lineno"],
+                end_lineno=finished_ctx["end_lineno"],
+                loc=finished_ctx["loc"],
+                hash=finished_ctx["hash"],
+                complexity=finished_ctx["complexity"],
+                recursive=finished_ctx["recursive"],
+                tags=finished_ctx["tags"],
+                calls_out=finished_ctx["calls_out"],
             )
         )
 
@@ -386,9 +388,9 @@ class _DeepIndexVisitor(ast.NodeVisitor):
         if fn_name:
             self.call_counter[fn_name] += 1
             for ctx in self.func_stack:
-                ctx['calls_out'].append(fn_name)
-                if isinstance(node.func, ast.Name) and fn_name == ctx['name']:
-                    ctx['recursive'] = True
+                ctx["calls_out"].append(fn_name)
+                if isinstance(node.func, ast.Name) and fn_name == ctx["name"]:
+                    ctx["recursive"] = True
 
         self.generic_visit(node)
 
@@ -406,11 +408,7 @@ class _DeepIndexVisitor(ast.NodeVisitor):
 
         self.classes.append(
             ClassInfo(
-                name=node.name,
-                lineno=start,
-                end_lineno=end,
-                loc=(end - start + 1),
-                bases=bases
+                name=node.name, lineno=start, end_lineno=end, loc=(end - start + 1), bases=bases
             )
         )
         self.generic_visit(node)

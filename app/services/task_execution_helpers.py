@@ -3,12 +3,13 @@
 Helper classes and functions for task execution refactoring.
 تقليل التعقيد عبر تقسيم منطق execute_task إلى وحدات منفصلة.
 """
+
 from __future__ import annotations
 
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any
 
 from app.services.fastapi_generation_service import (
     OrchestratorConfig,
@@ -44,9 +45,14 @@ class TaskInitializer:
     """Handles task initialization and configuration."""
 
     @staticmethod
-    def initialize_context(task: Any, model: str | None, config_dict: dict[str, Any]) -> TaskExecutionContext:
+    def initialize_context(
+        task: Any, model: str | None, config_dict: dict[str, Any]
+    ) -> TaskExecutionContext:
         """Initialize task execution context with all required settings."""
-        from app.services.fastapi_generation_service import OrchestratorConfig, OrchestratorTelemetry
+        from app.services.fastapi_generation_service import (
+            OrchestratorConfig,
+            OrchestratorTelemetry,
+        )
 
         cfg = OrchestratorConfig(
             model_name=config_dict.get("model_name", "default"),
@@ -54,7 +60,7 @@ class TaskInitializer:
         )
 
         telemetry = OrchestratorTelemetry()
-        
+
         ctx = TaskExecutionContext(
             task=task,
             mission=task.mission if hasattr(task, "mission") else None,
@@ -97,13 +103,13 @@ class ToolCallHandler:
         """
         sig = self._tool_signature(canonical, fn_args)
         self.ctx.repeat_counter[sig] = self.ctx.repeat_counter.get(sig, 0) + 1
-        
+
         if self.ctx.repeat_counter[sig] == self.ctx.repeat_threshold:
             msg = f"repeat_pattern_threshold:{canonical}:{self.ctx.repeat_threshold}"
             self.ctx.tool_repeat_warnings.append(msg)
             self.ctx.telemetry.repeat_pattern_triggered = True
             return self.ctx.repeat_abort
-        
+
         return False
 
     @staticmethod
@@ -175,7 +181,7 @@ class TaskFinalizer:
             return TaskStatus.FAILED
         if context.telemetry.repeat_pattern_triggered and context.repeat_abort:
             return TaskStatus.FAILED
-        
+
         return TaskStatus.SUCCESS
 
 
@@ -194,10 +200,10 @@ class MessageBuilder:
     def normalize_assistant_message(raw_msg: Any) -> dict[str, Any]:
         """Normalize assistant message from LLM response."""
         msg = {"role": "assistant"}
-        
+
         if hasattr(raw_msg, "content") and raw_msg.content:
             msg["content"] = raw_msg.content
-        
+
         if hasattr(raw_msg, "tool_calls") and raw_msg.tool_calls:
             msg["tool_calls"] = [
                 {
@@ -205,12 +211,14 @@ class MessageBuilder:
                     "type": getattr(tc, "type", "function"),
                     "function": {
                         "name": getattr(tc.function, "name", "") if hasattr(tc, "function") else "",
-                        "arguments": getattr(tc.function, "arguments", "") if hasattr(tc, "function") else "",
+                        "arguments": getattr(tc.function, "arguments", "")
+                        if hasattr(tc, "function")
+                        else "",
                     },
                 }
                 for tc in raw_msg.tool_calls
             ]
-        
+
         return msg
 
 

@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import jwt
 from fastapi import HTTPException
@@ -12,12 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.boundaries import (
     CircuitBreakerConfig,
-    Principal,
     get_policy_boundary,
     get_service_boundary,
 )
 from app.config.settings import get_settings
-from app.core.ai_gateway import AIClient, get_ai_client
+from app.core.ai_gateway import AIClient
 from app.core.prompts import get_system_prompt
 from app.models import AdminConversation, AdminMessage, MessageRole
 from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
@@ -74,7 +74,7 @@ class AdminChatBoundaryService:
                 raise HTTPException(status_code=401, detail="Invalid token payload")
 
             # Verify via Policy Engine (Example Usage)
-            principal = Principal(id=str(user_id), type="user")
+            # principal = Principal(id=str(user_id), type="user")
             # We assume a default policy allows chat access for valid users
             # if not self.policy_boundary.policy_engine.evaluate(principal, "chat", "admin_api"):
             #    raise HTTPException(status_code=403, detail="Access Denied by Policy")
@@ -118,9 +118,7 @@ class AdminChatBoundaryService:
         self, conversation_id: int, role: MessageRole, content: str
     ) -> AdminMessage:
         """Persists a message to the database."""
-        message = AdminMessage(
-            conversation_id=conversation_id, role=role, content=content
-        )
+        message = AdminMessage(conversation_id=conversation_id, role=role, content=content)
         self.db.add(message)
         await self.db.commit()
         return message
@@ -152,7 +150,7 @@ class AdminChatBoundaryService:
         question: str,
         history: list[dict[str, Any]],
         ai_client: AIClient,
-        session_factory_func
+        session_factory_func,
     ) -> AsyncGenerator[str, None]:
         """
         Orchestrates the chat streaming flow protected by Service Boundaries.
@@ -196,7 +194,10 @@ class AdminChatBoundaryService:
         class StreamingPersistenceContext:
             def __init__(self):
                 self.is_persisted = False
-            async def __aenter__(self): return self
+
+            async def __aenter__(self):
+                return self
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 if not self.is_persisted:
                     if exc_type is asyncio.CancelledError:
@@ -210,8 +211,12 @@ class AdminChatBoundaryService:
 
             async with StreamingPersistenceContext():
                 tool_intents = {
-                    ChatIntent.FILE_READ, ChatIntent.FILE_WRITE, ChatIntent.CODE_SEARCH,
-                    ChatIntent.PROJECT_INDEX, ChatIntent.MISSION_COMPLEX, ChatIntent.HELP,
+                    ChatIntent.FILE_READ,
+                    ChatIntent.FILE_WRITE,
+                    ChatIntent.CODE_SEARCH,
+                    ChatIntent.PROJECT_INDEX,
+                    ChatIntent.MISSION_COMPLEX,
+                    ChatIntent.HELP,
                 }
 
                 if intent_result.intent in tool_intents:
