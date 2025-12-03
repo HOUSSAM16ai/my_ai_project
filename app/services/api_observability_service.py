@@ -253,18 +253,14 @@ class APIObservabilityService:
 
     def _check_for_anomalies(self, endpoint: str, duration_ms: float, status_code: int):
         """ML-based anomaly detection (simplified predictive model)"""
-        # Update baseline
+        # Initialize baseline if not present
         if endpoint not in self.baseline_latency:
             self.baseline_latency[endpoint] = duration_ms
+            # We return early here because the first request sets the baseline,
+            # so it can't be an anomaly relative to itself.
             return
 
-        # Exponential moving average for baseline
-        alpha = 0.1  # Smoothing factor
-        self.baseline_latency[endpoint] = (
-            alpha * duration_ms + (1 - alpha) * self.baseline_latency[endpoint]
-        )
-
-        # Detect anomalies
+        # Detect anomalies using the CURRENT baseline (before updating it)
         baseline = self.baseline_latency[endpoint]
         threshold_critical = baseline * 5.0  # 5x baseline
         threshold_high = baseline * 3.0  # 3x baseline
@@ -293,6 +289,13 @@ class APIObservabilityService:
                 },
                 recommended_action="Monitor closely - consider scaling or optimization",
             )
+
+        # Update baseline after checking for anomalies
+        # Exponential moving average for baseline
+        alpha = 0.1  # Smoothing factor
+        self.baseline_latency[endpoint] = (
+            alpha * duration_ms + (1 - alpha) * self.baseline_latency[endpoint]
+        )
 
         # SLA violation check
         if duration_ms > self.sla_target_ms:
