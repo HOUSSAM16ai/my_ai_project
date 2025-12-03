@@ -27,10 +27,11 @@ async def test_admin_auth_uses_centralized_config():
     invalid_token = jwt.encode({"sub": "123"}, old_default_key, algorithm="HS256")
 
     # 4. Patch dependencies in app.services.admin_chat_boundary_service
-    with patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings), \
-         patch("app.services.admin_chat_boundary_service.get_service_boundary") as mock_get_service, \
-         patch("app.services.admin_chat_boundary_service.get_policy_boundary"):
-
+    with (
+        patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings),
+        patch("app.services.admin_chat_boundary_service.get_service_boundary") as mock_get_service,
+        patch("app.services.admin_chat_boundary_service.get_policy_boundary"),
+    ):
         # Setup mock service boundary to avoid init failures
         mock_service_boundary = MagicMock()
         mock_get_service.return_value = mock_service_boundary
