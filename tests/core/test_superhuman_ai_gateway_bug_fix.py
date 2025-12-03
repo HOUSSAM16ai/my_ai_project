@@ -1,7 +1,15 @@
+from unittest.mock import MagicMock, patch
 
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from app.core.ai_gateway import NeuralRoutingMesh, NeuralNode, CircuitBreaker, CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+
+from app.core.ai_gateway import (
+    CIRCUIT_FAILURE_THRESHOLD,
+    CIRCUIT_RECOVERY_TIMEOUT,
+    CircuitBreaker,
+    NeuralNode,
+    NeuralRoutingMesh,
+)
+
 
 class TestGatewayBugFix:
     """
@@ -17,9 +25,10 @@ class TestGatewayBugFix:
         This verifies that when the upstream provider (or mock) returns standard OpenAI-formatted chunks,
         the gateway correctly processes them and does not trigger the 'Empty response' validation logic.
         """
-        with patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"), \
-             patch("app.core.ai_gateway.get_omni_router") as mock_get_router:
-
+        with (
+            patch("app.core.ai_gateway.OPENROUTER_API_KEY", "test_key"),
+            patch("app.core.ai_gateway.get_omni_router") as mock_get_router,
+        ):
             mock_router = MagicMock()
             mock_get_router.return_value = mock_router
             mock_router.get_ranked_nodes.return_value = ["model-1"]
@@ -29,7 +38,9 @@ class TestGatewayBugFix:
             # Manually inject node to ensure predictable routing
             client.nodes_map["model-1"] = NeuralNode(
                 model_id="model-1",
-                circuit_breaker=CircuitBreaker("test", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT)
+                circuit_breaker=CircuitBreaker(
+                    "test", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+                ),
             )
 
             # Mock _stream_from_node to yield correct OpenAI format
