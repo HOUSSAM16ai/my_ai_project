@@ -75,6 +75,8 @@ class TestSuperhumanAIGateway:
             # Mock node to be open (failing)
             mock_node = MagicMock()
             mock_node.circuit_breaker.allow_request.return_value = False
+            # Fix: Ensure mocked node has rate_limit_cooldown_until attribute
+            mock_node.rate_limit_cooldown_until = 0.0
 
             # Inject mock node
             client.nodes_map[ModelProvider.OPENAI] = mock_node
