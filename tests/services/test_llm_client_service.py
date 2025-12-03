@@ -160,7 +160,7 @@ class TestHttpFallbackClient:
             (500, "server_error_500"),
             (401, "authentication_error"),
             (429, "rate_limit_error"),
-            (418, "HTTP fallback bad status"),
+            (418, "HTTP error 418"),
         ]
 
         with mock.patch("app.services.llm_client_service.requests") as mock_requests:

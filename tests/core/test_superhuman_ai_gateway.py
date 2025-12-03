@@ -52,7 +52,10 @@ class TestSuperhumanAIGateway:
                 client._stream_from_node = MagicMock()
 
                 async def mock_stream_gen(*args, **kwargs):
-                    yield {"content": "response"}
+                    # Simulate OpenAI format
+                    yield {
+                        "choices": [{"delta": {"content": "response"}}],
+                    }
 
                 client._stream_from_node.side_effect = mock_stream_gen
 
@@ -129,14 +132,14 @@ class TestSuperhumanAIGateway:
                 yield  # unreachable
 
             async def stream_success(*args, **kwargs):
-                yield {"content": "Success"}
+                yield {"choices": [{"delta": {"content": "Success"}}]}
 
             # We need to patch _stream_from_node to behave differently per node
             # Side effect can be a function that checks args
             async def side_effect(node, messages):
                 if node.model_id == "fail_model":
                     raise Exception("Fail")
-                yield {"content": "Success"}
+                yield {"choices": [{"delta": {"content": "Success"}}]}
 
             client._stream_from_node = MagicMock(side_effect=side_effect)
 
@@ -145,4 +148,4 @@ class TestSuperhumanAIGateway:
                 response.append(chunk)
 
             assert len(response) > 0
-            assert response[0]["content"] == "Success"
+            assert response[0]["choices"][0]["delta"]["content"] == "Success"
