@@ -100,16 +100,41 @@ class CircuitBreakerRegistry:
     
     DEPRECATED: This class now delegates to the centralized CircuitBreakerRegistry
     in app.core.resilience. Use get_circuit_breaker() directly instead.
+    
+    Warning: This class is maintained for backward compatibility only.
+    New code should use: from app.core.resilience import get_circuit_breaker
     """
 
     @classmethod
     def get(cls, name: str) -> CircuitBreaker:
-        """Get circuit breaker from centralized registry."""
+        """
+        Get circuit breaker from centralized registry.
+        
+        DEPRECATED: Use get_circuit_breaker() from app.core.resilience directly.
+        """
+        import warnings
+        warnings.warn(
+            "CircuitBreakerRegistry from chat_orchestrator_service is deprecated. "
+            "Use 'from app.core.resilience import get_circuit_breaker' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return get_circuit_breaker(name)
 
     @classmethod
     def reset_all(cls):
-        """Reset all circuit breakers (for testing)."""
+        """
+        Reset all circuit breakers (for testing).
+        
+        DEPRECATED: Use reset_all_circuit_breakers() from app.core.resilience directly.
+        """
+        import warnings
+        warnings.warn(
+            "CircuitBreakerRegistry.reset_all() is deprecated. "
+            "Use 'from app.core.resilience import reset_all_circuit_breakers' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         from app.core.resilience import reset_all_circuit_breakers
         reset_all_circuit_breakers()
 
