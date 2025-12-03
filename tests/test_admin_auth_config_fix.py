@@ -4,8 +4,9 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
 from app.config.settings import AppSettings
+from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+
 
 @pytest.mark.asyncio
 async def test_admin_auth_uses_centralized_config():
