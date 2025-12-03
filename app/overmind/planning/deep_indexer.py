@@ -204,7 +204,7 @@ def _file_hash(path: str) -> str:
 def _hash_norm_function(code: str, prefix: int) -> str:
     """
     تطبيع شديد الاختصار:
-      - إزالة التعليقات
+      - إزالة التعليقات (بما في ذلك المتصلة)
       - إزالة السطور الفارغة
       - إزالة المسافات المتكررة
       - الاقتصار على أول prefix حروف من sha256
@@ -213,12 +213,14 @@ def _hash_norm_function(code: str, prefix: int) -> str:
     skip_doc = False
     doc_open = None
     for ln in code.splitlines():
+        # Strip inline comments
+        if "#" in ln:
+            ln = ln.split("#", 1)[0]
+
         stripped = ln.strip()
         if not stripped:
             continue
-        # التعليقات المنفصلة
-        if stripped.startswith("#"):
-            continue
+
         # محاولة إزالة السلاسل متعددة الأسطر (Docstring) البدائية
         if stripped.startswith(('"""', "'''")):
             marker = stripped[:3]
@@ -321,61 +323,52 @@ class _DeepIndexVisitor(ast.NodeVisitor):
             )
         )
 
-    # Complexity increasers
-    def visit_If(self, node: ast.If) -> None:
-        self._inc_complexity()
+    def _visit_complexity_node(self, node: ast.AST, amount: int = 1) -> None:
+        self._inc_complexity(amount)
         self.generic_visit(node)
+
+    # Complexity increasers - Reduced duplication
+    def visit_If(self, node: ast.If) -> None:
+        self._visit_complexity_node(node)
 
     def visit_For(self, node: ast.For) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_While(self, node: ast.While) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_Try(self, node: ast.Try) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_With(self, node: ast.With) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
 
     def visit_Match(self, node: ast.Match) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
+        self._visit_complexity_node(node)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        self._visit_complexity_node(node)
+
+    def visit_ListComp(self, node: ast.ListComp) -> None:
+        self._visit_complexity_node(node)
+
+    def visit_SetComp(self, node: ast.SetComp) -> None:
+        self._visit_complexity_node(node)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
+        self._visit_complexity_node(node)
+
+    def visit_DictComp(self, node: ast.DictComp) -> None:
+        self._visit_complexity_node(node)
 
     def visit_BoolOp(self, node: ast.BoolOp) -> None:
         self._inc_complexity(max(1, len(node.values) - 1))
-        self.generic_visit(node)
-
-    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
-
-    def visit_ListComp(self, node: ast.ListComp) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
-
-    def visit_SetComp(self, node: ast.SetComp) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
-
-    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
-        self._inc_complexity()
-        self.generic_visit(node)
-
-    def visit_DictComp(self, node: ast.DictComp) -> None:
-        self._inc_complexity()
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -408,7 +401,11 @@ class _DeepIndexVisitor(ast.NodeVisitor):
 
         self.classes.append(
             ClassInfo(
-                name=node.name, lineno=start, end_lineno=end, loc=(end - start + 1), bases=bases
+                name=node.name,
+                lineno=start,
+                end_lineno=end,
+                loc=(end - start + 1),
+                bases=bases,
             )
         )
         self.generic_visit(node)
@@ -507,19 +504,13 @@ def _parse_ast_safely(code: str) -> ast.AST | str:
         return f"parse_error:{e}"
 
 
-def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
+def _read_and_hash_file(path: str) -> tuple[str, str]:
     code = _read_file(path)
     file_sha = _file_hash(path)
+    return code, file_sha
 
-    if not code:
-        return _empty_file_module(path, file_sha, "empty_or_unreadable")
 
-    # If prior hash matches and caching could reuse parse (we still parse again if not using incremental storage)
-    result = _parse_ast_safely(code)
-    if isinstance(result, str):
-        return _empty_file_module(path, file_sha, result)
-
-    tree = result
+def _process_ast(path: str, code: str, file_sha: str, tree: ast.AST) -> FileModule:
     lines = code.splitlines()
     entrypoint = _detect_entrypoint(code, lines)
 
@@ -536,6 +527,20 @@ def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
         entrypoint=entrypoint,
         loc=len(lines),
     )
+
+
+def _parse_single_file(path: str, prior_hash: str | None = None) -> FileModule:
+    code, file_sha = _read_and_hash_file(path)
+
+    if not code:
+        return _empty_file_module(path, file_sha, "empty_or_unreadable")
+
+    # If prior hash matches and caching could reuse parse (we still parse again if not using incremental storage)
+    result = _parse_ast_safely(code)
+    if isinstance(result, str):
+        return _empty_file_module(path, file_sha, result)
+
+    return _process_ast(path, code, file_sha, result)
 
 
 # --------------------------------------------------------------------------------------
@@ -589,7 +594,9 @@ def _save_cache(cache_dir: str, data: dict[str, Any]) -> None:
 # --------------------------------------------------------------------------------------
 
 
-def _build_call_graph(modules: list[FileModule]) -> tuple[list[tuple[str, str, str, str]], Counter]:
+def _build_call_graph(
+    modules: list[FileModule],
+) -> tuple[list[tuple[str, str, str, str]], Counter]:
     """
     Returns:
       edges: [(file, function, callee_raw, callee_resolved? (maybe empty))]
@@ -646,7 +653,12 @@ def _aggregate_metrics(modules: list[FileModule]) -> dict[str, Any]:
                 max_fn = f"{m.path}::{fn.name}"
             if fn.complexity >= CONFIG["HOTSPOT_COMPLEXITY"] or fn.loc >= CONFIG["HOTSPOT_LOC"]:
                 hotspots.append(
-                    {"file": m.path, "name": fn.name, "loc": fn.loc, "complexity": fn.complexity}
+                    {
+                        "file": m.path,
+                        "name": fn.name,
+                        "loc": fn.loc,
+                        "complexity": fn.complexity,
+                    }
                 )
 
     avg_cx = (total_cx / fn_count) if fn_count else 0.0
@@ -684,7 +696,12 @@ def _collect_dup_groups(modules: list[FileModule]) -> dict[str, list[dict[str, A
     for m in modules:
         for fn in m.functions:
             dup_map[fn.hash].append(
-                {"file": m.path, "name": fn.name, "loc": fn.loc, "complexity": fn.complexity}
+                {
+                    "file": m.path,
+                    "name": fn.name,
+                    "loc": fn.loc,
+                    "complexity": fn.complexity,
+                }
             )
     result = {h: v for h, v in dup_map.items() if len(v) > 1}
     # Trim to MAX_DUP_GROUPS to prevent explosion
