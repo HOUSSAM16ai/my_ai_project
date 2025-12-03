@@ -54,8 +54,7 @@ def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundarySe
 
 
 def get_current_user_id(
-    request: Request,
-    service: AdminChatBoundaryService = Depends(get_admin_service)
+    request: Request, service: AdminChatBoundaryService = Depends(get_admin_service)
 ) -> int:
     """
     Retrieves the current user ID using the Service's Policy Boundary logic.
@@ -97,7 +96,7 @@ async def chat_stream(
         service.stream_chat_response(
             user_id, conversation, question, history, ai_client, session_factory
         ),
-        media_type="text/event-stream"
+        media_type="text/event-stream",
     )
 
 

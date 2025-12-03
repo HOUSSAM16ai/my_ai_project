@@ -28,11 +28,11 @@ security_logger = logging.getLogger("security")
 class SecurityEventLogger:
     """
     Centralized security event logging.
-    
+
     All security-related events should be logged through this class
     to maintain consistent audit trail.
     """
-    
+
     @staticmethod
     def log_auth_attempt(
         user_id: str | None,
@@ -44,7 +44,7 @@ class SecurityEventLogger:
     ):
         """
         Log authentication attempt.
-        
+
         Args:
             user_id: User ID if available
             username: Username attempted
@@ -63,7 +63,7 @@ class SecurityEventLogger:
             "reason": reason,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         if success:
             security_logger.info(
                 f"Authentication successful: user={username}, ip={ip_address}",
@@ -74,7 +74,7 @@ class SecurityEventLogger:
                 f"Authentication failed: user={username}, ip={ip_address}, reason={reason}",
                 extra=event,
             )
-    
+
     @staticmethod
     def log_access_denied(
         user_id: str,
@@ -86,7 +86,7 @@ class SecurityEventLogger:
     ):
         """
         Log access denial (authorization failure).
-        
+
         Args:
             user_id: User ID attempting access
             username: Username
@@ -105,12 +105,12 @@ class SecurityEventLogger:
             "reason": reason,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.warning(
             f"Access denied: user={username}, resource={resource}, action={action}",
             extra=event,
         )
-    
+
     @staticmethod
     def log_suspicious_activity(
         description: str,
@@ -120,7 +120,7 @@ class SecurityEventLogger:
     ):
         """
         Log suspicious activity for security analysis.
-        
+
         Args:
             description: Description of suspicious activity
             user_id: User ID if known
@@ -135,12 +135,12 @@ class SecurityEventLogger:
             "details": details or {},
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.error(
             f"Suspicious activity detected: {description}",
             extra=event,
         )
-    
+
     @staticmethod
     def log_password_change(
         user_id: str,
@@ -150,7 +150,7 @@ class SecurityEventLogger:
     ):
         """
         Log password change event.
-        
+
         Args:
             user_id: User whose password changed
             username: Username
@@ -165,12 +165,12 @@ class SecurityEventLogger:
             "initiated_by": initiated_by,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.info(
             f"Password changed: user={username}, by={initiated_by}",
             extra=event,
         )
-    
+
     @staticmethod
     def log_permission_change(
         target_user_id: str,
@@ -182,7 +182,7 @@ class SecurityEventLogger:
     ):
         """
         Log permission/role change.
-        
+
         Args:
             target_user_id: User whose permissions changed
             target_username: Target username
@@ -201,12 +201,12 @@ class SecurityEventLogger:
             "ip_address": ip_address,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.warning(
             f"Permissions changed: target={target_username}, admin={admin_username}",
             extra=event,
         )
-    
+
     @staticmethod
     def log_data_access(
         user_id: str,
@@ -218,7 +218,7 @@ class SecurityEventLogger:
     ):
         """
         Log sensitive data access.
-        
+
         Args:
             user_id: User accessing data
             username: Username
@@ -237,12 +237,12 @@ class SecurityEventLogger:
             "ip_address": ip_address,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.info(
             f"Data access: user={username}, resource={resource_type}/{resource_id}, action={action}",
             extra=event,
         )
-    
+
     @staticmethod
     def log_rate_limit_exceeded(
         client_id: str,
@@ -251,7 +251,7 @@ class SecurityEventLogger:
     ):
         """
         Log rate limit violation.
-        
+
         Args:
             client_id: Client identifier
             endpoint: Endpoint being accessed
@@ -264,7 +264,7 @@ class SecurityEventLogger:
             "ip_address": ip_address,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         security_logger.warning(
             f"Rate limit exceeded: client={client_id}, endpoint={endpoint}",
             extra=event,
@@ -307,7 +307,7 @@ def log_unauthorized_access(user_id: str, resource: str, action: str, ip: str):
 
 __all__ = [
     "SecurityEventLogger",
-    "log_login_success",
     "log_login_failure",
+    "log_login_success",
     "log_unauthorized_access",
 ]

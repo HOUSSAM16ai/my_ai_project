@@ -1,17 +1,14 @@
-
 import asyncio
 import threading
-import time
+from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import Request, Response
+from fastapi import Request
 
 from app.services.api_observability_service import (
     APIObservabilityService,
-    RequestMetrics,
     get_observability_service,
     monitor_performance,
 )
@@ -75,7 +72,7 @@ class TestAPIObservabilityService:
             method="POST",
             status_code=500,
             duration_ms=45.0,
-            error="Internal Server Error"
+            error="Internal Server Error",
         )
 
         assert len(observability_service.metrics_buffer) == 1
@@ -96,18 +93,12 @@ class TestAPIObservabilityService:
         latencies = [10.0, 20.0, 30.0, 100.0]
         for lat in latencies:
             observability_service.record_request_metrics(
-                endpoint="/api/test",
-                method="GET",
-                status_code=200,
-                duration_ms=lat
+                endpoint="/api/test", method="GET", status_code=200, duration_ms=lat
             )
 
         # Add an error
         observability_service.record_request_metrics(
-            endpoint="/api/test",
-            method="GET",
-            status_code=500,
-            duration_ms=50.0
+            endpoint="/api/test", method="GET", status_code=500, duration_ms=50.0
         )
         latencies.append(50.0)
 
@@ -119,12 +110,12 @@ class TestAPIObservabilityService:
 
     def test_calculate_rps(self, observability_service: APIObservabilityService):
         # Mock time to ensure metrics are considered "recent"
-        with patch('app.services.api_observability_service.datetime') as mock_datetime:
+        with patch("app.services.api_observability_service.datetime") as mock_datetime:
             now = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
             mock_datetime.now.return_value = now
 
             # Metrics from 30 seconds ago
-            metric_time = now - timedelta(seconds=30)
+            # metric_time = now - timedelta(seconds=30)
 
             # We need to manually construct metrics because record_request_metrics uses datetime.now()
             # which we are mocking, but we want to control the timestamp of the metric specifically.
@@ -237,13 +228,11 @@ class TestAPIObservabilityService:
 
     def test_thread_safety(self, observability_service: APIObservabilityService):
         """Test that methods are thread-safe."""
+
         def worker():
             for _ in range(100):
                 observability_service.record_request_metrics(
-                    endpoint="/api/thread",
-                    method="GET",
-                    status_code=200,
-                    duration_ms=10.0
+                    endpoint="/api/thread", method="GET", status_code=200, duration_ms=10.0
                 )
 
         threads = [threading.Thread(target=worker) for _ in range(10)]
@@ -259,7 +248,7 @@ class TestAPIObservabilityService:
         """Test the monitor_performance decorator with an async function."""
 
         # We need to patch the global observability_service used by the decorator
-        with patch('app.services.api_observability_service.observability_service') as mock_service:
+        with patch("app.services.api_observability_service.observability_service") as mock_service:
 
             @monitor_performance
             async def monitored_func(req: Request):
@@ -285,7 +274,7 @@ class TestAPIObservabilityService:
     def test_monitor_performance_decorator_exception(self):
         """Test the monitor_performance decorator when an exception occurs."""
 
-        with patch('app.services.api_observability_service.observability_service') as mock_service:
+        with patch("app.services.api_observability_service.observability_service") as mock_service:
 
             @monitor_performance
             async def failing_func():

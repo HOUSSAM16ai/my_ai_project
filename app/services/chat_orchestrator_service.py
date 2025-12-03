@@ -41,15 +41,13 @@ import logging
 import re
 import time
 from collections.abc import AsyncGenerator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
 # Use centralized circuit breaker
 from app.core.resilience import (
     CircuitBreaker,
-    CircuitBreakerConfig,
-    CircuitState,
     get_circuit_breaker,
 )
 
@@ -94,13 +92,14 @@ class ChatTelemetry:
 # NOTE: Circuit breaker logic moved to app/core/resilience/circuit_breaker.py
 # This section is kept for backward compatibility but delegates to centralized module
 
+
 class CircuitBreakerRegistry:
     """
     Registry for circuit breakers per tool.
-    
+
     DEPRECATED: This class now delegates to the centralized CircuitBreakerRegistry
     in app.core.resilience. Use get_circuit_breaker() directly instead.
-    
+
     Warning: This class is maintained for backward compatibility only.
     New code should use: from app.core.resilience import get_circuit_breaker
     """
@@ -109,15 +108,16 @@ class CircuitBreakerRegistry:
     def get(cls, name: str) -> CircuitBreaker:
         """
         Get circuit breaker from centralized registry.
-        
+
         DEPRECATED: Use get_circuit_breaker() from app.core.resilience directly.
         """
         import warnings
+
         warnings.warn(
             "CircuitBreakerRegistry from chat_orchestrator_service is deprecated. "
             "Use 'from app.core.resilience import get_circuit_breaker' instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return get_circuit_breaker(name)
 
@@ -125,17 +125,19 @@ class CircuitBreakerRegistry:
     def reset_all(cls):
         """
         Reset all circuit breakers (for testing).
-        
+
         DEPRECATED: Use reset_all_circuit_breakers() from app.core.resilience directly.
         """
         import warnings
+
         warnings.warn(
             "CircuitBreakerRegistry.reset_all() is deprecated. "
             "Use 'from app.core.resilience import reset_all_circuit_breakers' instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         from app.core.resilience import reset_all_circuit_breakers
+
         reset_all_circuit_breakers()
 
 

@@ -1,8 +1,11 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
-from app.models import AdminConversation, MessageRole
+
+import pytest
+
 from app.core.ai_gateway import AIClient
+from app.models import AdminConversation
+from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+
 
 @pytest.mark.asyncio
 async def test_conversation_init_before_intent_detection_failure():
@@ -41,7 +44,9 @@ async def test_conversation_init_before_intent_detection_failure():
 
         # Verify
         has_init = any("conversation_init" in e for e in events)
-        has_error = any("Intent detection failed" in e for e in events) or any("Service Error" in e for e in events)
+        has_error = any("Intent detection failed" in e for e in events) or any(
+            "Service Error" in e for e in events
+        )
 
         assert has_init, "conversation_init event was not emitted before intent detection failure"
         assert has_error, "Error event was not emitted after intent detection failure"

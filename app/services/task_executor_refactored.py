@@ -10,12 +10,13 @@ This module implements the refactored execute_task logic using:
 - Builder Pattern for result construction
 - Guard Clauses to reduce nesting depth
 """
+
 from __future__ import annotations
 
 import json
 import os
 import traceback
-from typing import Any, Protocol
+from typing import Any
 
 from app.services.task_execution_helpers import (
     MessageBuilder,
@@ -29,6 +30,7 @@ from app.services.task_execution_helpers import (
 
 # Import required types and functions
 try:
+    from app.services import agent_tools
     from app.services.fastapi_generation_service import (
         MissionEventType,
         StepState,
@@ -38,35 +40,34 @@ try:
         log_mission_event,
     )
     from app.services.llm_client_service import get_llm_client
-    from app.services import agent_tools
 except Exception:
     # Fallback for testing
     def get_llm_client():
         raise RuntimeError("LLM client not available")
-    
+
     def log_mission_event(*args, **kwargs):
         pass
-    
+
     class MissionEventType:
         TASK_STATUS_CHANGE = "TASK_STATUS_CHANGE"
         TASK_UPDATED = "TASK_UPDATED"
-    
+
     class TaskStatus:
         RUNNING = "RUNNING"
         SUCCESS = "SUCCESS"
         FAILED = "FAILED"
-    
+
     def _cfg(key: str, default: Any = None) -> str:
         return os.getenv(key, str(default))
-    
+
     def _select_model(explicit: str | None = None, task: Any = None) -> str:
         return explicit or "default-model"
-    
+
     class agent_tools:
         @staticmethod
         def get_tools_schema():
             return []
-        
+
         @staticmethod
         def resolve_tool_name(name: str) -> str:
             return name
@@ -75,12 +76,12 @@ except Exception:
 class TaskExecutor:
     """
     Refactored task executor with reduced complexity.
-    
+
     Original Metrics:
     - Cyclomatic Complexity: 43
     - Lines of Code: 219
     - Nesting Depth: 6
-    
+
     Target Metrics:
     - Cyclomatic Complexity: ≤10
     - Lines of Code: ≤80 (main method)
@@ -94,7 +95,7 @@ class TaskExecutor:
     def execute(self, task: Any, model: str | None = None) -> None:
         """
         Execute task with drastically reduced complexity.
-        
+
         This method orchestrates task execution by delegating to specialized handlers.
         Complexity reduced from 43 to ~8 through systematic decomposition.
         """
@@ -177,7 +178,9 @@ class TaskExecutor:
                 "final_reason": "client_init_failed",
                 "error": ctx.telemetry.error,
             }
-            self.service._finalize_task_safe(ctx.task, TaskStatus.FAILED, "LLM client initialization failed.")
+            self.service._finalize_task_safe(
+                ctx.task, TaskStatus.FAILED, "LLM client initialization failed."
+            )
             return None
 
     def _handle_initialization_failure(self, ctx: TaskExecutionContext) -> None:
@@ -188,11 +191,7 @@ class TaskExecutor:
 
     def _build_context(self, ctx: TaskExecutionContext) -> str:
         """Build context blob for task. CC: 1"""
-        return self.service._build_context_blob(
-            ctx.task,
-            ctx.hotspot_hint_enabled,
-            ctx.telemetry
-        )
+        return self.service._build_context_blob(ctx.task, ctx.hotspot_hint_enabled, ctx.telemetry)
 
     def _build_messages(self, ctx: TaskExecutionContext, context_blob: str) -> list[dict[str, Any]]:
         """Build initial messages. CC: 1"""
@@ -208,12 +207,12 @@ class TaskExecutor:
     ) -> None:
         """
         Execute task steps with reduced complexity.
-        
+
         Original complexity: Nested in main function with CC contribution ~25
         Refactored complexity: CC ~8
         """
         step_executor = StepExecutor(ctx, client, messages, tools_schema, self.service)
-        
+
         for idx in range(ctx.cfg.max_steps):
             should_break = step_executor.execute_step(idx)
             if should_break:
@@ -241,7 +240,9 @@ class TaskExecutor:
             "error": ctx.telemetry.error,
             "tool_repeat_warnings": ctx.tool_repeat_warnings,
         }
-        self.service._finalize_task_safe(ctx.task, TaskStatus.FAILED, f"Catastrophic failure: {exc}")
+        self.service._finalize_task_safe(
+            ctx.task, TaskStatus.FAILED, f"Catastrophic failure: {exc}"
+        )
 
 
 class StepExecutor:
@@ -268,10 +269,10 @@ class StepExecutor:
     def execute_step(self, idx: int) -> bool:
         """
         Execute a single step.
-        
+
         Returns:
             bool: True if should break from loop, False otherwise
-        
+
         CC: 5 (significantly reduced from original ~15)
         """
         state = StepState(step_index=idx)
@@ -328,10 +329,10 @@ class StepExecutor:
     def _handle_tool_calls(self, state: StepState, tool_calls: list[dict[str, Any]]) -> bool:
         """
         Handle tool calls for this step.
-        
+
         Returns:
             bool: True if should break from loop
-        
+
         CC: 6 (reduced from original ~12)
         """
         state.decision = "tool"
@@ -363,10 +364,10 @@ class StepExecutor:
     ) -> bool:
         """
         Process a single tool call.
-        
+
         Returns:
             bool: True if should abort execution
-        
+
         CC: 5 (reduced from original ~8)
         """
         # Extract tool information
@@ -424,17 +425,17 @@ class StepExecutor:
         """Execute tool and record result. CC: 2"""
         # Invoke tool
         tool_res = self._invoke_tool(canonical, fn_args)
-        payload_dict = getattr(
-            tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"}
-        )()
+        payload_dict = getattr(tool_res, "to_dict", lambda: {"ok": False, "error": "NO_TO_DICT"})()
 
         # Add to messages
-        self.messages.append({
-            "role": "tool",
-            "tool_call_id": call_id,
-            "name": canonical,
-            "content": self._safe_json(payload_dict),
-        })
+        self.messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": call_id,
+                "name": canonical,
+                "content": self._safe_json(payload_dict),
+            }
+        )
 
         # Emit event if needed
         if self.ctx.emit_events:
@@ -452,13 +453,14 @@ class StepExecutor:
     def _invoke_tool(self, name: str, args: dict[str, Any]) -> Any:
         """Invoke tool by name. CC: 1"""
         from app.services.agent_tools import _TOOL_REGISTRY
-        
+
         tool_fn = _TOOL_REGISTRY.get(name, {}).get("fn")
         if tool_fn:
             return tool_fn(**args)
-        
+
         # Fallback
         from app.services.agent_tools import ToolResult
+
         return ToolResult(ok=False, error=f"Tool '{name}' not found")
 
     @staticmethod

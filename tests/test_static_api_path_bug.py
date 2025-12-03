@@ -1,10 +1,11 @@
-
 import os
 import shutil
 import tempfile
 from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
+
 
 @pytest.fixture
 def app_with_static_api_path():
@@ -32,6 +33,7 @@ def app_with_static_api_path():
     yield app
 
     shutil.rmtree(tmpdir)
+
 
 def test_static_file_with_api_in_path_should_be_served(app_with_static_api_path):
     """

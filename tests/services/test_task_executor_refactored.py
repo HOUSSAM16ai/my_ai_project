@@ -5,9 +5,10 @@ SUPERHUMAN INTEGRATION TESTS FOR REFACTORED TASK EXECUTOR
 
 These tests ensure the refactored executor works seamlessly with existing code.
 """
-import json
+
+import contextlib
 from types import SimpleNamespace
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -61,7 +62,7 @@ class TestTaskExecutorIntegration:
         """✅ Test execution when LLM client initialization fails."""
         mock_get_client.side_effect = Exception("Client init failed")
         mock_agent_tools.get_tools_schema.return_value = []
-        
+
         executor = TaskExecutor(mock_service)
         executor.execute(mock_task, "gpt-4")
 
@@ -81,7 +82,7 @@ class TestTaskExecutorIntegration:
         monkeypatch.setenv("MAESTRO_EMIT_TASK_EVENTS", "0")
         monkeypatch.setenv("MAESTRO_STAGNATION_ENFORCE", "0")
         monkeypatch.setenv("AGENT_MAX_STEPS", "5")
-        
+
         # Mock LLM client
         mock_client = MagicMock()
         mock_response = SimpleNamespace(
@@ -128,9 +129,7 @@ class TestTaskExecutorIntegration:
                 to_dict=lambda: {"ok": True, "result": "file content"},
             )
 
-        mock_agent_tools._TOOL_REGISTRY = {
-            "read_file": {"fn": mock_read_file}
-        }
+        mock_agent_tools._TOOL_REGISTRY = {"read_file": {"fn": mock_read_file}}
         mock_agent_tools.get_tools_schema.return_value = [
             {"type": "function", "function": {"name": "read_file"}}
         ]
@@ -138,7 +137,7 @@ class TestTaskExecutorIntegration:
 
         # Mock LLM responses: first with tool call, then final answer
         mock_client = MagicMock()
-        
+
         # First response: tool call
         tool_response = SimpleNamespace(
             choices=[
@@ -160,7 +159,7 @@ class TestTaskExecutorIntegration:
             ],
             usage=SimpleNamespace(total_tokens=100),
         )
-        
+
         # Second response: final answer
         final_response = SimpleNamespace(
             choices=[
@@ -173,7 +172,7 @@ class TestTaskExecutorIntegration:
             ],
             usage=SimpleNamespace(total_tokens=50),
         )
-        
+
         mock_client.chat.completions.create.side_effect = [tool_response, final_response]
         mock_get_client.return_value = mock_client
 
@@ -220,11 +219,7 @@ class TestTaskExecutorIntegration:
         mock_agent_tools.get_tools_schema.return_value = []
         mock_agent_tools.resolve_tool_name.side_effect = lambda x: x
         mock_agent_tools._TOOL_REGISTRY = {
-            "read_file": {
-                "fn": lambda **kw: SimpleNamespace(
-                    ok=True, to_dict=lambda: {"ok": True}
-                )
-            }
+            "read_file": {"fn": lambda **kw: SimpleNamespace(ok=True, to_dict=lambda: {"ok": True})}
         }
 
         executor = TaskExecutor(mock_service)
@@ -241,11 +236,11 @@ class TestStepExecutorIntegration:
     @pytest.fixture
     def mock_context(self):
         """Create mock execution context."""
-        from app.services.task_execution_helpers import TaskExecutionContext
         from app.services.fastapi_generation_service import (
             OrchestratorConfig,
             OrchestratorTelemetry,
         )
+        from app.services.task_execution_helpers import TaskExecutionContext
 
         return TaskExecutionContext(
             task=SimpleNamespace(id=1),
@@ -288,11 +283,7 @@ class TestStepExecutorIntegration:
         """✅ Test step executor detects stagnation."""
         mock_agent_tools.resolve_tool_name.side_effect = lambda x: x
         mock_agent_tools._TOOL_REGISTRY = {
-            "read_file": {
-                "fn": lambda **kw: SimpleNamespace(
-                    ok=True, to_dict=lambda: {"ok": True}
-                )
-            }
+            "read_file": {"fn": lambda **kw: SimpleNamespace(ok=True, to_dict=lambda: {"ok": True})}
         }
 
         # Set previous tools to same as current
@@ -340,11 +331,7 @@ class TestStepExecutorIntegration:
 
         mock_agent_tools.resolve_tool_name.side_effect = lambda x: x
         mock_agent_tools._TOOL_REGISTRY = {
-            "read_file": {
-                "fn": lambda **kw: SimpleNamespace(
-                    ok=True, to_dict=lambda: {"ok": True}
-                )
-            }
+            "read_file": {"fn": lambda **kw: SimpleNamespace(ok=True, to_dict=lambda: {"ok": True})}
         }
 
         mock_client = MagicMock()
@@ -395,7 +382,7 @@ class TestBackwardCompatibility:
     def test_task_executor_maintains_interface(self, monkeypatch):
         """✅ Test that TaskExecutor maintains expected interface."""
         monkeypatch.delenv("MAESTRO_EMIT_TASK_EVENTS", raising=False)
-        
+
         service = MagicMock()
         executor = TaskExecutor(service)
 
@@ -405,20 +392,18 @@ class TestBackwardCompatibility:
 
         # Should accept task and optional model
         task = SimpleNamespace(id=1)
-        try:
-            executor.execute(task, None)
-        except Exception:
-            pass  # Expected to fail but interface should be correct
+        with contextlib.suppress(Exception):
+            executor.execute(task, None)  # Expected to fail but interface should be correct
 
     def test_result_format_compatibility(self):
         """✅ Test that result format is compatible with existing code."""
-        from app.services.task_execution_helpers import (
-            TaskExecutionContext,
-            TaskFinalizer,
-        )
         from app.services.fastapi_generation_service import (
             OrchestratorConfig,
             OrchestratorTelemetry,
+        )
+        from app.services.task_execution_helpers import (
+            TaskExecutionContext,
+            TaskFinalizer,
         )
 
         ctx = TaskExecutionContext(
@@ -456,7 +441,7 @@ class TestExtensibility:
 
         ctx = MagicMock()
         handler = CustomToolCallHandler(ctx)
-        
+
         assert hasattr(handler, "custom_validation")
         assert handler.custom_validation() is True
 
@@ -491,11 +476,11 @@ class TestExtensibility:
     @patch("app.services.task_executor_refactored.agent_tools")
     def test_step_executor_extract_tool_info_robustness(self, mock_agent_tools):
         """✅ Test that tool info extraction is robust."""
-        from app.services.task_execution_helpers import TaskExecutionContext
         from app.services.fastapi_generation_service import (
             OrchestratorConfig,
             OrchestratorTelemetry,
         )
+        from app.services.task_execution_helpers import TaskExecutionContext
 
         ctx = TaskExecutionContext(
             task=MagicMock(),
@@ -509,7 +494,7 @@ class TestExtensibility:
         # Test with incomplete call
         call = {"id": "call_1"}
         fn_name, fn_args, call_id = executor._extract_tool_info(call)
-        
+
         assert fn_name is None
         assert fn_args == {}
         assert call_id == "call_1"
@@ -523,7 +508,7 @@ class TestExtensibility:
             },
         }
         fn_name, fn_args, call_id = executor._extract_tool_info(call)
-        
+
         assert fn_name == "read_file"
         assert fn_args == {"path": "/test.txt"}
         assert call_id == "call_2"

@@ -7,24 +7,24 @@ SUPERHUMAN ERROR HANDLING FRAMEWORK
 This module provides centralized error handling to eliminate excessive try-except blocks.
 Uses decorators and context managers for clean, DRY error handling.
 """
+
 import functools
 import logging
 import traceback
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Callable, TypeVar, cast
-
-from app.core.common_imports import logging as _  # Ensure logging is available
-
+from typing import Any, TypeVar, cast
 
 # Type variables for generic functions
-T = TypeVar('T')
-F = TypeVar('F', bound=Callable[..., Any])
+T = TypeVar("T")
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 logger = logging.getLogger(__name__)
 
 
 # ==================== DECORATORS ====================
+
 
 def safe_execute(
     default_return: Any = None,
@@ -34,20 +34,21 @@ def safe_execute(
 ):
     """
     Decorator for safe function execution with automatic error handling.
-    
+
     Eliminates the need for repetitive try-except blocks.
-    
+
     Args:
         default_return: Value to return on error
         log_error: Whether to log the error
         error_message: Custom error message
         raise_on_error: Whether to re-raise the exception
-        
+
     Example:
         @safe_execute(default_return={}, log_error=True)
         def risky_operation():
             return dangerous_call()
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -60,7 +61,9 @@ def safe_execute(
                 if raise_on_error:
                     raise
                 return default_return
+
         return cast(F, wrapper)
+
     return decorator
 
 
@@ -73,27 +76,28 @@ def retry_on_failure(
 ):
     """
     Decorator to retry function on failure with exponential backoff.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         delay: Initial delay between retries (seconds)
         backoff: Multiplier for delay after each retry
         exceptions: Tuple of exceptions to catch and retry
         log_retry: Whether to log retry attempts
-        
+
     Example:
         @retry_on_failure(max_retries=3, delay=1.0)
         def unstable_api_call():
             return external_service.call()
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             import time
-            
+
             current_delay = delay
             last_exception = None
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
@@ -108,31 +112,32 @@ def retry_on_failure(
                         current_delay *= backoff
                     else:
                         if log_retry:
-                            logger.error(
-                                f"Failed after {max_retries} retries: {func.__name__}"
-                            )
-            
+                            logger.error(f"Failed after {max_retries} retries: {func.__name__}")
+
             # All retries exhausted
             if last_exception:
                 raise last_exception
             return None
+
         return cast(F, wrapper)
+
     return decorator
 
 
 def suppress_errors(*exceptions: type[Exception], log_error: bool = False):
     """
     Decorator to suppress specific exceptions.
-    
+
     Args:
         *exceptions: Exception types to suppress
         log_error: Whether to log suppressed errors
-        
+
     Example:
         @suppress_errors(ValueError, KeyError, log_error=True)
         def parse_data(data):
             return data['key']  # Won't crash if key missing
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -142,11 +147,14 @@ def suppress_errors(*exceptions: type[Exception], log_error: bool = False):
                 if log_error:
                     logger.debug(f"Suppressed error in {func.__name__}: {e}")
                 return None
+
         return cast(F, wrapper)
+
     return decorator
 
 
 # ==================== CONTEXT MANAGERS ====================
+
 
 @contextmanager
 def safe_context(
@@ -157,13 +165,13 @@ def safe_context(
 ):
     """
     Context manager for safe execution blocks.
-    
+
     Args:
         error_message: Message to log on error
         default_return: Value to yield on error
         log_error: Whether to log the error
         raise_on_error: Whether to re-raise the exception
-        
+
     Example:
         with safe_context("Database operation failed", default_return=[]):
             results = db.query(Model).all()
@@ -183,10 +191,10 @@ def safe_context(
 def capture_errors(error_list: list[Exception] | None = None):
     """
     Context manager to capture errors without crashing.
-    
+
     Args:
         error_list: List to append captured errors to
-        
+
     Example:
         errors = []
         with capture_errors(errors):
@@ -203,14 +211,15 @@ def capture_errors(error_list: list[Exception] | None = None):
 
 # ==================== ERROR HANDLERS ====================
 
+
 class ErrorHandler:
     """Centralized error handling with logging and metrics."""
-    
+
     def __init__(self, service_name: str = "unknown"):
         self.service_name = service_name
         self.logger = logging.getLogger(f"error_handler.{service_name}")
         self.error_count = 0
-    
+
     def handle(
         self,
         error: Exception,
@@ -219,36 +228,37 @@ class ErrorHandler:
     ) -> None:
         """
         Handle an error with logging and metrics.
-        
+
         Args:
             error: The exception to handle
             context: Additional context information
             severity: Log severity level
         """
         self.error_count += 1
-        
+
         log_func = getattr(self.logger, severity, self.logger.error)
-        
+
         context_str = ""
         if context:
             context_str = f" | Context: {context}"
-        
+
         log_func(
             f"[{self.service_name}] Error #{self.error_count}: "
             f"{type(error).__name__}: {error}{context_str}"
         )
-    
+
     def wrap_function(self, func: F, default_return: Any = None) -> F:
         """
         Wrap a function with error handling.
-        
+
         Args:
             func: Function to wrap
             default_return: Value to return on error
-            
+
         Returns:
             Wrapped function
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
@@ -256,10 +266,12 @@ class ErrorHandler:
             except Exception as e:
                 self.handle(e, context={"args": args, "kwargs": kwargs})
                 return default_return
+
         return cast(F, wrapper)
 
 
 # ==================== UTILITY FUNCTIONS ====================
+
 
 def log_exception(
     logger_instance: logging.Logger | None = None,
@@ -268,7 +280,7 @@ def log_exception(
 ) -> None:
     """
     Log current exception with traceback.
-    
+
     Args:
         logger_instance: Logger to use (or default)
         message: Message to log
@@ -282,42 +294,39 @@ def log_exception(
 def format_exception(error: Exception, include_traceback: bool = True) -> str:
     """
     Format exception for display.
-    
+
     Args:
         error: Exception to format
         include_traceback: Whether to include full traceback
-        
+
     Returns:
         Formatted error string
     """
     error_type = type(error).__name__
     error_msg = str(error)
-    
+
     if include_traceback:
         tb = traceback.format_exc()
         return f"{error_type}: {error_msg}\n\nTraceback:\n{tb}"
-    
+
     return f"{error_type}: {error_msg}"
 
 
 # ==================== EXPORTS ====================
 
 __all__ = [
-    # Decorators
-    'safe_execute',
-    'retry_on_failure',
-    'suppress_errors',
-    
-    # Context managers
-    'safe_context',
-    'capture_errors',
-    
     # Classes
-    'ErrorHandler',
-    
+    "ErrorHandler",
+    # Context managers
+    "capture_errors",
     # Utilities
-    'log_exception',
-    'format_exception',
+    "format_exception",
+    "log_exception",
+    # Decorators
+    "retry_on_failure",
+    "safe_context",
+    "safe_execute",
+    "suppress_errors",
 ]
 
 
