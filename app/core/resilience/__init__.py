@@ -17,8 +17,12 @@ from .circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerRegistry,
+    CircuitOpenError,
     CircuitState,
+    get_all_circuit_breaker_stats,
     get_circuit_breaker,
+    reset_all_circuit_breakers,
+    reset_circuit_breaker,
 )
 
 __all__ = [
@@ -26,5 +30,9 @@ __all__ = [
     "CircuitBreakerConfig",
     "CircuitBreakerRegistry",
     "CircuitState",
+    "CircuitOpenError",
     "get_circuit_breaker",
+    "reset_circuit_breaker",
+    "reset_all_circuit_breakers",
+    "get_all_circuit_breaker_stats",
 ]
