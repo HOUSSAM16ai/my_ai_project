@@ -15,7 +15,6 @@ from app.services.aiops_self_healing_service import (
 
 
 class TestAIOpsService:
-
     @pytest.fixture
     def aiops_service(self):
         # Create a fresh instance for each test to avoid state leakage
@@ -37,8 +36,8 @@ class TestAIOpsService:
                 metric_id=f"m-{i}",
                 service_name=service_name,
                 metric_type=metric_type,
-                value=100.0 + (i % 2), # Alternating 100, 101
-                timestamp=datetime.now(UTC)
+                value=100.0 + (i % 2),  # Alternating 100, 101
+                timestamp=datetime.now(UTC),
             )
             aiops_service.collect_telemetry(data)
 
@@ -63,7 +62,7 @@ class TestAIOpsService:
                 service_name=service_name,
                 metric_type=metric_type,
                 value=v,
-                timestamp=datetime.now(UTC)
+                timestamp=datetime.now(UTC),
             )
             aiops_service.collect_telemetry(data)
 
@@ -79,10 +78,10 @@ class TestAIOpsService:
             service_name=service_name,
             metric_type=metric_type,
             value=120.0,
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
 
-        with patch.object(aiops_service, '_trigger_healing') as mock_healing:
+        with patch.object(aiops_service, "_trigger_healing") as mock_healing:
             aiops_service.collect_telemetry(anomaly_data)
 
             # Check if anomaly was recorded
@@ -103,8 +102,8 @@ class TestAIOpsService:
                 metric_id=f"seed-{i}",
                 service_name=service_name,
                 metric_type=metric_type,
-                value=0.01, # Low error rate
-                timestamp=datetime.now(UTC)
+                value=0.01,  # Low error rate
+                timestamp=datetime.now(UTC),
             )
             aiops_service.collect_telemetry(data)
 
@@ -114,10 +113,10 @@ class TestAIOpsService:
             service_name=service_name,
             metric_type=metric_type,
             value=0.06,
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
 
-        with patch.object(aiops_service, '_trigger_healing') as mock_healing:
+        with patch.object(aiops_service, "_trigger_healing") as mock_healing:
             aiops_service.collect_telemetry(data)
 
             assert len(aiops_service.anomalies) == 1
@@ -130,18 +129,14 @@ class TestAIOpsService:
     def test_healing_action_determination(self, aiops_service):
         # 1. Latency Spike -> Scale Up
         anomaly_latency = MagicMock(
-            anomaly_type=AnomalyType.LATENCY_SPIKE,
-            service_name="svc-1",
-            anomaly_id="a1"
+            anomaly_type=AnomalyType.LATENCY_SPIKE, service_name="svc-1", anomaly_id="a1"
         )
         action_latency = aiops_service._determine_healing_action(anomaly_latency)
         assert action_latency["action"] == HealingAction.SCALE_UP
 
         # 2. Error Rate -> Circuit Breaker
         anomaly_error = MagicMock(
-            anomaly_type=AnomalyType.ERROR_RATE_INCREASE,
-            service_name="svc-1",
-            anomaly_id="a2"
+            anomaly_type=AnomalyType.ERROR_RATE_INCREASE, service_name="svc-1", anomaly_id="a2"
         )
         action_error = aiops_service._determine_healing_action(anomaly_error)
         assert action_error["action"] == HealingAction.ENABLE_CIRCUIT_BREAKER
@@ -152,7 +147,7 @@ class TestAIOpsService:
             metric_value=200,
             expected_value=100,
             service_name="svc-1",
-            anomaly_id="a3"
+            anomaly_id="a3",
         )
         action_traffic = aiops_service._determine_healing_action(anomaly_traffic)
         assert action_traffic["action"] == HealingAction.SCALE_UP
@@ -161,9 +156,9 @@ class TestAIOpsService:
         anomaly_low = MagicMock(
             anomaly_type=AnomalyType.TRAFFIC_ANOMALY,
             metric_value=50,
-            expected_value=100, # Lower than expected, maybe not scale up
+            expected_value=100,  # Lower than expected, maybe not scale up
             service_name="svc-1",
-            anomaly_id="a4"
+            anomaly_id="a4",
         )
         # The logic is: metric_value > expected_value
         action_low = aiops_service._determine_healing_action(anomaly_low)
@@ -176,6 +171,7 @@ class TestAIOpsService:
 
         # Manually inject anomaly into state
         from app.services.aiops_self_healing_service import AnomalyDetection
+
         anomaly = AnomalyDetection(
             anomaly_id=anomaly_id,
             service_name=service_name,
@@ -185,12 +181,12 @@ class TestAIOpsService:
             metric_value=200,
             expected_value=100,
             confidence=1.0,
-            description="test"
+            description="test",
         )
         aiops_service.anomalies[anomaly_id] = anomaly
 
         # Trigger healing via public method to cover flow
-        with patch('uuid.uuid4', return_value="decision-id"):
+        with patch("uuid.uuid4", return_value="decision-id"):
             aiops_service._trigger_healing(anomaly)
 
         assert "decision-id" in aiops_service.healing_decisions
@@ -212,7 +208,7 @@ class TestAIOpsService:
                 service_name=service_name,
                 metric_type=metric_type,
                 value=float(i),
-                timestamp=base_time + timedelta(hours=i)
+                timestamp=base_time + timedelta(hours=i),
             )
             aiops_service.collect_telemetry(data)
 
@@ -254,7 +250,7 @@ class TestAIOpsService:
                 service_name=service_name,
                 metric_type=MetricType.REQUEST_RATE,
                 value=100.0,
-                timestamp=datetime.now(UTC)
+                timestamp=datetime.now(UTC),
             )
             aiops_service.collect_telemetry(data)
 
@@ -271,6 +267,7 @@ class TestAIOpsService:
 
         # Create anomaly
         from app.services.aiops_self_healing_service import AnomalyDetection
+
         anomaly = AnomalyDetection(
             anomaly_id=anomaly_id,
             service_name=service_name,
@@ -280,31 +277,35 @@ class TestAIOpsService:
             metric_value=500,
             expected_value=100,
             confidence=0.9,
-            description="Latency high"
+            description="Latency high",
         )
         aiops_service.anomalies[anomaly_id] = anomaly
 
         # 1. Test "Correlated with increased error rate"
         # Add error rate metrics
-        aiops_service.collect_telemetry(TelemetryData(
-            metric_id="err-1",
-            service_name=service_name,
-            metric_type=MetricType.ERROR_RATE,
-            value=0.15,
-            timestamp=datetime.now(UTC)
-        ))
+        aiops_service.collect_telemetry(
+            TelemetryData(
+                metric_id="err-1",
+                service_name=service_name,
+                metric_type=MetricType.ERROR_RATE,
+                value=0.15,
+                timestamp=datetime.now(UTC),
+            )
+        )
 
         causes = aiops_service.analyze_root_cause(anomaly_id)
         assert "Correlated with increased error rate" in causes
 
         # 2. Test CPU Usage
-        aiops_service.collect_telemetry(TelemetryData(
-            metric_id="cpu-1",
-            service_name=service_name,
-            metric_type=MetricType.CPU_USAGE,
-            value=85.0,
-            timestamp=datetime.now(UTC)
-        ))
+        aiops_service.collect_telemetry(
+            TelemetryData(
+                metric_id="cpu-1",
+                service_name=service_name,
+                metric_type=MetricType.CPU_USAGE,
+                value=85.0,
+                timestamp=datetime.now(UTC),
+            )
+        )
 
         causes = aiops_service.analyze_root_cause(anomaly_id)
         assert "High CPU usage detected" in causes
@@ -316,10 +317,10 @@ class TestAIOpsService:
         assert "resolution_rate" in metrics
 
         health = aiops_service.get_service_health("non-existent")
-        assert health["health_status"] == "healthy" # No anomalies = healthy
+        assert health["health_status"] == "healthy"  # No anomalies = healthy
 
     def test_percentile_calculation(self, aiops_service):
-        values = list(range(100)) # 0..99
+        values = list(range(100))  # 0..99
         p95 = aiops_service._percentile(values, 95)
         assert p95 == 95
 
