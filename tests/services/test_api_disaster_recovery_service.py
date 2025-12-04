@@ -1,17 +1,18 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
+
 import pytest
+
 from app.services.api_disaster_recovery_service import (
+    BackupMetadata,
     DisasterRecoveryService,
-    OnCallIncidentService,
-    RecoveryStrategy,
     IncidentSeverity,
     IncidentStatus,
+    OnCallIncidentService,
     OnCallRole,
-    BackupMetadata,
     OnCallSchedule,
-    get_disaster_recovery_service,
-    get_oncall_incident_service
+    RecoveryStrategy,
 )
+
 
 class TestDisasterRecoveryService:
     """Test suite for DisasterRecoveryService"""
@@ -41,7 +42,7 @@ class TestDisasterRecoveryService:
             location="s3://test-bucket/backup.sql",
             retention_days=30,
             encryption_enabled=True,
-            verified=False
+            verified=False,
         )
 
         result = dr_service.register_backup(backup)
@@ -58,7 +59,7 @@ class TestDisasterRecoveryService:
             location="s3://test",
             retention_days=30,
             encryption_enabled=True,
-            verified=False
+            verified=False,
         )
         dr_service.register_backup(backup)
 
@@ -73,9 +74,7 @@ class TestDisasterRecoveryService:
     def test_initiate_failover_success(self, dr_service):
         """Test initiating a failover successfully"""
         result = dr_service.initiate_failover(
-            plan_id="database_dr",
-            initiated_by="admin_user",
-            reason="Simulated failure"
+            plan_id="database_dr", initiated_by="admin_user", reason="Simulated failure"
         )
 
         assert result["success"] is True
@@ -86,9 +85,7 @@ class TestDisasterRecoveryService:
     def test_initiate_failover_failure(self, dr_service):
         """Test initiating a failover for a non-existent plan"""
         result = dr_service.initiate_failover(
-            plan_id="non_existent_plan",
-            initiated_by="admin_user",
-            reason="Test"
+            plan_id="non_existent_plan", initiated_by="admin_user", reason="Test"
         )
 
         assert result["success"] is False
@@ -102,6 +99,7 @@ class TestDisasterRecoveryService:
         assert "database_dr" in status["disaster_recovery_plans"]
         assert "backup_summary" in status
         assert status["backup_summary"]["total_backups"] == 0
+
 
 class TestOnCallIncidentService:
     """Test suite for OnCallIncidentService"""
@@ -117,7 +115,7 @@ class TestOnCallIncidentService:
             description="Something is broken",
             severity=IncidentSeverity.SEV1,
             detected_by="monitoring_system",
-            affected_services=["api"]
+            affected_services=["api"],
         )
 
         assert incident_id in incident_service.incidents
@@ -133,14 +131,14 @@ class TestOnCallIncidentService:
             description="Testing update",
             severity=IncidentSeverity.SEV2,
             detected_by="user",
-            affected_services=["db"]
+            affected_services=["db"],
         )
 
         result = incident_service.update_incident_status(
             incident_id=incident_id,
             new_status=IncidentStatus.INVESTIGATING,
             updated_by="responder",
-            notes="Starting investigation"
+            notes="Starting investigation",
         )
 
         assert result is True
@@ -151,9 +149,7 @@ class TestOnCallIncidentService:
     def test_update_non_existent_incident(self, incident_service):
         """Test updating a non-existent incident"""
         result = incident_service.update_incident_status(
-            incident_id="fake_id",
-            new_status=IncidentStatus.RESOLVED,
-            updated_by="user"
+            incident_id="fake_id", new_status=IncidentStatus.RESOLVED, updated_by="user"
         )
         assert result is False
 
@@ -164,13 +160,11 @@ class TestOnCallIncidentService:
             description="Testing assignment",
             severity=IncidentSeverity.SEV3,
             detected_by="user",
-            affected_services=["ui"]
+            affected_services=["ui"],
         )
 
         result = incident_service.assign_incident(
-            incident_id=incident_id,
-            assigned_to="engineer_1",
-            assigned_by="lead"
+            incident_id=incident_id, assigned_to="engineer_1", assigned_by="lead"
         )
 
         assert result is True
@@ -187,7 +181,7 @@ class TestOnCallIncidentService:
             engineer_contact={"email": "john@example.com"},
             shift_start=now - timedelta(hours=1),
             shift_end=now + timedelta(hours=8),
-            is_active=True
+            is_active=True,
         )
 
         incident_service.add_on_call_schedule(schedule)
@@ -209,7 +203,7 @@ class TestOnCallIncidentService:
             what_happened="Service down",
             what_went_well=["Detection"],
             what_could_improve=["Recovery speed"],
-            action_items=[{"owner": "eng1", "task": "fix bug"}]
+            action_items=[{"owner": "eng1", "task": "fix bug"}],
         )
 
         assert pir_id in incident_service.post_incident_reviews
@@ -223,7 +217,7 @@ class TestOnCallIncidentService:
             description="Fixed",
             severity=IncidentSeverity.SEV1,
             detected_by="system",
-            affected_services=["all"]
+            affected_services=["all"],
         )
 
         # Simulate time passing and resolution
