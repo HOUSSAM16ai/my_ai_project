@@ -204,7 +204,10 @@ class APIObservabilityService:
             # Calculate percentiles
             sorted_latencies = sorted(latencies)
             total_requests = len(self.metrics_buffer)
-            error_count = len(self.error_buffer)
+
+            # Calculate error count directly from metrics buffer for accuracy
+            # This ensures error rate is correct even if error_buffer (capped at 500) overflows
+            error_count = sum(1 for m in self.metrics_buffer if m.status_code >= 400)
 
             snapshot = PerformanceSnapshot(
                 timestamp=datetime.now(UTC),
