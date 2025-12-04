@@ -1,16 +1,18 @@
+from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timedelta, UTC
-import statistics
+
 from app.services.aiops_self_healing_service import (
     AIOpsService,
-    MetricType,
-    TelemetryData,
+    AnomalySeverity,
     AnomalyType,
     HealingAction,
-    AnomalySeverity,
-    get_aiops_service
+    MetricType,
+    TelemetryData,
+    get_aiops_service,
 )
+
 
 class TestAIOpsService:
 
@@ -85,7 +87,7 @@ class TestAIOpsService:
 
             # Check if anomaly was recorded
             assert len(aiops_service.anomalies) == 1
-            anomaly = list(aiops_service.anomalies.values())[0]
+            anomaly = next(iter(aiops_service.anomalies.values()))
             assert anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE
             assert anomaly.severity in [AnomalySeverity.HIGH, AnomalySeverity.CRITICAL]
 
@@ -119,7 +121,7 @@ class TestAIOpsService:
             aiops_service.collect_telemetry(data)
 
             assert len(aiops_service.anomalies) == 1
-            anomaly = list(aiops_service.anomalies.values())[0]
+            anomaly = next(iter(aiops_service.anomalies.values()))
             assert anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE
             assert anomaly.metric_value == 0.06
 
