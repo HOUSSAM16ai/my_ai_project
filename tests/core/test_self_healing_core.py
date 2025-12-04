@@ -1,15 +1,16 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from sqlalchemy import text
+
 from app.core.self_healing_db import (
-    SelfHealingEngine,
-    _validate_table_name,
-    _validate_column_name,
-    SQLGenerator,
     ColumnDefinition,
     ColumnType,
-    AsyncStrategy
+    SelfHealingEngine,
+    SQLGenerator,
+    _validate_column_name,
+    _validate_table_name,
 )
+
 
 class TestSelfHealingSecurity:
     def test_validate_table_name_security(self):
@@ -32,6 +33,7 @@ class TestSelfHealingSecurity:
         with pytest.raises(ValueError, match="Invalid column name"):
             _validate_column_name("user_id; --")
 
+
 class TestSQLGenerator:
     def test_add_column_sql(self):
         col = ColumnDefinition("new_col", ColumnType.TEXT, nullable=True)
@@ -40,7 +42,11 @@ class TestSQLGenerator:
 
     def test_create_index_sql(self):
         sql = SQLGenerator.create_index("admin_conversations", "linked_mission_id")
-        assert sql == 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
+        assert (
+            sql
+            == 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
+        )
+
 
 class TestSelfHealingEngineLogic:
     @pytest.mark.asyncio
@@ -95,7 +101,9 @@ class TestSelfHealingEngineLogic:
                 if "ALTER TABLE" in arg_str:
                     alter_calls.append(arg_str)
 
-        assert len(alter_calls) > 0, f"No ALTER TABLE calls found. Calls: {[str(c) for c in mock_conn.execute.mock_calls]}"
+        assert len(alter_calls) > 0, (
+            f"No ALTER TABLE calls found. Calls: {[str(c) for c in mock_conn.execute.mock_calls]}"
+        )
 
     def test_heal_api_error(self):
         mock_engine = MagicMock()

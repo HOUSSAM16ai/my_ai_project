@@ -701,9 +701,11 @@ def _container_files_present() -> list[str]:
 # --------------------------------------------------------------------------------------
 class PeerNode:
     """Represents a peer planner in the cluster."""
+
     def __init__(self, name: str, weight: float):
         self.name = name
         self.weight = weight
+
 
 class UltraHyperPlanner(BasePlanner):
     name = "ultra_hyper_semantic_planner"
@@ -720,16 +722,13 @@ class UltraHyperPlanner(BasePlanner):
         "telemetry",
         "global_scan",
         "clustering",
-        "failover"
+        "failover",
     }
     tags: ClassVar[set[str]] = {"ultra", "hyper", "planner", "index", "semantic", "cluster"}
 
     def __init__(self):
         super().__init__()
-        self.peers = [
-            PeerNode("backup_planner_alpha", 0.8),
-            PeerNode("backup_planner_beta", 0.7)
-        ]
+        self.peers = [PeerNode("backup_planner_alpha", 0.8), PeerNode("backup_planner_beta", 0.7)]
 
     # ------------------------------------------------------------------
     def generate_plan(
@@ -757,14 +756,14 @@ class UltraHyperPlanner(BasePlanner):
                 description=f"Fallback execution by {best_peer.name}: Understand Objective",
                 tool_name=TOOL_THINK,
                 tool_args={"prompt": f"Emergency Mode: {objective}"},
-                dependencies=[]
+                dependencies=[],
             )
         ]
 
         return MissionPlanSchema(
             objective=objective,
             tasks=tasks,
-            meta={"cluster_mode": True, "active_node": best_peer.name, "failover": True}
+            meta={"cluster_mode": True, "active_node": best_peer.name, "failover": True},
         )
 
     def _core_planning_logic(

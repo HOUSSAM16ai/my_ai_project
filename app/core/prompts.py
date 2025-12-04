@@ -1,4 +1,3 @@
-# app/core/prompts.py
 """
 Central Registry for System Prompts and Cognitive Contexts.
 Optimized for Superhuman performance and low complexity.
@@ -35,6 +34,7 @@ OVERMIND_IDENTITY = """
 5. **Project Expert**: Deep knowledge of codebase.
 """
 
+
 def _get_static_structure() -> str:
     return """
 ## 🏗️ PROJECT STRUCTURE (CogniForge)
@@ -44,24 +44,27 @@ def _get_static_structure() -> str:
 - **Frontend**: Static HTML/JS (No Build)
 """
 
+
 # =============================================================================
 # DYNAMIC CONTEXT HELPERS (Refactored for Low Complexity)
 # =============================================================================
+
 
 def _get_deep_index_summary() -> str:
     """Retrieves deep structural analysis summary safely."""
     try:
         from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+
         index = build_index(".")
-        if not index: return ""
+        if not index:
+            return ""
 
         summary = summarize_for_prompt(index, max_len=2500)
         metrics = index.get("global_metrics", {})
         hotspots = index.get("complexity_hotspots_top50", [])[:5]
 
         hotspot_text = "\n".join(
-            f"- `{h.get('file')}::{h.get('name')}` (CC: {h.get('complexity')})"
-            for h in hotspots
+            f"- `{h.get('file')}::{h.get('name')}` (CC: {h.get('complexity')})" for h in hotspots
         )
 
         return f"""
@@ -77,11 +80,14 @@ def _get_deep_index_summary() -> str:
         logger.debug(f"Deep Index unavailable: {e}")
         return ""
 
+
 def _get_agent_tools_status() -> str:
-    """ concise tool status report."""
+    """concise tool status report."""
     try:
         from app.services import agent_tools
-        if not hasattr(agent_tools, "__all__"): return ""
+
+        if not hasattr(agent_tools, "__all__"):
+            return ""
 
         tools = agent_tools.__all__
         categories = {
@@ -100,6 +106,7 @@ def _get_agent_tools_status() -> str:
     except Exception:
         return ""
 
+
 def _get_system_health() -> str:
     """Check vital signs."""
     env = os.getenv("ENVIRONMENT", "unknown")
@@ -107,9 +114,11 @@ def _get_system_health() -> str:
     ai = "✅" if os.getenv("OPENROUTER_API_KEY") else "⚠️"
     return f"## 📊 STATUS\n- Env: {env}\n- DB: {db}\n- AI: {ai}"
 
+
 # =============================================================================
 # MAIN PROMPT GENERATOR
 # =============================================================================
+
 
 def get_system_prompt(include_health=True, include_capabilities=True, include_dynamic=True) -> str:
     parts = [
@@ -120,6 +129,7 @@ def get_system_prompt(include_health=True, include_capabilities=True, include_dy
     if include_dynamic:
         try:
             from app.services.project_context_service import get_project_context_for_ai
+
             parts.append(f"\n# 🏗️ CONTEXT\n{get_project_context_for_ai()}")
         except Exception:
             parts.append(_get_static_structure())
@@ -133,5 +143,6 @@ def get_system_prompt(include_health=True, include_capabilities=True, include_dy
     parts.append(f"\n## ⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
     return "\n".join(parts)
+
 
 OVERMIND_SYSTEM_PROMPT = get_system_prompt()
