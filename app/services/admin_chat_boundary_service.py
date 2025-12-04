@@ -19,7 +19,7 @@ from app.boundaries import (
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient
 from app.core.prompts import get_system_prompt
-from app.models import AdminConversation, AdminMessage, MessageRole
+from app.models import AdminConversation, AdminMessage, MessageRole, User
 from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,36 @@ class AdminChatBoundaryService:
         except ValueError as e:
             raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
 
+    async def verify_conversation_access(
+        self, user_id: int, conversation_id: int
+    ) -> AdminConversation:
+        """
+        Verifies access to a conversation, allowing Admins to access any conversation.
+        """
+        # Fetch user to check admin status
+        user_stmt = select(User).where(User.id == user_id)
+        user_result = await self.db.execute(user_stmt)
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        stmt = select(AdminConversation).where(AdminConversation.id == conversation_id)
+        result = await self.db.execute(stmt)
+        conversation = result.scalar_one_or_none()
+
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        # Superhuman Access Control: Admins see all
+        if user.is_admin:
+            return conversation
+
+        if conversation.user_id != user_id:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        return conversation
+
     async def get_or_create_conversation(
         self, user_id: int, question: str, conversation_id: str | None = None
     ) -> AdminConversation:
@@ -95,16 +125,9 @@ class AdminChatBoundaryService:
         if conversation_id:
             try:
                 conv_id_int = int(conversation_id)
-                stmt = select(AdminConversation).where(
-                    AdminConversation.id == conv_id_int, AdminConversation.user_id == user_id
-                )
-                result = await self.db.execute(stmt)
-                conversation = result.scalar_one_or_none()
-
-                if not conversation:
-                    raise HTTPException(status_code=404, detail="Conversation not found")
+                conversation = await self.verify_conversation_access(user_id, conv_id_int)
             except ValueError as e:
-                raise HTTPException(status_code=404, detail="Conversation not found") from e
+                raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
 
         if not conversation:
             conversation = AdminConversation(title=question[:50], user_id=user_id)

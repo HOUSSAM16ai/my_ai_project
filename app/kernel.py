@@ -69,14 +69,33 @@ class RealityKernel:
         app.add_middleware(
             TrustedHostMiddleware, allowed_hosts=self.settings.get("ALLOWED_HOSTS", [])
         )
+        # Advanced CORS Configuration (Superhuman Security)
+        # 1. Parse origins strictly
+        raw_origins = self.settings.get("BACKEND_CORS_ORIGINS", [])
+        allow_origins = raw_origins if isinstance(raw_origins, list) else []
+
+        # 2. Fallback logic: If explicit origins missing, derive from environment
+        if not allow_origins:
+            if self.settings.get("ENVIRONMENT") == "development":
+                allow_origins = ["*"]
+            else:
+                allow_origins = [self.settings.get("FRONTEND_URL")]
+
+        # 3. Apply Strict Middleware
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"]
-            if self.settings.get("ENVIRONMENT") == "development"
-            else [self.settings.get("FRONTEND_URL")],
+            allow_origins=allow_origins,
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+            allow_headers=[
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With",
+                "X-CSRF-Token",
+            ],
+            expose_headers=["Content-Length", "Content-Range"],
         )
         app.add_middleware(SecurityHeadersMiddleware)
         if self.settings.get("ENVIRONMENT") != "testing":

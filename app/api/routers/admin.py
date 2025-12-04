@@ -176,19 +176,13 @@ async def get_conversation(
     conversation_id: int,
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
+    service: AdminChatBoundaryService = Depends(get_admin_service),
 ):
     """
     Retrieves messages for a specific conversation.
     """
-    # Verify ownership
-    stmt = select(AdminConversation).where(
-        AdminConversation.id == conversation_id, AdminConversation.user_id == user_id
-    )
-    result = await db.execute(stmt)
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    # Verify ownership via Service Boundary (handles Admin override)
+    conversation = await service.verify_conversation_access(user_id, conversation_id)
 
     stmt = (
         select(AdminMessage)
