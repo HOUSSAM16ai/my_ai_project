@@ -31,7 +31,7 @@ class AdminAIService:
         messages = (
             db.query(AdminMessage)
             .filter(AdminMessage.conversation_id == conversation_id)
-            .order_by(AdminMessage.created_at)
+            .order_by(AdminMessage.created_at, AdminMessage.id)
             .all()
         )
         return [{"role": msg.role, "content": msg.content} for msg in messages]
