@@ -222,6 +222,25 @@ ENDPOINT_SCHEMAS = {
             }
         }
     },
+    "/admin/api/conversations": {
+        "GET": {
+            "response": {
+                "200": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["id", "title"],
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "title": {"type": "string"},
+                            "created_at": {"type": "string"},
+                            "updated_at": {"type": "string"},
+                        },
+                    },
+                }
+            }
+        }
+    },
 }
 
 
