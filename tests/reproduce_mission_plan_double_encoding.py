@@ -1,16 +1,16 @@
-
-import pytest
-from unittest.mock import MagicMock
 from dataclasses import dataclass
+from unittest.mock import MagicMock
 
-from app.services.master_agent_service import OvermindService, CandidatePlan
-from app.models import Mission, MissionPlan, User, PlanStatus, MissionStatus
+from app.models import Mission, MissionPlan, MissionStatus
+from app.services.master_agent_service import CandidatePlan, OvermindService
+
 
 # Mocking the schema object
 class MockSchema:
     def __init__(self, objective, tasks):
         self.objective = objective
         self.tasks = tasks
+
 
 @dataclass
 class MockTask:
@@ -19,6 +19,7 @@ class MockTask:
     tool_name: str
     tool_args: dict
     dependencies: list
+
 
 def test_overmind_persist_plan_logic():
     """
@@ -37,9 +38,9 @@ def test_overmind_persist_plan_logic():
                 description="Task 1",
                 tool_name="tool1",
                 tool_args={"arg": "val"},
-                dependencies=[]
+                dependencies=[],
             )
-        ]
+        ],
     )
 
     candidate = CandidatePlan(
@@ -47,7 +48,7 @@ def test_overmind_persist_plan_logic():
         planner_name="TestPlanner",
         score=100.0,
         rationale="Because test",
-        telemetry={"meta": "data"}
+        telemetry={"meta": "data"},
     )
 
     # 2. Setup Service and Mock Session
