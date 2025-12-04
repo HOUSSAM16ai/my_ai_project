@@ -1580,7 +1580,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
         if not os.path.exists(file_path):
             return None
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             if file_path.endswith((".yaml", ".yml")):
                 # FIX: Use centralized safe loader to prevent YAML RCE
                 from app.core.yaml_utils import load_yaml_safely
