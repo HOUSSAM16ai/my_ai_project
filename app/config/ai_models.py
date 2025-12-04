@@ -9,7 +9,7 @@
 ║  ╚██████╗╚██████╔╝╚██████╔╝██║ ╚████║██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗      ║
 ║   ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝      ║
 ║                                                                                          ║
-║              🧠 AI MODELS CONFIGURATION CENTER v2.0 - SUPERHUMAN EDITION                ║
+║              🧠 AI MODELS CONFIGURATION CENTER v2.1 - SUPERHUMAN EDITION                ║
 ║              ════════════════════════════════════════════════════════════                ║
 ║                                                                                          ║
 ║   ╔════════════════════════════════════════════════════════════════════════════════╗    ║
@@ -83,8 +83,10 @@ class AvailableModels:
     # ─────────────────────────────────────────────────────────────────────────
     # 🆓 FREE MODELS (High Quality) | نماذج مجانية عالية الجودة
     # ─────────────────────────────────────────────────────────────────────────
-    GEMINI_2_FLASH_EXP_FREE = "google/gemini-2.0-flash-exp:free"  # ⚡ سريع جداً ومجاني
+    GEMINI_2_FLASH_EXP_FREE = "google/gemini-2.0-flash-exp:free"  # ⚡ سريع جداً ومجاني (LIMITED)
     PHI_3_MINI_FREE = "microsoft/phi-3-mini-128k-instruct:free"  # 🤏 صغير جداً ومجاني
+    KAT_CODER_PRO_FREE = "kwaipilot/kat-coder-pro:free"  # 👨‍💻 مبرمج ممتاز ومجاني
+    QWEN_QWEN3_CODER_FREE = "qwen/qwen3-coder:free"  # 💻 مبرمج كوين الجديد
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
@@ -131,7 +133,7 @@ class ActiveModels:
     # 👉 غيّر هذا لتبديل نموذج الذكاء الاصطناعي الرئيسي
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    PRIMARY = "qwen/qwen3-coder:free"
+    PRIMARY = AvailableModels.KAT_CODER_PRO_FREE
 
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 💰 LOW COST MODEL | نموذج منخفض التكلفة
@@ -149,9 +151,11 @@ class ActiveModels:
     # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    GATEWAY_PRIMARY = "qwen/qwen3-coder:free"  # Main gateway model
-    GATEWAY_FALLBACK_1 = "google/gemini-2.0-flash-exp:free"  # First fallback (Gemini Flash 2.0)
-    GATEWAY_FALLBACK_2 = "kwaipilot/kat-coder-pro:free"  # Second fallback (kwaipilot/kat-coder-pro)
+    GATEWAY_PRIMARY = AvailableModels.KAT_CODER_PRO_FREE  # 🏆 Stabilized Primary
+    GATEWAY_FALLBACK_1 = (
+        AvailableModels.GEMINI_2_FLASH_EXP_FREE
+    )  # ⚡ First fallback (Fast but rate-limited)
+    GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE  # 💻 Second fallback
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة
     # ═══════════════════════════════════════════════════════════════════════════════════
@@ -159,10 +163,10 @@ class ActiveModels:
     # نماذج مختلفة لمستويات تعقيد مختلفة (التوجيه الذكي).
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    TIER_NANO = "openai/gpt-4o-mini"  # ⚡ Ultra-fast (<50ms) | فائق السرعة
-    TIER_FAST = "openai/gpt-4o-mini"  # 🚀 Fast (<200ms) | سريع
-    TIER_SMART = "anthropic/claude-3.5-sonnet"  # 🧠 Smart (<1s) | ذكي
-    TIER_GENIUS = "anthropic/claude-3-opus"  # 🎓 Genius (<5s) | عبقري
+    TIER_NANO = AvailableModels.GPT_4O_MINI  # ⚡ Ultra-fast (<50ms) | فائق السرعة
+    TIER_FAST = AvailableModels.GPT_4O_MINI  # 🚀 Fast (<200ms) | سريع
+    TIER_SMART = AvailableModels.CLAUDE_35_SONNET  # 🧠 Smart (<1s) | ذكي
+    TIER_GENIUS = AvailableModels.CLAUDE_3_OPUS  # 🎓 Genius (<5s) | عبقري
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
