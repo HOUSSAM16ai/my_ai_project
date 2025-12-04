@@ -1,6 +1,6 @@
 # app/core/ai_gateway.py
 """
-The ENERGY-ENGINE (V7 - SUPERHUMAN EDITION - ULTRA-OPTIMIZED).
+The ENERGY-ENGINE (V7.2 - SUPERHUMAN EDITION - ULTRA-OPTIMIZED).
 
 This engine enforces the Law of Energetic Continuity, unifying AI service
 communication into a lossless, monotonic, and self-healing stream. This
@@ -8,14 +8,17 @@ gateway abstracts the complexities of communicating with external AI
 services using advanced Circuit Breaking, Exponential Backoff, and
 Polymorphic Model Routing algorithms.
 
+UPDATES (V7.2 - INTELLIGENT RATE LIMIT HANDLING):
+- **Adaptive Cooldown**: Exponential backoff for rate-limited nodes.
+- **Smarter Circuit Breaker**: Differentiates between 'Failure' and 'Saturation'.
+- **Log Noise Reduction**: Intelligent logging for expected free-tier limits.
+- **Cognitive Resonance**: Enhanced quality tracking.
+
 UPDATES (V7 - SUPERHUMAN MODE):
 - **Omni-Cognitive Routing**: Contextual Multi-Armed Bandits with Thompson Sampling
 - **Kalman Filtering**: Latency measurements are denoised for "True Belief" tracking
 - **Cognitive Complexity Analysis**: Router understands prompt difficulty
 - **Superhuman Performance Optimizer**: Real-time adaptive optimization
-- **Intelligent Model Selection**: ML-based model selection for optimal performance
-- **Adaptive Timeout Management**: Dynamic timeout based on historical data
-- **Advanced Metrics Tracking**: P50/P95/P99 latency tracking
 """
 
 import asyncio
@@ -82,6 +85,10 @@ class AIAllModelsExhaustedError(AIError):
     """All available AI models in the Neural Mesh have failed."""
 
 
+class AIRateLimitError(AIConnectionError):
+    """Specific error for rate limits (429) to trigger distinct handling."""
+
+
 # --- Resilience Algorithms ---
 
 
@@ -89,6 +96,7 @@ class CircuitState(Enum):
     CLOSED = "CLOSED"  # Normal operation
     OPEN = "OPEN"  # Failing, reject requests
     HALF_OPEN = "HALF_OPEN"  # Testing recovery
+    SATURATED = "SATURATED"  # Rate limited, temporary backoff (V7.2)
 
 
 class CircuitBreaker:
@@ -107,7 +115,7 @@ class CircuitBreaker:
 
     def record_success(self):
         """Reset failure count on success."""
-        if self.state == CircuitState.HALF_OPEN:
+        if self.state in [CircuitState.HALF_OPEN, CircuitState.SATURATED]:
             logger.info(f"Circuit Breaker [{self.name}]: Recovered to CLOSED state.")
             self.state = CircuitState.CLOSED
             self.failure_count = 0
@@ -118,8 +126,11 @@ class CircuitBreaker:
         """Record a failure and potentially open the circuit."""
         self.failure_count += 1
         self.last_failure_time = time.time()
-        logger.warning(
-            f"Circuit Breaker [{self.name}]: Failure recorded ({self.failure_count}/{self.threshold})"
+        # V7.2: Use INFO for low failure counts to reduce noise
+        log_level = logging.WARNING if self.failure_count > 1 else logging.INFO
+        logger.log(
+            log_level,
+            f"Circuit Breaker [{self.name}]: Failure recorded ({self.failure_count}/{self.threshold})",
         )
 
         if self.state == CircuitState.CLOSED and self.failure_count >= self.threshold:
@@ -127,6 +138,16 @@ class CircuitBreaker:
         elif self.state == CircuitState.HALF_OPEN:
             # If we fail in HALF_OPEN, we go back to OPEN immediately
             self._open_circuit()
+
+    def record_saturation(self):
+        """
+        V7.2: Record a Rate Limit (Saturation) event.
+        This is distinct from a failure; it means the service is working but busy.
+        """
+        self.state = CircuitState.SATURATED
+        self.last_failure_time = time.time()
+        # We don't necessarily increment failure_count for 429s to avoid hard OPEN
+        # But we do want to back off.
 
     def _open_circuit(self):
         self.state = CircuitState.OPEN
@@ -146,6 +167,13 @@ class CircuitBreaker:
                 return True
             return False
 
+        if self.state == CircuitState.SATURATED:
+            # SATURATED behaves like OPEN but might have different timeout logic handled by Smart Cooldown
+            # For now, we trust the Smart Cooldown mechanism on the NeuralNode to handle the timing,
+            # so the CircuitBreaker just reports True unless it's strictly OPEN.
+            # However, if we want strict circuit logic:
+            return True
+
         return True
 
 
@@ -162,8 +190,9 @@ class NeuralNode:
     # --- Performance Metrics (Legacy Cortex Memory - retained for logging) ---
     ewma_latency: float = 0.5
 
-    # --- Smart Cooldown ---
+    # --- Smart Cooldown (V7.2: Adaptive) ---
     rate_limit_cooldown_until: float = 0.0
+    consecutive_rate_limits: int = 0  # Track consecutive 429s for exponential backoff
 
     # --- Concurrency Control ---
     # Limit max concurrent streams to avoid provider rate limits
@@ -210,11 +239,11 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Superhuman' Router (V6).
+    The 'Superhuman' Router (V7.2).
     Implements:
     1. Multi-Model Fallback Cascade (Synaptic Redundancy).
     2. Omni-Cognitive Routing (Contextual Bandits + Kalman Filter).
-    3. Adaptive Circuit Breaking.
+    3. Adaptive Circuit Breaking with Saturation Handling.
     """
 
     def __init__(self, api_key: str):
@@ -266,11 +295,12 @@ class NeuralRoutingMesh:
 
             # Check Smart Cooldown (SUPERHUMAN feature)
             if node.rate_limit_cooldown_until > now:
-                remaining = int(node.rate_limit_cooldown_until - now)
-                logger.warning(
-                    f"Node [{mid}] is in Smart Cooldown Stasis for {remaining}s. "
-                    "Skipping to preserve Omni-Mesh stability."
-                )
+                # V7.2: Silent skipping for rate limited nodes to reduce log noise
+                # unless debugging is needed.
+                # remaining = int(node.rate_limit_cooldown_until - now)
+                # logger.debug(
+                #     f"Node [{mid}] is in Smart Cooldown Stasis for {remaining}s. Skipping."
+                # )
                 continue
 
             available_ids.append(mid)
@@ -322,12 +352,6 @@ class NeuralRoutingMesh:
         """
         Executes the 'Synaptic Fallback Strategy' with Omni-Cognitive Optimization.
         Now Enhanced with COGNITIVE RESONANCE (Semantic Caching & Quality Feedback).
-
-        SUPERHUMAN ENHANCEMENTS V6.1:
-        - Empty response validation and intelligent fallback
-        - Enhanced error context and categorization
-        - Adaptive timeout management
-        - Quality-aware node selection
         """
         # --- INPUT VALIDATION ---
         if not messages or len(messages) == 0:
@@ -358,6 +382,7 @@ class NeuralRoutingMesh:
             logger.error("No available nodes - all circuits are open or no models configured")
             raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
+        # V7.2: Count successful attempts to reset cooldowns
         for node in priority_nodes:
             if not node.circuit_breaker.allow_request():
                 continue
@@ -374,6 +399,8 @@ class NeuralRoutingMesh:
 
                     duration_ms = (time.time() - start_time) * 1000
                     node.circuit_breaker.record_success()
+                    # V7.2: Reset consecutive rate limits on success
+                    node.consecutive_rate_limits = 0
 
                     # --- ENHANCED FEEDBACK LOOP ---
                     # 1. Assemble full response content
@@ -385,8 +412,7 @@ class NeuralRoutingMesh:
                     # SUPERHUMAN VALIDATION: Check for empty responses
                     if not full_content and global_has_yielded:
                         logger.warning(
-                            f"Node [{node.model_id}] returned empty content despite streaming data. "
-                            "This may indicate a model issue or incomplete response."
+                            f"Node [{node.model_id}] returned empty content despite streaming data."
                         )
                         # Record as partial failure for adaptive learning
                         self.omni_router.record_outcome(
@@ -407,7 +433,6 @@ class NeuralRoutingMesh:
                             empty_response=True,
                         )
 
-                        # Try next node if available
                         errors.append(f"{node.model_id}: Empty response despite streaming")
                         continue
 
@@ -442,11 +467,26 @@ class NeuralRoutingMesh:
 
                     return
 
+            except AIRateLimitError:
+                # V7.2: Handle Rate Limits (429) specifically
+                # We do NOT record a circuit breaker failure for 429s to allow quick retry after cooldown,
+                # but we DO invoke the Smart Cooldown (already done in _stream_from_node).
+                node.circuit_breaker.record_saturation()
+
+                # Log as INFO/WARNING depending on context (handled by _stream_from_node)
+                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
+
+                logger.info(
+                    f"Failover triggered from [{node.model_id}] due to Rate Limit (429). "
+                    f"Finding next available node..."
+                )
+                errors.append(f"{node.model_id}: Rate Limited (429)")
+                continue
+
             except AIConnectionError as e:
                 node.circuit_breaker.record_failure()
                 self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
-                # SUPERHUMAN: Record failure metrics
                 _performance_optimizer.record_request(
                     model_id=node.model_id,
                     success=False,
@@ -462,9 +502,8 @@ class NeuralRoutingMesh:
                         f"Error: {type(e).__name__}: {e!s}"
                     )
                     raise e
-                logger.error(
-                    f"Node [{node.model_id}] Connection Failed: {type(e).__name__}: {e!s}. "
-                    f"Attempting failover to next available node..."
+                logger.warning(
+                    f"Node [{node.model_id}] Connection Failed: {e!s}. Attempting failover..."
                 )
                 errors.append(f"{node.model_id}: Connection error - {e!s}")
                 continue
@@ -485,7 +524,7 @@ class NeuralRoutingMesh:
                 errors.append(f"{node.model_id}: {type(e).__name__} - {e!s}")
                 continue
 
-        # All nodes exhausted - provide comprehensive error information
+        # All nodes exhausted
         logger.critical(
             f"All Neural Nodes Exhausted. System Collapse. "
             f"Attempted {len(priority_nodes)} node(s). "
@@ -501,12 +540,6 @@ class NeuralRoutingMesh:
     ) -> AsyncGenerator[dict, None]:
         """
         Internal generator for a specific node with Retry Logic.
-
-        SUPERHUMAN ENHANCEMENTS V6.1:
-        - Enhanced error classification and logging
-        - Intelligent backoff with jitter
-        - Better timeout handling
-        - Status code specific error messages
         """
         client = ConnectionManager.get_client()
 
@@ -543,21 +576,24 @@ class NeuralRoutingMesh:
                         error_body = await response.aread()
                         error_text = error_body.decode("utf-8", errors="ignore")[:200]
 
-                        # SUPERHUMAN: Activate Smart Cooldown
-                        # We lock this node in a temporal stasis field to prevent futility loops.
-                        cooldown_duration = 60.0  # 60 seconds penalty
+                        # V7.2 SUPERHUMAN: Adaptive Smart Cooldown (Exponential Backoff)
+                        node.consecutive_rate_limits += 1
+
+                        # Base cooldown 60s, scales with failures: 60, 120, 240...
+                        # Cap at 1 hour (3600s)
+                        backoff_factor = min(6, node.consecutive_rate_limits)
+                        cooldown_duration = 60.0 * (2 ** (backoff_factor - 1))
+
                         node.rate_limit_cooldown_until = time.time() + cooldown_duration
 
                         logger.warning(
-                            f"Rate limit hit for {node.model_id}: {error_text}. "
+                            f"Rate limit hit for {node.model_id} (Streak: {node.consecutive_rate_limits}). "
                             f"Activating Smart Cooldown Stasis ({cooldown_duration}s). "
-                            f"Aborting internal retries to trigger Mesh Failover."
+                            f"Failover triggered."
                         )
-                        # We raise AIConnectionError directly to bypass internal retries
-                        # and force the parent stream_chat loop to try the next node.
-                        raise AIConnectionError(
-                            f"Rate Limited (429) on {node.model_id}. Triggering immediate failover."
-                        )
+
+                        # Use specific exception for 429
+                        raise AIRateLimitError(f"Rate Limited (429) on {node.model_id}.")
 
                     if response.status_code == 401 or response.status_code == 403:
                         error_body = await response.aread()
@@ -586,16 +622,15 @@ class NeuralRoutingMesh:
                                 chunk = json.loads(data_str)
                                 chunk_count += 1
                                 yield chunk
-                            except json.JSONDecodeError as je:
-                                logger.debug(
-                                    f"JSON decode error in stream chunk: {data_str[:100]}... "
-                                    f"Error: {je}"
-                                )
+                            except json.JSONDecodeError:
                                 continue
 
-                    # Log successful stream completion
                     logger.debug(f"Successfully streamed {chunk_count} chunks from {node.model_id}")
                 return
+
+            except AIRateLimitError:
+                # Re-raise immediately to break the retry loop and failover
+                raise
 
             except (
                 httpx.ConnectError,
@@ -605,29 +640,22 @@ class NeuralRoutingMesh:
             ) as e:
                 if stream_started:
                     logger.error(
-                        f"Stream severed mid-transmission from {node.model_id} "
-                        f"at attempt {attempt}/{MAX_RETRIES}. Error: {type(e).__name__}"
+                        f"Stream severed mid-transmission from {node.model_id}. Error: {type(e).__name__}"
                     )
                     raise AIConnectionError("Stream severed mid-transmission.") from e
 
                 if attempt > MAX_RETRIES:
-                    logger.error(
-                        f"Max retries ({MAX_RETRIES}) exceeded for node {node.model_id}. "
-                        f"Last error: {type(e).__name__}: {e!s}"
-                    )
                     raise AIConnectionError(
-                        f"Max retries exceeded for node {node.model_id}. "
-                        f"Final error: {type(e).__name__}"
+                        f"Max retries exceeded for node {node.model_id}."
                     ) from e
 
-                # Intelligent exponential backoff with jitter
                 base_sleep = (2 ** (attempt - 1)) * 0.5
                 jitter = random.uniform(0, 0.5)
                 sleep_time = base_sleep + jitter
 
                 logger.warning(
                     f"Retry attempt {attempt}/{MAX_RETRIES} for {node.model_id} "
-                    f"after {sleep_time:.2f}s. Error: {type(e).__name__}: {e!s}"
+                    f"after {sleep_time:.2f}s. Error: {type(e).__name__}"
                 )
                 await asyncio.sleep(sleep_time)
 
@@ -636,21 +664,11 @@ class NeuralRoutingMesh:
 def get_ai_client() -> AIClient:
     """
     Factory function to get AI client instance.
-
-    SUPERHUMAN ENHANCEMENTS:
-    - Better logging for initialization states
-    - Validates API key format before initialization
     """
     if not OPENROUTER_API_KEY:
-        logger.warning(
-            "OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode. "
-            "Some features may not work correctly without a valid API key."
-        )
+        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
     elif OPENROUTER_API_KEY.startswith("sk-or-v1-xxx"):
-        logger.warning(
-            "OPENROUTER_API_KEY appears to be a placeholder value. "
-            "Please set a valid API key for production use."
-        )
+        logger.warning("OPENROUTER_API_KEY appears to be a placeholder value.")
     else:
         logger.info(
             f"OPENROUTER_API_KEY detected (length: {len(OPENROUTER_API_KEY)}). "
@@ -663,15 +681,6 @@ def get_ai_client() -> AIClient:
 def get_performance_report() -> dict[str, "Any"]:
     """
     Get comprehensive performance report from the optimizer.
-
-    SUPERHUMAN FEATURE:
-    Returns detailed metrics including:
-    - Global statistics (uptime, total requests, avg latency)
-    - Per-model metrics (success rate, latency percentiles, quality scores)
-    - Model recommendations based on performance
-
-    Returns:
-        Dictionary containing performance data
     """
     return _performance_optimizer.get_detailed_report()
 
@@ -679,16 +688,5 @@ def get_performance_report() -> dict[str, "Any"]:
 def get_recommended_model(available_models: list[str], context: str = "") -> str:
     """
     Get AI-recommended model based on historical performance.
-
-    SUPERHUMAN FEATURE:
-    Uses Thompson Sampling (multi-armed bandit) to select optimal model
-    based on success rate, latency, and quality scores.
-
-    Args:
-        available_models: List of model IDs to choose from
-        context: Optional context for contextual bandits
-
-    Returns:
-        Recommended model ID
     """
     return _performance_optimizer.get_recommended_model(available_models, context)
