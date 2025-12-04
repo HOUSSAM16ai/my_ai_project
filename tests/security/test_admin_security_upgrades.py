@@ -1,8 +1,10 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-from app.models import AdminConversation, User
+
 from app.core.security import generate_service_token
+from app.models import AdminConversation, User
+
 
 @pytest.mark.asyncio
 async def test_access_control_isolation(
@@ -26,9 +28,7 @@ async def test_access_control_isolation(
 
     # 2. User A creates a conversation
     resp = await async_client.post(
-        "/admin/api/chat/stream",
-        json={"question": "Hello form User A"},
-        headers=headers_a
+        "/admin/api/chat/stream", json={"question": "Hello form User A"}, headers=headers_a
     )
     # Stream response, we just want to ensure it started
     assert resp.status_code == 200
@@ -43,20 +43,15 @@ async def test_access_control_isolation(
 
     # 3. User B tries to access User A's conversation
     # Use get_conversation endpoint
-    resp_b = await async_client.get(
-        f"/admin/api/conversations/{conv_id}",
-        headers=headers_b
-    )
+    resp_b = await async_client.get(f"/admin/api/conversations/{conv_id}", headers=headers_b)
 
     # Should be 404 (Not Found) because currently it filters by user_id
     assert resp_b.status_code == 404
 
+
 @pytest.mark.asyncio
 async def test_admin_can_access_any_conversation(
-    async_client: AsyncClient,
-    db_session,
-    admin_user,
-    admin_auth_headers
+    async_client: AsyncClient, db_session, admin_user, admin_auth_headers
 ):
     """
     Verifies that an Admin user can access a regular user's conversation.
@@ -72,9 +67,7 @@ async def test_admin_can_access_any_conversation(
     headers_a = {"Authorization": f"Bearer {token_a}"}
 
     await async_client.post(
-        "/admin/api/chat/stream",
-        json={"question": "User A secret plan"},
-        headers=headers_a
+        "/admin/api/chat/stream", json={"question": "User A secret plan"}, headers=headers_a
     )
 
     result = await db_session.execute(
@@ -85,13 +78,13 @@ async def test_admin_can_access_any_conversation(
 
     # 2. Admin tries to access it
     resp_admin = await async_client.get(
-        f"/admin/api/conversations/{conv.id}",
-        headers=admin_auth_headers
+        f"/admin/api/conversations/{conv.id}", headers=admin_auth_headers
     )
 
     # Current behavior is 404. We assert 200 because that's the desired "Superhuman" state.
     # This assertion ensures the test fails NOW so we can fix it.
     assert resp_admin.status_code == 200, f"Admin got {resp_admin.status_code}, expected 200"
+
 
 @pytest.mark.asyncio
 async def test_cors_strictness_mock(test_app):

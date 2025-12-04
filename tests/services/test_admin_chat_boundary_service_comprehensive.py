@@ -5,7 +5,7 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from app.models import AdminConversation, AdminMessage, MessageRole
+from app.models import AdminConversation, AdminMessage, MessageRole, User
 from app.services.admin_chat_boundary_service import AdminChatBoundaryService
 
 
@@ -108,11 +108,18 @@ async def test_get_or_create_conversation_create_new(service):
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_existing(service):
     existing_conv = AdminConversation(id=10, user_id=1, title="Test")
+    mock_user = MagicMock(spec=User)
+    mock_user.id = 1
+    mock_user.is_admin = True
 
-    # Mock database result
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = existing_conv
-    service.db.execute = AsyncMock(return_value=mock_result)
+    # Mock database result for sequential calls
+    mock_user_result = MagicMock()
+    mock_user_result.scalar_one_or_none.return_value = mock_user
+
+    mock_conv_result = MagicMock()
+    mock_conv_result.scalar_one_or_none.return_value = existing_conv
+
+    service.db.execute = AsyncMock(side_effect=[mock_user_result, mock_conv_result])
 
     conversation = await service.get_or_create_conversation(
         user_id=1, question="New Q", conversation_id="10"
@@ -124,9 +131,19 @@ async def test_get_or_create_conversation_existing(service):
 
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_not_found(service):
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
-    service.db.execute = AsyncMock(return_value=mock_result)
+    mock_user = MagicMock(spec=User)
+    mock_user.id = 1
+    mock_user.is_admin = True
+
+    # 1. User found
+    mock_user_result = MagicMock()
+    mock_user_result.scalar_one_or_none.return_value = mock_user
+
+    # 2. Conversation NOT found
+    mock_conv_result = MagicMock()
+    mock_conv_result.scalar_one_or_none.return_value = None
+
+    service.db.execute = AsyncMock(side_effect=[mock_user_result, mock_conv_result])
 
     with pytest.raises(HTTPException) as exc:
         await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="999")
@@ -141,7 +158,7 @@ async def test_get_or_create_conversation_invalid_id(service):
         await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="invalid")
 
     assert exc.value.status_code == 404
-    assert exc.value.detail == "Conversation not found"
+    assert exc.value.detail == "Invalid conversation ID"
 
 
 @pytest.mark.asyncio
