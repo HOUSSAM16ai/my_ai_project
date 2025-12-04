@@ -744,13 +744,11 @@ class OvermindService:
 
     def _persist_plan(self, mission: Mission, candidate: CandidatePlan, version: int, session):
         schema = candidate.raw
-        raw_json = json.dumps(
-            {
-                "objective": getattr(schema, "objective", ""),
-                "tasks_meta": len(getattr(schema, "tasks", [])),
-            },
-            ensure_ascii=False,
-        )
+        # Do not use json.dumps() here, as JSONText handles serialization
+        raw_data = {
+            "objective": getattr(schema, "objective", ""),
+            "tasks_meta": len(getattr(schema, "tasks", [])),
+        }
 
         mp = MissionPlan(
             mission_id=mission.id,
@@ -759,9 +757,9 @@ class OvermindService:
             status=PlanStatus.VALID,
             score=candidate.score,
             rationale=candidate.rationale,
-            raw_json=raw_json,
-            stats_json="{}",
-            warnings_json="[]",
+            raw_json=raw_data,
+            stats_json={},
+            warnings_json=[],
         )
         session.add(mp)
         session.flush()
