@@ -1,17 +1,19 @@
-
-import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from app.models import AdminConversation, MessageRole
+
+from app.models import AdminConversation
 from app.services.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat_orchestrator_service import ChatIntent, IntentResult
+
 
 @pytest.fixture
 def mock_settings():
     settings = MagicMock()
     settings.SECRET_KEY = "test_secret"
     return settings
+
 
 @pytest.fixture
 def service(mock_settings):
@@ -24,6 +26,7 @@ def service(mock_settings):
         service = AdminChatBoundaryService(db_session)
         service.settings = mock_settings
         return service
+
 
 @pytest.mark.asyncio
 async def test_stream_chat_response_deep_analysis_intent(service):
@@ -52,7 +55,7 @@ async def test_stream_chat_response_deep_analysis_intent(service):
             intent=ChatIntent.DEEP_ANALYSIS,
             confidence=0.95,
             params={"question": question},
-            reasoning="Matched pattern"
+            reasoning="Matched pattern",
         )
 
         # 2. Mock orchestrator.orchestrate to simulate Overmind response
@@ -65,6 +68,7 @@ async def test_stream_chat_response_deep_analysis_intent(service):
         # 3. Mock AI Client stream_chat (fallback path) to verify it's NOT called
         async def fallback_gen(*args, **kwargs):
             yield "This is the fallback simple chat response."
+
         ai_client.stream_chat = fallback_gen
 
         mock_get_orch.return_value = mock_orch
@@ -100,4 +104,6 @@ async def test_stream_chat_response_deep_analysis_intent(service):
         # Assertions
         assert intent_event_found, "DEEP_ANALYSIS intent event was not emitted!"
         assert deep_analysis_content_found, "Orchestrator was not called for DEEP_ANALYSIS!"
-        assert not fallback_content_found, "System fell back to simple chat instead of using Orchestrator!"
+        assert not fallback_content_found, (
+            "System fell back to simple chat instead of using Orchestrator!"
+        )
