@@ -92,10 +92,25 @@ async def chat_stream(
 
     # 4. Stream Response (Service Boundary)
     # Pass session_factory for the internal safe persistence context
+
+    import json
+
+    async def safe_stream_generator():
+        try:
+            async for chunk in service.stream_chat_response(
+                user_id, conversation, question, history, ai_client, session_factory
+            ):
+                yield chunk
+        except Exception as e:
+            logger.error(f"Stream interrupted: {e}", exc_info=True)
+            error_payload = {
+                "type": "error",
+                "payload": {"details": f"Service Error: {e}"},
+            }
+            yield f"data: {json.dumps(error_payload)}\n\n"
+
     return StreamingResponse(
-        service.stream_chat_response(
-            user_id, conversation, question, history, ai_client, session_factory
-        ),
+        safe_stream_generator(),
         media_type="text/event-stream",
     )
 
