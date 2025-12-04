@@ -42,3 +42,4 @@ black==24.1.1
 python-json-logger>=4.0.0
 psutil==5.9.8
 pytest-factoryboy==2.8.1
+PyYAML==6.0.1

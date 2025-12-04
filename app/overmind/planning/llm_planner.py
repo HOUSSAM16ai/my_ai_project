@@ -1572,6 +1572,32 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
     # ----------------------------------------------------------------------------------
     # Utilities
     # ----------------------------------------------------------------------------------
+    def _read_from_file(self, file_path: str) -> Any:
+        """
+        Securely read a file (YAML/JSON/Text).
+        Crucial security fix: Use safe_load for YAML to prevent RCE.
+        """
+        if not os.path.exists(file_path):
+            return None
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            if file_path.endswith((".yaml", ".yml")):
+                # FIX: Use centralized safe loader to prevent YAML RCE
+                from app.core.yaml_utils import load_yaml_safely
+
+                try:
+                    return load_yaml_safely(f.read())
+                except Exception as e:
+                    _LOG.warning(f"Failed to load YAML safely from {file_path}: {e}")
+                    return None
+            # For JSON, we use standard json load
+            if file_path.endswith(".json"):
+                try:
+                    return json.load(f)
+                except Exception:
+                    return None
+            return f.read()
+
     def _resolve_target_files(self, objective: str) -> list[str]:
         raw = extract_filenames(objective)
         normalized = []
