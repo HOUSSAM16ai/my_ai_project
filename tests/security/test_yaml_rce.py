@@ -1,8 +1,12 @@
 import os
+import subprocess
+import tempfile
+
 import pytest
 import yaml
-import tempfile
-from app.core.yaml_utils import load_yaml_safely, YamlSecurityError, load_yaml_file_safely
+
+from app.core.yaml_utils import YamlSecurityError, load_yaml_file_safely, load_yaml_safely
+
 
 class TestYamlRCEProtection:
     """
@@ -74,8 +78,6 @@ class TestYamlRCEProtection:
         """
         Security Audit: strict scan of the codebase to ensure 'yaml.load' is not used.
         """
-        import subprocess
-
         # Grep for yaml.load( in all python files
         try:
             cmd = ["grep", "-r", "yaml\\.load(", "."]
@@ -104,8 +106,10 @@ class TestYamlRCEProtection:
                     unsafe_usages.append(line)
 
             if unsafe_usages:
-                pytest.fail(f"Found unsafe yaml.load() usage in codebase:\n{chr(10).join(unsafe_usages)}")
+                pytest.fail(
+                    f"Found unsafe yaml.load() usage in codebase:\n{chr(10).join(unsafe_usages)}"
+                )
 
-        except Exception as e:
+        except Exception:
             # If grep fails (e.g. not found), that's good?
             pass

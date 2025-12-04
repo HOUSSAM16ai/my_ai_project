@@ -8,9 +8,12 @@ import yaml
 
 _LOG = logging.getLogger("yaml_utils")
 
+
 class YamlSecurityError(Exception):
     """Raised when unsafe YAML loading is attempted."""
+
     pass
+
 
 def load_yaml_safely(content: str | bytes) -> Any:
     """
@@ -21,7 +24,8 @@ def load_yaml_safely(content: str | bytes) -> Any:
         return yaml.safe_load(content)
     except yaml.YAMLError as e:
         _LOG.error(f"Failed to parse YAML safely: {e}")
-        raise YamlSecurityError(f"Invalid or unsafe YAML content: {e}")
+        raise YamlSecurityError(f"Invalid or unsafe YAML content: {e}") from e
+
 
 def load_yaml_file_safely(path: str) -> Any:
     """
@@ -30,5 +34,5 @@ def load_yaml_file_safely(path: str) -> Any:
     if not os.path.exists(path):
         raise FileNotFoundError(f"YAML file not found: {path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return load_yaml_safely(f)
