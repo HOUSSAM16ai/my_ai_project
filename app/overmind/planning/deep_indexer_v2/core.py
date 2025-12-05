@@ -291,9 +291,7 @@ def build_index(
         "functions": [
             {
                 "file": m.path,
-                **{
-                    k: v for k, v in asdict(fn).items() if k != "calls_out"
-                },
+                **{k: v for k, v in asdict(fn).items() if k != "calls_out"},
             }
             for m in modules
             for fn in m.functions

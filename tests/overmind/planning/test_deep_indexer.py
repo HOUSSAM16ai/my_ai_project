@@ -1,6 +1,5 @@
-import os
-import json
 from app.overmind.planning import deep_indexer
+
 
 def test_deep_indexer_build_index_structure(tmp_path):
     # Setup: Create a dummy python project structure
@@ -70,6 +69,7 @@ class Processor:
     # So complexity should be roughly 3.
     assert m2["functions"][0]["complexity"] >= 3
 
+
 def test_summarize_for_prompt(tmp_path):
     # Setup dummy index
     index = {
@@ -80,7 +80,7 @@ def test_summarize_for_prompt(tmp_path):
             "std_function_complexity": 2.1,
             "max_function_complexity": 20,
             "max_function_complexity_ref": "foo.py::bar",
-            "total_loc": 1000
+            "total_loc": 1000,
         },
         "complexity_hotspots_top50": [
             {"file": "bad.py", "name": "do_bad", "loc": 100, "complexity": 50}
@@ -91,7 +91,7 @@ def test_summarize_for_prompt(tmp_path):
         "layers": {},
         "service_candidates": [],
         "entrypoints": [],
-        "call_graph_edges_sample": []
+        "call_graph_edges_sample": [],
     }
 
     # Act
