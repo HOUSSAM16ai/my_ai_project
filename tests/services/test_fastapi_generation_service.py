@@ -1,7 +1,10 @@
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from app.services.fastapi_generation_service import get_generation_service
+
 
 @pytest.fixture
 def service():

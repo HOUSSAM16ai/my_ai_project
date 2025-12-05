@@ -324,7 +324,7 @@ class TestTaskFinalizer:
 
         status = TaskFinalizer.determine_final_status(ctx)
 
-        assert status == "SUCCESS"
+        assert str(status.value).lower() == "success"
 
     def test_determine_final_status_stagnation_fail(self):
         """✅ Test status determination with stagnation failure."""
@@ -338,7 +338,7 @@ class TestTaskFinalizer:
 
         status = TaskFinalizer.determine_final_status(ctx)
 
-        assert status == "FAILED"
+        assert str(status.value).lower() == "failed"
 
     def test_determine_final_status_tool_limit_hit(self):
         """✅ Test status determination when tool limit exceeded."""
@@ -351,7 +351,7 @@ class TestTaskFinalizer:
 
         status = TaskFinalizer.determine_final_status(ctx)
 
-        assert status == "FAILED"
+        assert str(status.value).lower() == "failed"
 
     def test_determine_final_status_repeat_abort(self):
         """✅ Test status determination with repeat pattern abort."""
@@ -365,7 +365,7 @@ class TestTaskFinalizer:
 
         status = TaskFinalizer.determine_final_status(ctx)
 
-        assert status == "FAILED"
+        assert str(status.value).lower() == "failed"
 
 
 class TestMessageBuilder:
@@ -569,7 +569,7 @@ class TestIntegration:
 
         # Step 6: Determine status
         status = TaskFinalizer.determine_final_status(ctx)
-        assert status == "SUCCESS"
+        assert str(status.value).lower() == "success"
 
 
 # ==================== EDGE CASE TESTS ====================
