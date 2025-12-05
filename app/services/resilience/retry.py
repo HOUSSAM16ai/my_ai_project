@@ -89,15 +89,21 @@ class RetryBudget:
             retry_rate = (self.total_retries / self.total_requests) * 100
             return retry_rate < self.budget_percent
 
-    def track_retry(self) -> None:
-        """Track a retry attempt"""
+    def track_request(self) -> None:
+        """Track a request attempt (successful or failed)"""
         with self._lock:
-            self.total_retries += 1
             self.total_requests += 1
             # Reset counters if window exceeded
             if self.total_requests > self.window_size:
                 self.total_requests = int(self.window_size * 0.9)
                 self.total_retries = int(self.total_retries * 0.9)
+
+    def track_retry(self) -> None:
+        """Track a retry attempt"""
+        with self._lock:
+            self.total_retries += 1
+            # We don't increment total_requests here because it's already incremented
+            # by track_request() which should be called for every attempt
 
     def get_stats(self) -> dict:
         """Get budget statistics"""
@@ -159,6 +165,9 @@ class RetryManager:
         retry_on_status = retry_on_status or [500, 502, 503, 504]
 
         for attempt in range(self.config.max_retries + 1):
+            # Track request for budget calculation
+            self.retry_budget.track_request()
+
             try:
                 result = func(*args, **kwargs)
 
