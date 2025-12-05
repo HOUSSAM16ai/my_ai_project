@@ -16,6 +16,7 @@ def _env_flag(name: str, default: bool = False) -> bool:
     raw = _env(name, "1" if default else "0").lower()
     return raw in ("1", "true", "yes", "on")
 
+
 # Snapshot configuration for introspection
 CONFIG = {
     "CACHE_ENABLE": _env_flag("PLANNER_INDEX_CACHE_ENABLE", False),
