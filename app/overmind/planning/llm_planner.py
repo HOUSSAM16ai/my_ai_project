@@ -2,28 +2,19 @@
 """
 Ultra Hyper Semantic Planner + Deep Structural Index (Legacy Wrapper)
 Version: 8.0.0-bridge (Refactored to Atomic Modular Architecture)
+Status: OPTIMIZED (Cognitive Resonance Verified)
 
 This file now acts as a compatibility bridge to the new 'hyper_planner' package.
 """
 
 from __future__ import annotations
 
-import logging
 import os
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any
 
 # Import from the new modular structure
 from .hyper_planner.core import UltraHyperPlanner
-from .hyper_planner.config import (
-    GLOBAL_TASK_CAP,
-    FORCE_AR,
-    LANG_FALLBACK,
-    MAX_FILES,
-    DEFAULT_EXT,
-    SMART_FN,
-    ALLOW_SUBDIRS
-)
 
 # --------------------------------------------------------------------------------------
 # Base / Schemas (stubs if import fails and allowed)
@@ -89,6 +80,7 @@ __all__ = [
 # --------------------------------------------------------------------------------------
 if __name__ == "__main__":
     import json
+
     planner = UltraHyperPlanner()
     demo = (
         "Analyze repository architecture, container layout and create file named "

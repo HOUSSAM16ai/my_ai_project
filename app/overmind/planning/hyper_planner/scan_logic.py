@@ -1,12 +1,11 @@
-
-import os
 import glob
 import logging
-from typing import Any
+import os
 
-from . import config, utils
+from . import config
 
 _LOG = logging.getLogger("ultra_hyper_planner.scan")
+
 
 # --------------------------------------------------------------------------------------
 # Extra Source Scan
@@ -47,7 +46,7 @@ def _collect_extra_files() -> list[str]:
                         collected.add(fp)
         if len(collected) >= config.SCAN_MAX_FILES:
             break
-    return sorted(collected)[:config.SCAN_MAX_FILES]
+    return sorted(collected)[: config.SCAN_MAX_FILES]
 
 
 def _container_files_present() -> list[str]:

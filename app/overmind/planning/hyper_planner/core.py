@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import json
@@ -6,14 +5,12 @@ import logging
 import math
 import os
 import time
-from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from ..base_planner import BasePlanner, PlannerError, PlanValidationError
-from ..schemas import MissionPlanSchema, PlannedTask, PlanningContext
 from ..deep_indexer import build_index, summarize_for_prompt
-
-from . import config, utils, prompts, scan_logic, deep_index_logic
+from ..schemas import MissionPlanSchema, PlannedTask, PlanningContext
+from . import config, deep_index_logic, prompts, scan_logic, utils
 
 # --------------------------------------------------------------------------------------
 # Logging
@@ -25,6 +22,7 @@ if not _LOG.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s][%(name)s] %(message)s"))
     _LOG.addHandler(_h)
+
 
 # --------------------------------------------------------------------------------------
 # Planner
@@ -125,7 +123,9 @@ class UltraHyperPlanner(BasePlanner):
                 adaptive_chunking = True
 
         streaming_possible = self._can_stream()
-        use_stream = streaming_possible and config.STREAM_ENABLE and total_chunks >= config.STREAM_MIN_CHUNKS
+        use_stream = (
+            streaming_possible and config.STREAM_ENABLE and total_chunks >= config.STREAM_MIN_CHUNKS
+        )
 
         tasks: list[PlannedTask] = []
         idx = 1
@@ -173,7 +173,9 @@ class UltraHyperPlanner(BasePlanner):
                         index_for_sem = build_index(".")
                         sem_source = summarize_for_prompt(
                             index_for_sem,
-                            max_len=min(config.STRUCT_SEMANTIC_MAX_BYTES, config.DEEP_INDEX_SUMMARY_MAX),
+                            max_len=min(
+                                config.STRUCT_SEMANTIC_MAX_BYTES, config.DEEP_INDEX_SUMMARY_MAX
+                            ),
                         )
                     else:
                         sem_source = deep_summary_text or ""
@@ -210,7 +212,7 @@ class UltraHyperPlanner(BasePlanner):
         if config.GLOBAL_CODE_SUMMARY_EN and extra_read_ids:
             try:
                 if len(extra_read_ids) > config.GLOBAL_CODE_SUMMARY_MAX_FILES:
-                    use_ids = extra_read_ids[:config.GLOBAL_CODE_SUMMARY_MAX_FILES]
+                    use_ids = extra_read_ids[: config.GLOBAL_CODE_SUMMARY_MAX_FILES]
                 else:
                     use_ids = extra_read_ids
                 refs = []
@@ -291,7 +293,10 @@ class UltraHyperPlanner(BasePlanner):
                     tool_name=config.TOOL_THINK,
                     tool_args={
                         "prompt": prompts.build_section_prompt(
-                            objective, inferred_sections, lang, struct_ref=utils._truncate(ref or "", 900)
+                            objective,
+                            inferred_sections,
+                            lang,
+                            struct_ref=utils._truncate(ref or "", 900),
                         )
                     },
                     dependencies=(
@@ -637,7 +642,10 @@ class UltraHyperPlanner(BasePlanner):
                 task_id=idx_write,
                 description=f"Write artifact index {config.INDEX_FILE_NAME}.",
                 tool_name=config.TOOL_WRITE,
-                tool_args={"path": config.INDEX_FILE_NAME, "content": f"{{{{{idx_think}.answer}}}}"},
+                tool_args={
+                    "path": config.INDEX_FILE_NAME,
+                    "content": f"{{{{{idx_think}.answer}}}}",
+                },
                 dependencies=[idx_think],
             )
         )
@@ -806,6 +814,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
         with open(file_path, encoding="utf-8") as f:
             if file_path.endswith((".yaml", ".yml")):
                 from app.core.yaml_utils import load_yaml_safely
+
                 try:
                     return load_yaml_safely(f.read())
                 except Exception as e:
@@ -827,7 +836,7 @@ Provide deep, organized analysis with superhuman intelligence in one comprehensi
                 nf = utils._ensure_ext(nf)
             if nf.lower() not in [x.lower() for x in normalized]:
                 normalized.append(nf)
-        return normalized[:config.MAX_FILES]
+        return normalized[: config.MAX_FILES]
 
     def _can_stream(self) -> bool:
         mode = config.ALLOW_APPEND_MODE

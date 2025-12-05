@@ -1,8 +1,7 @@
-
-import os
 import logging
-from typing import Any, Tuple
-from .. import deep_indexer
+import os
+from typing import Any
+
 from . import config, utils
 
 _LOG = logging.getLogger("ultra_hyper_planner.deep_index")
@@ -25,7 +24,7 @@ else:
 
 def attempt_deep_index(
     tasks: list[Any], idx: int, base_deps: list[str], lang: str
-) -> Tuple[dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     # PlannedTask imported inside core to avoid circular dep if needed, but passing Any here
     # Actually we need PlannedTask. We will import from core or schema.
     # To keep this clean, let's assume the caller handles the Task creation or we import schemas.
@@ -104,8 +103,10 @@ def attempt_deep_index(
         _LOG.warning("Deep index failed: %s", e)
     return struct_meta, {"next_idx": idx, "deps": deps_out}
 
+
 def _truncate_json(data: dict[str, Any], max_bytes: int) -> str:
     import json
+
     raw = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     if len(raw.encode("utf-8")) <= max_bytes:
         return raw

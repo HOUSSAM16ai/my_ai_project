@@ -1,7 +1,7 @@
-
+import math
 import os
 import re
-import math
+
 from . import config
 
 # --------------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ def extract_filenames(obj: str) -> list[str]:
                 break
     if not out:
         out = ["output" + config.DEFAULT_EXT]
-    return out[:config.MAX_FILES]
+    return out[: config.MAX_FILES]
 
 
 def extract_requested_lines(obj: str) -> int | None:
