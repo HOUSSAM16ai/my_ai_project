@@ -64,6 +64,7 @@ class AvailableModels:
     # ─────────────────────────────────────────────────────────────────────────
     CLAUDE_37_SONNET_THINKING = "anthropic/claude-3.7-sonnet:thinking"  # 🧠 تفكير متقدم
     CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"  # 🎯 استدلال ممتاز
+    CLAUDE_OPUS_4_5 = "anthropic/claude-opus-4.5"  # 🔮 النموذج الجديد (كما طلب المستخدم)
     CLAUDE_3_OPUS = "anthropic/claude-3-opus"  # 🎓 الأكثر قدرة
     CLAUDE_3_HAIKU = "anthropic/claude-3-haiku"  # ⚡ سريع ورخيص
 
@@ -133,7 +134,7 @@ class ActiveModels:
     # 👉 غيّر هذا لتبديل نموذج الذكاء الاصطناعي الرئيسي
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    PRIMARY = AvailableModels.KAT_CODER_PRO_FREE
+    PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
 
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 💰 LOW COST MODEL | نموذج منخفض التكلفة
@@ -151,7 +152,7 @@ class ActiveModels:
     # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    GATEWAY_PRIMARY = AvailableModels.anthropic/claude-sonnet-4.5  # 🏆 Stabilized Primary
+    GATEWAY_PRIMARY = AvailableModels.CLAUDE_OPUS_4_5  # 🏆 Stabilized Primary
     GATEWAY_FALLBACK_1 = (
         AvailableModels.GEMINI_2_FLASH_EXP_FREE
     )  # ⚡ First fallback (Fast but rate-limited)
