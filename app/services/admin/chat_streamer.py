@@ -8,16 +8,18 @@ from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.models import AdminConversation, MessageRole
-from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
 from app.services.admin.chat_persistence import AdminChatPersistence
+from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
 
 logger = logging.getLogger(__name__)
+
 
 class AdminChatStreamer:
     """
     Encapsulates the Streaming Logic (SSE).
     Part of "Evolutionary Logic Distillation" - separating network IO from business rules.
     """
+
     def __init__(self, persistence: AdminChatPersistence):
         self.persistence = persistence
 
@@ -30,7 +32,6 @@ class AdminChatStreamer:
         ai_client: AIClient,
         session_factory_func,
     ) -> AsyncGenerator[str, None]:
-
         # 1. Update In-Memory History
         if not history or history[-1]["content"] != question:
             history.append({"role": "user", "content": question})

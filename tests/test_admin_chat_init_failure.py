@@ -25,7 +25,7 @@ async def test_conversation_init_before_intent_detection_failure():
     session_factory = MagicMock()
 
     # Mock orchestrator to raise an exception during detect_intent
-    with patch("app.services.admin_chat_boundary_service.get_chat_orchestrator") as mock_get_orch:
+    with patch("app.services.admin.chat_streamer.get_chat_orchestrator") as mock_get_orch:
         mock_orch = MagicMock()
         mock_orch.detect_intent.side_effect = Exception("Intent detection failed")
         mock_get_orch.return_value = mock_orch

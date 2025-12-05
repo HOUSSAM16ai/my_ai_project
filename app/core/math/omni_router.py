@@ -113,13 +113,14 @@ class SemanticAffinityEngine:
     Uses lightweight symbolic analysis (keywords) to approximate semantic understanding.
     In a real system, this would use vector embeddings.
     """
+
     def __init__(self):
         # Maps keywords to "specialized" model substrings or IDs
         self.specializations = {
             "coding": {"python", "code", "function", "bug", "error", "api", "class", "async"},
             "creative": {"story", "poem", "write", "creative", "character", "plot"},
             "math": {"calculate", "equation", "solve", "math", "number", "formula"},
-            "analysis": {"analyze", "summary", "report", "data", "trend", "insight"}
+            "analysis": {"analyze", "summary", "report", "data", "trend", "insight"},
         }
 
         # Maps model ID substrings to their specialized domain
@@ -128,7 +129,7 @@ class SemanticAffinityEngine:
             "claude": "analysis",
             "gpt-4": "math",
             "wizard": "creative",
-            "gemini": "analysis"
+            "gemini": "analysis",
         }
 
     def get_affinity_score(self, prompt: str, model_id: str) -> float:
@@ -149,7 +150,7 @@ class SemanticAffinityEngine:
                 detected_domain = domain
 
         if not detected_domain:
-            return 1.0 # Neutral
+            return 1.0  # Neutral
 
         # 2. Check if model matches domain
         # Heuristic: does model ID contain hints?
@@ -160,7 +161,7 @@ class SemanticAffinityEngine:
                 break
 
         if model_domain == detected_domain:
-            return 1.25 # Strong Match Boost
+            return 1.25  # Strong Match Boost
 
         return 1.0
 

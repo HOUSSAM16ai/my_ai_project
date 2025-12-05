@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AdminConversation, AdminMessage, MessageRole, User
 from app.core.prompts import get_system_prompt
+from app.models import AdminConversation, AdminMessage, MessageRole, User
 
 logger = logging.getLogger(__name__)
+
 
 class AdminChatPersistence:
     """
     Encapsulates all Data Access Logic for Admin Chat.
     Part of the "Evolutionary Logic Distillation" - separating persistence from orchestration.
     """
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -40,17 +41,19 @@ class AdminChatPersistence:
 
         return conversation
 
-    async def get_or_create_conversation(self, user_id: int, title_hint: str, conversation_id: str | int | None = None) -> AdminConversation:
+    async def get_or_create_conversation(
+        self, user_id: int, title_hint: str, conversation_id: str | int | None = None
+    ) -> AdminConversation:
         conversation = None
         if conversation_id:
             try:
                 conversation = await self.verify_access(user_id, int(conversation_id))
             except (ValueError, TypeError):
-                 # Fallback to create new if invalid ID?
-                 # Or re-raise? Original service raised 404.
-                 # For now, we mimic original behavior which raised 404 via the boundary service logic.
-                 # But here we just return None to let the caller decide, or re-raise.
-                 raise
+                # Fallback to create new if invalid ID?
+                # Or re-raise? Original service raised 404.
+                # For now, we mimic original behavior which raised 404 via the boundary service logic.
+                # But here we just return None to let the caller decide, or re-raise.
+                raise
 
         if not conversation:
             conversation = AdminConversation(title=title_hint[:50], user_id=user_id)
@@ -60,7 +63,9 @@ class AdminChatPersistence:
 
         return conversation
 
-    async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> AdminMessage:
+    async def save_message(
+        self, conversation_id: int, role: MessageRole, content: str
+    ) -> AdminMessage:
         message = AdminMessage(conversation_id=conversation_id, role=role, content=content)
         self.db.add(message)
         await self.db.commit()
