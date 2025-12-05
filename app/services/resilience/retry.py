@@ -71,29 +71,41 @@ class RetryBudget:
     """
     Retry Budget - Limits retries to prevent cascading failures
 
-    Implements the principle: Max 10% of requests can be retries
+    Implements the principle: Max 10% of requests can be retries.
+    Enhanced with 'Cognitive Inference' to handle ghost retries and cold starts.
     """
 
-    def __init__(self, budget_percent: float = 10.0):
+    def __init__(self, budget_percent: float = 10.0, min_requests_threshold: int = 10):
         self.budget_percent = budget_percent
+        self.min_requests_threshold = min_requests_threshold
         self.total_requests = 0
         self.total_retries = 0
         self._lock = threading.RLock()
         self.window_size = 1000  # Rolling window
 
     def can_retry(self) -> bool:
-        """Check if retry is within budget"""
+        """
+        Check if retry is within budget using Statistical Heuristics.
+        """
         with self._lock:
-            if self.total_requests == 0:
+            # Heuristic Inference: Ensure logical consistency.
+            # A retry implies a request occurred, even if not explicitly tracked.
+            effective_total_requests = max(self.total_requests, self.total_retries)
+
+            # Cognitive Grace Period:
+            # Do not enforce strict budgeting during the cold start phase
+            # to prevent false positives on low-volume traffic spikes.
+            if effective_total_requests < self.min_requests_threshold:
                 return True
-            retry_rate = (self.total_retries / self.total_requests) * 100
+
+            retry_rate = (self.total_retries / effective_total_requests) * 100
             return retry_rate < self.budget_percent
 
     def track_request(self) -> None:
         """Track a request attempt (successful or failed)"""
         with self._lock:
             self.total_requests += 1
-            # Reset counters if window exceeded
+            # Reset counters if window exceeded to maintain temporal relevance
             if self.total_requests > self.window_size:
                 self.total_requests = int(self.window_size * 0.9)
                 self.total_retries = int(self.total_retries * 0.9)
@@ -102,14 +114,15 @@ class RetryBudget:
         """Track a retry attempt"""
         with self._lock:
             self.total_retries += 1
-            # We don't increment total_requests here because it's already incremented
-            # by track_request() which should be called for every attempt
+            # We don't increment total_requests here because it's usually incremented
+            # by track_request(). However, 'can_retry' handles the gap if it wasn't.
 
     def get_stats(self) -> dict:
         """Get budget statistics"""
         with self._lock:
+            effective_requests = max(self.total_requests, self.total_retries)
             retry_rate = (
-                (self.total_retries / self.total_requests) * 100 if self.total_requests > 0 else 0
+                (self.total_retries / effective_requests) * 100 if effective_requests > 0 else 0
             )
             return {
                 "total_requests": self.total_requests,
@@ -157,7 +170,7 @@ class RetryManager:
             if cached:
                 return cached
 
-        # Check retry budget
+        # Check retry budget (Fail Fast check)
         if not self.retry_budget.can_retry():
             raise RetryBudgetExhaustedError("Retry budget exhausted. Failing fast.")
 
@@ -215,6 +228,12 @@ class RetryManager:
 
                 # Track retry for budget
                 self.retry_budget.track_retry()
+
+                # Check budget again before sleeping (Double Check Pattern)
+                if not self.retry_budget.can_retry():
+                    raise RetryBudgetExhaustedError(
+                        "Retry budget exhausted during attempts."
+                    ) from None
 
                 # Wait before retry
                 time.sleep(delay_ms / 1000.0)
