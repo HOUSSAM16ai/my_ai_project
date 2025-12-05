@@ -2,21 +2,28 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.chat_orchestrator_service import ChatIntent, ChatOrchestratorService
+from app.services.chat.service import ChatOrchestratorService
+from app.services.chat.intent import ChatIntent
 
 
 @pytest.fixture
 def orchestrator():
     service = ChatOrchestratorService()
     # Mock lazy initialized components
-    service._async_tools = AsyncMock()
-    service._async_overmind = AsyncMock()
+    service._context.async_tools = AsyncMock()
+    service._context.async_overmind = AsyncMock()
     # Rate limiter check is usually synchronous in this codebase's implementation of RateLimiter.check
-    service._rate_limiter = MagicMock()
+    service._context.rate_limiter = MagicMock()
     service._initialized = True
 
     # Mock rate limiter check to always return True
-    service._rate_limiter.check.return_value = (True, "ok")
+    service._context.rate_limiter.check.return_value = (True, "ok")
+
+    # Add deprecated attributes for backward compatibility in tests that might access them directly
+    # (Though we should fix the tests to access _context)
+    service._async_tools = service._context.async_tools
+    service._async_overmind = service._context.async_overmind
+    service._rate_limiter = service._context.rate_limiter
 
     return service
 
@@ -39,8 +46,6 @@ async def test_detect_intent_file_read_arabic(orchestrator):
 
 @pytest.mark.asyncio
 async def test_detect_intent_code_search(orchestrator):
-    # Adjusted to match the regex expectation: "search code for User" matches "User" better
-    # Original failure was "search for code User" -> query="code User"
     text = "search code for User in app"
     result = orchestrator.detect_intent(text)
     assert result.intent == ChatIntent.CODE_SEARCH
@@ -81,8 +86,8 @@ async def test_handle_file_read_flow(orchestrator):
     path = "test.py"
     user_id = 1
 
-    orchestrator._async_tools.available = True
-    orchestrator._async_tools.read_file.return_value = {
+    orchestrator._context.async_tools.available = True
+    orchestrator._context.async_tools.read_file.return_value = {
         "ok": True,
         "data": {"content": "print('hello')", "exists": True},
     }
@@ -91,8 +96,9 @@ async def test_handle_file_read_flow(orchestrator):
     mock_cb = MagicMock()
     mock_cb.can_execute.return_value = (True, "")
 
+    # Patch the global get_circuit_breaker used by the handlers
     with patch(
-        "app.services.chat_orchestrator_service.CircuitBreakerRegistry.get", return_value=mock_cb
+        "app.services.chat.handlers.file_handler.get_circuit_breaker", return_value=mock_cb
     ):
         generator = orchestrator.handle_file_read(path, user_id)
         events = []
@@ -108,8 +114,8 @@ async def test_handle_code_search_flow(orchestrator):
     query = "User"
     user_id = 1
 
-    orchestrator._async_tools.available = True
-    orchestrator._async_tools.code_search_lexical.return_value = {
+    orchestrator._context.async_tools.available = True
+    orchestrator._context.async_tools.code_search_lexical.return_value = {
         "ok": True,
         "data": {
             "results": [{"file": "models.py", "line": 10, "match_line_excerpt": "class User:"}]
@@ -120,7 +126,7 @@ async def test_handle_code_search_flow(orchestrator):
     mock_cb.can_execute.return_value = (True, "")
 
     with patch(
-        "app.services.chat_orchestrator_service.CircuitBreakerRegistry.get", return_value=mock_cb
+        "app.services.chat.handlers.search_handler.get_circuit_breaker", return_value=mock_cb
     ):
         generator = orchestrator.handle_code_search(query, user_id)
         events = []
@@ -162,6 +168,9 @@ async def test_orchestrate_delegates_to_handler(orchestrator):
     conversation_id = 100
     ai_client = MagicMock()
     history = []
+
+    # Since handlers are now separate functions/methods, we need to mock the dispatching method or the handler itself.
+    # The current implementation calls `self.handle_file_read`.
 
     orchestrator.handle_file_read = MagicMock()
 
