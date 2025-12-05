@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.chat.service import ChatOrchestratorService
 from app.services.chat.intent import ChatIntent
+from app.services.chat.service import ChatOrchestratorService
 
 
 @pytest.fixture
@@ -97,9 +97,7 @@ async def test_handle_file_read_flow(orchestrator):
     mock_cb.can_execute.return_value = (True, "")
 
     # Patch the global get_circuit_breaker used by the handlers
-    with patch(
-        "app.services.chat.handlers.file_handler.get_circuit_breaker", return_value=mock_cb
-    ):
+    with patch("app.services.chat.handlers.file_handler.get_circuit_breaker", return_value=mock_cb):
         generator = orchestrator.handle_file_read(path, user_id)
         events = []
         async for event in generator:

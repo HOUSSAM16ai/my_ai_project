@@ -4,9 +4,22 @@ import logging
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from app.core.resilience import CircuitBreaker
+    pass
 
 logger = logging.getLogger(__name__)
+
+
+class CircuitBreakerProtocol(Protocol):
+    """
+    Protocol for the Resilience Grid's Circuit Breaker mechanism.
+    Enforces a strict contract for fault tolerance across the Neural Routing Mesh.
+    """
+
+    async def call(self, func, *args, **kwargs): ...
+    @property
+    def state(self) -> str: ...
+    @property
+    def failure_count(self) -> int: ...
 
 
 class AsyncToolsProtocol(Protocol):
@@ -32,19 +45,33 @@ class RateLimiterProtocol(Protocol):
 
 
 class ChatContext:
-    """Context object holding dependencies for chat handlers."""
+    """
+    Context object holding dependencies for chat handlers.
+    Now augmented with the Resilience Grid's Circuit Breaker integration points.
+    """
 
     def __init__(
         self,
         async_tools: AsyncToolsProtocol | None = None,
         async_overmind: AsyncOvermindProtocol | None = None,
         rate_limiter: RateLimiterProtocol | None = None,
+        circuit_breaker: CircuitBreakerProtocol | None = None,
     ):
         self.async_tools = async_tools
         self.async_overmind = async_overmind
         self.rate_limiter = rate_limiter
+        self.circuit_breaker = circuit_breaker
 
     async def check_rate_limit(self, user_id: int, tool_name: str) -> tuple[bool, str]:
         if not self.rate_limiter:
             return True, "ok"
         return self.rate_limiter.check(user_id, tool_name)
+
+    async def execute_resilient(self, func, *args, **kwargs):
+        """
+        Executes a function through the Resilience Grid (Circuit Breaker) if available.
+        Otherwise, executes directly, bypassing the safety mechanisms.
+        """
+        if self.circuit_breaker:
+            return await self.circuit_breaker.call(func, *args, **kwargs)
+        return await func(*args, **kwargs)

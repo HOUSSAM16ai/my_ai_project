@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from app.core.resilience import get_circuit_breaker
 from app.services.chat.handlers.base import ChatContext

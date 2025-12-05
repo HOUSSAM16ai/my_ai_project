@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from app.core.resilience import CircuitBreaker, get_circuit_breaker, reset_all_circuit_breakers
 from app.services.chat.handlers.base import ChatContext
