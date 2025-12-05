@@ -1,8 +1,17 @@
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch
-from app.services.resilience.service import DistributedResilienceService, get_resilience_service, resilient
-from app.services.resilience.circuit_breaker import CircuitBreakerConfig, CircuitState, CircuitBreakerOpenError
-from app.services.resilience.retry import RetryConfig, RetryStrategy, RetryBudgetExhaustedError
+
+from app.services.resilience.circuit_breaker import (
+    CircuitBreakerConfig,
+)
+from app.services.resilience.retry import RetryConfig
+from app.services.resilience.service import (
+    DistributedResilienceService,
+    get_resilience_service,
+    resilient,
+)
+
 
 class TestDistributedResilienceService:
     @pytest.fixture

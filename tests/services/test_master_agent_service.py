@@ -1,28 +1,27 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, ANY
-from app.services.master_agent_service import (
-    OvermindService,
-    MissionStatus,
-    MissionEventType,
-    TaskStatus,
-    Mission,
-    Task,
-    MissionPlan,
-    CandidatePlan,
-    DEFAULT_MAX_TASK_ATTEMPTS,
-    PlanStatus,
-    start_mission,
-    run_mission_lifecycle,
-    _compute_diff,
-    _extract_answer_from_data,
-    _ensure_dict,
-    _canonicalize_tool_name,
-    CANON_WRITE,
-    CANON_READ,
-    _render_template_in_args,
-    _autofill_file_args,
-)
+
 from app.overmind.planning.schemas import MissionPlanSchema, PlannedTask
+from app.services.master_agent_service import (
+    CANON_READ,
+    CANON_WRITE,
+    Mission,
+    MissionPlan,
+    MissionStatus,
+    OvermindService,
+    Task,
+    TaskStatus,
+    _autofill_file_args,
+    _canonicalize_tool_name,
+    _compute_diff,
+    _ensure_dict,
+    _extract_answer_from_data,
+    _render_template_in_args,
+    run_mission_lifecycle,
+    start_mission,
+)
+
 
 # We need to mock SessionLocal since the service uses it directly
 @pytest.fixture
@@ -38,20 +37,24 @@ def mock_session():
     session.get.return_value = None
     return session
 
+
 @pytest.fixture
 def mock_session_local(mock_session):
     with patch("app.services.master_agent_service.SessionLocal", return_value=mock_session) as mock:
         yield mock
 
+
 @pytest.fixture
 def overmind_service():
     return OvermindService()
+
 
 @pytest.fixture
 def mock_user():
     user = MagicMock()
     user.id = 1
     return user
+
 
 @pytest.fixture
 def mock_planners():
@@ -66,21 +69,21 @@ def mock_planners():
                     description="Do something",
                     tool_name="some_tool",
                     tool_args={"arg": "val"},
-                    dependencies=[]
+                    dependencies=[],
                 )
-            ]
+            ],
         ),
-        "meta": {"planner": "TestPlanner"}
+        "meta": {"planner": "TestPlanner"},
     }
     with patch("app.services.master_agent_service.get_all_planners", return_value=[planner]):
         yield [planner]
 
-class TestMasterAgentService:
 
+class TestMasterAgentService:
     def test_start_new_mission(self, overmind_service, mock_session_local, mock_session, mock_user):
         """Test starting a new mission creates the record and starts the thread."""
         with patch("threading.Thread") as mock_thread:
-            mission = overmind_service.start_new_mission("Test Objective", mock_user)
+            overmind_service.start_new_mission("Test Objective", mock_user)
 
             # Verify mission creation
             assert mock_session.add.called
@@ -94,32 +97,38 @@ class TestMasterAgentService:
 
             # Verify event logging
             # The second add call should be the event
-            args2, _ = mock_session.add.call_args_list[1]
+            _args2, _ = mock_session.add.call_args_list[1]
 
             # Verify thread start
             mock_thread.assert_called_once()
             call_args = mock_thread.call_args[1]
-            assert call_args['target'] == overmind_service.run_mission_lifecycle
-            assert call_args['daemon'] is True
+            assert call_args["target"] == overmind_service.run_mission_lifecycle
+            assert call_args["daemon"] is True
 
-    def test_run_mission_lifecycle_not_found(self, overmind_service, mock_session_local, mock_session):
+    def test_run_mission_lifecycle_not_found(
+        self, overmind_service, mock_session_local, mock_session
+    ):
         """Test lifecycle handles missing mission gracefully."""
         mock_session.get.return_value = None
 
         overmind_service.run_mission_lifecycle(999)
 
-    def test_run_mission_lifecycle_catastrophic_failure(self, overmind_service, mock_session_local, mock_session):
+    def test_run_mission_lifecycle_catastrophic_failure(
+        self, overmind_service, mock_session_local, mock_session
+    ):
         """Test catastrophic failure handling in lifecycle."""
         mission = Mission(id=1, status=MissionStatus.PENDING)
         mock_session.get.return_value = mission
 
         # Mock _tick to raise exception
-        with patch.object(overmind_service, '_tick', side_effect=Exception("Boom")):
+        with patch.object(overmind_service, "_tick", side_effect=Exception("Boom")):
             overmind_service.run_mission_lifecycle(1)
 
             assert mission.status == MissionStatus.FAILED
 
-    def test_plan_phase_success(self, overmind_service, mock_session_local, mock_session, mock_planners):
+    def test_plan_phase_success(
+        self, overmind_service, mock_session_local, mock_session, mock_planners
+    ):
         """Test the planning phase successfully selects a plan."""
         mission = Mission(id=1, status=MissionStatus.PENDING)
 
@@ -138,7 +147,7 @@ class TestMasterAgentService:
 
         # Verify plan persistence
         # We expect MissionPlan and Task to be added
-        assert mock_session.add.call_count >= 2 # 1 plan + 1 task
+        assert mock_session.add.call_count >= 2  # 1 plan + 1 task
 
     def test_plan_phase_no_planners(self, overmind_service, mock_session_local, mock_session):
         """Test planning phase fails when no planners are available."""
@@ -149,7 +158,9 @@ class TestMasterAgentService:
 
             assert mission.status == MissionStatus.FAILED
 
-    def test_plan_phase_all_planners_fail(self, overmind_service, mock_session_local, mock_session, mock_planners):
+    def test_plan_phase_all_planners_fail(
+        self, overmind_service, mock_session_local, mock_session, mock_planners
+    ):
         """Test planning phase fails when all planners raise exceptions."""
         mission = Mission(id=1, status=MissionStatus.PENDING)
 
@@ -166,8 +177,16 @@ class TestMasterAgentService:
         plan = MissionPlan(id=100, mission_id=1)
         mock_session.get.return_value = plan
 
-        task1 = Task(task_key="t1", status=TaskStatus.PENDING, mission_id=1, plan_id=100, depends_on_json=[])
-        task2 = Task(task_key="t2", status=TaskStatus.PENDING, mission_id=1, plan_id=100, depends_on_json=["t1"])
+        task1 = Task(
+            task_key="t1", status=TaskStatus.PENDING, mission_id=1, plan_id=100, depends_on_json=[]
+        )
+        task2 = Task(
+            task_key="t2",
+            status=TaskStatus.PENDING,
+            mission_id=1,
+            plan_id=100,
+            depends_on_json=["t1"],
+        )
 
         mock_session.query.return_value.filter_by.return_value.all.return_value = [task1, task2]
 
@@ -175,7 +194,9 @@ class TestMasterAgentService:
         def execute_side_effect(mission, task, session):
             task.status = TaskStatus.SUCCESS
 
-        with patch.object(overmind_service, '_execute_single_task', side_effect=execute_side_effect) as mock_exec:
+        with patch.object(
+            overmind_service, "_execute_single_task", side_effect=execute_side_effect
+        ) as mock_exec:
             overmind_service._execution_phase(mission, mock_session)
 
             # Only task1 should be executed because task2 depends on t1 which is not SUCCESS yet (in the initial state)
@@ -187,7 +208,7 @@ class TestMasterAgentService:
         mission = Mission(id=1)
         task = Task(id=10, task_key="t1", status=TaskStatus.PENDING, tool_name="some_tool")
 
-        with patch.object(overmind_service, '_execute_tool', return_value={"result_text": "OK"}) as mock_tool:
+        with patch.object(overmind_service, "_execute_tool", return_value={"result_text": "OK"}):
             overmind_service._execute_single_task(mission, task, mock_session)
 
             assert task.status == TaskStatus.SUCCESS
@@ -199,7 +220,7 @@ class TestMasterAgentService:
         mission = Mission(id=1)
         task = Task(id=10, task_key="t1", status=TaskStatus.PENDING, tool_name="some_tool")
 
-        with patch.object(overmind_service, '_execute_tool', side_effect=Exception("Tool failed")):
+        with patch.object(overmind_service, "_execute_tool", side_effect=Exception("Tool failed")):
             overmind_service._execute_single_task(mission, task, mock_session)
 
             assert task.status == TaskStatus.FAILED
@@ -247,7 +268,7 @@ class TestMasterAgentService:
         mission = Mission(id=1, status=MissionStatus.PENDING)
 
         # We want to verify it calls _plan_phase
-        with patch.object(overmind_service, '_plan_phase') as mock_plan:
+        with patch.object(overmind_service, "_plan_phase") as mock_plan:
             # We need to break the loop.
             def side_effect(m, s):
                 m.status = MissionStatus.SUCCESS
@@ -263,7 +284,7 @@ class TestMasterAgentService:
         task = Task(tool_name="test_tool", tool_args_json={})
 
         # Mock agent_tools module
-        with patch("app.services.master_agent_service.agent_tools") as mock_tools:
+        with patch("app.services.master_agent_service.agent_tools"):
             # We assume agent_tools has some execution logic, but the service mainly uses it to verify presence?
             # Actually the service implementation says:
             # "Re-implement tool execution logic using agent_tools"
@@ -288,7 +309,11 @@ class TestMasterAgentService:
         mission = Mission(id=1, status=MissionStatus.ADAPTING)
         overmind_service._adaptive_replan(mission, mock_session)
         assert mission.status == MissionStatus.FAILED
-        assert "not implemented" in mission.events[-1].payload_json.get("reason", "") if mission.events else True
+        assert (
+            "not implemented" in mission.events[-1].payload_json.get("reason", "")
+            if mission.events
+            else True
+        )
         # Or check status note via mock_session calls if note is not on model
 
     def test_module_wrappers(self, mock_user, mock_session_local):
@@ -297,7 +322,9 @@ class TestMasterAgentService:
             mission = start_mission("Obj", mock_user)
             assert isinstance(mission, Mission)
 
-        with patch("app.services.master_agent_service._overmind_service_singleton.run_mission_lifecycle") as mock_run:
+        with patch(
+            "app.services.master_agent_service._overmind_service_singleton.run_mission_lifecycle"
+        ) as mock_run:
             run_mission_lifecycle(1)
             mock_run.assert_called_once_with(1)
 
@@ -330,7 +357,7 @@ class TestMasterAgentService:
 
         # Test intent guessing
         with patch("app.services.master_agent_service.GUARD_FORCE_FILE_INTENT", True):
-             assert _canonicalize_tool_name("file", "please write to disk")[0] == CANON_WRITE
+            assert _canonicalize_tool_name("file", "please write to disk")[0] == CANON_WRITE
 
     def test_render_template(self, mock_session):
         """Test {{tXX.answer}} interpolation."""
@@ -340,10 +367,13 @@ class TestMasterAgentService:
 
         # Mock _collect_prior_outputs behavior
         # It queries tasks.
-        task = Task(task_key="t01", status=TaskStatus.SUCCESS, result_meta_json={"answer": "42"})
+        Task(task_key="t01", status=TaskStatus.SUCCESS, result_meta_json={"answer": "42"})
 
         # Let's mock _collect_prior_outputs directly, it's easier and less brittle
-        with patch("app.services.master_agent_service._collect_prior_outputs", return_value={"t01": {"answer": "42"}}):
+        with patch(
+            "app.services.master_agent_service._collect_prior_outputs",
+            return_value={"t01": {"answer": "42"}},
+        ):
             with patch("app.services.master_agent_service.INTERPOLATION_ENABLED", True):
                 new_args, notes = _render_template_in_args(args, mission_id, mock_session)
 

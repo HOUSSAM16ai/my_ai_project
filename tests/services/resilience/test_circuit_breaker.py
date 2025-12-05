@@ -1,21 +1,21 @@
-import pytest
 import time
-from unittest.mock import Mock, call
+from unittest.mock import Mock
+
+import pytest
+
 from app.services.resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
-    CircuitState,
     CircuitBreakerOpenError,
+    CircuitState,
 )
+
 
 class TestCircuitBreaker:
     @pytest.fixture
     def config(self):
         return CircuitBreakerConfig(
-            failure_threshold=2,
-            success_threshold=2,
-            timeout_seconds=1,
-            half_open_max_calls=1
+            failure_threshold=2, success_threshold=2, timeout_seconds=1, half_open_max_calls=1
         )
 
     @pytest.fixture
@@ -49,13 +49,13 @@ class TestCircuitBreaker:
         func = Mock(side_effect=Exception("error"))
 
         # First failure
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
         assert circuit_breaker.state.state == CircuitState.CLOSED
         assert circuit_breaker.state.failure_count == 1
 
         # Second failure (threshold reached)
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
         assert circuit_breaker.state.state == CircuitState.OPEN
         assert circuit_breaker.state.last_failure_time is not None
@@ -82,7 +82,7 @@ class TestCircuitBreaker:
         """Test success in HALF_OPEN closes the circuit"""
         # Force OPEN state and wait for timeout logic (simulated by helper)
         circuit_breaker._transition_to_open()
-        circuit_breaker.config.timeout_seconds = 0 # Instant timeout
+        circuit_breaker.config.timeout_seconds = 0  # Instant timeout
         time.sleep(0.01)
 
         func = Mock(return_value="success")
@@ -107,7 +107,7 @@ class TestCircuitBreaker:
 
         func = Mock(side_effect=Exception("error"))
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
 
         assert circuit_breaker.state.state == CircuitState.OPEN
