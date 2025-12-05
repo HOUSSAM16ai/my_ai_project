@@ -3,11 +3,13 @@ Hyper-Cognitive Tools
 =====================
 Reasoning, summarization, and refinement tools bridging to the LLM backend.
 """
-import os
-import logging
 
-from .core import tool, CANON_THINK
+import logging
+import os
+
+from .core import tool
 from .definitions import (
+    CANON_THINK,
     GENERIC_THINK_MAX_ANSWER_CHARS,
     GENERIC_THINK_MAX_CHARS,
     ToolResult,

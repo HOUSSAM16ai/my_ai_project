@@ -3,10 +3,11 @@ Hyper-File System Tools
 =======================
 Safe, structural-aware file manipulation.
 """
+
 import gzip
 import os
 
-from .core import tool, CANON_READ, CANON_WRITE, CANON_WRITE_IF_CHANGED
+from .core import CANON_READ, CANON_WRITE, CANON_WRITE_IF_CHANGED, tool
 from .definitions import (
     AUTO_CREATE_ALLOWED_EXTS,
     AUTO_CREATE_DEFAULT_CONTENT,
@@ -18,9 +19,9 @@ from .definitions import (
     MAX_WRITE_BYTES,
     READ_ALIASES_BASE,
     READ_DOTTED_ALIASES,
-    ToolResult,
     WRITE_ALIASES_BASE,
     WRITE_DOTTED_ALIASES,
+    ToolResult,
 )
 from .structural_logic import (
     _annotate_struct_meta,

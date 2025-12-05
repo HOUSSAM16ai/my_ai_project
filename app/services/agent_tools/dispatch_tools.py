@@ -3,6 +3,7 @@ Hyper-Dispatch & Introspection Tools
 ====================================
 Meta-tools for tool management and dynamic invocation.
 """
+
 from typing import Any
 
 from .core import (
@@ -18,7 +19,6 @@ from .globals import (
     _TOOL_REGISTRY,
     _TOOL_STATS,
 )
-from .utils import _dbg
 
 
 @tool(
