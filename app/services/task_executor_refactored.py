@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import traceback
+from dataclasses import dataclass
 from typing import Any
 
 from app.services.task_execution_helpers import (
@@ -30,11 +31,11 @@ from app.services.task_execution_helpers import (
 
 # Import required types and functions
 try:
+    from app.models import TaskStatus
     from app.services import agent_tools
     from app.services.fastapi_generation_service import (
         MissionEventType,
         StepState,
-        TaskStatus,
         _cfg,
         _select_model,
         log_mission_event,
@@ -56,6 +57,21 @@ except Exception:
         RUNNING = "RUNNING"
         SUCCESS = "SUCCESS"
         FAILED = "FAILED"
+
+    @dataclass
+    class StepState:
+        step_index: int
+        decision: Any = None
+        started_ms: float = 0.0
+        duration_ms: float = 0.0
+        tool_calls: list = None
+
+        def __post_init__(self):
+            if self.tool_calls is None:
+                self.tool_calls = []
+
+        def finish(self):
+            pass
 
     def _cfg(key: str, default: Any = None) -> str:
         return os.getenv(key, str(default))

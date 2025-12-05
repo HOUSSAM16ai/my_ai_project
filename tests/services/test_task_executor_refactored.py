@@ -110,7 +110,7 @@ class TestTaskExecutorIntegration:
         # Should finalize with SUCCESS
         mock_service._finalize_task_safe.assert_called()
         call_args = mock_service._finalize_task_safe.call_args
-        assert call_args[0][1] == "SUCCESS"
+        assert str(call_args[0][1].value).lower() == "success"
 
     @patch("app.services.task_executor_refactored.get_llm_client")
     @patch("app.services.task_executor_refactored.agent_tools")

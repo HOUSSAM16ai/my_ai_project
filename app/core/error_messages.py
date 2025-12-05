@@ -1,6 +1,7 @@
 import os
 import re
 
+
 def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: int) -> str:
     """
     Constructs a bilingual (Arabic/English) error message for LLM failures.
@@ -94,7 +95,7 @@ def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: in
         )
     if (
         "500" in error_lower
-        or re.search(r"\\bserver\\b", error_lower)
+        or re.search(r"\bserver\b", error_lower)
         or "server_error" in error_lower
     ):
         ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"

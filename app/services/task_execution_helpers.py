@@ -173,7 +173,7 @@ class TaskFinalizer:
     @staticmethod
     def determine_final_status(context: TaskExecutionContext) -> str:
         """Determine final task status based on telemetry."""
-        from app.services.fastapi_generation_service import TaskStatus
+        from app.models import TaskStatus
 
         if context.telemetry.stagnation and context.stagnation_fail:
             return TaskStatus.FAILED

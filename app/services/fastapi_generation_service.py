@@ -10,13 +10,12 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from app.core.error_messages import build_bilingual_error_message
-from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
-from app.utils.text_processing import strip_markdown_fences as _strip_markdown_fences
-
 # Standardized Imports
 from app.core.database import SessionLocal
+from app.core.error_messages import build_bilingual_error_message
 from app.models import Task
+from app.utils.text_processing import extract_first_json_object as _extract_first_json_object
+from app.utils.text_processing import strip_markdown_fences as _strip_markdown_fences
 
 try:
     from .llm_client_service import get_llm_client
@@ -208,6 +207,12 @@ class MaestroGenerationService:
         self.version = __version__
         self.log = _logger()
         self.post_finalize_hook: Callable[[Any], None] | None = None
+
+    def _build_bilingual_error_message(self, error: str, prompt_length: int, max_tokens: int) -> str:
+        """
+        Helper to expose the centralized error builder to tests and internal methods.
+        """
+        return build_bilingual_error_message(error, prompt_length, max_tokens)
 
     def text_completion(
         self,
@@ -579,6 +584,8 @@ def register_post_finalize_hook(func: Callable[[Any], None]):
 generation_service = get_generation_service()
 
 __all__ = [
+    "OrchestratorTelemetry",
+    "StepState",
     "diagnostics",
     "execute_task",
     "forge_new_code",
@@ -586,9 +593,7 @@ __all__ = [
     "generate_json",
     "generation_service",
     "get_generation_service",
-    "register_post_finalize_hook",
-    "OrchestratorTelemetry",
-    "StepState"
+    "register_post_finalize_hook"
 ]
 
 if __name__ == "__main__":
