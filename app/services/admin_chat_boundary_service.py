@@ -94,13 +94,13 @@ class AdminChatBoundaryService:
         self, user_id: int, question: str, conversation_id: str | None = None
     ) -> AdminConversation:
         try:
-            return await self.persistence.get_or_create_conversation(user_id, question, conversation_id)
+            return await self.persistence.get_or_create_conversation(
+                user_id, question, conversation_id
+            )
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
 
-    async def save_message(
-        self, conversation_id: int, role: MessageRole, content: str
-    ) -> Any:
+    async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> Any:
         return await self.persistence.save_message(conversation_id, role, content)
 
     async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, Any]]:

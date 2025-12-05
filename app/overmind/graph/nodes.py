@@ -5,17 +5,19 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any
 
 from app.core.ai_gateway import AIClient, get_ai_client
 
 logger = logging.getLogger(__name__)
+
 
 class AgentState(Enum):
     IDLE = "IDLE"
     WORKING = "WORKING"
     WAITING = "WAITING"
     ERROR = "ERROR"
+
 
 @dataclass
 class AgentMessage:
@@ -25,11 +27,13 @@ class AgentMessage:
     content: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
+
 class AgentNode:
     """
     Represents an Autonomous Agent Node in the Decentralized Graph.
     Part of Pillar 3: Decentralized Multi-Agent Graph Architecture.
     """
+
     def __init__(self, agent_id: str, role: str, description: str):
         self.agent_id = agent_id
         self.role = role
@@ -37,7 +41,7 @@ class AgentNode:
         self.state = AgentState.IDLE
         self.inbox: asyncio.Queue[AgentMessage] = asyncio.Queue()
         self.ai_client: AIClient = get_ai_client()
-        self.neighbors: list[str] = [] # IDs of connected agents
+        self.neighbors: list[str] = []  # IDs of connected agents
 
     def connect(self, other_agent_id: str):
         """Connects this agent to another agent in the graph."""
@@ -78,11 +82,11 @@ class AgentNode:
             "processed_by": self.agent_id,
             "original_task": message.content.get("task"),
             "status": "completed",
-            "output": f"Processed {message.content.get('task')} via {self.role}"
+            "output": f"Processed {message.content.get('task')} via {self.role}",
         }
 
         return AgentMessage(
             sender_id=self.agent_id,
-            target_id=message.sender_id, # Reply back
-            content=response_content
+            target_id=message.sender_id,  # Reply back
+            content=response_content,
         )

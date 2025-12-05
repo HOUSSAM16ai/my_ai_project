@@ -1,7 +1,10 @@
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+
 from app.models import AdminConversation, MessageRole
+from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+
 
 @pytest.mark.asyncio
 async def test_admin_chat_refactor_structure():
@@ -17,7 +20,9 @@ async def test_admin_chat_refactor_structure():
 
     # Mock the persistence layer
     service.persistence.get_or_create_conversation = AsyncMock()
-    service.persistence.get_or_create_conversation.return_value = AdminConversation(id=1, title="Test")
+    service.persistence.get_or_create_conversation.return_value = AdminConversation(
+        id=1, title="Test"
+    )
 
     # Call the facade method
     result = await service.get_or_create_conversation(1, "hello")
@@ -25,6 +30,7 @@ async def test_admin_chat_refactor_structure():
     # Verify delegation
     service.persistence.get_or_create_conversation.assert_called_once_with(1, "hello", None)
     assert result.id == 1
+
 
 @pytest.mark.asyncio
 async def test_admin_chat_persistence_delegation():

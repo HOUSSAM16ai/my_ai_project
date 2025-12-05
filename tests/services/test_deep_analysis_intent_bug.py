@@ -47,7 +47,7 @@ async def test_stream_chat_response_deep_analysis_intent(service):
     mock_session_factory = MagicMock()
     mock_session_factory.return_value.__aenter__.return_value = mock_session
 
-    with patch("app.services.admin_chat_boundary_service.get_chat_orchestrator") as mock_get_orch:
+    with patch("app.services.admin.chat_streamer.get_chat_orchestrator") as mock_get_orch:
         mock_orch = MagicMock()
 
         # 1. Setup Intent Detection to return DEEP_ANALYSIS

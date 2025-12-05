@@ -4,15 +4,17 @@ import asyncio
 import logging
 from typing import Any
 
-from app.overmind.graph.nodes import AgentNode, AgentMessage
+from app.overmind.graph.nodes import AgentMessage, AgentNode
 
 logger = logging.getLogger(__name__)
+
 
 class DecentralizedGraphOrchestrator:
     """
     Manages the lifecycle and connectivity of the Multi-Agent Graph.
     Pillar 3: Decentralized Multi-Agent Graph Architecture.
     """
+
     def __init__(self):
         self.nodes: dict[str, AgentNode] = {}
 
@@ -32,20 +34,16 @@ class DecentralizedGraphOrchestrator:
         """Sends a message to all nodes."""
         for node in self.nodes.values():
             msg = AgentMessage(
-                sender_id=sender_id,
-                target_id=node.agent_id,
-                content=message_content
+                sender_id=sender_id, target_id=node.agent_id, content=message_content
             )
             await node.receive(msg)
 
-    async def dispatch(self, target_id: str, message_content: dict[str, Any], sender_id: str = "system"):
+    async def dispatch(
+        self, target_id: str, message_content: dict[str, Any], sender_id: str = "system"
+    ):
         """Sends a message to a specific node."""
         if target_id in self.nodes:
-            msg = AgentMessage(
-                sender_id=sender_id,
-                target_id=target_id,
-                content=message_content
-            )
+            msg = AgentMessage(sender_id=sender_id, target_id=target_id, content=message_content)
             await self.nodes[target_id].receive(msg)
         else:
             logger.warning(f"Dispatch failed: Target {target_id} not found.")
@@ -63,8 +61,10 @@ class DecentralizedGraphOrchestrator:
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return results
 
+
 # Singleton Factory
 _orchestrator: DecentralizedGraphOrchestrator | None = None
+
 
 def get_graph_orchestrator() -> DecentralizedGraphOrchestrator:
     global _orchestrator

@@ -1,6 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.core.math.omni_router import SemanticAffinityEngine, OmniCognitiveRouter
+
+from app.core.math.omni_router import OmniCognitiveRouter, SemanticAffinityEngine
+
 
 class TestSemanticAffinityEngine:
     def test_coding_affinity(self):
@@ -31,6 +32,7 @@ class TestSemanticAffinityEngine:
         score = engine.get_affinity_score(prompt, model)
         assert score == 1.0
 
+
 class TestOmniCognitiveRouterSemantic:
     def test_ranking_with_semantics(self):
         router = OmniCognitiveRouter()
@@ -46,6 +48,7 @@ class TestOmniCognitiveRouterSemantic:
             # Note: node instances are created inside get_ranked_nodes if not present.
             # So we better mock the class method.
             from app.core.math.omni_router import OmniNodeState
+
             m.setattr(OmniNodeState, "sample", lambda self, complexity: 0.5)
 
             prompt = "write python code"
