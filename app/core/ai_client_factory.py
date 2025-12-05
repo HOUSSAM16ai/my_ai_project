@@ -34,6 +34,13 @@ import time
 import uuid
 from typing import Any, Protocol, runtime_checkable
 
+# Import requests inside methods to allow late binding/patching, but we can import at top level if needed
+# For now, keep it local to methods or inside try blocks if it's optional dependency.
+try:
+    import requests
+except ImportError:
+    requests = None
+
 from app.config.ai_models import get_ai_config
 
 logger = logging.getLogger(__name__)
@@ -192,13 +199,11 @@ class AIClientFactory:
         timeout: float,
     ) -> Any:
         """Create a simple HTTP-based fallback client"""
-        try:
-            import requests  # noqa: F401
+        if requests is None:
+             logger.error("requests not available")
+             return AIClientFactory._create_mock_client("no-requests")
 
-            return SimpleFallbackClient(api_key, base_url, timeout)
-        except ImportError:
-            logger.error("Neither OpenAI SDK nor requests available")
-            return AIClientFactory._create_mock_client("no-dependencies")
+        return SimpleFallbackClient(api_key, base_url, timeout)
 
     @staticmethod
     def _create_mock_client(reason: str) -> Any:
@@ -239,7 +244,9 @@ class SimpleFallbackClient:
 
             def create(self, model: str, messages: list, **kwargs):
                 """Make API call using requests"""
-                import requests
+                # We use the global requests which is imported at top level or fallback
+                if requests is None:
+                     raise RuntimeError("Requests library not available")
 
                 headers = {
                     "Authorization": f"Bearer {self._parent._parent.api_key[:10]}...",  # Masked for logging
