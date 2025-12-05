@@ -28,12 +28,17 @@ class DuplicationBuster:
             tree = ast.parse(path.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    # Normalize function name to ignore signature differences in name
+                    # We want to catch identical bodies even if named differently
+                    original_name = node.name
+                    node.name = "placeholder"
+
                     # Hash the body to find structural duplicates
                     body_source = ast.unparse(node)
                     # Normalize whitespace
                     norm_source = "".join(body_source.split())
                     h = hashlib.md5(norm_source.encode()).hexdigest()
-                    self.hashes[h].append((str(path), node.name))
+                    self.hashes[h].append((str(path), original_name))
         except Exception:
             pass
 
