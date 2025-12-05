@@ -151,7 +151,7 @@ class ActiveModels:
     # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
     # ═══════════════════════════════════════════════════════════════════════════════════
 
-    GATEWAY_PRIMARY = AvailableModels.KAT_CODER_PRO_FREE  # 🏆 Stabilized Primary
+    GATEWAY_PRIMARY = AvailableModels.anthropic/claude-sonnet-4.5  # 🏆 Stabilized Primary
     GATEWAY_FALLBACK_1 = (
         AvailableModels.GEMINI_2_FLASH_EXP_FREE
     )  # ⚡ First fallback (Fast but rate-limited)
