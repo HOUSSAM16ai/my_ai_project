@@ -200,8 +200,8 @@ class AIClientFactory:
     ) -> Any:
         """Create a simple HTTP-based fallback client"""
         if requests is None:
-             logger.error("requests not available")
-             return AIClientFactory._create_mock_client("no-requests")
+            logger.error("requests not available")
+            return AIClientFactory._create_mock_client("no-requests")
 
         return SimpleFallbackClient(api_key, base_url, timeout)
 
@@ -246,7 +246,7 @@ class SimpleFallbackClient:
                 """Make API call using requests"""
                 # We use the global requests which is imported at top level or fallback
                 if requests is None:
-                     raise RuntimeError("Requests library not available")
+                    raise RuntimeError("Requests library not available")
 
                 headers = {
                     "Authorization": f"Bearer {self._parent._parent.api_key[:10]}...",  # Masked for logging

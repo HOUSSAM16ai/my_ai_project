@@ -12,15 +12,17 @@ from typing import Any
 
 _LOG = logging.getLogger(__name__)
 
+
 class CircuitBreaker:
     """
     Singleton Circuit Breaker for LLM calls.
     """
+
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(CircuitBreaker, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._init_state()
         return cls._instance
 
@@ -77,8 +79,6 @@ class CircuitBreaker:
         return {
             "open": self._state["open_until"] > now,
             "open_until": self._state["open_until"],
-            "recent_error_count": len(
-                [t for t in self._state["errors"] if t >= now - window]
-            ),
+            "recent_error_count": len([t for t in self._state["errors"] if t >= now - window]),
             "open_events": self._state["open_events"],
         }

@@ -25,12 +25,12 @@ from typing import Any
 
 # Import centralized AI client factory
 from app.core.ai_client_factory import (
+    MockClient,
     clear_ai_client_cache,
 )
 from app.core.ai_client_factory import (
     get_ai_client as _get_centralized_client,
 )
-from app.core.ai_client_factory import MockClient
 
 # New Modular Helpers
 from app.services.llm.circuit_breaker import CircuitBreaker
@@ -57,6 +57,7 @@ MockLLMClient = MockClient
 # INTERNAL HELPERS
 # ======================================================================================
 
+
 def _should_force_mock() -> bool:
     return any(os.getenv(flag, "0") == "1" for flag in ("LLM_FORCE_MOCK", "LLM_MOCK_MODE"))
 
@@ -80,6 +81,7 @@ def _sanitize(text: str) -> str:
     # Regex based sanitization
     # Note: importing json here just for this
     import json
+
     try:
         _SANITIZE_REGEXES = json.loads(os.getenv("LLM_SANITIZE_REGEXES_JSON", "[]"))
     except Exception:
@@ -114,7 +116,7 @@ def get_llm_client() -> Any:
 
     if forced_mock:
         if _CLIENT_SINGLETON is None or not is_mock_client(_CLIENT_SINGLETON):
-             # Force mock via factory logic manually
+            # Force mock via factory logic manually
             _CLIENT_SINGLETON = MockClient("forced-mock-flag")
             _CLIENT_META.update({"reason": "forced"})
         return _CLIENT_SINGLETON
@@ -158,10 +160,7 @@ def is_mock_client(client: Any | None = None) -> bool:
         return True
 
     # Check class name
-    if hasattr(c, "__class__") and "Mock" in c.__class__.__name__:
-        return True
-
-    return False
+    return bool(hasattr(c, "__class__") and "Mock" in c.__class__.__name__)
 
 
 # ======================================================================================
@@ -170,6 +169,7 @@ def is_mock_client(client: Any | None = None) -> bool:
 
 _PRE_HOOKS: list[Callable[[dict[str, Any]], None]] = []
 _POST_HOOKS: list[Callable[[dict[str, Any], dict[str, Any]], None]] = []
+
 
 def register_llm_pre_hook(fn: Callable[[dict[str, Any]], None]) -> None:
     _PRE_HOOKS.append(fn)
@@ -183,6 +183,7 @@ def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None])
 # HIGH LEVEL INVOCATION
 # ======================================================================================
 
+
 def _prepare_payload(
     model: str,
     messages: list[dict[str, str]],
@@ -190,7 +191,7 @@ def _prepare_payload(
     tool_choice: str | None,
     temperature: float,
     max_tokens: int | None,
-    extra: dict[str, Any] | None
+    extra: dict[str, Any] | None,
 ) -> dict[str, Any]:
     payload = {
         "model": model,
@@ -220,7 +221,6 @@ def invoke_chat(
     stream: bool | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any] | Generator[dict[str, Any], None, None]:
-
     breaker = CircuitBreaker()
     if not breaker.is_allowed:
         raise RuntimeError("LLM circuit breaker OPEN – rejecting invocation temporarily.")
@@ -294,9 +294,11 @@ def invoke_chat(
                     total = usage_dict.get("total_tokens", 0)
 
                 # Empty Response Check
-                if (content is None or (isinstance(content, str) and content.strip() == "")) and not tool_calls:
-                     _LOG.warning(f"Empty response from {payload['model']} at attempt {attempts}")
-                     raise RuntimeError(f"Empty response (no content/tools). Attempt {attempts}")
+                if (
+                    content is None or (isinstance(content, str) and content.strip() == "")
+                ) and not tool_calls:
+                    _LOG.warning(f"Empty response from {payload['model']} at attempt {attempts}")
+                    raise RuntimeError(f"Empty response (no content/tools). Attempt {attempts}")
 
                 # Success Path
                 content = _sanitize(content)
@@ -314,7 +316,7 @@ def invoke_chat(
                     "raw": completion,
                     "meta": {
                         "attempts": attempts,
-                        "forced_model": False, # Simplified
+                        "forced_model": False,  # Simplified
                         "stream": False,
                         "start_ts": start_build,
                         "end_ts": time.time(),
@@ -355,7 +357,9 @@ def invoke_chat(
                 backoff *= _LLM_RETRY_BACKOFF_BASE
 
         # Final Error
-        raise RuntimeError(f"LLM invocation failed after {attempts} attempts. Last error: {last_exc}")
+        raise RuntimeError(
+            f"LLM invocation failed after {attempts} attempts. Last error: {last_exc}"
+        )
 
     if not use_stream:
         return _execute_request_with_retry()

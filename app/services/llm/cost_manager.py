@@ -11,15 +11,17 @@ from typing import Any
 
 _LOG = logging.getLogger(__name__)
 
+
 class CostManager:
     """
     Singleton Cost Manager for LLM calls.
     """
+
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(CostManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._init_state()
         return cls._instance
 
@@ -65,7 +67,7 @@ class CostManager:
         total_tokens: int | None,
         latency_ms: float,
         cost: float | None,
-        error_kind: str | None = None
+        error_kind: str | None = None,
     ):
         self._stats["calls"] += 1
         if prompt_tokens:
@@ -76,12 +78,12 @@ class CostManager:
             self._stats["total_tokens"] += total_tokens
 
         if error_kind:
-             self._stats["errors"] += 1
-             self._stats["last_error_kind"] = error_kind
+            self._stats["errors"] += 1
+            self._stats["last_error_kind"] = error_kind
 
         self._stats["latencies_ms"].append(latency_ms)
         if len(self._stats["latencies_ms"]) > self._latency_window:
-             self._stats["latencies_ms"][:] = self._stats["latencies_ms"][-self._latency_window:]
+            self._stats["latencies_ms"][:] = self._stats["latencies_ms"][-self._latency_window :]
 
         if cost:
             self._stats["cost_usd"] += cost
@@ -122,5 +124,5 @@ class CostManager:
                 "avg_latency_ms": avg_lat,
                 "cost_usd": round(self._stats["cost_usd"], 6),
             },
-            "latencies_raw": lat
+            "latencies_raw": lat,
         }

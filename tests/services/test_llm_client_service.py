@@ -4,6 +4,9 @@ from unittest import mock
 
 import pytest
 
+from app.core.ai_client_factory import SimpleFallbackClient as _HttpFallbackClient
+from app.services.llm.circuit_breaker import CircuitBreaker
+from app.services.llm.cost_manager import CostManager
 from app.services.llm_client_service import (
     _POST_HOOKS,
     _PRE_HOOKS,
@@ -17,9 +20,6 @@ from app.services.llm_client_service import (
     register_llm_pre_hook,
     reset_llm_client,
 )
-from app.services.llm.circuit_breaker import CircuitBreaker
-from app.services.llm.cost_manager import CostManager
-from app.core.ai_client_factory import SimpleFallbackClient as _HttpFallbackClient
 
 
 @pytest.fixture(autouse=True)

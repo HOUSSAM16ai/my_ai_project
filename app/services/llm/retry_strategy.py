@@ -6,10 +6,9 @@ Handles error classification and retry logic.
 
 import logging
 import os
-import random
-import time
 
 _LOG = logging.getLogger(__name__)
+
 
 class RetryStrategy:
     """
@@ -26,7 +25,8 @@ class RetryStrategy:
 
         # Server errors (5xx)
         if any(
-            x in msg for x in ["server_error_500", "500", "internal server error", "502", "503", "504"]
+            x in msg
+            for x in ["server_error_500", "500", "internal server error", "502", "503", "504"]
         ):
             return "server_error"
 
