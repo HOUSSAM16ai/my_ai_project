@@ -20,27 +20,35 @@ from app.utils.text_processing import strip_markdown_fences as _strip_markdown_f
 try:
     from .llm_client_service import get_llm_client
 except Exception:
+
     def get_llm_client():
         raise RuntimeError("LLM client service not available (import failure).")
+
 
 try:
     from . import agent_tools
 except Exception:
     import logging
+
     logging.getLogger(__name__).warning("agent_tools not available.")
 
 try:
     from . import system_service
 except Exception:
+
     class system_service:
         @staticmethod
         def find_related_context(_desc: str):
             from typing import ClassVar
+
             class R:
                 data: ClassVar[dict[str, str]] = {"context": "system-context-unavailable"}
+
             return R()
 
+
 __version__ = "18.1.0-refactored"
+
 
 @dataclass
 class StepState:
@@ -54,10 +62,12 @@ class StepState:
         if self.duration_ms is None:
             self.duration_ms = round(time.perf_counter() * 1000 - self.started_ms, 2)
 
+
 @dataclass
 class OrchestratorConfig:
     model_name: str
     max_steps: int
+
 
 @dataclass
 class OrchestratorTelemetry:
@@ -74,8 +84,10 @@ class OrchestratorTelemetry:
     def to_dict(self):
         return asdict(self)
 
+
 def _logger():
     import logging
+
     log = logging.getLogger("maestro.generation_service")
     if not log.handlers:
         h = logging.StreamHandler()
@@ -90,8 +102,10 @@ def _logger():
         log.setLevel("INFO")
     return log
 
+
 def _cfg(key: str, default: Any = None) -> Any:
     return os.getenv(key, default)
+
 
 def _safe_json(obj: Any) -> str:
     if isinstance(obj, str):
@@ -100,6 +114,7 @@ def _safe_json(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False, indent=2)
     except Exception:
         return repr(obj)
+
 
 def _soft_recover_json(raw: str) -> str | None:
     if os.getenv("MAESTRO_JSON_SOFT_RECOVER", "1") != "1":
@@ -122,11 +137,13 @@ def _soft_recover_json(raw: str) -> str | None:
                         continue
     return None
 
+
 def _safe_json_load(payload: str) -> tuple[Any | None, str | None]:
     try:
         return json.loads(payload), None
     except Exception as e:
         return None, str(e)
+
 
 def _build_system_prompt_helper(task: Any, context_blob: Any) -> str:
     """
@@ -181,6 +198,7 @@ EXECUTION RULES:
 ⚠️ CRITICAL: You have access to the ENTIRE project. Use it to provide accurate, detailed answers!
 """.strip()
 
+
 def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
     """
     Select AI model with proper priority chain.
@@ -200,7 +218,9 @@ def _select_model(explicit: str | None = None, task: Task | None = None) -> str:
 
     # Read from central config (app/config/ai_models.py)
     from app.config.ai_models import get_ai_config
+
     return get_ai_config().primary_model
+
 
 class MaestroGenerationService:
     def __init__(self):
@@ -208,7 +228,9 @@ class MaestroGenerationService:
         self.log = _logger()
         self.post_finalize_hook: Callable[[Any], None] | None = None
 
-    def _build_bilingual_error_message(self, error: str, prompt_length: int, max_tokens: int) -> str:
+    def _build_bilingual_error_message(
+        self, error: str, prompt_length: int, max_tokens: int
+    ) -> str:
         """
         Helper to expose the centralized error builder to tests and internal methods.
         """
@@ -375,9 +397,7 @@ class MaestroGenerationService:
             )
 
             if not answer:
-                error_msg = build_bilingual_error_message(
-                    "no_response", prompt_length, max_tokens
-                )
+                error_msg = build_bilingual_error_message("no_response", prompt_length, max_tokens)
                 return {
                     "status": "error",
                     "error": "Empty response from LLM",
@@ -457,9 +477,7 @@ class MaestroGenerationService:
             )
             ultimate_mode = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
             max_tokens_for_error = 128000 if ultimate_mode else 32000
-            error_msg = build_bilingual_error_message(
-                str(exc), len(prompt), max_tokens_for_error
-            )
+            error_msg = build_bilingual_error_message(str(exc), len(prompt), max_tokens_for_error)
             return {
                 "status": "error",
                 "error": str(exc),
@@ -553,7 +571,9 @@ class MaestroGenerationService:
         except Exception:
             print(f"[MAESTRO::{level.upper()}] {msg}")
 
+
 _generation_service_singleton: MaestroGenerationService | None = None
+
 
 def get_generation_service() -> MaestroGenerationService:
     global _generation_service_singleton
@@ -561,25 +581,32 @@ def get_generation_service() -> MaestroGenerationService:
         _generation_service_singleton = MaestroGenerationService()
     return _generation_service_singleton
 
+
 def forge_new_code(*a, **k):
     return get_generation_service().forge_new_code(*a, **k)
+
 
 def generate_json(*a, **k):
     return get_generation_service().generate_json(*a, **k)
 
+
 def generate_comprehensive_response(*a, **k):
     return get_generation_service().generate_comprehensive_response(*a, **k)
+
 
 def execute_task(task: Task, model: str | None = None):
     return get_generation_service().execute_task(task, model=model)
 
+
 def diagnostics():
     return get_generation_service().diagnostics()
+
 
 def register_post_finalize_hook(func: Callable[[Any], None]):
     svc = get_generation_service()
     svc.post_finalize_hook = func
     return True
+
 
 generation_service = get_generation_service()
 
@@ -593,7 +620,7 @@ __all__ = [
     "generate_json",
     "generation_service",
     "get_generation_service",
-    "register_post_finalize_hook"
+    "register_post_finalize_hook",
 ]
 
 if __name__ == "__main__":

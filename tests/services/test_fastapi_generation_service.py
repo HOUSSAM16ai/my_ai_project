@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,6 +9,7 @@ from app.services.fastapi_generation_service import get_generation_service
 def service():
     return get_generation_service()
 
+
 @pytest.fixture
 def mock_llm_client(monkeypatch):
     """
@@ -17,16 +17,15 @@ def mock_llm_client(monkeypatch):
     Uses monkeypatch instead of mocker (pytest-mock) to avoid dependency issues.
     """
     mock = MagicMock()
-    monkeypatch.setattr('app.services.fastapi_generation_service.get_llm_client', lambda: mock)
+    monkeypatch.setattr("app.services.fastapi_generation_service.get_llm_client", lambda: mock)
 
     # Configure the mock chain for chat.completions.create
     mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content="Mock response"))
-    ]
+    mock_response.choices = [MagicMock(message=MagicMock(content="Mock response"))]
     mock.chat.completions.create.return_value = mock_response
 
     return mock
+
 
 def test_forge_new_code(service, mock_llm_client):
     result = service.forge_new_code("test prompt")
@@ -34,9 +33,12 @@ def test_forge_new_code(service, mock_llm_client):
     assert result["answer"] == "Mock response"
     assert "meta" in result
 
+
 def test_generate_json(service, mock_llm_client):
     # Update the content for this specific test
-    mock_llm_client.chat.completions.create.return_value.choices[0].message.content = '{"key": "value"}'
+    mock_llm_client.chat.completions.create.return_value.choices[
+        0
+    ].message.content = '{"key": "value"}'
 
     result = service.generate_json("test json")
 
@@ -44,10 +46,12 @@ def test_generate_json(service, mock_llm_client):
     # Flexible assertion to handle potential formatting variations
     assert "key" in result["answer"] or "key" in str(result["answer"])
 
+
 def test_diagnostics(service):
     diag = service.diagnostics()
     assert "version" in diag
     assert "selected_default_model" in diag
+
 
 def test_execute_task_delegation(service, monkeypatch):
     """
