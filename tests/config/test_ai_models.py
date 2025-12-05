@@ -1,6 +1,5 @@
+from app.config.ai_models import ActiveModels, AvailableModels, get_ai_config
 
-import pytest
-from app.config.ai_models import ActiveModels, AvailableModels, get_ai_config, AIConfig
 
 class TestAIModelsConfiguration:
     def test_opus_4_5_is_available(self):
