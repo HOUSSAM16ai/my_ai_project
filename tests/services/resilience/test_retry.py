@@ -1,13 +1,14 @@
+from unittest.mock import Mock
+
 import pytest
-import time
-from unittest.mock import Mock, patch
+
 from app.services.resilience.retry import (
-    RetryManager,
-    RetryConfig,
-    RetryStrategy,
     RetryBudgetExhaustedError,
-    RetryableError
+    RetryConfig,
+    RetryManager,
+    RetryStrategy,
 )
+
 
 class TestRetryManager:
     @pytest.fixture
@@ -15,8 +16,8 @@ class TestRetryManager:
         return RetryConfig(
             max_retries=3,
             base_delay_ms=10,
-            retry_budget_percent=50.0, # High budget for testing
-            strategy=RetryStrategy.LINEAR
+            retry_budget_percent=50.0,  # High budget for testing
+            strategy=RetryStrategy.LINEAR,
         )
 
     @pytest.fixture
@@ -60,14 +61,14 @@ class TestRetryManager:
         with pytest.raises(Exception) as exc:
             retry_manager.execute_with_retry(func)
 
-        assert "fail" in str(exc.value) # Expect the original exception message
+        assert "fail" in str(exc.value)  # Expect the original exception message
         # 1 initial + 3 retries = 4 calls
         assert func.call_count == 4
 
     def test_retry_on_status_code(self, retry_manager):
         """Test retry on specific status codes"""
         # Mock response object
-        Response = type('Response', (), {})
+        Response = type("Response", (), {})
 
         fail_response = Response()
         fail_response.status_code = 500
@@ -84,7 +85,7 @@ class TestRetryManager:
 
     def test_no_retry_on_4xx(self, retry_manager):
         """Test that 4xx errors are not retried"""
-        Response = type('Response', (), {})
+        Response = type("Response", (), {})
         response = Response()
         response.status_code = 400
 
@@ -97,7 +98,7 @@ class TestRetryManager:
 
     def test_retry_budget_exhausted(self, config):
         """Test failing fast when retry budget is exhausted"""
-        config.retry_budget_percent = 10.0 # 10%
+        config.retry_budget_percent = 10.0  # 10%
         manager = RetryManager(config)
 
         # Manually inflate stats
@@ -123,7 +124,7 @@ class TestRetryManager:
         result2 = retry_manager.execute_with_retry(func, idempotency_key=key)
 
         assert result1 == result2
-        assert func.call_count == 1 # Only called once
+        assert func.call_count == 1  # Only called once
 
     def test_delay_calculation_strategies(self):
         """Test different backoff strategies"""
@@ -132,7 +133,7 @@ class TestRetryManager:
         manager_linear = RetryManager(config_linear)
         # Attempt 0: 100 * 1 = 100
         delay = manager_linear._calculate_delay(0)
-        assert 50 <= delay <= 150 # +/- 50% jitter
+        assert 50 <= delay <= 150  # +/- 50% jitter
 
         # Exponential
         config_exp = RetryConfig(strategy=RetryStrategy.EXPONENTIAL_BACKOFF, base_delay_ms=100)
