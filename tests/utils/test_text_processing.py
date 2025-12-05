@@ -1,5 +1,5 @@
-import pytest
-from app.utils.text_processing import strip_markdown_fences, extract_first_json_object
+from app.utils.text_processing import extract_first_json_object, strip_markdown_fences
+
 
 class TestTextProcessing:
     def test_strip_markdown_fences_basic(self):

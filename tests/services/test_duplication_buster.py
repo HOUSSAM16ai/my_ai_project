@@ -1,7 +1,5 @@
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
 from app.services.duplication_buster import DuplicationBuster
+
 
 class TestDuplicationBuster:
     def test_init(self):
@@ -23,7 +21,7 @@ def my_function():
 
         assert len(buster.hashes) == 1
         # Get the hash key
-        hash_key = list(buster.hashes.keys())[0]
+        hash_key = next(iter(buster.hashes.keys()))
         locations = buster.hashes[hash_key]
         assert len(locations) == 1
         assert locations[0][0] == str(file_path)
@@ -48,7 +46,7 @@ def func_b():
 
         # Now that we ignore function names, these should match
         assert len(buster.hashes) == 1
-        hash_key = list(buster.hashes.keys())[0]
+        hash_key = next(iter(buster.hashes.keys()))
         locations = buster.hashes[hash_key]
         assert len(locations) == 2
         names = sorted([loc[1] for loc in locations])
@@ -88,7 +86,7 @@ def func_b():
         buster = DuplicationBuster()
         # Manually inject hashes
         buster.hashes["hash1"] = [("file1.py", "func1"), ("file2.py", "func2")]
-        buster.hashes["hash2"] = [("file3.py", "func3")] # Not a duplicate
+        buster.hashes["hash2"] = [("file3.py", "func3")]  # Not a duplicate
 
         report = buster._generate_report()
 
@@ -122,6 +120,6 @@ async def async_func():
         buster._analyze_file(file_path)
 
         assert len(buster.hashes) == 1
-        hash_key = list(buster.hashes.keys())[0]
+        hash_key = next(iter(buster.hashes.keys()))
         locations = buster.hashes[hash_key]
         assert locations[0][1] == "async_func"
