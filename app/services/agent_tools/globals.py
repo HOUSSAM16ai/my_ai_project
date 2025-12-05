@@ -3,6 +3,7 @@ Hyper-Global State Container
 ============================
 Separated to avoid circular dependency loops in the Neural Mesh.
 """
+
 import threading
 from typing import Any
 

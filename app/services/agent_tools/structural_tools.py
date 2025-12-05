@@ -3,11 +3,13 @@ Hyper-Structural Tools
 ======================
 Tools for analyzing and manipulating the structural map.
 """
+
+from . import globals as g
 from .core import tool
 from .definitions import ToolResult
 from .structural_logic import _load_deep_struct_map_logic, _maybe_reload_struct_map
 from .utils import _safe_path
-from . import globals as g
+
 
 @tool(
     name="analyze_path_semantics",

@@ -3,9 +3,11 @@ Hyper-Search Tools
 ==================
 Lexical, semantic, and index-based code search capabilities.
 """
+
 import os
 import re
 import time
+
 from .core import tool
 from .definitions import (
     CODE_INDEX_EXCLUDE_DIRS,
@@ -20,6 +22,7 @@ from .definitions import (
     ToolResult,
 )
 from .utils import _safe_path
+
 
 @tool(
     name="code_index_project",

@@ -4,19 +4,20 @@ Hyper-Structural Logic
 Logic for managing deep structural maps and layer stats.
 Separated from tools to allow usage in other modules.
 """
+
 import hashlib
 import json
 import os
 from typing import Any
 
+# Redefining to use direct module access for re-assignment compatibility
+from . import globals as g
 from .definitions import (
     DEEP_LIMIT_KEYS,
     DEEP_MAP_PATH,
     DEEP_MAP_TTL,
     HASH_AFTER_WRITE,
 )
-# Redefining to use direct module access for re-assignment compatibility
-from . import globals as g
 from .utils import _dbg, _file_hash, _now
 
 
