@@ -10,9 +10,8 @@ from app.services.resilience.bulkhead import Bulkhead, BulkheadConfig
 from app.services.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 from app.services.resilience.fallback import FallbackChain
 from app.services.resilience.health import HealthChecker
-from app.services.resilience.rate_limit import RateLimitConfig
 from app.services.resilience.retry import RetryConfig, RetryManager
-from app.services.resilience.timeout import AdaptiveTimeout, TimeoutConfig
+from app.services.resilience.timeout import AdaptiveTimeout
 
 
 class DistributedResilienceService:

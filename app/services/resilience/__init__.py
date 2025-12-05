@@ -13,8 +13,8 @@ from app.services.resilience.circuit_breaker import (
 )
 from app.services.resilience.fallback import FallbackChain, FallbackLevel
 from app.services.resilience.health import (
-    HealthChecker,
     HealthCheckConfig,
+    HealthChecker,
     HealthCheckResult,
     HealthCheckType,
 )
@@ -26,13 +26,13 @@ from app.services.resilience.rate_limit import (
 )
 from app.services.resilience.retry import (
     IdempotencyKey,
+    RetryableError,
     RetryAttempt,
     RetryBudget,
     RetryBudgetExhaustedError,
     RetryConfig,
     RetryManager,
     RetryStrategy,
-    RetryableError,
 )
 from app.services.resilience.service import (
     DistributedResilienceService,
