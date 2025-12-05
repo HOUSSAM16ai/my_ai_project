@@ -2,6 +2,7 @@
 OMNI-COGNITIVE ROUTING ENGINE (Hyper-Morphic V7: Singularity Ready)
 ================================================
 The "God-Mode" Router.
+Now Enhanced with "Neuro-Symbolic Semantic Affinity".
 """
 
 import math
@@ -106,6 +107,64 @@ class OmniNodeState:
         return random.betavariate(belief.alpha, belief.beta)
 
 
+class SemanticAffinityEngine:
+    """
+    Pillar 2: Neuro-Symbolic Semantic Routing.
+    Uses lightweight symbolic analysis (keywords) to approximate semantic understanding.
+    In a real system, this would use vector embeddings.
+    """
+    def __init__(self):
+        # Maps keywords to "specialized" model substrings or IDs
+        self.specializations = {
+            "coding": {"python", "code", "function", "bug", "error", "api", "class", "async"},
+            "creative": {"story", "poem", "write", "creative", "character", "plot"},
+            "math": {"calculate", "equation", "solve", "math", "number", "formula"},
+            "analysis": {"analyze", "summary", "report", "data", "trend", "insight"}
+        }
+
+        # Maps model ID substrings to their specialized domain
+        self.model_domains = {
+            "coder": "coding",
+            "claude": "analysis",
+            "gpt-4": "math",
+            "wizard": "creative",
+            "gemini": "analysis"
+        }
+
+    def get_affinity_score(self, prompt: str, model_id: str) -> float:
+        """
+        Returns a multiplier (1.0 to 1.5) based on semantic match.
+        """
+        prompt_lower = prompt.lower()
+        model_lower = model_id.lower()
+
+        # 1. Detect Domain of Prompt
+        detected_domain = None
+        max_matches = 0
+
+        for domain, keywords in self.specializations.items():
+            matches = sum(1 for k in keywords if k in prompt_lower)
+            if matches > max_matches:
+                max_matches = matches
+                detected_domain = domain
+
+        if not detected_domain:
+            return 1.0 # Neutral
+
+        # 2. Check if model matches domain
+        # Heuristic: does model ID contain hints?
+        model_domain = None
+        for key, domain in self.model_domains.items():
+            if key in model_lower:
+                model_domain = domain
+                break
+
+        if model_domain == detected_domain:
+            return 1.25 # Strong Match Boost
+
+        return 1.0
+
+
 class OmniCognitiveRouter:
     """
     The Router.
@@ -113,6 +172,7 @@ class OmniCognitiveRouter:
 
     def __init__(self):
         self.nodes: dict[str, OmniNodeState] = {}
+        self.semantic_engine = SemanticAffinityEngine()
         self._lock = threading.Lock()
 
     def reset(self):
@@ -127,7 +187,7 @@ class OmniCognitiveRouter:
 
     def get_ranked_nodes(self, available_model_ids: list[str], prompt: str) -> list[str]:
         """
-        Context-Aware Ranking.
+        Context-Aware Ranking with Neuro-Symbolic Enhancement.
         """
         complexity = assess_cognitive_complexity(prompt)
 
@@ -137,8 +197,17 @@ class OmniCognitiveRouter:
                 self.register_node(mid)
 
             node = self.nodes[mid]
-            score = node.sample(complexity)
-            candidates.append((mid, score))
+
+            # 1. Statistical Score (Thompson Sampling)
+            statistical_score = node.sample(complexity)
+
+            # 2. Semantic Affinity Boost (Neuro-Symbolic)
+            affinity_multiplier = self.semantic_engine.get_affinity_score(prompt, mid)
+
+            # 3. Final Score
+            final_score = statistical_score * affinity_multiplier
+
+            candidates.append((mid, final_score))
 
         candidates.sort(key=lambda x: x[1], reverse=True)
         return [c[0] for c in candidates]
