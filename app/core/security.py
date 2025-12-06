@@ -8,17 +8,17 @@ to be pure and framework-agnostic.
 
 from datetime import UTC, datetime, timedelta
 
-import jwt
 import bcrypt
+import jwt
 
 # 🛡️ QUANTUM COMPATIBILITY PATCH
 # Monkey-patch bcrypt for passlib compatibility (bcrypt >= 4.0.0 removal of __about__)
 # This ensures existing hashes can be verified without downgrading bcrypt
 if not hasattr(bcrypt, "__about__"):
-    try:
+    import contextlib
+
+    with contextlib.suppress(Exception):
         bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
-    except Exception:
-        pass  # Best effort
 
 from app.config.settings import get_settings
 from app.models import pwd_context

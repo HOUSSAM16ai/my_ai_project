@@ -5,24 +5,27 @@ import tempfile
 from pathlib import Path
 
 import bcrypt
+
 # 🛡️ QUANTUM COMPATIBILITY PATCH (Test Scope)
 # Ensure bcrypt is patched before any other import that might use passlib
 if not hasattr(bcrypt, "__about__"):
-    try:
+    import contextlib
+
+    with contextlib.suppress(Exception):
         bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
-    except Exception:
-        pass
 
 # 🛡️ QUANTUM HASHING STABILIZER
 # Patch bcrypt.hashpw to truncate passwords > 72 bytes to satisfy passlib 1.7.4 checks
 # against newer bcrypt versions that enforce the limit strictly.
 _original_hashpw = bcrypt.hashpw
 
+
 def _quantum_hashpw(password, salt):
     if len(password) > 72:
         # Silently truncate to emulate legacy behavior / avoid crash
         password = password[:72]
     return _original_hashpw(password, salt)
+
 
 bcrypt.hashpw = _quantum_hashpw
 
