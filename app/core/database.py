@@ -99,7 +99,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                         # Note: table_name is already validated against _ALLOWED_TABLES whitelist
                         result = await conn.execute(
                             text("SELECT * FROM pragma_table_info(:table_name)"),
-                            {"table_name": table_name}
+                            {"table_name": table_name},
                         )
                         # Row format: (cid, name, type, notnull, dflt_value, pk)
                         existing_columns = {row[1] for row in result.fetchall()}
