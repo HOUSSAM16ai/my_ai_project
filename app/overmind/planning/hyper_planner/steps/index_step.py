@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .. import deep_index_logic
 from ...schemas import PlannedTask
+from .. import deep_index_logic
 from .base import PlanningStep
 
 
