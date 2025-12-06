@@ -1,12 +1,12 @@
 """Repository interface for data access abstraction."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
-class RepositoryInterface(ABC, Generic[T]):
+class RepositoryInterface[T](ABC):
     """Abstract repository interface for data access."""
 
     @abstractmethod

@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol
 
 
 @dataclass
@@ -115,13 +114,9 @@ class AliasStrategy(CanonicalStrategy):
         name_lower = name.lower()
 
         if name_lower in self.write_aliases:
-            return CanonicalResult(
-                "write_file", [f"alias_write:{name}"], "AliasStrategy"
-            )
+            return CanonicalResult("write_file", [f"alias_write:{name}"], "AliasStrategy")
         if name_lower in self.read_aliases:
-            return CanonicalResult(
-                "read_file", [f"alias_read:{name}"], "AliasStrategy"
-            )
+            return CanonicalResult("read_file", [f"alias_read:{name}"], "AliasStrategy")
 
         return CanonicalResult.unmatched(name)
 
@@ -141,9 +136,7 @@ class DirectMatchStrategy(CanonicalStrategy):
 
     def canonicalize(self, name: str, description: str) -> CanonicalResult:
         name_lower = name.lower()
-        return CanonicalResult(
-            name_lower, [f"direct_{name_lower}"], "DirectMatchStrategy"
-        )
+        return CanonicalResult(name_lower, [f"direct_{name_lower}"], "DirectMatchStrategy")
 
 
 class KeywordStrategy(CanonicalStrategy):
@@ -197,11 +190,7 @@ class DescriptionIntentStrategy(CanonicalStrategy):
         return 50
 
     def can_handle(self, name: str, description: str) -> bool:
-        return (
-            self.force_intent_check
-            and name.lower() in self.ambiguous_names
-            and description
-        )
+        return self.force_intent_check and name.lower() in self.ambiguous_names and description
 
     def canonicalize(self, name: str, description: str) -> CanonicalResult:
         desc_lower = description.lower()
@@ -273,9 +262,7 @@ class ToolCanonicalizer:
 
     def remove_strategy(self, strategy_type: type[CanonicalStrategy]) -> None:
         """Remove a strategy from the chain."""
-        self.strategies = [
-            s for s in self.strategies if not isinstance(s, strategy_type)
-        ]
+        self.strategies = [s for s in self.strategies if not isinstance(s, strategy_type)]
 
 
 # Singleton instance for backward compatibility

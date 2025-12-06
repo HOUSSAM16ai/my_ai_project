@@ -101,10 +101,10 @@ class TestCircuitBreaker:
         breaker = CircuitBreaker(config)
 
         def failing_operation():
-            raise Exception("Operation failed")
+            raise RuntimeError("Operation failed")
 
         for _ in range(3):
-            with pytest.raises(Exception):
+            with pytest.raises(RuntimeError):
                 breaker.call(failing_operation)
 
         assert breaker.get_state() == CircuitState.OPEN
@@ -115,10 +115,10 @@ class TestCircuitBreaker:
         breaker = CircuitBreaker(config)
 
         def failing_operation():
-            raise Exception("Failed")
+            raise RuntimeError("Failed")
 
         for _ in range(2):
-            with pytest.raises(Exception):
+            with pytest.raises(RuntimeError):
                 breaker.call(failing_operation)
 
         assert breaker.get_state() == CircuitState.OPEN
@@ -251,7 +251,15 @@ class TestRefactoredPlanner:
         valid_plan = Plan(
             plan_id="p1",
             objective="Test",
-            tasks=[Task(task_id="t1", description="Task", tool_name="test", tool_args={}, dependencies=[])],
+            tasks=[
+                Task(
+                    task_id="t1",
+                    description="Task",
+                    tool_name="test",
+                    tool_args={},
+                    dependencies=[],
+                )
+            ],
             metadata={},
         )
 
@@ -264,9 +272,23 @@ class TestRefactoredPlanner:
         optimizer = PlanOptimizer()
 
         tasks = [
-            Task(task_id="t3", description="Task 3", tool_name="test", tool_args={}, dependencies=["t1", "t2"]),
-            Task(task_id="t1", description="Task 1", tool_name="test", tool_args={}, dependencies=[]),
-            Task(task_id="t2", description="Task 2", tool_name="test", tool_args={}, dependencies=["t1"]),
+            Task(
+                task_id="t3",
+                description="Task 3",
+                tool_name="test",
+                tool_args={},
+                dependencies=["t1", "t2"],
+            ),
+            Task(
+                task_id="t1", description="Task 1", tool_name="test", tool_args={}, dependencies=[]
+            ),
+            Task(
+                task_id="t2",
+                description="Task 2",
+                tool_name="test",
+                tool_args={},
+                dependencies=["t1"],
+            ),
         ]
 
         plan = Plan(plan_id="p1", objective="Test", tasks=tasks, metadata={})

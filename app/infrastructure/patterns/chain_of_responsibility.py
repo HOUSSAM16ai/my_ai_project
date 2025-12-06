@@ -1,13 +1,13 @@
 """Chain of Responsibility pattern for request processing."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
 
 
-class Handler(ABC, Generic[TRequest, TResponse]):
+class Handler[TRequest, TResponse](ABC):
     """Abstract handler in chain of responsibility."""
 
     def __init__(self):

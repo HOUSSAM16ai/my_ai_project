@@ -3,6 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.overmind.planning.schemas import MissionPlanSchema, PlannedTask
+
+# Import the new canonicalizer
+from app.services.agent_tools.core import canonicalize_tool_name as _canonicalize_tool_name
 from app.services.master_agent_service import (
     CANON_READ,
     CANON_WRITE,
@@ -20,9 +23,6 @@ from app.services.master_agent_service import (
     run_mission_lifecycle,
     start_mission,
 )
-
-# Import the new canonicalizer
-from app.services.agent_tools.core import canonicalize_tool_name as _canonicalize_tool_name
 
 
 # We need to mock SessionLocal since the service uses it directly

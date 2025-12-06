@@ -10,19 +10,15 @@ from collections.abc import Callable
 from typing import Any
 
 from .definitions import (
-    ACCEPT_DOTTED,
     AUTOFILL,
     AUTOFILL_EXT,
     CANON_READ,
     CANON_WRITE,
     CANON_WRITE_IF_CHANGED,
     DISABLED,
-    FORCE_INTENT,
     READ_KEYWORDS,
-    READ_SUFFIXES,
     SUPPORTED_TYPES,
     WRITE_KEYWORDS,
-    WRITE_SUFFIXES,
     ToolResult,
     __version__,
 )
@@ -113,19 +109,17 @@ def _looks_like_read(desc: str) -> bool:
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
     """
     Canonicalize tool name using the new modular strategy-based system.
-    
+
     This function now delegates to the refactored ToolCanonicalizer which uses
     Strategy Pattern + Chain of Responsibility for better maintainability.
-    
+
     Complexity reduced from CC:22 to CC:3.
     """
-    from app.services.overmind.tool_canonicalizer import (
-        canonicalize_tool_name as new_canonicalizer
-    )
-    
+    from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
+
     # Use the new canonicalizer
     canonical, notes = new_canonicalizer(raw_name, description)
-    
+
     # Legacy compatibility: check against tool registry
     name = _lower(canonical)
     if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
@@ -134,7 +128,7 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, l
     if name in _ALIAS_INDEX:
         notes.append("direct_alias_hit")
         return _ALIAS_INDEX[name], notes
-    
+
     return canonical, notes
 
 

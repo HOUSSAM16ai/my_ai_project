@@ -117,7 +117,7 @@ class ContextAnalyzer:
 
     def _detect_language(self, text: str) -> str:
         """Detect text language."""
-        arabic_chars = sum(1 for c in text if "\u0600" <= c <= "\u06FF")
+        arabic_chars = sum(1 for c in text if "\u0600" <= c <= "\u06ff")
         if arabic_chars > len(text) * 0.3:
             return "arabic"
         return "english"
@@ -297,7 +297,11 @@ class RefactoredPlanner(PlannerInterface):
 
         event = Event(
             event_type=event_type,
-            data={"plan_id": plan.plan_id, "objective": plan.objective, "task_count": len(plan.tasks)},
+            data={
+                "plan_id": plan.plan_id,
+                "objective": plan.objective,
+                "task_count": len(plan.tasks),
+            },
         )
         self.event_bus.publish(event)
 

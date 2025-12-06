@@ -1,11 +1,10 @@
 """Routing strategies using Strategy Pattern."""
 
 import random
-import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.interfaces.strategy_interface import StrategyInterface
 
@@ -170,9 +169,7 @@ class IntelligentStrategy(RoutingStrategy):
         history = self._performance_history.get(endpoint.id, [])
         history_score = sum(history[-10:]) / len(history) if history else 0.5
 
-        return (
-            0.3 * latency_score + 0.3 * health_score + 0.2 * load_score + 0.2 * history_score
-        )
+        return 0.3 * latency_score + 0.3 * health_score + 0.2 * load_score + 0.2 * history_score
 
     def record_performance(self, endpoint_id: str, success: bool):
         """Record endpoint performance for learning."""
@@ -189,7 +186,7 @@ class IntelligentStrategy(RoutingStrategy):
 class StrategyFactory:
     """Factory for creating routing strategies."""
 
-    _strategies = {
+    _strategies: ClassVar[dict[str, type[RoutingStrategy]]] = {
         "round_robin": RoundRobinStrategy,
         "least_connections": LeastConnectionsStrategy,
         "weighted": WeightedStrategy,

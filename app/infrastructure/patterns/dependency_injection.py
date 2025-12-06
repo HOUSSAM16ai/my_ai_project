@@ -1,5 +1,6 @@
 """Dependency Injection Container."""
 
+import contextlib
 import inspect
 from collections.abc import Callable
 from typing import Any, TypeVar
@@ -82,7 +83,7 @@ def get_container() -> DIContainer:
     return _global_container
 
 
-def inject(func: Callable[..., T]) -> Callable[..., T]:
+def inject[T](func: Callable[..., T]) -> Callable[..., T]:
     """Decorator for automatic dependency injection."""
 
     def wrapper(*args: Any, **kwargs: Any) -> T:
@@ -91,10 +92,8 @@ def inject(func: Callable[..., T]) -> Callable[..., T]:
 
         for param_name, param in sig.parameters.items():
             if param_name not in kwargs and param.annotation != inspect.Parameter.empty:
-                try:
+                with contextlib.suppress(ValueError):
                     kwargs[param_name] = container.resolve(param.annotation)
-                except ValueError:
-                    pass
 
         return func(*args, **kwargs)
 
