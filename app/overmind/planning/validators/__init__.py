@@ -14,6 +14,7 @@ from .fanout_validator import FanoutValidator
 from .heuristic_validator import HeuristicValidator
 from .hash_computer import HashComputer
 from .stats_computer import StatsComputer
+from .orchestrator import ValidationOrchestrator
 
 __all__ = [
     "BasicConstraintsValidator",
@@ -25,4 +26,5 @@ __all__ = [
     "HeuristicValidator",
     "HashComputer",
     "StatsComputer",
+    "ValidationOrchestrator",
 ]
