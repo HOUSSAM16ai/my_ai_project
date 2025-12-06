@@ -94,8 +94,13 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                     # Check dialect to support both PostgreSQL and SQLite
                     dialect_name = conn.dialect.name
                     if dialect_name == "sqlite":
-                        # SQLite does not have information_schema, use PRAGMA table_info
-                        result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+                        # SQLite PRAGMA doesn't support parameterized queries directly
+                        # Use text() with bound parameter for safer execution
+                        # Note: table_name is already validated against _ALLOWED_TABLES whitelist
+                        result = await conn.execute(
+                            text("SELECT * FROM pragma_table_info(:table_name)"),
+                            {"table_name": table_name}
+                        )
                         # Row format: (cid, name, type, notnull, dflt_value, pk)
                         existing_columns = {row[1] for row in result.fetchall()}
                     else:
