@@ -44,16 +44,26 @@ from app.services.distributed_resilience_service import (
 class TestCircuitBreaker:
     """Test Circuit Breaker Pattern"""
 
-    def test_circuit_starts_closed(self):
+    @pytest.fixture
+    def circuit_breaker_factory(self):
+        def _create(failure_threshold=3, timeout_seconds=60, success_threshold=2):
+            config = CircuitBreakerConfig(
+                failure_threshold=failure_threshold,
+                timeout_seconds=timeout_seconds,
+                success_threshold=success_threshold
+            )
+            # Use unique names to avoid singleton collision in tests
+            return CircuitBreaker(f"test-cb-{time.time()}-{id(config)}", config)
+        return _create
+
+    def test_circuit_starts_closed(self, circuit_breaker_factory):
         """Circuit should start in CLOSED state"""
-        config = CircuitBreakerConfig(failure_threshold=3)
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory()
         assert cb.state.state == CircuitState.CLOSED
 
-    def test_circuit_opens_after_threshold(self):
+    def test_circuit_opens_after_threshold(self, circuit_breaker_factory):
         """Circuit should open after failure threshold"""
-        config = CircuitBreakerConfig(failure_threshold=3)
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory(failure_threshold=3)
 
         def failing_func():
             raise Exception("Test error")
@@ -65,10 +75,9 @@ class TestCircuitBreaker:
 
         assert cb.state.state == CircuitState.OPEN
 
-    def test_circuit_rejects_when_open(self):
+    def test_circuit_rejects_when_open(self, circuit_breaker_factory):
         """Circuit should reject calls when OPEN"""
-        config = CircuitBreakerConfig(failure_threshold=1, timeout_seconds=60)
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory(failure_threshold=1)
 
         def failing_func():
             raise Exception("Test error")
@@ -81,10 +90,9 @@ class TestCircuitBreaker:
         with pytest.raises(CircuitBreakerOpenError):
             cb.call(lambda: "success")
 
-    def test_circuit_transitions_to_half_open(self):
+    def test_circuit_transitions_to_half_open(self, circuit_breaker_factory):
         """Circuit should transition to HALF_OPEN after timeout"""
-        config = CircuitBreakerConfig(failure_threshold=1, timeout_seconds=1)
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory(failure_threshold=1, timeout_seconds=0.1)
 
         def failing_func():
             raise Exception("Test error")
@@ -96,15 +104,21 @@ class TestCircuitBreaker:
         assert cb.state.state == CircuitState.OPEN
 
         # Wait for timeout
-        time.sleep(1.1)
+        time.sleep(0.15)
+
+        # Trigger state check via core allow_request or calling
+        cb._core_breaker.allow_request()
 
         # Should allow test calls in HALF_OPEN
-        assert cb._get_state() == CircuitState.HALF_OPEN
+        assert cb.state.state == CircuitState.HALF_OPEN
 
-    def test_circuit_closes_after_success_in_half_open(self):
+    def test_circuit_closes_after_success_in_half_open(self, circuit_breaker_factory):
         """Circuit should close after success threshold in HALF_OPEN"""
-        config = CircuitBreakerConfig(failure_threshold=1, success_threshold=2, timeout_seconds=1)
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory(
+            failure_threshold=1,
+            success_threshold=2,
+            timeout_seconds=0.1
+        )
 
         def failing_func():
             raise Exception("Test error")
@@ -117,7 +131,10 @@ class TestCircuitBreaker:
             cb.call(failing_func)
 
         # Wait for HALF_OPEN
-        time.sleep(1.1)
+        time.sleep(0.15)
+
+        # Ensure we transition to HALF_OPEN
+        cb._core_breaker.allow_request()
 
         # Succeed twice
         cb.call(success_func)
@@ -125,13 +142,12 @@ class TestCircuitBreaker:
 
         assert cb.state.state == CircuitState.CLOSED
 
-    def test_circuit_stats(self):
+    def test_circuit_stats(self, circuit_breaker_factory):
         """Circuit breaker should provide stats"""
-        config = CircuitBreakerConfig()
-        cb = CircuitBreaker("test", config)
+        cb = circuit_breaker_factory()
 
         stats = cb.get_stats()
-        assert stats["name"] == "test"
+        assert "test-cb" in stats["name"]
         assert stats["state"] == "closed"
         assert "failure_count" in stats
         assert "success_count" in stats
@@ -675,8 +691,9 @@ class TestIntegration:
         """Circuit breaker and retry should work together"""
         service = DistributedResilienceService()
 
+        # Use unique name for integration test to avoid state pollution
         cb = service.get_or_create_circuit_breaker(
-            "integration", CircuitBreakerConfig(failure_threshold=5)
+            f"integration-{time.time()}", CircuitBreakerConfig(failure_threshold=5)
         )
         rm = service.get_or_create_retry_manager("integration", RetryConfig(max_retries=2))
 

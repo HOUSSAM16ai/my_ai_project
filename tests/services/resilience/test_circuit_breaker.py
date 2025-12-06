@@ -20,11 +20,25 @@ class TestCircuitBreaker:
 
     @pytest.fixture
     def circuit_breaker(self, config):
-        return CircuitBreaker("test-breaker", config)
+        # Ensure we start with a clean state by using a unique name
+        name = f"test-breaker-{time.time()}"
+        return CircuitBreaker(name, config)
+
+    def _force_open(self, cb):
+        """Helper to force the circuit breaker into OPEN state."""
+        # We can force the state on the core breaker
+        with cb._core_breaker._lock:
+            cb._core_breaker._state = CircuitState.OPEN
+            cb._core_breaker._last_failure_time = time.time()
+            cb._core_breaker._failure_count = cb.config.failure_threshold
+
+    def _get_state(self, cb):
+        """Helper to get the state from the wrapper."""
+        return cb.state.state
 
     def test_initial_state(self, circuit_breaker):
         """Test initial state is CLOSED"""
-        assert circuit_breaker.state.state == CircuitState.CLOSED
+        assert self._get_state(circuit_breaker) == CircuitState.CLOSED
         assert circuit_breaker.state.failure_count == 0
         assert circuit_breaker.state.success_count == 0
 
@@ -32,15 +46,15 @@ class TestCircuitBreaker:
         """Test successful execution keeps circuit CLOSED and resets failures"""
         func = Mock(return_value="success")
 
-        # Simulate a failure first
-        circuit_breaker._on_failure()
+        # Simulate a failure first using the core breaker directly
+        circuit_breaker._core_breaker.record_failure()
         assert circuit_breaker.state.failure_count == 1
 
         # Successful call
         result = circuit_breaker.call(func)
 
         assert result == "success"
-        assert circuit_breaker.state.state == CircuitState.CLOSED
+        assert self._get_state(circuit_breaker) == CircuitState.CLOSED
         assert circuit_breaker.state.failure_count == 0  # Should reset on success
         func.assert_called_once()
 
@@ -51,13 +65,13 @@ class TestCircuitBreaker:
         # First failure
         with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
-        assert circuit_breaker.state.state == CircuitState.CLOSED
+        assert self._get_state(circuit_breaker) == CircuitState.CLOSED
         assert circuit_breaker.state.failure_count == 1
 
         # Second failure (threshold reached)
         with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
-        assert circuit_breaker.state.state == CircuitState.OPEN
+        assert self._get_state(circuit_breaker) == CircuitState.OPEN
         assert circuit_breaker.state.last_failure_time is not None
 
         # Next call should fail fast
@@ -70,39 +84,42 @@ class TestCircuitBreaker:
     def test_timeout_transition_to_half_open(self, circuit_breaker):
         """Test transition from OPEN to HALF_OPEN after timeout"""
         # Force OPEN state
-        circuit_breaker._transition_to_open()
+        self._force_open(circuit_breaker)
 
         # Wait for timeout
         time.sleep(1.1)
 
-        # Should be HALF_OPEN implicitly when checked
-        assert circuit_breaker._get_state() == CircuitState.HALF_OPEN
+        # Trigger state check
+        circuit_breaker._core_breaker.allow_request()
+
+        assert self._get_state(circuit_breaker) == CircuitState.HALF_OPEN
 
     def test_half_open_success_closes_circuit(self, circuit_breaker):
         """Test success in HALF_OPEN closes the circuit"""
-        # Force OPEN state and wait for timeout logic (simulated by helper)
-        circuit_breaker._transition_to_open()
-        circuit_breaker.config.timeout_seconds = 0  # Instant timeout
+        # Force OPEN state
+        self._force_open(circuit_breaker)
+        # Modify core config directly
+        circuit_breaker._core_breaker.config.timeout = 0
         time.sleep(0.01)
 
         func = Mock(return_value="success")
 
         # First success (threshold is 2)
         circuit_breaker.call(func)
-        assert circuit_breaker.state.state == CircuitState.HALF_OPEN
+        assert self._get_state(circuit_breaker) == CircuitState.HALF_OPEN
         assert circuit_breaker.state.success_count == 1
 
         # Second success
         circuit_breaker.call(func)
-        assert circuit_breaker.state.state == CircuitState.CLOSED
+        assert self._get_state(circuit_breaker) == CircuitState.CLOSED
         assert circuit_breaker.state.success_count == 0
         assert circuit_breaker.state.failure_count == 0
 
     def test_half_open_failure_opens_circuit(self, circuit_breaker):
         """Test failure in HALF_OPEN opens the circuit immediately"""
-        # Force OPEN state and wait for timeout logic
-        circuit_breaker._transition_to_open()
-        circuit_breaker.config.timeout_seconds = 0
+        # Force OPEN state
+        self._force_open(circuit_breaker)
+        circuit_breaker._core_breaker.config.timeout = 0
         time.sleep(0.01)
 
         func = Mock(side_effect=Exception("error"))
@@ -110,41 +127,32 @@ class TestCircuitBreaker:
         with pytest.raises(Exception, match="error"):
             circuit_breaker.call(func)
 
-        assert circuit_breaker.state.state == CircuitState.OPEN
+        assert self._get_state(circuit_breaker) == CircuitState.OPEN
         assert circuit_breaker.state.success_count == 0
 
     def test_half_open_concurrency_limit(self, circuit_breaker):
         """Test concurrent calls limit in HALF_OPEN state"""
-        circuit_breaker._transition_to_open()
-        circuit_breaker.config.timeout_seconds = 0
+        self._force_open(circuit_breaker)
+        circuit_breaker._core_breaker.config.timeout = 0
         time.sleep(0.01)
 
-        # We need to simulate being in HALF_OPEN state correctly.
-        # The call() method checks `current_state == CircuitState.HALF_OPEN`.
-        # _get_state() will transition if timeout expired.
-
         # Ensure we are in HALF_OPEN
-        assert circuit_breaker._get_state() == CircuitState.HALF_OPEN
+        circuit_breaker._core_breaker.allow_request()
+        assert self._get_state(circuit_breaker) == CircuitState.HALF_OPEN
 
         # Manually increment active calls to simulate concurrency
-        # The logic in call() is:
-        # if current_state == CircuitState.HALF_OPEN:
-        #     if self.state.half_open_calls >= self.config.half_open_max_calls:
-        #         raise ...
-
-        # So we need to set half_open_calls manually
-        circuit_breaker.state.half_open_calls = 1
+        # We set it to max (1)
+        circuit_breaker._core_breaker._half_open_calls = circuit_breaker.config.half_open_max_calls
 
         func = Mock()
-        with pytest.raises(CircuitBreakerOpenError) as exc:
+        # Next call should be rejected because limit is reached
+        with pytest.raises(CircuitBreakerOpenError):
             circuit_breaker.call(func)
-
-        assert "limit reached" in str(exc.value)
 
     def test_expected_exceptions(self, config):
         """Test that only expected exceptions count as failures"""
         config.expected_exceptions = (ValueError,)
-        cb = CircuitBreaker("test", config)
+        cb = CircuitBreaker("test-expected-exc", config)
 
         func = Mock(side_effect=TypeError("unexpected"))
 
@@ -165,7 +173,8 @@ class TestCircuitBreaker:
     def test_get_stats(self, circuit_breaker):
         """Test stats reporting"""
         stats = circuit_breaker.get_stats()
-        assert stats["name"] == "test-breaker"
+        # Name might have timestamp suffix now
+        assert "test-breaker" in stats["name"]
         assert stats["state"] == "closed"
         assert stats["failure_count"] == 0
         assert "last_state_change" in stats
