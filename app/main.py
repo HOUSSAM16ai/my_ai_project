@@ -151,11 +151,8 @@ def create_app(static_dir: str | None = None) -> FastAPI:
     _setup_monitoring(app)
     _setup_static_files(app, static_dir)
 
-    # We add middlewares here.
-    # Note: add_middleware adds to the TOP of the stack (outermost layer).
-    # We want RateLimit to be outer layer to reject requests fast.
-    app.add_middleware(RateLimitMiddleware)
-
+    # Middleware is now woven by the Reality Kernel.
+    # No redundant additions here to avoid "Chaotic Constructive Interference".
     return app
 
 
@@ -163,19 +160,10 @@ def create_app(static_dir: str | None = None) -> FastAPI:
 app = create_app()
 kernel = app.kernel  # Expose for legacy tests
 
-# Add RemoveBlockingHeadersMiddleware.
-# Since this is added AFTER create_app, it will wrap the app returned by create_app (which has RateLimit).
-# So: RemoveBlockingHeaders -> RateLimit -> App
-# This seems correct? RateLimit might block before Headers removal?
-# Actually, if we want Rate Limit to be the absolute first line of defense, it should be the LAST one added.
-app.add_middleware(RemoveBlockingHeadersMiddleware)
-
 # log startup
 if hasattr(app, "logger"):
-    # Instantiate with app to avoid None, though Pure ASGI logic tolerates None for 'app' during check
-    app.logger.info(
-        "RemoveBlockingHeadersMiddleware enabled=%s", RemoveBlockingHeadersMiddleware(app).enabled
-    )
+    # Check if middleware is active in stack (simplified check)
+    app.logger.info("Application initialized with unified kernel middleware stack.")
 
 if not isinstance(app, FastAPI):
     raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")

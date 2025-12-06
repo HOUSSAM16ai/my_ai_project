@@ -32,6 +32,7 @@ class RealityKernel:
         from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
         from app.middleware.fastapi_error_handlers import add_error_handlers
+        from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
         from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
         from app.middleware.security.security_headers import SecurityHeadersMiddleware
 
@@ -100,6 +101,10 @@ class RealityKernel:
         app.add_middleware(SecurityHeadersMiddleware)
         if self.settings.get("ENVIRONMENT") != "testing":
             app.add_middleware(RateLimitMiddleware)
+
+        # Ensure Blocking Headers are removed for Codespaces/Dev (wraps RateLimit)
+        app.add_middleware(RemoveBlockingHeadersMiddleware)
+
         app.add_middleware(GZipMiddleware, minimum_size=1000)
 
         add_error_handlers(app)
