@@ -13,35 +13,35 @@ from typing import Any
 
 class HashComputer:
     """Computes hashes for plan change tracking."""
-    
+
     def compute_content_hash(self, plan: Any) -> str:
         """
         Compute semantic content hash.
-        
+
         Complexity: CC=2
         """
         hash_payload = self._build_content_payload(plan)
-        
+
         return hashlib.sha256(
             json.dumps(hash_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()
-    
+
     def compute_structural_hash(self, plan: Any) -> str:
         """
         Compute structural hash (topology only).
-        
+
         Complexity: CC=2
         """
         structural_vector = self._build_structural_vector(plan)
-        
+
         return hashlib.sha256(
             json.dumps(structural_vector, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()
-    
+
     def _build_content_payload(self, plan: Any) -> dict[str, Any]:
         """
         Build payload for content hash.
-        
+
         Complexity: CC=1
         """
         return {
@@ -65,11 +65,11 @@ class HashComputer:
                 for t in sorted(plan.tasks, key=lambda x: x.task_id)
             ],
         }
-    
+
     def _build_structural_vector(self, plan: Any) -> list[dict[str, Any]]:
         """
         Build vector for structural hash.
-        
+
         Complexity: CC=1
         """
         return [

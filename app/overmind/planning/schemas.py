@@ -46,7 +46,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import uuid
@@ -333,17 +332,17 @@ class MissionPlanSchema(BaseModel):
     def _full_graph_validation(self):
         """
         REFACTORED: Reduced from CC=44 to CC=5 using modular validators.
-        
+
         Uses ValidationOrchestrator to coordinate specialized validators,
         each with CC ≤ 5 for maintainability and testability.
         """
         from .validators.orchestrator import ValidationOrchestrator
-        
+
         orchestrator = ValidationOrchestrator(SETTINGS)
         result = orchestrator.validate(self)
-        
+
         # Extract results
-        issues = result.get("issues", [])
+        result.get("issues", [])
         warnings = result.get("warnings", [])
         stats = result.get("stats", {})
         topo = result.get("topo_order", [])
@@ -352,7 +351,7 @@ class MissionPlanSchema(BaseModel):
         depth_map = result.get("depth_map", {})
         avg_fanout = stats.get("avg_out_degree", 0.0)
         risk_score = stats.get("risk_score", 0)
-        
+
         # Continue with remaining logic (meta updates, etc.)
         if self.meta:
             if self.meta.avg_task_fanout is None:
