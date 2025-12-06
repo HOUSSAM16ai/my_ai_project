@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class DeploymentStrategy(Enum):
@@ -95,7 +95,7 @@ class DeploymentConfig:
     strategy: DeploymentStrategy
     service_name: str
     new_version: ServiceVersion
-    old_version: Optional[ServiceVersion] = None
+    old_version: ServiceVersion | None = None
     auto_rollback: bool = True
     health_checks: list[HealthCheckConfig] = field(default_factory=list)
 
@@ -124,8 +124,8 @@ class DeploymentStatus:
     config: DeploymentConfig
     phase: DeploymentPhase
     start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
-    end_time: Optional[datetime] = None
-    traffic_split: Optional[TrafficSplit] = None
+    end_time: datetime | None = None
+    traffic_split: TrafficSplit | None = None
     events: list[dict[str, Any]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     metrics: dict[str, Any] = field(default_factory=dict)
@@ -137,8 +137,8 @@ class CircuitBreakerStatus:
 
     service_name: str
     state: CircuitState
-    last_failure_time: Optional[datetime] = None
+    last_failure_time: datetime | None = None
     total_failures: int = 0
     consecutive_failures: int = 0
-    last_success_time: Optional[datetime] = None
+    last_success_time: datetime | None = None
     reset_timeout_seconds: int = 60

@@ -2,16 +2,18 @@
 """
 Core Orchestrator Logic (Refactored).
 """
+
 from __future__ import annotations
 
 import logging
+import random
 import threading
 import time
 import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 from .types import (
     CircuitBreakerStatus,
@@ -53,9 +55,7 @@ class DeploymentOrchestrator:
 
         self._deployments: dict[str, DeploymentStatus] = {}
         self._circuit_breakers: dict[str, CircuitBreakerStatus] = {}
-        self._metrics_buffer: dict[str, deque] = defaultdict(
-            lambda: deque(maxlen=1000)
-        )
+        self._metrics_buffer: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
         self._active_rollouts: dict[str, str] = {}  # service_name -> deployment_id
         self._initialized = True
         _LOG.info("Deployment Orchestrator Initialized (Hyper-Scale Mode)")
@@ -68,7 +68,7 @@ class DeploymentOrchestrator:
         self,
         service_name: str,
         new_version: ServiceVersion,
-        old_version: Optional[ServiceVersion] = None,
+        old_version: ServiceVersion | None = None,
         auto_rollback: bool = True,
     ) -> str:
         """بدء نشر أزرق-أخضر"""
@@ -87,7 +87,7 @@ class DeploymentOrchestrator:
         service_name: str,
         new_version: ServiceVersion,
         old_version: ServiceVersion,
-        canary_steps: Optional[list[int]] = None,
+        canary_steps: list[int] | None = None,
         interval_seconds: int = 60,
     ) -> str:
         """بدء نشر تدريجي (Canary)"""
@@ -106,7 +106,9 @@ class DeploymentOrchestrator:
         deployment_id = self._start_deployment(config)
         status = self.get_deployment_status(deployment_id)
         if status:
-            status.traffic_split = TrafficSplit(new_version_percentage=0, old_version_percentage=100)
+            status.traffic_split = TrafficSplit(
+                new_version_percentage=0, old_version_percentage=100
+            )
 
         return deployment_id
 
@@ -130,7 +132,7 @@ class DeploymentOrchestrator:
         )
         return self._start_deployment(config)
 
-    def get_deployment_status(self, deployment_id: str) -> Optional[DeploymentStatus]:
+    def get_deployment_status(self, deployment_id: str) -> DeploymentStatus | None:
         """الحصول على حالة النشر"""
         return self._deployments.get(deployment_id)
 
@@ -147,7 +149,7 @@ class DeploymentOrchestrator:
         self,
         service_name: str,
         operation: Callable,
-        fallback: Optional[Callable] = None,
+        fallback: Callable | None = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -201,16 +203,15 @@ class DeploymentOrchestrator:
         breaker.total_failures += 1
         breaker.consecutive_failures += 1
 
-        if (
-            breaker.state == CircuitState.CLOSED
-            and breaker.consecutive_failures >= 5
-        ):
+        if breaker.state == CircuitState.CLOSED and breaker.consecutive_failures >= 5:
             breaker.state = CircuitState.OPEN
             _LOG.error(f"Circuit Breaker for {breaker.service_name} OPENED due to failures")
 
         elif breaker.state == CircuitState.HALF_OPEN:
             breaker.state = CircuitState.OPEN
-            _LOG.error(f"Circuit Breaker for {breaker.service_name} Re-OPENED (Failed in Half-Open)")
+            _LOG.error(
+                f"Circuit Breaker for {breaker.service_name} Re-OPENED (Failed in Half-Open)"
+            )
 
     # ==================================================================================
     # Internal Orchestration Logic
@@ -297,7 +298,9 @@ class DeploymentOrchestrator:
 
                 # انتظار فترة المراقبة
                 # استخدام وقت قصير للاختبارات
-                sleep_time = 1 if getattr(self, "_testing_mode", False) else config.canary_interval_seconds
+                sleep_time = (
+                    1 if getattr(self, "_testing_mode", False) else config.canary_interval_seconds
+                )
                 self._wait_and_monitor(status, sleep_time)
 
         elif config.strategy == DeploymentStrategy.ROLLING:
@@ -305,12 +308,11 @@ class DeploymentOrchestrator:
             self._log_event(status, "Rolling update started")
             total_replicas = config.new_version.replicas
             for i in range(total_replicas):
-                self._wait_and_monitor(status, 1) # محاكاة استبدال Pod
-                self._log_event(status, f"Updated replica {i+1}/{total_replicas}")
+                self._wait_and_monitor(status, 1)  # محاكاة استبدال Pod
+                self._log_event(status, f"Updated replica {i + 1}/{total_replicas}")
 
     def _wait_and_monitor(self, status: DeploymentStatus, duration: float):
         """الانتظار مع مراقبة ومحاكاة المقاييس"""
-        import random
         start_time = time.time()
         while time.time() - start_time < duration:
             # Simulate metric collection
@@ -319,21 +321,21 @@ class DeploymentOrchestrator:
 
     def _collect_metrics(self, status: DeploymentStatus):
         """جمع مقاييس محاكاة"""
-        import random
         key = f"{status.config.service_name}:{status.config.new_version.version_id}"
         metric = {
             "timestamp": datetime.now(UTC).isoformat(),
             "cpu_usage": random.uniform(10, 80),
             "memory_usage": random.uniform(200, 1024),
             "requests_per_second": random.randint(50, 500),
-            "error_rate": random.uniform(0, 0.05)
+            "error_rate": random.uniform(0, 0.05),
         }
         self._metrics_buffer[key].append(metric)
 
     def _run_health_checks(self, status: DeploymentStatus) -> bool:
         """تشغيل فحوصات الصحة"""
         # محاكاة فحوصات الصحة
-        import random
+        # استخدام random هنا لتجنب إزالة الاستيراد
+        _ = random.random()
 
         # في بيئة الاختبار، نريد نتائج حتمية غالباً، لكن هنا نحاكي الواقع
         # للتبسيط، ننجح دائمًا إلا إذا تم حقن خطأ (لم يتم تنفيذه هنا)
@@ -347,8 +349,8 @@ class DeploymentOrchestrator:
         if status.config.auto_rollback:
             self._update_phase(status, DeploymentPhase.ROLLING_BACK)
             self._log_event(status, "Auto-rollback initiated")
-            time.sleep(2) # محاكاة التراجع
-            self._update_phase(status, DeploymentPhase.FAILED) # النهاية هي فشل النشر الأصلي
+            time.sleep(2)  # محاكاة التراجع
+            self._update_phase(status, DeploymentPhase.FAILED)  # النهاية هي فشل النشر الأصلي
             self._log_event(status, "Rollback completed")
         else:
             self._update_phase(status, DeploymentPhase.FAILED)
@@ -366,7 +368,7 @@ class DeploymentOrchestrator:
         event = {
             "timestamp": datetime.now(UTC),
             "message": message,
-            "phase": status.phase.value
+            "phase": status.phase.value,
         }
         status.events.append(event)
         _LOG.info(f"[{status.deployment_id}] {message}")
@@ -377,6 +379,7 @@ class DeploymentOrchestrator:
             HealthCheckConfig(HealthCheckType.READINESS, endpoint),
             HealthCheckConfig(HealthCheckType.LIVENESS, endpoint),
         ]
+
 
 def get_deployment_orchestrator() -> DeploymentOrchestrator:
     return DeploymentOrchestrator()
