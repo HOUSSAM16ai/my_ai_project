@@ -5,7 +5,7 @@ import logging
 import math
 import os
 import time
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..base_planner import BasePlanner, PlannerError, PlanValidationError
 from ..schemas import MissionPlanSchema, PlannedTask, PlanningContext
