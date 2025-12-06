@@ -68,9 +68,13 @@ def test_bcrypt_backend_attributes():
         # We expect < 4.0.0 for passlib 1.7.4 compatibility
         version = getattr(bcrypt, "__version__", "")
         # Note: bcrypt 3.2.0 puts version in __version__, 4.0.0 changed things.
-        if version and version.startswith("4."):
-            logger.warning(
-                "Running with bcrypt 4.x - this is known to be problematic with passlib 1.7.4"
-            )
+        if version and (version.startswith("4.") or version.startswith("5.")):
+            # Check for Quantum Patch
+            if hasattr(bcrypt, "__about__"):
+                logger.info("Running with bcrypt 4+/5+ but Quantum Patch is active. Safe.")
+            else:
+                logger.warning(
+                    f"Running with bcrypt {version} - this is known to be problematic with passlib 1.7.4 without patching"
+                )
     except ImportError:
         pass

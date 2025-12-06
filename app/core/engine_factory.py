@@ -22,6 +22,7 @@ import copy
 import logging
 import os
 import re
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -343,7 +344,24 @@ class DatabaseURLSanitizer:
 
     @staticmethod
     def _is_test_environment() -> bool:
-        """Check if running in a test environment."""
+        """
+        Check if running in a test environment.
+
+        🕵️ QUANTUM CONTEXT AWARENESS:
+        Detects testing context through multiple dimensional checks:
+        1. Explicit ENVIRONMENT variable
+        2. System Module Introspection (sys.modules)
+        3. Legacy Environment Indicators
+        """
+        # Check 1: Explicit ENVIRONMENT variable
+        if os.environ.get("ENVIRONMENT") == "testing":
+            return True
+
+        # Check 2: Pytest presence in modules (Deep Inspection)
+        if "pytest" in sys.modules:
+            return True
+
+        # Check 3: Legacy Environment Variables
         return (
             "pytest" in os.environ.get("_", "")
             or os.environ.get("TESTING", "").lower() == "true"
