@@ -331,235 +331,29 @@ class MissionPlanSchema(BaseModel):
 
     @model_validator(mode="after")
     def _full_graph_validation(self):
-        issues: list[PlanValidationIssue] = []
-        warnings: list[PlanWarning] = []
-
-        # Basic tasks existence
-        if not self.tasks:
-            issues.append(PlanValidationIssue(code="EMPTY_PLAN", message="Plan has no tasks."))
-            raise PlanValidationError(issues)
-
-        if len(self.tasks) > SETTINGS.MAX_TASKS:
-            issues.append(
-                PlanValidationIssue(
-                    code="TOO_MANY_TASKS",
-                    message=f"Task count {len(self.tasks)} exceeds MAX_TASKS={SETTINGS.MAX_TASKS}",
-                )
-            )
-            raise PlanValidationError(issues)
-
-        # Unique task IDs
-        id_map = {t.task_id: t for t in self.tasks}
-        if len(id_map) != len(self.tasks):
-            issues.append(
-                PlanValidationIssue(code="DUPLICATE_ID", message="Duplicate task_id detected.")
-            )
-            raise PlanValidationError(issues)
-
-        # Build adjacency / indegree
-        adj: dict[str, list[str]] = {tid: [] for tid in id_map}
-        indegree: dict[str, int] = dict.fromkeys(id_map, 0)
-        for t in self.tasks:
-            for dep in t.dependencies:
-                if dep not in id_map:
-                    issues.append(
-                        PlanValidationIssue(
-                            code="INVALID_DEPENDENCY",
-                            message=f"Task '{t.task_id}' depends on unknown '{dep}'.",
-                            task_id=t.task_id,
-                        )
-                    )
-                else:
-                    adj[dep].append(t.task_id)
-                    indegree[t.task_id] += 1
-        if issues:
-            raise PlanValidationError(issues)
-
-        # Fan-out limit
-        for parent, children in adj.items():
-            if len(children) > SETTINGS.MAX_OUT_DEGREE:
-                issues.append(
-                    PlanValidationIssue(
-                        code="EXCESS_OUT_DEGREE",
-                        message=f"Task '{parent}' fan-out {len(children)} > MAX_OUT_DEGREE={SETTINGS.MAX_OUT_DEGREE}",
-                        task_id=parent,
-                    )
-                )
-        if issues:
-            raise PlanValidationError(issues)
-
-        # Topological sort
-        import collections
-
-        queue = collections.deque([tid for tid, deg in indegree.items() if deg == 0])
-        if not queue:
-            issues.append(
-                PlanValidationIssue(code="NO_ROOTS", message="No root tasks (possible cycle).")
-            )
-            raise PlanValidationError(issues)
-
-        topo: list[str] = []
-        depth_map: dict[str, int] = dict.fromkeys(id_map, 0)
-        remaining = indegree.copy()
-
-        while queue:
-            node = queue.popleft()
-            topo.append(node)
-            for nxt in adj[node]:
-                remaining[nxt] -= 1
-                depth_map[nxt] = max(depth_map[nxt], depth_map[node] + 1)
-                if remaining[nxt] == 0:
-                    queue.append(nxt)
-
-        if len(topo) != len(id_map):
-            cyclic_nodes = [tid for tid, d in remaining.items() if d > 0]
-            issues.append(
-                PlanValidationIssue(
-                    code="CYCLE_DETECTED",
-                    message="Dependency cycle detected.",
-                    detail={"nodes": cyclic_nodes},
-                )
-            )
-            raise PlanValidationError(issues)
-
-        longest_path = max(depth_map.values()) if depth_map else 0
-        if longest_path > SETTINGS.MAX_DEPTH:
-            issues.append(
-                PlanValidationIssue(
-                    code="DEPTH_EXCEEDED",
-                    message=f"Depth {longest_path} > MAX_DEPTH={SETTINGS.MAX_DEPTH}",
-                )
-            )
-            raise PlanValidationError(issues)
-
-        # Heuristic Warnings
-        roots = [tid for tid, deg in indegree.items() if deg == 0]
-        if len(roots) / len(id_map) > 0.5 and len(id_map) > 10:
-            warnings.append(
-                PlanWarning(
-                    code="HIGH_ROOT_COUNT",
-                    message="More than 50% of tasks are roots.",
-                    severity=WarningSeverity.STRUCTURE,
-                )
-            )
-        for tid in id_map:
-            if indegree[tid] == 0 and not adj[tid] and len(id_map) > 1:
-                warnings.append(
-                    PlanWarning(
-                        code="ORPHAN_TASK",
-                        message=f"Task '{tid}' is isolated.",
-                        severity=WarningSeverity.STRUCTURE,
-                        task_id=tid,
-                    )
-                )
-        priorities = [t.priority for t in self.tasks]
-        if len(priorities) > 5 and len(set(priorities)) == 1:
-            warnings.append(
-                PlanWarning(
-                    code="UNIFORM_PRIORITY",
-                    message="All tasks share identical priority.",
-                    severity=WarningSeverity.PERFORMANCE,
-                )
-            )
-        high_risk = [t.task_id for t in self.tasks if t.risk_level == RiskLevel.HIGH]
-        if high_risk and len(high_risk) / len(self.tasks) > 0.3:
-            warnings.append(
-                PlanWarning(
-                    code="HIGH_RISK_DENSITY",
-                    message=f"High-risk tasks ratio {len(high_risk)}/{len(self.tasks)} > 0.3.",
-                    severity=WarningSeverity.RISK,
-                )
-            )
-        for t in self.tasks:
-            if t.task_type == TaskType.GATE and not t.gate_condition:
-                warnings.append(
-                    PlanWarning(
-                        code="GATE_WITHOUT_CONDITION",
-                        message=f"GATE task '{t.task_id}' missing gate_condition.",
-                        severity=WarningSeverity.ADVISORY,
-                        task_id=t.task_id,
-                    )
-                )
-
-        # Stats construction
-        risk_counts = {
-            "LOW": sum(1 for t in self.tasks if t.risk_level == RiskLevel.LOW),
-            "MEDIUM": sum(1 for t in self.tasks if t.risk_level == RiskLevel.MEDIUM),
-            "HIGH": len(high_risk),
-        }
-        risk_score = risk_counts["LOW"] * 1 + risk_counts["MEDIUM"] * 3 + risk_counts["HIGH"] * 7
-        out_degrees = [len(v) for v in adj.values()]
-        avg_fanout = round(sum(out_degrees) / len(out_degrees), 4) if out_degrees else 0.0
-
-        stats = {
-            "tasks": len(id_map),
-            "roots": len(roots),
-            "longest_path": longest_path,
-            "avg_out_degree": avg_fanout,
-            "max_out_degree": max(out_degrees) if out_degrees else 0,
-            "risk_counts": risk_counts,
-            "risk_score": risk_score,
-            "orphan_tasks": [w.task_id for w in warnings if w.code == "ORPHAN_TASK"],
-        }
-
-        # Enforce meta size limit (if meta present & limit > 0)
-        if self.meta:
-            meta_json = json.dumps(self.meta.model_dump(mode="json"), ensure_ascii=False)
-            if (
-                SETTINGS.MAX_META_BYTES > 0
-                and len(meta_json.encode("utf-8")) > SETTINGS.MAX_META_BYTES
-            ):
-                warnings.append(
-                    PlanWarning(
-                        code="META_TRUNCATION_RISK",
-                        message=f"PlanMeta size exceeds {SETTINGS.MAX_META_BYTES} bytes (consider pruning).",
-                        severity=WarningSeverity.PERFORMANCE,
-                    )
-                )
-
-        # Full content hash (semantic)
-        hash_payload = {
-            "objective": self.objective,
-            "tasks": [
-                {
-                    "task_id": t.task_id,
-                    "description": t.description,
-                    "task_type": t.task_type,
-                    "tool_name": t.tool_name,
-                    "tool_args": t.tool_args,
-                    "dependencies": t.dependencies,
-                    "priority": t.priority,
-                    "criticality": t.criticality,
-                    "risk_level": t.risk_level,
-                    "allow_high_risk": t.allow_high_risk,
-                    "tags": sorted(t.tags),
-                    "metadata": t.metadata,
-                    "gate_condition": t.gate_condition,
-                }
-                for t in sorted(self.tasks, key=lambda x: x.task_id)
-            ],
-        }
-        self.content_hash = hashlib.sha256(
-            json.dumps(hash_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
-        ).hexdigest()
-
-        # Structural hash (topology + structural hints)
-        structural_vector = [
-            {
-                "task_id": t.task_id,
-                "deps": sorted(t.dependencies),
-                "priority": t.priority,
-                "risk": t.risk_level,
-                "hotspot": bool(t.metadata.get("hotspot")),
-                "layer": t.metadata.get("layer"),
-            }
-            for t in sorted(self.tasks, key=lambda x: x.task_id)
-        ]
-        self.structural_hash = hashlib.sha256(
-            json.dumps(structural_vector, ensure_ascii=False, sort_keys=True).encode("utf-8")
-        ).hexdigest()
-
-        # Inject derived avg_task_fanout if meta present and missing
+        """
+        REFACTORED: Reduced from CC=44 to CC=5 using modular validators.
+        
+        Uses ValidationOrchestrator to coordinate specialized validators,
+        each with CC ≤ 5 for maintainability and testability.
+        """
+        from .validators.orchestrator import ValidationOrchestrator
+        
+        orchestrator = ValidationOrchestrator(SETTINGS)
+        result = orchestrator.validate(self)
+        
+        # Extract results
+        issues = result.get("issues", [])
+        warnings = result.get("warnings", [])
+        stats = result.get("stats", {})
+        topo = result.get("topo_order", [])
+        adj = result.get("adjacency", {})
+        indegree = result.get("indegree", {})
+        depth_map = result.get("depth_map", {})
+        avg_fanout = stats.get("avg_out_degree", 0.0)
+        risk_score = stats.get("risk_score", 0)
+        
+        # Continue with remaining logic (meta updates, etc.)
         if self.meta:
             if self.meta.avg_task_fanout is None:
                 self.meta.avg_task_fanout = avg_fanout
