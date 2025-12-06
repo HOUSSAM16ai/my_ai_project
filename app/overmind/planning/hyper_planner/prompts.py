@@ -104,3 +104,95 @@ def build_final_wrap_prompt(
         f"Objective:\n{objective}\nFile:{fname}{struct_ref}\n"
         f"Produce an executive wrap (<=200 lines) leveraging {role_ref} + prioritized recommendations."
     )
+
+
+# --- Migrated Prompts from core.py ---
+
+def semantic_analysis_prompt(lang: str, sem_source: str, max_bytes: int) -> str:
+    if lang == "ar":
+        return (
+            "حلل الملخص البنيوي وأعد JSON:\n"
+            "{layers:[...],services:[...],infra:[...],utilities:[...],hotspots:[...],duplicates:[...],"
+            "refactor_opportunities:[{item,impact,effort}],risks:[{issue,likelihood,impact}],patterns:[...]}\n\n"
+            f"{_truncate(sem_source, max_bytes)}"
+        )
+    return (
+        "Analyze structural summary -> JSON schema:\n"
+        "{layers:[...],services:[...],infra:[...],utilities:[...],hotspots:[...],duplicates:[...],"
+        "refactor_opportunities:[{item,impact,effort}],risks:[{issue,likelihood,impact}],patterns:[...]}\n\n"
+        f"{_truncate(sem_source, max_bytes)}"
+    )
+
+def global_code_summary_prompt(lang: str, refs: str, max_bytes: int) -> str:
+    if lang == "ar":
+        return (
+            "لخص هذه الملفات إلى خريطة وحدات/خدمات/بنية/وظائف حرجة/تكرارات محتملة. "
+            "أعد JSON: {modules:[...],services:[...],infra:[...],utilities:[...],"
+            "notable_functions:[...],potential_containers:[...],global_risks:[...]}.\n"
+            + _truncate(refs, max_bytes)
+        )
+    return (
+        "Summarize files into repository map (modules/services/layers/critical funcs/duplicate hints). "
+        "Return JSON: {modules:[...],services:[...],infra:[...],utilities:[...],"
+        "notable_functions:[...],potential_containers:[...],global_risks:[...]}.\n"
+        + _truncate(refs, max_bytes)
+    )
+
+def artifact_index_prompt(lang: str) -> str:
+    if lang == "ar":
+        return "أنشئ فهرساً موجزاً لكل ملف (سطران: التركيز والاستخدام)."
+    return "Create concise artifact index (2 lines per file: focus & usage)."
+
+def deep_arch_report_prompt(lang: str) -> str:
+    if lang == "ar":
+        return (
+            "حلل بيانات الفهرس (JSON + ملخص) وقدم تقرير معمارية متقدم "
+            "(طبقات، خدمات، تبعيات، نقاط ساخنة، تكرار، أولويات refactor، مخاطر، فرص تحسين). "
+            "Markdown منظم مختصر."
+        )
+    return (
+        "Analyze structural index (JSON + summary) → advanced architecture report "
+        "(layers, services, dependencies, hotspots, duplicates, refactor priorities, risks, improvements). "
+        "Return concise structured Markdown."
+    )
+
+def comprehensive_analysis_prompt(lang: str) -> str:
+    if lang == "ar":
+        return """حلل المشروع بشكل شامل وقدم تقرير واحد متكامل يتضمن:
+
+- طبقات النظام والخدمات (الحاويات الثلاث: db, web, ai_service)
+- التبعيات والعلاقات بين المكونات
+- النقاط الساخنة والمناطق الحرجة في الكود
+
+- ملخص الملفات الرئيسية ووظائفها
+- الفئات والوظائف المهمة
+- نقاط الدخول والواجهات البرمجية
+
+- التكرار في الكود وفرص التحسين
+- فرص إعادة الهيكلة والتنظيم
+- المخاطر المحتملة ونقاط الضعف
+
+- أولويات التحسين والتطوير
+- الخطوات التالية المقترحة
+- أفضل الممارسات للصيانة
+
+قدم تحليل عميق ومنظم بذكاء خارق في ملف واحد شامل."""
+    return """Analyze the project comprehensively and provide one integrated report including:
+
+- System layers and services (three containers: db, web, ai_service)
+- Dependencies and relationships between components
+- Hotspots and critical areas in the code
+
+- Summary of key files and their functions
+- Important classes and functions
+- Entry points and APIs
+
+- Code duplication and improvement opportunities
+- Refactoring and reorganization opportunities
+- Potential risks and weaknesses
+
+- Improvement and development priorities
+- Suggested next steps
+- Best practices for maintenance
+
+Provide deep, organized analysis with superhuman intelligence in one comprehensive file."""
