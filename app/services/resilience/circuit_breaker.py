@@ -4,12 +4,8 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
 from typing import Any
 
-from app.core.resilience.circuit_breaker import (
-    CircuitBreaker as CoreCircuitBreaker,
-)
 from app.core.resilience.circuit_breaker import (
     CircuitBreakerConfig as CoreCircuitBreakerConfig,
 )
@@ -25,6 +21,7 @@ from app.core.resilience.circuit_breaker import (
 
 # Re-export enums and config to maintain compatibility where possible
 CircuitState = CoreCircuitState
+
 
 @dataclass
 class CircuitBreakerConfig:
@@ -62,6 +59,7 @@ class CircuitBreakerState:
 
 class CircuitBreakerOpenError(CoreCircuitOpenError):
     """Raised when circuit breaker is OPEN"""
+
     pass
 
 
@@ -89,7 +87,7 @@ class CircuitBreaker:
 
         # Check if allowed
         if not self._core_breaker.allow_request():
-             raise CircuitBreakerOpenError(self.name)
+            raise CircuitBreakerOpenError(self.name)
 
         try:
             result = func(*args, **kwargs)
@@ -116,7 +114,7 @@ class CircuitBreaker:
         # Convert timestamp to datetime if present
         last_fail = None
         if stats["last_failure_time"] > 0:
-             last_fail = datetime.fromtimestamp(stats["last_failure_time"], tz=UTC)
+            last_fail = datetime.fromtimestamp(stats["last_failure_time"], tz=UTC)
 
         # Inferred state change tracking
         # Note: This is an approximation. Ideally core tracks this.
@@ -132,7 +130,7 @@ class CircuitBreaker:
             success_count=stats["success_count"],
             last_failure_time=last_fail,
             last_state_change=self._last_state_change_ts,
-            half_open_calls=stats["half_open_calls"]
+            half_open_calls=stats["half_open_calls"],
         )
 
     def get_stats(self) -> dict:
@@ -143,8 +141,6 @@ class CircuitBreaker:
             "state": s.state.value,
             "failure_count": s.failure_count,
             "success_count": s.success_count,
-            "last_failure_time": (
-                s.last_failure_time.isoformat() if s.last_failure_time else None
-            ),
+            "last_failure_time": (s.last_failure_time.isoformat() if s.last_failure_time else None),
             "last_state_change": s.last_state_change.isoformat() if s.last_state_change else None,
         }

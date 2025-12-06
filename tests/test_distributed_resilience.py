@@ -50,10 +50,11 @@ class TestCircuitBreaker:
             config = CircuitBreakerConfig(
                 failure_threshold=failure_threshold,
                 timeout_seconds=timeout_seconds,
-                success_threshold=success_threshold
+                success_threshold=success_threshold,
             )
             # Use unique names to avoid singleton collision in tests
             return CircuitBreaker(f"test-cb-{time.time()}-{id(config)}", config)
+
         return _create
 
     def test_circuit_starts_closed(self, circuit_breaker_factory):
@@ -114,11 +115,7 @@ class TestCircuitBreaker:
 
     def test_circuit_closes_after_success_in_half_open(self, circuit_breaker_factory):
         """Circuit should close after success threshold in HALF_OPEN"""
-        cb = circuit_breaker_factory(
-            failure_threshold=1,
-            success_threshold=2,
-            timeout_seconds=0.1
-        )
+        cb = circuit_breaker_factory(failure_threshold=1, success_threshold=2, timeout_seconds=0.1)
 
         def failing_func():
             raise Exception("Test error")

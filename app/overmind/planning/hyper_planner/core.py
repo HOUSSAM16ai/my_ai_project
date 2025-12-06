@@ -142,19 +142,29 @@ class UltraHyperPlanner(BasePlanner):
         context_source, struct_placeholder_ref = self._determine_context_source(
             struct_semantic_task.task_id if struct_semantic_task else None,
             struct_meta.get("md_task"),
-            global_code_summary_task.task_id if global_code_summary_task else None
+            global_code_summary_task.task_id if global_code_summary_task else None,
         )
         struct_meta["struct_context_injected"] = context_source != "none"
 
         # 4. Roles & Sections
         role_task_id, idx = self._step_roles(
-            tasks, idx, files, objective, lang, struct_placeholder_ref,
-            index_deps or analysis_dependency_ids
+            tasks,
+            idx,
+            files,
+            objective,
+            lang,
+            struct_placeholder_ref,
+            index_deps or analysis_dependency_ids,
         )
 
         section_task_id, idx = self._step_sections(
-            tasks, idx, objective, lang, struct_placeholder_ref,
-            role_task_id, index_deps or analysis_dependency_ids
+            tasks,
+            idx,
+            objective,
+            lang,
+            struct_placeholder_ref,
+            role_task_id,
+            index_deps or analysis_dependency_ids,
         )
 
         # 5. File Generation
@@ -178,8 +188,13 @@ class UltraHyperPlanner(BasePlanner):
 
         # 6. Comprehensive Analysis & Reporting
         idx = self._step_reporting(
-            tasks, idx, lang, final_writes, files, struct_meta,
-            index_deps or analysis_dependency_ids
+            tasks,
+            idx,
+            lang,
+            final_writes,
+            files,
+            struct_meta,
+            index_deps or analysis_dependency_ids,
         )
 
         # 7. Pruning
@@ -189,12 +204,23 @@ class UltraHyperPlanner(BasePlanner):
         # 8. Finalize
         container_files = scan_logic._container_files_present()
         meta = self._build_meta(
-            lang, files, req_lines, total_chunks, per_chunk, use_stream,
-            role_task_id, section_task_id, struct_meta, context_source,
+            lang,
+            files,
+            req_lines,
+            total_chunks,
+            per_chunk,
+            use_stream,
+            role_task_id,
+            section_task_id,
+            struct_meta,
+            context_source,
             global_code_summary_task.task_id if global_code_summary_task else None,
-            tasks, tasks_pruned, adaptive_chunking, len(tasks)
+            tasks,
+            tasks_pruned,
+            adaptive_chunking,
+            len(tasks),
         )
-        meta["container_files_detected"] = container_files # Explicit add for compatibility
+        meta["container_files_detected"] = container_files  # Explicit add for compatibility
 
         plan = MissionPlanSchema(objective=objective, tasks=tasks, meta=meta)
         self._validate(plan, files)
@@ -233,17 +259,11 @@ class UltraHyperPlanner(BasePlanner):
     def _determine_streaming_strategy(self, total_chunks: int) -> bool:
         streaming_possible = self._can_stream()
         return (
-            streaming_possible
-            and config.STREAM_ENABLE
-            and total_chunks >= config.STREAM_MIN_CHUNKS
+            streaming_possible and config.STREAM_ENABLE and total_chunks >= config.STREAM_MIN_CHUNKS
         )
 
     def _step_scan_repo_and_extras(
-        self,
-        tasks: list[PlannedTask],
-        idx: int,
-        deps_accum: list[str],
-        objective: str
+        self, tasks: list[PlannedTask], idx: int, deps_accum: list[str], objective: str
     ) -> int:
         if config.ALLOW_LIST_READ_ANALYSIS and self._wants_repo_scan(objective):
             idx = self._add_repo_scan_tasks(tasks, idx, deps_accum)
@@ -271,7 +291,7 @@ class UltraHyperPlanner(BasePlanner):
         idx: int,
         lang: str,
         index_deps: list[str],
-        struct_meta: dict
+        struct_meta: dict,
     ) -> PlannedTask | None:
         if not (struct_meta["attached"] and config.STRUCT_SEMANTIC_THINK):
             return None
@@ -320,17 +340,17 @@ class UltraHyperPlanner(BasePlanner):
             return None
 
     def _step_global_code_summary(
-        self,
-        tasks: list[PlannedTask],
-        idx: int,
-        lang: str,
-        extra_read_ids: list[str]
+        self, tasks: list[PlannedTask], idx: int, lang: str, extra_read_ids: list[str]
     ) -> PlannedTask | None:
         if not (config.GLOBAL_CODE_SUMMARY_EN and extra_read_ids):
             return None
 
         try:
-            use_ids = extra_read_ids[: config.GLOBAL_CODE_SUMMARY_MAX_FILES] if len(extra_read_ids) > config.GLOBAL_CODE_SUMMARY_MAX_FILES else extra_read_ids
+            use_ids = (
+                extra_read_ids[: config.GLOBAL_CODE_SUMMARY_MAX_FILES]
+                if len(extra_read_ids) > config.GLOBAL_CODE_SUMMARY_MAX_FILES
+                else extra_read_ids
+            )
             refs = [f"[{t}] => {{{{{t}.answer.content}}}}" for t in use_ids]
 
             gc_prompt_ar = (
@@ -364,7 +384,7 @@ class UltraHyperPlanner(BasePlanner):
         self,
         struct_semantic_task_id: str | None,
         md_task_id: str | None,
-        global_summary_task_id: str | None
+        global_summary_task_id: str | None,
     ) -> tuple[str, str | None]:
         if struct_semantic_task_id:
             return "semantic", struct_semantic_task_id
@@ -382,7 +402,7 @@ class UltraHyperPlanner(BasePlanner):
         objective: str,
         lang: str,
         struct_placeholder_ref: str | None,
-        deps: list[str]
+        deps: list[str],
     ) -> tuple[str | None, int]:
         role_task_id = None
         if config.ROLE_DERIVATION and len(files) > 1:
@@ -412,7 +432,7 @@ class UltraHyperPlanner(BasePlanner):
         lang: str,
         struct_placeholder_ref: str | None,
         role_task_id: str | None,
-        deps: list[str]
+        deps: list[str],
     ) -> tuple[str | None, int]:
         section_task_id = None
         inferred_sections = utils.infer_sections(objective, lang)
@@ -433,9 +453,7 @@ class UltraHyperPlanner(BasePlanner):
                             struct_ref=utils._truncate(ref or "", 900),
                         )
                     },
-                    dependencies=(
-                        [role_task_id] if role_task_id else deps
-                    ),
+                    dependencies=([role_task_id] if role_task_id else deps),
                 )
             )
         return section_task_id, idx
@@ -448,7 +466,7 @@ class UltraHyperPlanner(BasePlanner):
         final_writes: list[str],
         files: list[str],
         struct_meta: dict,
-        deps: list[str]
+        deps: list[str],
     ) -> int:
         if config.COMPREHENSIVE_MODE:
             idx = self._add_comprehensive_analysis(
@@ -471,9 +489,21 @@ class UltraHyperPlanner(BasePlanner):
 
     def _build_meta(
         self,
-        lang, files, req_lines, total_chunks, per_chunk, use_stream,
-        role_task_id, section_task_id, struct_meta, context_source,
-        global_summary_id, tasks, tasks_pruned, adaptive_chunking, planned_count
+        lang,
+        files,
+        req_lines,
+        total_chunks,
+        per_chunk,
+        use_stream,
+        role_task_id,
+        section_task_id,
+        struct_meta,
+        context_source,
+        global_summary_id,
+        tasks,
+        tasks_pruned,
+        adaptive_chunking,
+        planned_count,
     ) -> dict:
         return {
             "language": lang,

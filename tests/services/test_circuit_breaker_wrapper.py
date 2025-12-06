@@ -1,17 +1,26 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from app.services.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+
+import pytest
+
+from app.services.resilience.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerOpenError,
+)
+
 
 @pytest.fixture
 def mock_core_breaker():
     with patch("app.services.resilience.circuit_breaker.get_circuit_breaker") as mock:
         yield mock
 
+
 def test_circuit_breaker_initialization(mock_core_breaker):
     config = CircuitBreakerConfig()
     cb = CircuitBreaker("test-service", config)
     mock_core_breaker.assert_called_once()
     assert cb.name == "test-service"
+
 
 def test_circuit_breaker_call_success(mock_core_breaker):
     mock_instance = MagicMock()
@@ -26,6 +35,7 @@ def test_circuit_breaker_call_success(mock_core_breaker):
     mock_instance.record_success.assert_called_once()
     mock_instance.record_failure.assert_not_called()
 
+
 def test_circuit_breaker_call_failure(mock_core_breaker):
     mock_instance = MagicMock()
     mock_instance.allow_request.return_value = True
@@ -38,6 +48,7 @@ def test_circuit_breaker_call_failure(mock_core_breaker):
 
     mock_instance.record_failure.assert_called_once()
     mock_instance.record_success.assert_not_called()
+
 
 def test_circuit_breaker_open(mock_core_breaker):
     mock_instance = MagicMock()
