@@ -1,6 +1,6 @@
 {
   "name": "CogniForge - Ultimate Edition",
-  "dockerComposeFile": ["../docker-compose.yml"],
+  "dockerComposeFile": ["docker-compose.host.yml"],
   "service": "web",
   "workspaceFolder": "/app",
 
