@@ -28,20 +28,20 @@ CircuitBreaker = CircuitBreakerStatus
 
 # Export all symbols to maintain backward compatibility
 __all__ = [
-    "DeploymentOrchestrator",
-    "get_deployment_orchestrator",
-    "DeploymentStrategy",
-    "DeploymentPhase",
-    "HealthCheckType",
-    "CircuitState",
-    "RollbackTrigger",
-    "ServiceVersion",
-    "HealthCheckConfig",
-    "DeploymentConfig",
-    "TrafficSplit",
-    "DeploymentStatus",
+    "CircuitBreaker",
     "CircuitBreakerStatus",
+    "CircuitState",
+    "DeploymentConfig",
+    "DeploymentOrchestrator",
+    "DeploymentPhase",
+    "DeploymentStatus",
+    "DeploymentStrategy",
     # Aliases
     "HealthCheck",
-    "CircuitBreaker",
+    "HealthCheckConfig",
+    "HealthCheckType",
+    "RollbackTrigger",
+    "ServiceVersion",
+    "TrafficSplit",
+    "get_deployment_orchestrator",
 ]
