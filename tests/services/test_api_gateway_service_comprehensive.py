@@ -1,8 +1,6 @@
 
-import asyncio
-import json
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import Request
@@ -11,7 +9,6 @@ from app.services.api_gateway_service import (
     APIGatewayService,
     IntelligentCache,
     IntelligentRouter,
-    LoadBalancerState,
     PolicyEngine,
     PolicyRule,
     ProtocolType,
@@ -215,11 +212,11 @@ class TestPolicyEngineComprehensive:
         engine.add_policy(policy)
 
         # Missing user_id
-        allowed, reason = engine.evaluate({"user_id": None})
+        allowed, _ = engine.evaluate({"user_id": None})
         assert allowed is False
 
         # Present user_id
-        allowed, reason = engine.evaluate({"user_id": "123"})
+        allowed, _ = engine.evaluate({"user_id": "123"})
         assert allowed is True
 
 
@@ -270,7 +267,7 @@ class TestAPIGatewayServiceComprehensive:
         assert gateway.cache.current_size_bytes > 0
 
         # Second request should be cache hit
-        response2, status2 = await gateway.process_request(mock_request, ProtocolType.REST)
+        response2, _ = await gateway.process_request(mock_request, ProtocolType.REST)
         assert response2["cache_hit"] is True
 
     @pytest.mark.asyncio
