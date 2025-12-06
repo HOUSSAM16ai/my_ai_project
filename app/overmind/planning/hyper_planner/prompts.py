@@ -108,6 +108,7 @@ def build_final_wrap_prompt(
 
 # --- Migrated Prompts from core.py ---
 
+
 def semantic_analysis_prompt(lang: str, sem_source: str, max_bytes: int) -> str:
     if lang == "ar":
         return (
@@ -122,6 +123,7 @@ def semantic_analysis_prompt(lang: str, sem_source: str, max_bytes: int) -> str:
         "refactor_opportunities:[{item,impact,effort}],risks:[{issue,likelihood,impact}],patterns:[...]}\n\n"
         f"{_truncate(sem_source, max_bytes)}"
     )
+
 
 def global_code_summary_prompt(lang: str, refs: str, max_bytes: int) -> str:
     if lang == "ar":
@@ -138,10 +140,12 @@ def global_code_summary_prompt(lang: str, refs: str, max_bytes: int) -> str:
         + _truncate(refs, max_bytes)
     )
 
+
 def artifact_index_prompt(lang: str) -> str:
     if lang == "ar":
         return "أنشئ فهرساً موجزاً لكل ملف (سطران: التركيز والاستخدام)."
     return "Create concise artifact index (2 lines per file: focus & usage)."
+
 
 def deep_arch_report_prompt(lang: str) -> str:
     if lang == "ar":
@@ -155,6 +159,7 @@ def deep_arch_report_prompt(lang: str) -> str:
         "(layers, services, dependencies, hotspots, duplicates, refactor priorities, risks, improvements). "
         "Return concise structured Markdown."
     )
+
 
 def comprehensive_analysis_prompt(lang: str) -> str:
     if lang == "ar":
