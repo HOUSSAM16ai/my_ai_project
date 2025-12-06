@@ -13,7 +13,6 @@ from app.services.master_agent_service import (
     Task,
     TaskStatus,
     _autofill_file_args,
-    _canonicalize_tool_name,
     _compute_diff,
     _ensure_dict,
     _extract_answer_from_data,
@@ -21,6 +20,9 @@ from app.services.master_agent_service import (
     run_mission_lifecycle,
     start_mission,
 )
+
+# Import the new canonicalizer
+from app.services.agent_tools.core import canonicalize_tool_name as _canonicalize_tool_name
 
 
 # We need to mock SessionLocal since the service uses it directly

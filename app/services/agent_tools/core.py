@@ -111,54 +111,31 @@ def _looks_like_read(desc: str) -> bool:
 
 
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
-    notes: list[str] = []
-    name = _lower(raw_name)
-    if not name:
-        notes.append("empty_name")
-    base = name
-    suffix = None
-    if ACCEPT_DOTTED and "." in name:
-        base, suffix = name.split(".", 1)
-        notes.append(f"dotted_split:{base}.{suffix}")
-
+    """
+    Canonicalize tool name using the new modular strategy-based system.
+    
+    This function now delegates to the refactored ToolCanonicalizer which uses
+    Strategy Pattern + Chain of Responsibility for better maintainability.
+    
+    Complexity reduced from CC:22 to CC:3.
+    """
+    from app.services.overmind.tool_canonicalizer import (
+        canonicalize_tool_name as new_canonicalizer
+    )
+    
+    # Use the new canonicalizer
+    canonical, notes = new_canonicalizer(raw_name, description)
+    
+    # Legacy compatibility: check against tool registry
+    name = _lower(canonical)
     if name in _TOOL_REGISTRY and not _TOOL_REGISTRY[name].get("is_alias"):
         notes.append("canonical_exact")
         return name, notes
     if name in _ALIAS_INDEX:
         notes.append("direct_alias_hit")
         return _ALIAS_INDEX[name], notes
-    if base in _ALIAS_INDEX:
-        if suffix:
-            if suffix in WRITE_SUFFIXES:
-                notes.append(f"infer_write_suffix:{suffix}")
-                return CANON_WRITE, notes
-            if suffix in READ_SUFFIXES:
-                notes.append(f"infer_read_suffix:{suffix}")
-                return CANON_READ, notes
-        notes.append("base_alias_hit")
-        return _ALIAS_INDEX[base], notes
-
-    if suffix:
-        if suffix in WRITE_SUFFIXES:
-            notes.append(f"suffix_write:{suffix}")
-            return CANON_WRITE, notes
-        if suffix in READ_SUFFIXES:
-            notes.append(f"suffix_read:{suffix}")
-            return CANON_READ, notes
-    if any(k in name for k in WRITE_SUFFIXES | WRITE_KEYWORDS):
-        notes.append("keyword_write")
-        return CANON_WRITE, notes
-    if any(k in name for k in READ_SUFFIXES | READ_KEYWORDS):
-        notes.append("keyword_read")
-        return CANON_READ, notes
-    if FORCE_INTENT and name in {"", "unknown", "file", "filesystem"}:
-        if _looks_like_write(description):
-            notes.append("intent_write_desc")
-            return CANON_WRITE, notes
-        if _looks_like_read(description):
-            notes.append("intent_read_desc")
-            return CANON_READ, notes
-    return raw_name, notes
+    
+    return canonical, notes
 
 
 def resolve_tool_name(name: str) -> str | None:

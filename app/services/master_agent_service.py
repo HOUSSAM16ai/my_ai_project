@@ -425,47 +425,11 @@ def _tool_exists(name: str) -> bool:
         return False
 
 
-def _canonicalize_tool_name(raw_name: str, description: str) -> tuple[str, list[str]]:
-    notes: list[str] = []
-    name = _l(raw_name)
-    base = name
-    suffix = None
-    if GUARD_ACCEPT_DOTTED and "." in name:
-        base, suffix = name.split(".", 1)
-        notes.append(f"dotted_split:{base}.{suffix}")
-    if base in WRITE_ALIASES or name in WRITE_ALIASES:
-        notes.append(f"alias_write:{raw_name}")
-        return CANON_WRITE, notes
-    if base in READ_ALIASES or name in READ_ALIASES:
-        notes.append(f"alias_read:{raw_name}")
-        return CANON_READ, notes
-    if name == CANON_ENSURE:
-        notes.append("direct_ensure")
-        return CANON_ENSURE, notes
-    if name == CANON_APPEND:
-        notes.append("direct_append")
-        return CANON_APPEND, notes
-    if suffix:
-        if suffix in WRITE_SUFFIXES:
-            notes.append(f"suffix_write:{suffix}")
-            return CANON_WRITE, notes
-        if suffix in READ_SUFFIXES:
-            notes.append(f"suffix_read:{suffix}")
-            return CANON_READ, notes
-    if "write" in name or "create" in name or "generate" in name:
-        notes.append("raw_contains_write_token")
-        return CANON_WRITE, notes
-    if "read" in name or "open" in name or "load" in name:
-        notes.append("raw_contains_read_token")
-        return CANON_READ, notes
-    if GUARD_FORCE_FILE_INTENT and (name in {"", "unknown", "file", "filesystem"}):
-        if _looks_like_write(description):
-            notes.append("intent_desc_write")
-            return CANON_WRITE, notes
-        if _looks_like_read(description):
-            notes.append("intent_desc_read")
-            return CANON_READ, notes
-    return raw_name, notes
+# REMOVED: _canonicalize_tool_name
+# This function has been replaced by the modular ToolCanonicalizer system
+# in app/services/overmind/tool_canonicalizer.py
+# The actual implementation is now in app/services/agent_tools/core.py
+# which delegates to the new system.
 
 
 def _autofill_file_args(
