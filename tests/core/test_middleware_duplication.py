@@ -1,8 +1,11 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app.main import create_app
-from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
+from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
+
 
 @pytest.mark.asyncio
 async def test_middleware_chaos_interference():
@@ -12,11 +15,12 @@ async def test_middleware_chaos_interference():
     """
     # 1. Reset Global State (The "Singularity")
     import app.main
+
     app.main._kernel_instance = None
 
     # 2. Mock Settings to simulate PRODUCTION environment
     # We must ensure the Kernel sees "production" so it adds RateLimitMiddleware.
-    with patch("app.kernel.RealityKernel.__init__", return_value=None) as mock_init:
+    with patch("app.kernel.RealityKernel.__init__", return_value=None):
         # Actually, mocking init is hard because we need the object to work.
         pass
 
@@ -32,10 +36,12 @@ async def test_middleware_chaos_interference():
             "PROJECT_NAME": "CogniForge",
             "ALLOWED_HOSTS": ["*"],
             "BACKEND_CORS_ORIGINS": ["*"],
-            "FRONTEND_URL": "http://localhost:3000"
+            "FRONTEND_URL": "http://localhost:3000",
         }
         # Also mock dictionary access for direct usage if any
-        mock_settings.get.side_effect = lambda k, d=None: mock_settings.model_dump.return_value.get(k, d)
+        mock_settings.get.side_effect = lambda k, d=None: mock_settings.model_dump.return_value.get(
+            k, d
+        )
 
         mock_get_settings.return_value = mock_settings
 
@@ -60,7 +66,11 @@ async def test_middleware_chaos_interference():
 
         # In Production, we expect RateLimitMiddleware exactly ONCE.
         # Previously (the bug), it would have been 2 (or 1 if testing masked it).
-        assert rate_limit_count == 1, f"Constructive Interference Detected! RateLimitMiddleware count is {rate_limit_count}"
+        assert rate_limit_count == 1, (
+            f"Constructive Interference Detected! RateLimitMiddleware count is {rate_limit_count}"
+        )
 
         # We also expect RemoveBlockingHeadersMiddleware exactly ONCE.
-        assert remove_headers_count == 1, f"Defense System Breach! RemoveBlockingHeadersMiddleware count is {remove_headers_count}"
+        assert remove_headers_count == 1, (
+            f"Defense System Breach! RemoveBlockingHeadersMiddleware count is {remove_headers_count}"
+        )

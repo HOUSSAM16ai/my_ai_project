@@ -11,8 +11,6 @@ from sqlalchemy import select
 from app.core.database import async_session_factory
 from app.core.di import get_settings
 from app.kernel import RealityKernel
-from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
-from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.models import User
 
 # Load .env file before anything else
