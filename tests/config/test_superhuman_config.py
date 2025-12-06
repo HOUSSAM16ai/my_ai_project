@@ -44,8 +44,16 @@ class TestSuperhumanConfiguration:
     def test_sqlite_fallback(self):
         """Verifies SQLite injection when DB URL is missing (Safe-Fail)."""
         with patch.dict(os.environ, {"SECRET_KEY": "test"}, clear=True):
-            settings = AppSettings()
-            assert settings.DATABASE_URL == "sqlite+aiosqlite:///./test.db"
+            # Pydantic Settings reads from .env file by default, even when os.environ is cleared.
+            # Temporarily disable .env file reading to properly test the fallback behavior.
+            original_env_file = AppSettings.model_config.get("env_file")
+            try:
+                AppSettings.model_config["env_file"] = None
+                settings = AppSettings()
+                assert settings.DATABASE_URL == "sqlite+aiosqlite:///./test.db"
+            finally:
+                if original_env_file is not None:
+                    AppSettings.model_config["env_file"] = original_env_file
 
     def test_cors_injection(self):
         """Verifies CSV string injection for CORS."""
