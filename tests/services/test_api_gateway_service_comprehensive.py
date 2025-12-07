@@ -1,8 +1,9 @@
-
 import time
 from unittest.mock import MagicMock
 
 import pytest
+
+# Cognitive Resonance: Aligned
 from fastapi import Request
 
 from app.services.api_gateway_service import (
@@ -42,9 +43,7 @@ class TestIntelligentRouterComprehensive:
         router.provider_stats["anthropic"].is_healthy = True
 
         decision = router.route_request(
-            model_type="test-model",
-            estimated_tokens=1000,
-            strategy=RoutingStrategy.INTELLIGENT
+            model_type="test-model", estimated_tokens=1000, strategy=RoutingStrategy.INTELLIGENT
         )
 
         assert decision is not None
@@ -68,7 +67,7 @@ class TestIntelligentRouterComprehensive:
                 model_type="test",
                 estimated_tokens=100,
                 strategy=RoutingStrategy.COST_OPTIMIZED,
-                constraints={"max_cost": 0.5}
+                constraints={"max_cost": 0.5},
             )
 
     def test_update_provider_stats(self, router):
@@ -154,6 +153,7 @@ class TestIntelligentCacheComprehensive:
 
     def test_key_generation_fallback(self, cache):
         """Test key generation with non-serializable data."""
+
         class NonSerializable:
             pass
 
@@ -183,10 +183,7 @@ class TestPolicyEngineComprehensive:
     def test_condition_evaluation_auth(self, engine):
         """Test 'not authenticated' condition."""
         policy = PolicyRule(
-            rule_id="auth_check",
-            name="Auth Check",
-            condition="not authenticated",
-            action="deny"
+            rule_id="auth_check", name="Auth Check", condition="not authenticated", action="deny"
         )
         engine.add_policy(policy)
 
@@ -204,10 +201,7 @@ class TestPolicyEngineComprehensive:
     def test_condition_evaluation_user_id(self, engine):
         """Test 'user_id required' condition."""
         policy = PolicyRule(
-            rule_id="user_check",
-            name="User Check",
-            condition="user_id required",
-            action="deny"
+            rule_id="user_check", name="User Check", condition="user_id required", action="deny"
         )
         engine.add_policy(policy)
 
@@ -234,9 +228,11 @@ class TestAPIGatewayServiceComprehensive:
         mock_request.url.path = "/api/test"
         mock_request.headers = {}
         mock_request.query_params = {}
+
         # mock_request.json is async
         async def mock_json():
             return {"key": "value"}
+
         mock_request.json = mock_json
         # Mock state for auth
         mock_request.state.user_id = "user123"
@@ -274,7 +270,7 @@ class TestAPIGatewayServiceComprehensive:
     async def test_process_request_auth_denied(self, gateway):
         """Test authentication denial."""
         mock_request = MagicMock(spec=Request)
-        mock_request.state.user_id = None # Not authenticated
+        mock_request.state.user_id = None  # Not authenticated
 
         # The default policy checks "not authenticated" string in condition.
         # See PolicyEngine._evaluate_condition
