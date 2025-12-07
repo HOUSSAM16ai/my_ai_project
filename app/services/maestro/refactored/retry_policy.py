@@ -4,8 +4,9 @@ Retry policy for resilient operations.
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, TypeVar
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class RetryConfig:
 class RetryPolicy:
     """
     Retry policy with exponential backoff.
-    
+
     Extracted from text_completion() to reduce complexity.
     """
 
@@ -40,7 +41,7 @@ class RetryPolicy:
     ) -> T:
         """
         Execute function with retry logic.
-        
+
         Complexity: 4 (extracted from CC=23 function)
         """
         last_error: Exception | None = None
@@ -50,7 +51,7 @@ class RetryPolicy:
                 return await func()
             except Exception as e:
                 last_error = e
-                
+
                 if attempt == self.config.max_attempts:
                     logger.error(
                         f"{operation_name} failed after {attempt} attempts",
@@ -73,9 +74,9 @@ class RetryPolicy:
             self.config.initial_delay * (self.config.exponential_base ** (attempt - 1)),
             self.config.max_delay
         )
-        
+
         if self.config.jitter:
             import random
             delay *= (0.5 + random.random() * 0.5)
-        
+
         return delay

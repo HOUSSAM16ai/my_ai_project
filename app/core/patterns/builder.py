@@ -5,12 +5,12 @@ Separates object construction from representation.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 
 
-class Builder(ABC, Generic[T]):
+class Builder[T](ABC):
     """Base builder interface."""
 
     def __init__(self):

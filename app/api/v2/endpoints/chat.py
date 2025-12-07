@@ -4,7 +4,8 @@ Chat endpoints with streaming support.
 
 import logging
 import time
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any as AIClient  # Placeholder for AI client type
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -14,8 +15,7 @@ from app.api.v2.dependencies import (
     get_chat_orchestrator,
     get_current_user_id,
 )
-from app.api.v2.schemas import ChatRequest, ChatResponse, ErrorResponse
-from typing import Any as AIClient  # Placeholder for AI client type
+from app.api.v2.schemas import ChatRequest, ChatResponse
 from app.services.chat.refactored.orchestrator import ChatOrchestrator
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ async def chat_stream(
 ) -> StreamingResponse:
     """
     Stream chat response.
-    
+
     Complexity: 2
     """
     async def generate() -> AsyncGenerator[str, None]:
@@ -47,7 +47,7 @@ async def chat_stream(
                 yield f"data: {chunk}\n\n"
         except Exception as e:
             logger.error(f"Chat stream error: {e}", extra={"user_id": user_id})
-            yield f"data: [ERROR] {str(e)}\n\n"
+            yield f"data: [ERROR] {e!s}\n\n"
 
     return StreamingResponse(
         generate(),
@@ -68,11 +68,11 @@ async def chat(
 ) -> ChatResponse:
     """
     Non-streaming chat endpoint.
-    
+
     Complexity: 2
     """
     start_time = time.time()
-    
+
     try:
         chunks = []
         async for chunk in orchestrator.process(
@@ -85,7 +85,7 @@ async def chat(
             chunks.append(chunk)
 
         answer = "".join(chunks)
-        
+
         return ChatResponse(
             answer=answer,
             conversation_id=request.conversation_id or 0,
@@ -95,4 +95,4 @@ async def chat(
         )
     except Exception as e:
         logger.error(f"Chat error: {e}", extra={"user_id": user_id})
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

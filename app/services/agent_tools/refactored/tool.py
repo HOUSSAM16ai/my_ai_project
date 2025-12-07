@@ -2,8 +2,9 @@
 Tool definition and configuration.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -22,16 +23,16 @@ class ToolConfig:
     def validate(self) -> list[str]:
         """Validate configuration."""
         errors = []
-        
+
         if not self.name:
             errors.append("Tool name is required")
-        
+
         if not self.description:
             errors.append("Tool description is required")
-        
+
         if not self.handler:
             errors.append("Tool handler is required")
-        
+
         return errors
 
 
@@ -66,7 +67,7 @@ class Tool:
             result = await self.config.handler(**kwargs)
             self.execution_count += 1
             return result
-        except Exception as e:
+        except Exception:
             self.error_count += 1
             raise
 

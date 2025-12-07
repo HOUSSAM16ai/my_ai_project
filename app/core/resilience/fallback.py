@@ -3,7 +3,8 @@ Fallback policy for graceful degradation.
 """
 
 import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ T = TypeVar("T")
 class FallbackPolicy:
     """
     Fallback policy for graceful degradation.
-    
+
     Provides alternative behavior when primary operation fails.
     """
 
@@ -27,7 +28,7 @@ class FallbackPolicy:
     ) -> T:
         """
         Execute function with fallback.
-        
+
         Complexity: 2
         """
         try:
@@ -37,8 +38,8 @@ class FallbackPolicy:
                 f"{operation_name} failed, using fallback",
                 extra={"error": str(e)}
             )
-            
+
             if self.fallback_func:
                 return await self.fallback_func()
-            
+
             raise

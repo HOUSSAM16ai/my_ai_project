@@ -24,11 +24,11 @@ async def execute_tool(
 ) -> ToolExecutionResponse:
     """
     Execute a tool.
-    
+
     Complexity: 3
     """
     start_time = time.time()
-    
+
     tool = registry.get(request.tool_name)
     if not tool:
         raise HTTPException(status_code=404, detail=f"Tool '{request.tool_name}' not found")
@@ -36,7 +36,7 @@ async def execute_tool(
     try:
         result = await tool.execute(**request.parameters)
         execution_time = time.time() - start_time
-        
+
         return ToolExecutionResponse(
             success=True,
             result=result,
@@ -49,7 +49,7 @@ async def execute_tool(
             extra={"tool": request.tool_name, "user_id": user_id}
         )
         execution_time = time.time() - start_time
-        
+
         return ToolExecutionResponse(
             success=False,
             error=str(e),
@@ -65,11 +65,11 @@ async def list_tools(
 ) -> dict:
     """
     List available tools.
-    
+
     Complexity: 1
     """
     tools = registry.list_tools(category=category)
-    
+
     return {
         "tools": [
             {
@@ -90,7 +90,7 @@ async def get_tool_stats(
 ) -> dict:
     """
     Get tool statistics.
-    
+
     Complexity: 1
     """
     return registry.get_stats()

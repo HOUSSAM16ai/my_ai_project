@@ -7,10 +7,10 @@ AFTER: Cyclomatic Complexity = 3
 
 import logging
 import time
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any as AIClient  # Placeholder for AI client type
 
 from app.core.patterns.strategy import StrategyRegistry
-from typing import Any as AIClient  # Placeholder for AI client type
 from app.services.chat.refactored.context import ChatContext
 from app.services.chat.refactored.handlers import (
     CodeSearchHandler,
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class ChatOrchestrator:
     """
     Refactored orchestrator using Strategy pattern.
-    
+
     Complexity reduced from 24 to 3 by:
     1. Extracting intent handlers to separate classes
     2. Using Strategy pattern for handler selection
@@ -54,7 +54,7 @@ class ChatOrchestrator:
             HelpHandler(),
             DefaultChatHandler(),  # Fallback
         ]
-        
+
         for handler in handlers:
             self._handlers.register(handler)
 
@@ -68,14 +68,14 @@ class ChatOrchestrator:
     ) -> AsyncGenerator[str, None]:
         """
         Process chat request.
-        
+
         Complexity: 3 (down from 24)
         """
         start_time = time.time()
 
         # Detect intent
         intent_result = await self._intent_detector.detect(question)
-        
+
         logger.info(
             f"Intent detected: {intent_result.intent} "
             f"(confidence={intent_result.confidence:.2f})",

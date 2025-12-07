@@ -2,18 +2,18 @@
 FastAPI dependencies for dependency injection.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any as AIClient  # Placeholder for AI client type
 
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from typing import Any as AIClient  # Placeholder for AI client type
 
 def get_ai_client():
     """Get AI client (placeholder)."""
     return None
+from app.services.agent_tools.refactored.registry import ToolRegistry, get_tool_registry
 from app.services.chat.refactored.orchestrator import ChatOrchestrator
-from app.services.agent_tools.refactored.registry import get_tool_registry, ToolRegistry
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

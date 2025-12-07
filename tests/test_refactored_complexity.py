@@ -4,8 +4,9 @@ Tests to verify complexity reduction in refactored code.
 
 import pytest
 
-from app.services.chat.refactored.orchestrator import ChatOrchestrator
 from app.services.agent_tools.refactored.builder import ToolBuilder
+from app.services.chat.refactored.orchestrator import ChatOrchestrator
+
 # from app.services.maestro.refactored.client import MaestroClient  # Skip for now
 
 
@@ -16,7 +17,7 @@ class TestComplexityReduction:
         """
         BEFORE: orchestrate() CC = 24
         AFTER: process() CC = 3
-        
+
         Reduction: 87.5%
         """
         orchestrator = ChatOrchestrator()
@@ -27,7 +28,7 @@ class TestComplexityReduction:
         """
         BEFORE: tool() decorator CC = 25
         AFTER: ToolBuilder CC = 2
-        
+
         Reduction: 92%
         """
         builder = ToolBuilder("test_tool")
@@ -38,7 +39,7 @@ class TestComplexityReduction:
         """
         BEFORE: text_completion() CC = 23
         AFTER: text_completion() CC = 3
-        
+
         Reduction: 87%
         """
         # Skip test - dependency issue
@@ -51,7 +52,7 @@ class TestPatternImplementation:
     def test_strategy_pattern(self):
         """Verify Strategy pattern in chat handlers."""
         from app.services.chat.refactored.handlers import FileReadHandler
-        
+
         handler = FileReadHandler()
         assert handler.priority == 10
 
@@ -59,12 +60,12 @@ class TestPatternImplementation:
         """Verify Builder pattern in tool creation."""
         async def dummy_handler(**kwargs):
             return "test"
-        
+
         tool = (ToolBuilder("test")
                 .with_description("Test tool")
                 .with_handler(dummy_handler)
                 .build())
-        
+
         assert tool.name == "test"
         assert tool.config.description == "Test tool"
 
@@ -83,18 +84,18 @@ class TestScalability:
     @pytest.mark.asyncio
     async def test_service_registry(self):
         """Verify service registry for discovery."""
-        from app.core.scaling.service_registry import ServiceRegistry, ServiceInstance
-        
+        from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
+
         registry = ServiceRegistry()
         instance = ServiceInstance(
             id="test-1",
             host="localhost",
             port=8000
         )
-        
+
         await registry.register("test-service", instance)
         instances = await registry.get_instances("test-service")
-        
+
         assert len(instances) == 1
         assert instances[0].id == "test-1"
 
@@ -102,11 +103,11 @@ class TestScalability:
     async def test_load_balancer(self):
         """Verify load balancer."""
         from app.core.scaling.load_balancer import LoadBalancer, RoundRobinStrategy
-        from app.core.scaling.service_registry import ServiceRegistry, ServiceInstance
-        
+        from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
+
         registry = ServiceRegistry()
         lb = LoadBalancer(registry, RoundRobinStrategy())
-        
+
         # Register instances
         for i in range(3):
             instance = ServiceInstance(
@@ -115,7 +116,7 @@ class TestScalability:
                 port=8000 + i
             )
             await registry.register("test-service", instance)
-        
+
         # Get instance
         instance = await lb.get_instance("test-service")
         assert instance is not None
@@ -124,12 +125,12 @@ class TestScalability:
     async def test_bulkhead_pattern(self):
         """Verify bulkhead for resource isolation."""
         from app.core.resilience.bulkhead import Bulkhead
-        
+
         bulkhead = Bulkhead(max_concurrent=5)
-        
+
         async def dummy_operation():
             return "success"
-        
+
         result = await bulkhead.execute(dummy_operation)
         assert result == "success"
 
@@ -140,14 +141,14 @@ class TestResilience:
     @pytest.mark.asyncio
     async def test_timeout_policy(self):
         """Verify timeout policy."""
+
         from app.core.resilience.timeout import TimeoutPolicy
-        import asyncio
-        
+
         policy = TimeoutPolicy(timeout_seconds=0.1)
-        
+
         async def fast_operation():
             return "success"
-        
+
         result = await policy.execute(fast_operation)
         assert result == "success"
 
@@ -155,15 +156,15 @@ class TestResilience:
     async def test_fallback_policy(self):
         """Verify fallback policy."""
         from app.core.resilience.fallback import FallbackPolicy
-        
+
         async def fallback():
             return "fallback_value"
-        
+
         policy = FallbackPolicy(fallback_func=fallback)
-        
+
         async def failing_operation():
             raise RuntimeError("Failed")
-        
+
         result = await policy.execute(failing_operation)
         assert result == "fallback_value"
 

@@ -58,10 +58,10 @@ class BaseServiceStrategy(LLMStrategy):
             fail_hard=False,
             model=model,
         )
-        
+
         if not result or not result.strip():
             raise ValueError("Empty response from base service")
-        
+
         return result
 
 

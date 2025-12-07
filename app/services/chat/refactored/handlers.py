@@ -3,7 +3,7 @@ Intent handlers using Strategy pattern.
 """
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from app.core.patterns.strategy import Strategy
 from app.services.chat.refactored.context import ChatContext
@@ -36,7 +36,7 @@ class FileReadHandler(IntentHandler):
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute file read."""
         path = context.get_param("path", "")
-        
+
         if not path:
             yield "❌ لم يتم تحديد مسار الملف\n"
             return
@@ -51,12 +51,12 @@ class FileReadHandler(IntentHandler):
         except PermissionError:
             yield f"❌ لا توجد صلاحية لقراءة الملف: `{path}`\n"
         except Exception as e:
-            yield f"❌ خطأ في قراءة الملف: {str(e)}\n"
+            yield f"❌ خطأ في قراءة الملف: {e!s}\n"
             logger.error(f"File read error: {e}", extra={"path": path, "user_id": context.user_id})
 
     async def _read_file(self, path: str) -> str:
         """Read file contents."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return f.read()
 
 
@@ -69,7 +69,7 @@ class FileWriteHandler(IntentHandler):
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute file write."""
         path = context.get_param("path", "")
-        
+
         if not path:
             yield "❌ لم يتم تحديد مسار الملف\n"
             return
@@ -87,14 +87,14 @@ class CodeSearchHandler(IntentHandler):
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute code search."""
         query = context.get_param("query", "")
-        
+
         if not query:
             yield "❌ لم يتم تحديد استعلام البحث\n"
             return
 
         yield f"🔍 البحث عن: `{query}`\n\n"
         results = await self._search_code(query, context.user_id)
-        
+
         if not results:
             yield "لم يتم العثور على نتائج\n"
             return
@@ -119,8 +119,8 @@ class ProjectIndexHandler(IntentHandler):
         """Execute project indexing."""
         yield "📊 فهرسة المشروع...\n\n"
         stats = await self._index_project(context.user_id)
-        
-        yield f"✅ تمت الفهرسة بنجاح:\n"
+
+        yield "✅ تمت الفهرسة بنجاح:\n"
         yield f"- الملفات: {stats.get('files', 0)}\n"
         yield f"- الأسطر: {stats.get('lines', 0)}\n"
 
@@ -139,9 +139,9 @@ class DeepAnalysisHandler(IntentHandler):
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute deep analysis."""
         yield "🧠 تحليل عميق للسؤال...\n\n"
-        
+
         analysis = await self._analyze(context.question, context.ai_client)
-        
+
         yield f"{analysis}\n"
 
     async def _analyze(self, question: str, ai_client) -> str:

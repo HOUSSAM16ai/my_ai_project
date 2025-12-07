@@ -5,7 +5,8 @@ BEFORE: Complex decorator with CC = 25
 AFTER: Simple builder with CC = 2
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from app.core.patterns.builder import FluentBuilder
 from app.services.agent_tools.refactored.tool import Tool, ToolConfig
@@ -14,7 +15,7 @@ from app.services.agent_tools.refactored.tool import Tool, ToolConfig
 class ToolBuilder(FluentBuilder[Tool]):
     """
     Builder for creating tools with fluent interface.
-    
+
     Complexity: 2 (down from 25 in decorator)
     """
 
@@ -68,7 +69,7 @@ class ToolBuilder(FluentBuilder[Tool]):
         errors = self._config.validate()
         if errors:
             raise ValueError(f"Invalid tool configuration: {', '.join(errors)}")
-        
+
         return Tool(config=self._config)
 
 
@@ -83,21 +84,21 @@ def tool_decorator(
 ):
     """
     Simplified decorator using builder pattern.
-    
+
     Complexity: 2 (down from 22)
     """
     def decorator(func: Callable):
         builder = ToolBuilder(name).with_description(description).with_handler(func)
-        
+
         if parameters:
             builder.with_parameters(parameters)
         if aliases:
             builder.with_aliases(aliases)
         if capabilities:
             builder.with_capabilities(capabilities)
-        
+
         builder.with_category(category).allow_disable(allow_disable)
-        
+
         return builder.build()
-    
+
     return decorator

@@ -7,14 +7,14 @@ Encapsulates requests as objects for queuing, logging, and undo operations.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 from uuid import uuid4
 
 T = TypeVar("T")
 
 
 @dataclass
-class CommandResult(Generic[T]):
+class CommandResult[T]:
     """Result of command execution."""
 
     success: bool
@@ -23,7 +23,7 @@ class CommandResult(Generic[T]):
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-class Command(ABC, Generic[T]):
+class Command[T](ABC):
     """Base command interface."""
 
     def __init__(self):
