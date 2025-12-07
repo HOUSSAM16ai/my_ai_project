@@ -4,10 +4,10 @@
 # Version: 11.0.0-hyper-async
 # =================================================================================================
 
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Any, Dict
+from typing import Any
 
 from app.models import Task
 
@@ -26,7 +26,7 @@ class TaskExecutor:
     Designed for isolation and safe execution.
     """
 
-    async def execute_task(self, task: Task) -> Dict[str, Any]:
+    async def execute_task(self, task: Task) -> dict[str, Any]:
         """
         Executes a single task.
         Returns a dictionary with keys: status, result_text, meta, error.

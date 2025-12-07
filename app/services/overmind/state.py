@@ -4,13 +4,12 @@
 # Version: 11.0.0-hyper-async
 # =================================================================================================
 
-import json
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.models import (
     Mission,
@@ -49,7 +48,7 @@ class MissionStateManager:
         await self.session.flush()
         return mission
 
-    async def get_mission(self, mission_id: int) -> Optional[Mission]:
+    async def get_mission(self, mission_id: int) -> Mission | None:
         stmt = (
             select(Mission)
             .options(
@@ -168,7 +167,11 @@ class MissionStateManager:
         task.attempt_count += 1
         await self.session.flush()
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict = {}):
+    async def mark_task_complete(
+        self, task_id: int, result_text: str, meta: dict | None = None
+    ):
+        if meta is None:
+            meta = {}
         stmt = select(Task).where(Task.id == task_id)
         result = await self.session.execute(stmt)
         task = result.scalar_one()
