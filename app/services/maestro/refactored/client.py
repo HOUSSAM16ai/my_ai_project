@@ -62,6 +62,7 @@ class MaestroClient:
 
         Complexity: 3 (down from 23)
         """
+
         async def execute():
             return await self._execute_with_strategies(
                 system_prompt=system_prompt,
@@ -73,8 +74,7 @@ class MaestroClient:
 
         try:
             result = await self._circuit_breaker.call(
-                lambda: self._retry_policy.execute(execute, "text_completion"),
-                "text_completion"
+                lambda: self._retry_policy.execute(execute, "text_completion"), "text_completion"
             )
             return result or ""
         except Exception as e:

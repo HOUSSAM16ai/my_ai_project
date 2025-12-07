@@ -104,6 +104,7 @@ class DirectLLMStrategy(LLMStrategy):
         """Check if LLM client is available."""
         try:
             from app.services.llm_client import get_llm_client
+
             return get_llm_client() is not None
         except ImportError:
             return False

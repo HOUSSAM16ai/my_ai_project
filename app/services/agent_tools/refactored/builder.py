@@ -87,6 +87,7 @@ def tool_decorator(
 
     Complexity: 2 (down from 22)
     """
+
     def decorator(func: Callable):
         builder = ToolBuilder(name).with_description(description).with_handler(func)
 

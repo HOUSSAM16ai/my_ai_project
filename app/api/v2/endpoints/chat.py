@@ -35,6 +35,7 @@ async def chat_stream(
 
     Complexity: 2
     """
+
     async def generate() -> AsyncGenerator[str, None]:
         try:
             async for chunk in orchestrator.process(

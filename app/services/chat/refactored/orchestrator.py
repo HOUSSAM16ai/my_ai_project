@@ -77,9 +77,8 @@ class ChatOrchestrator:
         intent_result = await self._intent_detector.detect(question)
 
         logger.info(
-            f"Intent detected: {intent_result.intent} "
-            f"(confidence={intent_result.confidence:.2f})",
-            extra={"user_id": user_id, "conversation_id": conversation_id}
+            f"Intent detected: {intent_result.intent} (confidence={intent_result.confidence:.2f})",
+            extra={"user_id": user_id, "conversation_id": conversation_id},
         )
 
         # Build context

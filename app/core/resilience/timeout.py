@@ -40,14 +40,9 @@ class TimeoutPolicy:
         Complexity: 2
         """
         try:
-            return await asyncio.wait_for(
-                func(),
-                timeout=self.timeout_seconds
-            )
+            return await asyncio.wait_for(func(), timeout=self.timeout_seconds)
         except builtins.TimeoutError as e:
-            logger.error(
-                f"{operation_name} timed out after {self.timeout_seconds}s"
-            )
+            logger.error(f"{operation_name} timed out after {self.timeout_seconds}s")
             raise TimeoutError(
                 f"{operation_name} exceeded timeout of {self.timeout_seconds}s"
             ) from e

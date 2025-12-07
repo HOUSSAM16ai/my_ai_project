@@ -58,13 +58,11 @@ class TestPatternImplementation:
 
     def test_builder_pattern(self):
         """Verify Builder pattern in tool creation."""
+
         async def dummy_handler(**kwargs):
             return "test"
 
-        tool = (ToolBuilder("test")
-                .with_description("Test tool")
-                .with_handler(dummy_handler)
-                .build())
+        tool = ToolBuilder("test").with_description("Test tool").with_handler(dummy_handler).build()
 
         assert tool.name == "test"
         assert tool.config.description == "Test tool"
@@ -87,11 +85,7 @@ class TestScalability:
         from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
 
         registry = ServiceRegistry()
-        instance = ServiceInstance(
-            id="test-1",
-            host="localhost",
-            port=8000
-        )
+        instance = ServiceInstance(id="test-1", host="localhost", port=8000)
 
         await registry.register("test-service", instance)
         instances = await registry.get_instances("test-service")
@@ -110,11 +104,7 @@ class TestScalability:
 
         # Register instances
         for i in range(3):
-            instance = ServiceInstance(
-                id=f"test-{i}",
-                host="localhost",
-                port=8000 + i
-            )
+            instance = ServiceInstance(id=f"test-{i}", host="localhost", port=8000 + i)
             await registry.register("test-service", instance)
 
         # Get instance

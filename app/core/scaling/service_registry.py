@@ -53,9 +53,7 @@ class ServiceRegistry:
 
             self._services[service_name][instance.id] = instance
 
-            logger.info(
-                f"Service registered: {service_name}/{instance.id} at {instance.address}"
-            )
+            logger.info(f"Service registered: {service_name}/{instance.id} at {instance.address}")
 
     async def deregister(
         self,
@@ -64,10 +62,7 @@ class ServiceRegistry:
     ) -> None:
         """Deregister service instance."""
         async with self._lock:
-            if (
-                service_name in self._services
-                and instance_id in self._services[service_name]
-            ):
+            if service_name in self._services and instance_id in self._services[service_name]:
                 del self._services[service_name][instance_id]
                 logger.info(f"Service deregistered: {service_name}/{instance_id}")
 
@@ -96,10 +91,7 @@ class ServiceRegistry:
     ) -> None:
         """Update instance health status."""
         async with self._lock:
-            if (
-                service_name in self._services
-                and instance_id in self._services[service_name]
-            ):
+            if service_name in self._services and instance_id in self._services[service_name]:
                 instance = self._services[service_name][instance_id]
                 instance.healthy = healthy
                 instance.last_heartbeat = datetime.now()
@@ -123,9 +115,7 @@ class ServiceRegistry:
 
                     if age > self.heartbeat_timeout:
                         del instances[instance_id]
-                        logger.warning(
-                            f"Removed stale instance: {service_name}/{instance_id}"
-                        )
+                        logger.warning(f"Removed stale instance: {service_name}/{instance_id}")
 
     def get_stats(self) -> dict[str, Any]:
         """Get registry statistics."""

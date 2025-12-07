@@ -34,10 +34,7 @@ class FallbackPolicy:
         try:
             return await func()
         except Exception as e:
-            logger.warning(
-                f"{operation_name} failed, using fallback",
-                extra={"error": str(e)}
-            )
+            logger.warning(f"{operation_name} failed, using fallback", extra={"error": str(e)})
 
             if self.fallback_func:
                 return await self.fallback_func()

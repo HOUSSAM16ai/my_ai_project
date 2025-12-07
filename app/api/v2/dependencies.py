@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 def get_ai_client():
     """Get AI client (placeholder)."""
     return None
+
+
 from app.services.agent_tools.refactored.registry import ToolRegistry, get_tool_registry
 from app.services.chat.refactored.orchestrator import ChatOrchestrator
 
@@ -49,8 +51,5 @@ def verify_api_key(api_key: str | None = None) -> bool:
     """Verify API key."""
     # Placeholder - implement your API key verification
     if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key required")
     return True
