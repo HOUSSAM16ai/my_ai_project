@@ -29,11 +29,11 @@ jobs:
 
       - name: Execute Synchronization Engine
         env:
+          # Securely inject secrets from Repository Settings
+          # This prevents Token Revocation by GitHub's Secret Scanner
           SYNC_GITHUB_TOKEN: ${{ secrets.SYNC_GITHUB_TOKEN }}
           SYNC_GITHUB_ID: ${{ secrets.SYNC_GITHUB_ID }}
           SYNC_GITLAB_TOKEN: ${{ secrets.SYNC_GITLAB_TOKEN }}
           SYNC_GITLAB_ID: ${{ secrets.SYNC_GITLAB_ID }}
-          # GITHUB_REF is automatically available, but we can be explicit if needed.
-          # The script reads os.environ["GITHUB_REF"]
         run: |
           python scripts/universal_repo_sync.py
