@@ -1,4 +1,3 @@
-
 from unittest.mock import patch
 
 import pytest
@@ -96,7 +95,17 @@ class TestProjectContextService:
 
     def test_get_strengths(self, service):
         # Mock stats to trigger strengths
-        with patch.object(service, "get_code_statistics", return_value={"test_files": 60, "python_files": 110, "test_lines": 0, "app_lines": 0, "total_lines": 0}):
+        with patch.object(
+            service,
+            "get_code_statistics",
+            return_value={
+                "test_files": 60,
+                "python_files": 110,
+                "test_lines": 0,
+                "app_lines": 0,
+                "total_lines": 0,
+            },
+        ):
             strengths = service.get_strengths()
             assert any("Strong test coverage" in s for s in strengths)
             assert any("Comprehensive codebase" in s for s in strengths)
@@ -131,7 +140,7 @@ def another_func():
         analysis = service.get_deep_file_analysis()
 
         assert analysis["total_classes"] >= 3  # MyModel, MyData, Singleton
-        assert analysis["total_functions"] >= 2 # my_func, another_func
+        assert analysis["total_functions"] >= 2  # my_func, another_func
         assert "FastAPI" in analysis["frameworks_detected"]
         assert "Pydantic" in analysis["frameworks_detected"]
         assert "Dataclass" in analysis["design_patterns"]
@@ -176,13 +185,13 @@ def another_func():
         assert "📊 REAL-TIME PROJECT ANALYSIS" in context
         assert "## Code Statistics:" in context
         assert "## Project Structure:" in context
-        assert "User Service" in context # From services list
-        assert "User" in context # From models list
+        assert "User Service" in context  # From services list
+        assert "User" in context  # From models list
 
         # Test caching
         with patch.object(service, "get_code_statistics") as mock_stats:
             service.generate_context_for_ai()
-            mock_stats.assert_not_called() # Should use cache
+            mock_stats.assert_not_called()  # Should use cache
 
     def test_invalidate_cache(self, service):
         service.generate_context_for_ai()
@@ -227,7 +236,9 @@ def bad_func(a=[]): # mutable default
         deep_nesting = "def deep():\n    if True:\n        if True:\n            if True:\n                if True:\n                    if True:\n                        pass"
         magic_numbers = "x = 9999"
 
-        (project_root / "app" / "smelly.py").write_text(f"{long_method}\n{deep_nesting}\n{magic_numbers}")
+        (project_root / "app" / "smelly.py").write_text(
+            f"{long_method}\n{deep_nesting}\n{magic_numbers}"
+        )
 
         smells = service.detect_code_smells()
 
