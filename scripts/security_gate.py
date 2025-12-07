@@ -15,19 +15,20 @@ Capabilities:
 - "Deep Learning" Simulation for Anomaly Detection in Code Structure
 """
 
-import sys
-import re
-import os
-import math
-import logging
 import argparse
-from typing import List, Dict, Any, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime
+import logging
+import math
+import os
+import re
+import sys
+from dataclasses import dataclass
 
 # Configure Ultra-High Precision Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | SEC-GATE | %(levelname)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s | SEC-GATE | %(levelname)s | %(message)s"
+)
 logger = logging.getLogger("SecurityGate")
+
 
 @dataclass
 class CodeAnomaly:
@@ -37,6 +38,7 @@ class CodeAnomaly:
     description: str
     snippet: str
     confidence: float
+
 
 class NeuralStaticAnalyzer:
     """
@@ -83,7 +85,7 @@ class NeuralStaticAnalyzer:
             r"example",
             r"verify_",
             r"quick_start",
-            r"__pycache__"
+            r"__pycache__",
         ]
 
     def _calculate_entropy(self, text: str) -> float:
@@ -94,30 +96,32 @@ class NeuralStaticAnalyzer:
         for x in range(256):
             p_x = float(text.count(chr(x))) / len(text)
             if p_x > 0:
-                entropy += - p_x * math.log(p_x, 2)
+                entropy += -p_x * math.log(p_x, 2)
         return entropy
 
-    def scan_file(self, file_path: str) -> List[CodeAnomaly]:
+    def scan_file(self, file_path: str) -> list[CodeAnomaly]:
         anomalies = []
 
         # 1. Filename Check
         for pattern in self.blocked_files:
             if re.search(pattern, file_path):
-                anomalies.append(CodeAnomaly(
-                    file_path=file_path,
-                    line_number=0,
-                    severity="CRITICAL",
-                    description="File type strictly forbidden in repository",
-                    snippet=os.path.basename(file_path),
-                    confidence=1.0
-                ))
-                return anomalies # Skip content scan for blocked files
+                anomalies.append(
+                    CodeAnomaly(
+                        file_path=file_path,
+                        line_number=0,
+                        severity="CRITICAL",
+                        description="File type strictly forbidden in repository",
+                        snippet=os.path.basename(file_path),
+                        confidence=1.0,
+                    )
+                )
+                return anomalies  # Skip content scan for blocked files
 
         if not os.path.exists(file_path):
             return []
 
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
         except Exception as e:
             logger.warning(f"Could not read {file_path}: {e}")
@@ -127,56 +131,66 @@ class NeuralStaticAnalyzer:
             line_num = i + 1
             line_stripped = line.strip()
 
-            if not line_stripped or line_stripped.startswith('#') or line_stripped.startswith('//'):
+            if not line_stripped or line_stripped.startswith("#") or line_stripped.startswith("//"):
                 continue
 
             # 2. Secret Scanning (Pattern)
             for pattern, desc in self.secret_patterns:
                 if re.search(pattern, line_stripped):
-                    anomalies.append(CodeAnomaly(
-                        file_path=file_path,
-                        line_number=line_num,
-                        severity="CRITICAL",
-                        description=f"Secret detected: {desc}",
-                        snippet=line_stripped[:50] + "...",
-                        confidence=0.99
-                    ))
+                    anomalies.append(
+                        CodeAnomaly(
+                            file_path=file_path,
+                            line_number=line_num,
+                            severity="CRITICAL",
+                            description=f"Secret detected: {desc}",
+                            snippet=line_stripped[:50] + "...",
+                            confidence=0.99,
+                        )
+                    )
 
             # 3. Vulnerability Scanning (Pattern)
             for pattern, desc in self.vuln_patterns:
                 if re.search(pattern, line_stripped):
-                    anomalies.append(CodeAnomaly(
-                        file_path=file_path,
-                        line_number=line_num,
-                        severity="HIGH",
-                        description=f"Vulnerability pattern: {desc}",
-                        snippet=line_stripped.strip(),
-                        confidence=0.85
-                    ))
+                    anomalies.append(
+                        CodeAnomaly(
+                            file_path=file_path,
+                            line_number=line_num,
+                            severity="HIGH",
+                            description=f"Vulnerability pattern: {desc}",
+                            snippet=line_stripped.strip(),
+                            confidence=0.85,
+                        )
+                    )
 
             # 4. Entropy Check (Heuristic for unknown secrets)
             # Only check string literals inside quotes
             strings = re.findall(r'["\'](.*?)["\']', line_stripped)
             for s in strings:
-                if len(s) > 20 and self._calculate_entropy(s) > 4.5:
-                     # Ignore common false positives like base64 images or lengthy URLs if needed
-                     if "base64" not in s and "http" not in s:
-                        anomalies.append(CodeAnomaly(
+                # Ignore common false positives like base64 images or lengthy URLs if needed
+                if (
+                    len(s) > 20
+                    and self._calculate_entropy(s) > 4.5
+                    and "base64" not in s
+                    and "http" not in s
+                ):
+                    anomalies.append(
+                        CodeAnomaly(
                             file_path=file_path,
                             line_number=line_num,
                             severity="MEDIUM",
                             description="High entropy string detected (Potential Secret)",
                             snippet=s[:20] + "...",
-                            confidence=0.6
-                        ))
+                            confidence=0.6,
+                        )
+                    )
 
         return anomalies
 
-    def scan_directory(self, root_dir: str) -> List[CodeAnomaly]:
+    def scan_directory(self, root_dir: str) -> list[CodeAnomaly]:
         all_anomalies = []
         for root, dirs, files in os.walk(root_dir):
             # Skip hidden directories (like .git)
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
 
             for file in files:
                 file_path = os.path.join(root, file)
@@ -194,10 +208,13 @@ class NeuralStaticAnalyzer:
                 all_anomalies.extend(self.scan_file(file_path))
         return all_anomalies
 
+
 def main():
     parser = argparse.ArgumentParser(description="Neural-Symbolic Security Gate")
     parser.add_argument("--path", default=".", help="Path to scan")
-    parser.add_argument("--fail-on-high", action="store_true", help="Exit with error if HIGH/CRITICAL issues found")
+    parser.add_argument(
+        "--fail-on-high", action="store_true", help="Exit with error if HIGH/CRITICAL issues found"
+    )
     args = parser.parse_args()
 
     logger.info("Initializing NeuralStaticAnalyzer...")
@@ -221,7 +238,9 @@ def main():
             else:
                 icon = "ℹ️"
 
-            print(f"{icon} [{anomaly.severity}] {anomaly.file_path}:{anomaly.line_number} - {anomaly.description}")
+            print(
+                f"{icon} [{anomaly.severity}] {anomaly.file_path}:{anomaly.line_number} - {anomaly.description}"
+            )
             print(f"    Snippet: {anomaly.snippet}")
     else:
         logger.info("✅ No anomalies detected. Codebase is clean.")
@@ -232,6 +251,7 @@ def main():
         sys.exit(1)
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

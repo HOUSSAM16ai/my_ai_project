@@ -15,11 +15,11 @@ Capabilities:
 - Unified Logging & Reporting
 """
 
-import sys
-import os
 import argparse
-import logging
 import json
+import logging
+import os
+import sys
 from datetime import datetime
 
 # Import Sub-Systems
@@ -28,9 +28,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 try:
-    from scripts.security_gate import NeuralStaticAnalyzer, CodeAnomaly
-    from scripts.universal_repo_sync import sync_remotes, check_workload_identity
-    from app.services.agentic_devops import agentic_devops, DiagnosticResult
+    from app.services.agentic_devops import agentic_devops
+    from scripts.security_gate import NeuralStaticAnalyzer
+    from scripts.universal_repo_sync import check_workload_identity, sync_remotes
 except ImportError as e:
     print(f"CRITICAL: Failed to load Omega Modules: {e}")
     sys.exit(1)
@@ -38,6 +38,7 @@ except ImportError as e:
 # Configure High-Order Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | Ω-CORE | %(levelname)s | %(message)s")
 logger = logging.getLogger("OmegaOrchestrator")
+
 
 class OmegaCore:
     def __init__(self, mode="monitor"):
@@ -50,11 +51,12 @@ class OmegaCore:
         Performs a deep scan of the execution environment.
         """
         env_context = {
-            "ci_system": "GitHub Actions" if os.environ.get("GITHUB_ACTIONS") else
-                         ("GitLab CI" if os.environ.get("GITLAB_CI") else "Local"),
+            "ci_system": "GitHub Actions"
+            if os.environ.get("GITHUB_ACTIONS")
+            else ("GitLab CI" if os.environ.get("GITLAB_CI") else "Local"),
             "workload_identity": check_workload_identity(),
             "python_version": sys.version.split()[0],
-            "mode": self.mode
+            "mode": self.mode,
         }
         logger.info(f"Environment Analysis: {json.dumps(env_context, indent=2)}")
         return env_context
@@ -73,7 +75,9 @@ class OmegaCore:
             logger.info("✅ Security Protocol Passed: Zero Anomalies.")
             return True
 
-        logger.warning(f"⚠️ Detected {len(anomalies)} anomalies ({len(criticals)} Critical, {len(highs)} High).")
+        logger.warning(
+            f"⚠️ Detected {len(anomalies)} anomalies ({len(criticals)} Critical, {len(highs)} High)."
+        )
 
         # Self-Healing Logic
         if self.mode == "autonomous" and anomalies:
@@ -121,7 +125,7 @@ class OmegaCore:
 
     def run(self):
         logger.info("🚀 Omega Orchestrator Activated.")
-        env = self.analyze_environment()
+        self.analyze_environment()
 
         # 1. Security First
         security_passed = self.execute_security_protocol()
@@ -136,14 +140,20 @@ class OmegaCore:
 
         logger.info("🏁 Omega Protocol Completed Successfully.")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Omega Orchestrator - Autonomous DevOps Engine")
-    parser.add_argument("--mode", choices=["monitor", "autonomous", "sync", "diagnose"], default="monitor",
-                        help="Operating Mode")
+    parser.add_argument(
+        "--mode",
+        choices=["monitor", "autonomous", "sync", "diagnose"],
+        default="monitor",
+        help="Operating Mode",
+    )
     args = parser.parse_args()
 
     core = OmegaCore(mode=args.mode)
     core.run()
+
 
 if __name__ == "__main__":
     main()
