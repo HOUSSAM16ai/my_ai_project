@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # COMPATIBILITY WRAPPERS
 # =================================================================================================
 
+
 class OvermindService:
     """
     Legacy Service Wrapper.
@@ -48,9 +49,7 @@ class OvermindService:
             # 2. Launch the Orchestrator Background Process
             #    Fire and forget.
             threading.Thread(
-                target=self._launch_orchestrator_thread,
-                args=(mission.id,),
-                daemon=True
+                target=self._launch_orchestrator_thread, args=(mission.id,), daemon=True
             ).start()
 
             return mission
@@ -78,16 +77,17 @@ class OvermindService:
             asyncio.set_event_loop(loop)
 
         if loop.is_running():
-             # If we are already in a loop (e.g. FastAPI), we shouldn't be calling this
-             # blocking method ideally, but for the Facade return value we might have to.
-             # However, start_new_mission is usually called from an endpoint.
-             # If we block the event loop, we hurt performance.
-             # Ideally, we should change the controller to be async.
-             # But strictly adhering to the legacy interface:
-             import concurrent.futures
-             with concurrent.futures.ThreadPoolExecutor() as pool:
-                 future = pool.submit(asyncio.run, coroutine)
-                 return future.result()
+            # If we are already in a loop (e.g. FastAPI), we shouldn't be calling this
+            # blocking method ideally, but for the Facade return value we might have to.
+            # However, start_new_mission is usually called from an endpoint.
+            # If we block the event loop, we hurt performance.
+            # Ideally, we should change the controller to be async.
+            # But strictly adhering to the legacy interface:
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, coroutine)
+                return future.result()
         else:
             return loop.run_until_complete(coroutine)
 
@@ -118,8 +118,10 @@ _overmind_service_singleton = OvermindService()
 # PUBLIC API EXPORTS (Legacy Interface)
 # =================================================================================================
 
+
 def start_mission(objective: str, initiator: User) -> Mission:
     return _overmind_service_singleton.start_new_mission(objective, initiator)
+
 
 def run_mission_lifecycle(mission_id: int):
     return _overmind_service_singleton.run_mission_lifecycle(mission_id)

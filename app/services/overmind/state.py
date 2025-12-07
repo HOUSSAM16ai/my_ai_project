@@ -167,9 +167,7 @@ class MissionStateManager:
         task.attempt_count += 1
         await self.session.flush()
 
-    async def mark_task_complete(
-        self, task_id: int, result_text: str, meta: dict | None = None
-    ):
+    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None):
         if meta is None:
             meta = {}
         stmt = select(Task).where(Task.id == task_id)
