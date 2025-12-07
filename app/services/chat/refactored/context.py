@@ -4,7 +4,6 @@ Chat context for intent handlers.
 
 from dataclasses import dataclass, field
 from typing import Any
-
 from typing import Any as AIClient  # Placeholder for AI client type
 
 

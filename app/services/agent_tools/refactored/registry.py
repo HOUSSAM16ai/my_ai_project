@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class ToolRegistry:
     """
     Thread-safe tool registry.
-    
+
     Manages tool registration, lookup, and execution.
     """
 
@@ -85,10 +85,10 @@ class ToolRegistry:
         """List all tools, optionally filtered by category."""
         with self._lock:
             tools = list(self._tools.values())
-            
+
             if category:
                 tools = [t for t in tools if t.config.category == category]
-            
+
             return tools
 
     def get_stats(self) -> dict[str, Any]:

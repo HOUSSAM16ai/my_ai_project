@@ -5,13 +5,13 @@ Decouples sender from receiver by giving multiple objects a chance to handle req
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 R = TypeVar("R")
 
 
-class ChainLink(ABC, Generic[T, R]):
+class ChainLink[T, R](ABC):
     """Base chain link."""
 
     def __init__(self):
@@ -26,10 +26,10 @@ class ChainLink(ABC, Generic[T, R]):
         """Handle request or pass to next link."""
         if await self.can_handle(request):
             return await self.process(request)
-        
+
         if self._next:
             return await self._next.handle(request)
-        
+
         return None
 
     @abstractmethod
@@ -43,7 +43,7 @@ class ChainLink(ABC, Generic[T, R]):
         pass
 
 
-class Chain(Generic[T, R]):
+class Chain[T, R]:
     """Chain manager."""
 
     def __init__(self):

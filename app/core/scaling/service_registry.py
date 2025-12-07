@@ -32,7 +32,7 @@ class ServiceInstance:
 class ServiceRegistry:
     """
     Service registry for dynamic service discovery.
-    
+
     Enables horizontal scaling by tracking available instances.
     """
 
@@ -50,9 +50,9 @@ class ServiceRegistry:
         async with self._lock:
             if service_name not in self._services:
                 self._services[service_name] = {}
-            
+
             self._services[service_name][instance.id] = instance
-            
+
             logger.info(
                 f"Service registered: {service_name}/{instance.id} at {instance.address}"
             )
@@ -64,10 +64,12 @@ class ServiceRegistry:
     ) -> None:
         """Deregister service instance."""
         async with self._lock:
-            if service_name in self._services:
-                if instance_id in self._services[service_name]:
-                    del self._services[service_name][instance_id]
-                    logger.info(f"Service deregistered: {service_name}/{instance_id}")
+            if (
+                service_name in self._services
+                and instance_id in self._services[service_name]
+            ):
+                del self._services[service_name][instance_id]
+                logger.info(f"Service deregistered: {service_name}/{instance_id}")
 
     async def get_instances(
         self,
@@ -78,12 +80,12 @@ class ServiceRegistry:
         async with self._lock:
             if service_name not in self._services:
                 return []
-            
+
             instances = list(self._services[service_name].values())
-            
+
             if healthy_only:
                 instances = [i for i in instances if i.healthy]
-            
+
             return instances
 
     async def update_health(
@@ -94,11 +96,13 @@ class ServiceRegistry:
     ) -> None:
         """Update instance health status."""
         async with self._lock:
-            if service_name in self._services:
-                if instance_id in self._services[service_name]:
-                    instance = self._services[service_name][instance_id]
-                    instance.healthy = healthy
-                    instance.last_heartbeat = datetime.now()
+            if (
+                service_name in self._services
+                and instance_id in self._services[service_name]
+            ):
+                instance = self._services[service_name][instance_id]
+                instance.healthy = healthy
+                instance.last_heartbeat = datetime.now()
 
     async def heartbeat(
         self,
@@ -112,11 +116,11 @@ class ServiceRegistry:
         """Remove instances that haven't sent heartbeat."""
         async with self._lock:
             now = datetime.now()
-            
+
             for service_name, instances in list(self._services.items()):
                 for instance_id, instance in list(instances.items()):
                     age = (now - instance.last_heartbeat).total_seconds()
-                    
+
                     if age > self.heartbeat_timeout:
                         del instances[instance_id]
                         logger.warning(
@@ -126,7 +130,7 @@ class ServiceRegistry:
     def get_stats(self) -> dict[str, Any]:
         """Get registry statistics."""
         stats = {}
-        
+
         for service_name, instances in self._services.items():
             healthy = sum(1 for i in instances.values() if i.healthy)
             stats[service_name] = {
@@ -134,5 +138,5 @@ class ServiceRegistry:
                 "healthy": healthy,
                 "unhealthy": len(instances) - healthy,
             }
-        
+
         return stats

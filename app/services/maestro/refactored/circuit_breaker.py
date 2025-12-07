@@ -5,8 +5,9 @@ Circuit breaker pattern for fault tolerance.
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class CircuitBreakerError(Exception):
 class CircuitBreaker:
     """
     Circuit breaker for preventing cascading failures.
-    
+
     Pattern for horizontal scaling and resilience.
     """
 
@@ -58,7 +59,7 @@ class CircuitBreaker:
     async def call(self, func: Callable[[], T], operation_name: str = "operation") -> T:
         """
         Execute function through circuit breaker.
-        
+
         Complexity: 5
         """
         async with self._lock:
@@ -73,7 +74,7 @@ class CircuitBreaker:
             result = await func()
             await self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             await self._on_failure()
             raise
 

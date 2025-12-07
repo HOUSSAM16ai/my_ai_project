@@ -5,13 +5,13 @@ Enables runtime selection of algorithms without conditional logic.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 R = TypeVar("R")
 
 
-class Strategy(ABC, Generic[T, R]):
+class Strategy[T, R](ABC):
     """Base strategy interface."""
 
     @abstractmethod
@@ -30,7 +30,7 @@ class Strategy(ABC, Generic[T, R]):
         return 0
 
 
-class StrategyRegistry(Generic[T, R]):
+class StrategyRegistry[T, R]:
     """Registry for managing strategies."""
 
     def __init__(self):

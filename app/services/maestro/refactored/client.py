@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class MaestroClient:
     """
     Refactored Maestro client using Strategy pattern.
-    
+
     Complexity reduced from 23 to 3 by:
     1. Extracting LLM strategies to separate classes
     2. Using retry policy for resilience
@@ -59,7 +59,7 @@ class MaestroClient:
     ) -> str:
         """
         Generate text completion.
-        
+
         Complexity: 3 (down from 23)
         """
         async def execute():
@@ -93,7 +93,7 @@ class MaestroClient:
     ) -> str:
         """
         Execute using first available strategy.
-        
+
         Complexity: 2
         """
         for strategy in self._strategies:
@@ -105,7 +105,7 @@ class MaestroClient:
                     max_tokens=max_tokens,
                     model=model,
                 )
-                
+
                 if result and result.strip():
                     return result
 

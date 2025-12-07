@@ -3,8 +3,9 @@ Health checker for monitoring service instances.
 """
 
 import asyncio
+import contextlib
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from app.core.scaling.service_registry import ServiceRegistry
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class HealthChecker:
     """
     Health checker for monitoring service instances.
-    
+
     Continuously monitors instance health for load balancing.
     """
 
@@ -32,7 +33,7 @@ class HealthChecker:
         """Start health checking."""
         if self._running:
             return
-        
+
         self._running = True
         self._task = asyncio.create_task(self._check_loop())
         logger.info("Health checker started")
@@ -40,14 +41,12 @@ class HealthChecker:
     async def stop(self) -> None:
         """Stop health checking."""
         self._running = False
-        
+
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
-        
+
         logger.info("Health checker stopped")
 
     async def _check_loop(self) -> None:
@@ -64,13 +63,13 @@ class HealthChecker:
     async def _check_all_services(self) -> None:
         """Check health of all registered services."""
         stats = self.registry.get_stats()
-        
-        for service_name in stats.keys():
+
+        for service_name in stats:
             instances = await self.registry.get_instances(
                 service_name,
                 healthy_only=False
             )
-            
+
             for instance in instances:
                 healthy = await self._check_instance_health(instance)
                 await self.registry.update_health(
@@ -82,7 +81,7 @@ class HealthChecker:
     async def _check_instance_health(self, instance) -> bool:
         """
         Check if instance is healthy.
-        
+
         Override this method to implement custom health checks.
         """
         # Default: assume healthy if recently heartbeat

@@ -17,11 +17,11 @@ _start_time = time.time()
 async def health_check() -> HealthResponse:
     """
     Health check endpoint.
-    
+
     Complexity: 1
     """
     uptime = time.time() - _start_time
-    
+
     return HealthResponse(
         status="healthy",
         version="2.0.0",
@@ -38,7 +38,7 @@ async def health_check() -> HealthResponse:
 async def readiness_check() -> dict:
     """
     Readiness check for Kubernetes.
-    
+
     Complexity: 1
     """
     return {"ready": True}
@@ -48,7 +48,7 @@ async def readiness_check() -> dict:
 async def liveness_check() -> dict:
     """
     Liveness check for Kubernetes.
-    
+
     Complexity: 1
     """
     return {"alive": True}
