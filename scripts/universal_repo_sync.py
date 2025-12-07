@@ -26,18 +26,17 @@ Environment Variables:
     CI_COMMIT_SHA: (GitLab CI) The commit revision
 """
 
-import os
-import sys
-import subprocess
-import requests
 import logging
+import os
+import subprocess
+import sys
+
+import requests
 
 # Configure High-Precision Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | URSP | %(levelname)s | %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | URSP | %(levelname)s | %(message)s")
 logger = logging.getLogger("URSP")
+
 
 def get_env_var(name, default=None):
     val = os.environ.get(name, default)
@@ -45,6 +44,7 @@ def get_env_var(name, default=None):
         logger.error(f"Critical protocol failure: Missing environment variable {name}")
         sys.exit(1)
     return val
+
 
 def run_command(command, cwd=None, sensitive_inputs=None):
     """Executes a shell command with secure output handling."""
@@ -56,26 +56,18 @@ def run_command(command, cwd=None, sensitive_inputs=None):
     logger.info(f"Executing vector: {cmd_str}")
 
     try:
-        result = subprocess.run(
-            command,
-            cwd=cwd,
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
         logger.info("Vector execution successful.")
         return result.stdout
     except subprocess.CalledProcessError as e:
         logger.error(f"Vector execution failed: {e.stderr}")
         raise
 
+
 def resolve_github_target(token, repo_id):
     """Resolves GitHub repository URL using the Repository ID via GitHub API."""
     logger.info(f"Resolving GitHub target for ID: {repo_id}")
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     url = f"https://api.github.com/repositories/{repo_id}"
 
     try:
@@ -93,12 +85,11 @@ def resolve_github_target(token, repo_id):
         logger.error(f"Failed to resolve GitHub target: {e}")
         raise
 
+
 def resolve_gitlab_target(token, project_id):
     """Resolves GitLab project URL using the Project ID via GitLab API."""
     logger.info(f"Resolving GitLab target for ID: {project_id}")
-    headers = {
-        "PRIVATE-TOKEN": token
-    }
+    headers = {"PRIVATE-TOKEN": token}
     url = f"https://gitlab.com/api/v4/projects/{project_id}"
 
     try:
@@ -119,6 +110,7 @@ def resolve_gitlab_target(token, project_id):
     except Exception as e:
         logger.error(f"Failed to resolve GitLab target: {e}")
         raise
+
 
 def determine_push_spec():
     """
@@ -145,8 +137,11 @@ def determine_push_spec():
         else:
             return f"HEAD:refs/heads/{gitlab_ref_name}"
 
-    logger.warning("No standard CI environment detected. Defaulting to mirroring all local branches.")
+    logger.warning(
+        "No standard CI environment detected. Defaulting to mirroring all local branches."
+    )
     return "--all"
+
 
 def sync_remotes():
     github_token = get_env_var("SYNC_GITHUB_TOKEN")
@@ -160,7 +155,8 @@ def sync_remotes():
     try:
         github_url = resolve_github_target(github_token, github_id)
         gitlab_url = resolve_gitlab_target(gitlab_token, gitlab_id)
-    except Exception as e:
+    except Exception:
+        # Fixed: Removed unused variable 'e'
         logger.error("Target resolution aborted.")
         sys.exit(1)
 
@@ -168,13 +164,11 @@ def sync_remotes():
     logger.info("Initiating GitHub synchronization sequence...")
     try:
         run_command(
-            ["git", "push", "--force", github_url, push_spec],
-            sensitive_inputs=[github_token]
+            ["git", "push", "--force", github_url, push_spec], sensitive_inputs=[github_token]
         )
         if push_spec == "--all":
-             run_command(
-                ["git", "push", "--force", github_url, "--tags"],
-                sensitive_inputs=[github_token]
+            run_command(
+                ["git", "push", "--force", github_url, "--tags"], sensitive_inputs=[github_token]
             )
     except Exception:
         logger.error("GitHub sync failed.")
@@ -183,18 +177,17 @@ def sync_remotes():
     logger.info("Initiating GitLab synchronization sequence...")
     try:
         run_command(
-            ["git", "push", "--force", gitlab_url, push_spec],
-            sensitive_inputs=[gitlab_token]
+            ["git", "push", "--force", gitlab_url, push_spec], sensitive_inputs=[gitlab_token]
         )
         if push_spec == "--all":
             run_command(
-                ["git", "push", "--force", gitlab_url, "--tags"],
-                sensitive_inputs=[gitlab_token]
+                ["git", "push", "--force", gitlab_url, "--tags"], sensitive_inputs=[gitlab_token]
             )
     except Exception:
         logger.error("GitLab sync failed.")
 
     logger.info("Universal synchronization protocol completed.")
+
 
 if __name__ == "__main__":
     sync_remotes()
