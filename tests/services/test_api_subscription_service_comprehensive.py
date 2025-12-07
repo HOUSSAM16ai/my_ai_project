@@ -1,16 +1,13 @@
 
 import pytest
-from decimal import Decimal
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timedelta
 
 from app.services.api_subscription_service import (
     APISubscriptionService,
+    SubscriptionStatus,
     SubscriptionTier,
     UsageMetricType,
-    SubscriptionStatus,
-    SubscriptionPlan
 )
+
 
 class TestAPISubscriptionServiceComprehensive:
     @pytest.fixture
