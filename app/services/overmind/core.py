@@ -84,12 +84,16 @@ class OvermindOrchestrator:
                 await asyncio.sleep(POLL_INTERVAL)
 
     async def _phase_planning(self, mission: Mission):
-        await self.state.update_mission_status(mission.id, MissionStatus.PLANNING, "Starting Planning Phase")
+        await self.state.update_mission_status(
+            mission.id, MissionStatus.PLANNING, "Starting Planning Phase"
+        )
 
         # Select Planner
         planners = get_all_planners()
         if not planners:
-            await self.state.update_mission_status(mission.id, MissionStatus.FAILED, "No planners available")
+            await self.state.update_mission_status(
+                mission.id, MissionStatus.FAILED, "No planners available"
+            )
             return
 
         # Simple logic: Pick the first available one or highest score (Mock logic for now)
@@ -98,12 +102,14 @@ class OvermindOrchestrator:
 
         try:
             # Use Async generation if available
-            if hasattr(planner, 'a_instrumented_generate'):
+            if hasattr(planner, "a_instrumented_generate"):
                 result = await planner.a_instrumented_generate(mission.objective)
             else:
                 # Fallback to sync in thread
                 loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(None, planner.instrumented_generate, mission.objective)
+                result = await loop.run_in_executor(
+                    None, planner.instrumented_generate, mission.objective
+                )
 
             plan_schema = result["plan"]
             meta = result["meta"]
@@ -114,23 +120,29 @@ class OvermindOrchestrator:
                 planner_name=getattr(planner, "name", "unknown"),
                 plan_schema=plan_schema,
                 score=meta.get("selection_score", 1.0),
-                rationale="Selected via Orchestrator V2"
+                rationale="Selected via Orchestrator V2",
             )
 
-            await self.state.update_mission_status(mission.id, MissionStatus.PLANNED, "Plan generated successfully")
+            await self.state.update_mission_status(
+                mission.id, MissionStatus.PLANNED, "Plan generated successfully"
+            )
 
             await self.state.log_event(
                 mission.id,
                 MissionEventType.PLAN_SELECTED,
-                {"planner": getattr(planner, "name", "unknown")}
+                {"planner": getattr(planner, "name", "unknown")},
             )
 
         except Exception as e:
             logger.error(f"Planning failed: {e}")
-            await self.state.update_mission_status(mission.id, MissionStatus.FAILED, f"Planning Exception: {e}")
+            await self.state.update_mission_status(
+                mission.id, MissionStatus.FAILED, f"Planning Exception: {e}"
+            )
 
     async def _phase_prepare_execution(self, mission: Mission):
-        await self.state.update_mission_status(mission.id, MissionStatus.RUNNING, "Execution Started")
+        await self.state.update_mission_status(
+            mission.id, MissionStatus.RUNNING, "Execution Started"
+        )
         await self.state.log_event(mission.id, MissionEventType.EXECUTION_STARTED, {})
 
     async def _phase_execution_step(self, mission: Mission) -> bool:
@@ -146,10 +158,16 @@ class OvermindOrchestrator:
 
         if not pending and not running:
             if failed:
-                await self.state.update_mission_status(mission.id, MissionStatus.FAILED, f"{len(failed)} tasks failed.")
-                await self.state.log_event(mission.id, MissionEventType.MISSION_FAILED, {"failed_count": len(failed)})
+                await self.state.update_mission_status(
+                    mission.id, MissionStatus.FAILED, f"{len(failed)} tasks failed."
+                )
+                await self.state.log_event(
+                    mission.id, MissionEventType.MISSION_FAILED, {"failed_count": len(failed)}
+                )
             else:
-                await self.state.update_mission_status(mission.id, MissionStatus.SUCCESS, "All tasks completed.")
+                await self.state.update_mission_status(
+                    mission.id, MissionStatus.SUCCESS, "All tasks completed."
+                )
                 await self.state.log_event(mission.id, MissionEventType.MISSION_COMPLETED, {})
             return True
 
@@ -175,8 +193,8 @@ class OvermindOrchestrator:
         batch = ready_tasks[:MAX_PARALLEL]
 
         if not batch and not running:
-             # Stall detection?
-             pass
+            # Stall detection?
+            pass
 
         tasks_coroutines = []
         for t in batch:

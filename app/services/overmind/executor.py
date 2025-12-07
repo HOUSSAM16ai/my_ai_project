@@ -36,10 +36,7 @@ class TaskExecutor:
 
         # Guard: Check tool availability
         if not agent_tools:
-             return {
-                "status": "failed",
-                "error": "Agent tools registry not available."
-            }
+            return {"status": "failed", "error": "Agent tools registry not available."}
 
         # Standardize tool name if needed (simplified)
 
@@ -53,11 +50,8 @@ class TaskExecutor:
             tool_func = registry.get(tool_name)
 
             if not tool_func:
-                 # Fallback: Check if it's a known special tool
-                 return {
-                    "status": "failed",
-                    "error": f"Tool '{tool_name}' not found in registry."
-                }
+                # Fallback: Check if it's a known special tool
+                return {"status": "failed", "error": f"Tool '{tool_name}' not found in registry."}
 
             # Execute
             # If the tool is async, await it. If sync, run in executor.
@@ -71,17 +65,10 @@ class TaskExecutor:
             # Tools usually return a string or a dict.
             result_text = str(result)
             if isinstance(result, dict):
-                 result_text = json.dumps(result, default=str)
+                result_text = json.dumps(result, default=str)
 
-            return {
-                "status": "success",
-                "result_text": result_text,
-                "meta": {"tool": tool_name}
-            }
+            return {"status": "success", "result_text": result_text, "meta": {"tool": tool_name}}
 
         except Exception as e:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)
-            return {
-                "status": "failed",
-                "error": str(e)
-            }
+            return {"status": "failed", "error": str(e)}
