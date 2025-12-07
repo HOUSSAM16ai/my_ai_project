@@ -12,7 +12,6 @@
 import asyncio
 import logging
 import threading
-from typing import Any
 
 from app.core.database import async_session_factory
 from app.models import Mission, User
