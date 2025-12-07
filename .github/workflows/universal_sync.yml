@@ -1,0 +1,39 @@
+name: Universal Repository Synchronization Protocol
+
+on:
+  push:
+    branches:
+      - '**'  # Trigger on all branches
+    tags:
+      - '**'  # Trigger on all tags
+  workflow_dispatch:
+
+jobs:
+  hyper_sync:
+    name: Execute Hyper-Sync Protocol
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Intelligence Dependencies
+        run: |
+          pip install requests
+
+      - name: Execute Synchronization Engine
+        env:
+          SYNC_GITHUB_TOKEN: ${{ secrets.SYNC_GITHUB_TOKEN }}
+          SYNC_GITHUB_ID: ${{ secrets.SYNC_GITHUB_ID }}
+          SYNC_GITLAB_TOKEN: ${{ secrets.SYNC_GITLAB_TOKEN }}
+          SYNC_GITLAB_ID: ${{ secrets.SYNC_GITLAB_ID }}
+          # GITHUB_REF is automatically available, but we can be explicit if needed.
+          # The script reads os.environ["GITHUB_REF"]
+        run: |
+          python scripts/universal_repo_sync.py
