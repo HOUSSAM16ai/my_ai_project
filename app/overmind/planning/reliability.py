@@ -3,10 +3,12 @@
 Reliability tracking system for Planners.
 Implements exponential decay with Laplace smoothing to track success/failure rates over time.
 """
+
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+
 
 @dataclass
 class ReliabilityState:
@@ -14,6 +16,7 @@ class ReliabilityState:
     Tracks the reliability of a planner instance.
     Uses exponential decay to weight recent events more heavily.
     """
+
     success_weight: float = 0.0
     failure_weight: float = 0.0
     last_update_ts: float = field(default_factory=time.time)

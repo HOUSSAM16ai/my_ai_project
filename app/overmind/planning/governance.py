@@ -3,8 +3,10 @@
 Governance and Configuration for Planners.
 Handles environment variables, allow/block lists, and configuration constants.
 """
+
 import os
 import re
+
 from ._configs import DriftDetectionConfig, SelfTestConfig, StructuralScoringConfig
 
 # Regex for planner name validation
@@ -44,6 +46,7 @@ SELF_TEST_CONFIG = SelfTestConfig(
     disable_quarantine=os.getenv("PLANNER_DISABLE_QUARANTINE", "0") == "1",
 )
 
+
 def is_planner_allowed(name: str) -> bool:
     """Checks if a planner name is allowed by current policy."""
     key = name.strip().lower()
@@ -51,6 +54,4 @@ def is_planner_allowed(name: str) -> bool:
         return False
     if key in BLOCK_LIST:
         return False
-    if ALLOW_LIST and key not in ALLOW_LIST:
-        return False
-    return True
+    return not (ALLOW_LIST and key not in ALLOW_LIST)

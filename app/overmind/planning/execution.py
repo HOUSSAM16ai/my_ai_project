@@ -3,24 +3,27 @@
 Execution engine for Planners.
 Handles timeouts, thread management, and async execution wrappers.
 """
+
 from __future__ import annotations
 
 import asyncio
 import queue
 import threading
-from typing import Callable, Any, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
-from .schemas import MissionPlanSchema, PlanningContext
-from .exceptions import PlannerTimeoutError, PlannerError, PlanValidationError
+from .exceptions import PlannerError, PlannerTimeoutError
+from .schemas import MissionPlanSchema
 
 T = TypeVar("T")
+
 
 def run_with_timeout_sync(
     func: Callable[..., MissionPlanSchema],
     args: tuple,
     planner_name: str,
     objective: str,
-    timeout: float
+    timeout: float,
 ) -> MissionPlanSchema:
     """
     Executes a sync planner function in a separate thread with a timeout.
@@ -55,11 +58,9 @@ def run_with_timeout_sync(
     _validate_result_type(result, planner_name, objective)
     return result
 
+
 async def run_with_timeout_async(
-    awaitable,
-    planner_name: str,
-    objective: str,
-    timeout: float
+    awaitable, planner_name: str, objective: str, timeout: float
 ) -> MissionPlanSchema:
     """
     Executes an async planner function with a timeout.
@@ -70,6 +71,7 @@ async def run_with_timeout_async(
         raise PlannerTimeoutError(
             f"Async timeout {timeout:.2f}s exceeded.", planner_name, objective
         ) from exc
+
 
 def _validate_result_type(result: Any, planner_name: str, objective: str):
     """Ensures the result matches the canonical schema."""

@@ -3,21 +3,23 @@
 Linear Planning Strategy.
 Wraps a specific BasePlanner implementation (e.g., 'standard') to execute linear tasks.
 """
-from __future__ import annotations
-import logging
-from typing import Any
 
-from ..schemas import MissionPlanSchema, PlanningContext
+from __future__ import annotations
+
+import logging
+
 from ..base_planner import BasePlanner, get_planner_instance
-from .base_strategy import BasePlanningStrategy
+from ..schemas import MissionPlanSchema, PlanningContext
 
 logger = logging.getLogger(__name__)
+
 
 class LinearStrategy:
     """
     Standard linear execution planner strategy.
     Delegates to a concrete BasePlanner instance (e.g., a 'standard' planner).
     """
+
     name = "linear_strategy"
 
     def __init__(self, planner_name: str = "standard_planner"):
@@ -40,5 +42,7 @@ class LinearStrategy:
     def generate(self, objective: str, context: PlanningContext | None = None) -> MissionPlanSchema:
         return self.planner.generate_plan(objective, context)
 
-    async def a_generate(self, objective: str, context: PlanningContext | None = None) -> MissionPlanSchema:
+    async def a_generate(
+        self, objective: str, context: PlanningContext | None = None
+    ) -> MissionPlanSchema:
         return await self.planner.a_generate_plan(objective, context)
