@@ -1,37 +1,42 @@
-import pytest
 from datetime import datetime, timedelta
-from collections import deque
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 from app.services.ai_adaptive_microservices import (
     AIScalingEngine,
     IntelligentRouter,
     PredictiveHealthMonitor,
-    SelfAdaptiveMicroservices,
-    ServiceMetrics,
-    ServiceInstance,
-    ServiceHealth,
-    ScalingDirection,
     ScalingDecision,
+    ScalingDirection,
+    SelfAdaptiveMicroservices,
+    ServiceHealth,
+    ServiceInstance,
+    ServiceMetrics,
 )
 
 # --- Fixtures ---
+
 
 @pytest.fixture
 def scaling_engine():
     return AIScalingEngine()
 
+
 @pytest.fixture
 def intelligent_router():
     return IntelligentRouter()
+
 
 @pytest.fixture
 def health_monitor():
     return PredictiveHealthMonitor()
 
+
 @pytest.fixture
 def adaptive_system():
     return SelfAdaptiveMicroservices()
+
 
 @pytest.fixture
 def sample_metrics():
@@ -49,6 +54,7 @@ def sample_metrics():
         queue_depth=10,
     )
 
+
 @pytest.fixture
 def high_load_metrics():
     return ServiceMetrics(
@@ -64,6 +70,7 @@ def high_load_metrics():
         active_connections=500,
         queue_depth=100,
     )
+
 
 @pytest.fixture
 def low_load_metrics():
@@ -81,7 +88,9 @@ def low_load_metrics():
         queue_depth=0,
     )
 
+
 # --- AIScalingEngine Tests ---
+
 
 class TestAIScalingEngine:
     def test_predict_load_insufficient_data(self, scaling_engine, sample_metrics):
@@ -95,7 +104,7 @@ class TestAIScalingEngine:
         for i in range(20):
             metrics = ServiceMetrics(
                 service_name="test-service",
-                timestamp=datetime.now() - timedelta(minutes=20-i),
+                timestamp=datetime.now() - timedelta(minutes=20 - i),
                 cpu_usage=50.0,
                 memory_usage=50.0,
                 request_rate=100.0 + (i * 2),  # Increasing trend
@@ -104,7 +113,7 @@ class TestAIScalingEngine:
                 latency_p95=100.0,
                 latency_p99=200.0,
                 active_connections=100,
-                queue_depth=10
+                queue_depth=10,
             )
             history.append(metrics)
 
@@ -172,19 +181,19 @@ class TestAIScalingEngine:
             error_rate=1.0,
             latency_p50=500.0,
             latency_p95=1200.0,
-            latency_p99=2500.0, # Very high
+            latency_p99=2500.0,  # Very high
             active_connections=100,
             queue_depth=10,
         )
 
-        decision = scaling_engine.calculate_optimal_instances(
-            "test-service", metrics, 2
-        )
+        decision = scaling_engine.calculate_optimal_instances("test-service", metrics, 2)
 
         assert decision.direction == ScalingDirection.UP
         assert "High latency" in decision.reason
 
+
 # --- IntelligentRouter Tests ---
+
 
 class TestIntelligentRouter:
     def test_select_instance_none_available(self, intelligent_router):
@@ -192,14 +201,10 @@ class TestIntelligentRouter:
 
     def test_select_instance_prefers_healthy(self, intelligent_router):
         healthy = ServiceInstance(
-            instance_id="healthy-1",
-            service_name="test-service",
-            status=ServiceHealth.HEALTHY
+            instance_id="healthy-1", service_name="test-service", status=ServiceHealth.HEALTHY
         )
         degraded = ServiceInstance(
-            instance_id="degraded-1",
-            service_name="test-service",
-            status=ServiceHealth.DEGRADED
+            instance_id="degraded-1", service_name="test-service", status=ServiceHealth.DEGRADED
         )
 
         selected = intelligent_router.select_instance("test-service", [healthy, degraded])
@@ -207,9 +212,7 @@ class TestIntelligentRouter:
 
     def test_select_instance_fallback_degraded(self, intelligent_router):
         degraded = ServiceInstance(
-            instance_id="degraded-1",
-            service_name="test-service",
-            status=ServiceHealth.DEGRADED
+            instance_id="degraded-1", service_name="test-service", status=ServiceHealth.DEGRADED
         )
 
         selected = intelligent_router.select_instance("test-service", [degraded])
@@ -217,28 +220,26 @@ class TestIntelligentRouter:
 
     def test_calculate_instance_score(self, intelligent_router):
         instance = ServiceInstance(
-            instance_id="inst-1",
-            service_name="test-service",
-            status=ServiceHealth.HEALTHY
+            instance_id="inst-1", service_name="test-service", status=ServiceHealth.HEALTHY
         )
         # Add good metrics
         metrics = ServiceMetrics(
             service_name="test-service",
             timestamp=datetime.now(),
-            cpu_usage=20.0, # Good
-            memory_usage=20.0, # Good
+            cpu_usage=20.0,  # Good
+            memory_usage=20.0,  # Good
             request_rate=10.0,
-            error_rate=0.0, # Good
+            error_rate=0.0,  # Good
             latency_p50=10.0,
-            latency_p95=20.0, # Good
+            latency_p95=20.0,  # Good
             latency_p99=50.0,
             active_connections=10,
-            queue_depth=0
+            queue_depth=0,
         )
         instance.metrics_history.append(metrics)
 
         score = intelligent_router._calculate_instance_score(instance)
-        assert score > 0.5 # Should be a good score
+        assert score > 0.5  # Should be a good score
 
     def test_update_instance_score(self, intelligent_router):
         instance_id = "inst-1"
@@ -247,9 +248,11 @@ class TestIntelligentRouter:
 
         intelligent_router.update_instance_score(instance_id, success=False, response_time=500.0)
         # Should decrease, but start from previous value
-        assert intelligent_router.instance_scores[instance_id] < 0.6 # Just a rough check
+        assert intelligent_router.instance_scores[instance_id] < 0.6  # Just a rough check
+
 
 # --- PredictiveHealthMonitor Tests ---
+
 
 class TestPredictiveHealthMonitor:
     def test_analyze_health_healthy(self, health_monitor, sample_metrics):
@@ -268,7 +271,7 @@ class TestPredictiveHealthMonitor:
         metrics = ServiceMetrics(
             service_name="test-service",
             timestamp=datetime.now(),
-            cpu_usage=88.0, # > 85
+            cpu_usage=88.0,  # > 85
             memory_usage=50.0,
             request_rate=100.0,
             error_rate=1.0,
@@ -297,7 +300,7 @@ class TestPredictiveHealthMonitor:
                 latency_p95=30.0,
                 latency_p99=50.0,
                 active_connections=20,
-                queue_depth=0
+                queue_depth=0,
             )
             health_monitor.health_patterns["test-service"].append(m)
 
@@ -305,7 +308,7 @@ class TestPredictiveHealthMonitor:
         anomaly_metric = ServiceMetrics(
             service_name="test-service",
             timestamp=datetime.now(),
-            cpu_usage=80.0, # Sudden spike
+            cpu_usage=80.0,  # Sudden spike
             memory_usage=20.0,
             request_rate=50.0,
             error_rate=0.0,
@@ -313,7 +316,7 @@ class TestPredictiveHealthMonitor:
             latency_p95=30.0,
             latency_p99=50.0,
             active_connections=20,
-            queue_depth=0
+            queue_depth=0,
         )
 
         anomalies = health_monitor._detect_anomalies("test-service", anomaly_metric)
@@ -323,26 +326,28 @@ class TestPredictiveHealthMonitor:
     def test_predict_failure(self, health_monitor):
         # Create a trend of increasing error rates
         for i in range(15):
-             m = ServiceMetrics(
+            m = ServiceMetrics(
                 service_name="test-service",
                 timestamp=datetime.now(),
                 cpu_usage=50.0,
                 memory_usage=50.0,
                 request_rate=100.0,
-                error_rate=1.0 + (i * 2.0), # increasing errors
+                error_rate=1.0 + (i * 2.0),  # increasing errors
                 latency_p50=50.0,
                 latency_p95=100.0,
                 latency_p99=200.0,
                 active_connections=100,
-                queue_depth=10
+                queue_depth=10,
             )
-             health_monitor.health_patterns["test-service"].append(m)
+            health_monitor.health_patterns["test-service"].append(m)
 
         prob, factors = health_monitor.predict_failure("test-service")
         assert prob > 0
         assert any("Errors trending up" in f for f in factors)
 
+
 # --- SelfAdaptiveMicroservices Tests ---
+
 
 class TestSelfAdaptiveMicroservices:
     def test_register_service(self, adaptive_system):
@@ -369,22 +374,24 @@ class TestSelfAdaptiveMicroservices:
         instance.metrics_history.append(high_load_metrics)
 
         # Patch the scaling engine to ensure it returns UP
-        with patch.object(adaptive_system.scaling_engine, 'calculate_optimal_instances') as mock_calc:
-             mock_calc.return_value = ScalingDecision(
-                 service_name="test-service",
-                 direction=ScalingDirection.UP,
-                 current_instances=1,
-                 target_instances=3,
-                 confidence=0.9,
-                 reason="High load",
-                 predicted_impact={},
-                 timestamp=datetime.now()
-             )
+        with patch.object(
+            adaptive_system.scaling_engine, "calculate_optimal_instances"
+        ) as mock_calc:
+            mock_calc.return_value = ScalingDecision(
+                service_name="test-service",
+                direction=ScalingDirection.UP,
+                current_instances=1,
+                target_instances=3,
+                confidence=0.9,
+                reason="High load",
+                predicted_impact={},
+                timestamp=datetime.now(),
+            )
 
-             decision = adaptive_system.auto_scale("test-service")
+            decision = adaptive_system.auto_scale("test-service")
 
-             assert decision.direction == ScalingDirection.UP
-             assert len(adaptive_system.services["test-service"]) == 3
+            assert decision.direction == ScalingDirection.UP
+            assert len(adaptive_system.services["test-service"]) == 3
 
     def test_auto_scale_down(self, adaptive_system, low_load_metrics):
         adaptive_system.register_service("test-service", 3)
@@ -392,22 +399,24 @@ class TestSelfAdaptiveMicroservices:
         for inst in adaptive_system.services["test-service"]:
             inst.metrics_history.append(low_load_metrics)
 
-        with patch.object(adaptive_system.scaling_engine, 'calculate_optimal_instances') as mock_calc:
-             mock_calc.return_value = ScalingDecision(
-                 service_name="test-service",
-                 direction=ScalingDirection.DOWN,
-                 current_instances=3,
-                 target_instances=1,
-                 confidence=0.9,
-                 reason="Low load",
-                 predicted_impact={},
-                 timestamp=datetime.now()
-             )
+        with patch.object(
+            adaptive_system.scaling_engine, "calculate_optimal_instances"
+        ) as mock_calc:
+            mock_calc.return_value = ScalingDecision(
+                service_name="test-service",
+                direction=ScalingDirection.DOWN,
+                current_instances=3,
+                target_instances=1,
+                confidence=0.9,
+                reason="Low load",
+                predicted_impact={},
+                timestamp=datetime.now(),
+            )
 
-             decision = adaptive_system.auto_scale("test-service")
+            decision = adaptive_system.auto_scale("test-service")
 
-             assert decision.direction == ScalingDirection.DOWN
-             assert len(adaptive_system.services["test-service"]) == 1
+            assert decision.direction == ScalingDirection.DOWN
+            assert len(adaptive_system.services["test-service"]) == 1
 
     def test_route_request(self, adaptive_system):
         adaptive_system.register_service("test-service", 1)
