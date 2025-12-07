@@ -1,0 +1,55 @@
+name: "Ω Omega Intelligence Pipeline"
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write  # Required for Workload Identity Federation
+
+jobs:
+  omega-engine:
+    name: "Omega-Level Verification"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for deep analysis
+
+      - name: "Initialize Python 3.12"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Install Enterprise Dependencies"
+        run: |
+          pip install requests pyyaml
+
+      - name: "Establish Workload Identity Trust"
+        # In a real environment, this step would use google-github-actions/auth
+        # Here we simulate the OIDC token presence for our scripts
+        run: |
+          echo "GITHUB_OIDC_TOKEN=simulated-oidc-token-$(date +%s)" >> $GITHUB_ENV
+
+      - name: "🚀 Run Omega Orchestrator (Autonomous Mode)"
+        env:
+          SYNC_GITHUB_TOKEN: ${{ secrets.SYNC_GITHUB_TOKEN }}
+          SYNC_GITHUB_ID: ${{ vars.SYNC_GITHUB_ID }}
+          SYNC_GITLAB_TOKEN: ${{ secrets.SYNC_GITLAB_TOKEN }}
+          SYNC_GITLAB_ID: ${{ vars.SYNC_GITLAB_ID }}
+        run: |
+          # The orchestrator runs security checks, self-healing, and sync logic
+          python scripts/omega_orchestrator.py --mode=autonomous
+
+      - name: "Upload Diagnostic Report"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-diagnostics
+          path: omega_diagnostics.log

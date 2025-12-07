@@ -1,0 +1,60 @@
+# .julesrc
+# ======================================================================================
+# ==          JULES GUARDRAILS CONFIGURATION (STRICT MODE)                        ==
+# ======================================================================================
+# This file governs the behavior of the Jules AI Agent.
+# ANY CHANGES TO THIS FILE REQUIRE EXPLICIT HUMAN APPROVAL.
+
+version: "1.0"
+mode: "strict"
+
+# --------------------------------------------------------------------------------------
+# 1. SCOPE & LIMITS
+# --------------------------------------------------------------------------------------
+limits:
+  max_files_created_per_pr: 5
+  max_execution_time_minutes: 20
+  allowed_file_extensions: [".py", ".yml", ".yaml", ".json", ".md", ".sh", ".tf"]
+  forbidden_directories: [".git", ".secrets", "production_keys"]
+
+# --------------------------------------------------------------------------------------
+# 2. CODE QUALITY GATES
+# --------------------------------------------------------------------------------------
+quality_gates:
+  cyclomatic_complexity_threshold: 15  # Fail if any function > 15
+  test_coverage_minimum: 80.0          # Target percentage
+  coverage_delta_allowed: -1.0         # Max allowed drop in coverage per PR
+
+# --------------------------------------------------------------------------------------
+# 3. AUTO-FIX POLICIES
+# --------------------------------------------------------------------------------------
+auto_fix:
+  allowed_levels: ["low"]              # Options: none, low, medium, high
+  low_risk_categories:
+    - "remove_debug_prints"
+    - "fix_import_sorting"
+    - "correct_typos"
+    - "formatting"
+  require_rollback_mechanism: true
+
+# --------------------------------------------------------------------------------------
+# 4. APPROVAL WORKFLOW
+# --------------------------------------------------------------------------------------
+approval:
+  require_plan_first: true
+  require_human_signoff: true
+  allow_direct_push_to_main: false
+
+# --------------------------------------------------------------------------------------
+# 5. EMERGENCY CONTROLS
+# --------------------------------------------------------------------------------------
+emergency:
+  kill_switch_enabled: true
+  notification_channel: "admin-alerts"
+
+# --------------------------------------------------------------------------------------
+# 6. OBSERVABILITY
+# --------------------------------------------------------------------------------------
+logging:
+  audit_log_path: "logs/jules_audit.jsonl"
+  metrics_enabled: true
