@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.services.api_subscription_service import (
