@@ -36,32 +36,48 @@ except Exception:  # pragma: no cover
 # =============================================================================
 # Refactored module imports
 # =============================================================================
-from .exceptions import (
-    PlannerError,
-    PlanValidationError,
-    PlannerAdmissionError,
-    ExternalServiceError,
-    PlannerTimeoutError,
-)
-from .reliability import ReliabilityState
-from .execution import run_with_timeout_sync, run_with_timeout_async
-from .governance import (
-    is_planner_allowed,
-    ENV as _ENV,
-    DECAY_HALF_LIFE as _DECAY_HALF_LIFE,
-    MIN_RELIABILITY as _MIN_RELIABILITY,
-    FALLBACK_DEFAULT_TIMEOUT as _FALLBACK_DEFAULT_TIMEOUT,
-    STRUCT_ENABLE as _STRUCT_ENABLE,
-    STRUCT_CONFIG as _STRUCT_CONFIG,
-    DRIFT_CONFIG as _DRIFT_CONFIG,
-    SELF_TEST_CONFIG as _SELF_TEST_CONFIG,
-)
 from ._drift_detection import detect_structural_drift
 from ._self_test_runner import run_self_test as _run_self_test_impl
 from ._structural_scoring import (
     compute_final_selection_score,
     compute_structural_enrichment,
 )
+from .exceptions import (
+    ExternalServiceError,
+    PlannerAdmissionError,
+    PlannerError,
+    PlannerTimeoutError,
+    PlanValidationError,
+)
+from .execution import run_with_timeout_async, run_with_timeout_sync
+from .governance import (
+    DECAY_HALF_LIFE as _DECAY_HALF_LIFE,
+)
+from .governance import (
+    DRIFT_CONFIG as _DRIFT_CONFIG,
+)
+from .governance import (
+    ENV as _ENV,
+)
+from .governance import (
+    FALLBACK_DEFAULT_TIMEOUT as _FALLBACK_DEFAULT_TIMEOUT,
+)
+from .governance import (
+    MIN_RELIABILITY as _MIN_RELIABILITY,
+)
+from .governance import (
+    SELF_TEST_CONFIG as _SELF_TEST_CONFIG,
+)
+from .governance import (
+    STRUCT_CONFIG as _STRUCT_CONFIG,
+)
+from .governance import (
+    STRUCT_ENABLE as _STRUCT_ENABLE,
+)
+from .governance import (
+    is_planner_allowed,
+)
+from .reliability import ReliabilityState
 
 # =============================================================================
 # Logging
@@ -109,7 +125,9 @@ class BasePlanner:
 
         # Governance Checks
         if not getattr(planner_cls, "allow_registration", True):
-            logger.debug("Planner %s registration skipped (allow_registration=False).", planner_cls.__name__)
+            logger.debug(
+                "Planner %s registration skipped (allow_registration=False).", planner_cls.__name__
+            )
             return
 
         planner_name = getattr(planner_cls, "name", None)
@@ -139,7 +157,10 @@ class BasePlanner:
 
         logger.info(
             "Registered planner '%s' (tier=%s prod_ready=%s quarantine=%s)",
-            key, state.tier, state.production_ready, state.quarantined,
+            key,
+            state.tier,
+            state.production_ready,
+            state.quarantined,
         )
 
         # Self Test Delegation

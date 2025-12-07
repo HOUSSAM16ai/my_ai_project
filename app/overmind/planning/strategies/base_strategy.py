@@ -3,11 +3,13 @@
 Base Strategy Interface.
 Defines the contract for all planning strategies.
 """
+
 from __future__ import annotations
-from typing import Any, Protocol, runtime_checkable
+
+from typing import Protocol, runtime_checkable
 
 from ..schemas import MissionPlanSchema, PlanningContext
-from ..base_planner import BasePlanner
+
 
 @runtime_checkable
 class BasePlanningStrategy(Protocol):
@@ -22,6 +24,8 @@ class BasePlanningStrategy(Protocol):
         """Synchronous generation."""
         ...
 
-    async def a_generate(self, objective: str, context: PlanningContext | None = None) -> MissionPlanSchema:
+    async def a_generate(
+        self, objective: str, context: PlanningContext | None = None
+    ) -> MissionPlanSchema:
         """Asynchronous generation."""
         ...

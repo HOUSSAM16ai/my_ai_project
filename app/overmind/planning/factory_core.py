@@ -2,20 +2,22 @@
 """
 Core Factory Logic for Planner Management and Strategy Selection.
 """
+
 from __future__ import annotations
+
+import importlib
 import logging
 import pkgutil
-import importlib
-from typing import Any, Type
 
 from .base_planner import BasePlanner, instantiate_all_planners
+from .exceptions import PlannerNotFound
+from .schemas import PlanningContext
 from .strategies.base_strategy import BasePlanningStrategy
 from .strategies.linear_strategy import LinearStrategy
 from .strategies.recursive_strategy import RecursiveStrategy
-from .schemas import PlanningContext
-from .exceptions import PlannerNotFound, NoActivePlannersError
 
 logger = logging.getLogger(__name__)
+
 
 class PlannerFactory:
     """
@@ -24,7 +26,9 @@ class PlannerFactory:
     """
 
     @staticmethod
-    def discover_planners(root_package: str = "app.overmind.planning.generators") -> dict[str, BasePlanner]:
+    def discover_planners(
+        root_package: str = "app.overmind.planning.generators",
+    ) -> dict[str, BasePlanner]:
         """
         Discovers and instantiates all available planners.
         Iterates over the given package to find and import planner modules,
@@ -55,10 +59,12 @@ class PlannerFactory:
         try:
             return BasePlanner.get_planner_class(name)()
         except Exception as e:
-            raise PlannerNotFound(name, context=str(e))
+            raise PlannerNotFound(name, context=str(e)) from e
 
     @staticmethod
-    def select_strategy(objective: str, context: PlanningContext | None = None) -> BasePlanningStrategy:
+    def select_strategy(
+        objective: str, context: PlanningContext | None = None
+    ) -> BasePlanningStrategy:
         """
         Selects the optimal strategy based on objective complexity and context.
         """
@@ -76,6 +82,7 @@ class PlannerFactory:
             return RecursiveStrategy(planner_name="recursive_planner")
 
         return LinearStrategy(planner_name="standard_planner")
+
 
 def select_strategy(objective: str, context: PlanningContext | None = None) -> BasePlanningStrategy:
     """Convenience alias for PlannerFactory.select_strategy"""

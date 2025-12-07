@@ -7,9 +7,12 @@
 Semantic exception hierarchy for the Planner System.
 Enables precise error handling and better debugging in CI/CD environments.
 """
+
 from __future__ import annotations
+
 import time
 from typing import Any
+
 
 def _flatten_extras(extra: dict[str, Any]) -> dict[str, Any]:
     """Simple shallow flattening hook."""
@@ -18,6 +21,7 @@ def _flatten_extras(extra: dict[str, Any]) -> dict[str, Any]:
         flat[k] = v
     return flat
 
+
 class PlannerError(Exception):
     """
     Unified planner exception with context rich formatting.
@@ -25,14 +29,20 @@ class PlannerError(Exception):
     """
 
     def __init__(
-        self, message: str, planner_name: str = "unknown_planner", objective: str = "", where: str = "", context: str = "", **extra: Any
+        self,
+        message: str,
+        planner_name: str = "unknown_planner",
+        objective: str = "",
+        where: str = "",
+        context: str = "",
+        **extra: Any,
     ):
         base_msg = message
         if planner_name != "unknown_planner" or objective:
-             base_msg = f"[{planner_name}] objective='{objective}' :: {message}"
+            base_msg = f"[{planner_name}] objective='{objective}' :: {message}"
 
         if where:
-             base_msg += f" [where: {where}]"
+            base_msg += f" [where: {where}]"
 
         if extra:
             try:
@@ -94,6 +104,7 @@ class PlannerAdmissionError(PlannerError):
 # Compatibility Classes for Factory/Discovery
 class PlannerNotFound(PlannerError):
     """Raised when a requested planner is not found in the registry."""
+
     def __init__(self, planner_name: str, context: str = ""):
         super().__init__(
             f"Planner '{planner_name}' not found in registry",
@@ -102,75 +113,90 @@ class PlannerNotFound(PlannerError):
             context=context,
         )
 
+
 class PlannerQuarantined(PlannerError):
     """Raised when attempting to use a quarantined planner."""
+
     def __init__(self, planner_name: str, reason: str = ""):
         super().__init__(
             f"Planner '{planner_name}' is quarantined" + (f": {reason}" if reason else ""),
             planner_name=planner_name,
-            where="quarantine"
+            where="quarantine",
         )
         self.reason = reason
 
+
 class SandboxTimeout(PlannerError):
     """Raised when sandbox import times out."""
+
     def __init__(self, module_name: str, timeout_s: float):
         super().__init__(
             f"Sandbox import of '{module_name}' timed out after {timeout_s}s",
             where="sandbox",
             planner_name=module_name,
-            timeout_s=timeout_s
+            timeout_s=timeout_s,
         )
         self.module_name = module_name
         self.timeout_s = timeout_s
 
+
 class SandboxImportError(PlannerError):
     """Raised when sandbox import fails."""
+
     def __init__(self, module_name: str, error: str):
         super().__init__(
             f"Failed to import '{module_name}' in sandbox: {error}",
             where="sandbox",
             planner_name=module_name,
-            error=error
+            error=error,
         )
         self.module_name = module_name
         self.error = error
 
+
 class PlannerDiscoveryError(PlannerError):
     """Raised when planner discovery fails."""
+
     pass
+
 
 class PlannerInstantiationError(PlannerError):
     """Raised when planner instantiation fails."""
+
     def __init__(self, planner_name: str, error: str):
         super().__init__(
             f"Failed to instantiate planner '{planner_name}': {error}",
             where="instantiation",
             planner_name=planner_name,
-            error=error
+            error=error,
         )
         self.error = error
 
+
 class NoActivePlannersError(PlannerError):
     """Raised when no active planners are available."""
+
     pass
+
 
 class PlannerSelectionError(PlannerError):
     """Raised when planner selection fails."""
+
     pass
 
+
 __all__ = [
-    "PlannerError",
-    "PlanValidationError",
     "ExternalServiceError",
-    "PlannerTimeoutError",
+    "NoActivePlannersError",
+    "PlanValidationError",
     "PlannerAdmissionError",
+    "PlannerDiscoveryError",
+    "PlannerError",
+    "PlannerInstantiationError",
     "PlannerNotFound",
     "PlannerQuarantined",
-    "SandboxTimeout",
-    "SandboxImportError",
-    "PlannerDiscoveryError",
-    "PlannerInstantiationError",
-    "NoActivePlannersError",
     "PlannerSelectionError",
+    "PlannerTimeoutError",
+    "SandboxImportError",
+    "SandboxTimeout",
 ]

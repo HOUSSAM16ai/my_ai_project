@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock
-from app.overmind.planning.fault_tolerance import ResilientPlanner
-from app.overmind.planning.strategies.linear_strategy import LinearStrategy
+
 from app.overmind.planning.base_planner import BasePlanner
+from app.overmind.planning.fault_tolerance import ResilientPlanner
+
 
 def test_circuit_breaker_activates():
     """Test that the resilient planner falls back when primary fails."""
@@ -9,8 +10,10 @@ def test_circuit_breaker_activates():
     # Define a mock planner class to be used by strategies
     class MockPlannerBase(BasePlanner):
         name = "mock_planner"
+
         def generate_plan(self, obj, ctx):
             return MagicMock(meta=MagicMock(strategy="mock_success"))
+
         async def a_generate_plan(self, obj, ctx):
             return MagicMock(meta=MagicMock(strategy="mock_success"))
 
@@ -20,8 +23,10 @@ def test_circuit_breaker_activates():
     # Create failing strategy (simulating a strategy wrapping a broken planner or logic)
     class FailingStrategy:
         name = "failing_strategy"
+
         def generate(self, obj, ctx):
             raise ValueError("Intentional Failure")
+
         async def a_generate(self, obj, ctx):
             raise ValueError("Intentional Failure")
 
@@ -35,17 +40,21 @@ def test_circuit_breaker_activates():
 
     class WorkingStrategy:
         name = "linear_strategy"
+
         def generate(self, obj, ctx):
             # Return a simple object with meta attribute
             m = MagicMock()
             m.meta.strategy = "linear_strategy"
             return m
+
         async def a_generate(self, obj, ctx):
             m = MagicMock()
             m.meta.strategy = "linear_strategy"
             return m
 
-    resilient = ResilientPlanner(primary_strategy=FailingStrategy(), fallback_strategy=WorkingStrategy())
+    resilient = ResilientPlanner(
+        primary_strategy=FailingStrategy(), fallback_strategy=WorkingStrategy()
+    )
 
     # Run once to trigger failure and fallback
     plan = resilient.generate_safely("Test objective")
