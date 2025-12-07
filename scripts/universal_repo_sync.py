@@ -35,16 +35,15 @@ import logging
 import os
 import subprocess
 import sys
-import json
+
 import requests
-from datetime import datetime
 
 # Import Security Gate
 # If strictly script based, we can use subprocess. But importing is cleaner if pythonpath allows.
 # Assuming scripts/ is in path or we append it.
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
-    from security_gate import NeuralStaticAnalyzer, CodeAnomaly
+    from security_gate import NeuralStaticAnalyzer
 except ImportError:
     # Fallback if import fails (e.g., during some CI setups)
     NeuralStaticAnalyzer = None
@@ -171,7 +170,7 @@ def run_security_gate():
     if critical_issues:
         logger.error("🛑 SECURITY GATE BREACHED! Critical anomalies detected:")
         for issue in critical_issues:
-             logger.error(f"   [{issue.severity}] {issue.file_path}: {issue.description}")
+            logger.error(f"   [{issue.severity}] {issue.file_path}: {issue.description}")
 
         # Self-Healing / Auto-Fix Attempt (Stub)
         attempt_self_healing(critical_issues)
@@ -193,7 +192,9 @@ def attempt_self_healing(issues):
             logger.info(f"Attempting to redact secret in {issue.file_path}...")
             # Ideally we would rewrite the file.
             # For safety in this script, we just log the action needed.
-            logger.info(f"ACTION: Please remove secret from {issue.file_path}:{issue.line_number} manually or trigger Agentic Auto-Fix.")
+            logger.info(
+                f"ACTION: Please remove secret from {issue.file_path}:{issue.line_number} manually or trigger Agentic Auto-Fix."
+            )
 
     # In a real system, this would call the AgenticDevOps service to modify code.
 
@@ -206,12 +207,16 @@ def check_workload_identity():
     gl_oidc = os.environ.get("GITLAB_OIDC_TOKEN")
 
     if gh_oidc:
-        logger.info("🔐 GitHub Workload Identity Token Detected. Exchanging for temporary access credentials...")
+        logger.info(
+            "🔐 GitHub Workload Identity Token Detected. Exchanging for temporary access credentials..."
+        )
         # Stub for exchanging token with Cloud Provider
         return True
 
     if gl_oidc:
-        logger.info("🔐 GitLab Workload Identity Token Detected. Exchanging for temporary access credentials...")
+        logger.info(
+            "🔐 GitLab Workload Identity Token Detected. Exchanging for temporary access credentials..."
+        )
         # Stub for exchanging token with Cloud Provider
         return True
 
@@ -235,8 +240,8 @@ def sync_remotes():
     gitlab_id = get_env_var("SYNC_GITLAB_ID", required=False)
 
     if not ((github_token and github_id) or (gitlab_token and gitlab_id)):
-         logger.warning("No sync targets configured (Token/ID missing). Skipping sync.")
-         return
+        logger.warning("No sync targets configured (Token/ID missing). Skipping sync.")
+        return
 
     push_spec = determine_push_spec()
 
@@ -245,22 +250,32 @@ def sync_remotes():
         try:
             github_url = resolve_github_target(github_token, github_id)
             logger.info("Initiating GitHub synchronization sequence...")
-            run_command(["git", "push", "--force", github_url, push_spec], sensitive_inputs=[github_token])
+            run_command(
+                ["git", "push", "--force", github_url, push_spec], sensitive_inputs=[github_token]
+            )
             if push_spec == "--all":
-                run_command(["git", "push", "--force", github_url, "--tags"], sensitive_inputs=[github_token])
+                run_command(
+                    ["git", "push", "--force", github_url, "--tags"],
+                    sensitive_inputs=[github_token],
+                )
         except Exception:
-             logger.error("GitHub sync failed.")
+            logger.error("GitHub sync failed.")
 
     # 4. Resolve & Push GitLab
     if gitlab_token and gitlab_id:
         try:
             gitlab_url = resolve_gitlab_target(gitlab_token, gitlab_id)
             logger.info("Initiating GitLab synchronization sequence...")
-            run_command(["git", "push", "--force", gitlab_url, push_spec], sensitive_inputs=[gitlab_token])
+            run_command(
+                ["git", "push", "--force", gitlab_url, push_spec], sensitive_inputs=[gitlab_token]
+            )
             if push_spec == "--all":
-                run_command(["git", "push", "--force", gitlab_url, "--tags"], sensitive_inputs=[gitlab_token])
+                run_command(
+                    ["git", "push", "--force", gitlab_url, "--tags"],
+                    sensitive_inputs=[gitlab_token],
+                )
         except Exception:
-             logger.error("GitLab sync failed.")
+            logger.error("GitLab sync failed.")
 
     logger.info("Universal synchronization protocol completed.")
 

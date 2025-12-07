@@ -6,16 +6,17 @@ Implements the "Observability & Audit" requirement.
 Logs every action taken by the agent to a structured JSONL file.
 """
 
-import os
+import argparse
 import json
 import logging
-import argparse
-from datetime import datetime, UTC
-from typing import Optional, Dict, Any
+import os
+from datetime import UTC, datetime
+from typing import Any
 
 # Configure internal logging for the script itself
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | AUDIT | %(levelname)s | %(message)s")
 logger = logging.getLogger("AuditLogger")
+
 
 class JulesAuditLogger:
     def __init__(self, log_path: str = "logs/jules_audit.jsonl"):
@@ -27,14 +28,16 @@ class JulesAuditLogger:
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
 
-    def log_action(self,
-                   actor: str,
-                   action_type: str,
-                   target: str,
-                   reason: str,
-                   impact: str,
-                   status: str = "SUCCESS",
-                   metadata: Optional[Dict[str, Any]] = None):
+    def log_action(
+        self,
+        actor: str,
+        action_type: str,
+        target: str,
+        reason: str,
+        impact: str,
+        status: str = "SUCCESS",
+        metadata: dict[str, Any] | None = None,
+    ):
         """
         Logs a structured event to the audit file.
         """
@@ -46,20 +49,23 @@ class JulesAuditLogger:
             "reason": reason,
             "impact": impact,
             "status": status,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         try:
-            with open(self.log_path, 'a', encoding='utf-8') as f:
+            with open(self.log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(event) + "\n")
             logger.info(f"Logged action: {action_type} on {target}")
         except Exception as e:
             logger.error(f"Failed to write audit log: {e}")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Log an action to the Jules Audit Trail")
     parser.add_argument("--actor", default="Jules-Agent", help="Who performed the action")
-    parser.add_argument("--action", required=True, help="What action was taken (e.g., CREATE_FILE, REFACTOR)")
+    parser.add_argument(
+        "--action", required=True, help="What action was taken (e.g., CREATE_FILE, REFACTOR)"
+    )
     parser.add_argument("--target", required=True, help="Target file or system")
     parser.add_argument("--reason", required=True, help="Why this action was taken")
     parser.add_argument("--impact", required=True, help="Expected impact of this action")
@@ -74,8 +80,9 @@ def main():
         target=args.target,
         reason=args.reason,
         impact=args.impact,
-        status=args.status
+        status=args.status,
     )
+
 
 if __name__ == "__main__":
     main()

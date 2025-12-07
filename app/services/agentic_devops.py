@@ -8,13 +8,13 @@ This module implements the "Self-Healing CI/CD" capabilities described in the
 to diagnose build failures and propose code fixes.
 """
 
-import re
 import logging
 import os
+import re
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DiagnosticResult:
@@ -22,7 +22,8 @@ class DiagnosticResult:
     description: str
     confidence: float
     suggested_fix: str
-    affected_files: List[str]
+    affected_files: list[str]
+
 
 class AgenticDevOps:
     """
@@ -38,7 +39,7 @@ class AgenticDevOps:
             (r"Secret detected: (.*)", "Security Violation"),
         ]
 
-    def diagnose_failure(self, log_output: str) -> List[DiagnosticResult]:
+    def diagnose_failure(self, log_output: str) -> list[DiagnosticResult]:
         """
         Analyzes CI/CD logs to identify root causes.
         """
@@ -58,17 +59,19 @@ class AgenticDevOps:
                     elif error_type == "Security Violation":
                         fix = "Remove or rotate the exposed secret immediately."
 
-                    results.append(DiagnosticResult(
-                        error_type=error_type,
-                        description=f"{error_type}: {detail}",
-                        confidence=0.9,
-                        suggested_fix=fix,
-                        affected_files=[] # Would need more complex parsing to find file
-                    ))
+                    results.append(
+                        DiagnosticResult(
+                            error_type=error_type,
+                            description=f"{error_type}: {detail}",
+                            confidence=0.9,
+                            suggested_fix=fix,
+                            affected_files=[],  # Would need more complex parsing to find file
+                        )
+                    )
 
         return results
 
-    def propose_fix(self, file_path: str, issue_description: str) -> Optional[str]:
+    def propose_fix(self, file_path: str, issue_description: str) -> str | None:
         """
         Generates a patch/fix for a specific file based on the issue.
         """
@@ -79,11 +82,13 @@ class AgenticDevOps:
         # If we detect a secret, we replace it with an env var placeholder
         if "Secret detected" in issue_description:
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path) as f:
                     content = f.read()
 
                 # Naive replacement of AWS keys for demo
-                new_content = re.sub(r"AKIA[0-9A-Z]{16}", "os.environ['AWS_ACCESS_KEY_ID']", content)
+                new_content = re.sub(
+                    r"AKIA[0-9A-Z]{16}", "os.environ['AWS_ACCESS_KEY_ID']", content
+                )
 
                 if new_content != content:
                     logger.info(f"Generated auto-fix for {file_path}")
@@ -98,13 +103,14 @@ class AgenticDevOps:
         Applies a generated fix to the filesystem.
         """
         try:
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 f.write(new_content)
             logger.info(f"Applied fix to {file_path}")
             return True
         except Exception as e:
             logger.error(f"Failed to apply fix: {e}")
             return False
+
 
 # Singleton instance
 agentic_devops = AgenticDevOps()
