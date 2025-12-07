@@ -1,4 +1,3 @@
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,7 +8,6 @@ from app.services.history_service import get_recent_conversations, rate_message_
 
 
 class TestHistoryServiceComprehensive:
-
     @pytest.fixture
     async def user_with_conversations(self, db_session, user_factory, mission_factory):
         # When using pytest-factoryboy with async sessions, we need to handle creation carefully.
@@ -38,7 +36,7 @@ class TestHistoryServiceComprehensive:
                 user_id=user.id,
                 title=f"Conversation {i}",
                 conversation_type="chat",
-                linked_mission_id=mission.id
+                linked_mission_id=mission.id,
             )
             db_session.add(conversation)
             conversations.append(conversation)
@@ -59,7 +57,7 @@ class TestHistoryServiceComprehensive:
             message = AdminMessage(
                 conversation_id=conversation.id,
                 role="user" if i % 2 == 0 else "assistant",
-                content=f"Message {i}"
+                content=f"Message {i}",
             )
             db_session.add(message)
             messages.append(message)
@@ -80,7 +78,6 @@ class TestHistoryServiceComprehensive:
 
         # But wait, tests/conftest.py overrides get_db, but async_session_factory is imported from app.core.database
         # Let's see if we can patch app.services.history_service.async_session_factory
-
 
         # Creating a mock context manager for the session
         AsyncMock()
@@ -117,6 +114,7 @@ class TestHistoryServiceComprehensive:
         user, _ = user_with_conversations
 
         from tests.conftest import TestingSessionLocal
+
         with patch("app.services.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
@@ -140,7 +138,6 @@ class TestHistoryServiceComprehensive:
     async def test_rate_message_success(self, user_with_messages):
         user, _, messages = user_with_messages
         message_to_rate = messages[0]
-
 
         from tests.conftest import TestingSessionLocal
 
@@ -183,6 +180,7 @@ class TestHistoryServiceComprehensive:
         user, _, _ = user_with_messages
 
         from tests.conftest import TestingSessionLocal
+
         with patch("app.services.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
@@ -195,7 +193,9 @@ class TestHistoryServiceComprehensive:
             assert "not found" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_rate_message_security_violation(self, user_with_messages, user_factory, db_session):
+    async def test_rate_message_security_violation(
+        self, user_with_messages, user_factory, db_session
+    ):
         _user, _, messages = user_with_messages
         other_user = user_factory.build()
         db_session.add(other_user)
@@ -205,6 +205,7 @@ class TestHistoryServiceComprehensive:
         message_to_rate = messages[0]
 
         from tests.conftest import TestingSessionLocal
+
         with patch("app.services.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
@@ -244,7 +245,7 @@ class TestHistoryServiceComprehensive:
             mock_msg = MagicMock()
             mock_msg.id = message_to_rate.id
             mock_msg.conversation.user_id = user.id
-            mock_msg.rating = None # Exists
+            mock_msg.rating = None  # Exists
 
             mock_result = MagicMock()
             mock_result.scalar_one_or_none.return_value = mock_msg
@@ -262,6 +263,7 @@ class TestHistoryServiceComprehensive:
         message_to_rate = messages[0]
 
         from tests.conftest import TestingSessionLocal
+
         with patch("app.services.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
