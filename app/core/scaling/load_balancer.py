@@ -89,7 +89,7 @@ class LeastConnectionsStrategy(LoadBalancingStrategy):
 
         async with self._lock:
             # Find instance with minimum connections
-            min_conn = float('inf')
+            min_conn = float("inf")
             selected = instances[0]
 
             for instance in instances:

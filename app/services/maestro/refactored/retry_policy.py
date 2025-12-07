@@ -54,15 +54,14 @@ class RetryPolicy:
 
                 if attempt == self.config.max_attempts:
                     logger.error(
-                        f"{operation_name} failed after {attempt} attempts",
-                        extra={"error": str(e)}
+                        f"{operation_name} failed after {attempt} attempts", extra={"error": str(e)}
                     )
                     raise
 
                 delay = self._calculate_delay(attempt)
                 logger.warning(
                     f"{operation_name} attempt {attempt} failed, retrying in {delay:.2f}s",
-                    extra={"error": str(e)}
+                    extra={"error": str(e)},
                 )
                 await asyncio.sleep(delay)
 
@@ -72,11 +71,12 @@ class RetryPolicy:
         """Calculate delay with exponential backoff."""
         delay = min(
             self.config.initial_delay * (self.config.exponential_base ** (attempt - 1)),
-            self.config.max_delay
+            self.config.max_delay,
         )
 
         if self.config.jitter:
             import random
-            delay *= (0.5 + random.random() * 0.5)
+
+            delay *= 0.5 + random.random() * 0.5
 
         return delay

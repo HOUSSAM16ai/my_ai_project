@@ -53,27 +53,32 @@ class CompositeResiliencePolicy:
 
         Complexity: 5
         """
+
         async def wrapped_func():
             # Layer 5: Core function
             result = func
 
             # Layer 4: Retry
             if self.retry:
+
                 def result():
                     return self.retry.execute(result, operation_name)
 
             # Layer 3: Circuit Breaker
             if self.circuit_breaker:
+
                 def result():
                     return self.circuit_breaker.call(result, operation_name)
 
             # Layer 2: Timeout
             if self.timeout:
+
                 def result():
                     return self.timeout.execute(result, operation_name)
 
             # Layer 1: Bulkhead
             if self.bulkhead:
+
                 def result():
                     return self.bulkhead.execute(result, operation_name)
 

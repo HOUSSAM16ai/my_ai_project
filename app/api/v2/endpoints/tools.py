@@ -45,8 +45,7 @@ async def execute_tool(
         )
     except Exception as e:
         logger.error(
-            f"Tool execution failed: {e}",
-            extra={"tool": request.tool_name, "user_id": user_id}
+            f"Tool execution failed: {e}", extra={"tool": request.tool_name, "user_id": user_id}
         )
         execution_time = time.time() - start_time
 
