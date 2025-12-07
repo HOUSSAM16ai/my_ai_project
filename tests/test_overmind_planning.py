@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.overmind.planning import base_planner
+from app.overmind.planning import base_planner, governance
 from app.overmind.planning.base_planner import BasePlanner
 
 
@@ -54,6 +54,7 @@ def test_planner_registration():
 
 def test_planner_registration_with_allow_list():
     with patch.dict(os.environ, {"PLANNERS_ALLOW": "allowed_planner"}, clear=True):
+        importlib.reload(governance)
         importlib.reload(base_planner)
 
         class AllowedPlanner(base_planner.BasePlanner):
@@ -67,11 +68,15 @@ def test_planner_registration_with_allow_list():
     assert "allowed_planner" in base_planner.BasePlanner._registry
     assert "disallowed_planner" not in base_planner.BasePlanner._registry
     base_planner.BasePlanner._registry.pop("allowed_planner", None)
-    importlib.reload(base_planner)  # revert to original state
+
+    # Revert to original state
+    importlib.reload(governance)
+    importlib.reload(base_planner)
 
 
 def test_planner_registration_with_block_list():
     with patch.dict(os.environ, {"PLANNERS_BLOCK": "blocked_planner"}, clear=True):
+        importlib.reload(governance)
         importlib.reload(base_planner)
 
         class BlockedPlanner(base_planner.BasePlanner):
@@ -85,4 +90,7 @@ def test_planner_registration_with_block_list():
     assert "blocked_planner" not in base_planner.BasePlanner._registry
     assert "normal_planner" in base_planner.BasePlanner._registry
     base_planner.BasePlanner._registry.pop("normal_planner", None)
-    importlib.reload(base_planner)  # revert to original state
+
+    # Revert to original state
+    importlib.reload(governance)
+    importlib.reload(base_planner)
