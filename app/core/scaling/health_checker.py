@@ -28,6 +28,7 @@ class HealthChecker:
         self.check_interval = check_interval
         self._running = False
         self._task: asyncio.Task | None = None
+        self._background_tasks: set[asyncio.Task] = set()
 
     async def start(self) -> None:
         """Start health checking."""
@@ -36,6 +37,9 @@ class HealthChecker:
 
         self._running = True
         self._task = asyncio.create_task(self._check_loop())
+        # Keep strong reference to prevent garbage collection
+        self._background_tasks.add(self._task)
+        self._task.add_done_callback(self._background_tasks.discard)
         logger.info("Health checker started")
 
     async def stop(self) -> None:
