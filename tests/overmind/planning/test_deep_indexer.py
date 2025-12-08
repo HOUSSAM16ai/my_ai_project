@@ -31,16 +31,15 @@ class Processor:
 """)
 
     # Act: Build the index
-    index = deep_indexer.build_index(root=str(d))
+    index_result = deep_indexer.build_index(root=str(d))
 
     # Assert: Basic Structure
-    assert "files_scanned" in index
-    assert index["files_scanned"] == 2
-    assert "modules" in index
-    assert len(index["modules"]) == 2
+    # Updated to check attributes on IndexResult object
+    assert index_result.files_scanned == 2
+    assert len(index_result.modules) == 2
 
     # Verify module contents
-    modules = {m["path"]: m for m in index["modules"]}
+    modules = {m["path"]: m for m in index_result.modules}
 
     # Check simple.py
     # Note: deep_indexer uses absolute paths or relative depending on implementation.
@@ -72,6 +71,15 @@ class Processor:
 
 def test_summarize_for_prompt(tmp_path):
     # Setup dummy index
+    # We can pass a dict here because summarize_for_prompt handles it (via _normalize_input)
+    # But ideally we should pass an IndexResult object if we want to test that path,
+    # however, summarize_for_prompt is designed to be flexible.
+    # Given the previous tests passed with objects, let's keep this as dict to verify backward compat or robustness
+    # OR update it to object to be "Strict".
+    # Since the prompt said "Consumers... were expecting or mocking inconsistent structures",
+    # and we fixed consumers (like context_service) to use objects.
+    # But summarize_for_prompt is part of the library, so testing it with dict ensures the robust handling works.
+
     index = {
         "files_scanned": 10,
         "global_metrics": {
