@@ -98,10 +98,7 @@ class IntelligentRouter:
         self.lock = threading.RLock()
 
     def _evaluate_candidates(
-        self,
-        model_type: str,
-        estimated_tokens: int,
-        constraints: dict[str, Any]
+        self, model_type: str, estimated_tokens: int, constraints: dict[str, Any]
     ) -> list[dict[str, Any]]:
         """Filter and prepare candidates based on basic constraints."""
         max_cost = constraints.get("max_cost", float("inf"))
