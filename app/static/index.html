@@ -268,6 +268,19 @@
             margin: 10px 0;
             font-weight: bold;
         }
+        /* Loading Screen */
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: var(--primary-color);
+        }
+        .loading-screen i {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -286,6 +299,8 @@
         const App = () => {
             const [token, setToken] = useState(localStorage.getItem('token'));
             const [user, setUser] = useState(null);
+            // Initialize loading state if a token exists, to prevent flashing AuthScreen
+            const [isLoading, setIsLoading] = useState(!!localStorage.getItem('token'));
 
             useEffect(() => {
                 const fetchUser = async () => {
@@ -303,7 +318,11 @@
                         } catch (error) {
                             console.error("Failed to fetch user:", error);
                             logout();
+                        } finally {
+                            setIsLoading(false);
                         }
+                    } else {
+                        setIsLoading(false);
                     }
                 };
                 fetchUser();
@@ -313,8 +332,10 @@
                 localStorage.setItem('token', newToken);
                 setToken(newToken);
                 setUser(userData);
+                // Removed window.location.href reload to prevent "Temporal State Dislocation"
                 if (userData && userData.is_admin) {
-                     window.location.href = '/admin';
+                     // Optionally update URL without reload
+                     window.history.pushState({}, '', '/admin');
                 }
             };
 
@@ -324,6 +345,15 @@
                 setUser(null);
                 window.location.href = '/';
             };
+
+            if (isLoading) {
+                return (
+                    <div className="loading-screen">
+                        <i className="fas fa-circle-notch fa-spin"></i>
+                        <h2>Initializing Reality Kernel...</h2>
+                    </div>
+                );
+            }
 
             if (!token || !user) {
                 return <AuthScreen onLogin={handleLogin} />;
@@ -358,10 +388,12 @@
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setError('');
+                setIsSubmitting(true);
                 try {
                     const response = await fetch('/api/security/login', {
                         method: 'POST',
@@ -377,6 +409,8 @@
                     }
                 } catch (err) {
                     setError('An error occurred. Please try again.');
+                } finally {
+                    setIsSubmitting(false);
                 }
             };
 
@@ -391,7 +425,9 @@
                         <div className="input-group">
                             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
                         </div>
-                        <button type="submit">Login</button>
+                        <button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Login'}
+                        </button>
                     </form>
                     <div className="toggle-form">
                         <a onClick={onToggle}>Don't have an account? Register</a>
@@ -406,11 +442,13 @@
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
             const [success, setSuccess] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setError('');
                 setSuccess('');
+                setIsSubmitting(true);
                 try {
                     const response = await fetch('/api/security/register', {
                         method: 'POST',
@@ -426,6 +464,8 @@
                     }
                 } catch (err) {
                     setError('An error occurred. Please try again.');
+                } finally {
+                    setIsSubmitting(false);
                 }
             };
 
@@ -444,7 +484,9 @@
                         <div className="input-group">
                              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
                         </div>
-                        <button type="submit">Register</button>
+                        <button type="submit" disabled={isSubmitting}>
+                             {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Register'}
+                        </button>
                     </form>
                     <div className="toggle-form">
                         <a onClick={onToggle}>Already have an account? Login</a>
