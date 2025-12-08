@@ -12,10 +12,10 @@ class ChatIntent(Enum):
     SIMPLE_CHAT = "simple"
     FILE_READ = "file_read"
     FILE_WRITE = "file_write"
+    DEEP_ANALYSIS = "deep_analysis"  # NEW: For analytical questions requiring Overmind
     CODE_SEARCH = "code_search"
     PROJECT_INDEX = "project_index"
     MISSION_COMPLEX = "mission"
-    DEEP_ANALYSIS = "deep_analysis"  # NEW: For analytical questions requiring Overmind
     HELP = "help"
 
 
@@ -38,7 +38,7 @@ class IntentDetector:
 
     _PATH_PATTERN = r"['\"]?([a-zA-Z0-9_./\\-]+\.[a-zA-Z0-9]+)['\"]?"
 
-    # ORDER MATTERS: PROJECT_INDEX and DEEP_ANALYSIS before MISSION_COMPLEX
+    # ORDER MATTERS: PROJECT_INDEX and DEEP_ANALYSIS before CODE_SEARCH and MISSION_COMPLEX
     PATTERNS: ClassVar[dict[ChatIntent, list[str]]] = {
         ChatIntent.FILE_READ: [
             rf"(?:read|show|display|view|cat|open|get)\s+(?:file\s+)?{_PATH_PATTERN}",
@@ -51,18 +51,8 @@ class IntentDetector:
             rf"(?:create|make)\s+(?:new\s+)?{_PATH_PATTERN}",
             rf"(?:أنشئ|اكتب|أضف|احفظ)\s+(?:ملف\s+)?{_PATH_PATTERN}",
         ],
-        ChatIntent.CODE_SEARCH: [
-            r"(?:find|search|look for|where is|locate)\s+(?:code\s+)?(?:for\s+)?['\"]?(.+?)['\"]?(?:\s+in|\s*$)",
-            r"(?:search|grep)\s+(.+)",
-            r"(?:ابحث عن|أين|أوجد|جد)\s+(.+)",
-        ],
-        ChatIntent.PROJECT_INDEX: [
-            r"(?:index|scan|analyze)\s+(?:the\s+)?(?:project|codebase|repository)",
-            r"(?:show|list)\s+(?:project\s+)?(?:structure|files|overview)",
-            r"(?:فهرس|حلل|امسح)\s+(?:المشروع|الكود)",
-            r"(?:أظهر|اعرض)\s+(?:هيكل|بنية)\s+المشروع",
-        ],
         # NEW: DEEP_ANALYSIS - Analytical questions that need Overmind's deep understanding
+        # Must come before generic CODE_SEARCH
         ChatIntent.DEEP_ANALYSIS: [
             # Architecture & Design Analysis
             r"(?:explain|describe|what is|how does|how do)\s+(?:the\s+)?(?:architecture|design|structure|system|flow|pattern)",
@@ -90,6 +80,17 @@ class IntentDetector:
             r"(?:حلل|راجع|قيّم|افحص)\s+(?:الكود|النظام|الهيكل|التصميم|التنفيذ|قاعدة\s+البيانات)",
             r"(?:كيف\s+(?:يمكن|ينبغي|نستطيع))\s+(?:تحسين|تطوير|إصلاح|تعديل)",
             r"(?:اقترح|أوصي)\s+(?:تحسينات|تطويرات|تعديلات|إصلاحات)",
+        ],
+        ChatIntent.CODE_SEARCH: [
+            r"(?:find|search|look for|where is|locate)\s+(?:code\s+)?(?:for\s+)?['\"]?(.+?)['\"]?(?:\s+in|\s*$)",
+            r"(?:search|grep)\s+(.+)",
+            r"(?:ابحث عن|أين|أوجد|جد)\s+(.+)",
+        ],
+        ChatIntent.PROJECT_INDEX: [
+            r"(?:index|scan|analyze)\s+(?:the\s+)?(?:project|codebase|repository)",
+            r"(?:show|list)\s+(?:project\s+)?(?:structure|files|overview)",
+            r"(?:فهرس|حلل|امسح)\s+(?:المشروع|الكود)",
+            r"(?:أظهر|اعرض)\s+(?:هيكل|بنية)\s+المشروع",
         ],
         ChatIntent.MISSION_COMPLEX: [
             r"(?:refactor|fix|improve|optimize|implement|debug)\s+(?:the\s+)?(?:entire\s+)?(?:project|codebase|system|architecture|code)",
