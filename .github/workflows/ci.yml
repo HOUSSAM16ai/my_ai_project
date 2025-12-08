@@ -9,7 +9,7 @@ name: 🚀 CI/CD Pipeline
 
 on:
   push:
-    branches: ["main", "fix/*", "feature/*", "copilot/*"]
+    branches: ["main", "fix/*", "feature/*", "feat/*", "copilot/*"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
