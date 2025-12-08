@@ -32,6 +32,18 @@ class AdminChatStreamer:
         ai_client: AIClient,
         session_factory_func,
     ) -> AsyncGenerator[str, None]:
+        # 0. Inject Context (Overmind) if missing
+        has_system = any(msg.get("role") == "system" for msg in history)
+        if not has_system:
+            try:
+                from app.services.chat.context_service import get_context_service
+
+                ctx_service = get_context_service()
+                system_prompt = ctx_service.get_context_system_prompt()
+                history.insert(0, {"role": "system", "content": system_prompt})
+            except Exception as e:
+                logger.error(f"Failed to inject Overmind context: {e}")
+
         # 1. Update In-Memory History
         if not history or history[-1]["content"] != question:
             history.append({"role": "user", "content": question})
