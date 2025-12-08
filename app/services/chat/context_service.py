@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
 
 from app.overmind.planning.deep_indexer_v2 import build_index, summarize_for_prompt
 
@@ -15,8 +14,8 @@ class CodebaseContextService:
     It performs indexing and summarization to provide context to the AI.
     """
 
-    _instance: Optional[CodebaseContextService] = None
-    _cached_summary: Optional[str] = None
+    _instance: CodebaseContextService | None = None
+    _cached_summary: str | None = None
     _last_index_time: float = 0
     _CACHE_TTL = 3600  # 1 hour cache for the deep index
 
