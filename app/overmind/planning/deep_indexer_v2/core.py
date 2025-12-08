@@ -1,10 +1,8 @@
 import glob
 import math
 import os
-import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict
 from typing import Any
 
 from .analysis import (
@@ -17,7 +15,7 @@ from .analysis import (
 )
 from .config import CONFIG
 from .graph import build_call_graph, build_dependencies
-from .models import FileModule
+from .models import FileMetric, FileModule, GlobalMetrics, IndexResult
 from .visitor import DeepIndexVisitor
 
 
@@ -169,7 +167,7 @@ def _collect_dup_groups(modules: list[FileModule]) -> dict[str, list[dict[str, A
     return result
 
 
-def _file_metrics_list(modules: list[FileModule]) -> list[dict[str, Any]]:
+def _file_metrics_list(modules: list[FileModule]) -> list[FileMetric]:
     out = []
     for m in modules:
         cx_values = [fn.complexity for fn in m.functions]
@@ -181,64 +179,51 @@ def _file_metrics_list(modules: list[FileModule]) -> list[dict[str, Any]]:
                 tag_counter[t] += 1
         layer = layer_for_path(m.path)
         out.append(
-            {
-                "path": m.path,
-                "file_hash": m.file_hash,
-                "loc": m.loc,
-                "function_count": len(m.functions),
-                "class_count": len(m.classes),
-                "avg_function_complexity": avg_cx,
-                "max_function_complexity": max_cx,
-                "tags": sorted(tag_counter.keys()),
-                "layer": layer,
-                "entrypoint": m.entrypoint,
-            }
+            FileMetric(
+                path=m.path,
+                file_hash=m.file_hash,
+                loc=m.loc,
+                function_count=len(m.functions),
+                class_count=len(m.classes),
+                avg_function_complexity=avg_cx,
+                max_function_complexity=max_cx,
+                tags=sorted(tag_counter.keys()),
+                layer=layer,
+                entrypoint=m.entrypoint,
+            )
         )
     return out
 
 
-def _layer_map(file_metrics: list[dict[str, Any]]) -> dict[str, list[str]]:
+def _layer_map(file_metrics: list[FileMetric]) -> dict[str, list[str]]:
     lm = defaultdict(list)
     for fm in file_metrics:
-        if fm.get("layer"):
-            lm[fm["layer"]].append(fm["path"])
+        if fm.layer:
+            lm[fm.layer].append(fm.path)
     return {k: sorted(v) for k, v in lm.items()}
 
 
-def _service_candidates(
-    file_metrics: list[dict[str, Any]], file_sources: dict[str, str]
-) -> list[str]:
+def _service_candidates(file_metrics: list[FileMetric], file_sources: dict[str, str]) -> list[str]:
     cands = []
     for fm in file_metrics:
-        path = fm["path"]
+        path = fm.path
         code = file_sources.get(path, "")
         if service_candidate(path, code):
             cands.append(path)
     return sorted(set(cands))
 
 
-def build_index(
-    root: str = ".", internal_prefixes: tuple[str, ...] | None = None
-) -> dict[str, Any]:
-    t0 = time.time()
+def build_index(root: str = ".", internal_prefixes: tuple[str, ...] | None = None) -> IndexResult:
     if internal_prefixes is None:
         internal_prefixes = CONFIG["INTERNAL_PREFIXES"]
 
     # Collect files
-    files, skipped_large = _collect_python_files(root)
+    files, _skipped_large = _collect_python_files(root)
     file_sources: dict[str, str] = {}
-
-    # (Skipping caching logic re-implementation for brevity and focus on modularity first)
-    # Ideally, we would import the caching logic here too, but to keep it clean,
-    # we will focus on the main path.
-    # Note: The user asked for "Maintainable", so dropping complex caching for now or
-    # adding it later if needed is better. The original code had it mixed in.
-    # For now, we do a fresh parse.
 
     modules: list[FileModule] = []
 
     threads = CONFIG["THREADS"]
-    parse_start = time.time()
 
     def process(path: str) -> FileModule:
         fm = _parse_single_file(path)
@@ -254,87 +239,31 @@ def build_index(
         for f in files:
             modules.append(process(f))
 
-    parse_end = time.time()
-
     # Aggregations
-    agg_start = time.time()
     dependencies = build_dependencies(modules, internal_prefixes)
-    call_edges, call_freq = build_call_graph(modules)
-    gmetrics = _aggregate_metrics(modules)
-    dup_groups = _collect_dup_groups(modules)
+    # call_edges, call_freq = build_call_graph(modules) # Unused in IndexResult for now
+    _call_edges, _call_freq = build_call_graph(modules)
+    gmetrics_dict = _aggregate_metrics(modules)
+    # dup_groups = _collect_dup_groups(modules) # Unused in minimal IndexResult
     fmetrics = _file_metrics_list(modules)
     layers = _layer_map(fmetrics)
     svc_cands = _service_candidates(fmetrics, file_sources)
 
-    module_entries = []
-    for m in modules:
-        module_entries.append(
-            {
-                "path": m.path,
-                "functions": [asdict(fn) for fn in m.functions],
-                "classes": [asdict(c) for c in m.classes],
-                "imports": m.imports,
-                "call_names": m.call_names,
-                "error": m.error,
-                "file_hash": m.file_hash,
-                "entrypoint": m.entrypoint,
-                "loc": m.loc,
-            }
-        )
+    global_metrics = GlobalMetrics(
+        total_functions=gmetrics_dict["total_functions"],
+        avg_function_complexity=gmetrics_dict["avg_function_complexity"],
+        std_function_complexity=gmetrics_dict["std_function_complexity"],
+        max_function_complexity=gmetrics_dict["max_function_complexity"],
+        max_function_complexity_ref=gmetrics_dict["max_function_complexity_ref"],
+        total_loc=gmetrics_dict["total_loc"],
+        hotspots=gmetrics_dict["hotspots"],
+    )
 
-    agg_end = time.time()
-
-    index = {
-        "files_scanned": len(files),
-        "modules": module_entries,
-        "dependencies": dependencies,
-        "functions": [
-            {
-                "file": m.path,
-                **{k: v for k, v in asdict(fn).items() if k != "calls_out"},
-            }
-            for m in modules
-            for fn in m.functions
-        ],
-        "function_call_frequency_top50": (
-            call_freq.most_common(50) if call_freq else call_freq.most_common(0)
-        ),
-        "complexity_hotspots_top50": gmetrics["hotspots"],
-        "duplicate_function_bodies": dup_groups,
-        "index_version": "ast-deep-v2",
-        "file_metrics": fmetrics,
-        "layers": layers,
-        "service_candidates": svc_cands,
-        "entrypoints": sorted([m.path for m in modules if m.entrypoint]),
-        "global_metrics": {
-            "total_functions": gmetrics["total_functions"],
-            "avg_function_complexity": gmetrics["avg_function_complexity"],
-            "std_function_complexity": gmetrics["std_function_complexity"],
-            "max_function_complexity": gmetrics["max_function_complexity"],
-            "max_function_complexity_ref": gmetrics["max_function_complexity_ref"],
-            "total_loc": gmetrics["total_loc"],
-        },
-        "call_graph_edges_sample": [
-            {"file": f, "function": fn, "callee": cal, "resolved": res}
-            for (f, fn, cal, res) in call_edges
-        ],
-        "cache_used": False,
-        "cached_files": 0,
-        "changed_files": len(files),
-        "skipped_large_files": skipped_large,
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "config": CONFIG,
-        "version_details": {
-            "impl": "ultra_deep_indexer_v2_modular",
-            "python": f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
-        },
-    }
-
-    if CONFIG["TIME_PROFILE"]:
-        index["time_profile_ms"] = {
-            "collect_parse": round((parse_end - parse_start) * 1000, 2),
-            "aggregation": round((agg_end - agg_start) * 1000, 2),
-            "total": round((time.time() - t0) * 1000, 2),
-        }
-
-    return index
+    return IndexResult(
+        files_scanned=len(files),
+        global_metrics=global_metrics,
+        file_metrics=fmetrics,
+        layers=layers,
+        service_candidates=svc_cands,
+        dependencies=dependencies,
+    )
