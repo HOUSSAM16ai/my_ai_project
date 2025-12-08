@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -95,8 +95,13 @@ async def test_admin_chat_injection():
     from app.models import AdminConversation
     from app.services.admin.chat_streamer import AdminChatStreamer
 
-    mock_persistence = MagicMock()
-    streamer = AdminChatStreamer(mock_persistence)
+    # Create a proper Mock Session with correct async/sync behavior
+    mock_session = AsyncMock()
+    # IMPORTANT: session.add is synchronous!
+    mock_session.add = MagicMock()
+
+    streamer_persistence = MagicMock()
+    streamer = AdminChatStreamer(streamer_persistence)
 
     # Mock inputs
     conversation = AdminConversation(id=1, title="Test", user_id=1)
@@ -109,7 +114,12 @@ async def test_admin_chat_injection():
 
     ai_client.stream_chat = mock_stream
 
-    session_factory = MagicMock()
+    # The session_factory_func must return a context manager that yields our mock_session
+    mock_session_ctx = AsyncMock()
+    mock_session_ctx.__aenter__.return_value = mock_session
+    mock_session_ctx.__aexit__.return_value = None
+
+    session_factory = MagicMock(return_value=mock_session_ctx)
 
     # Mock the context service injection
     with patch(
@@ -132,3 +142,8 @@ async def test_admin_chat_injection():
             assert len(history) >= 2  # System + User
             assert history[0]["role"] == "system"
             assert history[0]["content"] == "SYSTEM_PROMPT_INJECTED"
+
+            # Verify persistence was called correctly on the NEW session
+            # Since we didn't mock AdminChatPersistence class, it uses the real one with our mock_session.
+            assert mock_session.add.called
+            assert mock_session.commit.called
