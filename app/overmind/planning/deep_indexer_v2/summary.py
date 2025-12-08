@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Union
+from typing import Any
 
 
-def _normalize_input(index_result: Any) -> Dict[str, Any]:
+def _normalize_input(index_result: Any) -> dict[str, Any]:
     """Helper to normalize input to a dictionary structure."""
     if isinstance(index_result, dict):
         return index_result
@@ -12,11 +12,11 @@ def _normalize_input(index_result: Any) -> Dict[str, Any]:
         "global_metrics": getattr(index_result, "global_metrics", {}),
         "file_metrics": getattr(index_result, "file_metrics", []),
         "layers": getattr(index_result, "layers", {}),
-        "complexity_hotspots_top50": getattr(index_result, "complexity_hotspots_top50", [])
+        "complexity_hotspots_top50": getattr(index_result, "complexity_hotspots_top50", []),
     }
 
 
-def _get_project_stats(files_scanned: int, global_metrics: Any) -> List[str]:
+def _get_project_stats(files_scanned: int, global_metrics: Any) -> list[str]:
     """Extracts project statistics."""
     # Handle global_metrics being dict or object
     if isinstance(global_metrics, dict):
@@ -40,7 +40,7 @@ def _get_project_stats(files_scanned: int, global_metrics: Any) -> List[str]:
     ]
 
 
-def _get_top_files(file_metrics: List[Any]) -> List[str]:
+def _get_top_files(file_metrics: list[Any]) -> list[str]:
     """Extracts top files by LOC."""
     lines = ["### Top Files (by LOC)"]
 
@@ -64,7 +64,7 @@ def _get_top_files(file_metrics: List[Any]) -> List[str]:
     return lines
 
 
-def _get_architecture_layers(layers: Dict[str, Any]) -> List[str]:
+def _get_architecture_layers(layers: dict[str, Any]) -> list[str]:
     """Extracts architecture layer info."""
     lines = ["", "### Architecture Layers"]
     for layer, files in layers.items():
@@ -73,7 +73,7 @@ def _get_architecture_layers(layers: Dict[str, Any]) -> List[str]:
     return lines
 
 
-def _get_complexity_hotspots(hotspots: List[Any]) -> List[str]:
+def _get_complexity_hotspots(hotspots: list[Any]) -> list[str]:
     """Extracts complexity hotspots."""
     lines = ["", "### Complexity Hotspots"]
 
@@ -108,10 +108,9 @@ def summarize_for_prompt(index_result: Any, max_len: int = 4000) -> str:
     summary_lines = []
 
     # 1. Project Stats
-    summary_lines.extend(_get_project_stats(
-        idx.get("files_scanned", 0),
-        idx.get("global_metrics", {})
-    ))
+    summary_lines.extend(
+        _get_project_stats(idx.get("files_scanned", 0), idx.get("global_metrics", {}))
+    )
 
     # 2. Top Files
     summary_lines.extend(_get_top_files(idx.get("file_metrics", [])))
