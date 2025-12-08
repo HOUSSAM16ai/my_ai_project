@@ -1,0 +1,265 @@
+# ======================================================================================
+# Container Scanning Configuration
+# ======================================================================================
+# Multi-tool container image security scanning
+
+.container_base:
+  stage: security
+  artifacts:
+    reports:
+      container_scanning: container-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Trivy - Comprehensive container scanner
+container:trivy:
+  extends: .container_base
+  image: aquasec/trivy:latest
+  script:
+    - echo "🔍 Scanning container with Trivy..."
+    - |
+      trivy image \
+        --format json \
+        --output container-trivy.json \
+        --severity HIGH,CRITICAL \
+        --scanners vuln,config,secret \
+        --timeout 10m \
+        $CONTAINER_IMAGE
+    - |
+      trivy image \
+        --format table \
+        --severity HIGH,CRITICAL \
+        $CONTAINER_IMAGE
+    - echo "✅ Trivy scan completed"
+  artifacts:
+    paths:
+      - container-trivy.json
+  needs:
+    - build:docker
+
+# Grype - Fast vulnerability scanner
+container:grype:
+  extends: .container_base
+  image: anchore/grype:latest
+  script:
+    - echo "🔍 Scanning container with Grype..."
+    - |
+      grype \
+        $CONTAINER_IMAGE \
+        -o json \
+        --file container-grype.json \
+        --fail-on critical || true
+    - grype $CONTAINER_IMAGE -o table
+    - echo "✅ Grype scan completed"
+  artifacts:
+    paths:
+      - container-grype.json
+  needs:
+    - build:docker
+  allow_failure: true
+
+# Snyk Container
+container:snyk:
+  extends: .container_base
+  image: snyk/snyk:docker
+  script:
+    - echo "🔍 Scanning container with Snyk..."
+    - |
+      snyk container test \
+        $CONTAINER_IMAGE \
+        --json \
+        --json-file-output=container-snyk.json \
+        --severity-threshold=high || true
+    - echo "✅ Snyk scan completed"
+  artifacts:
+    paths:
+      - container-snyk.json
+  needs:
+    - build:docker
+  rules:
+    - if: $SNYK_TOKEN
+      when: on_success
+  allow_failure: true
+
+# Clair - Static analysis for containers
+container:clair:
+  extends: .container_base
+  image: quay.io/projectquay/clair:latest
+  script:
+    - echo "🔍 Scanning container with Clair..."
+    - |
+      clairctl analyze \
+        $CONTAINER_IMAGE \
+        --output json > container-clair.json || true
+    - echo "✅ Clair scan completed"
+  artifacts:
+    paths:
+      - container-clair.json
+  needs:
+    - build:docker
+  allow_failure: true
+
+# Docker Bench Security
+container:docker-bench:
+  extends: .container_base
+  image: docker:24-git
+  services:
+    - docker:24-dind
+  script:
+    - echo "🔍 Running Docker Bench Security..."
+    - |
+      docker run --rm \
+        --net host \
+        --pid host \
+        --userns host \
+        --cap-add audit_control \
+        -v /var/lib:/var/lib \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v /etc:/etc \
+        docker/docker-bench-security > docker-bench.log || true
+    - cat docker-bench.log
+    - echo "✅ Docker Bench completed"
+  artifacts:
+    paths:
+      - docker-bench.log
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true
+
+# Hadolint - Dockerfile linter
+container:hadolint:
+  stage: security
+  image: hadolint/hadolint:latest-alpine
+  script:
+    - echo "🔍 Linting Dockerfile..."
+    - |
+      hadolint Dockerfile \
+        --format json \
+        --ignore DL3008 \
+        --ignore DL3009 > hadolint-report.json || true
+    - hadolint Dockerfile || true
+    - echo "✅ Hadolint completed"
+  artifacts:
+    paths:
+      - hadolint-report.json
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true
+
+# Dockle - Container image linter
+container:dockle:
+  extends: .container_base
+  image: goodwithtech/dockle:latest
+  script:
+    - echo "🔍 Linting container with Dockle..."
+    - |
+      dockle \
+        --format json \
+        --output dockle-report.json \
+        --exit-code 0 \
+        $CONTAINER_IMAGE || true
+    - dockle $CONTAINER_IMAGE || true
+    - echo "✅ Dockle scan completed"
+  artifacts:
+    paths:
+      - dockle-report.json
+  needs:
+    - build:docker
+  allow_failure: true
+
+# Aggregate Container Scan Results
+container:aggregate:
+  stage: security
+  image: python:3.12-slim
+  script:
+    - echo "📊 Aggregating container scan results..."
+    - |
+      python3 << 'EOF'
+      import json
+      import glob
+      
+      vulnerabilities = []
+      summary = {
+          "total": 0,
+          "critical": 0,
+          "high": 0,
+          "medium": 0,
+          "low": 0,
+          "scanners_used": []
+      }
+      
+      for file in glob.glob("container-*.json"):
+          scanner = file.replace("container-", "").replace(".json", "")
+          summary["scanners_used"].append(scanner)
+          
+          try:
+              with open(file, 'r') as f:
+                  data = json.load(f)
+                  
+                  # Parse Trivy format
+                  if "Results" in data:
+                      for result in data["Results"]:
+                          if "Vulnerabilities" in result:
+                              vulnerabilities.extend(result["Vulnerabilities"])
+                  
+                  # Parse Grype format
+                  elif "matches" in data:
+                      vulnerabilities.extend(data["matches"])
+                  
+                  # Generic format
+                  elif isinstance(data, list):
+                      vulnerabilities.extend(data)
+                      
+          except Exception as e:
+              print(f"Error processing {file}: {e}")
+      
+      # Count by severity
+      for vuln in vulnerabilities:
+          severity = vuln.get("Severity", "").upper()
+          if severity == "CRITICAL":
+              summary["critical"] += 1
+          elif severity == "HIGH":
+              summary["high"] += 1
+          elif severity == "MEDIUM":
+              summary["medium"] += 1
+          elif severity == "LOW":
+              summary["low"] += 1
+      
+      summary["total"] = len(vulnerabilities)
+      
+      report = {
+          "version": "1.0",
+          "vulnerabilities": vulnerabilities,
+          "summary": summary
+      }
+      
+      with open("container-report.json", "w") as f:
+          json.dump(report, f, indent=2)
+      
+      print(f"✅ Scanned with {len(summary['scanners_used'])} tools")
+      print(f"   Total: {summary['total']}")
+      print(f"   Critical: {summary['critical']}")
+      print(f"   High: {summary['high']}")
+      print(f"   Medium: {summary['medium']}")
+      print(f"   Low: {summary['low']}")
+      
+      # Fail on critical vulnerabilities
+      if summary["critical"] > 0:
+          print(f"❌ CRITICAL: {summary['critical']} critical vulnerabilities found!")
+          exit(1)
+      EOF
+    - echo "✅ Container scan aggregation completed"
+  artifacts:
+    reports:
+      container_scanning: container-report.json
+    paths:
+      - container-report.json
+  needs:
+    - container:trivy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  allow_failure: true

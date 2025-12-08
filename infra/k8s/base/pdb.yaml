@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cogniforge
+  labels:
+    app: cogniforge
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: cogniforge
+      component: backend
