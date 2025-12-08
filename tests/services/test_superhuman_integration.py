@@ -5,11 +5,15 @@ Verification of the Hyper-Advanced Architecture Orchestrator.
 Validates the Neural Pathways and System Resonance.
 """
 
+from unittest.mock import patch
+
 import pytest
+
 from app.services.superhuman_integration import (
     SuperhumanArchitectureOrchestrator,
     get_orchestrator,
 )
+
 
 class TestSuperhumanIntegration:
     """
@@ -28,7 +32,7 @@ class TestSuperhumanIntegration:
         assert orchestrator.system_health is not None
         assert "microservices" in orchestrator.system_health
 
-        # Verify component status (should be False in test env as deps are missing)
+        # Verify component status (should be boolean)
         assert isinstance(orchestrator.system_health["microservices"], bool)
 
     def test_system_status_structure(self):
@@ -91,3 +95,21 @@ class TestSuperhumanIntegration:
 
         assert analysis["project_path"] == "/tmp/test_lattice"
         assert "analyses" in analysis
+
+    @patch("importlib.import_module")
+    def test_safe_initialization_protocol(self, mock_import):
+        """
+        🦾 DEEP WEAKNESS FIX VERIFICATION
+        Verifies that the 'Bulkhead Pattern' prevents cascade failure
+        when a subsystem module raises a runtime exception during import.
+        """
+        # Simulate a catastrophic failure in a subsystem
+        mock_import.side_effect = RuntimeError("Quantum Destabilization Detected")
+
+        # The orchestrator should absorb the shock and continue
+        try:
+            orchestrator = SuperhumanArchitectureOrchestrator()
+            assert orchestrator.system_health["microservices"] is False
+            assert orchestrator.system_health["testing"] is False
+        except RuntimeError:
+            pytest.fail("Orchestrator failed to contain subsystem error (Deep Weakness Persists)")
