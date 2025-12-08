@@ -1,7 +1,10 @@
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
-from app.services.system_service import system_service
 from sqlalchemy.exc import OperationalError
+
+from app.services.system_service import system_service
+
 
 @pytest.mark.asyncio
 async def test_check_database_status_healthy():
@@ -14,6 +17,7 @@ async def test_check_database_status_healthy():
     assert status == "healthy"
     mock_db.execute.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_check_database_status_unhealthy():
     """Test that check_database_status returns 'unhealthy' when the database raises an exception."""
@@ -24,6 +28,7 @@ async def test_check_database_status_unhealthy():
 
     assert status == "unhealthy"
     mock_db.execute.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_is_database_connected_true():
@@ -36,6 +41,7 @@ async def test_is_database_connected_true():
     connected = await system_service.is_database_connected(mock_db)
 
     assert connected is True
+
 
 @pytest.mark.asyncio
 async def test_is_database_connected_false():

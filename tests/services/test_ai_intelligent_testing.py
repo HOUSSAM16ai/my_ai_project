@@ -1,11 +1,12 @@
 import pytest
+
 from app.services.ai_intelligent_testing import (
     AITestGenerator,
-    SmartTestSelector,
+    CodeAnalysis,
     CoverageOptimizer,
+    SmartTestSelector,
     TestCase,
     TestType,
-    CodeAnalysis
 )
 
 SAMPLE_CODE = """
@@ -22,9 +23,11 @@ class Calculator:
         return a + b
 """
 
+
 @pytest.fixture
 def generator():
     return AITestGenerator()
+
 
 def test_analyze_code(generator):
     """Test analyzing code structure."""
@@ -56,12 +59,14 @@ def test_analyze_code(generator):
     # The edge case description contains the function name, not necessarily the param name
     assert any("calculate_area" in case for case in analysis.edge_cases)
 
+
 def test_analyze_code_syntax_error(generator):
     """Test analyzing invalid code."""
     analysis = generator.analyze_code("def broken_code(:", "broken.py")
 
     assert analysis.complexity_score == 0.0
     assert analysis.functions == []
+
 
 def test_generate_tests_for_function(generator):
     """Test generating test cases for a function."""
@@ -82,46 +87,80 @@ def test_generate_tests_for_function(generator):
     assert "calculate_area" in happy_path.test_code
     assert "assert" in happy_path.test_code
 
+
 def test_smart_selector():
     """Test selecting high priority tests."""
     selector = SmartTestSelector()
 
     test1 = TestCase(
-        test_id="t1", test_name="critical_test", test_type=TestType.SECURITY,
-        description="", function_under_test="auth", test_code="", expected_outcome="",
-        input_values={}, edge_cases_covered=[], confidence=0.9, priority=10,
-        estimated_execution_time=1.0
+        test_id="t1",
+        test_name="critical_test",
+        test_type=TestType.SECURITY,
+        description="",
+        function_under_test="auth",
+        test_code="",
+        expected_outcome="",
+        input_values={},
+        edge_cases_covered=[],
+        confidence=0.9,
+        priority=10,
+        estimated_execution_time=1.0,
     )
 
     test2 = TestCase(
-        test_id="t2", test_name="minor_test", test_type=TestType.UNIT,
-        description="", function_under_test="util", test_code="", expected_outcome="",
-        input_values={}, edge_cases_covered=[], confidence=0.5, priority=1,
-        estimated_execution_time=1.0
+        test_id="t2",
+        test_name="minor_test",
+        test_type=TestType.UNIT,
+        description="",
+        function_under_test="util",
+        test_code="",
+        expected_outcome="",
+        input_values={},
+        edge_cases_covered=[],
+        confidence=0.5,
+        priority=1,
+        estimated_execution_time=1.0,
     )
 
     # Simulate that "auth" was changed
     selected = selector.select_tests([test1, test2], changed_files=["auth.py"], time_budget=10.0)
 
     assert len(selected) == 2
-    assert selected[0] == test1 # Higher priority should be first
+    assert selected[0] == test1  # Higher priority should be first
+
 
 def test_coverage_optimizer():
     """Test coverage optimization logic."""
     optimizer = CoverageOptimizer()
 
     test1 = TestCase(
-        test_id="t1", test_name="big_test", test_type=TestType.UNIT,
-        description="", function_under_test="big", test_code="", expected_outcome="",
-        input_values={}, edge_cases_covered=[], confidence=1.0, priority=5,
-        estimated_execution_time=1.0
+        test_id="t1",
+        test_name="big_test",
+        test_type=TestType.UNIT,
+        description="",
+        function_under_test="big",
+        test_code="",
+        expected_outcome="",
+        input_values={},
+        edge_cases_covered=[],
+        confidence=1.0,
+        priority=5,
+        estimated_execution_time=1.0,
     )
 
     test2 = TestCase(
-        test_id="t2", test_name="small_test", test_type=TestType.UNIT,
-        description="", function_under_test="small", test_code="", expected_outcome="",
-        input_values={}, edge_cases_covered=[], confidence=0.1, priority=5,
-        estimated_execution_time=1.0
+        test_id="t2",
+        test_name="small_test",
+        test_type=TestType.UNIT,
+        description="",
+        function_under_test="small",
+        test_code="",
+        expected_outcome="",
+        input_values={},
+        edge_cases_covered=[],
+        confidence=0.1,
+        priority=5,
+        estimated_execution_time=1.0,
     )
 
     # Should pick test1 because it simulates higher coverage (based on confidence)
