@@ -1,16 +1,21 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import GeneratedPrompt, PromptTemplate, User
 from app.services.prompt_engineering_service import prompt_engineering_service
-from app.models import PromptTemplate, GeneratedPrompt, User
+
 
 @pytest.fixture
 def mock_db_session():
     return AsyncMock(spec=AsyncSession)
 
+
 @pytest.fixture
 def mock_user():
     return User(id=1, email="test@example.com", is_admin=False)
+
 
 @pytest.mark.asyncio
 async def test_generate_prompt_existing_template(mock_db_session, mock_user):
@@ -37,6 +42,7 @@ async def test_generate_prompt_existing_template(mock_db_session, mock_user):
     assert isinstance(mock_db_session.add.call_args[0][0], GeneratedPrompt)
     assert mock_db_session.commit.call_count == 1
 
+
 @pytest.mark.asyncio
 async def test_generate_prompt_missing_template(mock_db_session, mock_user):
     """Test generating a prompt when the template is missing (should create default)."""
@@ -53,6 +59,7 @@ async def test_generate_prompt_missing_template(mock_db_session, mock_user):
         if isinstance(obj, PromptTemplate):
             obj.id = 2
         return None
+
     mock_db_session.refresh.side_effect = side_effect_refresh
 
     result = await prompt_engineering_service.generate_prompt(
@@ -76,6 +83,7 @@ async def test_generate_prompt_missing_template(mock_db_session, mock_user):
     assert added_generated.template_id == 2
 
     assert mock_db_session.commit.call_count == 2
+
 
 @pytest.mark.asyncio
 async def test_generate_prompt_formatting_error(mock_db_session, mock_user):
