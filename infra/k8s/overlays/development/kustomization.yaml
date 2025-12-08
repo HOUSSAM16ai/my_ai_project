@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: development
+
+namePrefix: dev-
+
+commonLabels:
+  environment: development
+  managed-by: kustomize
+
+bases:
+  - ../../base
+
+replicas:
+  - name: cogniforge
+    count: 1
+
+images:
+  - name: CONTAINER_IMAGE_PLACEHOLDER
+    newName: registry.gitlab.com/cogniforge/cogniforge
+    newTag: latest
+
+configMapGenerator:
+  - name: cogniforge-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - ENABLE_PROFILING=true
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+  - ingress-patch.yaml
+
+resources:
+  - namespace.yaml

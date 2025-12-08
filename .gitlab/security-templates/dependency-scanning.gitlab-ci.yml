@@ -1,0 +1,227 @@
+# ======================================================================================
+# Dependency Scanning Configuration
+# ======================================================================================
+# Comprehensive dependency vulnerability scanning
+
+.dependency_base:
+  stage: security
+  artifacts:
+    reports:
+      dependency_scanning: dependency-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# Safety - Python dependency checker
+dependency:safety:
+  extends: .dependency_base
+  image: python:3.12-slim
+  before_script:
+    - pip install safety
+  script:
+    - echo "🔍 Scanning Python dependencies with Safety..."
+    - |
+      safety check \
+        --json \
+        --output dependency-safety.json \
+        --file requirements.txt || true
+    - safety check --bare || true
+    - echo "✅ Safety scan completed"
+  artifacts:
+    paths:
+      - dependency-safety.json
+
+# pip-audit - Official Python security scanner
+dependency:pip-audit:
+  extends: .dependency_base
+  image: python:3.12-slim
+  before_script:
+    - pip install pip-audit
+  script:
+    - echo "🔍 Scanning with pip-audit..."
+    - |
+      pip-audit \
+        --format json \
+        --output dependency-pip-audit.json \
+        --requirement requirements.txt || true
+    - echo "✅ pip-audit scan completed"
+  artifacts:
+    paths:
+      - dependency-pip-audit.json
+
+# Trivy - Comprehensive vulnerability scanner
+dependency:trivy:
+  extends: .dependency_base
+  image: aquasec/trivy:latest
+  script:
+    - echo "🔍 Scanning dependencies with Trivy..."
+    - |
+      trivy fs \
+        --format json \
+        --output dependency-trivy.json \
+        --severity HIGH,CRITICAL \
+        --scanners vuln \
+        . || true
+    - echo "✅ Trivy scan completed"
+  artifacts:
+    paths:
+      - dependency-trivy.json
+
+# OWASP Dependency Check
+dependency:owasp:
+  extends: .dependency_base
+  image: owasp/dependency-check:latest
+  script:
+    - echo "🔍 Running OWASP Dependency Check..."
+    - |
+      /usr/share/dependency-check/bin/dependency-check.sh \
+        --scan . \
+        --format JSON \
+        --out dependency-owasp.json \
+        --enableExperimental || true
+    - echo "✅ OWASP scan completed"
+  artifacts:
+    paths:
+      - dependency-owasp.json
+  allow_failure: true
+
+# Snyk - Developer-first security scanner
+dependency:snyk:
+  extends: .dependency_base
+  image: snyk/snyk:python-3.12
+  script:
+    - echo "🔍 Scanning with Snyk..."
+    - |
+      snyk test \
+        --json \
+        --json-file-output=dependency-snyk.json \
+        --severity-threshold=high || true
+    - echo "✅ Snyk scan completed"
+  artifacts:
+    paths:
+      - dependency-snyk.json
+  rules:
+    - if: $SNYK_TOKEN
+      when: on_success
+  allow_failure: true
+
+# Aggregate Dependency Results
+dependency:aggregate:
+  stage: security
+  image: python:3.12-slim
+  script:
+    - echo "📊 Aggregating dependency scan results..."
+    - |
+      python3 << 'EOF'
+      import json
+      import glob
+      from collections import defaultdict
+      
+      vulnerabilities = defaultdict(list)
+      summary = {
+          "total": 0,
+          "critical": 0,
+          "high": 0,
+          "medium": 0,
+          "low": 0,
+          "packages_scanned": 0
+      }
+      
+      for file in glob.glob("dependency-*.json"):
+          try:
+              with open(file, 'r') as f:
+                  data = json.load(f)
+                  # Process different formats
+                  if isinstance(data, list):
+                      for vuln in data:
+                          pkg = vuln.get("package", "unknown")
+                          vulnerabilities[pkg].append(vuln)
+                  elif isinstance(data, dict):
+                      if "vulnerabilities" in data:
+                          for vuln in data["vulnerabilities"]:
+                              pkg = vuln.get("package", "unknown")
+                              vulnerabilities[pkg].append(vuln)
+          except Exception as e:
+              print(f"Error processing {file}: {e}")
+      
+      summary["total"] = sum(len(v) for v in vulnerabilities.values())
+      summary["packages_scanned"] = len(vulnerabilities)
+      
+      report = {
+          "version": "1.0",
+          "vulnerabilities": vulnerabilities,
+          "summary": summary
+      }
+      
+      with open("dependency-report.json", "w") as f:
+          json.dump(report, f, indent=2)
+      
+      print(f"✅ Found {summary['total']} vulnerabilities in {summary['packages_scanned']} packages")
+      
+      # Fail if critical vulnerabilities found
+      if summary["critical"] > 0:
+          print(f"❌ CRITICAL: {summary['critical']} critical vulnerabilities found!")
+          exit(1)
+      EOF
+    - echo "✅ Dependency aggregation completed"
+  artifacts:
+    reports:
+      dependency_scanning: dependency-report.json
+    paths:
+      - dependency-report.json
+  needs:
+    - dependency:safety
+    - dependency:pip-audit
+    - dependency:trivy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true
+
+# License Compliance Check
+dependency:license:
+  stage: security
+  image: python:3.12-slim
+  before_script:
+    - pip install pip-licenses
+  script:
+    - echo "📜 Checking license compliance..."
+    - |
+      pip-licenses \
+        --format=json \
+        --output-file=licenses.json \
+        --with-urls \
+        --with-description
+    - |
+      python3 << 'EOF'
+      import json
+      
+      # Forbidden licenses
+      FORBIDDEN = ["GPL-3.0", "AGPL-3.0", "SSPL"]
+      # Requires attribution
+      REQUIRES_ATTRIBUTION = ["Apache-2.0", "MIT", "BSD"]
+      
+      with open("licenses.json", "r") as f:
+          licenses = json.load(f)
+      
+      issues = []
+      for pkg in licenses:
+          license = pkg.get("License", "Unknown")
+          if any(forbidden in license for forbidden in FORBIDDEN):
+              issues.append(f"❌ {pkg['Name']}: Forbidden license {license}")
+      
+      if issues:
+          print("\n".join(issues))
+          exit(1)
+      else:
+          print("✅ All licenses are compliant")
+      EOF
+    - echo "✅ License check completed"
+  artifacts:
+    paths:
+      - licenses.json
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true

@@ -1,0 +1,145 @@
+# ======================================================================================
+# SAST (Static Application Security Testing) Configuration
+# ======================================================================================
+# Advanced SAST configuration using multiple tools for comprehensive coverage
+
+.sast_base:
+  stage: security
+  variables:
+    SAST_EXCLUDED_PATHS: "tests/,migrations/,docs/,*.md"
+  artifacts:
+    reports:
+      sast: sast-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# Semgrep - Fast, customizable static analysis
+sast:semgrep:
+  extends: .sast_base
+  image: returntocorp/semgrep:latest
+  script:
+    - echo "🔍 Running Semgrep SAST..."
+    - |
+      semgrep \
+        --config=auto \
+        --config=.semgrep.yml \
+        --json \
+        --output=sast-semgrep.json \
+        --exclude="tests/" \
+        --exclude="migrations/" \
+        --metrics=off \
+        . || true
+    - echo "✅ Semgrep scan completed"
+  artifacts:
+    paths:
+      - sast-semgrep.json
+    reports:
+      sast: sast-semgrep.json
+
+# Bandit - Python security linter
+sast:bandit:
+  extends: .sast_base
+  image: python:3.12-slim
+  before_script:
+    - pip install bandit[toml]
+  script:
+    - echo "🔍 Running Bandit SAST..."
+    - |
+      bandit \
+        -r app/ \
+        -f json \
+        -o sast-bandit.json \
+        -c pyproject.toml \
+        --severity-level medium || true
+    - echo "✅ Bandit scan completed"
+  artifacts:
+    paths:
+      - sast-bandit.json
+
+# PyLint Security Plugin
+sast:pylint-security:
+  extends: .sast_base
+  image: python:3.12-slim
+  before_script:
+    - pip install pylint pylint-secure-coding-standard
+  script:
+    - echo "🔍 Running PyLint Security..."
+    - |
+      pylint \
+        --load-plugins=pylint_secure_coding_standard \
+        --output-format=json \
+        app/ > sast-pylint.json || true
+    - echo "✅ PyLint security scan completed"
+  artifacts:
+    paths:
+      - sast-pylint.json
+  allow_failure: true
+
+# CodeQL Analysis (if available)
+sast:codeql:
+  extends: .sast_base
+  image: ghcr.io/github/codeql-action/codeql-runner:latest
+  script:
+    - echo "🔍 Running CodeQL..."
+    - codeql database create codeql-db --language=python
+    - codeql database analyze codeql-db --format=sarif-latest --output=sast-codeql.sarif
+    - echo "✅ CodeQL scan completed"
+  artifacts:
+    paths:
+      - sast-codeql.sarif
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# Aggregate SAST Results
+sast:aggregate:
+  stage: security
+  image: python:3.12-slim
+  script:
+    - echo "📊 Aggregating SAST results..."
+    - |
+      python3 << 'EOF'
+      import json
+      import glob
+      
+      results = {
+          "vulnerabilities": [],
+          "summary": {
+              "total": 0,
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+          }
+      }
+      
+      for file in glob.glob("sast-*.json"):
+          try:
+              with open(file, 'r') as f:
+                  data = json.load(f)
+                  if isinstance(data, dict) and "results" in data:
+                      results["vulnerabilities"].extend(data["results"])
+          except Exception as e:
+              print(f"Error processing {file}: {e}")
+      
+      results["summary"]["total"] = len(results["vulnerabilities"])
+      
+      with open("sast-report.json", "w") as f:
+          json.dump(results, f, indent=2)
+      
+      print(f"✅ Found {results['summary']['total']} total findings")
+      EOF
+    - echo "✅ SAST aggregation completed"
+  artifacts:
+    reports:
+      sast: sast-report.json
+    paths:
+      - sast-report.json
+  needs:
+    - sast:semgrep
+    - sast:bandit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
