@@ -8,6 +8,7 @@ from .models import LoadBalancerState, ProtocolType, RoutingDecision, RoutingStr
 from .providers.anthropic import AnthropicAdapter
 from .providers.base import ModelProviderAdapter
 from .providers.openai import OpenAIAdapter
+from .strategies.implementations import get_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -96,30 +97,15 @@ class IntelligentRouter:
         self.provider_stats: dict[str, LoadBalancerState] = AutoInitDict()
         self.lock = threading.RLock()
 
-    def route_request(
+    def _evaluate_candidates(
         self,
         model_type: str,
         estimated_tokens: int,
-        strategy: RoutingStrategy = RoutingStrategy.INTELLIGENT,
-        constraints: dict[str, Any] | None = None,
-    ) -> RoutingDecision:
-        """
-        توجيه ذكي للطلبات - Intelligent request routing
-
-        Args:
-            model_type: Type of model needed (e.g., 'gpt-4', 'claude-3')
-            estimated_tokens: Estimated token count
-            strategy: Routing strategy to use
-            constraints: Additional constraints (max_cost, max_latency, etc.)
-
-        Returns:
-            RoutingDecision with selected provider and reasoning
-        """
-        constraints = constraints or {}
+        constraints: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Filter and prepare candidates based on basic constraints."""
         max_cost = constraints.get("max_cost", float("inf"))
         max_latency = constraints.get("max_latency", float("inf"))
-
-        # Evaluate all available providers
         candidates = []
 
         for provider_name, adapter in self.provider_adapters.items():
@@ -153,47 +139,37 @@ class IntelligentRouter:
             except Exception as e:
                 logger.warning(f"Error evaluating provider {provider_name}: {e}")
                 continue
+        return candidates
+
+    def route_request(
+        self,
+        model_type: str,
+        estimated_tokens: int,
+        strategy: RoutingStrategy = RoutingStrategy.INTELLIGENT,
+        constraints: dict[str, Any] | None = None,
+    ) -> RoutingDecision:
+        """
+        توجيه ذكي للطلبات - Intelligent request routing
+
+        Args:
+            model_type: Type of model needed (e.g., 'gpt-4', 'claude-3')
+            estimated_tokens: Estimated token count
+            strategy: Routing strategy to use
+            constraints: Additional constraints (max_cost, max_latency, etc.)
+
+        Returns:
+            RoutingDecision with selected provider and reasoning
+        """
+        constraints = constraints or {}
+
+        candidates = self._evaluate_candidates(model_type, estimated_tokens, constraints)
 
         if not candidates:
             raise ValueError("No suitable provider found for routing (or all circuits open)")
 
-        # Calculate scores with normalization for INTELLIGENT strategy
-        if strategy == RoutingStrategy.INTELLIGENT and len(candidates) > 0:
-            # Find min/max for normalization
-            min_cost = min(c["cost"] for c in candidates)
-            max_cost = max(c["cost"] for c in candidates)
-            cost_range = max_cost - min_cost if max_cost > min_cost else 1.0
-
-            min_latency = min(c["latency"] for c in candidates)
-            max_latency = max(c["latency"] for c in candidates)
-            latency_range = max_latency - min_latency if max_latency > min_latency else 1.0
-
-            for c in candidates:
-                # Normalize to [0, 1] where 0 is best (min) and 1 is worst (max)
-                norm_cost = (c["cost"] - min_cost) / cost_range if cost_range > 0 else 0.0
-                norm_latency = (
-                    (c["latency"] - min_latency) / latency_range if latency_range > 0 else 0.0
-                )
-
-                # Score: Higher is better.
-                # Invert normalized metrics so 1.0 is best, 0.0 is worst.
-                # Use slightly modified weights to emphasize performance quality
-                c["score"] = (
-                    (1.0 - norm_cost) * 0.3 + (1.0 - norm_latency) * 0.5 + c["health_score"] * 0.2
-                )
-        else:
-            # Legacy/Single-factor strategies
-            for c in candidates:
-                if strategy == RoutingStrategy.COST_OPTIMIZED:
-                    c["score"] = 1.0 / (c["cost"] + 0.001)
-                elif strategy == RoutingStrategy.LATENCY_BASED:
-                    c["score"] = 1.0 / (c["latency"] + 0.001)
-                else:
-                    # Fallback for INTELLIGENT if only 1 candidate (normalization irrelevant)
-                    # or other future strategies
-                    cost_score = 1.0 / (c["cost"] + 0.001)
-                    latency_score = 1.0 / (c["latency"] + 0.001)
-                    c["score"] = cost_score * 0.3 + latency_score * 0.5 + c["health_score"] * 0.2
+        # Apply Strategy Pattern
+        strategy_impl = get_strategy(strategy)
+        strategy_impl.calculate_scores(candidates)
 
         # Select best candidate
         best = max(candidates, key=lambda x: x["score"])
