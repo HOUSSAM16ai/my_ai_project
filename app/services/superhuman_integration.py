@@ -12,41 +12,31 @@ This module provides:
 - Self-healing and auto-scaling capabilities
 """
 
+import contextlib
+import logging
 from datetime import datetime
 from typing import Any
 
-# Import all superhuman systems
-try:
-    from app.services.ai_adaptive_microservices import SelfAdaptiveMicroservices
+# Configure Superhuman Logger
+logger = logging.getLogger("superhuman.core")
 
-    MICROSERVICES_AVAILABLE = True
-except ImportError:
-    MICROSERVICES_AVAILABLE = False
 
-try:
-    from app.services.ai_intelligent_testing import (
-        AITestGenerator,
-        CoverageOptimizer,
-        SmartTestSelector,
-    )
+# Helper for Safe Loading (Quantum Resilience Protocol)
+def _safe_load_subsystem(module_path: str, class_name: str) -> Any | None:
+    """
+    Safely loads a subsystem preventing cascade failures.
+    Implements a 'Bulkhead Pattern' for import isolation.
+    """
+    try:
+        # Dynamic import to prevent hard dependency crashes
+        import importlib
 
-    TESTING_AVAILABLE = True
-except ImportError:
-    TESTING_AVAILABLE = False
-
-try:
-    from app.services.ai_auto_refactoring import CodeAnalyzer, RefactoringEngine
-
-    REFACTORING_AVAILABLE = True
-except ImportError:
-    REFACTORING_AVAILABLE = False
-
-try:
-    from app.services.ai_project_management import ProjectOrchestrator
-
-    PROJECT_MGMT_AVAILABLE = True
-except ImportError:
-    PROJECT_MGMT_AVAILABLE = False
+        module = importlib.import_module(module_path)
+        cls = getattr(module, class_name)
+        return cls()
+    except (ImportError, AttributeError, Exception) as e:
+        logger.warning(f"Subsystem {class_name} unavailable: {e}")
+        return None
 
 
 class SuperhumanArchitectureOrchestrator:
@@ -56,19 +46,34 @@ class SuperhumanArchitectureOrchestrator:
     """
 
     def __init__(self):
-        self.microservices = SelfAdaptiveMicroservices() if MICROSERVICES_AVAILABLE else None
-        self.test_generator = AITestGenerator() if TESTING_AVAILABLE else None
-        self.test_selector = SmartTestSelector() if TESTING_AVAILABLE else None
-        self.coverage_optimizer = CoverageOptimizer() if TESTING_AVAILABLE else None
-        self.refactoring_engine = RefactoringEngine() if REFACTORING_AVAILABLE else None
-        self.code_analyzer = CodeAnalyzer() if REFACTORING_AVAILABLE else None
-        self.project_orchestrator = ProjectOrchestrator() if PROJECT_MGMT_AVAILABLE else None
+        # Initialize Subsystems with Quantum Resilience (Safe Loading)
+        self.microservices = _safe_load_subsystem(
+            "app.services.ai_adaptive_microservices", "SelfAdaptiveMicroservices"
+        )
+        self.test_generator = _safe_load_subsystem(
+            "app.services.ai_intelligent_testing", "AITestGenerator"
+        )
+        self.test_selector = _safe_load_subsystem(
+            "app.services.ai_intelligent_testing", "SmartTestSelector"
+        )
+        self.coverage_optimizer = _safe_load_subsystem(
+            "app.services.ai_intelligent_testing", "CoverageOptimizer"
+        )
+        self.refactoring_engine = _safe_load_subsystem(
+            "app.services.ai_auto_refactoring", "RefactoringEngine"
+        )
+        self.code_analyzer = _safe_load_subsystem(
+            "app.services.ai_auto_refactoring", "CodeAnalyzer"
+        )
+        self.project_orchestrator = _safe_load_subsystem(
+            "app.services.ai_project_management", "ProjectOrchestrator"
+        )
 
         self.system_health = {
-            "microservices": MICROSERVICES_AVAILABLE,
-            "testing": TESTING_AVAILABLE,
-            "refactoring": REFACTORING_AVAILABLE,
-            "project_management": PROJECT_MGMT_AVAILABLE,
+            "microservices": self.microservices is not None,
+            "testing": self.test_generator is not None,
+            "refactoring": self.refactoring_engine is not None,
+            "project_management": self.project_orchestrator is not None,
         }
 
     def get_system_status(self) -> dict[str, Any]:
@@ -76,13 +81,18 @@ class SuperhumanArchitectureOrchestrator:
         الحصول على حالة النظام الشاملة
         Get comprehensive system status
         """
+        microservices_available = self.system_health["microservices"]
+        testing_available = self.system_health["testing"]
+        refactoring_available = self.system_health["refactoring"]
+        project_mgmt_available = self.system_health["project_management"]
+
         status = {
             "timestamp": datetime.now().isoformat(),
             "architecture_version": "2025.1.0-superhuman",
             "systems": {
                 "microservices": {
-                    "available": MICROSERVICES_AVAILABLE,
-                    "status": "active" if MICROSERVICES_AVAILABLE else "unavailable",
+                    "available": microservices_available,
+                    "status": "active" if microservices_available else "unavailable",
                     "features": (
                         [
                             "AI-powered auto-scaling",
@@ -90,13 +100,13 @@ class SuperhumanArchitectureOrchestrator:
                             "Predictive health monitoring",
                             "Self-healing capabilities",
                         ]
-                        if MICROSERVICES_AVAILABLE
+                        if microservices_available
                         else []
                     ),
                 },
                 "intelligent_testing": {
-                    "available": TESTING_AVAILABLE,
-                    "status": "active" if TESTING_AVAILABLE else "unavailable",
+                    "available": testing_available,
+                    "status": "active" if testing_available else "unavailable",
                     "features": (
                         [
                             "AI-generated test cases",
@@ -104,13 +114,13 @@ class SuperhumanArchitectureOrchestrator:
                             "Coverage optimization",
                             "Mutation testing ready",
                         ]
-                        if TESTING_AVAILABLE
+                        if testing_available
                         else []
                     ),
                 },
                 "auto_refactoring": {
-                    "available": REFACTORING_AVAILABLE,
-                    "status": "active" if REFACTORING_AVAILABLE else "unavailable",
+                    "available": refactoring_available,
+                    "status": "active" if refactoring_available else "unavailable",
                     "features": (
                         [
                             "Continuous code analysis",
@@ -118,13 +128,13 @@ class SuperhumanArchitectureOrchestrator:
                             "Code quality metrics",
                             "Security vulnerability detection",
                         ]
-                        if REFACTORING_AVAILABLE
+                        if refactoring_available
                         else []
                     ),
                 },
                 "project_management": {
-                    "available": PROJECT_MGMT_AVAILABLE,
-                    "status": "active" if PROJECT_MGMT_AVAILABLE else "unavailable",
+                    "available": project_mgmt_available,
+                    "status": "active" if project_mgmt_available else "unavailable",
                     "features": (
                         [
                             "AI-powered task prediction",
@@ -132,7 +142,7 @@ class SuperhumanArchitectureOrchestrator:
                             "Risk assessment",
                             "Resource optimization",
                         ]
-                        if PROJECT_MGMT_AVAILABLE
+                        if project_mgmt_available
                         else []
                     ),
                 },
@@ -181,7 +191,7 @@ class SuperhumanArchitectureOrchestrator:
         """الحصول على القدرات المتاحة"""
         capabilities = []
 
-        if MICROSERVICES_AVAILABLE:
+        if self.system_health["microservices"]:
             capabilities.extend(
                 [
                     "🔄 Self-Adaptive Microservices",
@@ -191,7 +201,7 @@ class SuperhumanArchitectureOrchestrator:
                 ]
             )
 
-        if TESTING_AVAILABLE:
+        if self.system_health["testing"]:
             capabilities.extend(
                 [
                     "🧪 AI-Generated Test Cases",
@@ -201,7 +211,7 @@ class SuperhumanArchitectureOrchestrator:
                 ]
             )
 
-        if REFACTORING_AVAILABLE:
+        if self.system_health["refactoring"]:
             capabilities.extend(
                 [
                     "🔧 Continuous Auto-Refactoring",
@@ -211,7 +221,7 @@ class SuperhumanArchitectureOrchestrator:
                 ]
             )
 
-        if PROJECT_MGMT_AVAILABLE:
+        if self.system_health["project_management"]:
             capabilities.extend(
                 [
                     "🎯 AI-Powered Task Prediction",
@@ -265,32 +275,36 @@ class SuperhumanArchitectureOrchestrator:
         }
 
         # Code quality analysis
-        if self.code_analyzer:
-            results["analyses"]["code_quality"] = {
-                "status": "completed",
-                "message": "Code analysis available - use analyze_code() method",
-            }
+        with contextlib.suppress(Exception):
+            if self.code_analyzer:
+                results["analyses"]["code_quality"] = {
+                    "status": "completed",
+                    "message": "Code analysis available - use analyze_code() method",
+                }
 
         # Testing analysis
-        if self.test_generator:
-            results["analyses"]["testing"] = {
-                "status": "completed",
-                "message": "Test generation available - use generate_tests() method",
-            }
+        with contextlib.suppress(Exception):
+            if self.test_generator:
+                results["analyses"]["testing"] = {
+                    "status": "completed",
+                    "message": "Test generation available - use generate_tests() method",
+                }
 
         # Microservices health
-        if self.microservices:
-            results["analyses"]["microservices"] = {
-                "status": "active",
-                "message": "Self-adaptive microservices running",
-            }
+        with contextlib.suppress(Exception):
+            if self.microservices:
+                results["analyses"]["microservices"] = {
+                    "status": "active",
+                    "message": "Self-adaptive microservices running",
+                }
 
         # Project management insights
-        if self.project_orchestrator:
-            results["analyses"]["project_management"] = {
-                "status": "active",
-                "message": "AI project management available",
-            }
+        with contextlib.suppress(Exception):
+            if self.project_orchestrator:
+                results["analyses"]["project_management"] = {
+                    "status": "active",
+                    "message": "AI project management available",
+                }
 
         return results
 
