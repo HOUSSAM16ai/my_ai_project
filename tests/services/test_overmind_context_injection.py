@@ -13,46 +13,64 @@ def test_codebase_context_summary():
     """
     service = get_context_service()
 
-    # Create a real IndexResult object for the mock
-    mock_global = GlobalMetrics(
-        total_loc=12345, total_functions=50, avg_function_complexity=5.5, max_function_complexity=20
-    )
-
-    mock_files = [
-        FileMetric(
-            path="app/main.py",
-            loc=100,
-            function_count=2,
-            class_count=0,
-            avg_function_complexity=1.0,
-            max_function_complexity=1,
-            tags=[],
-            layer="api",
-            entrypoint=True,
-            file_hash="hash1",
-        ),
-        FileMetric(
-            path="app/huge.py",
-            loc=5000,
-            function_count=20,
-            class_count=5,
-            avg_function_complexity=10.0,
-            max_function_complexity=20,
-            tags=[],
-            layer="core",
-            entrypoint=False,
-            file_hash="hash2",
-        ),
-    ]
-
-    mock_result = IndexResult(
+    # Mock build_index to return a controlled result (IndexResult object)
+    mock_index = IndexResult(
         files_scanned=10,
-        global_metrics=mock_global,
-        file_metrics=mock_files,
+        global_metrics=GlobalMetrics(
+            total_loc=12345,
+            total_functions=50,
+            avg_function_complexity=5.5,
+            std_function_complexity=1.0,
+            max_function_complexity=20,
+            max_function_complexity_ref="ref"
+        ),
+        file_metrics=[
+            FileMetric(
+                path="app/main.py",
+                file_hash="abc",
+                loc=100,
+                function_count=2,
+                class_count=0,
+                avg_function_complexity=1.0,
+                max_function_complexity=1,
+                tags=[],
+                layer="core",
+                entrypoint=False
+            ),
+            FileMetric(
+                path="app/huge.py",
+                file_hash="def",
+                loc=5000,
+                function_count=20,
+                class_count=0,
+                avg_function_complexity=10.0,
+                max_function_complexity=20,
+                tags=[],
+                layer="core",
+                entrypoint=False
+            ),
+        ],
+        complexity_hotspots_top50=[],
+        duplicate_function_bodies={},
+        dependencies={},
         layers={},
+        service_candidates=[],
+        modules=[],
+        functions=[],
+        function_call_frequency_top50=[],
+        index_version="v2",
+        entrypoints=[],
+        call_graph_edges_sample=[],
+        cache_used=False,
+        cached_files=0,
+        changed_files=0,
+        skipped_large_files=[],
+        generated_at="now",
+        config={},
+        version_details={}
     )
 
-    with patch("app.services.chat.context_service.build_index", return_value=mock_result):
+    with patch("app.services.chat.context_service.build_index", return_value=mock_index):
         service.force_refresh()
         prompt = service.get_context_system_prompt()
 

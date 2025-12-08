@@ -1,8 +1,10 @@
 import glob
 import math
 import os
+import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict
 from typing import Any
 
 from .analysis import (
@@ -96,7 +98,7 @@ def _parse_single_file(path: str) -> FileModule:
     return _process_ast(path, code, file_sha, result)
 
 
-def _aggregate_metrics(modules: list[FileModule]) -> dict[str, Any]:
+def _aggregate_metrics(modules: list[FileModule]) -> tuple[GlobalMetrics, list[dict[str, Any]]]:
     fn_count = 0
     total_cx = 0
     cx_values = []
@@ -131,16 +133,17 @@ def _aggregate_metrics(modules: list[FileModule]) -> dict[str, Any]:
         variance = sum((c - mean) ** 2 for c in cx_values) / len(cx_values)
         std_cx = math.sqrt(variance)
 
-    return {
-        "total_functions": fn_count,
-        "total_loc": total_loc,
-        "avg_function_complexity": round(avg_cx, 2),
-        "std_function_complexity": round(std_cx, 2),
-        "max_function_complexity": max_cx,
-        "max_function_complexity_ref": max_fn,
-        "hotspots_collected": len(hotspots),
-        "hotspots": hotspots[:50],
-    }
+    return (
+        GlobalMetrics(
+            total_functions=fn_count,
+            total_loc=total_loc,
+            avg_function_complexity=round(avg_cx, 2),
+            std_function_complexity=round(std_cx, 2),
+            max_function_complexity=max_cx,
+            max_function_complexity_ref=max_fn,
+        ),
+        hotspots[:50],
+    )
 
 
 def _collect_dup_groups(modules: list[FileModule]) -> dict[str, list[dict[str, Any]]]:
@@ -214,16 +217,18 @@ def _service_candidates(file_metrics: list[FileMetric], file_sources: dict[str, 
 
 
 def build_index(root: str = ".", internal_prefixes: tuple[str, ...] | None = None) -> IndexResult:
+    t0 = time.time()
     if internal_prefixes is None:
         internal_prefixes = CONFIG["INTERNAL_PREFIXES"]
 
     # Collect files
-    files, _skipped_large = _collect_python_files(root)
+    files, skipped_large = _collect_python_files(root)
     file_sources: dict[str, str] = {}
 
     modules: list[FileModule] = []
 
     threads = CONFIG["THREADS"]
+    parse_start = time.time()
 
     def process(path: str) -> FileModule:
         fm = _parse_single_file(path)
@@ -239,31 +244,80 @@ def build_index(root: str = ".", internal_prefixes: tuple[str, ...] | None = Non
         for f in files:
             modules.append(process(f))
 
+    parse_end = time.time()
+
     # Aggregations
+    agg_start = time.time()
     dependencies = build_dependencies(modules, internal_prefixes)
-    # call_edges, call_freq = build_call_graph(modules) # Unused in IndexResult for now
-    _call_edges, _call_freq = build_call_graph(modules)
-    gmetrics_dict = _aggregate_metrics(modules)
-    # dup_groups = _collect_dup_groups(modules) # Unused in minimal IndexResult
+    call_edges, call_freq = build_call_graph(modules)
+    gmetrics, hotspots = _aggregate_metrics(modules)
+    dup_groups = _collect_dup_groups(modules)
     fmetrics = _file_metrics_list(modules)
     layers = _layer_map(fmetrics)
     svc_cands = _service_candidates(fmetrics, file_sources)
 
-    global_metrics = GlobalMetrics(
-        total_functions=gmetrics_dict["total_functions"],
-        avg_function_complexity=gmetrics_dict["avg_function_complexity"],
-        std_function_complexity=gmetrics_dict["std_function_complexity"],
-        max_function_complexity=gmetrics_dict["max_function_complexity"],
-        max_function_complexity_ref=gmetrics_dict["max_function_complexity_ref"],
-        total_loc=gmetrics_dict["total_loc"],
-        hotspots=gmetrics_dict["hotspots"],
-    )
+    module_entries = []
+    for m in modules:
+        module_entries.append(
+            {
+                "path": m.path,
+                "functions": [asdict(fn) for fn in m.functions],
+                "classes": [asdict(c) for c in m.classes],
+                "imports": m.imports,
+                "call_names": m.call_names,
+                "error": m.error,
+                "file_hash": m.file_hash,
+                "entrypoint": m.entrypoint,
+                "loc": m.loc,
+            }
+        )
 
-    return IndexResult(
+    agg_end = time.time()
+
+    index_result = IndexResult(
         files_scanned=len(files),
-        global_metrics=global_metrics,
+        modules=module_entries,
+        dependencies=dependencies,
+        functions=[
+            {
+                "file": m.path,
+                **{k: v for k, v in asdict(fn).items() if k != "calls_out"},
+            }
+            for m in modules
+            for fn in m.functions
+        ],
+        function_call_frequency_top50=(
+            call_freq.most_common(50) if call_freq else call_freq.most_common(0)
+        ),
+        complexity_hotspots_top50=hotspots,
+        duplicate_function_bodies=dup_groups,
+        index_version="ast-deep-v2",
         file_metrics=fmetrics,
         layers=layers,
         service_candidates=svc_cands,
-        dependencies=dependencies,
+        entrypoints=sorted([m.path for m in modules if m.entrypoint]),
+        global_metrics=gmetrics,
+        call_graph_edges_sample=[
+            {"file": f, "function": fn, "callee": cal, "resolved": res}
+            for (f, fn, cal, res) in call_edges
+        ],
+        cache_used=False,
+        cached_files=0,
+        changed_files=len(files),
+        skipped_large_files=skipped_large,
+        generated_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        config=CONFIG,
+        version_details={
+            "impl": "ultra_deep_indexer_v2_modular",
+            "python": f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
+        },
     )
+
+    if CONFIG["TIME_PROFILE"]:
+        index_result.time_profile_ms = {
+            "collect_parse": round((parse_end - parse_start) * 1000, 2),
+            "aggregation": round((agg_end - agg_start) * 1000, 2),
+            "total": round((time.time() - t0) * 1000, 2),
+        }
+
+    return index_result
