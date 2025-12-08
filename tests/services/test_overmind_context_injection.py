@@ -22,7 +22,7 @@ def test_codebase_context_summary():
             avg_function_complexity=5.5,
             std_function_complexity=1.0,
             max_function_complexity=20,
-            max_function_complexity_ref="ref"
+            max_function_complexity_ref="ref",
         ),
         file_metrics=[
             FileMetric(
@@ -35,7 +35,7 @@ def test_codebase_context_summary():
                 max_function_complexity=1,
                 tags=[],
                 layer="core",
-                entrypoint=False
+                entrypoint=False,
             ),
             FileMetric(
                 path="app/huge.py",
@@ -47,7 +47,7 @@ def test_codebase_context_summary():
                 max_function_complexity=20,
                 tags=[],
                 layer="core",
-                entrypoint=False
+                entrypoint=False,
             ),
         ],
         complexity_hotspots_top50=[],
@@ -67,7 +67,7 @@ def test_codebase_context_summary():
         skipped_large_files=[],
         generated_at="now",
         config={},
-        version_details={}
+        version_details={},
     )
 
     with patch("app.services.chat.context_service.build_index", return_value=mock_index):
