@@ -1,6 +1,5 @@
+from app.services.chat.intent import ChatIntent, IntentDetector
 
-import pytest
-from app.services.chat.intent import IntentDetector, ChatIntent
 
 def test_deep_analysis_intent_keywords():
     """
@@ -9,9 +8,14 @@ def test_deep_analysis_intent_keywords():
 
     # English Cases
     assert IntentDetector.detect("explain the architecture").intent == ChatIntent.DEEP_ANALYSIS
-    assert IntentDetector.detect("what is the purpose of this module").intent == ChatIntent.DEEP_ANALYSIS
+    assert (
+        IntentDetector.detect("what is the purpose of this module").intent
+        == ChatIntent.DEEP_ANALYSIS
+    )
     assert IntentDetector.detect("analyze the code quality").intent == ChatIntent.DEEP_ANALYSIS
-    assert IntentDetector.detect("how can we improve performance").intent == ChatIntent.DEEP_ANALYSIS
+    assert (
+        IntentDetector.detect("how can we improve performance").intent == ChatIntent.DEEP_ANALYSIS
+    )
     assert IntentDetector.detect("find bugs in this file").intent == ChatIntent.DEEP_ANALYSIS
     assert IntentDetector.detect("list the dependencies").intent == ChatIntent.DEEP_ANALYSIS
 
@@ -21,6 +25,7 @@ def test_deep_analysis_intent_keywords():
     assert IntentDetector.detect("حلل الكود").intent == ChatIntent.DEEP_ANALYSIS
     assert IntentDetector.detect("كيف يمكن تحسين الأداء").intent == ChatIntent.DEEP_ANALYSIS
     assert IntentDetector.detect("ما هي المشاكل في هذا الملف").intent == ChatIntent.DEEP_ANALYSIS
+
 
 def test_deep_analysis_intent_false_positives():
     """
