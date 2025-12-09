@@ -12,7 +12,6 @@ Testing validators in realistic scenarios with:
 import json
 from concurrent.futures import ThreadPoolExecutor
 
-import pytest
 from marshmallow import Schema, fields
 
 from app.validators.base import BaseValidator
@@ -35,7 +34,7 @@ class TestValidatorAPIWorkflow:
         # Step 1: Validate input
         user_data = {"username": "john_doe", "email": "john@example.com", "age": 30, "active": True}
 
-        success, validated, errors = BaseValidator.validate(UserSchema, user_data)
+        success, validated, _errors = BaseValidator.validate(UserSchema, user_data)
 
         assert success is True
         assert validated["username"] == "john_doe"
@@ -55,7 +54,7 @@ class TestValidatorAPIWorkflow:
         # Partial update - only email
         update_data = {"email": "newemail@example.com"}
 
-        success, validated, errors = BaseValidator.validate(UserSchema, update_data, partial=True)
+        success, validated, _errors = BaseValidator.validate(UserSchema, update_data, partial=True)
 
         assert success is True
         assert validated["email"] == "newemail@example.com"
@@ -71,7 +70,7 @@ class TestValidatorAPIWorkflow:
         # Invalid data
         invalid_data = {"username": "john", "email": "not_an_email"}
 
-        success, validated, errors = BaseValidator.validate(UserSchema, invalid_data)
+        success, _validated, errors = BaseValidator.validate(UserSchema, invalid_data)
 
         assert success is False
         assert errors is not None
@@ -172,12 +171,12 @@ class TestValidatorErrorRecovery:
         """Test that validator recovers from errors"""
         # First, cause a validation error
         invalid_data = {"username": "test"}  # Missing required email
-        success1, _, errors1 = BaseValidator.validate(UserSchema, invalid_data)
+        success1, _, _errors1 = BaseValidator.validate(UserSchema, invalid_data)
         assert not success1
 
         # Then, validate valid data
         valid_data = {"username": "test", "email": "test@example.com"}
-        success2, validated2, errors2 = BaseValidator.validate(UserSchema, valid_data)
+        success2, _validated2, errors2 = BaseValidator.validate(UserSchema, valid_data)
 
         # Should succeed
         assert success2 is True
@@ -224,7 +223,7 @@ class TestValidatorComplexScenarios:
             "address": {"street": "123 Main St", "city": "Springfield", "zip_code": "12345"},
         }
 
-        success, validated, errors = BaseValidator.validate(UserWithAddressSchema, data)
+        success, validated, _errors = BaseValidator.validate(UserWithAddressSchema, data)
 
         assert success is True
         assert validated["address"]["city"] == "Springfield"
@@ -237,7 +236,7 @@ class TestValidatorComplexScenarios:
 
         data = {"tags": ["python", "testing", "validation"]}
 
-        success, validated, errors = BaseValidator.validate(TagsSchema, data)
+        success, validated, _errors = BaseValidator.validate(TagsSchema, data)
 
         assert success is True
         assert len(validated["tags"]) == 3
@@ -266,7 +265,7 @@ class TestValidatorComplexScenarios:
 
         # Step 1: Validate username
         data = {"username": "john"}
-        success1, validated1, _ = BaseValidator.validate(Step1Schema, data)
+        success1, _validated1, _ = BaseValidator.validate(Step1Schema, data)
         assert success1 is True
 
         # Step 2: Add email and validate again
@@ -327,25 +326,25 @@ class TestValidatorStateManagement:
 
     def test_cache_state_consistency(self):
         """Test that cache state remains consistent"""
-        initial_cache_size = len(BaseValidator._schema_cache)
+        len(BaseValidator._schema_cache)
 
         # Perform various validations
         BaseValidator.validate(UserSchema, {"username": "test", "email": "test@example.com"})
         BaseValidator.validate(UserSchema, {"username": "test2", "email": "test2@example.com"}, partial=True)
 
         # Cache should have at most 2 entries for UserSchema
-        cache_keys = [k for k in BaseValidator._schema_cache.keys() if "UserSchema" in k]
+        cache_keys = [k for k in BaseValidator._schema_cache if "UserSchema" in k]
         assert len(cache_keys) <= 2
 
     def test_no_state_leakage_between_validations(self):
         """Test that state doesn't leak between validations"""
         # First validation
         data1 = {"username": "user1", "email": "user1@example.com"}
-        success1, validated1, _ = BaseValidator.validate(UserSchema, data1)
+        _success1, validated1, _ = BaseValidator.validate(UserSchema, data1)
 
         # Second validation with different data
         data2 = {"username": "user2", "email": "user2@example.com"}
-        success2, validated2, _ = BaseValidator.validate(UserSchema, data2)
+        _success2, validated2, _ = BaseValidator.validate(UserSchema, data2)
 
         # Results should be independent
         assert validated1["username"] != validated2["username"]

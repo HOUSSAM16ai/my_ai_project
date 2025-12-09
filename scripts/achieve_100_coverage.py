@@ -11,10 +11,9 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
-def run_coverage_analysis() -> Dict:
+def run_coverage_analysis() -> dict:
     """Run pytest with coverage and return results"""
     print("🔍 Running coverage analysis...")
 
@@ -43,7 +42,7 @@ def run_coverage_analysis() -> Dict:
     return {}
 
 
-def analyze_coverage(coverage_data: Dict) -> Tuple[List[str], List[Tuple[str, float]]]:
+def analyze_coverage(coverage_data: dict) -> tuple[list[str], list[tuple[str, float]]]:
     """Analyze coverage data and return uncovered and low-coverage files"""
     if not coverage_data or "files" not in coverage_data:
         return [], []
@@ -77,7 +76,6 @@ def analyze_coverage(coverage_data: Dict) -> Tuple[List[str], List[Tuple[str, fl
 def generate_test_template(module_path: str) -> str:
     """Generate a test file template for a module"""
     module_name = Path(module_path).stem
-    test_name = f"test_{module_name}_comprehensive"
 
     template = f'''"""
 Comprehensive Tests for {module_name}
@@ -115,7 +113,7 @@ class Test{module_name.title().replace('_', '')}:
     return template
 
 
-def create_test_files(zero_coverage: List[str], low_coverage: List[Tuple[str, float]]):
+def create_test_files(zero_coverage: list[str], low_coverage: list[tuple[str, float]]):
     """Create test file templates for uncovered modules"""
     print("\n📝 Creating test file templates...")
 
@@ -143,7 +141,7 @@ def create_test_files(zero_coverage: List[str], low_coverage: List[Tuple[str, fl
 
 
 def print_coverage_report(
-    coverage_data: Dict, zero_coverage: List[str], low_coverage: List[Tuple[str, float]]
+    coverage_data: dict, zero_coverage: list[str], low_coverage: list[tuple[str, float]]
 ):
     """Print a detailed coverage report"""
     print("\n" + "=" * 70)
@@ -156,7 +154,7 @@ def print_coverage_report(
         covered_lines = totals["covered_lines"]
         total_lines = totals["num_statements"]
 
-        print(f"\n📈 Overall Coverage:")
+        print("\n📈 Overall Coverage:")
         print(f"  Total Lines: {total_lines}")
         print(f"  Covered Lines: {covered_lines}")
         print(f"  Coverage: {total_coverage:.2f}%")
@@ -183,7 +181,7 @@ def print_coverage_report(
     print("\n" + "=" * 70)
 
 
-def generate_action_plan(zero_coverage: List[str], low_coverage: List[Tuple[str, float]]):
+def generate_action_plan(zero_coverage: list[str], low_coverage: list[tuple[str, float]]):
     """Generate an action plan to achieve 100% coverage"""
     print("\n📋 ACTION PLAN TO ACHIEVE 100% COVERAGE")
     print("=" * 70)

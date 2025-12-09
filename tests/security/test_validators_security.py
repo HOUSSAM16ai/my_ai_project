@@ -11,7 +11,6 @@ Testing for security vulnerabilities:
 - Unicode attacks
 """
 
-import pytest
 from marshmallow import Schema, fields
 
 from app.validators.base import BaseValidator
@@ -40,7 +39,7 @@ class TestInjectionAttacks:
 
         for pattern in injection_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             # Should validate successfully (validation != sanitization)
             assert success is True
@@ -59,7 +58,7 @@ class TestInjectionAttacks:
 
         for pattern in xss_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
             assert validated["text"] == pattern
@@ -76,7 +75,7 @@ class TestInjectionAttacks:
 
         for pattern in command_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
             assert validated["text"] == pattern
@@ -92,7 +91,7 @@ class TestInjectionAttacks:
 
         for pattern in ldap_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
 
@@ -106,7 +105,7 @@ class TestInjectionAttacks:
 
         for pattern in xml_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
 
@@ -121,7 +120,7 @@ class TestDenialOfService:
         data = {"text": long_string}
 
         try:
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
             # Should handle or reject gracefully
             assert isinstance(success, bool)
         except MemoryError:
@@ -144,7 +143,7 @@ class TestDenialOfService:
         data = {"data": nested}
 
         try:
-            success, validated, errors = BaseValidator.validate(NestedSchema, data)
+            success, _validated, _errors = BaseValidator.validate(NestedSchema, data)
             assert isinstance(success, bool)
         except RecursionError:
             # Acceptable for extreme nesting
@@ -156,7 +155,7 @@ class TestDenialOfService:
         data = {f"field_{i}": f"value_{i}" for i in range(10000)}
 
         try:
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
             # Should handle gracefully (extra fields ignored)
             assert isinstance(success, bool)
         except Exception:
@@ -221,7 +220,7 @@ class TestUnicodeAttacks:
 
         for char in zero_width:
             data = {"text": f"test{char}test"}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
             assert char in validated["text"]
@@ -235,7 +234,7 @@ class TestUnicodeAttacks:
 
         for char in rtl_chars:
             data = {"text": f"test{char}test"}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
 
@@ -245,7 +244,7 @@ class TestUnicodeAttacks:
         text = "e" + "\u0301" * 1000  # e with 1000 acute accents
 
         data = {"text": text}
-        success, validated, errors = BaseValidator.validate(TestSchema, data)
+        success, _validated, _errors = BaseValidator.validate(TestSchema, data)
 
         assert success is True
 
@@ -266,7 +265,7 @@ class TestTypeConfusion:
         for value in overflow_values:
             data = {"number": value}
             try:
-                success, validated, errors = BaseValidator.validate(TestSchema, data)
+                success, _validated, _errors = BaseValidator.validate(TestSchema, data)
                 assert isinstance(success, bool)
             except (OverflowError, ValueError):
                 # Acceptable to reject extreme values
@@ -287,7 +286,7 @@ class TestTypeConfusion:
         for value in special_values:
             data = {"value": value}
             try:
-                success, validated, errors = BaseValidator.validate(FloatSchema, data)
+                success, _validated, _errors = BaseValidator.validate(FloatSchema, data)
                 assert isinstance(success, bool)
             except (ValueError, OverflowError):
                 # Acceptable to reject special values
@@ -305,7 +304,7 @@ class TestTypeConfusion:
         ]
 
         for data in test_cases:
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, _validated, _errors = BaseValidator.validate(TestSchema, data)
             # Should either succeed with coercion or fail gracefully
             assert isinstance(success, bool)
 
@@ -325,7 +324,7 @@ class TestPathTraversal:
 
         for pattern in traversal_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             # Should validate (path validation is application-level)
             assert success is True
@@ -347,7 +346,7 @@ class TestFormatStringAttacks:
 
         for pattern in format_patterns:
             data = {"text": pattern}
-            success, validated, errors = BaseValidator.validate(TestSchema, data)
+            success, validated, _errors = BaseValidator.validate(TestSchema, data)
 
             assert success is True
             assert validated["text"] == pattern
@@ -405,7 +404,7 @@ class TestErrorMessageLeakage:
 
         # Missing required fields
         data = {}
-        success, validated, errors = BaseValidator.validate(SecretSchema, data)
+        success, _validated, errors = BaseValidator.validate(SecretSchema, data)
 
         assert not success
         # Error should mention field names but not values
@@ -420,7 +419,7 @@ class TestErrorMessageLeakage:
             "'; DROP TABLE users; --": "value",
         }
 
-        success, validated, errors = BaseValidator.validate(TestSchema, malicious_data)
+        success, _validated, _errors = BaseValidator.validate(TestSchema, malicious_data)
 
         # Should handle gracefully
         assert isinstance(success, bool)
