@@ -1,0 +1,366 @@
+"""
+Neural Routing Mesh Module.
+Part of the Atomic Modularization Protocol.
+"""
+
+import asyncio
+import hashlib
+import json
+import logging
+import random
+import time
+from collections.abc import AsyncGenerator
+from typing import Protocol, runtime_checkable
+
+import httpx
+
+# Import new atomic modules
+from app.core.gateway.exceptions import (
+    AIAllModelsExhaustedError,
+    AIConnectionError,
+    AIRateLimitError,
+)
+from app.core.gateway.circuit_breaker import CircuitBreaker
+from app.core.gateway.node import NeuralNode
+from app.core.gateway.connection import ConnectionManager, BASE_TIMEOUT
+
+# Config imports
+from app.config.ai_models import get_ai_config
+from app.core.cognitive_cache import get_cognitive_engine
+from app.core.math.omni_router import get_omni_router
+from app.core.superhuman_performance_optimizer import get_performance_optimizer
+
+logger = logging.getLogger(__name__)
+
+# Constants
+_ai_config = get_ai_config()
+PRIMARY_MODEL = _ai_config.gateway_primary
+FALLBACK_MODELS = _ai_config.get_fallback_models()
+SAFETY_NET_MODEL_ID = "system/safety-net"
+MAX_RETRIES = 3
+CIRCUIT_FAILURE_THRESHOLD = 5
+CIRCUIT_RECOVERY_TIMEOUT = 30.0
+
+# Initialize global optimizer
+_performance_optimizer = get_performance_optimizer()
+
+
+@runtime_checkable
+class AIClient(Protocol):
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+
+    async def __aiter__(self):
+        return self
+
+
+class NeuralRoutingMesh:
+    """
+    The 'Superhuman' Router (V7.2).
+    Refactored for SRP and Modularity.
+    """
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://cogniforge.local",
+            "X-Title": "CogniForge Reality Kernel",
+        }
+
+        self.nodes_map: dict[str, NeuralNode] = self._initialize_nodes()
+        self.omni_router = get_omni_router()
+        self._register_nodes_with_omni_router()
+
+    def _initialize_nodes(self) -> dict[str, NeuralNode]:
+        nodes = {}
+        # 1. Primary Cortex
+        nodes[PRIMARY_MODEL] = NeuralNode(
+            model_id=PRIMARY_MODEL,
+            circuit_breaker=CircuitBreaker(
+                "Primary-Cortex", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+            ),
+        )
+
+        # 2. Backup Synapses (Fallbacks)
+        for idx, model_id in enumerate(FALLBACK_MODELS):
+            nodes[model_id] = NeuralNode(
+                model_id=model_id,
+                circuit_breaker=CircuitBreaker(
+                    f"Backup-Synapse-{idx + 1}",
+                    CIRCUIT_FAILURE_THRESHOLD,
+                    CIRCUIT_RECOVERY_TIMEOUT,
+                ),
+            )
+
+        # 3. Safety Net (The Last Resort)
+        nodes[SAFETY_NET_MODEL_ID] = NeuralNode(
+            model_id=SAFETY_NET_MODEL_ID,
+            circuit_breaker=CircuitBreaker(
+                "Safety-Net", 999999, 1.0
+            ),  # Virtually unbreakable
+        )
+        return nodes
+
+    def _register_nodes_with_omni_router(self):
+        for mid in self.nodes_map:
+            if mid != SAFETY_NET_MODEL_ID:
+                self.omni_router.register_node(mid)
+
+    def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
+        """
+        Returns a list of nodes sorted by their Omni-Cognitive Score.
+        """
+        available_ids = []
+        now = time.time()
+
+        for mid, node in self.nodes_map.items():
+            if mid == SAFETY_NET_MODEL_ID:
+                continue
+
+            if not node.circuit_breaker.allow_request():
+                continue
+
+            if node.rate_limit_cooldown_until > now:
+                continue
+
+            available_ids.append(mid)
+
+        final_nodes = []
+        if available_ids:
+            ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
+            for mid in ranked_ids:
+                if mid in self.nodes_map:
+                    node = self.nodes_map[mid]
+                    if node.rate_limit_cooldown_until <= now:
+                        final_nodes.append(node)
+
+        # Always append Safety Net at the end
+        if SAFETY_NET_MODEL_ID in self.nodes_map:
+            final_nodes.append(self.nodes_map[SAFETY_NET_MODEL_ID])
+
+        return final_nodes
+
+    def _calculate_quality_score(self, full_content: str) -> float:
+        if not full_content:
+            return 0.0
+
+        length_score = min(1.0, len(full_content) / 500)
+        words = full_content.split()
+        if not words:
+            return 0.0
+        unique_words = set(words)
+        density_score = len(unique_words) / len(words)
+
+        final_score = (0.4 * length_score) + (0.6 * density_score)
+        return max(0.0, min(1.0, final_score))
+
+    def _record_metrics(
+        self,
+        node: NeuralNode,
+        prompt: str,
+        duration_ms: float,
+        success: bool,
+        full_content: str = "",
+        quality_score: float = 0.0,
+        empty_response: bool = False,
+    ):
+        if node.model_id == SAFETY_NET_MODEL_ID:
+            return
+
+        self.omni_router.record_outcome(
+            model_id=node.model_id,
+            prompt=prompt,
+            success=success,
+            latency_ms=duration_ms,
+            quality_score=quality_score,
+        )
+
+        _performance_optimizer.record_request(
+            model_id=node.model_id,
+            success=success,
+            latency_ms=duration_ms,
+            tokens=len(full_content.split()) if success else 0,
+            quality_score=quality_score,
+            empty_response=empty_response,
+        )
+
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        if not messages:
+            raise ValueError("Messages list cannot be empty")
+
+        prompt = messages[-1].get("content", "")
+        context_str = json.dumps(list(messages[:-1]), sort_keys=True)
+        context_hash = hashlib.sha256(context_str.encode()).hexdigest()
+
+        # Check Cache
+        if messages[-1].get("role") == "user":
+            cached_memory = get_cognitive_engine().recall(prompt, context_hash)
+            if cached_memory:
+                logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
+                for chunk in cached_memory:
+                    yield chunk
+                return
+
+        priority_nodes = self._get_prioritized_nodes(prompt)
+        if not priority_nodes:
+            raise AIAllModelsExhaustedError("All circuits are open, no models available.")
+
+        errors = []
+
+        for node in priority_nodes:
+            if not node.circuit_breaker.allow_request():
+                continue
+
+            try:
+                # Use a dedicated processor/helper to stream from this node
+                full_response_chunks = []
+                # To prevent concatenated partial responses, we track if any data has been yielded.
+                # If so, we cannot failover safely.
+                chunks_yielded = 0
+
+                async for chunk in self._stream_from_node_with_retry(node, messages):
+                    yield chunk
+                    full_response_chunks.append(chunk)
+                    chunks_yielded += 1
+
+                # Post-processing (Metrics & Caching)
+                full_content = "".join(
+                    chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                    for chunk in full_response_chunks
+                ).strip()
+
+                if not full_content and full_response_chunks:
+                     # It yielded chunks but empty content? Only if chunks were metadata?
+                     pass
+
+                quality_score = self._calculate_quality_score(full_content)
+                node.circuit_breaker.record_success()
+
+                if node.model_id != SAFETY_NET_MODEL_ID:
+                     get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
+
+                return
+
+            except AIRateLimitError:
+                node.circuit_breaker.record_saturation()
+                self._record_metrics(node, prompt, 0, False)
+                errors.append(f"{node.model_id}: Rate Limited")
+                continue
+
+            except (AIConnectionError, ValueError, Exception) as e:
+                # IMPORTANT FIX: If we have already yielded data, we CANNOT failover.
+                # It would result in a corrupted stream (e.g. half of Model A + full Model B).
+                if 'chunks_yielded' in locals() and chunks_yielded > 0:
+                    logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
+                    node.circuit_breaker.record_failure()
+                    self._record_metrics(node, prompt, 0, False)
+                    # We must raise the error to the client
+                    raise e
+
+                # Connection errors or "Empty response" errors
+                node.circuit_breaker.record_failure()
+                self._record_metrics(node, prompt, 0, False)
+                errors.append(f"{node.model_id}: {str(e)}")
+                logger.warning(f"Node {node.model_id} failed: {e}")
+                continue
+
+        raise AIAllModelsExhaustedError(f"All models failed. Errors: {errors}")
+
+    async def _stream_from_node_with_retry(
+        self, node: NeuralNode, messages: list[dict]
+    ) -> AsyncGenerator[dict, None]:
+        """
+        Streams from a node with retry logic.
+        """
+        # Safety Net Implementation
+        if node.model_id == SAFETY_NET_MODEL_ID:
+            logger.warning("⚠️ Engaging Safety Net Protocol.")
+            safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
+            for word in safety_msg.split(" "):
+                yield {"choices": [{"delta": {"content": word + " "}}]}
+                await asyncio.sleep(0.05)
+            return
+
+        client = ConnectionManager.get_client()
+        attempt = 0
+
+        while attempt <= MAX_RETRIES:
+            attempt += 1
+            try:
+                stream_started = False
+                async with client.stream(
+                    "POST",
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json={"model": node.model_id, "messages": messages, "stream": True},
+                    timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
+                ) as response:
+
+                    if response.status_code == 429:
+                        # Adaptive Cooldown Logic
+                        node.consecutive_rate_limits += 1
+                        backoff = min(6, node.consecutive_rate_limits)
+                        cooldown = 60.0 * (2 ** (backoff - 1))
+                        node.rate_limit_cooldown_until = time.time() + cooldown
+                        raise AIRateLimitError(f"Rate limit 429 on {node.model_id}")
+
+                    if response.status_code >= 400:
+                        raise httpx.HTTPStatusError(
+                            f"HTTP {response.status_code}", request=response.request, response=response
+                        )
+
+                    stream_started = True
+                    node.consecutive_rate_limits = 0 # Reset on connection success (even if stream fails later?)
+
+                    chunk_count = 0
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str.strip() == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data_str)
+                                chunk_count += 1
+                                yield chunk
+                            except json.JSONDecodeError:
+                                continue
+
+                    if chunk_count == 0:
+                        raise ValueError("Empty response from provider")
+
+                    return
+
+            except AIRateLimitError:
+                raise # Propagate to main loop to trigger failover
+
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
+                if stream_started:
+                    # If we started streaming and failed, we can't retry cleanly without potentially duplicating content
+                    # or sending half-baked responses. Ideally we should raise to failover.
+                    # This exception is caught by the outer loop, which now checks for partial yields.
+                    raise AIConnectionError("Stream severed") from e
+
+                if attempt > MAX_RETRIES:
+                     raise AIConnectionError("Max retries exceeded") from e
+
+                await asyncio.sleep(0.5 * attempt) # Simple backoff for retries
+
+
+def get_ai_client() -> AIClient:
+    """
+    Factory function to get AI client instance.
+    """
+    api_key = _ai_config.openrouter_api_key
+    if not api_key:
+        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
+    elif api_key.startswith("sk-or-v1-xxx"):
+        logger.warning("OPENROUTER_API_KEY appears to be a placeholder value.")
+    else:
+        logger.info(
+            f"OPENROUTER_API_KEY detected (length: {len(api_key)}). "
+            "Neural Mesh initializing in full operational mode."
+        )
+
+    return NeuralRoutingMesh(api_key=api_key or "dummy_key")
