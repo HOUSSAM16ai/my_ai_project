@@ -11,10 +11,9 @@ import ast
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
-def analyze_module(filepath: Path) -> Dict:
+def analyze_module(filepath: Path) -> dict:
     """Analyze a Python module and extract its structure"""
     try:
         with open(filepath) as f:
@@ -49,7 +48,7 @@ def analyze_module(filepath: Path) -> Dict:
         return {"functions": [], "classes": [], "imports": []}
 
 
-def generate_comprehensive_test(module_path: Path, analysis: Dict) -> str:
+def generate_comprehensive_test(module_path: Path, analysis: dict) -> str:
     """Generate comprehensive test code for a module"""
     module_name = module_path.stem
     relative_path = str(module_path.relative_to("app")).replace("/", ".").replace(".py", "")
@@ -168,7 +167,7 @@ class TestIntegration:
     return template
 
 
-def get_uncovered_files() -> List[Tuple[Path, float, int]]:
+def get_uncovered_files() -> list[tuple[Path, float, int]]:
     """Get list of files with <100% coverage"""
     # Run coverage
     print("🔍 Analyzing coverage...")
@@ -232,7 +231,7 @@ def main():
         return
 
     print(f"\n📊 Found {len(uncovered)} files needing tests")
-    print(f"   Focusing on top 20 most important files\n")
+    print("   Focusing on top 20 most important files\n")
 
     generated = 0
     skipped = 0
@@ -265,7 +264,7 @@ def main():
         generated += 1
 
     print("\n" + "=" * 70)
-    print(f"📊 Summary:")
+    print("📊 Summary:")
     print(f"   Generated: {generated} test files")
     print(f"   Skipped: {skipped} (already exist)")
     print(f"   Total: {len(uncovered)} files need coverage")

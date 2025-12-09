@@ -10,7 +10,7 @@
 #   - Type coercion and sanitization
 
 
-from marshmallow import Schema, ValidationError, fields, post_load, validate, validates
+from marshmallow import EXCLUDE, Schema, ValidationError, fields, post_load, validate, validates
 
 # ======================================================================================
 # PAGINATION & QUERY SCHEMAS
@@ -19,6 +19,9 @@ from marshmallow import Schema, ValidationError, fields, post_load, validate, va
 
 class PaginationSchema(Schema):
     """Schema للترقيم - Pagination parameters"""
+
+    class Meta:
+        unknown = EXCLUDE
 
     page = fields.Integer(
         load_default=1,
@@ -46,6 +49,9 @@ class PaginationSchema(Schema):
 class QuerySchema(Schema):
     """Schema لاستعلامات SQL - SQL query validation"""
 
+    class Meta:
+        unknown = EXCLUDE
+
     sql = fields.String(
         required=True,
         validate=validate.Length(min=1, max=10000),
@@ -53,7 +59,7 @@ class QuerySchema(Schema):
     )
 
     @validates("sql")
-    def validate_sql(self, value):
+    def validate_sql(self, value, **kwargs):
         """التحقق من أن الاستعلام آمن - Validate SQL is safe"""
         sql_upper = value.strip().upper()
         if not sql_upper.startswith("SELECT"):
@@ -73,6 +79,9 @@ class QuerySchema(Schema):
 
 class UserSchema(Schema):
     """Schema للمستخدمين - User validation schema"""
+
+    class Meta:
+        unknown = EXCLUDE
 
     email = fields.Email(
         required=True,
@@ -141,6 +150,9 @@ class UserSchema(Schema):
 class MissionSchema(Schema):
     """Schema للمهام - Mission validation schema"""
 
+    class Meta:
+        unknown = EXCLUDE
+
     objective = fields.String(
         required=True,
         validate=validate.Length(min=10, max=5000),
@@ -174,6 +186,9 @@ class MissionSchema(Schema):
 
 class TaskSchema(Schema):
     """Schema للمهام الفرعية - Task validation schema"""
+
+    class Meta:
+        unknown = EXCLUDE
 
     mission_id = fields.Integer(required=True, metadata={"description": "Parent mission ID"})
     task_key = fields.String(
@@ -210,6 +225,9 @@ class TaskSchema(Schema):
 class MissionPlanSchema(Schema):
     """Schema لخطط المهام - Mission plan validation schema"""
 
+    class Meta:
+        unknown = EXCLUDE
+
     mission_id = fields.Integer(required=True, metadata={"description": "Mission ID"})
     plan_version = fields.Integer(
         load_default=1,
@@ -235,6 +253,9 @@ class MissionPlanSchema(Schema):
 
 class AdminConversationSchema(Schema):
     """Schema لمحادثات الأدمن - Admin conversation validation schema"""
+
+    class Meta:
+        unknown = EXCLUDE
 
     title = fields.String(
         required=True,
@@ -265,6 +286,9 @@ class AdminConversationSchema(Schema):
 
 class AdminMessageSchema(Schema):
     """Schema لرسائل الأدمن - Admin message validation schema"""
+
+    class Meta:
+        unknown = EXCLUDE
 
     conversation_id = fields.Integer(required=True, metadata={"description": "Conversation ID"})
     role = fields.String(
