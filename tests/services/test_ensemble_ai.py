@@ -3,17 +3,20 @@ Tests for Ensemble AI Service
 =============================
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.services.ensemble_ai import (
-    QueryClassifier,
     CostOptimizer,
     IntelligentRouter,
     ModelTier,
+    QueryClassifier,
     get_router,
 )
 
 # === QueryClassifier Tests ===
+
 
 class TestQueryClassifier:
     @pytest.mark.asyncio
@@ -80,7 +83,9 @@ class TestQueryClassifier:
     @pytest.mark.asyncio
     async def test_analyze_integration(self):
         classifier = QueryClassifier()
-        analysis = await classifier.analyze("explain how to optimize database query step by step", {})
+        analysis = await classifier.analyze(
+            "explain how to optimize database query step by step", {}
+        )
         assert "complexity_score" in analysis
         assert "domain" in analysis
         assert analysis["domain"] == "data"
@@ -88,6 +93,7 @@ class TestQueryClassifier:
 
 
 # === CostOptimizer Tests ===
+
 
 class TestCostOptimizer:
     def test_can_afford(self):
@@ -109,12 +115,13 @@ class TestCostOptimizer:
     def test_record_cost(self):
         optimizer = CostOptimizer()
         initial = optimizer.spent_today
-        optimizer.record_cost(ModelTier.SMART, 1000) # 0.01
+        optimizer.record_cost(ModelTier.SMART, 1000)  # 0.01
         assert optimizer.spent_today > initial
         assert optimizer.spent_today == initial + 0.01
 
 
 # === IntelligentRouter Tests ===
+
 
 class TestIntelligentRouter:
     @pytest.fixture
@@ -131,14 +138,14 @@ class TestIntelligentRouter:
 
     @pytest.mark.asyncio
     async def test_route_simple_urgent(self, router):
-        query = "quick help" # Urgent, simple
+        query = "quick help"  # Urgent, simple
         model, tier = await router.route(query, {})
         assert tier == ModelTier.NANO
         assert model == "nano-model"
 
     @pytest.mark.asyncio
     async def test_route_simple_not_urgent(self, router):
-        query = "what is 2+2" # Simple, not urgent, no reasoning
+        query = "what is 2+2"  # Simple, not urgent, no reasoning
         model, tier = await router.route(query, {})
         assert tier == ModelTier.FAST
         assert model == "fast-model"
@@ -148,7 +155,7 @@ class TestIntelligentRouter:
         # Trigger SMART: Complexity >= 0.4
         # "algorithm function class implement framework step by step"
         query = "implement a class function algorithm using framework step by step"
-        model, tier = await router.route(query, {})
+        _model, tier = await router.route(query, {})
         assert tier in [ModelTier.SMART, ModelTier.GENIUS]
 
     @pytest.mark.asyncio
@@ -156,26 +163,30 @@ class TestIntelligentRouter:
         query = "complex query"
         # Mock analysis to force GENIUS routing
         # Complexity >= 0.7 AND (reasoning OR creativity >= 0.5)
-        with patch.object(router.classifier, 'analyze', return_value={
-            "complexity_score": 0.8,
-            "creativity_score": 0.6,
-            "requires_fast_response": False,
-            "domain": "code",
-            "expected_length": "long",
-            "requires_reasoning": True,
-        }):
+        with patch.object(
+            router.classifier,
+            "analyze",
+            return_value={
+                "complexity_score": 0.8,
+                "creativity_score": 0.6,
+                "requires_fast_response": False,
+                "domain": "code",
+                "expected_length": "long",
+                "requires_reasoning": True,
+            },
+        ):
             model, tier = await router.route(query, {})
             assert tier == ModelTier.GENIUS
             assert model == "genius-model"
 
     @pytest.mark.asyncio
     async def test_route_cost_downgrade(self, router):
-        router.cost_optimizer.daily_budget = 0.000001 # Almost zero
-        router.cost_optimizer.spent_today = 100.0 # Already over budget
+        router.cost_optimizer.daily_budget = 0.000001  # Almost zero
+        router.cost_optimizer.spent_today = 100.0  # Already over budget
 
         # Should normally be GENIUS
         query = "explain complex thing"
-        model, tier = await router.route(query, {})
+        _model, tier = await router.route(query, {})
 
         # Should be downgraded
         assert tier != ModelTier.GENIUS
@@ -184,6 +195,7 @@ class TestIntelligentRouter:
     def test_get_next_tier(self, router):
         assert router.get_next_tier(ModelTier.NANO) == ModelTier.FAST
         assert router.get_next_tier(ModelTier.GENIUS) == ModelTier.GENIUS
+
 
 def test_get_router_singleton():
     r1 = get_router()

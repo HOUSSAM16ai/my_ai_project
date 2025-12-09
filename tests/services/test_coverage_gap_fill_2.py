@@ -3,7 +3,6 @@ Tests for Overmind Services (Coverage Gap Fill 2)
 =================================================
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import (
     Mission,
     MissionEvent,
-    MissionPlan,
     MissionStatus,
     Task,
     TaskStatus,
@@ -22,6 +20,7 @@ from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.state import MissionStateManager
 
 # === MissionStateManager Tests ===
+
 
 class TestMissionStateManager:
     @pytest.fixture
@@ -61,7 +60,7 @@ class TestMissionStateManager:
 
         await manager.update_mission_status(1, MissionStatus.RUNNING, "Start")
         assert mock_mission.status == MissionStatus.RUNNING
-        mock_session.add.assert_called() # log_event
+        mock_session.add.assert_called()  # log_event
 
     @pytest.mark.asyncio
     async def test_log_event(self, manager, mock_session):
@@ -86,7 +85,11 @@ class TestMissionStateManager:
 
         mock_plan_schema = MagicMock()
         mock_plan_schema.objective = "obj"
-        mock_plan_schema.tasks = [MagicMock(task_id="t1", description="d1", tool_name="tool", tool_args={}, dependencies=[])]
+        mock_plan_schema.tasks = [
+            MagicMock(
+                task_id="t1", description="d1", tool_name="tool", tool_args={}, dependencies=[]
+            )
+        ]
 
         mp = await manager.persist_plan(1, "planner", mock_plan_schema, 0.9, "reason")
 
@@ -119,6 +122,7 @@ class TestMissionStateManager:
 
 
 # === TaskExecutor Tests ===
+
 
 class TestTaskExecutor:
     @pytest.mark.asyncio
@@ -190,6 +194,7 @@ class TestTaskExecutor:
 
 # === OvermindOrchestrator Tests ===
 
+
 class TestOvermindOrchestrator:
     @pytest.fixture
     def mock_state(self):
@@ -224,7 +229,9 @@ class TestOvermindOrchestrator:
 
         with patch("app.services.overmind.core.get_all_planners", return_value=[]):
             await orchestrator._phase_planning(mission)
-            mock_state.update_mission_status.assert_awaited_with(1, MissionStatus.FAILED, "No planners available")
+            mock_state.update_mission_status.assert_awaited_with(
+                1, MissionStatus.FAILED, "No planners available"
+            )
 
     @pytest.mark.asyncio
     async def test_phase_planning_success(self, orchestrator, mock_state):
@@ -233,40 +240,46 @@ class TestOvermindOrchestrator:
         mock_planner = AsyncMock()
         mock_planner.a_instrumented_generate.return_value = {
             "plan": MagicMock(),
-            "meta": {"selection_score": 0.9}
+            "meta": {"selection_score": 0.9},
         }
         mock_planner.name = "mock_planner"
 
         with patch("app.services.overmind.core.get_all_planners", return_value=[mock_planner]):
             await orchestrator._phase_planning(mission)
             mock_state.persist_plan.assert_awaited()
-            mock_state.update_mission_status.assert_awaited_with(1, MissionStatus.PLANNED, "Plan generated successfully")
+            mock_state.update_mission_status.assert_awaited_with(
+                1, MissionStatus.PLANNED, "Plan generated successfully"
+            )
 
     @pytest.mark.asyncio
     async def test_phase_execution_step_all_done(self, orchestrator, mock_state):
         mission = Mission(id=1)
         mock_state.get_tasks.return_value = [
             Task(id=1, status=TaskStatus.SUCCESS),
-            Task(id=2, status=TaskStatus.SUCCESS)
+            Task(id=2, status=TaskStatus.SUCCESS),
         ]
 
         done = await orchestrator._phase_execution_step(mission)
         assert done is True
-        mock_state.update_mission_status.assert_awaited_with(1, MissionStatus.SUCCESS, "All tasks completed.")
+        mock_state.update_mission_status.assert_awaited_with(
+            1, MissionStatus.SUCCESS, "All tasks completed."
+        )
 
     @pytest.mark.asyncio
     async def test_phase_execution_step_failed(self, orchestrator, mock_state):
         mission = Mission(id=1)
-        mock_state.get_tasks.return_value = [
-            Task(id=1, status=TaskStatus.FAILED)
-        ]
+        mock_state.get_tasks.return_value = [Task(id=1, status=TaskStatus.FAILED)]
 
         done = await orchestrator._phase_execution_step(mission)
         assert done is True
-        mock_state.update_mission_status.assert_awaited_with(1, MissionStatus.FAILED, "1 tasks failed.")
+        mock_state.update_mission_status.assert_awaited_with(
+            1, MissionStatus.FAILED, "1 tasks failed."
+        )
 
     @pytest.mark.asyncio
-    async def test_phase_execution_step_execute_ready(self, orchestrator, mock_state, mock_executor):
+    async def test_phase_execution_step_execute_ready(
+        self, orchestrator, mock_state, mock_executor
+    ):
         mission = Mission(id=1)
         # Task 2 depends on Task 1. Task 1 is Success. Task 2 is Pending.
         t1 = Task(id=1, task_key="t1", status=TaskStatus.SUCCESS)

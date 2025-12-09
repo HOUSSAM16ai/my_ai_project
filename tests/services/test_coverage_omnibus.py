@@ -2,7 +2,6 @@
 Omnibus Test Suite to achieve 100% Service Coverage.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 # 1. Admin Chat Performance Service
@@ -75,8 +74,8 @@ from app.services.chaos_engineering import (
 #     CosmicGovernanceService,
 # )
 
-class TestOmnibusServices:
 
+class TestOmnibusServices:
     def test_admin_chat_performance_service(self):
         svc = AdminChatPerformanceService()
         assert svc is not None

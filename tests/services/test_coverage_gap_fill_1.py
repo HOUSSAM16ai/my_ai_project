@@ -2,30 +2,32 @@
 Tests to fill coverage gaps in critical services.
 """
 
-import threading
-import time
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+from app.models import Mission, User
 
 # === Master Agent Service Tests ===
 from app.services.master_agent_service import (
     OvermindService,
-    start_mission,
     run_mission_lifecycle,
+    start_mission,
 )
-from app.models import User, Mission
+
 
 class TestMasterAgentService:
     @pytest.fixture
     def mock_deps(self):
-        with patch("app.services.master_agent_service.async_session_factory") as mock_session_factory, \
-             patch("app.services.master_agent_service.MissionStateManager") as mock_state_manager, \
-             patch("app.services.master_agent_service.OvermindOrchestrator") as mock_orchestrator, \
-             patch("app.services.master_agent_service.TaskExecutor") as mock_executor, \
-             patch("app.services.master_agent_service.asyncio") as mock_asyncio:
-
+        with (
+            patch(
+                "app.services.master_agent_service.async_session_factory"
+            ) as mock_session_factory,
+            patch("app.services.master_agent_service.MissionStateManager") as mock_state_manager,
+            patch("app.services.master_agent_service.OvermindOrchestrator") as mock_orchestrator,
+            patch("app.services.master_agent_service.TaskExecutor"),
+            patch("app.services.master_agent_service.asyncio") as mock_asyncio,
+        ):
             # Setup Async Context Manager for session
             mock_session = AsyncMock()
             mock_session_factory.return_value.__aenter__.return_value = mock_session
@@ -41,7 +43,7 @@ class TestMasterAgentService:
                 "state_manager": mock_state_instance,
                 "orchestrator": mock_orchestrator,
                 "asyncio": mock_asyncio,
-                "mission": mock_mission
+                "mission": mock_mission,
             }
 
     def test_start_new_mission(self, mock_deps):
@@ -51,10 +53,11 @@ class TestMasterAgentService:
 
         # We need to mock _run_sync because it uses asyncio loops which are hard to test in sync tests
         # Also mock _create_mission_async to avoid "coroutine never awaited" warning
-        with patch.object(service, '_run_sync') as mock_run_sync, \
-             patch.object(service, '_create_mission_async') as mock_create_async, \
-             patch("threading.Thread") as mock_thread:
-
+        with (
+            patch.object(service, "_run_sync") as mock_run_sync,
+            patch.object(service, "_create_mission_async"),
+            patch("threading.Thread") as mock_thread,
+        ):
             mock_run_sync.return_value = mock_deps["mission"]
 
             mission = service.start_new_mission("objective", user)
@@ -65,13 +68,15 @@ class TestMasterAgentService:
 
     def test_run_mission_lifecycle(self, mock_deps):
         service = OvermindService()
-        with patch.object(service, '_launch_orchestrator_thread') as mock_launch:
+        with patch.object(service, "_launch_orchestrator_thread") as mock_launch:
             service.run_mission_lifecycle(123)
             mock_launch.assert_called_once_with(123)
 
     def test_legacy_exports(self, mock_deps):
         # Just verify they don't crash and call the singleton
-        with patch("app.services.master_agent_service._overmind_service_singleton") as mock_singleton:
+        with patch(
+            "app.services.master_agent_service._overmind_service_singleton"
+        ) as mock_singleton:
             user = MagicMock(spec=User)
             start_mission("obj", user)
             mock_singleton.start_new_mission.assert_called_once_with("obj", user)
@@ -82,13 +87,14 @@ class TestMasterAgentService:
 
 # === Micro Frontends Service Tests ===
 from app.services.micro_frontends_service import (
-    MicroFrontendsService,
-    get_micro_frontends_service,
-    MicroFrontend,
-    ModuleFederation,
     FrontendFramework,
+    MicroFrontend,
+    MicroFrontendsService,
+    ModuleFederation,
     ModuleType,
+    get_micro_frontends_service,
 )
+
 
 class TestMicroFrontendsService:
     def test_register_module(self):
@@ -102,7 +108,7 @@ class TestMicroFrontendsService:
             exposed_modules={},
             shared_dependencies=[],
             owner_team="core",
-            version="1.0.0"
+            version="1.0.0",
         )
 
         assert service.register_module(module)
@@ -113,17 +119,29 @@ class TestMicroFrontendsService:
         service = MicroFrontendsService()
         # Register shell
         shell = MicroFrontend(
-            module_id="shell", name="shell", module_type=ModuleType.SHELL,
-            framework=FrontendFramework.REACT, entry_url="/shell.js",
-            exposed_modules={}, shared_dependencies=["react"], owner_team="core", version="1.0"
+            module_id="shell",
+            name="shell",
+            module_type=ModuleType.SHELL,
+            framework=FrontendFramework.REACT,
+            entry_url="/shell.js",
+            exposed_modules={},
+            shared_dependencies=["react"],
+            owner_team="core",
+            version="1.0",
         )
         service.register_module(shell)
 
         # Register remote
         remote = MicroFrontend(
-            module_id="remote1", name="remote1", module_type=ModuleType.REMOTE,
-            framework=FrontendFramework.REACT, entry_url="/remote1.js",
-            exposed_modules={"./Widget": "./src/Widget"}, shared_dependencies=["react"], owner_team="feature", version="1.0"
+            module_id="remote1",
+            name="remote1",
+            module_type=ModuleType.REMOTE,
+            framework=FrontendFramework.REACT,
+            entry_url="/remote1.js",
+            exposed_modules={"./Widget": "./src/Widget"},
+            shared_dependencies=["react"],
+            owner_team="feature",
+            version="1.0",
         )
         service.register_module(remote)
 
@@ -132,7 +150,7 @@ class TestMicroFrontendsService:
             shell_module_id="shell",
             remote_modules=["remote1"],
             shared_state_keys=[],
-            routing_config={}
+            routing_config={},
         )
 
         assert service.create_federation(fed)
@@ -161,11 +179,12 @@ class TestMicroFrontendsService:
 
 # === Observability Integration Service Tests ===
 from app.services.observability_integration_service import (
+    AlertSeverity,
+    MetricType,
     ObservabilityIntegration,
     get_observability,
-    MetricType,
-    AlertSeverity,
 )
+
 
 class TestObservabilityIntegrationService:
     @pytest.fixture
@@ -210,11 +229,14 @@ class TestObservabilityIntegrationService:
 
     def test_system_metrics_collection(self, service):
         # Mock dependencies
-        with patch.dict("sys.modules", {
-            "app.services.deployment_orchestrator_service": MagicMock(),
-            "app.services.kubernetes_orchestration_service": MagicMock(),
-            "app.services.model_serving_infrastructure": MagicMock(),
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "app.services.deployment_orchestrator_service": MagicMock(),
+                "app.services.kubernetes_orchestration_service": MagicMock(),
+                "app.services.model_serving_infrastructure": MagicMock(),
+            },
+        ):
             service._collect_system_metrics()
             # Should not raise exception
             assert True

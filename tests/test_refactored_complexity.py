@@ -78,7 +78,7 @@ class TestPatternImplementation:
 
     def test_retry_policy_pattern(self):
         """Verify Retry Policy pattern."""
-        from app.services.resilience.retry import RetryManager, RetryConfig
+        from app.services.resilience.retry import RetryConfig, RetryManager
 
         retry_manager = RetryManager(RetryConfig(max_retries=3))
         assert retry_manager.config.max_retries == 3

@@ -9,13 +9,13 @@ import importlib
 import logging
 import pkgutil
 import threading
-import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from .base_planner import BasePlanner, instantiate_all_planners
 from .config import DEFAULT_CONFIG, FactoryConfig
-from .exceptions import PlannerNotFound, NoActivePlannersError
+from .exceptions import NoActivePlannersError, PlannerNotFound
 from .ranking import rank_planners
 from .schemas import PlanningContext
 from .strategies.base_strategy import BasePlanningStrategy
@@ -25,6 +25,7 @@ from .strategies.recursive_strategy import RecursiveStrategy
 logger = logging.getLogger(__name__)
 
 FACTORY_VERSION = "5.0.0"
+
 
 @dataclass
 class PlannerRecord:
@@ -55,11 +56,13 @@ class PlannerRecord:
             "error": self.error,
         }
 
+
 @dataclass
 class FactoryState:
     discovered: bool = False
     planner_records: dict[str, PlannerRecord] = field(default_factory=dict)
     discovery_runs: int = 0
+
 
 class PlannerFactory:
     """
@@ -95,7 +98,9 @@ class PlannerFactory:
                             # We import to register subclasses
                             importlib.import_module(name)
                         except Exception as e:
-                            self._log(f"Failed to import planner module {name}: {e}", level="WARNING")
+                            self._log(
+                                f"Failed to import planner module {name}: {e}", level="WARNING"
+                            )
             except Exception as e:
                 self._log(f"Failed to scan root package {root_package}: {e}", level="WARNING")
 
@@ -116,14 +121,14 @@ class PlannerFactory:
             name=planner.name,
             module=planner.__module__,
             # Assuming these attributes exist or defaulting
-            capabilities=getattr(planner, 'capabilities', set()),
-            reliability_score=getattr(planner, 'reliability_score', 0.5),
-            tier=getattr(planner, 'tier', "standard"),
-            production_ready=getattr(planner, 'production_ready', True),
+            capabilities=getattr(planner, "capabilities", set()),
+            reliability_score=getattr(planner, "reliability_score", 0.5),
+            tier=getattr(planner, "tier", "standard"),
+            production_ready=getattr(planner, "production_ready", True),
             quarantined=False,
             instantiated=True,
-            version=getattr(planner, 'version', "1.0.0"),
-            self_test_passed=True
+            version=getattr(planner, "version", "1.0.0"),
+            self_test_passed=True,
         )
         self._state.planner_records[planner.name] = record
         self._instance_cache[planner.name] = planner
@@ -134,10 +139,7 @@ class PlannerFactory:
 
     def _active_planner_names(self) -> list[str]:
         """Get list of active planner names."""
-        return [
-            name for name, rec in self._state.planner_records.items()
-            if not rec.quarantined
-        ]
+        return [name for name, rec in self._state.planner_records.items() if not rec.quarantined]
 
     def get_planner(self, name: str, auto_instantiate: bool = True) -> BasePlanner:
         """
@@ -159,13 +161,18 @@ class PlannerFactory:
             except Exception as e:
                 raise PlannerNotFound(name, context=str(e)) from e
 
-    def list_planners(self, include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
+    def list_planners(
+        self, include_quarantined: bool = False, include_errors: bool = False
+    ) -> list[str]:
         """List available planners."""
-        return sorted([
-            name for name, rec in self._state.planner_records.items()
-            if (include_quarantined or not rec.quarantined)
-            and (include_errors or not rec.error)
-        ])
+        return sorted(
+            [
+                name
+                for name, rec in self._state.planner_records.items()
+                if (include_quarantined or not rec.quarantined)
+                and (include_errors or not rec.error)
+            ]
+        )
 
     def select_best_planner(
         self,
@@ -184,18 +191,19 @@ class PlannerFactory:
 
         active_names = self._active_planner_names()
         if not active_names:
-            if self_heal_on_empty or (self_heal_on_empty is None and self._config.self_heal_on_empty):
+            if self_heal_on_empty or (
+                self_heal_on_empty is None and self._config.self_heal_on_empty
+            ):
                 self.self_heal()
                 active_names = self._active_planner_names()
 
             if not active_names:
-                raise NoActivePlannersError("No active planners available even after self-heal attempt.")
+                raise NoActivePlannersError(
+                    "No active planners available even after self-heal attempt."
+                )
 
         # Prepare candidates
-        candidates = {
-            name: self._state.planner_records[name]
-            for name in active_names
-        }
+        candidates = {name: self._state.planner_records[name] for name in active_names}
 
         # Use ranking module
         ranked = rank_planners(
@@ -204,13 +212,15 @@ class PlannerFactory:
             required_capabilities=set(required_capabilities or []),
             prefer_production=prefer_production,
             deep_context=deep_context,
-            config=self._config
+            config=self._config,
         )
 
         if not ranked:
-            raise NoActivePlannersError(f"No suitable planner found for objective: {objective[:50]}...")
+            raise NoActivePlannersError(
+                f"No suitable planner found for objective: {objective[:50]}..."
+            )
 
-        best_name = ranked[0][1] # (score, name, record)
+        best_name = ranked[0][1]  # (score, name, record)
 
         if auto_instantiate:
             return self.get_planner(best_name)
@@ -230,10 +240,12 @@ class PlannerFactory:
             "discovered": self._state.discovered,
             "discovery_runs": self._state.discovery_runs,
             "active_count": len(self._active_planner_names()),
-            "quarantined_count": len([r for r in self._state.planner_records.values() if r.quarantined]),
+            "quarantined_count": len(
+                [r for r in self._state.planner_records.values() if r.quarantined]
+            ),
             "instantiated_count": len(self._instance_cache),
-            "total_instantiations": len(self._instance_cache), # Simplified
-            "import_failures": {}, # Track if needed
+            "total_instantiations": len(self._instance_cache),  # Simplified
+            "import_failures": {},  # Track if needed
         }
 
     def describe_planner(self, name: str) -> dict[str, Any]:
@@ -242,7 +254,9 @@ class PlannerFactory:
             return self._state.planner_records[name].to_public_dict()
         return {}
 
-    def get_telemetry_samples(self, selection_limit: int = 25, instantiation_limit: int = 25) -> dict[str, list]:
+    def get_telemetry_samples(
+        self, selection_limit: int = 25, instantiation_limit: int = 25
+    ) -> dict[str, list]:
         """Get telemetry samples."""
         return {"selection": [], "instantiation": []}
 
@@ -252,7 +266,7 @@ class PlannerFactory:
         return {
             "healthy": active >= min_required,
             "active_planners": active,
-            "min_required": min_required
+            "min_required": min_required,
         }
 
     def reload_planners(self):
@@ -287,6 +301,7 @@ class PlannerFactory:
         if complexity_score > 50 or "complex" in objective.lower():
             return RecursiveStrategy(planner_name="recursive_planner")
         return LinearStrategy(planner_name="standard_planner")
+
 
 # Alias for static usage if needed
 def select_strategy(objective: str, context: PlanningContext | None = None) -> BasePlanningStrategy:

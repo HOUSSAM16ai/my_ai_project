@@ -5,15 +5,15 @@ Tests for Coverage Gap Fill 3
 
 import os
 import tempfile
-import threading
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 # === Refactoring Tool Tests ===
-from app.services.refactoring_tool import RefactorTool, RefactorResult
+from app.services.refactoring_tool import RefactorTool
+
 
 class TestRefactoringTool:
     @pytest.fixture
@@ -34,7 +34,9 @@ class TestRefactoringTool:
         try:
             # Mock build diff to return something
             with patch("app.services.refactoring_tool.difflib.unified_diff", return_value=["diff"]):
-                res = tool.apply_code_refactoring(f_path, "improve", dry_run=False, create_backup=True)
+                res = tool.apply_code_refactoring(
+                    f_path, "improve", dry_run=False, create_backup=True
+                )
 
             assert res.changed is True
             assert res.wrote is True
@@ -42,8 +44,10 @@ class TestRefactoringTool:
             assert Path(res.backup_path).exists()
             assert Path(f_path).read_text() == "refactored code"
         finally:
-            if os.path.exists(f_path): os.remove(f_path)
-            if res.backup_path and os.path.exists(res.backup_path): os.remove(res.backup_path)
+            if os.path.exists(f_path):
+                os.remove(f_path)
+            if res.backup_path and os.path.exists(res.backup_path):
+                os.remove(res.backup_path)
 
     def test_apply_code_refactoring_file_not_found(self, tool):
         res = tool.apply_code_refactoring("missing.py", "req")
@@ -75,13 +79,19 @@ class TestRefactoringTool:
 
             assert res.changed is True
             assert res.wrote is False
-            assert Path(f_path).read_text() == "code" # Not changed
+            assert Path(f_path).read_text() == "code"  # Not changed
         finally:
             os.remove(f_path)
 
 
 # === Repo Inspector Service Tests ===
-from app.services.repo_inspector_service import count_files, files_by_extension, total_lines_of_code, get_project_summary
+from app.services.repo_inspector_service import (
+    count_files,
+    files_by_extension,
+    get_project_summary,
+    total_lines_of_code,
+)
+
 
 class TestRepoInspectorService:
     @pytest.fixture
@@ -90,6 +100,7 @@ class TestRepoInspectorService:
             # IMPORTANT: Patch IGNORED_DIRS to avoid ignoring /tmp
             # We copy the original set and remove 'tmp' if present
             from app.services import repo_inspector_service
+
             original_ignored = repo_inspector_service.IGNORED_DIRS.copy()
             if "tmp" in repo_inspector_service.IGNORED_DIRS:
                 repo_inspector_service.IGNORED_DIRS.remove("tmp")
@@ -134,23 +145,29 @@ class TestRepoInspectorService:
 
 # === Service Catalog Service Tests ===
 from app.services.service_catalog_service import (
-    ServiceCatalogService,
-    get_service_catalog,
-    ServiceMetadata,
-    ServiceType,
-    ServiceLifecycle,
-    ServiceTemplate,
     APISpec,
-    HealthStatus
+    HealthStatus,
+    ServiceCatalogService,
+    ServiceLifecycle,
+    ServiceMetadata,
+    ServiceTemplate,
+    ServiceType,
+    get_service_catalog,
 )
+
 
 class TestServiceCatalogService:
     def test_register_and_get_service(self):
         catalog = ServiceCatalogService()
         svc = ServiceMetadata(
-            service_id="s1", name="S1", description="desc", service_type=ServiceType.API,
-            lifecycle=ServiceLifecycle.PRODUCTION, owner_team="team",
-            repository_url="url", documentation_url="doc"
+            service_id="s1",
+            name="S1",
+            description="desc",
+            service_type=ServiceType.API,
+            lifecycle=ServiceLifecycle.PRODUCTION,
+            owner_team="team",
+            repository_url="url",
+            documentation_url="doc",
         )
         assert catalog.register_service(svc)
         assert catalog.get_service("s1") == svc
@@ -158,14 +175,24 @@ class TestServiceCatalogService:
     def test_search_services(self):
         catalog = ServiceCatalogService()
         s1 = ServiceMetadata(
-            service_id="s1", name="Alpha Service", description="desc", service_type=ServiceType.API,
-            lifecycle=ServiceLifecycle.PRODUCTION, owner_team="teamA",
-            repository_url="url", documentation_url="doc"
+            service_id="s1",
+            name="Alpha Service",
+            description="desc",
+            service_type=ServiceType.API,
+            lifecycle=ServiceLifecycle.PRODUCTION,
+            owner_team="teamA",
+            repository_url="url",
+            documentation_url="doc",
         )
         s2 = ServiceMetadata(
-            service_id="s2", name="Beta Service", description="desc", service_type=ServiceType.DATABASE,
-            lifecycle=ServiceLifecycle.PRODUCTION, owner_team="teamB",
-            repository_url="url", documentation_url="doc"
+            service_id="s2",
+            name="Beta Service",
+            description="desc",
+            service_type=ServiceType.DATABASE,
+            lifecycle=ServiceLifecycle.PRODUCTION,
+            owner_team="teamB",
+            repository_url="url",
+            documentation_url="doc",
         )
         catalog.register_service(s1)
         catalog.register_service(s2)
@@ -185,7 +212,9 @@ class TestServiceCatalogService:
         # Default template exists
         assert len(catalog.get_templates()) > 0
 
-        tpl = ServiceTemplate("t1", "T1", "desc", ServiceType.API, [], {"f1": "content {var}"}, {"var": "str"})
+        tpl = ServiceTemplate(
+            "t1", "T1", "desc", ServiceType.API, [], {"f1": "content {var}"}, {"var": "str"}
+        )
         catalog.register_template(tpl)
 
         scaffold = catalog.scaffold_service("t1", {"var": "val"})
@@ -194,9 +223,14 @@ class TestServiceCatalogService:
     def test_health(self):
         catalog = ServiceCatalogService()
         svc = ServiceMetadata(
-            service_id="s1", name="S1", description="desc", service_type=ServiceType.API,
-            lifecycle=ServiceLifecycle.PRODUCTION, owner_team="team",
-            repository_url="url", documentation_url="doc"
+            service_id="s1",
+            name="S1",
+            description="desc",
+            service_type=ServiceType.API,
+            lifecycle=ServiceLifecycle.PRODUCTION,
+            owner_team="team",
+            repository_url="url",
+            documentation_url="doc",
         )
         catalog.register_service(svc)
 
@@ -207,9 +241,15 @@ class TestServiceCatalogService:
     def test_dependency_graph(self):
         catalog = ServiceCatalogService()
         s1 = ServiceMetadata(
-            service_id="s1", name="S1", description="desc", service_type=ServiceType.API,
-            lifecycle=ServiceLifecycle.PRODUCTION, owner_team="team",
-            repository_url="url", documentation_url="doc", dependencies=["s2"]
+            service_id="s1",
+            name="S1",
+            description="desc",
+            service_type=ServiceType.API,
+            lifecycle=ServiceLifecycle.PRODUCTION,
+            owner_team="team",
+            repository_url="url",
+            documentation_url="doc",
+            dependencies=["s2"],
         )
         catalog.register_service(s1)
         graph = catalog.get_dependency_graph()
@@ -230,11 +270,12 @@ class TestServiceCatalogService:
 
 # === User Analytics Metrics Service Tests ===
 from app.services.user_analytics_metrics_service import (
-    UserAnalyticsMetricsService,
-    get_user_analytics_service,
     EventType,
+    UserAnalyticsMetricsService,
     UserSegment,
+    get_user_analytics_service,
 )
+
 
 class TestUserAnalyticsMetricsService:
     def test_track_event(self):
@@ -257,9 +298,11 @@ class TestUserAnalyticsMetricsService:
 
     def test_engagement_metrics(self):
         service = UserAnalyticsMetricsService()
-        eid = service.track_event(1, EventType.PAGE_VIEW, "home")
+        service.track_event(1, EventType.PAGE_VIEW, "home")
         # Track another event to update end_time and duration
-        service.track_event(1, EventType.CLICK, "btn", session_id=service.events_buffer[0].session_id)
+        service.track_event(
+            1, EventType.CLICK, "btn", session_id=service.events_buffer[0].session_id
+        )
 
         metrics = service.get_engagement_metrics()
         assert metrics.dau == 1
@@ -280,7 +323,7 @@ class TestUserAnalyticsMetricsService:
         service.users[1] = {
             "first_seen": datetime.now(UTC) - timedelta(days=30),
             "last_seen": datetime.now(UTC),
-            "total_events": 1
+            "total_events": 1,
         }
 
         metrics = service.get_retention_metrics()
@@ -290,7 +333,7 @@ class TestUserAnalyticsMetricsService:
 
     def test_nps(self):
         service = UserAnalyticsMetricsService()
-        service.record_nps_response(1, 10) # Promoter
+        service.record_nps_response(1, 10)  # Promoter
         service.record_nps_response(2, 0)  # Detractor
 
         metrics = service.get_nps_metrics()
@@ -315,7 +358,7 @@ class TestUserAnalyticsMetricsService:
         service.users[1] = {
             "first_seen": datetime.now(UTC),
             "last_seen": datetime.now(UTC),
-            "total_events": 1
+            "total_events": 1,
         }
         segments = service.segment_users()
         assert 1 in segments[UserSegment.NEW]

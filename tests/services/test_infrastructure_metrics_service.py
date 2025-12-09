@@ -3,20 +3,17 @@ Tests for Infrastructure Metrics Service
 ========================================
 """
 
-import threading
 import time
-from datetime import datetime, timedelta, UTC
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from app.services.infrastructure_metrics_service import (
-    InfrastructureMetricsService,
     HealthStatus,
-    CPUMetrics,
-    MemoryMetrics,
-    DiskMetrics,
+    InfrastructureMetricsService,
     get_infrastructure_service,
 )
+
 
 class TestInfrastructureMetricsService:
     @pytest.fixture
@@ -31,9 +28,7 @@ class TestInfrastructureMetricsService:
             mock.virtual_memory.return_value = MagicMock(
                 total=1000, available=500, used=500, percent=50.0
             )
-            mock.swap_memory.return_value = MagicMock(
-                total=100, used=10, percent=10.0
-            )
+            mock.swap_memory.return_value = MagicMock(total=100, used=10, percent=10.0)
 
             # Disk
             mock.disk_usage.return_value = MagicMock(
@@ -45,10 +40,16 @@ class TestInfrastructureMetricsService:
 
             # Network
             mock.net_io_counters.return_value = MagicMock(
-                bytes_sent=1000, bytes_recv=2000, packets_sent=10, packets_recv=20,
-                errin=0, errout=0, dropin=0, dropout=0
+                bytes_sent=1000,
+                bytes_recv=2000,
+                packets_sent=10,
+                packets_recv=20,
+                errin=0,
+                errout=0,
+                dropin=0,
+                dropout=0,
             )
-            mock.net_connections.return_value = [1, 2, 3] # 3 connections
+            mock.net_connections.return_value = [1, 2, 3]  # 3 connections
 
             # Process
             mock_proc = MagicMock()
@@ -105,8 +106,14 @@ class TestInfrastructureMetricsService:
 
         time.sleep(0.1)
         mock_psutil.net_io_counters.return_value = MagicMock(
-            bytes_sent=2000, bytes_recv=4000, packets_sent=20, packets_recv=40,
-            errin=0, errout=0, dropin=0, dropout=0
+            bytes_sent=2000,
+            bytes_recv=4000,
+            packets_sent=20,
+            packets_recv=40,
+            errin=0,
+            errout=0,
+            dropin=0,
+            dropout=0,
         )
 
         metrics = service.collect_network_metrics()

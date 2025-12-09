@@ -209,7 +209,9 @@ class CosmicGovernanceService:
                 rules = protocol.cosmic_rules
 
                 for rule_name, rule_config in rules.items():
-                    if not CosmicGovernanceService._check_rule(rule_name, rule_config, action, context):
+                    if not CosmicGovernanceService._check_rule(
+                        rule_name, rule_config, action, context
+                    ):
                         violations.append(
                             {
                                 "protocol": protocol.protocol_name,
@@ -578,9 +580,7 @@ class CosmicGovernanceService:
                 council.total_decisions += 1
 
                 # Remove from pending
-                pending = [
-                    d for d in council.pending_decisions if d.get("id") != decision_id
-                ]
+                pending = [d for d in council.pending_decisions if d.get("id") != decision_id]
                 council.pending_decisions = pending
 
                 # Mark both JSON columns as modified
@@ -592,7 +592,9 @@ class CosmicGovernanceService:
                     [d for d in council.decision_history if d.get("status") == "approved"]
                 )
                 council.consensus_rate = (
-                    approved_decisions / council.total_decisions if council.total_decisions > 0 else 1.0
+                    approved_decisions / council.total_decisions
+                    if council.total_decisions > 0
+                    else 1.0
                 )
 
                 council.last_meeting_at = datetime.now(UTC)
