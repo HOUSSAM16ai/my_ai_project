@@ -122,6 +122,7 @@ class TaskStatus(CaseInsensitiveEnum):
 
 class MissionEventType(CaseInsensitiveEnum):
     CREATED = "mission_created"
+    STATUS_CHANGE = "status_change"
     ARCHITECTURE_CLASSIFIED = "architecture_classified"
     PLAN_SELECTED = "plan_selected"
     EXECUTION_STARTED = "execution_started"

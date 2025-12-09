@@ -78,16 +78,17 @@ if not _LOG.handlers:
 # Try import generation_service module
 # --------------------------------------------------------------------------------------
 try:
-    from . import generation_service as _gen_mod
+    # Changed from generation_service to fastapi_generation_service to match actual file structure
+    from .. import fastapi_generation_service as _gen_mod
 except Exception as e:
     # هذه حالة حرجة لأن معظم النظام يعتمد على وجود الملف. نرفع استثناء صريح مبكر.
-    raise RuntimeError(f"[maestro.adapter] Cannot import generation_service.py: {e}") from e
+    raise RuntimeError(f"[maestro.adapter] Cannot import fastapi_generation_service.py: {e}") from e
 
 # --------------------------------------------------------------------------------------
 # Optional direct LLM client (fallback path)
 # --------------------------------------------------------------------------------------
 try:
-    from .llm_client_service import get_llm_client
+    from ..llm_client_service import get_llm_client
 except Exception:
     get_llm_client = None
     _LOG.warning("llm_client_service.get_llm_client غير متوفر، سيُستخدم مسار fallback فقط إن لزم.")

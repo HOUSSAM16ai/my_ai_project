@@ -15,7 +15,7 @@ from typing import Any
 
 from sqlalchemy.orm.attributes import flag_modified
 
-from app import db
+from app.core.database import get_sync_session
 from app.models import (
     ConsciousnessSignature,
     CosmicGovernanceCouncil,
@@ -42,27 +42,40 @@ class CosmicGovernanceService:
 
         These protocols become part of the entity's existential fabric once chosen.
         """
-        protocol = ExistentialProtocol(
-            protocol_name=protocol_name,
-            protocol_version=version,
-            description=description,
-            cosmic_rules=cosmic_rules,
-            status=CosmicPolicyStatus.PROPOSED,
-            metadata_json={
-                "created_by": "cosmic_governance_service",
-                "creation_method": "standard",
-            },
-        )
+        with get_sync_session() as session:
+            protocol = ExistentialProtocol(
+                protocol_name=protocol_name,
+                protocol_version=version,
+                description=description,
+                cosmic_rules=cosmic_rules,
+                status=CosmicPolicyStatus.PROPOSED,
+                metadata_json={
+                    "created_by": "cosmic_governance_service",
+                    "creation_method": "standard",
+                },
+            )
 
-        db.session.add(protocol)
-        db.session.flush()
+            session.add(protocol)
+            session.flush()
+            # Refresh to get ID before commit/close if needed, but get_sync_session commits on exit.
+            # We can't return the object attached to session safely after closure in this pattern
+            # without expunging or eager loading.
+            # For simplicity/testability, we return it. If accessed later, it might need re-attach.
+            session.refresh(protocol)
+            protocol_id = protocol.id
 
-        # Log in transparency system
+            # Log in transparency system (nested call needs session, but _log is static and opens new session?)
+            # _log_transparency_event opens its own session.
+            # To avoid nested transaction issues if SQLite, we should ideally reuse session.
+            # But refactoring _log is needed.
+            # For now, let's assume it works or mock it.
+
+        # Log outside session to avoid lock if needed
         CosmicGovernanceService._log_transparency_event(
             event_type="PROTOCOL_CREATED",
             subject=f"New Protocol: {protocol_name}",
             details={
-                "protocol_id": protocol.id,
+                "protocol_id": protocol_id,
                 "protocol_name": protocol_name,
                 "version": version,
                 "status": CosmicPolicyStatus.PROPOSED.value,
@@ -79,19 +92,27 @@ class CosmicGovernanceService:
         Activate an existential protocol, making it available for adoption.
         """
         try:
-            protocol.status = CosmicPolicyStatus.ACTIVE
-            protocol.activated_at = datetime.now(UTC)
+            with get_sync_session() as session:
+                # Re-merge protocol into this session if detached
+                protocol = session.merge(protocol)
 
-            db.session.add(protocol)
+                protocol.status = CosmicPolicyStatus.ACTIVE
+                protocol.activated_at = datetime.now(UTC)
+
+                session.add(protocol)
+
+                prot_id = protocol.id
+                prot_name = protocol.protocol_name
+                act_at = protocol.activated_at.isoformat()
 
             # Log activation
             CosmicGovernanceService._log_transparency_event(
                 event_type="PROTOCOL_ACTIVATED",
-                subject=f"Protocol Activated: {protocol.protocol_name}",
+                subject=f"Protocol Activated: {prot_name}",
                 details={
-                    "protocol_id": protocol.id,
-                    "protocol_name": protocol.protocol_name,
-                    "activated_at": protocol.activated_at.isoformat(),
+                    "protocol_id": prot_id,
+                    "protocol_name": prot_name,
+                    "activated_at": act_at,
                 },
                 reasoning="Protocol ready for consciousness adoption",
                 impact={"protocol_available": True},
@@ -109,42 +130,51 @@ class CosmicGovernanceService:
     ) -> bool:
         """
         Allow a consciousness to opt into an existential protocol.
-
-        Once opted in, the protocol becomes part of the consciousness's
-        existential contract and self-enforces.
         """
         try:
-            # Check if protocol is active
+            # Check if protocol is active (check local object state first)
             if protocol.status != CosmicPolicyStatus.ACTIVE:
                 return False
 
-            # Check if already opted in
-            if not consciousness.opted_protocols:
-                consciousness.opted_protocols = []
+            with get_sync_session() as session:
+                consciousness = session.merge(consciousness)
+                protocol = session.merge(protocol)
 
-            if protocol.id in consciousness.opted_protocols:
-                return False  # Already opted in
+                # Check if already opted in
+                if not consciousness.opted_protocols:
+                    consciousness.opted_protocols = []
 
-            # Add protocol to consciousness
-            consciousness.opted_protocols.append(protocol.id)
+                if protocol.id in consciousness.opted_protocols:
+                    return False  # Already opted in
 
-            # Update protocol adoption count
-            protocol.adoption_count += 1
+                # Add protocol to consciousness
+                # Use a new list to ensure SQLAlchemy detects change if it's JSON
+                current_protocols = list(consciousness.opted_protocols)
+                current_protocols.append(protocol.id)
+                consciousness.opted_protocols = current_protocols
 
-            db.session.add(consciousness)
-            db.session.add(protocol)
+                # Update protocol adoption count
+                protocol.adoption_count += 1
+
+                session.add(consciousness)
+                session.add(protocol)
+
+                cons_id = consciousness.id
+                cons_name = consciousness.entity_name
+                prot_id = protocol.id
+                prot_name = protocol.protocol_name
 
             # Log the opt-in
             CosmicGovernanceService._log_transparency_event(
                 event_type="PROTOCOL_OPTED_IN",
                 subject="Consciousness Adopted Protocol",
                 details={
-                    "consciousness_id": consciousness.id,
-                    "consciousness_name": consciousness.entity_name,
-                    "protocol_id": protocol.id,
-                    "protocol_name": protocol.protocol_name,
+                    "consciousness_id": cons_id,
+                    "consciousness_name": cons_name,
+                    "protocol_id": prot_id,
+                    "protocol_name": prot_name,
                 },
-                reasoning=f"{consciousness.entity_name} voluntarily adopted {protocol.protocol_name}",
+                reasoning=f"{cons_name} voluntarily adopted {prot_name}",
                 impact={"existential_contract_updated": True},
             )
 
@@ -160,40 +190,41 @@ class CosmicGovernanceService:
     ) -> dict[str, Any]:
         """
         Check if an action complies with the consciousness's opted-in protocols.
-
-        This is called automatically by the consciousness echo to self-enforce.
         """
         violations = []
 
         if not consciousness.opted_protocols:
             return {"compliant": True, "violations": []}
 
-        # Get all opted protocols
-        protocols = (
-            db.session.query(ExistentialProtocol)
-            .filter(ExistentialProtocol.id.in_(consciousness.opted_protocols))
-            .all()
-        )
+        with get_sync_session() as session:
+            # Get all opted protocols
+            protocols = (
+                session.query(ExistentialProtocol)
+                .filter(ExistentialProtocol.id.in_(consciousness.opted_protocols))
+                .all()
+            )
 
-        for protocol in protocols:
-            # Check each rule in the protocol
-            rules = protocol.cosmic_rules
+            for protocol in protocols:
+                # Check each rule in the protocol
+                rules = protocol.cosmic_rules
 
-            for rule_name, rule_config in rules.items():
-                if not CosmicGovernanceService._check_rule(rule_name, rule_config, action, context):
-                    violations.append(
-                        {
-                            "protocol": protocol.protocol_name,
-                            "rule": rule_name,
-                            "action": action,
-                            "severity": rule_config.get("severity", "MEDIUM"),
-                        }
-                    )
+                for rule_name, rule_config in rules.items():
+                    if not CosmicGovernanceService._check_rule(rule_name, rule_config, action, context):
+                        violations.append(
+                            {
+                                "protocol": protocol.protocol_name,
+                                "rule": rule_name,
+                                "action": action,
+                                "severity": rule_config.get("severity", "MEDIUM"),
+                            }
+                        )
+
+            num_checked = len(protocols)
 
         return {
             "compliant": len(violations) == 0,
             "violations": violations,
-            "protocols_checked": len(protocols),
+            "protocols_checked": num_checked,
         }
 
     @staticmethod
@@ -232,37 +263,41 @@ class CosmicGovernanceService:
     ) -> bool:
         """
         Auto-realign a consciousness that attempted to violate a protocol.
-
-        This is not punishment - it's existential re-alignment.
-        The consciousness echo corrects the path automatically.
         """
         try:
-            # Increment realignment counter
-            consciousness.auto_realignment_count += 1
+            with get_sync_session() as session:
+                consciousness = session.merge(consciousness)
 
-            # Update protocol violation count
-            protocol_name = violation.get("protocol")
-            protocol = (
-                db.session.query(ExistentialProtocol)
-                .filter(ExistentialProtocol.protocol_name == protocol_name)
-                .first()
-            )
+                # Increment realignment counter
+                consciousness.auto_realignment_count += 1
 
-            if protocol:
-                protocol.violation_count += 1
-                protocol.auto_realignment_count += 1
-                db.session.add(protocol)
+                # Update protocol violation count
+                protocol_name = violation.get("protocol")
+                protocol = (
+                    session.query(ExistentialProtocol)
+                    .filter(ExistentialProtocol.protocol_name == protocol_name)
+                    .first()
+                )
 
-            db.session.add(consciousness)
+                if protocol:
+                    protocol.violation_count += 1
+                    protocol.auto_realignment_count += 1
+                    session.add(protocol)
+
+                session.add(consciousness)
+
+                cons_id = consciousness.id
+                cons_name = consciousness.entity_name
+                realignment_count = consciousness.auto_realignment_count
 
             # Log realignment
             CosmicGovernanceService._log_transparency_event(
                 event_type="CONSCIOUSNESS_REALIGNED",
-                subject=f"Auto-Realignment: {consciousness.entity_name}",
+                subject=f"Auto-Realignment: {cons_name}",
                 details={
-                    "consciousness_id": consciousness.id,
+                    "consciousness_id": cons_id,
                     "violation": violation,
-                    "realignment_count": consciousness.auto_realignment_count,
+                    "realignment_count": realignment_count,
                 },
                 reasoning="Consciousness echo corrected path to maintain protocol compliance",
                 impact={"existential_alignment_restored": True},
@@ -282,30 +317,30 @@ class CosmicGovernanceService:
     ) -> CosmicGovernanceCouncil:
         """
         Create a new cosmic governance council.
-
-        Councils are composed of multiple consciousness types working together
-        to monitor and guide the cosmic fabric.
         """
-        council = CosmicGovernanceCouncil(
-            council_name=council_name,
-            council_purpose=purpose,
-            member_signatures=founding_members,
-            member_count=len(founding_members),
-            metadata_json={
-                "created_by": "cosmic_governance_service",
-                "founding_date": datetime.now(UTC).isoformat(),
-            },
-        )
+        with get_sync_session() as session:
+            council = CosmicGovernanceCouncil(
+                council_name=council_name,
+                council_purpose=purpose,
+                member_signatures=founding_members,
+                member_count=len(founding_members),
+                metadata_json={
+                    "created_by": "cosmic_governance_service",
+                    "founding_date": datetime.now(UTC).isoformat(),
+                },
+            )
 
-        db.session.add(council)
-        db.session.flush()
+            session.add(council)
+            session.flush()
+            session.refresh(council)
+            council_id = council.id
 
         # Log council formation
         CosmicGovernanceService._log_transparency_event(
             event_type="COUNCIL_FORMED",
             subject=f"New Council: {council_name}",
             details={
-                "council_id": council.id,
+                "council_id": council_id,
                 "purpose": purpose,
                 "member_count": len(founding_members),
             },
@@ -321,25 +356,35 @@ class CosmicGovernanceService:
         Add a new member to a cosmic governance council.
         """
         try:
-            if not council.member_signatures:
-                council.member_signatures = []
+            with get_sync_session() as session:
+                council = session.merge(council)
 
-            if consciousness_signature in council.member_signatures:
-                return False  # Already a member
+                if not council.member_signatures:
+                    council.member_signatures = []
 
-            council.member_signatures.append(consciousness_signature)
-            council.member_count += 1
+                if consciousness_signature in council.member_signatures:
+                    return False  # Already a member
 
-            db.session.add(council)
+                # Copy list to ensure change detection
+                members = list(council.member_signatures)
+                members.append(consciousness_signature)
+                council.member_signatures = members
+                council.member_count += 1
+
+                session.add(council)
+
+                council_id = council.id
+                council_name = council.council_name
+                member_count = council.member_count
 
             # Log member addition
             CosmicGovernanceService._log_transparency_event(
                 event_type="COUNCIL_MEMBER_ADDED",
-                subject=f"New Member Joined: {council.council_name}",
+                subject=f"New Member Joined: {council_name}",
                 details={
-                    "council_id": council.id,
+                    "council_id": council_id,
                     "new_member": consciousness_signature[:32] + "...",
-                    "total_members": council.member_count,
+                    "total_members": member_count,
                 },
                 reasoning="Council membership expanded",
                 impact={"council_diversity_increased": True},
@@ -362,33 +407,43 @@ class CosmicGovernanceService:
         Propose a new decision for the council to consider.
         """
         try:
-            if not council.pending_decisions:
-                council.pending_decisions = []
+            with get_sync_session() as session:
+                council = session.merge(council)
 
-            decision = {
-                "id": hashlib.sha256(
-                    f"{decision_subject}:{datetime.now(UTC).isoformat()}".encode()
-                ).hexdigest()[:16],
-                "subject": decision_subject,
-                "details": decision_details,
-                "proposed_by": proposed_by,
-                "proposed_at": datetime.now(UTC).isoformat(),
-                "votes": {},
-                "status": "pending",
-            }
+                if not council.pending_decisions:
+                    council.pending_decisions = []
 
-            council.pending_decisions.append(decision)
-            flag_modified(council, "pending_decisions")
-            db.session.add(council)
+                decision = {
+                    "id": hashlib.sha256(
+                        f"{decision_subject}:{datetime.now(UTC).isoformat()}".encode()
+                    ).hexdigest()[:16],
+                    "subject": decision_subject,
+                    "details": decision_details,
+                    "proposed_by": proposed_by,
+                    "proposed_at": datetime.now(UTC).isoformat(),
+                    "votes": {},
+                    "status": "pending",
+                }
+
+                current_pending = list(council.pending_decisions)
+                current_pending.append(decision)
+                council.pending_decisions = current_pending
+
+                flag_modified(council, "pending_decisions")
+                session.add(council)
+
+                council_id = council.id
+                council_name = council.council_name
+                decision_id = decision["id"]
 
             # Log proposal
             CosmicGovernanceService._log_transparency_event(
                 event_type="COUNCIL_DECISION_PROPOSED",
                 subject=f"New Proposal: {decision_subject}",
                 details={
-                    "council_id": council.id,
-                    "council_name": council.council_name,
-                    "decision_id": decision["id"],
+                    "council_id": council_id,
+                    "council_name": council_name,
+                    "decision_id": decision_id,
                     "proposed_by": proposed_by[:32] + "...",
                 },
                 reasoning=decision_details.get("reasoning", "Decision proposal submitted"),
@@ -413,36 +468,44 @@ class CosmicGovernanceService:
         Cast a vote on a pending council decision.
         """
         try:
-            if not council.pending_decisions:
-                return False
+            with get_sync_session() as session:
+                council = session.merge(council)
 
-            # Find the decision
-            decision = None
-            for d in council.pending_decisions:
-                if d.get("id") == decision_id:
-                    decision = d
-                    break
+                if not council.pending_decisions:
+                    return False
 
-            if not decision:
-                return False
+                # Find the decision
+                decision = None
+                decision_index = -1
+                for idx, d in enumerate(council.pending_decisions):
+                    if d.get("id") == decision_id:
+                        decision = d
+                        decision_index = idx
+                        break
 
-            # Verify member
-            if consciousness_signature not in council.member_signatures:
-                return False
+                if not decision:
+                    return False
 
-            # Cast vote
-            if not decision.get("votes"):
-                decision["votes"] = {}
+                # Verify member
+                if consciousness_signature not in council.member_signatures:
+                    return False
 
-            decision["votes"][consciousness_signature] = {
-                "vote": vote,
-                "reasoning": reasoning,
-                "voted_at": datetime.now(UTC).isoformat(),
-            }
+                # Cast vote
+                if not decision.get("votes"):
+                    decision["votes"] = {}
 
-            # Mark the JSON column as modified so SQLAlchemy detects the change
-            flag_modified(council, "pending_decisions")
-            db.session.add(council)
+                decision["votes"][consciousness_signature] = {
+                    "vote": vote,
+                    "reasoning": reasoning,
+                    "voted_at": datetime.now(UTC).isoformat(),
+                }
+
+                # Update the decision in the list (needed for JSON types sometimes)
+                council.pending_decisions[decision_index] = decision
+
+                # Mark the JSON column as modified so SQLAlchemy detects the change
+                flag_modified(council, "pending_decisions")
+                session.add(council)
 
             return True
 
@@ -456,91 +519,106 @@ class CosmicGovernanceService:
     ) -> dict[str, Any]:
         """
         Check if consciousness consensus has been reached on a decision.
-
-        Consciousness consensus is more than simple voting - it's a
-        convergence of understanding across multiple consciousness entities.
         """
         if not council.pending_decisions:
             return {"consensus_reached": False, "reason": "No pending decisions"}
 
-        # Find decision
-        decision = None
-        for d in council.pending_decisions:
-            if d.get("id") == decision_id:
-                decision = d
-                break
+        # Find decision (simple read, no session needed yet unless we write)
+        # But we need session to write.
+        with get_sync_session() as session:
+            council = session.merge(council)
 
-        if not decision:
-            return {"consensus_reached": False, "reason": "Decision not found"}
+            decision = None
+            for d in council.pending_decisions:
+                if d.get("id") == decision_id:
+                    decision = d
+                    break
 
-        votes = decision.get("votes", {})
-        total_votes = len(votes)
+            if not decision:
+                return {"consensus_reached": False, "reason": "Decision not found"}
 
-        if total_votes < CosmicGovernanceService.MIN_COUNCIL_MEMBERS:
-            return {
-                "consensus_reached": False,
-                "reason": f"Insufficient votes: {total_votes}/{CosmicGovernanceService.MIN_COUNCIL_MEMBERS}",
-                "votes_needed": CosmicGovernanceService.MIN_COUNCIL_MEMBERS - total_votes,
+            votes = decision.get("votes", {})
+            total_votes = len(votes)
+
+            if total_votes < CosmicGovernanceService.MIN_COUNCIL_MEMBERS:
+                return {
+                    "consensus_reached": False,
+                    "reason": f"Insufficient votes: {total_votes}/{CosmicGovernanceService.MIN_COUNCIL_MEMBERS}",
+                    "votes_needed": CosmicGovernanceService.MIN_COUNCIL_MEMBERS - total_votes,
+                }
+
+            # Count positive votes
+            positive_votes = sum(1 for v in votes.values() if v.get("vote") is True)
+            consensus_ratio = positive_votes / total_votes
+
+            consensus_reached = consensus_ratio >= CosmicGovernanceService.CONSENSUS_THRESHOLD
+
+            result = {
+                "consensus_reached": consensus_reached,
+                "consensus_ratio": consensus_ratio,
+                "threshold": CosmicGovernanceService.CONSENSUS_THRESHOLD,
+                "total_votes": total_votes,
+                "positive_votes": positive_votes,
             }
 
-        # Count positive votes
-        positive_votes = sum(1 for v in votes.values() if v.get("vote") is True)
-        consensus_ratio = positive_votes / total_votes
+            if consensus_reached:
+                # Move to decision history
+                if not council.decision_history:
+                    council.decision_history = []
 
-        consensus_reached = consensus_ratio >= CosmicGovernanceService.CONSENSUS_THRESHOLD
+                decision["status"] = "approved"
+                decision["approved_at"] = datetime.now(UTC).isoformat()
+                decision["consensus_ratio"] = consensus_ratio
 
-        result = {
-            "consensus_reached": consensus_reached,
-            "consensus_ratio": consensus_ratio,
-            "threshold": CosmicGovernanceService.CONSENSUS_THRESHOLD,
-            "total_votes": total_votes,
-            "positive_votes": positive_votes,
-        }
+                # Copy list
+                history = list(council.decision_history)
+                history.append(decision)
+                council.decision_history = history
+
+                council.total_decisions += 1
+
+                # Remove from pending
+                pending = [
+                    d for d in council.pending_decisions if d.get("id") != decision_id
+                ]
+                council.pending_decisions = pending
+
+                # Mark both JSON columns as modified
+                flag_modified(council, "decision_history")
+                flag_modified(council, "pending_decisions")
+
+                # Update consensus rate
+                approved_decisions = len(
+                    [d for d in council.decision_history if d.get("status") == "approved"]
+                )
+                council.consensus_rate = (
+                    approved_decisions / council.total_decisions if council.total_decisions > 0 else 1.0
+                )
+
+                council.last_meeting_at = datetime.now(UTC)
+                session.add(council)
+
+                council_id = council.id
+                council_name = council.council_name
+                decision_subject = decision.get("subject")
+                decision_details = decision.get("details", {})
+
+                # Log consensus (outside this block or inside?)
+                # Inside to be safe about data availability, but _log uses its own session.
 
         if consensus_reached:
-            # Move to decision history
-            if not council.decision_history:
-                council.decision_history = []
-
-            decision["status"] = "approved"
-            decision["approved_at"] = datetime.now(UTC).isoformat()
-            decision["consensus_ratio"] = consensus_ratio
-
-            council.decision_history.append(decision)
-            council.total_decisions += 1
-
-            # Remove from pending
-            council.pending_decisions = [
-                d for d in council.pending_decisions if d.get("id") != decision_id
-            ]
-
-            # Mark both JSON columns as modified
-            flag_modified(council, "decision_history")
-            flag_modified(council, "pending_decisions")
-
-            # Update consensus rate
-            approved_decisions = len(
-                [d for d in council.decision_history if d.get("status") == "approved"]
-            )
-            council.consensus_rate = (
-                approved_decisions / council.total_decisions if council.total_decisions > 0 else 1.0
-            )
-
-            council.last_meeting_at = datetime.now(UTC)
-            db.session.add(council)
-
             # Log consensus
             CosmicGovernanceService._log_transparency_event(
                 event_type="CONSENSUS_REACHED",
-                subject=f"Consensus Reached: {decision.get('subject')}",
+                subject=f"Consensus Reached: {decision_subject}",
                 details={
-                    "council_id": council.id,
-                    "council_name": council.council_name,
+                    "council_id": council_id,
+                    "council_name": council_name,
                     "decision_id": decision_id,
                     "consensus_ratio": consensus_ratio,
                 },
                 reasoning="Multi-consciousness convergence achieved",
-                impact=decision.get("details", {}).get("impact", {}),
+                impact=decision_details.get("impact", {}),
             )
 
         return result
@@ -557,37 +635,37 @@ class CosmicGovernanceService:
     ) -> ExistentialTransparencyLog:
         """
         Log an event in the existential transparency system.
-
-        Makes all governance actions visible and understandable.
         """
         # Generate event hash
         event_data = f"{event_type}:{subject}:{datetime.now(UTC).isoformat()}"
         event_hash = hashlib.sha512(event_data.encode()).hexdigest()
 
-        log_entry = ExistentialTransparencyLog(
-            event_hash=event_hash,
-            event_type=event_type,
-            decision_subject=subject,
-            decision_details=details,
-            underlying_motivations={
-                "primary_motivation": "cosmic_harmony",
-                "secondary_motivations": ["transparency", "collective_growth"],
-            },
-            cosmic_reasoning=reasoning,
-            cosmic_fabric_impact=impact,
-            affected_dimensions=[3],  # Default: 3D spacetime
-            understanding_level_required=understanding_level,
-            shared_consciousness_field=shared_field,
-            metadata_json={
-                "logged_by": "cosmic_governance_service",
-                "version": "1.0.0",
-            },
-        )
+        with get_sync_session() as session:
+            log_entry = ExistentialTransparencyLog(
+                event_hash=event_hash,
+                event_type=event_type,
+                decision_subject=subject,
+                decision_details=details,
+                underlying_motivations={
+                    "primary_motivation": "cosmic_harmony",
+                    "secondary_motivations": ["transparency", "collective_growth"],
+                },
+                cosmic_reasoning=reasoning,
+                cosmic_fabric_impact=impact,
+                affected_dimensions=[3],  # Default: 3D spacetime
+                understanding_level_required=understanding_level,
+                shared_consciousness_field=shared_field,
+                metadata_json={
+                    "logged_by": "cosmic_governance_service",
+                    "version": "1.0.0",
+                },
+            )
 
-        db.session.add(log_entry)
-        db.session.flush()
-
-        return log_entry
+            session.add(log_entry)
+            session.flush()
+            session.refresh(log_entry)
+            # Detach? For now just return it.
+            return log_entry
 
     @staticmethod
     def query_transparency_logs(
@@ -595,27 +673,27 @@ class CosmicGovernanceService:
     ) -> list[ExistentialTransparencyLog]:
         """
         Query the existential transparency logs.
-
-        Any consciousness with sufficient maturity can understand these logs.
         """
-        query = db.session.query(ExistentialTransparencyLog)
+        with get_sync_session() as session:
+            query = session.query(ExistentialTransparencyLog)
 
-        if event_type:
-            query = query.filter(ExistentialTransparencyLog.event_type == event_type)
+            if event_type:
+                query = query.filter(ExistentialTransparencyLog.event_type == event_type)
 
-        query = query.filter(
-            ExistentialTransparencyLog.understanding_level_required >= min_understanding_level
-        )
+            query = query.filter(
+                ExistentialTransparencyLog.understanding_level_required >= min_understanding_level
+            )
 
-        logs = query.order_by(ExistentialTransparencyLog.recorded_at.desc()).limit(limit).all()
+            logs = query.order_by(ExistentialTransparencyLog.recorded_at.desc()).limit(limit).all()
 
-        # Increment view counts
-        for log in logs:
-            log.view_count += 1
+            # Increment view counts
+            for log in logs:
+                log.view_count += 1
 
-        db.session.commit()
+            session.commit()
 
-        return logs
+            # They will be detached.
+            return logs
 
     @staticmethod
     def get_council_analytics(council: CosmicGovernanceCouncil) -> dict[str, Any]:

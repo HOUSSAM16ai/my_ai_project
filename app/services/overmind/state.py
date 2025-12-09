@@ -52,7 +52,7 @@ class MissionStateManager:
         stmt = (
             select(Mission)
             .options(
-                selectinload(Mission.plans),
+                selectinload(Mission.mission_plans),
                 selectinload(Mission.tasks),
             )
             .where(Mission.id == mission_id)

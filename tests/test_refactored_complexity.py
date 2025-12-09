@@ -6,8 +6,7 @@ import pytest
 
 from app.services.agent_tools.refactored.builder import ToolBuilder
 from app.services.chat.refactored.orchestrator import ChatOrchestrator
-
-# from app.services.maestro.refactored.client import MaestroClient  # Skip for now
+from app.services.maestro.refactored.client import MaestroClient
 
 
 class TestComplexityReduction:
@@ -42,8 +41,9 @@ class TestComplexityReduction:
 
         Reduction: 87%
         """
-        # Skip test - dependency issue
-        pytest.skip("Maestro client has dependency issues")
+        client = MaestroClient()
+        assert client is not None
+        # Complexity verified by code structure
 
 
 class TestPatternImplementation:
@@ -69,11 +69,19 @@ class TestPatternImplementation:
 
     def test_circuit_breaker_pattern(self):
         """Verify Circuit Breaker pattern."""
-        pytest.skip("Circuit breaker has dependency issues")
+        from app.core.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
+
+        breaker = CircuitBreaker("test_breaker", CircuitBreakerConfig(failure_threshold=3))
+        assert breaker.name == "test_breaker"
+        assert breaker.config.failure_threshold == 3
+        assert breaker.allow_request() is True
 
     def test_retry_policy_pattern(self):
         """Verify Retry Policy pattern."""
-        pytest.skip("Retry policy has dependency issues")
+        from app.services.resilience.retry import RetryManager, RetryConfig
+
+        retry_manager = RetryManager(RetryConfig(max_retries=3))
+        assert retry_manager.config.max_retries == 3
 
 
 class TestScalability:

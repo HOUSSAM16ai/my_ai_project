@@ -28,12 +28,12 @@ class OvermindOrchestrator:
         """
         Main entry point for the Async Mission Lifecycle.
         """
-        mission = await self.state.get_mission(mission_id)
-        if not mission:
-            logger.error(f"Mission {mission_id} not found.")
-            return
-
         try:
+            mission = await self.state.get_mission(mission_id)
+            if not mission:
+                logger.error(f"Mission {mission_id} not found.")
+                return
+
             await self._run_lifecycle_loop(mission_id)
         except Exception as e:
             logger.exception(f"Catastrophic failure in Mission {mission_id}")
