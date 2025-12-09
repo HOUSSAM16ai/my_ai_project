@@ -131,6 +131,65 @@ class ChatOrchestratorService:
     # -------------------------------------------------------------------------
     # MAIN ORCHESTRATION
     # -------------------------------------------------------------------------
+    async def _dispatch_intent_handler(
+        self,
+        intent_result,
+        question: str,
+        user_id: int,
+        conversation_id: int,
+        ai_client: AIClient,
+    ) -> AsyncGenerator[str, None] | None:
+        """Dispatch to appropriate intent handler."""
+        intent = intent_result.intent
+
+        if intent == ChatIntent.FILE_READ:
+            path = intent_result.params.get("path", "")
+            if path:
+                return self.handle_file_read(path, user_id)
+
+        elif intent == ChatIntent.FILE_WRITE:
+            path = intent_result.params.get("path", "")
+            if path:
+
+                async def file_write_response():
+                    yield f"📝 لإنشاء ملف `{path}`، يرجى تحديد المحتوى.\n"
+                    yield "يمكنك كتابة المحتوى في الرسالة التالية.\n"
+
+                return file_write_response()
+
+        elif intent == ChatIntent.CODE_SEARCH:
+            query = intent_result.params.get("query", "")
+            if query:
+                return self.handle_code_search(query, user_id)
+
+        elif intent == ChatIntent.PROJECT_INDEX:
+            return self.handle_project_index(user_id)
+
+        elif intent == ChatIntent.DEEP_ANALYSIS:
+            return self.handle_deep_analysis(question, user_id, ai_client)
+
+        elif intent == ChatIntent.MISSION_COMPLEX:
+            return self.handle_mission(question, user_id, conversation_id)
+
+        elif intent == ChatIntent.HELP:
+            return self.handle_help()
+
+        return None
+
+    async def _stream_default_chat(
+        self, ai_client: AIClient, history_messages: list[dict[str, str]]
+    ) -> AsyncGenerator[str, None]:
+        """Stream default LLM chat response."""
+        async for chunk in ai_client.stream_chat(history_messages):
+            if isinstance(chunk, dict):
+                choices = chunk.get("choices", [])
+                if choices:
+                    content = choices[0].get("delta", {}).get("content", "")
+                    if content:
+                        yield content
+            elif isinstance(chunk, str):
+                yield chunk
+
     async def orchestrate(
         self,
         question: str,
@@ -154,58 +213,28 @@ class ChatOrchestratorService:
         )
 
         # Dispatch to specific handlers
-        if intent_result.intent == ChatIntent.FILE_READ:
-            path = intent_result.params.get("path", "")
-            if path:
-                async for chunk in self.handle_file_read(path, user_id):
-                    yield chunk
+        handler = await self._dispatch_intent_handler(
+            intent_result, question, user_id, conversation_id, ai_client
+        )
+
+        if handler:
+            async for chunk in handler:
+                yield chunk
+
+            # Check if mission handler should return early
+            if (
+                intent_result.intent == ChatIntent.MISSION_COMPLEX
+                and self._context.async_overmind
+                and self._context.async_overmind.available
+            ):
+                logger.debug(
+                    f"Orchestration completed in {(time.time() - start_time) * 1000:.2f}ms"
+                )
                 return
 
-        elif intent_result.intent == ChatIntent.FILE_WRITE:
-            path = intent_result.params.get("path", "")
-            if path:
-                yield f"📝 لإنشاء ملف `{path}`، يرجى تحديد المحتوى.\n"
-                yield "يمكنك كتابة المحتوى في الرسالة التالية.\n"
-                return
-
-        elif intent_result.intent == ChatIntent.CODE_SEARCH:
-            query = intent_result.params.get("query", "")
-            if query:
-                async for chunk in self.handle_code_search(query, user_id):
-                    yield chunk
-                return
-
-        elif intent_result.intent == ChatIntent.PROJECT_INDEX:
-            async for chunk in self.handle_project_index(user_id):
-                yield chunk
-            return
-
-        elif intent_result.intent == ChatIntent.DEEP_ANALYSIS:
-            async for chunk in self.handle_deep_analysis(question, user_id, ai_client):
-                yield chunk
-            return
-
-        elif intent_result.intent == ChatIntent.MISSION_COMPLEX:
-            async for chunk in self.handle_mission(question, user_id, conversation_id):
-                yield chunk
-            # If Overmind is working, we return early. If it failed (available=False), we might continue to chat.
-            if self._context.async_overmind and self._context.async_overmind.available:
-                return
-
-        elif intent_result.intent == ChatIntent.HELP:
-            async for chunk in self.handle_help():
-                yield chunk
-            return
-
-        # Default: Simple LLM chat
-        async for chunk in ai_client.stream_chat(history_messages):
-            if isinstance(chunk, dict):
-                choices = chunk.get("choices", [])
-                if choices:
-                    content = choices[0].get("delta", {}).get("content", "")
-                    if content:
-                        yield content
-            elif isinstance(chunk, str):
+        # Default: Simple LLM chat (if no handler or mission failed)
+        if not handler or intent_result.intent == ChatIntent.MISSION_COMPLEX:
+            async for chunk in self._stream_default_chat(ai_client, history_messages):
                 yield chunk
 
         logger.debug(f"Orchestration completed in {(time.time() - start_time) * 1000:.2f}ms")

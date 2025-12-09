@@ -16,6 +16,65 @@ class RetryStrategy:
     """
 
     @staticmethod
+    def _check_server_error(msg: str) -> bool:
+        """Check if error is a server error (5xx)."""
+        server_indicators = [
+            "server_error_500",
+            "500",
+            "internal server error",
+            "502",
+            "503",
+            "504",
+        ]
+        return any(x in msg for x in server_indicators)
+
+    @staticmethod
+    def _check_rate_limit(msg: str) -> bool:
+        """Check if error is rate limiting."""
+        return ("rate" in msg and "limit" in msg) or "429" in msg or "too many requests" in msg
+
+    @staticmethod
+    def _check_auth_error(msg: str) -> bool:
+        """Check if error is authentication/authorization."""
+        auth_indicators = [
+            "authentication_error",
+            "unauthorized",
+            "api key",
+            "invalid api key",
+            "401",
+            "403",
+            "forbidden",
+            "invalid_api_key",
+        ]
+        return any(x in msg for x in auth_indicators)
+
+    @staticmethod
+    def _check_timeout(msg: str, exc_type: str) -> bool:
+        """Check if error is timeout."""
+        return "timeout" in msg or "timed out" in msg or "timeouterror" in exc_type
+
+    @staticmethod
+    def _check_network_error(msg: str) -> bool:
+        """Check if error is network/connection."""
+        network_indicators = ["connection", "network", "dns", "connect", "refused"]
+        return any(x in msg for x in network_indicators)
+
+    @staticmethod
+    def _check_parse_error(msg: str) -> bool:
+        """Check if error is parsing."""
+        return ("parse" in msg or "json" in msg or "decode" in msg) and "error" in msg
+
+    @staticmethod
+    def _check_empty_response(msg: str) -> bool:
+        """Check if error is empty response."""
+        return "empty" in msg or "no content" in msg or "null" in msg
+
+    @staticmethod
+    def _check_model_error(msg: str) -> bool:
+        """Check if error is model-specific."""
+        return "model" in msg and ("not found" in msg or "unavailable" in msg)
+
+    @staticmethod
     def classify_error(exc: Exception) -> str:
         """
         Classify errors for intelligent retry and reporting.
@@ -23,51 +82,21 @@ class RetryStrategy:
         msg = str(exc).lower()
         exc_type = type(exc).__name__.lower()
 
-        # Server errors (5xx)
-        if any(
-            x in msg
-            for x in ["server_error_500", "500", "internal server error", "502", "503", "504"]
-        ):
+        if RetryStrategy._check_server_error(msg):
             return "server_error"
-
-        # Rate limiting
-        if ("rate" in msg and "limit" in msg) or "429" in msg or "too many requests" in msg:
+        if RetryStrategy._check_rate_limit(msg):
             return "rate_limit"
-
-        # Authentication & Authorization errors
-        if any(
-            x in msg
-            for x in [
-                "authentication_error",
-                "unauthorized",
-                "api key",
-                "invalid api key",
-                "401",
-                "403",
-                "forbidden",
-                "invalid_api_key",
-            ]
-        ):
+        if RetryStrategy._check_auth_error(msg):
             return "auth_error"
-
-        # Timeout errors
-        if "timeout" in msg or "timed out" in msg or "timeouterror" in exc_type:
+        if RetryStrategy._check_timeout(msg, exc_type):
             return "timeout"
-
-        # Connection & Network errors
-        if any(x in msg for x in ["connection", "network", "dns", "connect", "refused"]):
+        if RetryStrategy._check_network_error(msg):
             return "network"
-
-        # Parsing errors
-        if ("parse" in msg or "json" in msg or "decode" in msg) and "error" in msg:
+        if RetryStrategy._check_parse_error(msg):
             return "parse"
-
-        # Empty response errors
-        if "empty" in msg or "no content" in msg or "null" in msg:
+        if RetryStrategy._check_empty_response(msg):
             return "empty_response"
-
-        # Model-specific errors
-        if "model" in msg and ("not found" in msg or "unavailable" in msg):
+        if RetryStrategy._check_model_error(msg):
             return "model_error"
 
         return "unknown"

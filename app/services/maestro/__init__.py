@@ -178,6 +178,110 @@ class _GenerationServiceAdapter:
         self._json_retries = _int_env("MAESTRO_ADAPTER_JSON_MAX_RETRIES", 1)
 
     # --------------------------- text_completion --------------------------------------
+    def _try_base_text_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        fail_hard: bool,
+        model_name: str,
+    ) -> str | None:
+        """Try base service text_completion method."""
+        if not self._base or not hasattr(self._base, "text_completion"):
+            return None
+
+        result = self._base.text_completion(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            max_retries=0,
+            fail_hard=fail_hard,
+            model=model_name,
+        )
+
+        if result and (not isinstance(result, str) or result.strip()):
+            return result
+        return None
+
+    def _try_forge_new_code(
+        self, system_prompt: str, user_prompt: str, model_name: str
+    ) -> str | None:
+        """Try forge_new_code method."""
+        if not self._base or not hasattr(self._base, "forge_new_code"):
+            return None
+
+        merged = f"{system_prompt.strip()}\n\nUSER:\n{user_prompt}"
+        resp = self._base.forge_new_code(merged, model=model_name)
+
+        if isinstance(resp, dict) and resp.get("status") == "success":
+            answer = (resp.get("answer") or "").strip()
+            if answer:
+                return answer
+
+        error = resp.get("error") if isinstance(resp, dict) else "forge_failure"
+        raise RuntimeError(f"forge_new_code_failed: {error}")
+
+    def _try_direct_llm(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        model_name: str,
+    ) -> str | None:
+        """Try direct LLM client."""
+        if not get_llm_client:
+            return None
+
+        client = get_llm_client()
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        content = completion.choices[0].message.content or ""
+
+        if content and content.strip():
+            return content.strip()
+        return None
+
+    def _execute_text_completion_attempt(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        fail_hard: bool,
+        model_name: str,
+    ) -> str | None:
+        """Execute single text completion attempt."""
+        # Try base service first
+        result = self._try_base_text_completion(
+            system_prompt, user_prompt, temperature, max_tokens, fail_hard, model_name
+        )
+        if result:
+            return result
+
+        # Try forge_new_code
+        result = self._try_forge_new_code(system_prompt, user_prompt, model_name)
+        if result:
+            return result
+
+        # Try direct LLM
+        result = self._try_direct_llm(
+            system_prompt, user_prompt, temperature, max_tokens, model_name
+        )
+        if result:
+            return result
+
+        raise RuntimeError("No underlying generation method available.")
+
     def text_completion(
         self,
         system_prompt: str,
@@ -202,88 +306,24 @@ class _GenerationServiceAdapter:
 
         for attempt in range(1, attempts + 2):
             try:
-                # 1) Base direct
-                if self._base and hasattr(self._base, "text_completion"):
-                    result = self._base.text_completion(
-                        system_prompt=system_prompt,
-                        user_prompt=user_prompt,
-                        temperature=temperature,
-                        max_tokens=max_tokens,
-                        max_retries=0,
-                        fail_hard=fail_hard,
-                        model=model_name,
-                    )
-
-                    # SUPERHUMAN CHECK: Validate non-empty response
-                    if not result or (isinstance(result, str) and result.strip() == ""):
-                        _LOG.warning(
-                            f"text_completion received empty result from base service "
-                            f"(attempt {attempt}/{attempts + 1})"
-                        )
-                        if attempt <= attempts:
-                            time.sleep(0.15 * attempt)  # Increasing backoff
-                            continue
-
+                result = self._execute_text_completion_attempt(
+                    system_prompt, user_prompt, temperature, max_tokens, fail_hard, model_name
+                )
+                if result:
                     return result
 
-                # 2) forge_new_code path
-                if self._base and hasattr(self._base, "forge_new_code"):
-                    merged = f"{system_prompt.strip()}\n\nUSER:\n{user_prompt}"
-                    resp = self._base.forge_new_code(merged, model=model_name)
-
-                    if isinstance(resp, dict) and resp.get("status") == "success":
-                        answer = (resp.get("answer") or "").strip()
-                        if not answer:
-                            _LOG.warning(
-                                f"forge_new_code returned empty answer "
-                                f"(attempt {attempt}/{attempts + 1})"
-                            )
-                            if attempt <= attempts:
-                                time.sleep(0.15 * attempt)
-                                continue
-                        return answer
-
-                    last_err = resp.get("error") if isinstance(resp, dict) else "forge_failure"
-                    raise RuntimeError(f"forge_new_code_failed: {last_err}")
-
-                # 3) Direct LLM
-                if get_llm_client:
-                    client = get_llm_client()
-                    completion = client.chat.completions.create(
-                        model=model_name,
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt},
-                        ],
-                        temperature=temperature,
-                        max_tokens=max_tokens,
-                    )
-                    content = completion.choices[0].message.content or ""
-
-                    # SUPERHUMAN CHECK: Validate content
-                    if not content or content.strip() == "":
-                        _LOG.warning(
-                            f"LLM client returned empty content (attempt {attempt}/{attempts + 1})"
-                        )
-                        if attempt <= attempts:
-                            time.sleep(0.15 * attempt)
-                            continue
-
-                    return content.strip()
-
-                raise RuntimeError("No underlying generation method available.")
+                _LOG.warning(f"Empty result (attempt {attempt}/{attempts + 1})")
+                if attempt <= attempts:
+                    time.sleep(0.15 * attempt)
 
             except Exception as e:
                 last_err = e
                 _LAST_ERRORS["text_completion"] = f"{type(e).__name__}: {e!s}"
-                _LOG.warning(
-                    f"text_completion attempt {attempt}/{attempts + 1} failed: "
-                    f"{type(e).__name__}: {e!s}"
-                )
+                _LOG.warning(f"Attempt {attempt}/{attempts + 1} failed: {type(e).__name__}: {e!s}")
+
                 if attempt <= attempts:
-                    # Exponential backoff
                     backoff_time = 0.15 * (2 ** (attempt - 1))
-                    time.sleep(min(backoff_time, 2.0))  # Cap at 2 seconds
+                    time.sleep(min(backoff_time, 2.0))
 
         if fail_hard:
             error_msg = f"{type(last_err).__name__}: {last_err}" if last_err else "Unknown error"
@@ -296,6 +336,67 @@ class _GenerationServiceAdapter:
         return ""
 
     # --------------------------- structured_json --------------------------------------
+    def _try_direct_structured_json(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        format_schema: dict,
+        temperature: float,
+        attempts: int,
+        fail_hard: bool,
+        model: str | None,
+    ) -> dict | None:
+        """Try direct base structured_json method."""
+        if not self._base or not hasattr(self._base, "structured_json"):
+            return None
+
+        try:
+            result = self._base.structured_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                format_schema=format_schema,
+                temperature=temperature,
+                max_retries=attempts,
+                fail_hard=fail_hard,
+                model=model,
+            )
+
+            if result and isinstance(result, dict):
+                return result
+
+            _LOG.warning(
+                f"Direct base structured_json returned invalid result (type: {type(result).__name__})"
+            )
+        except Exception as e:
+            _LAST_ERRORS["structured_json_direct"] = f"{type(e).__name__}: {e!s}"
+            _LOG.warning(f"Direct base structured_json failed: {type(e).__name__}: {e!s}")
+
+        return None
+
+    def _validate_json_response(
+        self, raw: str, required: list[str]
+    ) -> tuple[dict | None, str | None]:
+        """Validate and parse JSON response."""
+        if not raw or (isinstance(raw, str) and raw.strip() == ""):
+            return None, "empty_response_from_text_completion"
+
+        candidate = _extract_first_json_object(raw)
+        if not candidate:
+            return None, f"no_json_found_in_response (length: {len(raw)})"
+
+        obj, err = _safe_json_load(candidate)
+        if err:
+            return None, f"json_parse_error: {err}"
+
+        if not isinstance(obj, dict):
+            return None, f"parsed_not_dict (type: {type(obj).__name__})"
+
+        missing = [k for k in required if k not in obj]
+        if missing:
+            return None, f"missing_required_fields: {missing}"
+
+        return obj, None
+
     def structured_json(
         self,
         system_prompt: str,
@@ -322,35 +423,14 @@ class _GenerationServiceAdapter:
             if isinstance(req, list):
                 required = req
 
-        # Try direct if base provides structured_json:
-        if self._base and hasattr(self._base, "structured_json"):
-            try:
-                result = self._base.structured_json(
-                    system_prompt=system_prompt,
-                    user_prompt=user_prompt,
-                    format_schema=format_schema,
-                    temperature=temperature,
-                    max_retries=attempts,
-                    fail_hard=fail_hard,
-                    model=model,
-                )
+        # Try direct method first
+        result = self._try_direct_structured_json(
+            system_prompt, user_prompt, format_schema, temperature, attempts, fail_hard, model
+        )
+        if result:
+            return result
 
-                # SUPERHUMAN CHECK: Validate result
-                if result is None or not isinstance(result, dict):
-                    _LOG.warning(
-                        "Direct base structured_json returned invalid result "
-                        f"(type: {type(result).__name__}). Falling back to text extraction."
-                    )
-                else:
-                    return result
-
-            except Exception as e:
-                _LAST_ERRORS["structured_json_direct"] = f"{type(e).__name__}: {e!s}"
-                _LOG.warning(
-                    f"Direct base structured_json failed: {type(e).__name__}: {e!s}. "
-                    "Falling back to text extraction."
-                )
-
+        # Fallback to text extraction
         sys = (
             system_prompt.strip()
             + "\nYou MUST output ONLY one valid JSON object. No markdown fences. No commentary."
@@ -369,50 +449,12 @@ class _GenerationServiceAdapter:
                     model=model,
                 )
 
-                if not raw or (isinstance(raw, str) and raw.strip() == ""):
-                    last_err = "empty_response_from_text_completion"
-                    _LOG.warning(
-                        f"structured_json attempt {attempt}/{attempts + 1}: "
-                        "Received empty response from text_completion"
-                    )
-                    raise RuntimeError(last_err)
+                obj, error = self._validate_json_response(raw, required)
+                if error:
+                    last_err = error
+                    _LOG.warning(f"structured_json attempt {attempt}/{attempts + 1}: {error}")
+                    raise RuntimeError(error)
 
-                candidate = _extract_first_json_object(raw)
-                if not candidate:
-                    last_err = f"no_json_found_in_response (length: {len(raw)})"
-                    _LOG.warning(
-                        f"structured_json attempt {attempt}/{attempts + 1}: "
-                        f"No JSON found in response. First 100 chars: {raw[:100]}"
-                    )
-                    raise RuntimeError(last_err)
-
-                obj, err = _safe_json_load(candidate)
-                if err:
-                    last_err = f"json_parse_error: {err}"
-                    _LOG.warning(
-                        f"structured_json attempt {attempt}/{attempts + 1}: "
-                        f"Failed to parse JSON: {err}. Candidate: {candidate[:100]}"
-                    )
-                    raise RuntimeError(last_err)
-
-                if not isinstance(obj, dict):
-                    last_err = f"parsed_not_dict (type: {type(obj).__name__})"
-                    _LOG.warning(
-                        f"structured_json attempt {attempt}/{attempts + 1}: "
-                        f"Parsed object is not a dict: {type(obj).__name__}"
-                    )
-                    raise RuntimeError(last_err)
-
-                missing = [k for k in required if k not in obj]
-                if missing:
-                    last_err = f"missing_required_fields: {missing}"
-                    _LOG.warning(
-                        f"structured_json attempt {attempt}/{attempts + 1}: "
-                        f"Missing required fields: {missing}. Present keys: {list(obj.keys())}"
-                    )
-                    raise RuntimeError(last_err)
-
-                # Success!
                 _LOG.debug(
                     f"structured_json succeeded on attempt {attempt}/{attempts + 1}. "
                     f"Returned keys: {list(obj.keys())}"
@@ -422,11 +464,10 @@ class _GenerationServiceAdapter:
             except Exception as e:
                 _LAST_ERRORS["structured_json"] = f"{type(e).__name__}: {e!s}"
                 _LOG.warning(
-                    f"structured_json attempt {attempt}/{attempts + 1} failed: "
-                    f"{type(e).__name__}: {e!s}"
+                    f"structured_json attempt {attempt}/{attempts + 1} failed: {type(e).__name__}: {e!s}"
                 )
+
                 if attempt <= attempts:
-                    # Exponential backoff
                     backoff_time = 0.18 * (2 ** (attempt - 1))
                     time.sleep(min(backoff_time, 2.5))
 
