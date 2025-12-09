@@ -166,11 +166,15 @@ def run_security_gate():
     anomalies = analyzer.scan_directory(".")
 
     critical_issues = [a for a in anomalies if a.severity == "CRITICAL"]
-    
+
     # Filter out development files that are safe
     real_critical_issues = [
-        issue for issue in critical_issues
-        if not any(pattern in issue.file_path for pattern in ['.env', 'example', 'test', 'verify', 'docker'])
+        issue
+        for issue in critical_issues
+        if not any(
+            pattern in issue.file_path
+            for pattern in [".env", "example", "test", "verify", "docker"]
+        )
     ]
 
     if real_critical_issues:

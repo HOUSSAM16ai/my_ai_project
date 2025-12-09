@@ -258,8 +258,8 @@ class TestTypeConfusion:
             2**31 - 1,  # Max 32-bit signed int
             2**31,  # Overflow 32-bit signed int
             2**63 - 1,  # Max 64-bit signed int
-            -2**31,  # Min 32-bit signed int
-            -2**63,  # Min 64-bit signed int
+            -(2**31),  # Min 32-bit signed int
+            -(2**63),  # Min 64-bit signed int
         ]
 
         for value in overflow_values:

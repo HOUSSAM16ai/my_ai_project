@@ -58,8 +58,7 @@ def analyze_coverage(coverage_data: dict) -> tuple[list[str], list[tuple[str, fl
 
         # Skip certain files
         if any(
-            skip in filepath
-            for skip in ["__pycache__", "migrations/", "__init__.py", "main.py"]
+            skip in filepath for skip in ["__pycache__", "migrations/", "__init__.py", "main.py"]
         ):
             continue
 
@@ -79,7 +78,7 @@ def generate_test_template(module_path: str) -> str:
 
     template = f'''"""
 Comprehensive Tests for {module_name}
-{'=' * (25 + len(module_name))}
+{"=" * (25 + len(module_name))}
 
 Auto-generated test template.
 Target: 100% coverage
@@ -95,10 +94,10 @@ TODO:
 import pytest
 
 # Import the module to test
-# from app.{module_path.replace('app/', '').replace('.py', '').replace('/', '.')} import *
+# from app.{module_path.replace("app/", "").replace(".py", "").replace("/", ".")} import *
 
 
-class Test{module_name.title().replace('_', '')}:
+class Test{module_name.title().replace("_", "")}:
     """Test class for {module_name}"""
 
     def test_placeholder(self):

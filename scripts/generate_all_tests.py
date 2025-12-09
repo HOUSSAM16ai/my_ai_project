@@ -27,7 +27,13 @@ def analyze_module(filepath: Path) -> dict:
             if isinstance(node, ast.FunctionDef):
                 # Get function info
                 args = [arg.arg for arg in node.args.args]
-                functions.append({"name": node.name, "args": args, "is_async": isinstance(node, ast.AsyncFunctionDef)})
+                functions.append(
+                    {
+                        "name": node.name,
+                        "args": args,
+                        "is_async": isinstance(node, ast.AsyncFunctionDef),
+                    }
+                )
             elif isinstance(node, ast.ClassDef):
                 # Get class info
                 methods = []
@@ -87,7 +93,7 @@ def generate_comprehensive_test(module_path: Path, analysis: dict) -> str:
         test_class = f"""
 class Test{class_name}:
     \"\"\"Comprehensive tests for {class_name}\"\"\"
-{''.join(test_methods)}
+{"".join(test_methods)}
 """
         test_classes.append(test_class)
 
@@ -102,24 +108,24 @@ class Test{class_name}:
         decorator = "@pytest.mark.asyncio\n    " if is_async else ""
 
         func_tests.append(f"""
-    {decorator}{'async ' if is_async else ''}def test_{func_name}_basic(self):
+    {decorator}{"async " if is_async else ""}def test_{func_name}_basic(self):
         \"\"\"Test {func_name} with basic inputs\"\"\"
         # TODO: Implement test for {func_name}
-        {'await ' if is_async else ''}{func_name}()
+        {"await " if is_async else ""}{func_name}()
         assert True
 """)
 
     if func_tests:
         test_classes.append(f"""
-class Test{module_name.title().replace('_', '')}Functions:
+class Test{module_name.title().replace("_", "")}Functions:
     \"\"\"Test standalone functions\"\"\"
-{''.join(func_tests)}
+{"".join(func_tests)}
 """)
 
     # Build complete test file
     template = f'''"""
 Comprehensive Tests for {module_name}
-{'=' * (25 + len(module_name))}
+{"=" * (25 + len(module_name))}
 
 Auto-generated test file.
 Target: 100% coverage
@@ -135,7 +141,10 @@ from unittest.mock import Mock, patch, MagicMock
 {chr(10).join(imports_section) if imports_section else "# No imports needed"}
 
 
-{chr(10).join(test_classes) if test_classes else """
+{
+        chr(10).join(test_classes)
+        if test_classes
+        else """
 class TestPlaceholder:
     \"\"\"Placeholder test class\"\"\"
 
@@ -143,7 +152,8 @@ class TestPlaceholder:
         \"\"\"Test that module can be imported\"\"\"
         import app.{relative_path}
         assert True
-"""}
+"""
+    }
 
 
 class TestEdgeCases:

@@ -45,7 +45,9 @@ class TestStripMarkdownFencesFuzzing:
             num_backticks = random.randint(1, 20)
             pattern = "`" * num_backticks
             if random.choice([True, False]):
-                pattern += "\n" + "".join(random.choices(string.printable, k=random.randint(0, 100)))
+                pattern += "\n" + "".join(
+                    random.choices(string.printable, k=random.randint(0, 100))
+                )
             if random.choice([True, False]):
                 pattern += "\n" + "`" * random.randint(1, 20)
             patterns.append(pattern)
@@ -159,7 +161,7 @@ class TestExtractFirstJsonObjectFuzzing:
             '{: "value"}',  # Missing key
             '{"key" "value"}',  # Missing colon
             '{"key": "value",}',  # Trailing comma
-            '{,}',  # Only comma
+            "{,}",  # Only comma
             '{"key": undefined}',  # Invalid value
             "{'key': 'value'}",  # Single quotes
         ]
@@ -203,7 +205,8 @@ class TestExtractFirstJsonObjectFuzzing:
             # Generate random string content
             content = "".join(
                 random.choices(
-                    string.printable + "\\\"{}[]", k=random.randint(0, 200)  # Include special chars
+                    string.printable + '\\"{}[]',
+                    k=random.randint(0, 200),  # Include special chars
                 )
             )
 
@@ -315,7 +318,7 @@ class TestCombinedFuzzing:
             "\x00" * 100,
             "```\n{{{{{{\n```",
             '```\n{"key": "```"}\n```',
-            '{```}',
+            "{```}",
             '{"```": "```"}',
         ]
 

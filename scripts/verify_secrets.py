@@ -12,8 +12,14 @@ def verify_secrets():
     # Check if running in CI/Dev environment
     is_ci = os.environ.get("CI") == "true" or os.environ.get("GITHUB_ACTIONS") == "true"
     is_testing = os.environ.get("ENVIRONMENT") == "testing"
-    is_gitpod = os.environ.get("GITPOD_ENVIRONMENT_ID") is not None or os.environ.get("GITPOD_WORKSPACE_ID") is not None
-    is_codespaces = os.environ.get("CODESPACES") == "true" or os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN") is not None
+    is_gitpod = (
+        os.environ.get("GITPOD_ENVIRONMENT_ID") is not None
+        or os.environ.get("GITPOD_WORKSPACE_ID") is not None
+    )
+    is_codespaces = (
+        os.environ.get("CODESPACES") == "true"
+        or os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN") is not None
+    )
     is_dev = os.environ.get("TESTING") == "1"
 
     required_secrets = ["DATABASE_URL", "SECRET_KEY"]

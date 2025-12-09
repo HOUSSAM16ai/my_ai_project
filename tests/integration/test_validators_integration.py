@@ -330,7 +330,9 @@ class TestValidatorStateManagement:
 
         # Perform various validations
         BaseValidator.validate(UserSchema, {"username": "test", "email": "test@example.com"})
-        BaseValidator.validate(UserSchema, {"username": "test2", "email": "test2@example.com"}, partial=True)
+        BaseValidator.validate(
+            UserSchema, {"username": "test2", "email": "test2@example.com"}, partial=True
+        )
 
         # Cache should have at most 2 entries for UserSchema
         cache_keys = [k for k in BaseValidator._schema_cache if "UserSchema" in k]
@@ -359,7 +361,13 @@ class TestValidatorRealWorldScenarios:
         from app.validators.schemas import PaginationSchema
 
         # Typical API request
-        query_params = {"page": "2", "per_page": "25", "search": "test", "order_by": "created_at", "order_dir": "desc"}
+        query_params = {
+            "page": "2",
+            "per_page": "25",
+            "search": "test",
+            "order_by": "created_at",
+            "order_dir": "desc",
+        }
 
         success, validated, _ = BaseValidator.validate(PaginationSchema, query_params)
 

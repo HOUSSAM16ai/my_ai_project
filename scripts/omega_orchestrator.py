@@ -84,12 +84,16 @@ class OmegaCore:
             self.engage_self_healing(anomalies)
 
         # Decision Gate - Only fail on real critical threats (not dev files)
-        real_criticals = [c for c in criticals if not any(
-            pattern in c.file_path for pattern in ['.env', 'example', 'test', 'verify']
-        )]
-        
+        real_criticals = [
+            c
+            for c in criticals
+            if not any(pattern in c.file_path for pattern in [".env", "example", "test", "verify"])
+        ]
+
         if real_criticals:
-            logger.error(f"⛔ Security Gate Lockdown: {len(real_criticals)} Critical threats present.")
+            logger.error(
+                f"⛔ Security Gate Lockdown: {len(real_criticals)} Critical threats present."
+            )
             for c in real_criticals[:3]:
                 logger.error(f"   {c.file_path}:{c.line_number} - {c.description}")
             return False
