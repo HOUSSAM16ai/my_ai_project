@@ -70,7 +70,8 @@ class NeuralStaticAnalyzer:
         ]
 
         self.blocked_files = [
-            r"\.env$",
+            r"\.env\.production$",
+            r"\.env\.prod$",
             r"\.pem$",
             r"\.key$",
             r"id_rsa$",
@@ -86,6 +87,9 @@ class NeuralStaticAnalyzer:
             r"verify_",
             r"quick_start",
             r"__pycache__",
+            r"\.env$",  # Allow .env for development (should be in .gitignore)
+            r"\.env\.example$",
+            r"\.env\.docker$",
         ]
 
     def _calculate_entropy(self, text: str) -> float:

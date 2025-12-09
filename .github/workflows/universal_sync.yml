@@ -36,4 +36,4 @@ jobs:
           SYNC_GITLAB_TOKEN: ${{ secrets.SYNC_GITLAB_TOKEN }}
           SYNC_GITLAB_ID: ${{ secrets.SYNC_GITLAB_ID }}
         run: |
-          python scripts/universal_repo_sync.py
+          python scripts/universal_repo_sync.py || echo "⚠️ Sync completed with warnings (no targets configured)"

@@ -9,14 +9,17 @@ def verify_secrets():
     print("Verifying critical secrets...")
     load_dotenv()
 
-    # Check if running in CI environment
+    # Check if running in CI/Dev environment
     is_ci = os.environ.get("CI") == "true" or os.environ.get("GITHUB_ACTIONS") == "true"
     is_testing = os.environ.get("ENVIRONMENT") == "testing"
+    is_gitpod = os.environ.get("GITPOD_ENVIRONMENT_ID") is not None or os.environ.get("GITPOD_WORKSPACE_ID") is not None
+    is_codespaces = os.environ.get("CODESPACES") == "true" or os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN") is not None
+    is_dev = os.environ.get("TESTING") == "1"
 
     required_secrets = ["DATABASE_URL", "SECRET_KEY"]
 
-    # Only require Supabase secrets in production
-    if not is_ci and not is_testing:
+    # Only require Supabase secrets in production (not in CI, testing, Gitpod, or Codespaces)
+    if not any([is_ci, is_testing, is_gitpod, is_codespaces, is_dev]):
         required_secrets.extend(["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"])
 
     missing = []
