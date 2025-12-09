@@ -157,6 +157,9 @@ class ActiveModels:
         AvailableModels.GEMINI_2_FLASH_EXP_FREE
     )  # ⚡ First fallback (Fast but rate-limited)
     GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE  # 💻 Second fallback
+    GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE  # 👨‍💻 Third fallback
+    GATEWAY_FALLBACK_4 = AvailableModels.PHI_3_MINI_FREE  # 🤏 Fourth fallback
+    GATEWAY_FALLBACK_5 = AvailableModels.LLAMA_3_2_11B_VISION_FREE  # 👁️ Fifth fallback
     # ═══════════════════════════════════════════════════════════════════════════════════
     # ⚡ TIERED MODELS | النماذج المتدرجة
     # ═══════════════════════════════════════════════════════════════════════════════════
@@ -190,6 +193,9 @@ class AIConfig:
     gateway_primary: str = ActiveModels.GATEWAY_PRIMARY
     gateway_fallback_1: str = ActiveModels.GATEWAY_FALLBACK_1
     gateway_fallback_2: str = ActiveModels.GATEWAY_FALLBACK_2
+    gateway_fallback_3: str = ActiveModels.GATEWAY_FALLBACK_3
+    gateway_fallback_4: str = ActiveModels.GATEWAY_FALLBACK_4
+    gateway_fallback_5: str = ActiveModels.GATEWAY_FALLBACK_5
 
     # Tiers
     tier_nano: str = ActiveModels.TIER_NANO
@@ -208,7 +214,13 @@ class AIConfig:
 
     def get_fallback_models(self) -> list[str]:
         """Get list of fallback models."""
-        return [self.gateway_fallback_1, self.gateway_fallback_2]
+        return [
+            self.gateway_fallback_1,
+            self.gateway_fallback_2,
+            self.gateway_fallback_3,
+            self.gateway_fallback_4,
+            self.gateway_fallback_5,
+        ]
 
     def get_tier_model(self, tier: str) -> str:
         """Get model for a specific tier."""
@@ -229,6 +241,9 @@ class AIConfig:
                 "primary": self.gateway_primary,
                 "fallback_1": self.gateway_fallback_1,
                 "fallback_2": self.gateway_fallback_2,
+                "fallback_3": self.gateway_fallback_3,
+                "fallback_4": self.gateway_fallback_4,
+                "fallback_5": self.gateway_fallback_5,
             },
             "tiers": {
                 "nano": self.tier_nano,
@@ -250,6 +265,9 @@ class AIConfig:
         print(f"║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║")
         print(f"║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║")
         print(f"║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║")
+        print(f"║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║")
+        print(f"║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║")
+        print(f"║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║")
         print("╠══════════════════════════════════════════════════════════════════════════════╣")
         print(f"║  ⚡ Tier NANO:         {self.tier_nano:<50} ║")
         print(f"║  🚀 Tier FAST:         {self.tier_fast:<50} ║")
