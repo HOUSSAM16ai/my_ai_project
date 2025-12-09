@@ -363,9 +363,7 @@ class NeuralRoutingMesh:
         context_hash = hashlib.sha256(context_str.encode()).hexdigest()
         return prompt, context_hash
 
-    def _try_recall_from_cache(
-        self, prompt: str, context_hash: str
-    ) -> list[dict] | None:
+    def _try_recall_from_cache(self, prompt: str, context_hash: str) -> list[dict] | None:
         """Attempt to recall response from cognitive cache."""
         if not prompt:
             return None
@@ -374,17 +372,14 @@ class NeuralRoutingMesh:
         cached_memory = cognitive_engine.recall(prompt, context_hash)
 
         if cached_memory:
-            logger.info(
-                f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'"
-            )
+            logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
             return cached_memory
         return None
 
     def _assemble_response_content(self, chunks: list[dict]) -> str:
         """Assemble full response content from chunks."""
         return "".join(
-            chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-            for chunk in chunks
+            chunk.get("choices", [{}])[0].get("delta", {}).get("content", "") for chunk in chunks
         ).strip()
 
     def _record_success_metrics(
@@ -417,9 +412,7 @@ class NeuralRoutingMesh:
         self, node: NeuralNode, prompt: str, duration_ms: float, errors: list[str]
     ) -> None:
         """Record metrics for empty response."""
-        logger.warning(
-            f"Node [{node.model_id}] returned empty content despite streaming data."
-        )
+        logger.warning(f"Node [{node.model_id}] returned empty content despite streaming data.")
 
         self.omni_router.record_outcome(
             model_id=node.model_id,
@@ -440,14 +433,10 @@ class NeuralRoutingMesh:
 
         errors.append(f"{node.model_id}: Empty response despite streaming")
 
-    def _handle_rate_limit_error(
-        self, node: NeuralNode, prompt: str, errors: list[str]
-    ) -> None:
+    def _handle_rate_limit_error(self, node: NeuralNode, prompt: str, errors: list[str]) -> None:
         """Handle rate limit error."""
         node.circuit_breaker.record_saturation()
-        self.omni_router.record_outcome(
-            node.model_id, prompt, success=False, latency_ms=0
-        )
+        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
         logger.info(
             f"Failover triggered from [{node.model_id}] due to Rate Limit (429). "
             f"Finding next available node..."
@@ -464,9 +453,7 @@ class NeuralRoutingMesh:
     ) -> None:
         """Handle connection error."""
         node.circuit_breaker.record_failure()
-        self.omni_router.record_outcome(
-            node.model_id, prompt, success=False, latency_ms=0
-        )
+        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
         _performance_optimizer.record_request(
             model_id=node.model_id,
@@ -499,9 +486,7 @@ class NeuralRoutingMesh:
     ) -> None:
         """Handle unexpected error."""
         node.circuit_breaker.record_failure()
-        self.omni_router.record_outcome(
-            node.model_id, prompt, success=False, latency_ms=0
-        )
+        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
         if global_has_yielded:
             logger.critical(
@@ -548,13 +533,9 @@ class NeuralRoutingMesh:
                 raise ValueError("Empty response despite streaming")
 
             quality_score = self._calculate_quality_score(full_content)
-            logger.info(
-                f"Cognitive Resonance Score for [{node.model_id}]: {quality_score:.2f}"
-            )
+            logger.info(f"Cognitive Resonance Score for [{node.model_id}]: {quality_score:.2f}")
 
-            self._record_success_metrics(
-                node, prompt, duration_ms, full_content, quality_score
-            )
+            self._record_success_metrics(node, prompt, duration_ms, full_content, quality_score)
 
             if prompt and full_response_chunks:
                 cognitive_engine = get_cognitive_engine()
@@ -579,12 +560,8 @@ class NeuralRoutingMesh:
         priority_nodes = self._get_prioritized_nodes(prompt)
 
         if not priority_nodes:
-            logger.error(
-                "No available nodes - all circuits are open or no models configured"
-            )
-            raise AIAllModelsExhaustedError(
-                "All circuits are open, no models available."
-            )
+            logger.error("No available nodes - all circuits are open or no models configured")
+            raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         for node in priority_nodes:
             if not node.circuit_breaker.allow_request():
@@ -681,9 +658,7 @@ class NeuralRoutingMesh:
                         )
 
                         # Use specific exception for 429
-                        raise AIRateLimitError(
-                            f"Rate Limited (429) on {node.model_id}."
-                        )
+                        raise AIRateLimitError(f"Rate Limited (429) on {node.model_id}.")
 
                     if response.status_code == 401 or response.status_code == 403:
                         error_body = await response.aread()
@@ -715,9 +690,7 @@ class NeuralRoutingMesh:
                             except json.JSONDecodeError:
                                 continue
 
-                    logger.debug(
-                        f"Successfully streamed {chunk_count} chunks from {node.model_id}"
-                    )
+                    logger.debug(f"Successfully streamed {chunk_count} chunks from {node.model_id}")
                 return
 
             except AIRateLimitError:
@@ -758,9 +731,7 @@ def get_ai_client() -> AIClient:
     Factory function to get AI client instance.
     """
     if not OPENROUTER_API_KEY:
-        logger.warning(
-            "OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode."
-        )
+        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
     elif OPENROUTER_API_KEY.startswith("sk-or-v1-xxx"):
         logger.warning("OPENROUTER_API_KEY appears to be a placeholder value.")
     else:

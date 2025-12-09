@@ -349,11 +349,7 @@ class AIModelMetricsService:
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0.0
-        )
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
 
         return AccuracyMetrics(
             accuracy=accuracy,
@@ -367,9 +363,7 @@ class AIModelMetricsService:
             sample_count=total,
         )
 
-    def calculate_bleu_score(
-        self, reference: str, candidate: str, max_n: int = 4
-    ) -> float:
+    def calculate_bleu_score(self, reference: str, candidate: str, max_n: int = 4) -> float:
         """
         Calculate BLEU score for translation/generation quality
 
@@ -412,9 +406,7 @@ class AIModelMetricsService:
             ngrams.append(tuple(tokens[i : i + n]))
         return Counter(ngrams)
 
-    def calculate_rouge_scores(
-        self, reference: str, candidate: str
-    ) -> dict[str, float]:
+    def calculate_rouge_scores(self, reference: str, candidate: str) -> dict[str, float]:
         """
         Calculate ROUGE scores (simplified version)
 
@@ -472,9 +464,7 @@ class AIModelMetricsService:
 
         return perplexity
 
-    def get_latency_metrics(
-        self, model_name: str, model_version: str
-    ) -> LatencyMetrics | None:
+    def get_latency_metrics(self, model_name: str, model_version: str) -> LatencyMetrics | None:
         """Get latency metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -492,11 +482,7 @@ class AIModelMetricsService:
                 p50_ms=sorted_latencies[int(n * 0.50)],
                 p95_ms=sorted_latencies[int(n * 0.95)],
                 p99_ms=sorted_latencies[int(n * 0.99)],
-                p999_ms=(
-                    sorted_latencies[int(n * 0.999)]
-                    if n > 1000
-                    else sorted_latencies[-1]
-                ),
+                p999_ms=(sorted_latencies[int(n * 0.999)] if n > 1000 else sorted_latencies[-1]),
                 mean_ms=statistics.mean(latencies),
                 median_ms=statistics.median(latencies),
                 min_ms=min(latencies),
@@ -505,9 +491,7 @@ class AIModelMetricsService:
                 sample_count=n,
             )
 
-    def get_cost_metrics(
-        self, model_name: str, model_version: str
-    ) -> CostMetrics | None:
+    def get_cost_metrics(self, model_name: str, model_version: str) -> CostMetrics | None:
         """Get cost metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -610,12 +594,8 @@ class AIModelMetricsService:
 
             baseline_mean = statistics.mean(baseline_nums)
             current_mean = statistics.mean(current_nums)
-            baseline_std = (
-                statistics.stdev(baseline_nums) if len(baseline_nums) > 1 else 1.0
-            )
-            current_std = (
-                statistics.stdev(current_nums) if len(current_nums) > 1 else 1.0
-            )
+            baseline_std = statistics.stdev(baseline_nums) if len(baseline_nums) > 1 else 1.0
+            current_std = statistics.stdev(current_nums) if len(current_nums) > 1 else 1.0
 
             # Normalized difference in means
             mean_shift = abs(baseline_mean - current_mean) / (baseline_std + 1e-10)
@@ -651,9 +631,7 @@ class AIModelMetricsService:
         sensitive_attributes: list[Any],
     ) -> dict[Any, dict[str, list[Any]]]:
         """Group predictions and truths by sensitive attribute."""
-        groups: dict[Any, dict[str, list[Any]]] = defaultdict(
-            lambda: {"pred": [], "truth": []}
-        )
+        groups: dict[Any, dict[str, list[Any]]] = defaultdict(lambda: {"pred": [], "truth": []})
 
         for pred, truth, attr in zip(
             predictions, ground_truths, sensitive_attributes, strict=False
@@ -721,9 +699,7 @@ class AIModelMetricsService:
         )
 
         group_metrics = {
-            group: self._calculate_group_rates(
-                data["pred"], data["truth"], positive_class
-            )
+            group: self._calculate_group_rates(data["pred"], data["truth"], positive_class)
             for group, data in groups.items()
         }
 
@@ -831,9 +807,7 @@ class AIModelMetricsService:
             )
 
         if latency.p99_ms > latency.p95_ms * 2:
-            recommendations.append(
-                "⚠️ High tail latency variance. Investigate outlier requests."
-            )
+            recommendations.append("⚠️ High tail latency variance. Investigate outlier requests.")
 
         if cost.cost_per_request > 0.01:
             recommendations.append(
@@ -844,9 +818,7 @@ class AIModelMetricsService:
             DriftStatus.MODERATE_DRIFT,
             DriftStatus.SEVERE_DRIFT,
         ]:
-            recommendations.append(
-                "🔄 Model drift detected. Retrain model with recent data."
-            )
+            recommendations.append("🔄 Model drift detected. Retrain model with recent data.")
 
         if not recommendations:
             recommendations.append("✅ Model performance is optimal.")
@@ -867,9 +839,7 @@ class AIModelMetricsService:
                 model_name = model_data["model_name"]
                 model_version = model_data["model_version"]
 
-                snapshot = self.get_model_performance_snapshot(
-                    model_name, model_version
-                )
+                snapshot = self.get_model_performance_snapshot(model_name, model_version)
 
                 if snapshot:
                     summary["models"][model_key] = {
