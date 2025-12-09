@@ -1,28 +1,26 @@
 import hashlib
+import itertools
 import math
 import statistics
 import threading
 import time
-import itertools
 from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from app.services.metrics.types import (
-    MetricType,
-    ModelType,
-    DriftStatus,
-    InferenceMetrics,
-    AccuracyMetrics,
-    NLPMetrics,
-    LatencyMetrics,
-    CostMetrics,
-    ModelDriftMetrics,
-    FairnessMetrics,
-    ModelPerformanceSnapshot,
-)
-from app.core.utils.text import get_ngrams, get_lcs_length
+from app.core.utils.text import get_lcs_length, get_ngrams
 from app.services.metrics.calculators.drift import DriftCalculatorContext
+from app.services.metrics.types import (
+    AccuracyMetrics,
+    CostMetrics,
+    DriftStatus,
+    FairnessMetrics,
+    InferenceMetrics,
+    LatencyMetrics,
+    ModelDriftMetrics,
+    ModelPerformanceSnapshot,
+    ModelType,
+)
 
 
 class AIModelMetricsService:
@@ -593,6 +591,7 @@ class AIModelMetricsService:
                     }
 
             return summary
+
 
 # ======================================================================================
 # SINGLETON INSTANCE

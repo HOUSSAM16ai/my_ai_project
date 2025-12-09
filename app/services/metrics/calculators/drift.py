@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
 import statistics
+from abc import ABC, abstractmethod
 from collections import Counter
 from typing import Any
+
 
 class DriftCalculationStrategy(ABC):
     """Abstract Strategy for Drift Calculation"""
@@ -10,6 +11,7 @@ class DriftCalculationStrategy(ABC):
     def calculate_drift(self, baseline: list[Any], current: list[Any]) -> float:
         """Calculate drift score between 0.0 and 1.0"""
         pass
+
 
 class NumericDriftStrategy(DriftCalculationStrategy):
     """Calculates drift for numeric data using statistical moments"""
@@ -34,6 +36,7 @@ class NumericDriftStrategy(DriftCalculationStrategy):
 
         return drift
 
+
 class CategoricalDriftStrategy(DriftCalculationStrategy):
     """Calculates drift for categorical data using distribution comparison"""
 
@@ -52,6 +55,7 @@ class CategoricalDriftStrategy(DriftCalculationStrategy):
         # Total variation distance (0-1)
         return total_diff / 2.0
 
+
 class DriftCalculatorContext:
     """Context to select the appropriate drift strategy"""
 
@@ -60,14 +64,14 @@ class DriftCalculatorContext:
         # In a real system, schema metadata would be better.
         try:
             if baseline and isinstance(baseline[0], (int, float)):
-                 # Try converting to float to be sure it's numeric logic
-                 float(baseline[0])
-                 strategy = NumericDriftStrategy()
+                # Try converting to float to be sure it's numeric logic
+                float(baseline[0])
+                strategy = NumericDriftStrategy()
             else:
-                 # If conversion fails or it's not a number, treat as categorical
-                 strategy = CategoricalDriftStrategy()
+                # If conversion fails or it's not a number, treat as categorical
+                strategy = CategoricalDriftStrategy()
         except (ValueError, TypeError):
-             strategy = CategoricalDriftStrategy()
+            strategy = CategoricalDriftStrategy()
 
         # Fallback if first item check isn't enough (e.g. mixed types),
         # the Numeric strategy might still fail if later elements are strings.

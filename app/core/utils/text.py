@@ -1,11 +1,13 @@
 from collections import Counter
 
+
 def get_ngrams(tokens: list[str], n: int) -> Counter:
     """Get n-grams from tokens"""
     ngrams = []
     for i in range(len(tokens) - n + 1):
         ngrams.append(tuple(tokens[i : i + n]))
     return Counter(ngrams)
+
 
 def get_lcs_length(seq1: list, seq2: list) -> int:
     """Calculate longest common subsequence length"""
