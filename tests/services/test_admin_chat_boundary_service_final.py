@@ -1,17 +1,19 @@
 # tests/services/test_admin_chat_boundary_service_final.py
-import pytest
-import jwt
-from unittest.mock import MagicMock, AsyncMock, patch
-from hypothesis import given, strategies as st
-from fastapi import HTTPException
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt
+import pytest
+from fastapi import HTTPException
+from hypothesis import given
+from hypothesis import strategies as st
+
+from app.models import AdminConversation
 from app.services.admin_chat_boundary_service import AdminChatBoundaryService
-from app.models import AdminConversation, MessageRole
 from tests.utils.unified_test_template import UnifiedTestTemplate
+
 
 # === Test Class ===
 class TestAdminChatBoundaryService(UnifiedTestTemplate):
-
     @pytest.fixture
     def mock_db_session(self):
         return self.async_mock()
@@ -25,12 +27,19 @@ class TestAdminChatBoundaryService(UnifiedTestTemplate):
     @pytest.fixture
     def service(self, mock_db_session, mock_settings):
         # We need to mock the dependencies created in __init__
-        with patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings), \
-             patch("app.services.admin_chat_boundary_service.get_service_boundary") as mock_sb, \
-             patch("app.services.admin_chat_boundary_service.get_policy_boundary") as mock_pb, \
-             patch("app.services.admin_chat_boundary_service.AdminChatPersistence") as mock_persistence_cls, \
-             patch("app.services.admin_chat_boundary_service.AdminChatStreamer") as mock_streamer_cls:
-
+        with (
+            patch(
+                "app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings
+            ),
+            patch("app.services.admin_chat_boundary_service.get_service_boundary") as mock_sb,
+            patch("app.services.admin_chat_boundary_service.get_policy_boundary") as _mock_pb,
+            patch(
+                "app.services.admin_chat_boundary_service.AdminChatPersistence"
+            ) as mock_persistence_cls,
+            patch(
+                "app.services.admin_chat_boundary_service.AdminChatStreamer"
+            ) as mock_streamer_cls,
+        ):
             # Setup mocks
             mock_sb.return_value.get_or_create_circuit_breaker = MagicMock()
 
@@ -59,7 +68,11 @@ class TestAdminChatBoundaryService(UnifiedTestTemplate):
     @given(st.text())
     @UnifiedTestTemplate.HYPOTHESIS_SETTINGS
     def test_validate_auth_header_malformed_fuzz(self, service, random_header):
-        if random_header and len(random_header.split()) == 2 and random_header.lower().startswith("bearer"):
+        if (
+            random_header
+            and len(random_header.split()) == 2
+            and random_header.lower().startswith("bearer")
+        ):
             pass
         with pytest.raises(HTTPException) as exc:
             service.validate_auth_header(random_header)
@@ -101,6 +114,7 @@ class TestAdminChatBoundaryService(UnifiedTestTemplate):
         async def mock_stream(*args, **kwargs):
             yield "chunk1"
             yield "chunk2"
+
         service.streamer.stream_response = mock_stream
         chunks = []
         async for c in service.stream_chat_response(1, "conv", "q", [], "ai", "sess"):

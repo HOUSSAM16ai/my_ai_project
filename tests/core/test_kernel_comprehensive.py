@@ -1,11 +1,14 @@
 # tests/core/test_kernel_comprehensive.py
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-import os
-from unittest.mock import MagicMock, AsyncMock, patch
-from hypothesis import given, strategies as st
+from fastapi import FastAPI
+from hypothesis import given
+from hypothesis import strategies as st
+
 from app.kernel import RealityKernel
 from tests.test_template import UnifiedTestTemplate
-from fastapi import FastAPI
+
 
 # === Mock Blueprints ===
 class MockBlueprint:
@@ -14,9 +17,9 @@ class MockBlueprint:
         self.router = MagicMock()
         self.router.tags = [name.capitalize()]
 
+
 # === Test Class ===
 class TestRealityKernel(UnifiedTestTemplate):
-
     @pytest.fixture
     def mock_settings(self):
         return {
@@ -24,20 +27,23 @@ class TestRealityKernel(UnifiedTestTemplate):
             "ENVIRONMENT": "testing",
             "ALLOWED_HOSTS": ["*"],
             "BACKEND_CORS_ORIGINS": ["http://localhost:3000"],
-            "FRONTEND_URL": "http://localhost:3000"
+            "FRONTEND_URL": "http://localhost:3000",
         }
 
     @pytest.fixture
     def mock_dependencies(self):
         """Mocks external dependencies used by Kernel to ensure isolation."""
-        with patch.dict("sys.modules", {
-            "app.blueprints": MagicMock(),
-            "app.middleware.fastapi_error_handlers": MagicMock(),
-            "app.middleware.remove_blocking_headers": MagicMock(),
-            "app.middleware.security.rate_limit_middleware": MagicMock(),
-            "app.middleware.security.security_headers": MagicMock(),
-            "app.core.database": MagicMock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "app.blueprints": MagicMock(),
+                "app.middleware.fastapi_error_handlers": MagicMock(),
+                "app.middleware.remove_blocking_headers": MagicMock(),
+                "app.middleware.security.rate_limit_middleware": MagicMock(),
+                "app.middleware.security.security_headers": MagicMock(),
+                "app.core.database": MagicMock(),
+            },
+        ):
             yield
 
     # --- Unit Tests: Initialization & Configuration ---
@@ -64,10 +70,12 @@ class TestRealityKernel(UnifiedTestTemplate):
 
     # --- Property-Based Tests: Settings Robustness ---
 
-    @given(settings_dict=st.dictionaries(
-        keys=st.text(),
-        values=st.one_of(st.text(), st.integers(), st.lists(st.text()), st.none())
-    ))
+    @given(
+        settings_dict=st.dictionaries(
+            keys=st.text(),
+            values=st.one_of(st.text(), st.integers(), st.lists(st.text()), st.none()),
+        )
+    )
     @UnifiedTestTemplate.HYPOTHESIS_SETTINGS
     def test_kernel_resilience_to_random_settings(self, settings_dict):
         """
@@ -79,8 +87,10 @@ class TestRealityKernel(UnifiedTestTemplate):
         # or verify that code handles missing keys gracefully.
         # Based on code, 'ENVIRONMENT' is accessed safely via .get(), others too.
 
-        with patch("app.kernel.RealityKernel._discover_and_weave_blueprints"), \
-             patch("app.kernel.RealityKernel._create_pristine_app", return_value=FastAPI()):
+        with (
+            patch("app.kernel.RealityKernel._discover_and_weave_blueprints"),
+            patch("app.kernel.RealityKernel._create_pristine_app", return_value=FastAPI()),
+        ):
             try:
                 kernel = RealityKernel(settings_dict)
                 assert kernel.app is not None
@@ -99,14 +109,13 @@ class TestRealityKernel(UnifiedTestTemplate):
         WHEN _discover_and_weave_blueprints is called
         THEN it should import modules and include routers.
         """
-        with patch("os.walk") as mock_walk, \
-             patch("importlib.import_module") as mock_import, \
-             patch("inspect.getmembers") as mock_members:
-
+        with (
+            patch("os.walk") as mock_walk,
+            patch("importlib.import_module") as mock_import,
+            patch("inspect.getmembers") as mock_members,
+        ):
             # Setup file system mock
-            mock_walk.return_value = [
-                ("/app/blueprints", [], ["test_blueprint.py", "ignored.txt"])
-            ]
+            mock_walk.return_value = [("/app/blueprints", [], ["test_blueprint.py", "ignored.txt"])]
 
             # Setup module import mock
             mock_module = MagicMock()
@@ -129,7 +138,7 @@ class TestRealityKernel(UnifiedTestTemplate):
                 # Actual fix for isinstance mocking:
                 # The code imports Blueprint. We need to match that.
 
-                kernel = RealityKernel(mock_settings)
+                _ = RealityKernel(mock_settings)
                 # The constructor calls weave. We need to reset or mock weave during init if we want to test it separately.
                 # But here we want to test weave.
 
@@ -151,7 +160,6 @@ class TestRealityKernel(UnifiedTestTemplate):
                 assert mock_import.call_count >= 1
                 args, _ = mock_import.call_args
                 assert "app.blueprints.test_blueprint" in args[0]
-
 
     # --- Lifespan Tests ---
 
@@ -184,10 +192,11 @@ class TestRealityKernel(UnifiedTestTemplate):
             mock_settings["ENVIRONMENT"] = "production"
             kernel_prod = RealityKernel(mock_settings)
 
-            with patch("app.core.database.validate_schema_on_startup", new_callable=AsyncMock) as mock_validate:
+            with patch(
+                "app.core.database.validate_schema_on_startup", new_callable=AsyncMock
+            ) as mock_validate:
                 async with kernel_prod.app.router.lifespan_context(kernel_prod.app):
                     mock_validate.assert_called_once()
-
 
     # --- CORS Logic Tests (Security) ---
 
@@ -205,5 +214,7 @@ class TestRealityKernel(UnifiedTestTemplate):
             assert k_dev.app.user_middleware is not None
 
             # Prod
-            k_prod = RealityKernel({"ENVIRONMENT": "production", "FRONTEND_URL": "https://example.com"})
+            k_prod = RealityKernel(
+                {"ENVIRONMENT": "production", "FRONTEND_URL": "https://example.com"}
+            )
             assert k_prod.app is not None

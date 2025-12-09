@@ -1,10 +1,12 @@
+from unittest.mock import AsyncMock
+
 import pytest
-from hypothesis import given, strategies as st, settings, HealthCheck
-from unittest.mock import MagicMock, AsyncMock, patch
-import asyncio
+from hypothesis import HealthCheck, settings
+from hypothesis import strategies as st
 
 # === Unified Test Template ===
 # Use this class as a mixin or base for all test classes to ensure consistency.
+
 
 class UnifiedTestTemplate:
     """
@@ -42,9 +44,7 @@ class UnifiedTestTemplate:
     # --- Property-Based Testing Helpers ---
     # Standard settings for hypothesis to be thorough but fast enough for CI
     HYPOTHESIS_SETTINGS = settings(
-        max_examples=100,
-        deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture]
+        max_examples=100, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
     )
 
     # --- Fuzzing Helpers ---
@@ -57,5 +57,5 @@ class UnifiedTestTemplate:
         return st.recursive(
             st.booleans() | st.floats() | st.text(),
             lambda children: st.lists(children) | st.dictionaries(st.text(), children),
-            max_leaves=10
+            max_leaves=10,
         )
