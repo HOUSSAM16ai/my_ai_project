@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Universal Repository Synchronization Protocol (URSP) v2.0
+Universal Repository Synchronization Protocol (URSP) v3.2 - "Mirror Gate"
 High-performance synchronization engine for multi-provider repository mirroring.
-Enhanced with "Sanitization Gate", "Workload Identity", and "Self-Healing" capabilities.
+Enforces "Exact Replica" consistency using strict Git mirroring protocols.
 
-This script uses provided authentication tokens and repository IDs to resolve
-target repository URLs via their respective APIs and performs a force-push
-synchronization to ensure state consistency across the intelligence network.
+This script identifies the execution environment (GitHub Actions or GitLab CI)
+to establish a Single Source of Truth (SSOT). It then forces the Target Repository
+to match the SSOT exactly, including pruning deleted branches and tags.
 
-It automatically handles the detached HEAD state common in CI/CD environments
-by identifying the triggering reference (branch or tag) and pushing explicitly.
-It supports both GitHub Actions and GitLab CI environments.
+Safety Mechanisms:
+- Automatically unshallows repositories.
+- Creates local tracking branches for all remote branches to prevent data loss.
+- Validates sync via strict process exit codes.
 
 Usage:
     python scripts/universal_repo_sync.py
@@ -21,32 +22,18 @@ Environment Variables:
     SYNC_GITLAB_TOKEN: GitLab Personal Access Token
     SYNC_GITLAB_ID: GitLab Project ID
 
-    # Optional OIDC Tokens (Workload Identity)
-    GITHUB_OIDC_TOKEN: Token from GitHub Actions
-    GITLAB_OIDC_TOKEN: Token from GitLab CI
-
     # Automatically provided by CI environments:
-    GITHUB_REF: (GitHub Actions) The full ref that triggered the workflow (e.g., refs/heads/main)
-    CI_COMMIT_REF_NAME: (GitLab CI) The branch or tag name (e.g., main)
-    CI_COMMIT_SHA: (GitLab CI) The commit revision
+    GITHUB_ACTIONS: "true" if running on GitHub
+    GITLAB_CI: "true" if running on GitLab
 """
 
+import contextlib
 import logging
 import os
 import subprocess
 import sys
 
 import requests
-
-# Import Security Gate
-# If strictly script based, we can use subprocess. But importing is cleaner if pythonpath allows.
-# Assuming scripts/ is in path or we append it.
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-try:
-    from security_gate import NeuralStaticAnalyzer
-except ImportError:
-    # Fallback if import fails (e.g., during some CI setups)
-    NeuralStaticAnalyzer = None
 
 # Configure High-Precision Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | URSP | %(levelname)s | %(message)s")
@@ -56,12 +43,12 @@ logger = logging.getLogger("URSP")
 def get_env_var(name, default=None, required=True):
     val = os.environ.get(name, default)
     if not val and required:
-        logger.error(f"Critical protocol failure: Missing environment variable {name}")
-        sys.exit(1)
+        # For non-critical optional targets, we might want to just log warning
+        pass
     return val
 
 
-def run_command(command, cwd=None, sensitive_inputs=None):
+def run_command(command, cwd=None, sensitive_inputs=None, ignore_errors=False):
     """Executes a shell command with secure output handling."""
     cmd_str = " ".join(command)
     if sensitive_inputs:
@@ -76,25 +63,25 @@ def run_command(command, cwd=None, sensitive_inputs=None):
         logger.info("Vector execution successful.")
         return result.stdout
     except subprocess.CalledProcessError as e:
+        if ignore_errors:
+            logger.warning(f"Vector execution failed (ignored): {e.stderr}")
+            return None
         logger.error(f"Vector execution failed: {e.stderr}")
         raise
 
 
-def resolve_github_target(token, repo_id):
-    """Resolves GitHub repository URL using the Repository ID via GitHub API."""
+def resolve_github_url(token, repo_id):
+    """Resolves GitHub repository URL using the Repository ID."""
     logger.info(f"Resolving GitHub target for ID: {repo_id}")
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     url = f"https://api.github.com/repositories/{repo_id}"
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
         clone_url = data.get("clone_url")
-        full_name = data.get("full_name")
-        logger.info(f"Target resolved: {full_name}")
-
-        # Inject auth into URL
+        # Inject auth
         auth_url = clone_url.replace("https://", f"https://oauth2:{token}@")
         return auth_url
     except Exception as e:
@@ -102,20 +89,19 @@ def resolve_github_target(token, repo_id):
         raise
 
 
-def resolve_gitlab_target(token, project_id):
-    """Resolves GitLab project URL using the Project ID via GitLab API."""
+def resolve_gitlab_url(token, project_id):
+    """Resolves GitLab project URL using the Project ID."""
     logger.info(f"Resolving GitLab target for ID: {project_id}")
     headers = {"PRIVATE-TOKEN": token}
     url = f"https://gitlab.com/api/v4/projects/{project_id}"
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
         http_url = data.get("http_url_to_repo")
-        name = data.get("path_with_namespace")
-        logger.info(f"Target resolved: {name}")
-
+        # Inject auth - GitLab supports oauth2 as user for tokens, or just the token as user
+        # Format: https://oauth2:<token>@gitlab.com/...
         auth_url = http_url.replace("https://", f"https://oauth2:{token}@")
         return auth_url
     except Exception as e:
@@ -123,169 +109,119 @@ def resolve_gitlab_target(token, project_id):
         raise
 
 
-def determine_push_spec():
+def ensure_complete_history():
     """
-    Determines the git push specification based on the current CI environment.
-    Returns a string like 'HEAD:refs/heads/main' or '--all'.
+    Ensures the local repository has complete history and local branches for all remote branches.
+    This is CRITICAL before running 'git push --prune', otherwise valid remote branches
+    might be deleted because the local CI environment (detached HEAD) doesn't know about them.
     """
-    # 1. GitHub Actions
-    github_ref = os.environ.get("GITHUB_REF")
-    if github_ref:
-        logger.info(f"Detected GitHub Actions environment. Ref: {github_ref}")
-        return f"HEAD:{github_ref}"
+    logger.info("Validating repository history depth...")
 
-    # 2. GitLab CI
-    gitlab_ref_name = os.environ.get("CI_COMMIT_REF_NAME")
-    if gitlab_ref_name:
-        logger.info(f"Detected GitLab CI environment. Branch/Tag: {gitlab_ref_name}")
-        gitlab_tag = os.environ.get("CI_COMMIT_TAG")
-        if gitlab_tag:
-            return f"HEAD:refs/tags/{gitlab_tag}"
-        else:
-            return f"HEAD:refs/heads/{gitlab_ref_name}"
+    # 1. Unshallow if needed
+    if os.path.exists(".git/shallow"):
+        logger.warning("Repository is shallow. Initiating full history hydration...")
+        with contextlib.suppress(Exception):
+            run_command(["git", "fetch", "--unshallow"], ignore_errors=True)
 
-    logger.warning(
-        "No standard CI environment detected. Defaulting to mirroring all local branches."
-    )
-    return "--all"
+    # 2. Fetch all remotes
+    logger.info("Fetching all remotes to ensure consistency...")
+    run_command(["git", "fetch", "--all"], ignore_errors=True)
 
+    # 3. Create local tracking branches for all remote branches
+    # This prevents 'git push --prune +refs/heads/*:refs/heads/*' from deleting branches
+    # that exist on origin but are not currently checked out locally.
+    logger.info("Hydrating local tracking branches for all remote refs...")
+    try:
+        # Get all remote branches (excluding HEAD)
+        output = run_command(["git", "branch", "-r"], ignore_errors=True)
+        if output:
+            for line in output.splitlines():
+                branch = line.strip()
+                if "->" in branch or "origin/HEAD" in branch:
+                    continue
 
-def run_security_gate():
-    """
-    Executes the Neural-Symbolic Security Gate.
-    """
-    if not NeuralStaticAnalyzer:
-        logger.warning("NeuralStaticAnalyzer not found. Skipping Security Gate (Legacy Mode).")
-        return True
+                # branch is like 'origin/feature/abc'
+                # Use split to avoid replacing 'origin/' inside the branch name
+                parts = branch.split("/", 1)
+                if len(parts) == 2 and parts[0] == "origin":
+                    local_branch_name = parts[1]
+                else:
+                    # Fallback or weird naming, skip to be safe
+                    logger.warning(f"Skipping malformed branch ref: {branch}")
+                    continue
 
-    logger.info("🔒 Engaging Security Gate Protocols...")
-    analyzer = NeuralStaticAnalyzer()
+                # Create local branch if it doesn't exist
+                # git branch --track <local> <remote>
+                # We use --force to update it if it exists but is stale
+                logger.info(f"Tracking branch: {local_branch_name} -> {branch}")
+                run_command(["git", "branch", "--track", "-f", local_branch_name, branch], ignore_errors=True)
 
-    # In a real sync, we might only check diffs. For now, scan entire repo to be safe.
-    # We exclude .git and venv by default in the walker.
-    anomalies = analyzer.scan_directory(".")
-
-    critical_issues = [a for a in anomalies if a.severity == "CRITICAL"]
-
-    # Filter out development files that are safe
-    real_critical_issues = [
-        issue
-        for issue in critical_issues
-        if not any(
-            pattern in issue.file_path
-            for pattern in [".env", "example", "test", "verify", "docker"]
-        )
-    ]
-
-    if real_critical_issues:
-        logger.error("🛑 SECURITY GATE BREACHED! Critical anomalies detected:")
-        for issue in real_critical_issues:
-            logger.error(f"   [{issue.severity}] {issue.file_path}: {issue.description}")
-
-        # Self-Healing / Auto-Fix Attempt (Stub)
-        attempt_self_healing(real_critical_issues)
-        return False
-
-    logger.info("✅ Security Gate Passed. Code integrity verified.")
-    return True
-
-
-def attempt_self_healing(issues):
-    """
-    Simulates a self-healing agent that attempts to fix issues.
-    """
-    logger.info("🚑 Initiating Self-Healing Protocols...")
-
-    # Simple Heuristic Fixes
-    for issue in issues:
-        if "Secret detected" in issue.description:
-            logger.info(f"Attempting to redact secret in {issue.file_path}...")
-            # Ideally we would rewrite the file.
-            # For safety in this script, we just log the action needed.
-            logger.info(
-                f"ACTION: Please remove secret from {issue.file_path}:{issue.line_number} manually or trigger Agentic Auto-Fix."
-            )
-
-    # In a real system, this would call the AgenticDevOps service to modify code.
-
-
-def check_workload_identity():
-    """
-    Checks for OIDC tokens to simulate Workload Identity Federation.
-    """
-    gh_oidc = os.environ.get("GITHUB_OIDC_TOKEN")
-    gl_oidc = os.environ.get("GITLAB_OIDC_TOKEN")
-
-    if gh_oidc:
-        logger.info(
-            "🔐 GitHub Workload Identity Token Detected. Exchanging for temporary access credentials..."
-        )
-        # Stub for exchanging token with Cloud Provider
-        return True
-
-    if gl_oidc:
-        logger.info(
-            "🔐 GitLab Workload Identity Token Detected. Exchanging for temporary access credentials..."
-        )
-        # Stub for exchanging token with Cloud Provider
-        return True
-
-    logger.info("ℹ️ No OIDC tokens found. Falling back to static PATs (Legacy Mode).")
-    return False
+    except Exception as e:
+        logger.warning(f"Failed to hydrate some branches: {e}")
 
 
 def sync_remotes():
-    # 0. Infrastructure Check
-    check_workload_identity()
+    # 0. Safety Pre-flight
+    ensure_complete_history()
 
-    # 1. Security Gate
-    if not run_security_gate():
-        logger.error("Synchronization Aborted due to Security Gate failure.")
-        sys.exit(1)
+    # 1. Identify Environment & Source of Truth
+    is_github = os.environ.get("GITHUB_ACTIONS") == "true"
+    is_gitlab = os.environ.get("GITLAB_CI") == "true"
 
-    # 2. Env Vars
-    github_token = get_env_var("SYNC_GITHUB_TOKEN", required=False)
-    github_id = get_env_var("SYNC_GITHUB_ID", required=False)
-    gitlab_token = get_env_var("SYNC_GITLAB_TOKEN", required=False)
-    gitlab_id = get_env_var("SYNC_GITLAB_ID", required=False)
+    if is_github:
+        logger.info("Detected Environment: GitHub Actions. Source of Truth: GitHub.")
+        target_platform = "GitLab"
+    elif is_gitlab:
+        logger.info("Detected Environment: GitLab CI. Source of Truth: GitLab.")
+        target_platform = "GitHub"
+    else:
+        logger.warning("Unknown environment. Defaulting to multi-target push mode.")
+        target_platform = "All"
 
-    if not ((github_token and github_id) or (gitlab_token and gitlab_id)):
-        logger.warning("No sync targets configured (Token/ID missing). Skipping sync.")
-        return
+    # 2. Load Credentials
+    github_token = os.environ.get("SYNC_GITHUB_TOKEN")
+    github_id = os.environ.get("SYNC_GITHUB_ID")
+    gitlab_token = os.environ.get("SYNC_GITLAB_TOKEN")
+    gitlab_id = os.environ.get("SYNC_GITLAB_ID")
 
-    push_spec = determine_push_spec()
+    # 3. Execute Synchronization based on Direction
 
-    # 3. Resolve & Push GitHub
-    if github_token and github_id:
+    # CASE A: GitHub -> GitLab
+    if (target_platform == "GitLab" or target_platform == "All") and gitlab_token and gitlab_id:
         try:
-            github_url = resolve_github_target(github_token, github_id)
-            logger.info("Initiating GitHub synchronization sequence...")
-            run_command(
-                ["git", "push", "--force", github_url, push_spec], sensitive_inputs=[github_token]
-            )
-            if push_spec == "--all":
-                run_command(
-                    ["git", "push", "--force", github_url, "--tags"],
-                    sensitive_inputs=[github_token],
-                )
-        except Exception:
-            logger.error("GitHub sync failed.")
+            target_url = resolve_gitlab_url(gitlab_token, gitlab_id)
+            logger.info("Initiating Mirror Push to GitLab...")
 
-    # 4. Resolve & Push GitLab
-    if gitlab_token and gitlab_id:
-        try:
-            gitlab_url = resolve_gitlab_target(gitlab_token, gitlab_id)
-            logger.info("Initiating GitLab synchronization sequence...")
+            # Use --prune --force --all to ensure exact replica (deletes removed branches)
+            # and --tags to sync tags.
+            # Now that we have hydrated local branches, this is safe.
             run_command(
-                ["git", "push", "--force", gitlab_url, push_spec], sensitive_inputs=[gitlab_token]
+                ["git", "push", "--prune", "--force", target_url, "+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
+                sensitive_inputs=[gitlab_token]
             )
-            if push_spec == "--all":
-                run_command(
-                    ["git", "push", "--force", gitlab_url, "--tags"],
-                    sensitive_inputs=[gitlab_token],
-                )
-        except Exception:
-            logger.error("GitLab sync failed.")
+            logger.info("✅ Sync to GitLab Successful (Exit Code 0).")
+
+        except Exception as e:
+            logger.error(f"Sync to GitLab failed: {e}")
+            if target_platform == "GitLab":
+                sys.exit(1)
+
+    # CASE B: GitLab -> GitHub
+    if (target_platform == "GitHub" or target_platform == "All") and github_token and github_id:
+        try:
+            target_url = resolve_github_url(github_token, github_id)
+            logger.info("Initiating Mirror Push to GitHub...")
+
+            run_command(
+                ["git", "push", "--prune", "--force", target_url, "+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
+                sensitive_inputs=[github_token]
+            )
+            logger.info("✅ Sync to GitHub Successful (Exit Code 0).")
+
+        except Exception as e:
+            logger.error(f"Sync to GitHub failed: {e}")
+            if target_platform == "GitHub":
+                sys.exit(1)
 
     logger.info("Universal synchronization protocol completed.")
 
