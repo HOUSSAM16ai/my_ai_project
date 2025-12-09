@@ -1,13 +1,15 @@
 # tests/services/chat/test_chat_service_superhuman.py
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
+
+from app.services.chat.service import ChatIntent, ChatOrchestratorService, IntentResult
 from tests.utils.unified_test_template import UnifiedTestTemplate
 
-from app.services.chat.service import ChatOrchestratorService, ChatIntent, IntentResult
 
 class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
-
     @pytest.fixture
     def mock_context(self):
         ctx = MagicMock()
@@ -26,19 +28,24 @@ class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
     @pytest.fixture
     def mock_ai_client(self):
         client = MagicMock()
+
         async def mock_stream(*args, **kwargs):
             yield "AI Response"
+
         client.stream_chat = mock_stream
         return client
 
     def test_initialization_lazy(self):
         svc = ChatOrchestratorService()
         assert not svc._initialized
-        with patch.dict("sys.modules", {
-            "app.services.async_tool_bridge": MagicMock(),
-            "app.core.rate_limiter": MagicMock(),
-            "app.services.chat.handlers.base": MagicMock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "app.services.async_tool_bridge": MagicMock(),
+                "app.core.rate_limiter": MagicMock(),
+                "app.services.chat.handlers.base": MagicMock(),
+            },
+        ):
             svc._ensure_initialized()
             assert svc._initialized
 
@@ -48,10 +55,7 @@ class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
         # However, we want to force SIMPLE_CHAT.
         with patch("app.services.chat.service.IntentDetector.detect") as mock_detect:
             mock_detect.return_value = IntentResult(
-                intent=ChatIntent.SIMPLE_CHAT,
-                confidence=1.0,
-                params={},
-                reasoning="test"
+                intent=ChatIntent.SIMPLE_CHAT, confidence=1.0, params={}, reasoning="test"
             )
 
             chunks = []
@@ -63,18 +67,20 @@ class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
 
     @pytest.mark.asyncio
     async def test_orchestrate_file_read(self, orchestrator, mock_ai_client):
-        with patch("app.services.chat.service.IntentDetector.detect") as mock_detect, \
-             patch("app.services.chat.service.handle_file_read") as mock_handler:
-
+        with (
+            patch("app.services.chat.service.IntentDetector.detect") as mock_detect,
+            patch("app.services.chat.service.handle_file_read") as mock_handler,
+        ):
             mock_detect.return_value = IntentResult(
                 intent=ChatIntent.FILE_READ,
                 confidence=1.0,
                 params={"path": "test.txt"},
-                reasoning="test"
+                reasoning="test",
             )
 
             async def gen(*args):
                 yield "File Content"
+
             mock_handler.side_effect = gen
 
             chunks = []
@@ -86,18 +92,20 @@ class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
 
     @pytest.mark.asyncio
     async def test_orchestrate_mission_complex(self, orchestrator, mock_ai_client):
-        with patch("app.services.chat.service.IntentDetector.detect") as mock_detect, \
-             patch("app.services.chat.service.handle_mission") as mock_handler:
-
+        with (
+            patch("app.services.chat.service.IntentDetector.detect") as mock_detect,
+            patch("app.services.chat.service.handle_mission") as mock_handler,
+        ):
             mock_detect.return_value = IntentResult(
                 intent=ChatIntent.MISSION_COMPLEX,
                 confidence=1.0,
                 params={"objective": "Build X"},
-                reasoning="test"
+                reasoning="test",
             )
 
             async def gen(*args):
                 yield "Mission Started"
+
             mock_handler.side_effect = gen
 
             chunks = []
@@ -115,7 +123,10 @@ class TestChatOrchestratorSuperhuman(UnifiedTestTemplate):
         svc._context = MagicMock()
 
         mock_ai = MagicMock()
-        async def mock_stream(*args): yield "AI"
+
+        async def mock_stream(*args):
+            yield "AI"
+
         mock_ai.stream_chat = mock_stream
 
         # We just want to ensure no crash

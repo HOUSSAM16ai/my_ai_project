@@ -1,27 +1,37 @@
 # tests/services/chat/test_chat_intent_superhuman.py
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
+
+from app.services.chat.intent import ChatIntent, IntentDetector, IntentResult
 from tests.utils.unified_test_template import UnifiedTestTemplate
-from app.services.chat.intent import IntentDetector, ChatIntent, IntentResult
+
 
 class TestIntentDetectorSuperhuman(UnifiedTestTemplate):
-
     # --- Unit Tests: Specific Patterns ---
 
-    @pytest.mark.parametrize("text,expected_intent", [
-        ("read file config.py", ChatIntent.FILE_READ),
-        ("create file test.js", ChatIntent.FILE_WRITE), # Fixed: Removed "new" to match pattern 1
-        ("create new test.js", ChatIntent.FILE_WRITE),  # Matches pattern 2
-        ("explain the architecture", ChatIntent.DEEP_ANALYSIS),
-        ("find code for login", ChatIntent.CODE_SEARCH),
-        ("analyze project structure", ChatIntent.PROJECT_INDEX),
-        ("start mission to refactor auth", ChatIntent.MISSION_COMPLEX),
-        ("help me", ChatIntent.HELP),
-        ("hello world", ChatIntent.SIMPLE_CHAT),
-    ])
+    @pytest.mark.parametrize(
+        "text,expected_intent",
+        [
+            ("read file config.py", ChatIntent.FILE_READ),
+            (
+                "create file test.js",
+                ChatIntent.FILE_WRITE,
+            ),  # Fixed: Removed "new" to match pattern 1
+            ("create new test.js", ChatIntent.FILE_WRITE),  # Matches pattern 2
+            ("explain the architecture", ChatIntent.DEEP_ANALYSIS),
+            ("find code for login", ChatIntent.CODE_SEARCH),
+            ("analyze project structure", ChatIntent.PROJECT_INDEX),
+            ("start mission to refactor auth", ChatIntent.MISSION_COMPLEX),
+            ("help me", ChatIntent.HELP),
+            ("hello world", ChatIntent.SIMPLE_CHAT),
+        ],
+    )
     def test_detect_specific_intents(self, text, expected_intent):
         result = IntentDetector.detect(text)
-        assert result.intent == expected_intent, f"Expected {expected_intent} for '{text}', got {result.intent}"
+        assert result.intent == expected_intent, (
+            f"Expected {expected_intent} for '{text}', got {result.intent}"
+        )
 
     # --- Property-Based Tests: Invariants ---
 

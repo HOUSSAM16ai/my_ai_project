@@ -1,14 +1,15 @@
 # tests/security/test_security_final.py
+import typing
+
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
+
 from tests.utils.unified_test_template import UnifiedTestTemplate
 
-class TestSecuritySuperhuman(UnifiedTestTemplate):
 
-    SQL_INJECTION_PATTERNS = [
-        "' OR 1=1 --",
-        "'; DROP TABLE users; --"
-    ]
+class TestSecuritySuperhuman(UnifiedTestTemplate):
+    SQL_INJECTION_PATTERNS: typing.ClassVar[list[str]] = ["' OR 1=1 --", "'; DROP TABLE users; --"]
 
     @pytest.mark.parametrize("payload", SQL_INJECTION_PATTERNS)
     def test_sqli_resilience_static(self, payload):
