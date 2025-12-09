@@ -8,33 +8,33 @@
 """
 
 # Re-export everything from the new location to maintain backward compatibility
-from app.services.metrics.types import (
-    MetricType,
-    ModelType,
-    DriftStatus,
-    InferenceMetrics,
-    AccuracyMetrics,
-    NLPMetrics,
-    LatencyMetrics,
-    CostMetrics,
-    ModelDriftMetrics,
-    FairnessMetrics,
-    ModelPerformanceSnapshot,
-)
 from app.services.metrics.service import AIModelMetricsService, get_ai_model_service
+from app.services.metrics.types import (
+    AccuracyMetrics,
+    CostMetrics,
+    DriftStatus,
+    FairnessMetrics,
+    InferenceMetrics,
+    LatencyMetrics,
+    MetricType,
+    ModelDriftMetrics,
+    ModelPerformanceSnapshot,
+    ModelType,
+    NLPMetrics,
+)
 
 __all__ = [
-    "MetricType",
-    "ModelType",
-    "DriftStatus",
-    "InferenceMetrics",
-    "AccuracyMetrics",
-    "NLPMetrics",
-    "LatencyMetrics",
-    "CostMetrics",
-    "ModelDriftMetrics",
-    "FairnessMetrics",
-    "ModelPerformanceSnapshot",
     "AIModelMetricsService",
+    "AccuracyMetrics",
+    "CostMetrics",
+    "DriftStatus",
+    "FairnessMetrics",
+    "InferenceMetrics",
+    "LatencyMetrics",
+    "MetricType",
+    "ModelDriftMetrics",
+    "ModelPerformanceSnapshot",
+    "ModelType",
+    "NLPMetrics",
     "get_ai_model_service",
 ]
