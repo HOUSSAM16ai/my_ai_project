@@ -349,7 +349,11 @@ class AIModelMetricsService:
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        f1 = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
 
         return AccuracyMetrics(
             accuracy=accuracy,
@@ -363,7 +367,9 @@ class AIModelMetricsService:
             sample_count=total,
         )
 
-    def calculate_bleu_score(self, reference: str, candidate: str, max_n: int = 4) -> float:
+    def calculate_bleu_score(
+        self, reference: str, candidate: str, max_n: int = 4
+    ) -> float:
         """
         Calculate BLEU score for translation/generation quality
 
@@ -406,7 +412,9 @@ class AIModelMetricsService:
             ngrams.append(tuple(tokens[i : i + n]))
         return Counter(ngrams)
 
-    def calculate_rouge_scores(self, reference: str, candidate: str) -> dict[str, float]:
+    def calculate_rouge_scores(
+        self, reference: str, candidate: str
+    ) -> dict[str, float]:
         """
         Calculate ROUGE scores (simplified version)
 
@@ -464,7 +472,9 @@ class AIModelMetricsService:
 
         return perplexity
 
-    def get_latency_metrics(self, model_name: str, model_version: str) -> LatencyMetrics | None:
+    def get_latency_metrics(
+        self, model_name: str, model_version: str
+    ) -> LatencyMetrics | None:
         """Get latency metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -482,7 +492,11 @@ class AIModelMetricsService:
                 p50_ms=sorted_latencies[int(n * 0.50)],
                 p95_ms=sorted_latencies[int(n * 0.95)],
                 p99_ms=sorted_latencies[int(n * 0.99)],
-                p999_ms=sorted_latencies[int(n * 0.999)] if n > 1000 else sorted_latencies[-1],
+                p999_ms=(
+                    sorted_latencies[int(n * 0.999)]
+                    if n > 1000
+                    else sorted_latencies[-1]
+                ),
                 mean_ms=statistics.mean(latencies),
                 median_ms=statistics.median(latencies),
                 min_ms=min(latencies),
@@ -491,7 +505,9 @@ class AIModelMetricsService:
                 sample_count=n,
             )
 
-    def get_cost_metrics(self, model_name: str, model_version: str) -> CostMetrics | None:
+    def get_cost_metrics(
+        self, model_name: str, model_version: str
+    ) -> CostMetrics | None:
         """Get cost metrics for a model"""
         with self.lock:
             model_key = f"{model_name}:{model_version}"
@@ -518,7 +534,9 @@ class AIModelMetricsService:
             return CostMetrics(
                 total_cost_usd=total_cost,
                 cost_per_request=total_cost / len(recent_inferences),
-                cost_per_1k_tokens=total_cost / (total_tokens / 1000) if total_tokens > 0 else 0.0,
+                cost_per_1k_tokens=(
+                    total_cost / (total_tokens / 1000) if total_tokens > 0 else 0.0
+                ),
                 total_requests=len(recent_inferences),
                 total_input_tokens=total_input_tokens,
                 total_output_tokens=total_output_tokens,
@@ -592,8 +610,12 @@ class AIModelMetricsService:
 
             baseline_mean = statistics.mean(baseline_nums)
             current_mean = statistics.mean(current_nums)
-            baseline_std = statistics.stdev(baseline_nums) if len(baseline_nums) > 1 else 1.0
-            current_std = statistics.stdev(current_nums) if len(current_nums) > 1 else 1.0
+            baseline_std = (
+                statistics.stdev(baseline_nums) if len(baseline_nums) > 1 else 1.0
+            )
+            current_std = (
+                statistics.stdev(current_nums) if len(current_nums) > 1 else 1.0
+            )
 
             # Normalized difference in means
             mean_shift = abs(baseline_mean - current_mean) / (baseline_std + 1e-10)
@@ -622,6 +644,67 @@ class AIModelMetricsService:
             # Total variation distance (0-1)
             return total_diff / 2.0
 
+    def _group_by_sensitive_attribute(
+        self,
+        predictions: list[Any],
+        ground_truths: list[Any],
+        sensitive_attributes: list[Any],
+    ) -> dict[Any, dict[str, list[Any]]]:
+        """Group predictions and truths by sensitive attribute."""
+        groups: dict[Any, dict[str, list[Any]]] = defaultdict(
+            lambda: {"pred": [], "truth": []}
+        )
+
+        for pred, truth, attr in zip(
+            predictions, ground_truths, sensitive_attributes, strict=False
+        ):
+            groups[attr]["pred"].append(pred)
+            groups[attr]["truth"].append(truth)
+
+        return groups
+
+    def _calculate_group_rates(
+        self, preds: list[Any], truths: list[Any], positive_class: Any
+    ) -> dict[str, float]:
+        """Calculate positive rate, TPR, and FPR for a group."""
+        pos_rate = sum(1 for p in preds if p == positive_class) / len(preds)
+
+        tp = sum(
+            1
+            for p, t in zip(preds, truths, strict=False)
+            if p == positive_class and t == positive_class
+        )
+        actual_positives = sum(1 for t in truths if t == positive_class)
+        tpr = tp / actual_positives if actual_positives > 0 else 0.0
+
+        fp = sum(
+            1
+            for p, t in zip(preds, truths, strict=False)
+            if p == positive_class and t != positive_class
+        )
+        actual_negatives = sum(1 for t in truths if t != positive_class)
+        fpr = fp / actual_negatives if actual_negatives > 0 else 0.0
+
+        return {"pos_rate": pos_rate, "tpr": tpr, "fpr": fpr}
+
+    def _calculate_demographic_parity(self, pos_rates: list[float]) -> float:
+        """Calculate demographic parity metric."""
+        return min(pos_rates) / max(pos_rates) if max(pos_rates) > 0 else 1.0
+
+    def _calculate_equal_opportunity(self, tprs: list[float]) -> float:
+        """Calculate equal opportunity metric."""
+        return 1.0 - (max(tprs) - min(tprs))
+
+    def _calculate_equalized_odds(self, tprs: list[float], fprs: list[float]) -> float:
+        """Calculate equalized odds metric."""
+        tpr_diff = max(tprs) - min(tprs)
+        fpr_diff = max(fprs) - min(fprs)
+        return 1.0 - ((tpr_diff + fpr_diff) / 2.0)
+
+    def _calculate_disparate_impact(self, pos_rates: list[float]) -> float:
+        """Calculate disparate impact metric."""
+        return min(pos_rates) / max(pos_rates) if max(pos_rates) > 0 else 1.0
+
     def calculate_fairness_metrics(
         self,
         predictions: list[Any],
@@ -630,62 +713,21 @@ class AIModelMetricsService:
         positive_class: Any = 1,
     ) -> FairnessMetrics:
         """
-        Calculate fairness metrics across sensitive attributes
-
-        Args:
-            predictions: Model predictions
-            ground_truths: Ground truth labels
-            sensitive_attributes: Sensitive group identifiers
-            positive_class: Positive class value
-
-        Returns:
-            FairnessMetrics object
+        Calculate fairness metrics across sensitive attributes.
+        Complexity reduced from 23 to <10 by extracting helper methods.
         """
-        # Group by sensitive attribute
-        groups: dict[Any, dict[str, list[Any]]] = defaultdict(lambda: {"pred": [], "truth": []})
+        groups = self._group_by_sensitive_attribute(
+            predictions, ground_truths, sensitive_attributes
+        )
 
-        for pred, truth, attr in zip(
-            predictions, ground_truths, sensitive_attributes, strict=False
-        ):
-            groups[attr]["pred"].append(pred)
-            groups[attr]["truth"].append(truth)
-
-        # Calculate metrics per group
-        group_metrics = {}
-        for group, data in groups.items():
-            preds = data["pred"]
-            truths = data["truth"]
-
-            # Positive rate
-            pos_rate = sum(1 for p in preds if p == positive_class) / len(preds)
-
-            # True positive rate (TPR)
-            tp = sum(
-                1
-                for p, t in zip(preds, truths, strict=False)
-                if p == positive_class and t == positive_class
+        group_metrics = {
+            group: self._calculate_group_rates(
+                data["pred"], data["truth"], positive_class
             )
-            actual_positives = sum(1 for t in truths if t == positive_class)
-            tpr = tp / actual_positives if actual_positives > 0 else 0.0
+            for group, data in groups.items()
+        }
 
-            # False positive rate (FPR)
-            fp = sum(
-                1
-                for p, t in zip(preds, truths, strict=False)
-                if p == positive_class and t != positive_class
-            )
-            actual_negatives = sum(1 for t in truths if t != positive_class)
-            fpr = fp / actual_negatives if actual_negatives > 0 else 0.0
-
-            group_metrics[group] = {
-                "pos_rate": pos_rate,
-                "tpr": tpr,
-                "fpr": fpr,
-            }
-
-        # Calculate fairness metrics
         if len(group_metrics) < 2:
-            # Need at least 2 groups for fairness comparison
             return FairnessMetrics(
                 demographic_parity=1.0,
                 equal_opportunity=1.0,
@@ -700,29 +742,12 @@ class AIModelMetricsService:
         tprs = [m["tpr"] for m in group_metrics.values()]
         fprs = [m["fpr"] for m in group_metrics.values()]
 
-        # Demographic parity: ratio of min/max positive rates
-        demographic_parity = min(pos_rates) / max(pos_rates) if max(pos_rates) > 0 else 1.0
-
-        # Equal opportunity: difference in TPRs
-        equal_opportunity = 1.0 - (max(tprs) - min(tprs))
-
-        # Equalized odds: combined TPR and FPR difference
-        tpr_diff = max(tprs) - min(tprs)
-        fpr_diff = max(fprs) - min(fprs)
-        equalized_odds = 1.0 - ((tpr_diff + fpr_diff) / 2.0)
-
-        # Disparate impact: ratio of positive rates
-        disparate_impact = min(pos_rates) / max(pos_rates) if max(pos_rates) > 0 else 1.0
-
-        # Statistical parity difference
-        statistical_parity_difference = max(pos_rates) - min(pos_rates)
-
         return FairnessMetrics(
-            demographic_parity=demographic_parity,
-            equal_opportunity=equal_opportunity,
-            equalized_odds=equalized_odds,
-            disparate_impact=disparate_impact,
-            statistical_parity_difference=statistical_parity_difference,
+            demographic_parity=self._calculate_demographic_parity(pos_rates),
+            equal_opportunity=self._calculate_equal_opportunity(tprs),
+            equalized_odds=self._calculate_equalized_odds(tprs, fprs),
+            disparate_impact=self._calculate_disparate_impact(pos_rates),
+            statistical_parity_difference=max(pos_rates) - min(pos_rates),
             groups_analyzed=list(groups.keys()),
             sample_count=len(predictions),
         )
@@ -806,7 +831,9 @@ class AIModelMetricsService:
             )
 
         if latency.p99_ms > latency.p95_ms * 2:
-            recommendations.append("⚠️ High tail latency variance. Investigate outlier requests.")
+            recommendations.append(
+                "⚠️ High tail latency variance. Investigate outlier requests."
+            )
 
         if cost.cost_per_request > 0.01:
             recommendations.append(
@@ -817,7 +844,9 @@ class AIModelMetricsService:
             DriftStatus.MODERATE_DRIFT,
             DriftStatus.SEVERE_DRIFT,
         ]:
-            recommendations.append("🔄 Model drift detected. Retrain model with recent data.")
+            recommendations.append(
+                "🔄 Model drift detected. Retrain model with recent data."
+            )
 
         if not recommendations:
             recommendations.append("✅ Model performance is optimal.")
@@ -838,7 +867,9 @@ class AIModelMetricsService:
                 model_name = model_data["model_name"]
                 model_version = model_data["model_version"]
 
-                snapshot = self.get_model_performance_snapshot(model_name, model_version)
+                snapshot = self.get_model_performance_snapshot(
+                    model_name, model_version
+                )
 
                 if snapshot:
                     summary["models"][model_key] = {

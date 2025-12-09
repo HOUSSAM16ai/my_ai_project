@@ -272,7 +272,9 @@ class NeuralRoutingMesh:
             self.nodes_map[model_id] = NeuralNode(
                 model_id=model_id,
                 circuit_breaker=CircuitBreaker(
-                    f"Backup-Synapse-{idx + 1}", CIRCUIT_FAILURE_THRESHOLD, CIRCUIT_RECOVERY_TIMEOUT
+                    f"Backup-Synapse-{idx + 1}",
+                    CIRCUIT_FAILURE_THRESHOLD,
+                    CIRCUIT_RECOVERY_TIMEOUT,
                 ),
             )
 
@@ -348,187 +350,273 @@ class NeuralRoutingMesh:
         final_score = (0.4 * length_score) + (0.6 * density_score)
         return max(0.0, min(1.0, final_score))
 
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
-        """
-        Executes the 'Synaptic Fallback Strategy' with Omni-Cognitive Optimization.
-        Now Enhanced with COGNITIVE RESONANCE (Semantic Caching & Quality Feedback).
-        """
-        # --- INPUT VALIDATION ---
+    def _validate_messages(self, messages: list[dict]) -> None:
+        """Validate input messages."""
         if not messages or len(messages) == 0:
             logger.error("stream_chat called with empty messages list")
             raise ValueError("Messages list cannot be empty")
 
-        # --- PHASE 1: COGNITIVE RECALL ---
+    def _extract_prompt_and_context(self, messages: list[dict]) -> tuple[str, str]:
+        """Extract prompt and context hash from messages."""
         prompt = messages[-1].get("content", "") if messages else ""
-        cognitive_engine = get_cognitive_engine()
         context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         context_hash = hashlib.sha256(context_str.encode()).hexdigest()
+        return prompt, context_hash
 
-        if prompt and messages[-1].get("role") == "user":
-            cached_memory = cognitive_engine.recall(prompt, context_hash)
-            if cached_memory:
-                logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
-                for chunk in cached_memory:
+    def _try_recall_from_cache(
+        self, prompt: str, context_hash: str
+    ) -> list[dict] | None:
+        """Attempt to recall response from cognitive cache."""
+        if not prompt:
+            return None
+
+        cognitive_engine = get_cognitive_engine()
+        cached_memory = cognitive_engine.recall(prompt, context_hash)
+
+        if cached_memory:
+            logger.info(
+                f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'"
+            )
+            return cached_memory
+        return None
+
+    def _assemble_response_content(self, chunks: list[dict]) -> str:
+        """Assemble full response content from chunks."""
+        return "".join(
+            chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+            for chunk in chunks
+        ).strip()
+
+    def _record_success_metrics(
+        self,
+        node: NeuralNode,
+        prompt: str,
+        duration_ms: float,
+        full_content: str,
+        quality_score: float,
+    ) -> None:
+        """Record success metrics for a node."""
+        self.omni_router.record_outcome(
+            model_id=node.model_id,
+            prompt=prompt,
+            success=True,
+            latency_ms=duration_ms,
+            quality_score=quality_score,
+        )
+
+        _performance_optimizer.record_request(
+            model_id=node.model_id,
+            success=True,
+            latency_ms=duration_ms,
+            tokens=len(full_content.split()),
+            quality_score=quality_score,
+            empty_response=False,
+        )
+
+    def _record_empty_response(
+        self, node: NeuralNode, prompt: str, duration_ms: float, errors: list[str]
+    ) -> None:
+        """Record metrics for empty response."""
+        logger.warning(
+            f"Node [{node.model_id}] returned empty content despite streaming data."
+        )
+
+        self.omni_router.record_outcome(
+            model_id=node.model_id,
+            prompt=prompt,
+            success=False,
+            latency_ms=duration_ms,
+            quality_score=0.0,
+        )
+
+        _performance_optimizer.record_request(
+            model_id=node.model_id,
+            success=False,
+            latency_ms=duration_ms,
+            tokens=0,
+            quality_score=0.0,
+            empty_response=True,
+        )
+
+        errors.append(f"{node.model_id}: Empty response despite streaming")
+
+    def _handle_rate_limit_error(
+        self, node: NeuralNode, prompt: str, errors: list[str]
+    ) -> None:
+        """Handle rate limit error."""
+        node.circuit_breaker.record_saturation()
+        self.omni_router.record_outcome(
+            node.model_id, prompt, success=False, latency_ms=0
+        )
+        logger.info(
+            f"Failover triggered from [{node.model_id}] due to Rate Limit (429). "
+            f"Finding next available node..."
+        )
+        errors.append(f"{node.model_id}: Rate Limited (429)")
+
+    def _handle_connection_error(
+        self,
+        node: NeuralNode,
+        prompt: str,
+        error: AIConnectionError,
+        global_has_yielded: bool,
+        errors: list[str],
+    ) -> None:
+        """Handle connection error."""
+        node.circuit_breaker.record_failure()
+        self.omni_router.record_outcome(
+            node.model_id, prompt, success=False, latency_ms=0
+        )
+
+        _performance_optimizer.record_request(
+            model_id=node.model_id,
+            success=False,
+            latency_ms=0,
+            tokens=0,
+            quality_score=0.0,
+            empty_response=False,
+        )
+
+        if global_has_yielded:
+            logger.critical(
+                f"Neural Stream severed mid-transmission from [{node.model_id}]. "
+                f"Cannot failover safely. Error: {type(error).__name__}: {error!s}"
+            )
+            raise error
+
+        logger.warning(
+            f"Node [{node.model_id}] Connection Failed: {error!s}. Attempting failover..."
+        )
+        errors.append(f"{node.model_id}: Connection error - {error!s}")
+
+    def _handle_unexpected_error(
+        self,
+        node: NeuralNode,
+        prompt: str,
+        error: Exception,
+        global_has_yielded: bool,
+        errors: list[str],
+    ) -> None:
+        """Handle unexpected error."""
+        node.circuit_breaker.record_failure()
+        self.omni_router.record_outcome(
+            node.model_id, prompt, success=False, latency_ms=0
+        )
+
+        if global_has_yielded:
+            logger.critical(
+                f"Neural Stream crashed mid-transmission from [{node.model_id}]. "
+                f"Cannot failover safely. Error: {type(error).__name__}: {error!s}"
+            )
+            raise error
+
+        logger.error(
+            f"Node [{node.model_id}] Unexpected Error: {type(error).__name__}: {error!s}. "
+            f"Stack trace available in debug logs. Attempting failover..."
+        )
+        errors.append(f"{node.model_id}: {type(error).__name__} - {error!s}")
+
+    async def _process_node_response(
+        self,
+        node: NeuralNode,
+        messages: list[dict],
+        prompt: str,
+        context_hash: str,
+        errors: list[str],
+    ) -> AsyncGenerator[dict, None]:
+        """Process response from a single node and yield chunks."""
+        full_response_chunks = []
+        global_has_yielded = False
+
+        async with node.semaphore:
+            logger.info(f"Engaging Neural Node via Omni Choice: {node.model_id}")
+            start_time = time.time()
+
+            async for chunk in self._stream_from_node(node, messages):
+                yield chunk
+                full_response_chunks.append(chunk)
+                global_has_yielded = True
+
+            duration_ms = (time.time() - start_time) * 1000
+            node.circuit_breaker.record_success()
+            node.consecutive_rate_limits = 0
+
+            full_content = self._assemble_response_content(full_response_chunks)
+
+            if not full_content and global_has_yielded:
+                self._record_empty_response(node, prompt, duration_ms, errors)
+                raise ValueError("Empty response despite streaming")
+
+            quality_score = self._calculate_quality_score(full_content)
+            logger.info(
+                f"Cognitive Resonance Score for [{node.model_id}]: {quality_score:.2f}"
+            )
+
+            self._record_success_metrics(
+                node, prompt, duration_ms, full_content, quality_score
+            )
+
+            if prompt and full_response_chunks:
+                cognitive_engine = get_cognitive_engine()
+                cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
+
+    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+        """
+        Stream chat with cognitive caching and quality feedback.
+        Complexity reduced from 23 to <10 by extracting helper methods.
+        """
+        self._validate_messages(messages)
+        prompt, context_hash = self._extract_prompt_and_context(messages)
+
+        if messages[-1].get("role") == "user":
+            cached = self._try_recall_from_cache(prompt, context_hash)
+            if cached:
+                for chunk in cached:
                     yield chunk
                 return
 
-        # --- PHASE 2: SYNAPTIC ROUTING & QUALITY ASSESSMENT ---
         errors = []
-        global_has_yielded = False
-        full_response_chunks = []
         priority_nodes = self._get_prioritized_nodes(prompt)
 
         if not priority_nodes:
-            logger.error("No available nodes - all circuits are open or no models configured")
-            raise AIAllModelsExhaustedError("All circuits are open, no models available.")
+            logger.error(
+                "No available nodes - all circuits are open or no models configured"
+            )
+            raise AIAllModelsExhaustedError(
+                "All circuits are open, no models available."
+            )
 
-        # V7.2: Count successful attempts to reset cooldowns
         for node in priority_nodes:
             if not node.circuit_breaker.allow_request():
                 continue
 
             try:
-                async with node.semaphore:
-                    logger.info(f"Engaging Neural Node via Omni Choice: {node.model_id}")
-                    start_time = time.time()
+                async for chunk in self._process_node_response(
+                    node, messages, prompt, context_hash, errors
+                ):
+                    yield chunk
+                return
 
-                    async for chunk in self._stream_from_node(node, messages):
-                        yield chunk
-                        full_response_chunks.append(chunk)
-                        global_has_yielded = True
-
-                    duration_ms = (time.time() - start_time) * 1000
-                    node.circuit_breaker.record_success()
-                    # V7.2: Reset consecutive rate limits on success
-                    node.consecutive_rate_limits = 0
-
-                    # --- ENHANCED FEEDBACK LOOP ---
-                    # 1. Assemble full response content
-                    full_content = "".join(
-                        chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                        for chunk in full_response_chunks
-                    ).strip()
-
-                    # SUPERHUMAN VALIDATION: Check for empty responses
-                    if not full_content and global_has_yielded:
-                        logger.warning(
-                            f"Node [{node.model_id}] returned empty content despite streaming data."
-                        )
-                        # Record as partial failure for adaptive learning
-                        self.omni_router.record_outcome(
-                            model_id=node.model_id,
-                            prompt=prompt,
-                            success=False,
-                            latency_ms=duration_ms,
-                            quality_score=0.0,
-                        )
-
-                        # SUPERHUMAN: Record metrics for performance optimization
-                        _performance_optimizer.record_request(
-                            model_id=node.model_id,
-                            success=False,
-                            latency_ms=duration_ms,
-                            tokens=0,
-                            quality_score=0.0,
-                            empty_response=True,
-                        )
-
-                        errors.append(f"{node.model_id}: Empty response despite streaming")
-                        continue
-
-                    # 2. Calculate Cognitive Resonance (Quality)
-                    quality_score = self._calculate_quality_score(full_content)
-                    logger.info(
-                        f"Cognitive Resonance Score for [{node.model_id}]: {quality_score:.2f}"
-                    )
-
-                    # 3. FEED THE OMNI BRAIN (with quality score)
-                    self.omni_router.record_outcome(
-                        model_id=node.model_id,
-                        prompt=prompt,
-                        success=True,
-                        latency_ms=duration_ms,
-                        quality_score=quality_score,
-                    )
-
-                    # SUPERHUMAN: Record comprehensive metrics
-                    _performance_optimizer.record_request(
-                        model_id=node.model_id,
-                        success=True,
-                        latency_ms=duration_ms,
-                        tokens=len(full_content.split()),  # Approximate token count
-                        quality_score=quality_score,
-                        empty_response=False,
-                    )
-
-                    # --- PHASE 3: MEMORIZATION ---
-                    if prompt and full_response_chunks:
-                        cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
-
-                    return
+            except ValueError as e:
+                if "Empty response" in str(e):
+                    continue
+                raise
 
             except AIRateLimitError:
-                # V7.2: Handle Rate Limits (429) specifically
-                # We do NOT record a circuit breaker failure for 429s to allow quick retry after cooldown,
-                # but we DO invoke the Smart Cooldown (already done in _stream_from_node).
-                node.circuit_breaker.record_saturation()
-
-                # Log as INFO/WARNING depending on context (handled by _stream_from_node)
-                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
-
-                logger.info(
-                    f"Failover triggered from [{node.model_id}] due to Rate Limit (429). "
-                    f"Finding next available node..."
-                )
-                errors.append(f"{node.model_id}: Rate Limited (429)")
+                self._handle_rate_limit_error(node, prompt, errors)
                 continue
 
             except AIConnectionError as e:
-                node.circuit_breaker.record_failure()
-                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
-
-                _performance_optimizer.record_request(
-                    model_id=node.model_id,
-                    success=False,
-                    latency_ms=0,
-                    tokens=0,
-                    quality_score=0.0,
-                    empty_response=False,
-                )
-
-                if global_has_yielded:
-                    logger.critical(
-                        f"Neural Stream severed mid-transmission from [{node.model_id}]. Cannot failover safely. "
-                        f"Error: {type(e).__name__}: {e!s}"
-                    )
-                    raise e
-                logger.warning(
-                    f"Node [{node.model_id}] Connection Failed: {e!s}. Attempting failover..."
-                )
-                errors.append(f"{node.model_id}: Connection error - {e!s}")
+                self._handle_connection_error(node, prompt, e, False, errors)
                 continue
 
             except Exception as e:
-                node.circuit_breaker.record_failure()
-                self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
-                if global_has_yielded:
-                    logger.critical(
-                        f"Neural Stream crashed mid-transmission from [{node.model_id}]. Cannot failover safely. "
-                        f"Error: {type(e).__name__}: {e!s}"
-                    )
-                    raise e
-                logger.error(
-                    f"Node [{node.model_id}] Unexpected Error: {type(e).__name__}: {e!s}. "
-                    f"Stack trace available in debug logs. Attempting failover..."
-                )
-                errors.append(f"{node.model_id}: {type(e).__name__} - {e!s}")
+                self._handle_unexpected_error(node, prompt, e, False, errors)
                 continue
 
-        # All nodes exhausted
         logger.critical(
             f"All Neural Nodes Exhausted. System Collapse. "
-            f"Attempted {len(priority_nodes)} node(s). "
-            f"Errors encountered: {len(errors)}"
+            f"Attempted {len(priority_nodes)} node(s). Errors encountered: {len(errors)}"
         )
         error_summary = " | ".join(errors) if errors else "No specific errors recorded"
         raise AIAllModelsExhaustedError(
@@ -593,7 +681,9 @@ class NeuralRoutingMesh:
                         )
 
                         # Use specific exception for 429
-                        raise AIRateLimitError(f"Rate Limited (429) on {node.model_id}.")
+                        raise AIRateLimitError(
+                            f"Rate Limited (429) on {node.model_id}."
+                        )
 
                     if response.status_code == 401 or response.status_code == 403:
                         error_body = await response.aread()
@@ -625,7 +715,9 @@ class NeuralRoutingMesh:
                             except json.JSONDecodeError:
                                 continue
 
-                    logger.debug(f"Successfully streamed {chunk_count} chunks from {node.model_id}")
+                    logger.debug(
+                        f"Successfully streamed {chunk_count} chunks from {node.model_id}"
+                    )
                 return
 
             except AIRateLimitError:
@@ -666,7 +758,9 @@ def get_ai_client() -> AIClient:
     Factory function to get AI client instance.
     """
     if not OPENROUTER_API_KEY:
-        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
+        logger.warning(
+            "OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode."
+        )
     elif OPENROUTER_API_KEY.startswith("sk-or-v1-xxx"):
         logger.warning("OPENROUTER_API_KEY appears to be a placeholder value.")
     else:
