@@ -52,6 +52,7 @@ OPENROUTER_API_KEY = _ai_config.openrouter_api_key
 # The "Holographic Registry" of Models - READ FROM CENTRAL CONFIG
 PRIMARY_MODEL = _ai_config.gateway_primary
 FALLBACK_MODELS = _ai_config.get_fallback_models()
+SAFETY_NET_MODEL_ID = "system/safety-net"  # 🛡️ The Ultimate Failsafe
 
 MAX_RETRIES = 3
 BASE_TIMEOUT = 30.0
@@ -278,10 +279,19 @@ class NeuralRoutingMesh:
                 ),
             )
 
+        # 3. Safety Net (The Last Resort)
+        self.nodes_map[SAFETY_NET_MODEL_ID] = NeuralNode(
+            model_id=SAFETY_NET_MODEL_ID,
+            circuit_breaker=CircuitBreaker(
+                "Safety-Net", 999999, 1.0
+            ),  # Virtually unbreakable
+        )
+
         self.omni_router = get_omni_router()
-        # Register nodes in the Omni Brain
+        # Register nodes in the Omni Brain (excluding Safety Net to prevent it being chosen)
         for mid in self.nodes_map:
-            self.omni_router.register_node(mid)
+            if mid != SAFETY_NET_MODEL_ID:
+                self.omni_router.register_node(mid)
 
     def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
         """
@@ -291,6 +301,10 @@ class NeuralRoutingMesh:
         available_ids = []
         now = time.time()
         for mid, node in self.nodes_map.items():
+            # Skip Safety Net in standard selection
+            if mid == SAFETY_NET_MODEL_ID:
+                continue
+
             # Check Circuit Breaker
             if not node.circuit_breaker.allow_request():
                 continue
@@ -298,32 +312,28 @@ class NeuralRoutingMesh:
             # Check Smart Cooldown (SUPERHUMAN feature)
             if node.rate_limit_cooldown_until > now:
                 # V7.2: Silent skipping for rate limited nodes to reduce log noise
-                # unless debugging is needed.
-                # remaining = int(node.rate_limit_cooldown_until - now)
-                # logger.debug(
-                #     f"Node [{mid}] is in Smart Cooldown Stasis for {remaining}s. Skipping."
-                # )
                 continue
 
             available_ids.append(mid)
 
-        if not available_ids:
-            return []
-
         # 2. Ask the Omni Brain for the optimal order based on PROMPT
-        ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
-
-        # 3. Map back to NeuralNodes
-        # Ensure we strictly respect the cooldown even if Router suggests it
+        # If no standard nodes are available, we skip this and fall through to Safety Net
         final_nodes = []
-        for mid in ranked_ids:
-            if mid not in self.nodes_map:
-                continue
-            node = self.nodes_map[mid]
-            # Check Smart Cooldown (Double check for safety)
-            if node.rate_limit_cooldown_until > now:
-                continue
-            final_nodes.append(node)
+        if available_ids:
+            ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
+
+            # 3. Map back to NeuralNodes
+            for mid in ranked_ids:
+                if mid not in self.nodes_map:
+                    continue
+                node = self.nodes_map[mid]
+                if node.rate_limit_cooldown_until > now:
+                    continue
+                final_nodes.append(node)
+
+        # 4. Append Safety Net at the very end
+        if SAFETY_NET_MODEL_ID in self.nodes_map:
+            final_nodes.append(self.nodes_map[SAFETY_NET_MODEL_ID])
 
         return final_nodes
 
@@ -391,6 +401,9 @@ class NeuralRoutingMesh:
         quality_score: float,
     ) -> None:
         """Record success metrics for a node."""
+        if node.model_id == SAFETY_NET_MODEL_ID:
+            return  # Do not record metrics for safety net
+
         self.omni_router.record_outcome(
             model_id=node.model_id,
             prompt=prompt,
@@ -414,29 +427,31 @@ class NeuralRoutingMesh:
         """Record metrics for empty response."""
         logger.warning(f"Node [{node.model_id}] returned empty content despite streaming data.")
 
-        self.omni_router.record_outcome(
-            model_id=node.model_id,
-            prompt=prompt,
-            success=False,
-            latency_ms=duration_ms,
-            quality_score=0.0,
-        )
+        if node.model_id != SAFETY_NET_MODEL_ID:
+            self.omni_router.record_outcome(
+                model_id=node.model_id,
+                prompt=prompt,
+                success=False,
+                latency_ms=duration_ms,
+                quality_score=0.0,
+            )
 
-        _performance_optimizer.record_request(
-            model_id=node.model_id,
-            success=False,
-            latency_ms=duration_ms,
-            tokens=0,
-            quality_score=0.0,
-            empty_response=True,
-        )
+            _performance_optimizer.record_request(
+                model_id=node.model_id,
+                success=False,
+                latency_ms=duration_ms,
+                tokens=0,
+                quality_score=0.0,
+                empty_response=True,
+            )
 
         errors.append(f"{node.model_id}: Empty response despite streaming")
 
     def _handle_rate_limit_error(self, node: NeuralNode, prompt: str, errors: list[str]) -> None:
         """Handle rate limit error."""
         node.circuit_breaker.record_saturation()
-        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
+        if node.model_id != SAFETY_NET_MODEL_ID:
+            self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
         logger.info(
             f"Failover triggered from [{node.model_id}] due to Rate Limit (429). "
             f"Finding next available node..."
@@ -453,16 +468,17 @@ class NeuralRoutingMesh:
     ) -> None:
         """Handle connection error."""
         node.circuit_breaker.record_failure()
-        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
+        if node.model_id != SAFETY_NET_MODEL_ID:
+            self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
-        _performance_optimizer.record_request(
-            model_id=node.model_id,
-            success=False,
-            latency_ms=0,
-            tokens=0,
-            quality_score=0.0,
-            empty_response=False,
-        )
+            _performance_optimizer.record_request(
+                model_id=node.model_id,
+                success=False,
+                latency_ms=0,
+                tokens=0,
+                quality_score=0.0,
+                empty_response=False,
+            )
 
         if global_has_yielded:
             logger.critical(
@@ -486,7 +502,8 @@ class NeuralRoutingMesh:
     ) -> None:
         """Handle unexpected error."""
         node.circuit_breaker.record_failure()
-        self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
+        if node.model_id != SAFETY_NET_MODEL_ID:
+            self.omni_router.record_outcome(node.model_id, prompt, success=False, latency_ms=0)
 
         if global_has_yielded:
             logger.critical(
@@ -537,7 +554,7 @@ class NeuralRoutingMesh:
 
             self._record_success_metrics(node, prompt, duration_ms, full_content, quality_score)
 
-            if prompt and full_response_chunks:
+            if prompt and full_response_chunks and node.model_id != SAFETY_NET_MODEL_ID:
                 cognitive_engine = get_cognitive_engine()
                 cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
 
@@ -561,6 +578,7 @@ class NeuralRoutingMesh:
 
         if not priority_nodes:
             logger.error("No available nodes - all circuits are open or no models configured")
+            # If even Safety Net is somehow missing, we are in trouble.
             raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         for node in priority_nodes:
@@ -606,6 +624,21 @@ class NeuralRoutingMesh:
         """
         Internal generator for a specific node with Retry Logic.
         """
+        # 🛡️ SAFETY NET LOGIC
+        if node.model_id == SAFETY_NET_MODEL_ID:
+            logger.warning("⚠️ Engaging Safety Net Protocol (All external models failed).")
+            safety_message = (
+                "⚠️ **System Alert**: The AI Neural Mesh is currently experiencing high load or connectivity issues. "
+                "Unable to reach external intelligence providers (OpenAI/Anthropic/Google). "
+                "\n\nThis is an automated failsafe response. Please try again in a few moments."
+            )
+            # Yield simulated chunks
+            words = safety_message.split(" ")
+            for word in words:
+                yield {"choices": [{"delta": {"content": word + " "}}]}
+                await asyncio.sleep(0.05)  # Simulate typing
+            return
+
         client = ConnectionManager.get_client()
 
         attempt = 0
