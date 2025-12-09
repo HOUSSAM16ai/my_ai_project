@@ -43,3 +43,9 @@ python-json-logger>=4.0.0
 psutil==5.9.8
 pytest-factoryboy==2.8.1
 PyYAML==6.0.1
+hypothesis>=6.92.1
+mutmut>=2.4.4
+safety>=2.3.5
+bandit>=1.7.6
+junit-xml>=1.9
+anyio>=3.7.1
