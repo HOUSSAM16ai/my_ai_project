@@ -33,6 +33,8 @@ from app.core.ai_client_factory import (
 )
 
 # New Modular Helpers
+from app.ai.application.payload_builder import PayloadBuilder
+from app.ai.application.response_normalizer import ResponseNormalizer
 from app.services.llm.circuit_breaker import CircuitBreaker
 from app.services.llm.cost_manager import CostManager
 from app.services.llm.retry_strategy import RetryStrategy
@@ -64,33 +66,6 @@ def _should_force_mock() -> bool:
 
 def _bool_env(name: str) -> bool:
     return os.getenv(name, "0") == "1"
-
-
-def _sanitize(text: str) -> str:
-    _LLM_SANITIZE_OUTPUT = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
-    if not _LLM_SANITIZE_OUTPUT or not isinstance(text, str):
-        return text
-
-    # Hardcoded common sensitive markers
-    _SENSITIVE_MARKERS = ("OPENAI_API_KEY=", "sk-or-", "sk-")
-    sanitized = text.replace("\r", "")
-    for marker in _SENSITIVE_MARKERS:
-        if marker in sanitized:
-            sanitized = sanitized.replace(marker, f"[REDACTED:{marker}]")
-
-    # Regex based sanitization
-    # Note: importing json here just for this
-    import json
-
-    try:
-        _SANITIZE_REGEXES = json.loads(os.getenv("LLM_SANITIZE_REGEXES_JSON", "[]"))
-    except Exception:
-        _SANITIZE_REGEXES = []
-
-    for pattern in _SANITIZE_REGEXES:
-        with contextlib.suppress(Exception):
-            sanitized = re.sub(pattern, "[REDACTED_PATTERN]", sanitized)
-    return sanitized
 
 
 def _maybe_stream_simulated(full_text: str, chunk_size: int = 100) -> Generator[str, None, None]:
@@ -184,32 +159,6 @@ def register_llm_post_hook(fn: Callable[[dict[str, Any], dict[str, Any]], None])
 # ======================================================================================
 
 
-def _prepare_payload(
-    model: str,
-    messages: list[dict[str, str]],
-    tools: list[dict[str, Any]] | None,
-    tool_choice: str | None,
-    temperature: float,
-    max_tokens: int | None,
-    extra: dict[str, Any] | None,
-) -> dict[str, Any]:
-    payload = {
-        "model": model,
-        "messages": messages,
-        "tools": tools,
-        "tool_choice": tool_choice,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "extra": extra or {},
-    }
-
-    _LLM_FORCE_MODEL = os.getenv("LLM_FORCE_MODEL", "").strip() or None
-    if _LLM_FORCE_MODEL:
-        payload["model"] = _LLM_FORCE_MODEL
-
-    return payload
-
-
 def invoke_chat(
     model: str,
     messages: list[dict[str, str]],
@@ -242,7 +191,17 @@ def invoke_chat(
     client = get_llm_client()
     cost_manager = CostManager()
 
-    payload = _prepare_payload(model, messages, tools, tool_choice, temperature, max_tokens, extra)
+    # REFACTORED: Use PayloadBuilder
+    builder = PayloadBuilder()
+    payload = builder.build(
+        model=model,
+        messages=messages,
+        tools=tools,
+        tool_choice=tool_choice,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        extra=extra,
+    )
 
     # Pre-hooks
     for hook in _PRE_HOOKS:
@@ -255,6 +214,9 @@ def invoke_chat(
 
     start_build = time.time()
     retry_schedule: list[float] = []
+
+    # REFACTORED: Use ResponseNormalizer
+    normalizer = ResponseNormalizer(cost_manager=cost_manager)
 
     def _execute_request_with_retry() -> dict[str, Any]:
         attempts = 0
@@ -276,53 +238,16 @@ def invoke_chat(
                 )
                 latency_ms = (time.perf_counter() - t0) * 1000.0
 
-                # Extract Data
-                content = getattr(completion.choices[0].message, "content", "")
-                tool_calls = getattr(completion.choices[0].message, "tool_calls", None)
-                usage = getattr(completion, "usage", {}) or {}
-
-                # Normalize usage to dict if it's an object
-                if hasattr(usage, "prompt_tokens"):
-                    pt = usage.prompt_tokens
-                    ct = usage.completion_tokens
-                    total = usage.total_tokens
-                else:
-                    # Handle dict-like or missing
-                    usage_dict = usage if isinstance(usage, dict) else {}
-                    pt = usage_dict.get("prompt_tokens", 0)
-                    ct = usage_dict.get("completion_tokens", 0)
-                    total = usage_dict.get("total_tokens", 0)
-
-                # Empty Response Check
-                if (
-                    content is None or (isinstance(content, str) and content.strip() == "")
-                ) and not tool_calls:
-                    _LOG.warning(f"Empty response from {payload['model']} at attempt {attempts}")
-                    raise RuntimeError(f"Empty response (no content/tools). Attempt {attempts}")
-
-                # Success Path
-                content = _sanitize(content)
-                cost = cost_manager.estimate_cost(payload["model"], pt, ct)
-
-                cost_manager.update_metrics(pt, ct, total, latency_ms, cost)
-
-                envelope = {
-                    "content": content,
-                    "tool_calls": tool_calls,
-                    "usage": {"prompt_tokens": pt, "completion_tokens": ct, "total_tokens": total},
-                    "model": payload["model"],
-                    "latency_ms": round(latency_ms, 2),
-                    "cost": cost,
-                    "raw": completion,
-                    "meta": {
-                        "attempts": attempts,
-                        "forced_model": False,  # Simplified
-                        "stream": False,
-                        "start_ts": start_build,
-                        "end_ts": time.time(),
-                        "retry_schedule": retry_schedule,
-                    },
-                }
+                # REFACTORED: Delegate normalization to ResponseNormalizer
+                envelope = normalizer.normalize(
+                    completion=completion,
+                    payload=payload,
+                    latency_ms=latency_ms,
+                    start_ts=start_build,
+                    end_ts=time.time(),
+                    retry_schedule=retry_schedule,
+                    attempts=attempts,
+                )
 
                 # Post-hooks
                 for hook in _POST_HOOKS:
@@ -368,7 +293,21 @@ def invoke_chat(
         envelope = _execute_request_with_retry()
         full = envelope["content"]
         for chunk in _maybe_stream_simulated(full):
-            yield {"delta": _sanitize(chunk)}
+            # _sanitize is now internal to normalizer, but _stream_gen needs access.
+            # We can re-use normalizer._sanitize or expose it.
+            # Since _maybe_stream_simulated simulates chunks from FULL content which is already sanitized in envelope["content"],
+            # we don't strictly need to sanitize chunks again.
+            # However, `_sanitize` was called on each chunk in original code.
+            # But envelope["content"] IS sanitized.
+            # So `full` is sanitized.
+            # `_maybe_stream_simulated` yields substrings of `full`.
+            # So they are already sanitized.
+            # BUT the original code called `_sanitize(chunk)`.
+            # If `full` is "ab", sanitize("a") and sanitize("b") vs sanitize("ab").
+            # Usually redundant.
+            # To be safe and identical:
+            sanitized_chunk = normalizer._sanitize(chunk)
+            yield {"delta": sanitized_chunk}
         envelope["meta"]["stream"] = True
         yield envelope
 

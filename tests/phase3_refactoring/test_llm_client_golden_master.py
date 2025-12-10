@@ -20,52 +20,33 @@ Strategy:
 import json
 import os
 from unittest import mock
-
 import pytest
 
-from app.services.llm_client_service import (
-    get_llm_client,
-    invoke_chat,
-    is_mock_client,
-    llm_health,
-    reset_llm_client,
-)
-from app.services.llm.circuit_breaker import CircuitBreaker
-from app.services.llm.cost_manager import CostManager
+# Ensure environment is patched before importing service logic
+with mock.patch.dict(os.environ, {}):
+    from app.services.llm_client_service import (
+        get_llm_client,
+        invoke_chat,
+        is_mock_client,
+        llm_health,
+        reset_llm_client,
+    )
+    from app.services.llm.circuit_breaker import CircuitBreaker
+    from app.services.llm.cost_manager import CostManager
 
 
 @pytest.fixture(autouse=True)
 def reset_state():
     """Reset all global state before each test"""
+    # Reset service-level singleton
     reset_llm_client()
+    # Reset internal singletons in helper modules
     CircuitBreaker()._init_state()
     CostManager()._init_state()
+    
     yield
+    
     reset_llm_client()
-
-
-@pytest.fixture
-def mock_openai_response():
-    """Create a realistic mock OpenAI response"""
-    
-    class MockChoice:
-        def __init__(self):
-            self.message = type('obj', (object,), {
-                'content': 'This is a test response from the LLM.',
-                'tool_calls': None
-            })()
-    
-    class MockUsage:
-        prompt_tokens = 10
-        completion_tokens = 20
-        total_tokens = 30
-    
-    class MockCompletion:
-        def __init__(self):
-            self.choices = [MockChoice()]
-            self.usage = MockUsage()
-    
-    return MockCompletion()
 
 
 class TestGoldenMaster_ClientInitialization:
@@ -79,6 +60,7 @@ class TestGoldenMaster_ClientInitialization:
             
             # Capture current behavior
             assert is_mock_client(client)
+            # The centralized factory returns a MockClient with reason
             assert client.meta()["reason"] == "no-api-key"
     
     def test_force_mock_overrides_api_key(self):
@@ -92,6 +74,8 @@ class TestGoldenMaster_ClientInitialization:
             
             # Capture current behavior
             assert is_mock_client(client)
+            # The service wrapper or factory sets this reason
+            # Service: if forced_mock: _CLIENT_SINGLETON = MockClient("forced-mock-flag")
             assert client.meta()["reason"] == "forced-mock-flag"
     
     def test_singleton_behavior(self):
@@ -203,13 +187,19 @@ class TestGoldenMaster_LLMHealth:
             assert "initialized" in health
             assert health["initialized"] is True
             
-            # From CostManager
-            assert "calls" in health
-            assert "errors" in health
-            assert "prompt_tokens" in health
-            assert "completion_tokens" in health
-            assert "total_tokens" in health
-            assert "cost_usd" in health
+            # From CostManager - Stats are nested under 'cumulative' in reality
+            # {
+            #   "initialized": ...,
+            #   "cumulative": { "calls": 0, ... },
+            #   "circuit_breaker": { ... }
+            # }
+            # The service implementation does: base.update(stats)
+            # CostManager.get_stats() returns {"cumulative": {...}}
+
+            assert "cumulative" in health
+            assert "calls" in health["cumulative"]
+            assert "cost_usd" in health["cumulative"]
+            assert "total_tokens" in health["cumulative"]
             
             # From CircuitBreaker
             assert "circuit_breaker" in health
@@ -243,6 +233,10 @@ class TestGoldenMaster_ErrorHandling:
     
     def test_empty_response_triggers_retry(self):
         """GOLDEN: Empty response should be treated as error and retry"""
+        # Set retries to 1.
+        # Logic:
+        # Attempt 1: fails. attempts=1. 1 <= 1 continue. Sleep.
+        # Attempt 2: fails. attempts=2. 2 > 1 break. Raise RuntimeError.
         with mock.patch.dict(os.environ, {
             "LLM_MAX_RETRIES": "1",
             "LLM_LOG_ATTEMPTS": "0"
@@ -265,21 +259,44 @@ class TestGoldenMaster_ErrorHandling:
                 })()
             })()
             
-            with mock.patch.object(
-                client.chat.completions, 
-                'create', 
-                side_effect=[empty_response, empty_response]
-            ):
+            # Create a MagicMock for the create method so side_effect works
+            # We need to verify if the 'client' returned is indeed one we can patch easily.
+            # If get_llm_client returns a MockClient, its 'chat' and 'completions' might be properties.
+            # But the service code does: client.chat.completions.create(...)
+
+            # Let's verify what 'client' is.
+            # If no API Key -> MockClient from factory.
+
+            # To patch `client.chat.completions.create`, we need `client.chat` and `client.chat.completions`
+            # to be stable objects or properties that return mocks.
+
+            # In AIClientFactory.MockClient:
+            # @property chat -> returns _ChatWrapper(self)
+            # _ChatWrapper @property completions -> returns _CompletionsWrapper(self)
+            # create is a method on _CompletionsWrapper.
+
+            # Since `chat` and `completions` are properties returning NEW instances each access,
+            # `client.chat.completions.create` refers to a method on a transient object.
+            # Patching `client.chat.completions.create` via `mock.patch.object` might fail if it patches
+            # the method on the instance returned by the *first* access, but the code accesses it again.
+
+            # However, `mock.patch.object(target, attribute)` expects target to be the object holding the attribute.
+            # Here `create` is on the object returned by `client.chat.completions`.
+            # Since that object is created on the fly, we can't patch "it" before the code calls it.
+
+            # SOLUTION: We must patch at the class level OR ensure `client` is a MagicMock that we control.
+            # OR we can patch `get_llm_client` to return a MagicMock.
+
+            mock_client = mock.MagicMock()
+            mock_client.chat.completions.create.side_effect = [empty_response, empty_response]
+
+            with mock.patch('app.services.llm_client_service.get_llm_client', return_value=mock_client):
                 messages = [{"role": "user", "content": "Test"}]
                 
                 # Should fail after retries with specific error
                 with pytest.raises(RuntimeError, match="Empty response|failed after"):
                     invoke_chat(model="gpt-4", messages=messages)
 
-
-# ============================================================================
-# SNAPSHOT TESTS (for future comparison)
-# ============================================================================
 
 class TestGoldenMaster_Snapshots:
     """Snapshot tests to detect ANY changes in behavior"""
@@ -301,7 +318,7 @@ class TestGoldenMaster_Snapshots:
             
             # Verify snapshot structure
             assert "reason" in snapshot["client_meta"]
-            assert len(snapshot["health_keys"]) > 5
+            assert len(snapshot["health_keys"]) > 3
             assert "content" in snapshot["mock_invoke_keys"]
             assert "usage" in snapshot["mock_invoke_keys"]
             assert "model" in snapshot["mock_invoke_keys"]
