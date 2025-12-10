@@ -17,7 +17,7 @@ async def test_create_unified_async_engine_postgres_hardening():
     # Test Data
     postgres_url = "postgresql+asyncpg://user:pass@localhost:5432/db"
 
-    with mock.patch("app.core.engine_factory.create_async_engine") as mock_create:
+    with mock.patch("app.core.engine.factory.create_async_engine") as mock_create:
         mock_create.return_value = mock.Mock(spec=AsyncEngine)
 
         # 1. Basic Creation
@@ -65,7 +65,7 @@ async def test_create_unified_async_engine_sqlite():
     """
     sqlite_url = "sqlite+aiosqlite:///./test.db"
 
-    with mock.patch("app.core.engine_factory.create_async_engine") as mock_create:
+    with mock.patch("app.core.engine.factory.create_async_engine") as mock_create:
         create_unified_async_engine(database_url=sqlite_url)
 
         call_args = mock_create.call_args
@@ -121,7 +121,7 @@ async def test_create_unified_async_engine_protocol_upgrade():
     """
     raw_url = "postgresql://user:pass@localhost:5432/db"
 
-    with mock.patch("app.core.engine_factory.create_async_engine") as mock_create:
+    with mock.patch("app.core.engine.factory.create_async_engine") as mock_create:
         create_unified_async_engine(database_url=raw_url)
 
         call_args = mock_create.call_args
@@ -145,7 +145,7 @@ async def test_pgbouncer_compatibility_settings():
         "postgresql+asyncpg://user:pass@project.pooler.supabase.com:6543/postgres?ssl=require"
     )
 
-    with mock.patch("app.core.engine_factory.create_async_engine") as mock_create:
+    with mock.patch("app.core.engine.factory.create_async_engine") as mock_create:
         mock_create.return_value = mock.Mock(spec=AsyncEngine)
 
         create_unified_async_engine(database_url=supabase_pooler_url)
