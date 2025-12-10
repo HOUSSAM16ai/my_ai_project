@@ -21,13 +21,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+import warnings
+
 try:
     from radon.complexity import cc_visit
     from radon.metrics import h_visit, mi_visit
     RADON_AVAILABLE = True
 except ImportError:
     RADON_AVAILABLE = False
-    print("⚠️  Warning: radon not installed. Install with: pip install radon")
+    warnings.warn("radon not installed. Install with: pip install radon", UserWarning)
 
 
 @dataclass
@@ -144,12 +146,13 @@ class SimplicityValidator:
             "__pycache__",
             ".git",
             "migrations",
-            "tests",
             "venv",
             ".venv",
             "node_modules",
         ]
-        return any(pattern in str(file_path) for pattern in skip_patterns)
+        # Use path-based matching for proper directory detection
+        parts = file_path.parts
+        return any(pattern in parts for pattern in skip_patterns) or "tests" in parts
     
     def _analyze_file(self, file_path: Path):
         """Analyze a single Python file."""
@@ -198,7 +201,7 @@ class SimplicityValidator:
     
     def _analyze_class(self, cls: ast.ClassDef, file_path: Path):
         """Analyze a class for SRP violations."""
-        methods = [node for node in cls.body if isinstance(node, ast.FunctionDef)]
+        methods = [node for node in cls.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
         
         # Estimate lines (rough approximation)
         if hasattr(cls, 'end_lineno') and hasattr(cls, 'lineno'):
@@ -308,10 +311,14 @@ class SimplicityValidator:
         
         for child in ast.walk(node):
             # Each decision point adds 1 to complexity
-            if isinstance(child, (ast.If, ast.While, ast.For, ast.ExceptHandler)):
+            if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, 
+                                 ast.ExceptHandler, ast.With, ast.AsyncWith)):
                 complexity += 1
             elif isinstance(child, ast.BoolOp):
                 complexity += len(child.values) - 1
+            elif isinstance(child, (ast.Lambda, ast.ListComp, ast.DictComp, 
+                                   ast.SetComp, ast.GeneratorExp)):
+                complexity += 1
         
         return complexity
     
