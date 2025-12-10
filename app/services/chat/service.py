@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING
 from app.core.resilience import CircuitBreaker, get_circuit_breaker, reset_all_circuit_breakers
 from app.services.chat.handlers.base import ChatContext
 from app.services.chat.handlers.file_handler import handle_file_read, handle_file_write
-from app.services.chat.handlers.mission_handler import handle_deep_analysis, handle_mission
+from app.services.chat.handlers.mission_handler import handle_mission
+from app.services.chat.handlers.genesis_handler import handle_genesis_analysis
 from app.services.chat.handlers.search_handler import handle_code_search
 from app.services.chat.handlers.system_handler import handle_help, handle_project_index
 from app.services.chat.intent import ChatIntent, IntentDetector, IntentResult
@@ -121,7 +122,8 @@ class ChatOrchestratorService:
         self, question: str, user_id: int, ai_client: AIClient
     ) -> AsyncGenerator[str, None]:
         self._ensure_initialized()
-        async for chunk in handle_deep_analysis(self._context, question, user_id, ai_client):
+        # REPLACED: Use Genesis Agent for deep analysis instead of the old handler
+        async for chunk in handle_genesis_analysis(question, user_id):
             yield chunk
 
     async def handle_help(self) -> AsyncGenerator[str, None]:

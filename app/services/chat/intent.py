@@ -62,7 +62,7 @@ class IntentDetector:
             # Code Quality & Issues
             r"(?:what(?:'s| is| are))\s+(?:the\s+)?(?:issues?|problems?|bugs?|errors?|warnings?)\s+(?:in|with|of)",
             r"(?:why\s+(?:is|are|does|do))\s+.+?\s+(?:not\s+working|failing|broken|wrong)",
-            r"(?:find|identify|detect|locate)\s+(?:the\s+)?(?:bug|issue|problem|error|bottleneck)",
+            r"(?:find|identify|detect|locate)\s+(?:the\s+)?(?:bug|issue|problem|error|bottleneck|vulnerability|flaw)",
             # Improvement & Optimization
             r"(?:how\s+(?:can|should|do))\s+(?:we|i)\s+(?:improve|optimize|enhance|refactor|fix)",
             r"(?:suggest|recommend|propose)\s+(?:improvements?|optimizations?|changes?|fixes?)",
@@ -76,10 +76,12 @@ class IntentDetector:
             r"(?:does|do)\s+(?:this|these|the)\s+(?:.+?)\s+(?:follow|adhere to|comply with|violate)",
             # Arabic patterns
             r"(?:اشرح|وضح|صف|كيف)\s+(?:يعمل|تعمل|بنية|هيكل|تصميم|نظام)",
-            r"(?:ما\s+(?:هو|هي|هم))\s+(?:الغرض|الدور|الوظيفة|المسؤولية|المشاكل|الأخطاء)",
+            r"(?:ما\s+(?:هو|هي|هم))\s+(?:الغرض|الدور|الوظيفة|المسؤولية|المشاكل|الأخطاء|الثغرات)",
             r"(?:حلل|راجع|قيّم|افحص)\s+(?:الكود|النظام|الهيكل|التصميم|التنفيذ|قاعدة\s+البيانات)",
             r"(?:كيف\s+(?:يمكن|ينبغي|نستطيع))\s+(?:تحسين|تطوير|إصلاح|تعديل)",
             r"(?:اقترح|أوصي)\s+(?:تحسينات|تطويرات|تعديلات|إصلاحات)",
+            r"(?:هل\s+(?:توجد|هناك))\s+(?:مشاكل|أخطاء|ثغرات|bugs)",
+            r"(?:اين|أين)\s+(?:توجد|تقع)\s+(?:المشاكل|الأخطاء|الثغرات|المناطق الحرجة)",
         ],
         ChatIntent.CODE_SEARCH: [
             r"(?:find|search|look for|where is|locate)\s+(?:code\s+)?(?:for\s+)?['\"]?(.+?)['\"]?(?:\s+in|\s*$)",
