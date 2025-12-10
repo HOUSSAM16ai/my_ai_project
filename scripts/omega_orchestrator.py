@@ -30,25 +30,26 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 try:
     from scripts.universal_repo_sync import check_workload_identity, sync_remotes
 except ImportError as e:
+    # Use print here since logging isn't configured yet
     print(f"CRITICAL: Failed to load sync module: {e}")
     sys.exit(1)
+
+# Configure High-Order Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | Ω-CORE | %(levelname)s | %(message)s")
+logger = logging.getLogger("OmegaOrchestrator")
 
 # Optional modules - don't fail if missing
 try:
     from scripts.security_gate import NeuralStaticAnalyzer
 except ImportError:
     NeuralStaticAnalyzer = None
-    print("Warning: Security gate module not available")
+    logger.warning("Security gate module not available")
 
 try:
     from app.services.agentic_devops import agentic_devops
 except ImportError:
     agentic_devops = None
-    print("Warning: Agentic DevOps module not available")
-
-# Configure High-Order Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | Ω-CORE | %(levelname)s | %(message)s")
-logger = logging.getLogger("OmegaOrchestrator")
+    logger.warning("Agentic DevOps module not available")
 
 
 class OmegaCore:
