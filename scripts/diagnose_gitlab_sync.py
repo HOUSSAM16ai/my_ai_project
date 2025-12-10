@@ -69,7 +69,8 @@ except:
 print_header("Test 3: Git Configuration")
 try:
     result = subprocess.run(["git", "remote", "-v"], capture_output=True, text=True, check=True)
-    if "github.com" in result.stdout:
+    # Check if any remote points to github.com (read-only check, not URL sanitization)
+    if "github.com" in result.stdout.lower():
         print_success("GitHub remote configured")
     else:
         print_warning("GitHub remote not found")
