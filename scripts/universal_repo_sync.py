@@ -109,6 +109,20 @@ def resolve_gitlab_url(token, project_id):
         raise
 
 
+def check_workload_identity():
+    """
+    Checks if Workload Identity (OIDC) is available in the current environment.
+    Returns True if available, False otherwise.
+    """
+    # Check for GitHub OIDC token
+    if os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL") and os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN"):
+        return True
+    # Check for GitLab OIDC token
+    if os.environ.get("CI_JOB_JWT_V2"):
+        return True
+    return False
+
+
 def ensure_complete_history():
     """
     Ensures the local repository has complete history and local branches for all remote branches.
