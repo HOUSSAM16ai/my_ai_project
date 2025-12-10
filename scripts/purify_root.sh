@@ -42,12 +42,18 @@ echo "📦 Moving files to archive..."
 
 # Move FIX_* files
 echo "   Moving FIX_* files..."
-mv FIX_*.md docs/archive/fixes/ 2>/dev/null || true
-mv *_FIX*.md docs/archive/fixes/ 2>/dev/null || true
+if compgen -G "FIX_*.md" > /dev/null; then
+    mv FIX_*.md docs/archive/fixes/ 2>/dev/null || echo "   Warning: Some FIX_*.md files could not be moved"
+fi
+if compgen -G "*_FIX*.md" > /dev/null; then
+    mv *_FIX*.md docs/archive/fixes/ 2>/dev/null || echo "   Warning: Some *_FIX*.md files could not be moved"
+fi
 
 # Move GUIDE files
 echo "   Moving *_GUIDE*.md files..."
-mv *_GUIDE*.md docs/archive/guides/ 2>/dev/null || true
+if compgen -G "*_GUIDE*.md" > /dev/null; then
+    mv *_GUIDE*.md docs/archive/guides/ 2>/dev/null || echo "   Warning: Some GUIDE files could not be moved"
+fi
 mv *_QUICK_REF*.md docs/archive/guides/ 2>/dev/null || true
 mv *_QUICKSTART*.md docs/archive/guides/ 2>/dev/null || true
 
