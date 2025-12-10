@@ -78,8 +78,9 @@ class OmegaCore:
         """
         if not self.security_engine:
             logger.warning("⚠️ Security engine not available, skipping security scan.")
-            # In monitor mode, allow to proceed with warning
-            # In autonomous/sync mode, this should be safe as no self-healing happens
+            # When security engine is unavailable, proceed with caution
+            # In monitor mode: safe to proceed (read-only operations)
+            # Note: Self-healing (in autonomous mode) requires security engine
             logger.info("ℹ️ Proceeding without security scan (security engine unavailable)")
             return True
             
@@ -124,8 +125,8 @@ class OmegaCore:
         Activates Agentic DevOps to repair code.
         
         Returns:
-            bool: True if self-healing was attempted (regardless of success), 
-                  False if agentic_devops is unavailable.
+            bool: False if agentic_devops is unavailable (no self-healing attempted),
+                  True if self-healing was attempted (regardless of individual fix success).
         """
         if not agentic_devops:
             logger.warning("🚑 Agentic DevOps not available, skipping self-healing...")
