@@ -1,10 +1,11 @@
 name: "Ω Omega Intelligence Pipeline"
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  # Disabled automatic triggers to save GitHub Actions minutes
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main ]
   workflow_dispatch:
 
 permissions:

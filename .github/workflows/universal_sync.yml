@@ -1,5 +1,16 @@
 name: Universal Repository Synchronization Protocol
 
+# =============================================================================
+# This workflow syncs the repository to GitLab to reduce GitHub Actions usage
+# It only runs on push to sync changes - NOT for testing/quality checks
+# 
+# Required Secrets (configure in repository settings):
+#   - SYNC_GITHUB_TOKEN: GitHub Personal Access Token
+#   - SYNC_GITHUB_ID: GitHub Repository ID  
+#   - SYNC_GITLAB_TOKEN: GitLab Personal Access Token
+#   - SYNC_GITLAB_ID: GitLab Project ID
+# =============================================================================
+
 on:
   push:
     branches:

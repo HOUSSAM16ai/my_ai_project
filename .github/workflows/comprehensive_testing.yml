@@ -3,14 +3,16 @@
 # =============================================================================
 # Enforces 100% coverage and runs all test types
 # Blocks merge if coverage drops below 100%
+# DISABLED: Only runs manually to save GitHub Actions minutes
 
 name: 🧪 Comprehensive Testing
 
 on:
-  push:
-    branches: ["main", "develop", "feature/*"]
-  pull_request:
-    branches: ["main", "develop"]
+  # Disabled automatic triggers to save GitHub Actions minutes
+  # push:
+  #   branches: ["main", "develop", "feature/*"]
+  # pull_request:
+  #   branches: ["main", "develop"]
   workflow_dispatch:
 
 permissions:
