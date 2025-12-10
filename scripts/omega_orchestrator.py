@@ -78,6 +78,9 @@ class OmegaCore:
         """
         if not self.security_engine:
             logger.warning("⚠️ Security engine not available, skipping security scan.")
+            # In monitor mode, allow to proceed with warning
+            # In autonomous/sync mode, this should be safe as no self-healing happens
+            logger.info("ℹ️ Proceeding without security scan (security engine unavailable)")
             return True
             
         logger.info("🛡️ Initiating Omega Security Protocol...")
@@ -119,10 +122,14 @@ class OmegaCore:
     def engage_self_healing(self, anomalies):
         """
         Activates Agentic DevOps to repair code.
+        
+        Returns:
+            bool: True if self-healing was attempted (regardless of success), 
+                  False if agentic_devops is unavailable.
         """
         if not agentic_devops:
             logger.warning("🚑 Agentic DevOps not available, skipping self-healing...")
-            return
+            return False
             
         logger.info("🚑 Engaging Autonomous Repair Systems...")
         for anomaly in anomalies:
@@ -140,6 +147,8 @@ class OmegaCore:
                     logger.error("❌ Repair Failed.")
             else:
                 logger.info("ℹ️ No autonomous fix available. Human intervention required.")
+        
+        return True
 
     def run_sync_protocol(self):
         """

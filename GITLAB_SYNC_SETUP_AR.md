@@ -47,7 +47,11 @@
 استخدم GitHub API:
 ```bash
 # استبدل USERNAME و REPO_NAME بالقيم الصحيحة
-curl https://api.github.com/repos/USERNAME/REPO_NAME | grep '"id"'
+# باستخدام jq (أكثر أماناً):
+curl -s https://api.github.com/repos/USERNAME/REPO_NAME | jq '.id'
+
+# أو بدون jq:
+curl -s https://api.github.com/repos/USERNAME/REPO_NAME | grep '"id"' | head -1
 ```
 
 أو افتح المستودع وشاهد الـ URL، الرقم الموجود هو الـ ID.
