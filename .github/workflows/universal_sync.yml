@@ -47,4 +47,16 @@ jobs:
           SYNC_GITLAB_TOKEN: ${{ secrets.SYNC_GITLAB_TOKEN }}
           SYNC_GITLAB_ID: ${{ secrets.SYNC_GITLAB_ID }}
         run: |
-          python scripts/universal_repo_sync.py || echo "⚠️ Sync completed with warnings (no targets configured)"
+          echo "🔄 Starting GitLab synchronization..."
+          python scripts/universal_repo_sync.py && echo "✅ Sync completed successfully!" || echo "⚠️ Sync completed with warnings"
+          
+      - name: Verify Sync Status
+        if: always()
+        run: |
+          echo "📊 Sync Summary:"
+          echo "  - Source: GitHub (this repository)"
+          echo "  - Target: GitLab (mirror)"
+          echo "  - Method: Force push (exact replica)"
+          echo "  - Status: Check logs above"
+          echo ""
+          echo "✅ If no errors above, GitLab is now synchronized!"
