@@ -254,6 +254,44 @@ db-status:
 	python check_migrations_status.py
 
 # =============================================================================
+# SIMPLICITY - Superhuman Simplicity Implementation
+# =============================================================================
+simplicity-validate:
+	@echo "$(BLUE)🎯 Running simplicity validator...$(NC)"
+	python tools/simplicity_validator.py --directory app --report-file SIMPLICITY_VALIDATION_REPORT.md
+	@echo "$(GREEN)✅ Simplicity validation complete!$(NC)"
+
+simplicity-purify:
+	@echo "$(BLUE)🧹 Purifying root directory...$(NC)"
+	bash scripts/purify_root.sh
+	@echo "$(GREEN)✅ Root purification complete!$(NC)"
+
+simplicity-report:
+	@echo "$(BLUE)📊 Generating simplicity report...$(NC)"
+	@echo "$(YELLOW)See SIMPLICITY_VALIDATION_REPORT.md for details$(NC)"
+	@cat SIMPLICITY_VALIDATION_REPORT.md 2>/dev/null || echo "Run 'make simplicity-validate' first"
+
+simplicity-help:
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(BLUE)  🎯 Superhuman Simplicity Commands$(NC)"
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"
+	@echo ""
+	@echo "$(GREEN)Available commands:$(NC)"
+	@echo "  make simplicity-validate   - Validate code against simplicity principles"
+	@echo "  make simplicity-purify     - Clean root directory (move docs to archive)"
+	@echo "  make simplicity-report     - View current simplicity report"
+	@echo ""
+	@echo "$(GREEN)Documentation:$(NC)"
+	@echo "  • SIMPLICITY_PRINCIPLES_GUIDE_AR.md  - Full Arabic guide"
+	@echo "  • SIMPLICITY_PRINCIPLES_GUIDE_EN.md  - Full English guide"
+	@echo "  • SIMPLICITY_QUICK_REFERENCE.md      - Quick reference"
+	@echo "  • SUPERHUMAN_SIMPLICITY_ARCHITECTURE.md - 7 principles"
+	@echo "  • SUPERHUMAN_SIMPLICITY_FRAMEWORK.md - 72-hour plan"
+	@echo ""
+	@echo "$(YELLOW)Philosophy: \"احذف، ادمج، ثم ابنِ\" - Delete, Merge, then Build$(NC)"
+	@echo "$(BLUE)════════════════════════════════════════════════════════════════$(NC)"
+
+# =============================================================================
 # CLEANUP
 # =============================================================================
 clean:
