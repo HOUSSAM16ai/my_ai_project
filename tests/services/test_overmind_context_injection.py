@@ -78,7 +78,7 @@ def test_codebase_context_summary():
         assert "Overmind CLI Mindgate" in prompt
         assert "Cognitive Map" in prompt
 
-        # Check Metrics
+        # Check Metrics (Updated for Enterprise format)
         assert "LOC=12345" in prompt
         assert "funcs=50" in prompt
 

@@ -10,9 +10,11 @@ def test_context_service_generation():
     # Run the generation
     summary = service._refresh_index()
 
-    assert "Stats:" in summary
-    assert "Python files" in summary
-    assert "Core Modules:" in summary
+    # Updated assertions for "Deep Indexer V2 Enterprise" format
+    assert "### Project Stats" in summary
+    assert "FILES_SCANNED=" in summary
+    assert "### Top Files (by LOC)" in summary
+    assert "### Architecture Layers" in summary
 
     # Check if system prompt gets it
     prompt = service.get_context_system_prompt()
