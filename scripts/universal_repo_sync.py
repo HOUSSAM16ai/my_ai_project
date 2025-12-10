@@ -111,16 +111,19 @@ def resolve_gitlab_url(token, project_id):
 
 def check_workload_identity():
     """
-    Checks if Workload Identity (OIDC) is available in the current environment.
+    Checks if Workload Identity (OIDC) is available in the current CI environment.
     
-    Supported Environments:
+    This function specifically detects OIDC tokens available in CI/CD environments
+    (GitHub Actions and GitLab CI) for secure authentication without storing credentials.
+    
+    Supported CI Environments:
     - GitHub Actions: Checks for ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN
     - GitLab CI: Checks for CI_JOB_JWT_V2
     
     Returns:
-        bool: True if Workload Identity is available in the current environment, 
+        bool: True if Workload Identity/OIDC is available in the current CI environment, 
               False otherwise. This indicates whether OIDC tokens can be used 
-              for authentication with cloud providers.
+              for secure authentication in the current execution context.
     """
     # Check for GitHub OIDC token
     if os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL") and os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN"):
