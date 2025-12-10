@@ -159,7 +159,13 @@ def write_file_if_changed(path: str, content: str, enforce_ext: str | None = Non
                     _touch_layer(data["struct_layer"], "writes")
                 _apply_struct_limit(data)
                 return ToolResult(ok=True, data=data)
-        return write_file(path=path, content=content, enforce_ext=enforce_ext)
+
+        # Only pass enforce_ext if it's provided to avoid validation errors on None
+        kwargs = {"path": path, "content": content}
+        if enforce_ext is not None:
+            kwargs["enforce_ext"] = enforce_ext
+
+        return write_file(**kwargs)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
