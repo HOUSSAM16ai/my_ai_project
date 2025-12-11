@@ -91,23 +91,23 @@ class InMemoryUserSegmentation(UserSegmentationPort):
         Apply segmentation rules to classify user.
         
         Segmentation logic:
-        - NEW_USER: Less than 7 days since signup, few sessions
-        - ACTIVE_USER: Regular engagement, multiple sessions
-        - POWER_USER: High engagement, many events and sessions
+        - NEW: Less than 7 days since signup, few sessions
+        - ACTIVE: Regular engagement, multiple sessions
+        - POWER: High engagement, many events and sessions
         - AT_RISK: Previously active but declining engagement
         - CHURNED: No activity in last 30 days
         """
         # New users (less than 7 days, low activity)
         if days_since_signup < 7:
-            return UserSegment.NEW_USER
+            return UserSegment.NEW
         
         # Power users (high engagement)
         if total_events > 100 and total_sessions > 20:
-            return UserSegment.POWER_USER
+            return UserSegment.POWER
         
         # Active users (regular engagement)
         if total_events > 20 and total_sessions > 5:
-            return UserSegment.ACTIVE_USER
+            return UserSegment.ACTIVE
         
         # At-risk users (some activity but declining)
         if total_events > 10 and total_sessions > 2:
