@@ -1,18 +1,48 @@
-"""Domain layer - Pure business logic and entities."""
+"""Analytics domain layer."""
 
-from app.analytics.domain.entities import Anomaly, BehaviorProfile, UsageMetric, UserJourney
-from app.analytics.domain.interfaces import AnomalyDetector, MetricsRepository, ReportGenerator
-from app.analytics.domain.value_objects import BehaviorPattern, MetricType, TimeGranularity
+from .enums import ABTestVariant, EventType, UserSegment
+from .models import (
+    ABTestResults,
+    CohortAnalysis,
+    ConversionMetrics,
+    EngagementMetrics,
+    NPSMetrics,
+    RetentionMetrics,
+    RevenueMetrics,
+    UserData,
+    UserEvent,
+    UserSession,
+)
+from .ports import (
+    ABTestStorePort,
+    ActiveUsersStorePort,
+    EventStorePort,
+    NPSStorePort,
+    SessionStorePort,
+    UserStorePort,
+)
 
 __all__ = [
-    "UsageMetric",
-    "UserJourney",
-    "Anomaly",
-    "BehaviorProfile",
-    "MetricType",
-    "TimeGranularity",
-    "BehaviorPattern",
-    "MetricsRepository",
-    "AnomalyDetector",
-    "ReportGenerator",
+    # Enums
+    "EventType",
+    "UserSegment",
+    "ABTestVariant",
+    # Models
+    "UserEvent",
+    "UserSession",
+    "UserData",
+    "EngagementMetrics",
+    "ConversionMetrics",
+    "RetentionMetrics",
+    "NPSMetrics",
+    "ABTestResults",
+    "CohortAnalysis",
+    "RevenueMetrics",
+    # Ports
+    "EventStorePort",
+    "SessionStorePort",
+    "UserStorePort",
+    "ActiveUsersStorePort",
+    "ABTestStorePort",
+    "NPSStorePort",
 ]

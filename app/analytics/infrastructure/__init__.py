@@ -1,5 +1,19 @@
-"""Infrastructure layer - Technical implementations."""
+"""Analytics infrastructure layer."""
 
-from app.analytics.infrastructure.in_memory_repository import InMemoryMetricsRepository
+from .in_memory_stores import (
+    InMemoryABTestStore,
+    InMemoryActiveUsersStore,
+    InMemoryEventStore,
+    InMemoryNPSStore,
+    InMemorySessionStore,
+    InMemoryUserStore,
+)
 
-__all__ = ["InMemoryMetricsRepository"]
+__all__ = [
+    "InMemoryEventStore",
+    "InMemorySessionStore",
+    "InMemoryUserStore",
+    "InMemoryActiveUsersStore",
+    "InMemoryABTestStore",
+    "InMemoryNPSStore",
+]

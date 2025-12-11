@@ -1,11 +1,17 @@
-"""Application layer - Use cases and business logic."""
+"""Analytics application layer."""
 
-from app.analytics.application.anomaly_detection import StatisticalAnomalyDetector
-from app.analytics.application.behavior_analysis import UserBehaviorAnalyzer
-from app.analytics.application.report_generation import UsageReportGenerator
+from .ab_test_manager import ABTestManager
+from .event_tracker import EventTracker
+from .metrics_calculator import MetricsCalculator
+from .nps_manager import NPSManager
+from .session_manager import SessionManager
+from .user_segmentation import UserSegmentation
 
 __all__ = [
-    "StatisticalAnomalyDetector",
-    "UsageReportGenerator",
-    "UserBehaviorAnalyzer",
+    "EventTracker",
+    "SessionManager",
+    "MetricsCalculator",
+    "ABTestManager",
+    "NPSManager",
+    "UserSegmentation",
 ]
