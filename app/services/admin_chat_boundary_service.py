@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -122,3 +123,29 @@ class AdminChatBoundaryService:
             user_id, conversation, question, history, ai_client, session_factory_func
         ):
             yield chunk
+
+    async def stream_chat_response_safe(
+        self,
+        user_id: int,
+        conversation: AdminConversation,
+        question: str,
+        history: list[dict[str, Any]],
+        ai_client: AIClient,
+        session_factory_func,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Wraps the streaming process in a safety net to ensure exceptions are caught
+        and returned as JSON error events instead of crashing the connection.
+        """
+        try:
+            async for chunk in self.stream_chat_response(
+                user_id, conversation, question, history, ai_client, session_factory_func
+            ):
+                yield chunk
+        except Exception as e:
+            logger.error(f"Stream interrupted: {e}", exc_info=True)
+            error_payload = {
+                "type": "error",
+                "payload": {"details": f"Service Error: {e}"},
+            }
+            yield f"data: {json.dumps(error_payload)}\n\n"
