@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from app.services.analytics.domain.models import EventType, UserEvent, UserSession
@@ -211,10 +211,66 @@ class InMemorySessionRepository(SessionRepositoryPort):
 
 
 # ======================================================================================
+# IN-MEMORY USER REPOSITORY
+# ======================================================================================
+
+
+class InMemoryUserRepository:
+    """
+    In-memory user repository.
+    
+    Stores user metadata and activity tracking.
+    """
+    
+    def __init__(self):
+        self._users: dict[int, dict[str, Any]] = {}
+        self._lock = threading.RLock()
+    
+    def get_all(self) -> dict[int, dict[str, Any]]:
+        """Get all users"""
+        with self._lock:
+            return dict(self._users)
+    
+    def get_or_create(self, user_id: int) -> dict[str, Any]:
+        """Get or create user record"""
+        with self._lock:
+            if user_id not in self._users:
+                now = datetime.utcnow()
+                self._users[user_id] = {
+                    "user_id": user_id,
+                    "first_seen": now,
+                    "last_seen": now,
+                    "total_events": 0,
+                    "total_conversions": 0,
+                    "total_sessions": 0,
+                }
+            return self._users[user_id]
+    
+    def update(self, user_id: int, data: dict[str, Any]) -> None:
+        """Update user data"""
+        with self._lock:
+            if user_id in self._users:
+                self._users[user_id].update(data)
+    
+    def get_active_users(self, days: int) -> set[int]:
+        """Get active users within days"""
+        with self._lock:
+            now = datetime.utcnow()
+            cutoff = now - timedelta(days=days)
+            
+            return {
+                user_id
+                for user_id, data in self._users.items()
+                if data.get("last_seen", now) >= cutoff
+            }
+
+
+# ======================================================================================
 # EXPORTS
 # ======================================================================================
 
 __all__ = [
     "InMemoryEventRepository",
     "InMemorySessionRepository",
+    "InMemoryUserRepository",
 ]
