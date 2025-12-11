@@ -227,6 +227,210 @@ class CostManagerPort(Protocol):
 
 
 # ======================================================================================
+# CACHE PORT
+# ======================================================================================
+
+
+class CachePort(Protocol):
+    """
+    Port for caching LLM responses.
+    
+    Implementations:
+    - RedisCache
+    - InMemoryCache
+    - DiskCache
+    """
+
+    def get(self, key: str) -> Any | None:
+        """
+        Retrieve cached value.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            Cached value or None if not found
+        """
+        ...
+
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
+        """
+        Store value in cache.
+        
+        Args:
+            key: Cache key
+            value: Value to cache
+            ttl: Time-to-live in seconds (None = no expiry)
+        """
+        ...
+
+    def delete(self, key: str) -> None:
+        """
+        Delete cached value.
+        
+        Args:
+            key: Cache key
+        """
+        ...
+
+    def clear(self) -> None:
+        """Clear all cached values"""
+        ...
+
+    def exists(self, key: str) -> bool:
+        """
+        Check if key exists in cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            True if key exists, False otherwise
+        """
+        ...
+
+
+# ======================================================================================
+# METRICS PORT
+# ======================================================================================
+
+
+class MetricsPort(Protocol):
+    """
+    Port for metrics collection and reporting.
+    
+    Implementations:
+    - PrometheusMetrics
+    - DatadogMetrics
+    - CloudWatchMetrics
+    - InMemoryMetrics
+    """
+
+    def increment_counter(
+        self,
+        name: str,
+        value: float = 1.0,
+        tags: dict[str, str] | None = None,
+    ) -> None:
+        """
+        Increment a counter metric.
+        
+        Args:
+            name: Metric name
+            value: Increment value
+            tags: Optional tags/labels
+        """
+        ...
+
+    def record_gauge(
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
+    ) -> None:
+        """
+        Record a gauge metric.
+        
+        Args:
+            name: Metric name
+            value: Current value
+            tags: Optional tags/labels
+        """
+        ...
+
+    def record_histogram(
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
+    ) -> None:
+        """
+        Record a histogram/distribution metric.
+        
+        Args:
+            name: Metric name
+            value: Observed value
+            tags: Optional tags/labels
+        """
+        ...
+
+    def get_metrics(self) -> dict[str, Any]:
+        """
+        Get all collected metrics.
+        
+        Returns:
+            Dictionary of metrics data
+        """
+        ...
+
+
+# ======================================================================================
+# OBSERVABILITY PORT
+# ======================================================================================
+
+
+class ObservabilityPort(Protocol):
+    """
+    Port for distributed tracing and observability.
+    
+    Implementations:
+    - OpenTelemetryObserver
+    - DatadogTracer
+    - JaegerTracer
+    - SimpleObserver
+    """
+
+    def start_span(
+        self,
+        operation: str,
+        parent_span: Any | None = None,
+        tags: dict[str, Any] | None = None,
+    ) -> Any:
+        """
+        Start a new tracing span.
+        
+        Args:
+            operation: Operation name
+            parent_span: Parent span (for nested operations)
+            tags: Optional metadata tags
+            
+        Returns:
+            Span object
+        """
+        ...
+
+    def finish_span(
+        self,
+        span: Any,
+        status: str = "success",
+        error: Exception | None = None,
+    ) -> None:
+        """
+        Finish a tracing span.
+        
+        Args:
+            span: Span to finish
+            status: Operation status (success/error)
+            error: Optional error if failed
+        """
+        ...
+
+    def record_event(
+        self,
+        event_name: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Record a discrete event.
+        
+        Args:
+            event_name: Event name
+            attributes: Optional event attributes
+        """
+        ...
+
+
+# ======================================================================================
 # EXPORTS
 # ======================================================================================
 
@@ -235,4 +439,7 @@ __all__ = [
     "RetryStrategyPort",
     "CircuitBreakerPort",
     "CostManagerPort",
+    "CachePort",
+    "MetricsPort",
+    "ObservabilityPort",
 ]
