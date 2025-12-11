@@ -163,3 +163,4 @@ app/static/build/
 # CI/CD Tools (temporary downloads)
 actionlint*
 .coverage.*
+*.backup
