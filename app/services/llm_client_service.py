@@ -4,7 +4,7 @@ LLM Client Service - Pure FastAPI/Python Edition
 ================================================
 Central authoritative gateway for all LLM invocations.
 Refactored to be completely independent of Flask globals.
-Uses `pydantic-settings` for configuration via `app.core.config`.
+Uses `pydantic-settings` for configuration via `app.config.settings`.
 
 REFACTORED: Now delegates actual client creation to centralized
 app.core.ai_client_factory module. This service maintains backward

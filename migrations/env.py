@@ -11,9 +11,11 @@ from sqlalchemy import pool
 # Ensure we can import the app modules
 sys.path.append(os.getcwd())
 
-from app.core.config import settings
+from app.config.settings import get_settings
 from app.core.engine_factory import FatalEngineError, create_unified_async_engine
 from app.models import SQLModel  # Import SQLModel to get metadata
+
+settings = get_settings()
 
 # --- 2. LOGGING CONFIGURATION ---
 config = context.config
