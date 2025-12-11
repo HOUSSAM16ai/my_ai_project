@@ -215,6 +215,56 @@ def create_llm_transport(
 
 
 # ======================================================================================
+# TRANSPORT REGISTRY
+# ======================================================================================
+
+_TRANSPORT_REGISTRY: dict[str, type] = {
+    "openrouter": OpenRouterTransport,
+    "mock": MockLLMTransport,
+}
+
+
+def register_transport(name: str, transport_class: type) -> None:
+    """Register a transport implementation."""
+    _TRANSPORT_REGISTRY[name] = transport_class
+
+
+def get_transport(provider: str = "openrouter", **kwargs: Any) -> LLMClientPort:
+    """
+    Get transport instance for provider.
+    
+    Args:
+        provider: Provider name (openrouter, openai, anthropic, mock)
+        **kwargs: Additional arguments for transport initialization
+        
+    Returns:
+        Transport instance implementing LLMClientPort
+    """
+    if os.getenv("LLM_FORCE_MOCK", "0") == "1":
+        return MockLLMTransport()
+    
+    provider = provider.lower()
+    
+    if provider == "openai":
+        from app.ai.infrastructure.transports.openai_transport import OpenAITransport
+        return OpenAITransport(**kwargs)
+    
+    if provider == "anthropic":
+        from app.ai.infrastructure.transports.anthropic_transport import AnthropicTransport
+        return AnthropicTransport(**kwargs)
+    
+    if provider in _TRANSPORT_REGISTRY:
+        transport_class = _TRANSPORT_REGISTRY[provider]
+        if provider == "openrouter":
+            from app.core.ai_client_factory import get_ai_client
+            client = kwargs.get("client") or get_ai_client()
+            return transport_class(client)
+        return transport_class(**kwargs)
+    
+    raise ValueError(f"Unknown provider: {provider}")
+
+
+# ======================================================================================
 # EXPORTS
 # ======================================================================================
 
@@ -222,4 +272,6 @@ __all__ = [
     "OpenRouterTransport",
     "MockLLMTransport",
     "create_llm_transport",
+    "get_transport",
+    "register_transport",
 ]
