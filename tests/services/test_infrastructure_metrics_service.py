@@ -18,28 +18,36 @@ from app.services.infrastructure_metrics_service import (
 class TestInfrastructureMetricsService:
     @pytest.fixture
     def mock_psutil(self):
-        with patch("app.services.infrastructure_metrics_service.psutil") as mock:
+        # We need to patch psutil in all the new collector modules
+        with patch("app.services.infra_metrics.collectors.resources.psutil") as mock_res, \
+             patch("app.services.infra_metrics.collectors.io.psutil") as mock_io, \
+             patch("app.services.infra_metrics.collectors.processes.psutil") as mock_proc:
+
+            # Create a shared mock that has all the configured return values
+            # This allows us to configure it once as in the original test
+            shared_mock = MagicMock()
+
             # CPU
-            mock.cpu_times_percent.return_value = MagicMock(user=10.0, system=5.0, idle=85.0)
-            mock.cpu_percent.return_value = 15.0
-            mock.cpu_count.return_value = 4
+            shared_mock.cpu_times_percent.return_value = MagicMock(user=10.0, system=5.0, idle=85.0)
+            shared_mock.cpu_percent.return_value = 15.0
+            shared_mock.cpu_count.return_value = 4
 
             # Memory
-            mock.virtual_memory.return_value = MagicMock(
+            shared_mock.virtual_memory.return_value = MagicMock(
                 total=1000, available=500, used=500, percent=50.0
             )
-            mock.swap_memory.return_value = MagicMock(total=100, used=10, percent=10.0)
+            shared_mock.swap_memory.return_value = MagicMock(total=100, used=10, percent=10.0)
 
             # Disk
-            mock.disk_usage.return_value = MagicMock(
+            shared_mock.disk_usage.return_value = MagicMock(
                 total=10000, used=2000, free=8000, percent=20.0
             )
-            mock.disk_io_counters.return_value = MagicMock(
+            shared_mock.disk_io_counters.return_value = MagicMock(
                 read_bytes=1000, write_bytes=500, read_count=10, write_count=5
             )
 
             # Network
-            mock.net_io_counters.return_value = MagicMock(
+            shared_mock.net_io_counters.return_value = MagicMock(
                 bytes_sent=1000,
                 bytes_recv=2000,
                 packets_sent=10,
@@ -49,21 +57,36 @@ class TestInfrastructureMetricsService:
                 dropin=0,
                 dropout=0,
             )
-            mock.net_connections.return_value = [1, 2, 3]  # 3 connections
+            shared_mock.net_connections.return_value = [1, 2, 3]  # 3 connections
 
             # Process
-            mock_proc = MagicMock()
-            mock_proc.name.return_value = "test_proc"
-            mock_proc.cpu_percent.return_value = 1.0
-            mock_proc.memory_percent.return_value = 0.5
-            mock_proc.memory_info.return_value = MagicMock(rss=1000)
-            mock_proc.num_threads.return_value = 2
-            mock_proc.open_files.return_value = []
-            mock_proc.connections.return_value = []
-            mock_proc.status.return_value = "running"
-            mock.Process.return_value = mock_proc
+            mock_process = MagicMock()
+            mock_process.name.return_value = "test_proc"
+            mock_process.cpu_percent.return_value = 1.0
+            mock_process.memory_percent.return_value = 0.5
+            mock_process.memory_info.return_value = MagicMock(rss=1000)
+            mock_process.num_threads.return_value = 2
+            mock_process.open_files.return_value = []
+            mock_process.connections.return_value = []
+            mock_process.status.return_value = "running"
+            shared_mock.Process.return_value = mock_process
 
-            yield mock
+            # Assign shared mock to all specific mocks
+            # We copy attributes to ensure calls work as expected
+            mock_res.cpu_times_percent = shared_mock.cpu_times_percent
+            mock_res.cpu_percent = shared_mock.cpu_percent
+            mock_res.cpu_count = shared_mock.cpu_count
+            mock_res.virtual_memory = shared_mock.virtual_memory
+            mock_res.swap_memory = shared_mock.swap_memory
+
+            mock_io.disk_usage = shared_mock.disk_usage
+            mock_io.disk_io_counters = shared_mock.disk_io_counters
+            mock_io.net_io_counters = shared_mock.net_io_counters
+            mock_io.net_connections = shared_mock.net_connections
+
+            mock_proc.Process = shared_mock.Process
+
+            yield shared_mock
 
     @pytest.fixture
     def service(self, mock_psutil):
@@ -92,9 +115,12 @@ class TestInfrastructureMetricsService:
 
         # Advance time and update counters
         time.sleep(0.1)
-        mock_psutil.disk_io_counters.return_value = MagicMock(
+        # Update the mock return value for the next call
+        new_io = MagicMock(
             read_bytes=2000, write_bytes=1000, read_count=20, write_count=10
         )
+
+        mock_psutil.disk_io_counters.return_value = new_io
 
         metrics = service.collect_disk_metrics()
         assert metrics.used_percent == 20.0
