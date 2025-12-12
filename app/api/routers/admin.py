@@ -9,12 +9,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
-from sqlalchemy import select
 
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
 from app.core.di import get_logger
-from app.models import AdminConversation, AdminMessage, MessageRole
+from app.models import MessageRole
 from app.services.admin_chat_boundary_service import AdminChatBoundaryService
 
 logger = get_logger(__name__)
@@ -117,105 +116,39 @@ async def chat_stream(
 
 @router.get("/api/chat/latest", summary="Get Latest Conversation")
 async def get_latest_chat(
-    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
+    service: AdminChatBoundaryService = Depends(get_admin_service),
 ):
     """
     Retrieves the latest conversation for the current user.
-    Refactoring Note: Kept simple read logic here or could move to service.
-    For 80/20 rule, we focus on the complex chat_stream first, but let's clean this up too slightly.
+    Pure Router implementation: Delegates entirely to Boundary Service.
     """
-    stmt = (
-        select(AdminConversation)
-        .where(AdminConversation.user_id == user_id)
-        .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
+    conversation_data = await service.get_latest_conversation_details(user_id)
+    if not conversation_data:
         return {"conversation_id": None, "messages": []}
-
-    stmt = (
-        select(AdminMessage)
-        .where(AdminMessage.conversation_id == conversation.id)
-        .order_by(AdminMessage.created_at, AdminMessage.id)
-    )
-    result = await db.execute(stmt)
-    messages = result.scalars().all()
-
-    return {
-        "conversation_id": conversation.id,
-        "title": conversation.title,
-        "messages": [
-            {
-                "role": msg.role.value,
-                "content": msg.content,
-                "created_at": msg.created_at.isoformat() if msg.created_at else "",
-            }
-            for msg in messages
-        ],
-    }
+    return conversation_data
 
 
 @router.get("/api/conversations", summary="List Conversations")
 async def list_conversations(
-    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
+    service: AdminChatBoundaryService = Depends(get_admin_service),
 ):
     """
     Retrieves a list of conversations for the current user.
+    Pure Router implementation: Delegates entirely to Boundary Service.
     """
-    stmt = (
-        select(AdminConversation)
-        .where(AdminConversation.user_id == user_id)
-        .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
-    )
-    result = await db.execute(stmt)
-    conversations = result.scalars().all()
-
-    results = []
-    for conv in conversations:
-        c_at = conv.created_at.isoformat() if conv.created_at else ""
-        u_at = c_at
-        if hasattr(conv, "updated_at") and conv.updated_at:
-            u_at = conv.updated_at.isoformat()
-
-        results.append({"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at})
-    return results
+    return await service.list_user_conversations(user_id)
 
 
 @router.get("/api/conversations/{conversation_id}", summary="Get Conversation Details")
 async def get_conversation(
     conversation_id: int,
-    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ):
     """
     Retrieves messages for a specific conversation.
+    Pure Router implementation: Delegates entirely to Boundary Service.
     """
-    # Verify ownership via Service Boundary (handles Admin override)
-    conversation = await service.verify_conversation_access(user_id, conversation_id)
-
-    stmt = (
-        select(AdminMessage)
-        .where(AdminMessage.conversation_id == conversation.id)
-        .order_by(AdminMessage.created_at, AdminMessage.id)
-    )
-    result = await db.execute(stmt)
-    messages = result.scalars().all()
-
-    return {
-        "conversation_id": conversation.id,
-        "title": conversation.title,
-        "messages": [
-            {
-                "role": msg.role.value,
-                "content": msg.content,
-                "created_at": msg.created_at.isoformat() if msg.created_at else "",
-            }
-            for msg in messages
-        ],
-    }
+    return await service.get_conversation_details(user_id, conversation_id)
