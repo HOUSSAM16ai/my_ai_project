@@ -142,10 +142,7 @@ class ProjectContextService:
         # Check for common issues
         app_dir = self.project_root / "app"
 
-        # Check if extensions.py exists (Flask remnant)
-        if (app_dir / "extensions.py").exists():
-            issues.append("⚠️ Flask remnant: app/extensions.py exists")
-
+        # Note: Flask legacy check removed - project fully migrated to FastAPI
         # Note: Circular import check removed for performance
         # The circular import was already fixed in discovery.py
 
