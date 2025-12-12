@@ -239,9 +239,9 @@ class AdminChatStreamingService:
 
         logger.info("✨ Superhuman Admin Chat Streaming Service initialized")
 
-    def stream_response(
+    async def stream_response(
         self, text: str, metadata: dict[str, Any] | None = None
-    ) -> Generator[str, None, None]:
+    ) -> AsyncGenerator[str, None]:
         """
         Stream response with optimal chunking.
 
@@ -279,9 +279,8 @@ class AdminChatStreamingService:
             )
 
             # CRITICAL FIX: Ensure we don't block main thread in async contexts
-            # If we are running in a threadpool (likely for sync generator), sleep is okay-ish,
-            # but we should be careful.
-            time.sleep(delay_ms / MS_TO_SECONDS)
+            # Use asyncio.sleep for non-blocking delay in async context
+            await asyncio.sleep(delay_ms / MS_TO_SECONDS)
 
         # Send completion event
         total_time = time.time() - start_time
