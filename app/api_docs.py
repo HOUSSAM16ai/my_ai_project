@@ -125,7 +125,7 @@ CORS is enabled for the following origins:
                 "type": "apiKey",
                 "in": "cookie",
                 "name": "session",
-                "description": "Session-based authentication using Flask-Login",
+                "description": "Session-based authentication",
             }
         },
         "security": [{"SessionAuth": []}],
