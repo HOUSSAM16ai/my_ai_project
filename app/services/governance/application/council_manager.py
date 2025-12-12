@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 from typing import Any, Protocol
 
-from app.models import CosmicGovernanceCouncil
+from app.services.governance.domain.models import CosmicGovernanceCouncil
 
 
 class CouncilRepository(Protocol):

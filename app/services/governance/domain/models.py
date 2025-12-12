@@ -2,17 +2,49 @@
 """
 Governance Domain Models
 ========================
-Domain entities for cosmic governance (imported from app.models).
+Domain entities for cosmic governance.
 """
-
-# Domain models already exist in app.models, so we import them
-# This maintains clean architecture by creating a domain layer reference
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any
 
+# Re-defining missing models here as they are not in app.models
+
+@dataclass
+class ExistentialProtocol:
+    id: int | None = None
+    protocol_name: str = ""
+    description: str = ""
+    cosmic_rules: dict[str, Any] = field(default_factory=dict)
+    version: str = "1.0.0"
+    is_active: bool = True
+
+@dataclass
+class CosmicGovernanceCouncil:
+    id: int | None = None
+    council_name: str = ""
+    purpose: str = ""
+    consensus_threshold: float = 0.75
+    members: list[str] = field(default_factory=list)
+
+@dataclass
+class ConsciousnessSignature:
+    signature: str
+    understanding_level: float = 0.0
+    adopted_protocols: list[int] = field(default_factory=list)
+    metadata_json: dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class ExistentialTransparencyLog:
+    id: str
+    event_type: str
+    subject: str
+    details: dict[str, Any]
+    reasoning: str
+    impact: dict[str, Any]
+    timestamp: datetime
 
 class PolicyStatus(Enum):
     """Policy status enum"""

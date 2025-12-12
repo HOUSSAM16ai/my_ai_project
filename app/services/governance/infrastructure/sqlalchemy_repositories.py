@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.database import get_sync_session
-from app.models import (
+from app.services.governance.domain.models import (
     ConsciousnessSignature,
     CosmicGovernanceCouncil,
     ExistentialProtocol,

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Protocol
 
-from app.models import CosmicPolicyStatus, ExistentialProtocol
+from app.services.governance.domain.models import PolicyStatus as CosmicPolicyStatus, ExistentialProtocol
 
 
 class ProtocolRepository(Protocol):
