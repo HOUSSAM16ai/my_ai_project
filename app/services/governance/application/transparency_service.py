@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 from typing import Any, Protocol
 
-from app.models import ExistentialTransparencyLog
+from app.services.governance.domain.models import ExistentialTransparencyLog
 
 
 class TransparencyRepository(Protocol):

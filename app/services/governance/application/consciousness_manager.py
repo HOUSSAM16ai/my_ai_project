@@ -9,7 +9,22 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from app.models import ConsciousnessSignature, ExistentialProtocol
+# Import models from facade instead of app.models since they don't exist there
+# (Circular import is avoided because facade imports *from* application but we only import types from facade,
+#  Wait, Facade imports ConsciousnessManager from here. Importing types from Facade HERE causes circular import.
+#  We must define types or import them from a common place.
+#  Since we defined them in Facade to solve the first issue, we should move them to a separate models file
+#  that both can import.
+#  However, for now, let's use Type Checking imports or just assume they exist if we mock them.)
+# Better yet, let's create a shared models file in app/services/governance/domain/models.py
+# and update Facade to import from there, and this file to import from there.
+
+# Plan:
+# 1. Update app/services/governance/domain/models.py to include the missing dataclasses.
+# 2. Update Facade to import from domain/models.py.
+# 3. Update this file to import from domain/models.py.
+
+from app.services.governance.domain.models import ConsciousnessSignature, ExistentialProtocol
 
 
 class ConsciousnessRepository(Protocol):

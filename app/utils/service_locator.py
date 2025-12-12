@@ -55,17 +55,16 @@ class ServiceLocator:
                 from app.services.database_service import database_service as service_module
             elif service_name == "api_gateway_service":
                 from app.services.api_gateway_service import api_gateway_service as service_module
-            # TODO: The following services are not yet implemented or have been removed.
-            # elif service_name == "api_security_service":
-            #     from app.services.api_security_service import security_service as service_module
+            elif service_name == "api_security_service":
+                from app.services.api_security_service import security_service as service_module
             elif service_name == "api_observability_service":
                 from app.services.api_observability_service import (
                     observability_service as service_module,
                 )
             elif service_name == "api_contract_service":
                 from app.services.api_contract_service import contract_service as service_module
-            # elif service_name == "api_governance_service":
-            #     from app.services.api_governance_service import governance_service as service_module
+            elif service_name == "api_governance_service":
+                from app.services.api_governance_service import governance_service as service_module
             elif service_name == "api_slo_sli_service":
                 from app.services.api_slo_sli_service import slo_service as service_module
             elif service_name == "api_config_secrets_service":
