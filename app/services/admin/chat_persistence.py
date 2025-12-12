@@ -87,3 +87,40 @@ class AdminChatPersistence:
             messages.append({"role": msg.role.value, "content": msg.content})
 
         return messages
+
+    async def get_latest_conversation(self, user_id: int) -> AdminConversation | None:
+        """
+        Retrieves the latest conversation for a user.
+        """
+        stmt = (
+            select(AdminConversation)
+            .where(AdminConversation.user_id == user_id)
+            .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def list_conversations(self, user_id: int) -> list[AdminConversation]:
+        """
+        Lists all conversations for a user.
+        """
+        stmt = (
+            select(AdminConversation)
+            .where(AdminConversation.user_id == user_id)
+            .order_by(AdminConversation.created_at.desc(), AdminConversation.id.desc())
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_conversation_messages(self, conversation_id: int) -> list[AdminMessage]:
+        """
+        Retrieves all messages for a specific conversation.
+        """
+        stmt = (
+            select(AdminMessage)
+            .where(AdminMessage.conversation_id == conversation_id)
+            .order_by(AdminMessage.created_at, AdminMessage.id)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())

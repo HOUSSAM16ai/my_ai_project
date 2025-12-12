@@ -149,3 +149,60 @@ class AdminChatBoundaryService:
                 "payload": {"details": f"Service Error: {e}"},
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
+
+    # --- New Methods for Router Refactoring ---
+
+    async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
+        """
+        Retrieves the latest conversation and its messages for the dashboard.
+        """
+        conversation = await self.persistence.get_latest_conversation(user_id)
+        if not conversation:
+            return None
+
+        messages = await self.persistence.get_conversation_messages(conversation.id)
+        return {
+            "conversation_id": conversation.id,
+            "title": conversation.title,
+            "messages": [
+                {
+                    "role": msg.role.value,
+                    "content": msg.content,
+                    "created_at": msg.created_at.isoformat() if msg.created_at else "",
+                }
+                for msg in messages
+            ],
+        }
+
+    async def list_user_conversations(self, user_id: int) -> list[dict[str, Any]]:
+        """
+        Lists conversations for the history sidebar.
+        """
+        conversations = await self.persistence.list_conversations(user_id)
+        results = []
+        for conv in conversations:
+            c_at = conv.created_at.isoformat() if conv.created_at else ""
+            u_at = c_at
+            if hasattr(conv, "updated_at") and conv.updated_at:
+                u_at = conv.updated_at.isoformat()
+            results.append({"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at})
+        return results
+
+    async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
+        """
+        Retrieves full details for a specific conversation.
+        """
+        conversation = await self.verify_conversation_access(user_id, conversation_id)
+        messages = await self.persistence.get_conversation_messages(conversation.id)
+        return {
+            "conversation_id": conversation.id,
+            "title": conversation.title,
+            "messages": [
+                {
+                    "role": msg.role.value,
+                    "content": msg.content,
+                    "created_at": msg.created_at.isoformat() if msg.created_at else "",
+                }
+                for msg in messages
+            ],
+        }
