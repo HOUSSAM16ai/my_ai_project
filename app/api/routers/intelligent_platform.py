@@ -61,35 +61,6 @@ class CollectTelemetryRequest(BaseModel):
 # --- Endpoints ---
 
 
-@router.get("/data-mesh/metrics")
-async def get_data_mesh_metrics(
-    service: DataMeshService = Depends(get_data_mesh_service),
-):
-    """Get Data Mesh metrics"""
-    # The test expects {"ok": True, "data": ...}
-    # We can fetch real metrics from the service
-    metrics = service.get_mesh_metrics()
-    return {"ok": True, "data": metrics}
-
-
-@router.get("/aiops/metrics")
-async def get_aiops_metrics(
-    service: AIOpsService = Depends(get_aiops_service),
-):
-    """Get AIOps metrics"""
-    metrics = service.get_aiops_metrics()
-    return {"ok": True, "data": metrics}
-
-
-@router.get("/gitops/metrics")
-async def get_gitops_metrics(
-    service: GitOpsService = Depends(get_gitops_service),
-):
-    """Get GitOps metrics"""
-    metrics = service.get_gitops_metrics()
-    return {"ok": True, "data": metrics}
-
-
 @router.get("/overview")
 async def get_platform_overview(
     data_mesh: DataMeshService = Depends(get_data_mesh_service),
@@ -162,3 +133,7 @@ async def collect_telemetry(
 
     service.collect_telemetry(telemetry)
     return {"ok": True}
+
+
+# Note: Metric endpoints have been moved to app/api/routers/observability.py
+# for better Separation of Concerns.
