@@ -9,7 +9,6 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     SECRET_KEY: str = "a-super-secret-key-that-you-should-change"
-    FLASK_ENV: str = "development"
     DATABASE_URL: str = ""
 
     # Database settings

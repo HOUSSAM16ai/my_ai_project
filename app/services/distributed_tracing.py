@@ -468,11 +468,6 @@ class DistributedTracer:
         """Generate unique span ID (16 hex chars)"""
         return uuid.uuid4().hex[:16]
 
-    def _is_flask_context(self) -> bool:
-        """Check if running in Flask request context"""
-        # Flask support removed
-        return False
-
     async def trace_request(self, request: Request):
         """FastAPI request tracer"""
         parent_context = TraceContextPropagator.extract(dict(request.headers))

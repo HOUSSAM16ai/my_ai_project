@@ -183,7 +183,7 @@ async def validate_schema_on_startup() -> None:
     elif results["missing_columns"]:
         missing = ", ".join(results["missing_columns"])
         logger.error(f"❌ CRITICAL: Missing columns could not be fixed: {missing}")
-        logger.error("   Run: flask db upgrade OR alembic upgrade head")
+        logger.error("   Run: alembic upgrade head")
 
     if results["errors"]:
         for error in results["errors"]:
@@ -243,7 +243,7 @@ class SessionLocal:
     🔧 COMPATIBILITY LAYER FOR SYNC SESSIONS
 
     This class provides a sync session factory interface that mimics
-    the old Flask-SQLAlchemy SessionLocal pattern. It's used by:
+    legacy synchronous patterns. It's used by:
     - master_agent_service.py (background threads)
     - Other legacy sync code
 
