@@ -14,303 +14,55 @@
 #   - Audit logging for secrets access
 #   - Secret versioning and rollback
 
-import base64
-import hashlib
 import os
 import threading
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from enum import Enum
 from typing import Any
 
-from cryptography.fernet import Fernet
-
-# ======================================================================================
-# ENUMERATIONS
-# ======================================================================================
-
-
-class Environment(Enum):
-    """Deployment environments"""
-
-    DEVELOPMENT = "development"
-    STAGING = "staging"
-    PRODUCTION = "production"
-    TEST = "test"
-
-
-class SecretType(Enum):
-    """Types of secrets"""
-
-    API_KEY = "api_key"
-    DATABASE_PASSWORD = "database_password"
-    JWT_SECRET = "jwt_secret"
-    ENCRYPTION_KEY = "encryption_key"
-    OAUTH_CLIENT_SECRET = "oauth_client_secret"
-    WEBHOOK_SECRET = "webhook_secret"
-    CERTIFICATE = "certificate"
-
-
-class RotationPolicy(Enum):
-    """Secret rotation policies"""
-
-    NEVER = "never"
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
-    QUARTERLY = "quarterly"
-    CUSTOM = "custom"
-
-
-# ======================================================================================
-# DATA STRUCTURES
-# ======================================================================================
-
-
-@dataclass
-class Secret:
-    """Secret metadata and value"""
-
-    secret_id: str
-    name: str
-    secret_type: SecretType
-    environment: Environment
-    value: str  # Encrypted value
-    created_at: datetime
-    updated_at: datetime
-    version: int = 1
-    rotation_policy: RotationPolicy = RotationPolicy.NEVER
-    next_rotation: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class ConfigEntry:
-    """Configuration entry"""
-
-    key: str
-    value: Any
-    environment: Environment
-    description: str
-    is_sensitive: bool = False
-    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    updated_by: str | None = None
-
-
-@dataclass
-class SecretAccessLog:
-    """Secret access audit log"""
-
-    log_id: str
-    secret_id: str
-    accessed_at: datetime
-    accessed_by: str
-    action: str  # 'read', 'write', 'rotate', 'delete'
-    ip_address: str | None = None
-    success: bool = True
-    reason: str | None = None
-
-
-@dataclass
-class EnvironmentConfig:
-    """Environment-specific configuration"""
-
-    environment: Environment
-    config: dict[str, Any]
-    secrets: dict[str, str]  # Secret references, not values
-    feature_flags: dict[str, bool]
-    resource_limits: dict[str, Any]
-    deployment_metadata: dict[str, Any]
-
-
-# ======================================================================================
-# ENCRYPTION UTILITY
-# ======================================================================================
-
-
-class SecretEncryption:
-    """
-    Secret encryption utility using Fernet (symmetric encryption)
-
-    In production, this should be replaced with integration to
-    HashiCorp Vault or AWS Secrets Manager
-    """
-
-    def __init__(self, master_key: bytes | None = None):
-        if master_key is None:
-            # Generate a key from environment or create new one
-            master_key_str = os.environ.get("MASTER_ENCRYPTION_KEY")
-            if master_key_str:
-                master_key = base64.urlsafe_b64decode(master_key_str.encode())
-            else:
-                master_key = Fernet.generate_key()
-
-        self.cipher = Fernet(master_key)
-
-    def encrypt(self, plaintext: str) -> str:
-        """Encrypt plaintext"""
-        return self.cipher.encrypt(plaintext.encode()).decode()
-
-    def decrypt(self, ciphertext: str) -> str:
-        """Decrypt ciphertext"""
-        return self.cipher.decrypt(ciphertext.encode()).decode()
-
-
-# ======================================================================================
-# VAULT INTEGRATION (Abstract Base)
-# ======================================================================================
-
-
-class VaultBackend:
-    """
-    Abstract base for secret vault backends
-
-    Implementations for HashiCorp Vault, AWS Secrets Manager, etc.
-    should inherit from this class
-    """
-
-    def read_secret(self, secret_id: str) -> str | None:
-        """Read secret from vault"""
-        raise NotImplementedError
-
-    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
-        """Write secret to vault"""
-        raise NotImplementedError
-
-    def delete_secret(self, secret_id: str) -> bool:
-        """Delete secret from vault"""
-        raise NotImplementedError
-
-    def list_secrets(self, prefix: str | None = None) -> list[str]:
-        """List all secrets"""
-        raise NotImplementedError
-
-    def rotate_secret(self, secret_id: str) -> bool:
-        """Rotate secret"""
-        raise NotImplementedError
-
-
-class LocalVaultBackend(VaultBackend):
-    """
-    Local vault backend for development
-
-    WARNING: Only for development! Use HashiCorp Vault or AWS Secrets Manager in production
-    """
-
-    def __init__(self):
-        self.secrets: dict[str, str] = {}
-        self.encryption = SecretEncryption()
-        self.lock = threading.RLock()
-
-    def read_secret(self, secret_id: str) -> str | None:
-        with self.lock:
-            encrypted = self.secrets.get(secret_id)
-            if encrypted:
-                return self.encryption.decrypt(encrypted)
-            return None
-
-    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
-        with self.lock:
-            encrypted = self.encryption.encrypt(value)
-            self.secrets[secret_id] = encrypted
-            return True
-
-    def delete_secret(self, secret_id: str) -> bool:
-        with self.lock:
-            if secret_id in self.secrets:
-                del self.secrets[secret_id]
-                return True
-            return False
-
-    def list_secrets(self, prefix: str | None = None) -> list[str]:
-        with self.lock:
-            if prefix:
-                return [k for k in self.secrets if k.startswith(prefix)]
-            return list(self.secrets.keys())
-
-    def rotate_secret(self, secret_id: str) -> bool:
-        # For local backend, rotation just marks the secret for update
-        return True
-
-
-# Placeholder for HashiCorp Vault integration
-class HashiCorpVaultBackend(VaultBackend):
-    """
-    HashiCorp Vault backend
-
-    Requires: hvac library
-    pip install hvac
-    """
-
-    def __init__(self, vault_url: str, token: str):
-        self.vault_url = vault_url
-        self.token = token
-        # In production:
-        # import hvac
-        # self.client = hvac.Client(url=vault_url, token=token)
-
-    def read_secret(self, secret_id: str) -> str | None:
-        # Production implementation:
-        # response = self.client.secrets.kv.v2.read_secret_version(path=secret_id)
-        # return response['data']['data']['value']
-        raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
-    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
-        raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
-    def delete_secret(self, secret_id: str) -> bool:
-        raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
-    def list_secrets(self, prefix: str | None = None) -> list[str]:
-        raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
-    def rotate_secret(self, secret_id: str) -> bool:
-        raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
-
-# Placeholder for AWS Secrets Manager integration
-class AWSSecretsManagerBackend(VaultBackend):
-    """
-    AWS Secrets Manager backend
-
-    Requires: boto3 library
-    pip install boto3
-    """
-
-    def __init__(self, region_name: str):
-        self.region_name = region_name
-        # In production:
-        # import boto3
-        # self.client = boto3.client('secretsmanager', region_name=region_name)
-
-    def read_secret(self, secret_id: str) -> str | None:
-        # Production implementation:
-        # response = self.client.get_secret_value(SecretId=secret_id)
-        # return response['SecretString']
-        raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
-
-    def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
-        raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
-
-    def delete_secret(self, secret_id: str) -> bool:
-        raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
-
-    def list_secrets(self, prefix: str | None = None) -> list[str]:
-        raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
-
-    def rotate_secret(self, secret_id: str) -> bool:
-        raise NotImplementedError("AWS Secrets Manager integration requires boto3 library")
-
-
-# ======================================================================================
-# CONFIG & SECRETS MANAGEMENT SERVICE
-# ======================================================================================
+from app.services.api_config_secrets.domain.models import (
+    ConfigEntry,
+    Environment,
+    EnvironmentConfig,
+    RotationPolicy,
+    Secret,
+    SecretAccessLog,
+    SecretType,
+)
+from app.services.api_config_secrets.domain.ports import VaultBackend
+from app.services.api_config_secrets.application.config_secrets_manager import ConfigSecretsManager
+from app.services.api_config_secrets.infrastructure.memory_adapters import (
+    InMemoryConfigRepository,
+    InMemorySecretMetadataRepository,
+    InMemoryAuditLogger,
+)
+from app.services.api_config_secrets.infrastructure.vault_adapters import (
+    LocalVaultBackend,
+    HashiCorpVaultBackend,
+    AWSSecretsManagerBackend,
+    SecretEncryption,
+)
+
+# Re-export key classes for backward compatibility
+__all__ = [
+    "Environment",
+    "SecretType",
+    "RotationPolicy",
+    "Secret",
+    "ConfigEntry",
+    "SecretAccessLog",
+    "EnvironmentConfig",
+    "SecretEncryption",
+    "VaultBackend",
+    "LocalVaultBackend",
+    "HashiCorpVaultBackend",
+    "AWSSecretsManagerBackend",
+    "ConfigSecretsService",
+    "get_config_secrets_service",
+]
 
 
 class ConfigSecretsService:
     """
-    خدمة إدارة التهيئة والأسرار المركزية - Centralized Config & Secrets Service
+    Facade for ConfigSecretsManager to maintain backward compatibility.
 
     Features:
     - Multi-environment configuration management
@@ -323,49 +75,52 @@ class ConfigSecretsService:
     """
 
     def __init__(self, vault_backend: VaultBackend | None = None):
-        self.vault = vault_backend or LocalVaultBackend()
-        self.config_store: dict[Environment, dict[str, ConfigEntry]] = defaultdict(dict)
-        self.secrets_registry: dict[str, Secret] = {}
-        self.access_logs: deque = deque(maxlen=10000)
-        self.lock = threading.RLock()
+        self._vault = vault_backend or LocalVaultBackend()
+        self._config_repo = InMemoryConfigRepository()
+        self._secret_repo = InMemorySecretMetadataRepository()
+        self._audit_logger = InMemoryAuditLogger()
 
-        # Initialize environment configurations
-        self._initialize_environments()
-
-    def _initialize_environments(self):
-        """Initialize default configurations for each environment"""
-
-        # Development environment
-        self.set_config(
-            Environment.DEVELOPMENT, "debug_mode", True, "Enable debug mode and verbose logging"
-        )
-        self.set_config(
-            Environment.DEVELOPMENT,
-            "rate_limit_enabled",
-            False,
-            "Disable rate limiting for easier development",
+        self._manager = ConfigSecretsManager(
+            vault_backend=self._vault,
+            config_repo=self._config_repo,
+            secret_metadata_repo=self._secret_repo,
+            audit_logger=self._audit_logger,
         )
 
-        # Staging environment
-        self.set_config(Environment.STAGING, "debug_mode", False, "Disable debug mode in staging")
-        self.set_config(
-            Environment.STAGING,
-            "rate_limit_enabled",
-            True,
-            "Enable rate limiting to match production",
-        )
+    # ==========================================================================
+    # Exposed Properties for Backward Compatibility (if accessed directly)
+    # ==========================================================================
 
-        # Production environment
-        self.set_config(
-            Environment.PRODUCTION, "debug_mode", False, "Debug mode always off in production"
-        )
-        self.set_config(
-            Environment.PRODUCTION,
-            "rate_limit_enabled",
-            True,
-            "Rate limiting mandatory in production",
-        )
-        self.set_config(Environment.PRODUCTION, "strict_ssl", True, "Enforce SSL/TLS in production")
+    @property
+    def vault(self) -> VaultBackend:
+        return self._manager.vault
+
+    @property
+    def config_store(self):
+        # Expose internal store via the repo if strictly necessary,
+        # but better to avoid if possible.
+        # The original code accessed config_store[environment][key].
+        # We can simulate this property or let it break if it was private.
+        # It was public: self.config_store: dict[...]
+        # To strictly maintain compat, we might need to expose the underlying dict of the repo
+        return self._config_repo._store
+
+    @property
+    def secrets_registry(self):
+        return self._secret_repo._registry
+
+    @property
+    def access_logs(self):
+        return self._audit_logger._logs
+
+    @property
+    def lock(self):
+        # The manager handles locking internally, but if external code uses the lock...
+        return self._config_repo._lock # Just return one of the locks
+
+    # ==========================================================================
+    # Proxy Methods
+    # ==========================================================================
 
     def set_config(
         self,
@@ -377,24 +132,13 @@ class ConfigSecretsService:
         updated_by: str | None = None,
     ):
         """Set configuration value for an environment"""
-        with self.lock:
-            entry = ConfigEntry(
-                key=key,
-                value=value,
-                environment=environment,
-                description=description,
-                is_sensitive=is_sensitive,
-                updated_by=updated_by,
-            )
-            self.config_store[environment][key] = entry
+        return self._manager.set_config(
+            environment, key, value, description, is_sensitive, updated_by
+        )
 
     def get_config(self, environment: Environment, key: str, default: Any = None) -> Any:
         """Get configuration value for an environment"""
-        with self.lock:
-            entry = self.config_store.get(environment, {}).get(key)
-            if entry:
-                return entry.value
-            return default
+        return self._manager.get_config(environment, key, default)
 
     def create_secret(
         self,
@@ -406,183 +150,44 @@ class ConfigSecretsService:
         accessed_by: str = "system",
     ) -> str:
         """Create a new secret"""
-        secret_id = hashlib.sha256(
-            f"{name}{environment.value}{datetime.now(UTC)}".encode()
-        ).hexdigest()[:16]
-
-        # Store in vault
-        success = self.vault.write_secret(secret_id, value)
-
-        if not success:
-            raise RuntimeError(f"Failed to write secret to vault: {secret_id}")
-
-        # Create secret metadata
-        now = datetime.now(UTC)
-        secret = Secret(
-            secret_id=secret_id,
-            name=name,
-            secret_type=secret_type,
-            environment=environment,
-            value="[ENCRYPTED]",  # Don't store actual value in memory
-            created_at=now,
-            updated_at=now,
-            rotation_policy=rotation_policy,
+        return self._manager.create_secret(
+            name, value, secret_type, environment, rotation_policy, accessed_by
         )
-
-        # Calculate next rotation
-        if rotation_policy != RotationPolicy.NEVER:
-            secret.next_rotation = self._calculate_next_rotation(now, rotation_policy)
-
-        with self.lock:
-            self.secrets_registry[secret_id] = secret
-
-        # Log access
-        self._log_access(secret_id, accessed_by, "write", True)
-
-        return secret_id
 
     def get_secret(self, secret_id: str, accessed_by: str = "system") -> str | None:
         """Get secret value from vault"""
-        with self.lock:
-            if secret_id not in self.secrets_registry:
-                self._log_access(secret_id, accessed_by, "read", False, "Secret not found")
-                return None
-
-        # Read from vault
-        value = self.vault.read_secret(secret_id)
-
-        # Log access
-        self._log_access(secret_id, accessed_by, "read", value is not None)
-
-        return value
+        return self._manager.get_secret(secret_id, accessed_by)
 
     def rotate_secret(self, secret_id: str, new_value: str, accessed_by: str = "system") -> bool:
         """Rotate a secret to a new value"""
-        with self.lock:
-            if secret_id not in self.secrets_registry:
-                return False
-
-            secret = self.secrets_registry[secret_id]
-
-            # Write new value
-            success = self.vault.write_secret(secret_id, new_value)
-
-            if success:
-                secret.version += 1
-                secret.updated_at = datetime.now(UTC)
-
-                # Calculate next rotation
-                if secret.rotation_policy != RotationPolicy.NEVER:
-                    secret.next_rotation = self._calculate_next_rotation(
-                        secret.updated_at, secret.rotation_policy
-                    )
-
-            # Log rotation
-            self._log_access(secret_id, accessed_by, "rotate", success)
-
-            return success
+        return self._manager.rotate_secret(secret_id, new_value, accessed_by)
 
     def check_rotation_needed(self) -> list[str]:
         """Check which secrets need rotation"""
-        now = datetime.now(UTC)
-        with self.lock:
-            return [
-                secret_id
-                for secret_id, secret in self.secrets_registry.items()
-                if secret.next_rotation and secret.next_rotation <= now
-            ]
+        return self._manager.check_rotation_needed()
 
-    def _calculate_next_rotation(self, from_date: datetime, policy: RotationPolicy) -> datetime:
-        """Calculate next rotation date based on policy"""
-        if policy == RotationPolicy.DAILY:
-            return from_date + timedelta(days=1)
-        elif policy == RotationPolicy.WEEKLY:
-            return from_date + timedelta(weeks=1)
-        elif policy == RotationPolicy.MONTHLY:
-            return from_date + timedelta(days=30)
-        elif policy == RotationPolicy.QUARTERLY:
-            return from_date + timedelta(days=90)
-        else:
-            return from_date + timedelta(days=365)  # Default to yearly
+    # _calculate_next_rotation was internal/protected, but if we want to be safe:
+    def _calculate_next_rotation(self, from_date, policy):
+        return self._manager._calculate_next_rotation(from_date, policy)
 
-    def _log_access(
-        self,
-        secret_id: str,
-        accessed_by: str,
-        action: str,
-        success: bool,
-        reason: str | None = None,
-    ):
-        """Log secret access for audit trail"""
-        log = SecretAccessLog(
-            log_id=hashlib.sha256(
-                f"{secret_id}{accessed_by}{datetime.now(UTC)}".encode()
-            ).hexdigest()[:16],
-            secret_id=secret_id,
-            accessed_at=datetime.now(UTC),
-            accessed_by=accessed_by,
-            action=action,
-            success=success,
-            reason=reason,
-        )
-
-        with self.lock:
-            self.access_logs.append(log)
+    # _log_access was internal
+    def _log_access(self, secret_id, accessed_by, action, success, reason=None):
+        return self._manager._log_access(secret_id, accessed_by, action, success, reason)
 
     def get_environment_config(self, environment: Environment) -> EnvironmentConfig:
         """Get complete configuration for an environment"""
-        with self.lock:
-            config = {
-                key: entry.value
-                for key, entry in self.config_store.get(environment, {}).items()
-                if not entry.is_sensitive
-            }
-
-            secrets = {
-                secret.name: secret.secret_id
-                for secret in self.secrets_registry.values()
-                if secret.environment == environment
-            }
-
-            return EnvironmentConfig(
-                environment=environment,
-                config=config,
-                secrets=secrets,
-                feature_flags={},
-                resource_limits={},
-                deployment_metadata={},
-            )
+        return self._manager.get_environment_config(environment)
 
     def get_audit_report(
         self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
     ) -> list[dict[str, Any]]:
         """Get audit logs for secret access"""
-        with self.lock:
-            logs = list(self.access_logs)
+        return self._manager.get_audit_report(secret_id, accessed_by, limit)
 
-            # Filter by secret_id if provided
-            if secret_id:
-                logs = [log for log in logs if log.secret_id == secret_id]
-
-            # Filter by accessed_by if provided
-            if accessed_by:
-                logs = [log for log in logs if log.accessed_by == accessed_by]
-
-            # Limit results
-            logs = logs[-limit:]
-
-            return [
-                {
-                    "log_id": log.log_id,
-                    "secret_id": log.secret_id,
-                    "accessed_at": log.accessed_at.isoformat(),
-                    "accessed_by": log.accessed_by,
-                    "action": log.action,
-                    "success": log.success,
-                    "reason": log.reason,
-                }
-                for log in logs
-            ]
+    # Delegate private init method if called (though it was called in __init__)
+    def _initialize_environments(self):
+        # Already called by manager init
+        pass
 
 
 # ======================================================================================
