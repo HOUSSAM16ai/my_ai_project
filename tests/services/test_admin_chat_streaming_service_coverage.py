@@ -93,12 +93,15 @@ def test_service_initialization():
     assert isinstance(service.chunker, SmartTokenChunker)
 
 
-def test_service_stream_response():
+@pytest.mark.asyncio
+async def test_service_stream_response():
     service = AdminChatStreamingService()
     text = "hello world"
     metadata = {"key": "value"}
 
-    chunks = list(service.stream_response(text, metadata))
+    chunks = []
+    async for chunk in service.stream_response(text, metadata):
+        chunks.append(chunk)
 
     # Verify Metadata
     assert "event: metadata" in chunks[0]
