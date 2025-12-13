@@ -5,6 +5,19 @@ Intent detection service.
 import re
 from dataclasses import dataclass
 from typing import Any
+from enum import Enum
+
+
+class ChatIntent(str, Enum):
+    """Chat intents."""
+    FILE_READ = "FILE_READ"
+    FILE_WRITE = "FILE_WRITE"
+    CODE_SEARCH = "CODE_SEARCH"
+    PROJECT_INDEX = "PROJECT_INDEX"
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"
+    MISSION_COMPLEX = "MISSION_COMPLEX"
+    HELP = "HELP"
+    DEFAULT = "DEFAULT"
 
 
 @dataclass
@@ -21,12 +34,12 @@ class IntentDetector:
 
     def __init__(self):
         self._patterns = [
-            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", "FILE_READ", self._extract_path),
-            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", "FILE_WRITE", self._extract_path),
-            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", "CODE_SEARCH", self._extract_query),
-            (r"(فهرس|index)\s+(المشروع|project)", "PROJECT_INDEX", lambda m: {}),
-            (r"(حلل|analyze|explain)\s+(.+)", "DEEP_ANALYSIS", lambda m: {}),
-            (r"(مساعدة|help)", "HELP", lambda m: {}),
+            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
+            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
+            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+            (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, lambda m: {}),
+            (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, lambda m: {}),
+            (r"(مساعدة|help)", ChatIntent.HELP, lambda m: {}),
         ]
 
     async def detect(self, question: str) -> IntentResult:
@@ -42,10 +55,10 @@ class IntentDetector:
 
         # Check for complex mission indicators
         if self._is_complex_mission(question):
-            return IntentResult(intent="MISSION_COMPLEX", confidence=0.7, params={})
+            return IntentResult(intent=ChatIntent.MISSION_COMPLEX, confidence=0.7, params={})
 
         # Default to chat
-        return IntentResult(intent="DEFAULT", confidence=1.0, params={})
+        return IntentResult(intent=ChatIntent.DEFAULT, confidence=1.0, params={})
 
     def _extract_path(self, match: re.Match) -> dict[str, str]:
         """Extract file path from match."""

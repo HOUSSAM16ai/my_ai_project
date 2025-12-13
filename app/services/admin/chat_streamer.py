@@ -9,7 +9,7 @@ from typing import Any
 from app.core.ai_gateway import AIClient
 from app.models import AdminConversation, MessageRole
 from app.services.admin.chat_persistence import AdminChatPersistence
-from app.services.chat_orchestrator_service import ChatIntent, get_chat_orchestrator
+from app.services.chat import ChatIntent, get_chat_orchestrator
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncGenerator
 
 from app.core.patterns.strategy import Strategy
-from app.services.chat.refactored.context import ChatContext
+from app.services.chat.context import ChatContext
 
 logger = logging.getLogger(__name__)
 
