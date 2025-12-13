@@ -5,26 +5,11 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from app.services.aiops_self_healing_service import (
-    AIOpsService,
-    MetricType,
-    TelemetryData,
-    get_aiops_service,
-)
-from app.services.data_mesh_service import (
-    DataContract,
-    DataDomainType,
-    DataMeshService,
-    DataProductStatus,
-    SchemaCompatibility,
-    get_data_mesh_service,
-)
-from app.services.edge_multicloud_service import EdgeMultiCloudService, get_edge_multicloud_service
-from app.services.gitops_policy_service import GitOpsService, get_gitops_service
-from app.services.sre_error_budget_service import SREErrorBudgetService, get_sre_service
-from app.services.workflow_orchestration_service import (
-    WorkflowOrchestrationService,
-    get_workflow_orchestration_service,
+from app.services.aiops_self_healing_service import MetricType
+from app.services.data_mesh_service import DataDomainType, SchemaCompatibility
+from app.services.platform_boundary_service import (
+    PlatformBoundaryService,
+    get_platform_boundary_service,
 )
 
 router = APIRouter(
@@ -33,7 +18,7 @@ router = APIRouter(
 )
 
 
-# --- Pydantic Models for Request Bodies ---
+# --- Pydantic Models for Request Bodies (DTOs) ---
 
 
 class CreateDataContractRequest(BaseModel):
@@ -63,37 +48,26 @@ class CollectTelemetryRequest(BaseModel):
 
 @router.get("/overview")
 async def get_platform_overview(
-    data_mesh: DataMeshService = Depends(get_data_mesh_service),
-    aiops: AIOpsService = Depends(get_aiops_service),
-    gitops: GitOpsService = Depends(get_gitops_service),
-    workflows: WorkflowOrchestrationService = Depends(get_workflow_orchestration_service),
-    edge: EdgeMultiCloudService = Depends(get_edge_multicloud_service),
-    sre: SREErrorBudgetService = Depends(get_sre_service),
+    service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
-    """Get platform overview"""
-    return {
-        "ok": True,
-        "data": {
-            "data_mesh": data_mesh.get_mesh_metrics(),
-            "aiops": aiops.get_aiops_metrics(),
-            "gitops": gitops.get_gitops_metrics(),
-            "workflows": workflows.get_metrics(),
-            "edge_multicloud": edge.get_metrics(),
-            "sre": sre.get_sre_metrics(),
-        },
-    }
+    """
+    Get platform overview.
+    Refactored: Delegates aggregation logic to PlatformBoundaryService.
+    """
+    data = await service.get_platform_overview()
+    return {"ok": True, "data": data}
 
 
 @router.post("/data-mesh/contracts")
 async def create_data_contract(
     request: CreateDataContractRequest,
-    service: DataMeshService = Depends(get_data_mesh_service),
+    service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
-    """Create data contract"""
-
-    # Map Pydantic model to Dataclass
-    contract = DataContract(
-        contract_id=str(uuid.uuid4()),
+    """
+    Create data contract.
+    Refactored: Delegates DTO mapping and creation to PlatformBoundaryService.
+    """
+    result = await service.create_data_contract(
         domain=request.domain,
         name=request.name,
         description=request.description,
@@ -103,35 +77,28 @@ async def create_data_contract(
         owners=request.owners,
         consumers=request.consumers,
         sla_guarantees=request.sla_guarantees,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
-        status=DataProductStatus.ACTIVE,
         metadata=request.metadata,
     )
-
-    result = service.create_data_contract(contract)
     return {"ok": result}
 
 
 @router.post("/aiops/telemetry")
 async def collect_telemetry(
     request: CollectTelemetryRequest,
-    service: AIOpsService = Depends(get_aiops_service),
+    service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
-    """Collect telemetry"""
-
-    # Map Pydantic model to Dataclass
-    telemetry = TelemetryData(
-        metric_id=str(uuid.uuid4()),
+    """
+    Collect telemetry.
+    Refactored: Delegates logic to PlatformBoundaryService.
+    """
+    await service.collect_telemetry(
         service_name=request.service_name,
         metric_type=request.metric_type,
         value=request.value,
-        timestamp=request.timestamp or datetime.now(UTC),
         labels=request.labels,
         unit=request.unit,
+        timestamp=request.timestamp,
     )
-
-    service.collect_telemetry(telemetry)
     return {"ok": True}
 
 
