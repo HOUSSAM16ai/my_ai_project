@@ -6,6 +6,7 @@ Enables runtime selection of algorithms without conditional logic.
 
 from abc import ABC, abstractmethod
 from typing import TypeVar
+import inspect
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -52,7 +53,12 @@ class StrategyRegistry[T, R]:
         """Find and execute appropriate strategy."""
         strategy = await self.find_strategy(context)
         if strategy:
-            return await strategy.execute(context)
+            result = strategy.execute(context)
+            # If the strategy returns an awaitable (coroutine), await it.
+            # If it returns an async generator (or regular generator), return it directly.
+            if inspect.isawaitable(result):
+                return await result
+            return result
         return None
 
     def clear(self) -> None:
