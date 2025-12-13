@@ -4,8 +4,6 @@ Admin-facing API endpoints for the CogniForge platform.
 Refactored to use 'AdminChatBoundaryService' for Separation of Concerns.
 """
 
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
@@ -13,7 +11,6 @@ from app.api.v2.schemas import ChatRequest
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
 from app.core.di import get_logger
-from app.models import MessageRole
 from app.services.admin_chat_boundary_service import AdminChatBoundaryService
 
 logger = get_logger(__name__)
@@ -61,22 +58,14 @@ async def chat_stream(
     if not question or not question.strip():
         raise HTTPException(status_code=400, detail="Question is required.")
 
-    # 1. Get or Create Conversation (Data Boundary)
-    conversation = await service.get_or_create_conversation(
-        user_id, question, chat_request.conversation_id
-    )
-
-    # 2. Save User Message (Data Boundary)
-    await service.save_message(conversation.id, MessageRole.USER, question)
-
-    # 3. Prepare Context (Data Boundary)
-    history = await service.get_chat_history(conversation.id)
-
-    # 4. Stream Response (Service Boundary)
-    # Pass session_factory for the internal safe persistence context
+    # Orchestrate the entire chat flow via the Boundary Service
     return StreamingResponse(
-        service.stream_chat_response_safe(
-            user_id, conversation, question, history, ai_client, session_factory
+        service.orchestrate_chat_stream(
+            user_id,
+            question,
+            chat_request.conversation_id,
+            ai_client,
+            session_factory,
         ),
         media_type="text/event-stream",
     )
