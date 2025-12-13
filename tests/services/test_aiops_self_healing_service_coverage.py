@@ -85,8 +85,9 @@ class TestAIOpsService:
             aiops_service.collect_telemetry(anomaly_data)
 
             # Check if anomaly was recorded
-            assert len(aiops_service.anomalies) == 1
-            anomaly = next(iter(aiops_service.anomalies.values()))
+            anomalies = aiops_service.anomaly_repo.get_all()
+            assert len(anomalies) == 1
+            anomaly = next(iter(anomalies.values()))
             assert anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE
             assert anomaly.severity in [AnomalySeverity.HIGH, AnomalySeverity.CRITICAL]
 
@@ -119,8 +120,9 @@ class TestAIOpsService:
         with patch.object(aiops_service, "_trigger_healing") as mock_healing:
             aiops_service.collect_telemetry(data)
 
-            assert len(aiops_service.anomalies) == 1
-            anomaly = next(iter(aiops_service.anomalies.values()))
+            anomalies = aiops_service.anomaly_repo.get_all()
+            assert len(anomalies) == 1
+            anomaly = next(iter(anomalies.values()))
             assert anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE
             assert anomaly.metric_value == 0.06
 
@@ -183,17 +185,21 @@ class TestAIOpsService:
             confidence=1.0,
             description="test",
         )
-        aiops_service.anomalies[anomaly_id] = anomaly
+        aiops_service.anomaly_repo.add(anomaly)
 
         # Trigger healing via public method to cover flow
         with patch("uuid.uuid4", return_value="decision-id"):
             aiops_service._trigger_healing(anomaly)
 
-        assert "decision-id" in aiops_service.healing_decisions
-        decision = aiops_service.healing_decisions["decision-id"]
+        decisions = aiops_service.healing_repo.get_all()
+        assert "decision-id" in decisions
+        decision = decisions["decision-id"]
         assert decision.success is True
-        assert anomaly.resolved is True
-        assert anomaly.resolved_at is not None
+
+        # Verify anomaly resolved status via repo
+        updated_anomaly = aiops_service.anomaly_repo.get(anomaly_id)
+        assert updated_anomaly.resolved is True
+        assert updated_anomaly.resolved_at is not None
 
     def test_forecast_load(self, aiops_service):
         service_name = "forecast-svc"
@@ -223,7 +229,7 @@ class TestAIOpsService:
 
         # Let's just check it returns a valid forecast object
         assert forecast.predicted_load > 119
-        assert len(aiops_service.forecasts[service_name]) == 1
+        assert len(aiops_service.forecast_repo.get(service_name)) == 1
 
     def test_forecast_load_insufficient_data(self, aiops_service):
         forecast = aiops_service.forecast_load("new-svc", MetricType.REQUEST_RATE)
@@ -259,7 +265,7 @@ class TestAIOpsService:
         assert plan is not None
         assert plan.service_name == service_name
         assert plan.recommended_capacity > plan.expected_peak_load
-        assert service_name in aiops_service.capacity_plans
+        assert aiops_service.capacity_repo.get(service_name) is not None
 
     def test_root_cause_analysis(self, aiops_service):
         service_name = "rca-svc"
@@ -279,7 +285,7 @@ class TestAIOpsService:
             confidence=0.9,
             description="Latency high",
         )
-        aiops_service.anomalies[anomaly_id] = anomaly
+        aiops_service.anomaly_repo.add(anomaly)
 
         # 1. Test "Correlated with increased error rate"
         # Add error rate metrics
