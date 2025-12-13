@@ -9,7 +9,7 @@ from typing import Any
 from app.core.ai_gateway import AIClient
 from app.models import AdminConversation, MessageRole
 from app.services.admin.chat_persistence import AdminChatPersistence
-from app.services.chat import ChatIntent, get_chat_orchestrator
+from app.services.chat import get_chat_orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -76,48 +76,20 @@ class AdminChatStreamer:
 
         # 4. Streaming Execution
         try:
-            intent_result = orchestrator.detect_intent(question)
-
             # We use a try/finally block to ensure persistence happens even if stream is broken
             try:
-                tool_intents = {
-                    ChatIntent.FILE_READ,
-                    ChatIntent.FILE_WRITE,
-                    ChatIntent.CODE_SEARCH,
-                    ChatIntent.PROJECT_INDEX,
-                    ChatIntent.MISSION_COMPLEX,
-                    ChatIntent.DEEP_ANALYSIS,
-                    ChatIntent.HELP,
-                }
-
-                if intent_result.intent in tool_intents:
-                    yield f"event: intent\ndata: {json.dumps({'type': 'intent_detected', 'intent': intent_result.intent.value, 'confidence': intent_result.confidence})}\n\n"
-
-                    async for content_part in orchestrator.orchestrate(
-                        question=question,
-                        user_id=user_id,
-                        conversation_id=conversation.id,
-                        ai_client=ai_client,
-                        history_messages=history,
-                    ):
-                        if content_part:
-                            full_response.append(content_part)
-                            chunk_data = {"choices": [{"delta": {"content": content_part}}]}
-                            yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
-                else:
-                    async for chunk in ai_client.stream_chat(history):
-                        content_part = ""
-                        if isinstance(chunk, dict):
-                            choices = chunk.get("choices", [])
-                            if choices:
-                                content_part = choices[0].get("delta", {}).get("content", "")
-                            else:
-                                content_part = chunk.get("content", "")
-
-                        if content_part:
-                            full_response.append(content_part)
-
-                        yield f"event: delta\ndata: {json.dumps(chunk)}\n\n"
+                async for content_part in orchestrator.process(
+                    question=question,
+                    user_id=user_id,
+                    conversation_id=conversation.id,
+                    ai_client=ai_client,
+                    history_messages=history,
+                ):
+                    if content_part:
+                        full_response.append(content_part)
+                        # Wrap content in the structure expected by frontend (Delta)
+                        chunk_data = {"choices": [{"delta": {"content": content_part}}]}
+                        yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
 
             finally:
                 # Always persist the result
