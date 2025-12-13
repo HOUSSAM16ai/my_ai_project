@@ -11,8 +11,8 @@ from collections.abc import AsyncGenerator
 from typing import Any as AIClient  # Placeholder for AI client type
 
 from app.core.patterns.strategy import StrategyRegistry
-from app.services.chat.refactored.context import ChatContext
-from app.services.chat.refactored.handlers import (
+from app.services.chat.context import ChatContext
+from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
     DeepAnalysisHandler,
     DefaultChatHandler,
@@ -22,7 +22,7 @@ from app.services.chat.refactored.handlers import (
     MissionComplexHandler,
     ProjectIndexHandler,
 )
-from app.services.chat.refactored.intent_detector import IntentDetector
+from app.services.chat.intent_detector import IntentDetector
 
 logger = logging.getLogger(__name__)
 
