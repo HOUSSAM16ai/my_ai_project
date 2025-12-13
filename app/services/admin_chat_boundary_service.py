@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import logging
 import json
+import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -150,6 +150,36 @@ class AdminChatBoundaryService:
             }
             yield f"data: {json.dumps(error_payload)}\n\n"
 
+    async def orchestrate_chat_stream(
+        self,
+        user_id: int,
+        question: str,
+        conversation_id_str: str | None,
+        ai_client: AIClient,
+        session_factory_func,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Orchestrates the entire chat flow:
+        1. Get or Create Conversation (Data Boundary)
+        2. Save User Message (Data Boundary)
+        3. Prepare Context (Data Boundary)
+        4. Stream Response (Service Boundary) with Safety Net
+        """
+        # 1. Get or Create Conversation
+        conversation = await self.get_or_create_conversation(user_id, question, conversation_id_str)
+
+        # 2. Save User Message
+        await self.save_message(conversation.id, MessageRole.USER, question)
+
+        # 3. Prepare Context
+        history = await self.get_chat_history(conversation.id)
+
+        # 4. Stream Response
+        async for chunk in self.stream_chat_response_safe(
+            user_id, conversation, question, history, ai_client, session_factory_func
+        ):
+            yield chunk
+
     # --- New Methods for Router Refactoring ---
 
     async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
@@ -185,7 +215,9 @@ class AdminChatBoundaryService:
             u_at = c_at
             if hasattr(conv, "updated_at") and conv.updated_at:
                 u_at = conv.updated_at.isoformat()
-            results.append({"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at})
+            results.append(
+                {"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at}
+            )
         return results
 
     async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:

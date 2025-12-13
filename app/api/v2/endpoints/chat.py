@@ -16,7 +16,7 @@ from app.api.v2.dependencies import (
     get_current_user_id,
 )
 from app.api.v2.schemas import ChatRequest, ChatResponse
-from app.services.chat.refactored.orchestrator import ChatOrchestrator
+from app.services.chat.orchestrator import ChatOrchestrator
 
 logger = logging.getLogger(__name__)
 

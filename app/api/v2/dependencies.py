@@ -15,7 +15,7 @@ def get_ai_client():
 
 
 from app.services.agent_tools.refactored.registry import ToolRegistry, get_tool_registry
-from app.services.chat.refactored.orchestrator import ChatOrchestrator
+from app.services.chat.orchestrator import ChatOrchestrator
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

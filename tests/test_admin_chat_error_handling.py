@@ -30,8 +30,11 @@ async def test_chat_error_handling_with_auth_but_service_error(async_client, adm
 
         mock_stream.side_effect = mock_generator
 
+        # Need to include user_id in body to satisfy strict schema validation
         response = await async_client.post(
-            "/admin/api/chat/stream", json={"question": "Hello"}, headers=admin_auth_headers
+            "/admin/api/chat/stream",
+            json={"question": "Hello", "user_id": 1},
+            headers=admin_auth_headers,
         )
 
         assert response.status_code == 200
