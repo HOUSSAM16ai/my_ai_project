@@ -48,6 +48,21 @@ class GitOpsPolicyService:
         """Sync application from Git."""
         return _service.sync_application(app_id)
 
+    def get_gitops_metrics(self) -> dict:
+        """
+        Get metrics via facade.
+        Matches legacy schema: {"out_of_sync_apps": int, "status": str}
+        """
+        out_of_sync = _service.get_out_of_sync_apps()
+        return {
+            "out_of_sync_apps": len(out_of_sync),
+            "status": "active"
+        }
+
+
+# Compatibility Alias
+GitOpsService = GitOpsPolicyService
+
 
 # Module-level functions
 def create_policy(policy: Policy) -> Policy:
@@ -58,3 +73,12 @@ def create_policy(policy: Policy) -> Policy:
 def validate_resource(resource: dict[str, Any]):
     """Validate resource against policies."""
     return _service.validate_resource(resource)
+
+def get_gitops_service():
+    """Factory for dependency injection compatibility."""
+    return GitOpsPolicyService()
+
+def get_gitops_policy_service():
+    """Direct alias to the new factory."""
+    from .gitops_policy import get_gitops_policy_service as _get
+    return _get()

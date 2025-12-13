@@ -1,19 +1,12 @@
 # app/api/routers/observability.py
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.services.aiops_self_healing_service import AIOpsService, get_aiops_service
-from app.services.api_observability_service import (
-    APIObservabilityService,
-    get_observability_service,
+from app.services.platform_boundary_service import (
+    PlatformBoundaryService,
+    get_platform_boundary_service,
 )
-from app.services.data_mesh_service import DataMeshService, get_data_mesh_service
-from app.services.gitops_policy_service import GitOpsPolicyService, get_gitops_policy_service
-
-# For Dependency Injection type hinting
-from app.services.gitops_policy.facade import GitOpsPolicyServiceFacade
 
 router = APIRouter(prefix="/api/observability", tags=["Observability"])
 logger = logging.getLogger(__name__)
@@ -29,87 +22,90 @@ async def health_check():
 
 @router.get("/metrics", summary="Unified System Metrics")
 async def get_metrics(
-    aiops_service: AIOpsService = Depends(get_aiops_service),
-    observability_service: APIObservabilityService = Depends(get_observability_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Aggregated metrics from all subsystems (AIOps, API Performance).
+    Now served via the Platform Boundary Service.
+
+    OPTIMIZATION: Calls specific sub-services via the boundary to avoid
+    calculating the full platform overview (which includes heavy operations).
     """
+    # Fetch only what we need for this specific endpoint to avoid over-fetching
+    snapshot = await platform_service.get_performance_snapshot()
+    aiops_health = platform_service.aiops.get_aiops_metrics()
+
     return {
         "status": "success",
-        "timestamp": observability_service.get_performance_snapshot().timestamp,
+        "timestamp": snapshot.timestamp,
         "metrics": {
-            "api_performance": observability_service.get_performance_snapshot(),
-            "aiops_health": aiops_service.get_aiops_metrics(),
+            "api_performance": snapshot,
+            "aiops_health": aiops_health,
         },
     }
 
 
 @router.get("/metrics/aiops", summary="AIOps Specific Metrics")
 async def get_aiops_metrics(
-    service: AIOpsService = Depends(get_aiops_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get detailed AIOps metrics (Anomalies, Healing Actions).
-    Moved from intelligent_platform.py for better separation of concerns.
+    Delegates to Platform Boundary.
     """
-    metrics = service.get_aiops_metrics()
+    metrics = platform_service.aiops.get_aiops_metrics()
     return {"ok": True, "data": metrics}
 
 
 @router.get("/metrics/datamesh", summary="Data Mesh Metrics")
 async def get_data_mesh_metrics(
-    service: DataMeshService = Depends(get_data_mesh_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get Data Mesh metrics.
-    Moved from intelligent_platform.py.
+    Delegates to Platform Boundary.
     """
-    metrics = service.get_mesh_metrics()
+    metrics = platform_service.data_mesh.get_mesh_metrics()
     return {"ok": True, "data": metrics}
 
 
 @router.get("/metrics/gitops", summary="GitOps Metrics")
 async def get_gitops_metrics(
-    service_facade: GitOpsPolicyServiceFacade = Depends(get_gitops_policy_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get GitOps metrics.
-    Moved from intelligent_platform.py.
+    Delegates to Platform Boundary.
     """
-    out_of_sync = service_facade.get_out_of_sync_apps()
-
-    metrics = {
-        "out_of_sync_apps": len(out_of_sync),
-        "status": "active"
-    }
-
+    metrics = platform_service.gitops.get_gitops_metrics()
     return {"ok": True, "data": metrics}
 
 
 @router.get("/performance/snapshot", summary="API Performance Snapshot")
 async def get_performance_snapshot(
-    service: APIObservabilityService = Depends(get_observability_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get current API performance snapshot including P99 latency.
+    Delegates to Platform Boundary.
     """
-    return {"status": "success", "snapshot": service.get_performance_snapshot()}
+    snapshot = await platform_service.get_performance_snapshot()
+    return {"status": "success", "snapshot": snapshot}
 
 
 @router.get("/performance/endpoint/{path:path}", summary="Endpoint Analytics")
 async def get_endpoint_analytics(
     path: str,
-    service: APIObservabilityService = Depends(get_observability_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get detailed analytics for a specific endpoint.
+    Delegates to Platform Boundary.
     """
-    # Normalize path if needed (e.g., ensure leading slash)
     if not path.startswith("/"):
         path = "/" + path
 
-    data = service.get_endpoint_analytics(path)
+    data = await platform_service.get_endpoint_analytics(path)
     if data["status"] == "no_data":
         raise HTTPException(status_code=404, detail="No metrics found for this endpoint")
     return data
@@ -118,9 +114,11 @@ async def get_endpoint_analytics(
 @router.get("/alerts", summary="System Alerts")
 async def get_alerts(
     severity: str | None = None,
-    service: APIObservabilityService = Depends(get_observability_service),
+    platform_service: PlatformBoundaryService = Depends(get_platform_boundary_service),
 ):
     """
     Get active system alerts (Anomalies, SLA Violations).
+    Delegates to Platform Boundary.
     """
-    return {"status": "success", "alerts": service.get_all_alerts(severity)}
+    alerts = await platform_service.get_system_alerts(severity)
+    return {"status": "success", "alerts": alerts}

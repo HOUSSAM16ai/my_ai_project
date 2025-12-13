@@ -1,4 +1,3 @@
-# app/services/platform_boundary_service.py
 """
 Platform Boundary Service
 ------------------------
@@ -24,6 +23,11 @@ from app.services.aiops_self_healing_service import (
     MetricType,
     TelemetryData,
     get_aiops_service,
+)
+from app.services.api_observability_service import (
+    APIObservabilityService,
+    PerformanceSnapshot,
+    get_observability_service,
 )
 from app.services.data_mesh_service import (
     DataContract,
@@ -58,6 +62,7 @@ class PlatformBoundaryService:
         workflows: WorkflowOrchestrationService,
         edge: EdgeMultiCloudService,
         sre: SREErrorBudgetService,
+        observability: APIObservabilityService,
     ):
         self.data_mesh = data_mesh
         self.aiops = aiops
@@ -65,6 +70,7 @@ class PlatformBoundaryService:
         self.workflows = workflows
         self.edge = edge
         self.sre = sre
+        self.observability = observability
 
     async def get_platform_overview(self) -> dict[str, Any]:
         """
@@ -78,12 +84,40 @@ class PlatformBoundaryService:
                 "workflows": self.workflows.get_metrics(),
                 "edge_multicloud": self.edge.get_metrics(),
                 "sre": self.sre.get_sre_metrics(),
+                # New: API Observability Metrics
+                "observability": {
+                    "snapshot": self.observability.get_performance_snapshot(),
+                    "compliance": self.observability.get_sla_compliance(),
+                },
             }
         except Exception as e:
             logger.error(f"Error gathering platform overview: {e}", exc_info=True)
-            # In a resilient system, we might return partial data, but for now we re-raise
-            # or return a safe fallback.
             raise
+
+    # --- API Observability Methods ---
+
+    async def get_performance_snapshot(self) -> PerformanceSnapshot:
+        """
+        Get current API performance snapshot including P99 latency.
+        Delegates to APIObservabilityService.
+        """
+        return self.observability.get_performance_snapshot()
+
+    async def get_endpoint_analytics(self, path: str) -> dict[str, Any]:
+        """
+        Get detailed analytics for a specific endpoint.
+        Delegates to APIObservabilityService.
+        """
+        return self.observability.get_endpoint_analytics(path)
+
+    async def get_system_alerts(self, severity: str | None = None) -> list[dict[str, Any]]:
+        """
+        Get active system alerts (Anomalies, SLA Violations).
+        Delegates to APIObservabilityService.
+        """
+        return self.observability.get_all_alerts(severity)
+
+    # --- Data Mesh Methods ---
 
     async def create_data_contract(
         self,
@@ -121,6 +155,8 @@ class PlatformBoundaryService:
 
         logger.info(f"Creating Data Contract via Boundary: {name} ({domain})")
         return self.data_mesh.create_data_contract(contract)
+
+    # --- Telemetry Methods ---
 
     async def collect_telemetry(
         self,
@@ -168,6 +204,7 @@ def get_platform_boundary_service() -> PlatformBoundaryService:
             workflows=get_workflow_orchestration_service(),
             edge=get_edge_multicloud_service(),
             sre=get_sre_service(),
+            observability=get_observability_service(),
         )
 
     return _platform_boundary_instance

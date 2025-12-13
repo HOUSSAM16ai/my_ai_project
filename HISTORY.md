@@ -68,9 +68,10 @@ This document records the architectural evolution of the CogniForge platform, sp
         *   **Solution:** Creation of `app/services/platform_boundary_service.py`.
         *   **Result:** The router now delegates all aggregation and DTO mapping logic to the Boundary Service, adhering to the "Thin Router / Fat Service" principle.
         *   **Separation of Concerns:** DTOs (Data Transfer Objects) are now mapped to Domain Entities (DataContract, TelemetryData) *inside* the service boundary, not the HTTP layer.
-    *   **Hexagonal Architecture Completion:**
-        *   All remaining services (Wave 11-15) have been migrated to the Hexagonal Architecture pattern.
-        *   The "Superhuman" service mesh is now fully operational.
+    *   **Observability Unification:**
+        *   The `app/api/routers/observability.py` router was refactored to use the `PlatformBoundaryService` as its single source of truth for platform-wide metrics.
+        *   Direct dependencies on `AIOps`, `DataMesh`, and `GitOps` services were removed from the router and encapsulated within the boundary service.
+        *   This enforces strict architectural layering: Router -> Boundary Service -> Domain Services.
 
 ### Future Trajectory
 *   **Singularity Matrix:** Full integration of `HyperFluxCapacitor` into the core event loop.
