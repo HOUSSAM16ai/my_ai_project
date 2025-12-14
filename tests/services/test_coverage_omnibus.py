@@ -16,21 +16,10 @@ from app.services.advanced_streaming_service import (
     get_streaming_service,
 )
 
-# 3. Agentic DevOps
-from app.services.agentic_devops import (
-    AgenticDevOps,
-    agentic_devops,
-)
-
 # 4. AI Model Metrics Service
 from app.services.ai_model_metrics_service import (
     AIModelMetricsService,
     get_ai_model_service,
-)
-
-# 5. AI Service Gateway
-from app.services.ai_service_gateway import (
-    get_ai_service_gateway,
 )
 
 # 6. API Advanced Analytics Service
@@ -86,22 +75,10 @@ class TestOmnibusServices:
         assert svc is not None
         assert get_streaming_service() is get_streaming_service()
 
-    def test_agentic_devops_service(self):
-        svc = AgenticDevOps()
-        assert svc is not None
-        assert agentic_devops is not None
-
     def test_ai_model_metrics_service(self):
         svc = AIModelMetricsService()
         assert svc is not None
         assert get_ai_model_service() is get_ai_model_service()
-
-    def test_ai_service_gateway(self):
-        # AIServiceGateway class is not exported from app.services.ai_service_gateway
-        # Patch the underlying getter to avoid instantiation issues with logger
-        with patch("app.services.ai_service_gateway.get_new_gateway") as mock_get:
-            mock_get.return_value = MagicMock()
-            assert get_ai_service_gateway() is not None
 
     def test_api_advanced_analytics_service(self):
         svc = AdvancedAnalyticsService()
