@@ -417,7 +417,7 @@ observability_service = APIObservabilityService(sla_target_ms=20.0)
 
 
 # ======================================================================================
-# DECORATORS (Moved from legacy/flask or added for completeness)
+# DECORATORS (Added for completeness)
 # ======================================================================================
 def monitor_performance(func: Callable[..., Any]) -> Callable[..., Any]:
     """

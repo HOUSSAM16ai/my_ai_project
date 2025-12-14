@@ -37,11 +37,8 @@ echo "🔧 Step 1: Running database migrations..."
 if command -v alembic &> /dev/null; then
     alembic upgrade head
     echo -e "${GREEN}✅ Alembic migrations completed${NC}"
-elif command -v flask &> /dev/null; then
-    flask db upgrade
-    echo -e "${GREEN}✅ Flask-Migrate migrations completed${NC}"
 else
-    echo -e "${YELLOW}⚠️ No migration tool found (alembic/flask)${NC}"
+    echo -e "${YELLOW}⚠️ No migration tool found (alembic)${NC}"
     echo "   Skipping migration step"
 fi
 

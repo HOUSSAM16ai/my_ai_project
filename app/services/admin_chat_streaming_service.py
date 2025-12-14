@@ -146,7 +146,7 @@ class SpeculativeDecoder:
         self.common_patterns = {
             "def ": ["function_name(", "class ", "method("],
             "import ": ["os", "sys", "json", "logging"],
-            "from ": ["app", "flask", "typing"],
+            "from ": ["app", "fastapi", "typing"],
         }
 
     def predict_next_tokens(self, current_text: str, count: int = 3) -> list[str]:

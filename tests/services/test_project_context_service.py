@@ -49,12 +49,12 @@ class TestProjectContextService:
     def test_get_project_structure(self, service):
         structure = service.get_project_structure()
 
-        directories = [d["name"] for d in structure["directories"]]
+        directories = [d["name"] for d in structure.directories]
         assert "core" in directories
         assert "services" in directories
 
-        assert "models.py" in structure["key_files"]
-        assert "main.py" in structure["key_files"]
+        assert "models.py" in structure.key_files
+        assert "main.py" in structure.key_files
 
     def test_get_code_statistics(self, service, project_root):
         # Add some content to count lines
@@ -63,10 +63,10 @@ class TestProjectContextService:
 
         stats = service.get_code_statistics()
 
-        assert stats["python_files"] > 0
-        assert stats["test_files"] == 1
-        assert stats["app_lines"] >= 3
-        assert stats["test_lines"] >= 2
+        assert stats.python_files > 0
+        assert stats.test_files == 1
+        assert stats.app_lines >= 3
+        assert stats.test_lines >= 2
 
     def test_get_models_info(self, service):
         models = service.get_models_info()
@@ -88,24 +88,16 @@ class TestProjectContextService:
         issues = service.get_recent_issues()
         assert "✅ No critical issues detected" in issues
 
-    def test_get_recent_issues_flask_remnant(self, service, project_root):
-        (project_root / "app" / "extensions.py").touch()
-        issues = service.get_recent_issues()
-        assert "⚠️ Flask remnant: app/extensions.py exists" in issues
-
     def test_get_strengths(self, service):
         # Mock stats to trigger strengths
-        with patch.object(
-            service,
-            "get_code_statistics",
-            return_value={
-                "test_files": 60,
-                "python_files": 110,
-                "test_lines": 0,
-                "app_lines": 0,
-                "total_lines": 0,
-            },
-        ):
+        with patch.object(service, "get_code_statistics") as mock_stats:
+            # Create a real CodeStatistics object
+            from app.services.project_context.domain.models import CodeStatistics
+            stats = CodeStatistics()
+            stats.test_files = 60
+            stats.python_files = 110
+            mock_stats.return_value = stats
+
             strengths = service.get_strengths()
             assert any("Strong test coverage" in s for s in strengths)
             assert any("Comprehensive codebase" in s for s in strengths)
@@ -139,13 +131,13 @@ def another_func():
 
         analysis = service.get_deep_file_analysis()
 
-        assert analysis["total_classes"] >= 3  # MyModel, MyData, Singleton
-        assert analysis["total_functions"] >= 2  # my_func, another_func
-        assert "FastAPI" in analysis["frameworks_detected"]
-        assert "Pydantic" in analysis["frameworks_detected"]
-        assert "Dataclass" in analysis["design_patterns"]
-        assert "Singleton Pattern" in analysis["design_patterns"]
-        assert "Async/Await" in analysis["design_patterns"]
+        assert analysis.total_classes >= 3  # MyModel, MyData, Singleton
+        assert analysis.total_functions >= 2  # my_func, another_func
+        assert "FastAPI" in analysis.frameworks_detected
+        assert "Pydantic" in analysis.frameworks_detected
+        assert "Dataclass" in analysis.design_patterns
+        assert "Singleton Pattern" in analysis.design_patterns
+        assert "Async/Await" in analysis.design_patterns
 
     def test_get_architecture_layers(self, service, project_root):
         # Create directories expected by the layer detection logic
@@ -175,7 +167,7 @@ def another_func():
         components = service.get_key_components()
         # "app/main.py" is in key_files list in the service
 
-        names = [c["name"] for c in components]
+        names = [c.name for c in components]
         assert "Application Entry Point" in names
         assert "Database Models" in names
 

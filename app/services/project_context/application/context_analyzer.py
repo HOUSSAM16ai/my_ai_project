@@ -139,9 +139,6 @@ class ProjectContextService:
         """Identify potential issues in the project."""
         issues = []
 
-        # Check for common issues
-        app_dir = self.project_root / "app"
-
         # Note: Flask legacy check removed - project fully migrated to FastAPI
         # Note: Circular import check removed for performance
         # The circular import was already fixed in discovery.py
@@ -157,11 +154,11 @@ class ProjectContextService:
 
         stats = self.get_code_statistics()
 
-        if stats["test_files"] > 50:
-            strengths.append(f"✅ Strong test coverage ({stats['test_files']} test files)")
+        if stats.test_files > 50:
+            strengths.append(f"✅ Strong test coverage ({stats.test_files} test files)")
 
-        if stats["python_files"] > 100:
-            strengths.append(f"✅ Comprehensive codebase ({stats['python_files']} Python files)")
+        if stats.python_files > 100:
+            strengths.append(f"✅ Comprehensive codebase ({stats.python_files} Python files)")
 
         # Check for modern patterns
         app_dir = self.project_root / "app"
