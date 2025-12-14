@@ -1,3 +1,21 @@
+
+## 2024-05-23: Legacy Compatibility Layer Removal
+
+Removed obsolete files remaining from the migration to the Unified Architecture:
+
+1.  **`app/dependencies.py`**:
+    *   Removed. This file provided a synchronous `get_db` generator which is incompatible with the current asynchronous `SQLAlchemy` + `FastAPI` architecture.
+    *   It also contained a deprecated dependency for `AIServiceGateway`.
+
+2.  **`app/settings.py`**:
+    *   Removed. This was a legacy settings loader. The application now exclusively uses `app.config.settings.AppSettings` injected via `app.core.di`.
+
+3.  **`app/gateways/ai_service_gateway.py`**:
+    *   Removed. The AI Gateway logic has been superseded by the **Neural Routing Mesh** (`app/core/ai_gateway.py`).
+    *   Removed corresponding `get_ai_gateway` factory from `app/core/factories.py` as it was dead code.
+
+4.  **`app/gateways/`**:
+    *   Directory removed as it is now empty.
 # HISTORY.md - The Chronicles of CogniForge
 
 ## Universal History of the Reality Kernel
