@@ -98,6 +98,7 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Cleanup:**
         *   Deleted `verify_implementation_static.py`: A redundant static verification script no longer needed after the establishment of comprehensive test suites.
         *   Deleted `app/services/compat/database_compat.py`: A deprecated compatibility layer for legacy database interactions. The system now fully utilizes the modern `app/core/database.py` infrastructure.
+        *   Deleted `app/services/observability_integration_service.py.ORIGINAL`: A massive backup file (19KB) left over from the refactoring process. The system now relies on the modular hexagonal architecture in `app/services/observability_integration/` and its shim.
     *   **Impact:**
         *   Reduced repository noise and potential for confusion.
         *   Enforced usage of current, standardized database patterns.
