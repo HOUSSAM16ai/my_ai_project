@@ -43,7 +43,7 @@ def check_and_fix():
             inspector = inspect(engine)
             if "admin_conversations" not in inspector.get_table_names():
                 print("❌ Table 'admin_conversations' does not exist")
-                print("   Run: flask db upgrade")
+                print("   Run: alembic upgrade head")
                 return False
 
             # Check if column exists
