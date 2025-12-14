@@ -4,7 +4,6 @@ import os
 import click
 
 from app.cli_handlers.db_cli import register_db_commands
-from app.cli_handlers.genesis_cli import register_genesis_commands
 from app.cli_handlers.maintenance_cli import register_maintenance_commands
 from app.cli_handlers.migrate_cli import register_migrate_commands
 from app.core.di import get_logger, get_session, get_settings
@@ -40,7 +39,6 @@ def cli(ctx, env):
 register_db_commands(cli)
 register_migrate_commands(cli)
 register_maintenance_commands(cli)
-register_genesis_commands(cli)
 
 if __name__ == "__main__":
     cli()

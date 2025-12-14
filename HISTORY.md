@@ -102,6 +102,17 @@ This document records the architectural evolution of the CogniForge platform, sp
             *   Removed misleading references to the legacy Flask architecture.
             *   Cleaned root directory of operational noise.
             *   Reduced cognitive load for developers navigating the project root.
+    *   **Cleanup Phase 3 (Abandoned Agents):**
+        *   **Target:** The `Genesis` Agent System.
+        *   **Analysis:** Identified `app/genesis` as an abandoned precursor to the current `Overmind` and `Neural Mesh` systems.
+        *   **Deleted Components:**
+            *   `app/genesis/`: The entire legacy agent package.
+            *   `app/cli_handlers/genesis_cli.py`: The CLI command registration for the dead agent.
+            *   `app/services/chat/handlers/genesis_handler.py`: The obsolete chat handler that linked to Genesis.
+        *   **Impact:**
+            *   Removed 300+ lines of dead code.
+            *   Decoupled the `app/cli.py` entrypoint from abandoned modules.
+            *   Reduced confusion between "Genesis" (Legacy) and "Overmind" (Active) terminologies.
 
 ### Future Trajectory
 *   **Singularity Matrix:** Full integration of `HyperFluxCapacitor` into the core event loop.
@@ -110,4 +121,4 @@ This document records the architectural evolution of the CogniForge platform, sp
 
 ---
 *Maintained by the CogniForge Core Engineering Team (AI Division).*
-*Last Updated: December 14, 2025 - Codebase Purification Phase 2*
+*Last Updated: December 14, 2025 - Codebase Purification Phase 3*
