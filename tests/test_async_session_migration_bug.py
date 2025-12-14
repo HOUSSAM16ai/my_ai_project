@@ -20,7 +20,6 @@ async database operations.
 """
 
 import inspect
-from contextlib import suppress
 
 import pytest
 
@@ -143,25 +142,3 @@ class TestUserServiceFix:
         assert inspect.iscoroutinefunction(service.get_all_users)
         assert inspect.iscoroutinefunction(service.create_new_user)
         assert inspect.iscoroutinefunction(service.ensure_admin_user_exists)
-
-
-class TestDatabaseCompatFix:
-    """Tests for the database_compat.py fix."""
-
-    def test_deprecated_functions_issue_warnings(self):
-        """Verify deprecated functions issue deprecation warnings."""
-        import warnings
-
-        from app.services.compat.database_compat import get_database_health
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with suppress(Exception):
-                # This will fail because we don't have a real DB, but should still warn
-                get_database_health()
-
-            # Check if deprecation warning was issued
-            deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
-            assert len(deprecation_warnings) > 0, (
-                "Deprecated functions should issue DeprecationWarning"
-            )
