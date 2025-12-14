@@ -53,3 +53,4 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Agentic DevOps Removal:** Deleted `app/services/agentic_devops.py`, an abandoned prototype for self-healing CI/CD that was never integrated into the core pipeline.
     *   **Test Suite Pruning:** Updated `tests/services/test_coverage_omnibus.py` to remove references to the deleted service.
     *   **Legacy Config Removal:** Verified deletion of `app/core/config.py` (deprecated legacy config).
+    *   **Analytics Service Cleanup:** Deleted `app/services/analytics/facade_old.py` (legacy backup) and `app/services/analytics/facade_complete.py` (redundant duplicate) after confirming `app/services/analytics/facade.py` fully implements the required functionality.
