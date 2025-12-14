@@ -33,7 +33,6 @@ seed_*.py
 quick_*.sh
 detect_platform.sh
 entrypoint.sh
-auto_diagnose_and_fix.py
 supabase_verification_system.py
 
 # 5. Infrastructure as Code - K8s configs (can be handled separately)
