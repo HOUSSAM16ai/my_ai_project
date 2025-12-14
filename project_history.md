@@ -1,6 +1,26 @@
 # تاريخ مشروع CogniForge (Project History)
 
 ## 1. تحليل المشكلة (Problem Analysis)
+- **الأعراض (Symptoms)**: وجود ملفات "ميتة" (Dead Code) تعود إلى فترة استخدام إطار العمل Flask، تحديدًا دليل `compat/` وملف `compat/current_app.py`.
+- **السبب الجذري (Root Cause)**: عند الانتقال من Flask إلى FastAPI، تم الاحتفاظ بطبقة توافق (Compatibility Layer) لضمان عدم توقف العمل. الآن، أصبح المشروع يعتمد كليًا على FastAPI، مما يجعل هذه الملفات عبئًا تقنيًا غير ضروري.
+
+## 2. الحل التقني (Technical Solution)
+- **التنظيف (Cleanup)**: حذف دليل `compat/` ومحتوياته (`current_app.py`, `__init__.py`).
+- **التحقق (Verification)**: تم التأكد من عدم وجود أي استيراد (Import) لهذه الوحدات في قاعدة التعليمات البرمجية الحالية.
+
+## 3. التحقق والاختبار (Verification)
+- تم إجراء بحث شامل باستخدام `grep` للتأكد من عدم وجود مراجع للكود المحذوف.
+- سيتم تشغيل مجموعة الاختبارات لضمان عدم وجود آثار جانبية.
+
+## 4. سجل التغييرات (Change Log)
+### `compat/`
+- تم حذف الدليل بالكامل.
+### `compat/current_app.py`
+- تم الحذف (كان يحتوي على `SimpleNamespace` لمحاكاة `flask.current_app`).
+
+---
+
+## 1. تحليل المشكلة (Problem Analysis)
 - **الأعراض (Symptoms)**: ظهور خطأ `Streaming error: 'ChatOrchestrator' object has no attribute 'detect_intent'` في واجهة المحادثة الإدارية (Admin Chat).
 - **السبب الجذري (Root Cause)**: حدث عدم توافق (API Mismatch) بين خدمة البث `AdminChatStreamer` والمنسق الجديد `ChatOrchestrator`. تم تحديث `ChatOrchestrator` مؤخرًا لتقليل التعقيد (Refactoring) وإخفاء تفاصيل الكشف عن النية (Intent Detection) داخل استراتيجية موحدة (Strategy Pattern)، بينما ظل `AdminChatStreamer` يحاول استدعاء الطرق القديمة (`detect_intent`, `orchestrate`) التي تم إلغاؤها أو تغييرها.
 
