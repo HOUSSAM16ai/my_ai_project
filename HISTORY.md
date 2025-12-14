@@ -18,22 +18,18 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Policy Boundary:** `PolicyEngine` (Authentication & Authorization).
 
 ### Era 3: The Superhuman Deconstruction
-*   **Objective:** Extreme modularity, "AGI-Class" maintainability, and clean architecture.
-*   **Major Refactoring Events:**
-    *   **Chat Service Atomization:**
-        *   The monolithic `ChatOrchestratorService` (Complexity: 24) was deconstructed into a **Strategy-based `ChatOrchestrator`** (Complexity: 3).
-        *   Handlers were extracted into atomic units: `FileReadHandler`, `CodeSearchHandler`, `DeepAnalysisHandler`, etc.
-        *   The `app/services/chat/refactored/` staging area was promoted to `app/services/chat/`, replacing legacy structures.
-    *   **Router Purification:**
-        *   `app/api/routers/admin.py` was stripped of business logic and schema definitions.
-        *   Schemas were centralized in `app/api/v2/schemas.py`.
-        *   The Router now strictly acts as a HTTP entry point, delegating 100% of logic to Boundary Services.
-    *   **Gateway Facades:**
-        *   `app/core/ai_gateway.py` established as a Facade for the `app/core/gateway/` mesh, ensuring backward compatibility while enabling the "Neural Routing Mesh" underneath.
+*   **Logic:**
+    *   **Deep Indexer Refactoring:**
+        *   The massive `DeepIndexer` class in `app/overmind/planning/deep_indexer.py` (300+ LOC, Cyclomatic Complexity 24) was refactored using the **Visitor Pattern**.
+        *   New components: `DeepIndexVisitor` (AST traversal), `DependencyGrapher` (Import analysis), `FileProcessor` (I/O & Hashing).
+        *   Result: `deep_indexer.py` reduced to a coordinator, complexity dropped to <5 per method.
+    *   **AI Gateway Simplification:**
+        *   The `NeuralRoutingMesh` was simplified by extracting the `CircuitBreaker` into a standalone, generic utility (`app/core/resilience/circuit_breaker.py`).
+        *   This allows other services (Database, Redis) to reuse the circuit breaker logic without coupling to the AI domain.
 
-### Era 4: The Hexagonal Purification (Wave 10)
-*   **Objective:** Absolute architectural purity, zero coupling, and universal replaceability.
-*   **Key Transformations:**
+### Era 4: The Simplicity Mandate
+*   **Focus:** Removing "Mega-Services" and "God Objects".
+*   **Actions:**
     *   **AIOps Service Dismantling:**
         *   The legacy `AIOpsService` "God Object" (601 lines) was dismantled.
         *   Replaced by a **Hexagonal Architecture** in `app/services/aiops_self_healing/`:
@@ -54,3 +50,4 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Test Suite Pruning:** Updated `tests/services/test_coverage_omnibus.py` to remove references to the deleted service.
     *   **Legacy Config Removal:** Verified deletion of `app/core/config.py` (deprecated legacy config).
     *   **Analytics Service Cleanup:** Deleted `app/services/analytics/facade_old.py` (legacy backup) and `app/services/analytics/facade_complete.py` (redundant duplicate) after confirming `app/services/analytics/facade.py` fully implements the required functionality.
+    *   **Verification Script Purification:** Removed obsolete verification scripts `verify_final.py` (ephemeral Playwright check) and `verify_comprehensive_fix_final.py` (redundant hardcoded path checker) to reduce root directory noise and prevent confusion with actual CI verification steps.
