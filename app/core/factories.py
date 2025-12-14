@@ -26,7 +26,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import AppSettings
 from app.core.database import get_db
 from app.core.di import get_logger, get_settings
-from app.gateways.ai_service_gateway import AIServiceGateway
 from app.protocols.http_client import HttpClient, RequestsAdapter
 from app.services.database_service import DatabaseService
 
@@ -50,16 +49,3 @@ def get_db_service(
     Injects a SQLAlchemy session, a logger, and application settings.
     """
     return DatabaseService(session=session, logger=logger, settings=settings)
-
-
-def get_ai_gateway(
-    http_client: HttpClient = Depends(lambda: RequestsAdapter()),
-    settings: AppSettings = Depends(get_settings),
-    logger: Logger = Depends(get_logger),
-) -> AIServiceGateway:
-    """
-    Factory for providing an `AIServiceGateway` instance.
-
-    Injects an HTTP client, application settings, and a logger.
-    """
-    return AIServiceGateway(http_client=http_client, settings=settings, logger=logger)
