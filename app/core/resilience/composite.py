@@ -7,10 +7,10 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from app.core.resilience.bulkhead import Bulkhead
+from app.core.resilience.circuit_breaker import CircuitBreaker
 from app.core.resilience.fallback import FallbackPolicy
+from app.core.resilience.retry import RetryPolicy
 from app.core.resilience.timeout import TimeoutPolicy
-from app.services.maestro.refactored.circuit_breaker import CircuitBreaker
-from app.services.maestro.refactored.retry_policy import RetryPolicy
 
 logger = logging.getLogger(__name__)
 
