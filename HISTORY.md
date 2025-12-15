@@ -138,4 +138,5 @@ This document records the architectural evolution of the CogniForge platform, sp
         *   Refactored `tests/test_deployment_orchestration.py` to use `app.services.deployment`.
     *   **Advanced Analytics Cleanup:**
         *   Deleted `app/services/api_advanced_analytics_service.py` (deprecated shim).
+        *   Migrated `verify_api_advanced_analytics.py` to `tests/services/test_api_advanced_analytics_integration.py` to preserve verification logic.
         *   Updated `tests/services/test_coverage_omnibus.py` to import directly from `app.services.api_advanced_analytics`.

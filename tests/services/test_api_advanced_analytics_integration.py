@@ -1,10 +1,12 @@
 """
-Verification test for api_advanced_analytics refactoring
+Integration test for api_advanced_analytics refactoring
 ========================================================
-Quick test to verify backward compatibility.
+Migrated from verify_api_advanced_analytics.py
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+import pytest
 
 from app.services.api_advanced_analytics import (
     AdvancedAnalyticsService,
@@ -14,7 +16,7 @@ from app.services.api_advanced_analytics import (
 
 
 def test_backward_compatibility():
-    """Test that old imports still work."""
+    """Test that factory and instantiation work."""
     # Test factory function
     service1 = get_advanced_analytics_service()
     assert service1 is not None
@@ -22,14 +24,14 @@ def test_backward_compatibility():
     # Test direct instantiation
     service2 = AdvancedAnalyticsService()
     assert service2 is not None
-    
-    print("✅ Backward compatibility: PASSED")
 
 
 def test_track_request():
     """Test request tracking."""
     service = get_advanced_analytics_service()
     
+    # We rely on the internal state change or return value.
+    # track_request returns None, but updates internal metrics.
     service.track_request(
         endpoint="/api/test",
         method="GET",
@@ -38,8 +40,8 @@ def test_track_request():
         user_id="user123",
         session_id="session456",
     )
-    
-    print("✅ Track request: PASSED")
+    # No assertion here other than no exception raised,
+    # but subsequent tests verify the data is there.
 
 
 def test_realtime_dashboard():
@@ -64,24 +66,27 @@ def test_realtime_dashboard():
     assert "last_hour" in dashboard
     assert "top_endpoints" in dashboard
     
-    print("✅ Realtime dashboard: PASSED")
-    print(f"   Requests/min: {dashboard['current_metrics']['requests_per_minute']}")
-    print(f"   Error rate: {dashboard['current_metrics']['error_rate']}%")
+    assert dashboard['current_metrics']['requests_per_minute'] >= 0
 
 
 def test_user_behavior_analysis():
     """Test user behavior analysis."""
     service = get_advanced_analytics_service()
     
-    profile = service.analyze_user_behavior("user123")
+    # Ensure user exists in data from previous tests or add new
+    service.track_request(
+        endpoint="/api/user_test",
+        method="GET",
+        status_code=200,
+        response_time_ms=20.0,
+        user_id="user_behavior_test",
+    )
+
+    profile = service.analyze_user_behavior("user_behavior_test")
     
     assert profile is not None
-    assert profile.user_id == "user123"
+    assert profile.user_id == "user_behavior_test"
     assert profile.pattern is not None
-    
-    print("✅ User behavior analysis: PASSED")
-    print(f"   Pattern: {profile.pattern.value}")
-    print(f"   Churn risk: {profile.churn_probability:.2%}")
 
 
 def test_generate_report():
@@ -91,7 +96,7 @@ def test_generate_report():
     # Track some requests
     for i in range(20):
         service.track_request(
-            endpoint="/api/test",
+            endpoint="/api/test_report",
             method="GET",
             status_code=200,
             response_time_ms=45.0,
@@ -99,17 +104,14 @@ def test_generate_report():
     
     report = service.generate_usage_report(
         name="Test Report",
-        start_time=datetime.now(UTC) - timedelta(hours=1),
-        end_time=datetime.now(UTC),
+        start_time=datetime.now(timezone.utc) - timedelta(hours=1),
+        end_time=datetime.now(timezone.utc),
         granularity=TimeGranularity.HOUR,
     )
     
     assert report is not None
     assert report.name == "Test Report"
     assert "total_requests" in report.metrics
-    
-    print("✅ Generate report: PASSED")
-    print(f"   Total requests: {report.metrics['total_requests']}")
 
 
 def test_anomaly_detection():
@@ -120,8 +122,6 @@ def test_anomaly_detection():
     
     assert anomalies is not None
     assert isinstance(anomalies, list)
-    
-    print(f"✅ Anomaly detection: PASSED ({len(anomalies)} anomalies found)")
 
 
 def test_cost_optimization():
@@ -133,40 +133,3 @@ def test_cost_optimization():
     assert insights is not None
     assert "analysis_period" in insights
     assert "recommendations" in insights
-    
-    print(f"✅ Cost optimization: PASSED ({len(insights['recommendations'])} recommendations)")
-
-
-def main():
-    """Run all tests."""
-    print("\n" + "=" * 60)
-    print("🧪 API Advanced Analytics - Verification Tests")
-    print("=" * 60 + "\n")
-    
-    try:
-        test_backward_compatibility()
-        test_track_request()
-        test_realtime_dashboard()
-        test_user_behavior_analysis()
-        test_generate_report()
-        test_anomaly_detection()
-        test_cost_optimization()
-        
-        print("\n" + "=" * 60)
-        print("✅ ALL TESTS PASSED - Refactoring Successful!")
-        print("=" * 60)
-        print("\n📊 Summary:")
-        print("   Before: 636 lines (monolithic)")
-        print("   After:  52 lines (shim) + modular structure")
-        print("   Reduction: 91.8%")
-        print("   Backward Compatibility: 100%")
-        print("   Breaking Changes: 0")
-        print("\n")
-        
-    except Exception as e:
-        print(f"\n❌ TEST FAILED: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    main()
