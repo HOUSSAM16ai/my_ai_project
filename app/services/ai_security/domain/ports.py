@@ -6,7 +6,6 @@ Abstractions for infrastructure implementations.
 واجهات المجال الأمني - تجريدات للتطبيقات البنيوية
 """
 
-from abc import ABC, abstractmethod
 from typing import Protocol
 
 from .models import SecurityEvent, ThreatDetection, UserBehaviorProfile
@@ -15,17 +14,17 @@ from .models import SecurityEvent, ThreatDetection, UserBehaviorProfile
 class ThreatDetectorPort(Protocol):
     """
     كاشف التهديدات - Threat detection interface
-    
+
     Defines the contract for threat detection implementations.
     """
 
     def detect_threats(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         Detect security threats in an event.
-        
+
         Args:
             event: Security event to analyze
-            
+
         Returns:
             List of detected threats (empty if none)
         """
@@ -34,10 +33,10 @@ class ThreatDetectorPort(Protocol):
     def analyze_payload(self, payload: dict) -> list[str]:
         """
         Analyze payload for malicious patterns.
-        
+
         Args:
             payload: Request payload to analyze
-            
+
         Returns:
             List of detected patterns/issues
         """
@@ -47,7 +46,7 @@ class ThreatDetectorPort(Protocol):
 class BehavioralAnalyzerPort(Protocol):
     """
     محلل السلوك - Behavioral analysis interface
-    
+
     Defines the contract for user behavior analysis.
     """
 
@@ -56,11 +55,11 @@ class BehavioralAnalyzerPort(Protocol):
     ) -> list[ThreatDetection]:
         """
         Analyze event against user's normal behavior.
-        
+
         Args:
             event: Current security event
             profile: User's behavioral profile
-            
+
         Returns:
             List of behavioral anomalies detected
         """
@@ -69,7 +68,7 @@ class BehavioralAnalyzerPort(Protocol):
     def update_profile(self, event: SecurityEvent, profile: UserBehaviorProfile) -> None:
         """
         Update user profile with new event data.
-        
+
         Args:
             event: New security event
             profile: Profile to update (modified in place)
@@ -80,17 +79,17 @@ class BehavioralAnalyzerPort(Protocol):
 class ResponseSystemPort(Protocol):
     """
     نظام الاستجابة - Automated response interface
-    
+
     Defines the contract for automated threat response.
     """
 
     def execute_response(self, detection: ThreatDetection) -> dict:
         """
         Execute automated response to a threat.
-        
+
         Args:
             detection: Detected threat to respond to
-            
+
         Returns:
             Response action details
         """
@@ -99,10 +98,10 @@ class ResponseSystemPort(Protocol):
     def should_auto_block(self, detection: ThreatDetection) -> bool:
         """
         Determine if threat should be automatically blocked.
-        
+
         Args:
             detection: Detected threat
-            
+
         Returns:
             True if should auto-block
         """
@@ -138,9 +137,9 @@ class ThreatLoggerPort(Protocol):
 
 
 __all__ = [
-    "ThreatDetectorPort",
     "BehavioralAnalyzerPort",
-    "ResponseSystemPort",
     "ProfileRepositoryPort",
+    "ResponseSystemPort",
+    "ThreatDetectorPort",
     "ThreatLoggerPort",
 ]

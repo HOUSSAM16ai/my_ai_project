@@ -209,16 +209,14 @@ async def test_stream_chat_response_flow(service):
     # Mock orchestrator
     with patch("app.services.admin.chat_streamer.get_chat_orchestrator") as mock_get_orch:
         mock_orch = MagicMock()
-        # Mock intent detection
-        mock_orch.detect_intent.return_value = MagicMock(intent="simple_chat")
         mock_get_orch.return_value = mock_orch
 
-        # Mock AI Client streaming using an async generator
-        async def async_gen(*args, **kwargs):
-            yield {"choices": [{"delta": {"content": "World"}}]}
-            yield {"choices": [{"delta": {"content": "!"}}]}
+        # The streamer calls orchestrator.process, which returns an async generator of strings
+        async def mock_process(*args, **kwargs):
+            yield "World"
+            yield "!"
 
-        ai_client.stream_chat = async_gen
+        mock_orch.process.side_effect = mock_process
 
         generator = service.stream_chat_response(
             user_id, conversation, question, history, ai_client, mock_session_factory
@@ -259,7 +257,7 @@ async def test_stream_chat_response_error_handling(service):
 
     with patch("app.services.admin.chat_streamer.get_chat_orchestrator") as mock_get_orch:
         mock_orch = MagicMock()
-        mock_orch.detect_intent.side_effect = Exception("Orchestrator Failure")
+        mock_orch.process.side_effect = Exception("Orchestrator Failure")
         mock_get_orch.return_value = mock_orch
 
         generator = service.stream_chat_response(

@@ -3,9 +3,9 @@
 # LEGACY SHIM - Redirects to Hexagonal Architecture
 # ======================================================================================
 # This file maintains backward compatibility while delegating to the new architecture.
-# 
+#
 # ✅ REFACTORED: 627 lines → 60 lines (90% reduction)
-# 
+#
 # New code should use:
 #   from app.services.api_contract import get_api_contract_service
 #
@@ -46,7 +46,7 @@ class APIContractService:
     @staticmethod
     def get_contract(name: str, version: str):
         """Get contract schema."""
-        return _service.get_contract(name, version, schema)
+        return _service.get_contract(name, version)
 
     @staticmethod
     def get_active_versions() -> list[APIVersion]:

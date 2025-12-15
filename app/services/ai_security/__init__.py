@@ -13,7 +13,7 @@ This package follows Hexagonal Architecture (Ports & Adapters):
 
 Usage:
     from app.services.ai_security import get_superhuman_security_system
-    
+
     security = get_superhuman_security_system()
     threats = security.analyze_event(event)
 """
@@ -28,13 +28,13 @@ from .domain import (
 from .facade import SuperhumanSecuritySystem, get_superhuman_security_system
 
 __all__ = [
-    # Facade
-    "SuperhumanSecuritySystem",
-    "get_superhuman_security_system",
     # Domain Models
     "SecurityEvent",
+    # Facade
+    "SuperhumanSecuritySystem",
     "ThreatDetection",
     "ThreatLevel",
     "ThreatType",
     "UserBehaviorProfile",
+    "get_superhuman_security_system",
 ]

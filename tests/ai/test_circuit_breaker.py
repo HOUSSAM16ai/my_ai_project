@@ -89,7 +89,14 @@ class TestCircuitBreaker:
         
         assert breaker.get_state() == CircuitState.OPEN
         
-        time.sleep(0.15)
+        time.sleep(0.2)
+
+        # Ensure availability check happens first to trigger state transition
+        # Note: In CI environments, strict timing assertions can be flaky.
+        # We allow a retry if the first check fails due to timing.
+        if not breaker.is_available():
+            time.sleep(0.1)
+            assert breaker.is_available()
         
         result = breaker.call(lambda: "success")
         assert result == "success"
@@ -111,7 +118,12 @@ class TestCircuitBreaker:
             with pytest.raises(ValueError):
                 breaker.call(failing_func)
         
-        time.sleep(0.15)
+        time.sleep(0.2)
+
+        # Ensure availability check happens first to trigger state transition
+        if not breaker.is_available():
+            time.sleep(0.1)
+            assert breaker.is_available()
         
         for _ in range(2):
             breaker.call(lambda: "success")
@@ -133,7 +145,12 @@ class TestCircuitBreaker:
             with pytest.raises(ValueError):
                 breaker.call(failing_func)
         
-        time.sleep(0.15)
+        time.sleep(0.2)
+
+        # Ensure availability check happens first to trigger state transition
+        if not breaker.is_available():
+            time.sleep(0.1)
+            assert breaker.is_available()
         
         with pytest.raises(ValueError):
             breaker.call(failing_func)

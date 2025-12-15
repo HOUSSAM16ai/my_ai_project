@@ -12,7 +12,7 @@ from ...domain.models import ThreatDetection, ThreatLevel
 class SimpleResponseSystem:
     """
     نظام استجابة بسيط
-    
+
     Simple implementation of automated threat response.
     """
 
@@ -23,10 +23,10 @@ class SimpleResponseSystem:
     def execute_response(self, detection: ThreatDetection) -> dict:
         """
         Execute automated response.
-        
+
         Args:
             detection: Detected threat
-            
+
         Returns:
             Response details
         """
@@ -47,10 +47,10 @@ class SimpleResponseSystem:
     def should_auto_block(self, detection: ThreatDetection) -> bool:
         """
         Determine if threat should be auto-blocked.
-        
+
         Args:
             detection: Detected threat
-            
+
         Returns:
             True if should auto-block
         """

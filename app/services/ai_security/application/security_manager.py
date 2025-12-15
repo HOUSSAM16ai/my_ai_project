@@ -21,7 +21,7 @@ from ..domain.ports import (
 class SecurityManager:
     """
     مدير الأمان الرئيسي - Main security orchestrator
-    
+
     Coordinates threat detection, behavioral analysis, and automated response.
     """
 
@@ -35,7 +35,7 @@ class SecurityManager:
     ):
         """
         Initialize security manager with dependencies.
-        
+
         Args:
             threat_detector: Threat detection implementation
             behavioral_analyzer: Behavioral analysis implementation
@@ -52,16 +52,16 @@ class SecurityManager:
     def analyze_event(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         Analyze security event for threats.
-        
+
         Performs:
         1. Pattern-based threat detection
         2. Behavioral anomaly detection
         3. Automated response if needed
         4. Threat logging
-        
+
         Args:
             event: Security event to analyze
-            
+
         Returns:
             List of detected threats
         """
@@ -87,7 +87,7 @@ class SecurityManager:
         # Step 3: Execute automated response for critical threats
         for threat in all_threats:
             if self.response_system.should_auto_block(threat):
-                response_details = self.response_system.execute_response(threat)
+                self.response_system.execute_response(threat)
                 threat.auto_blocked = True
 
             # Log all threats
@@ -98,10 +98,10 @@ class SecurityManager:
     def get_recent_threats(self, limit: int = 100) -> list[ThreatDetection]:
         """
         Get recently detected threats.
-        
+
         Args:
             limit: Maximum number of threats to return
-            
+
         Returns:
             List of recent threat detections
         """
@@ -110,10 +110,10 @@ class SecurityManager:
     def get_user_profile(self, user_id: str) -> Optional:
         """
         Get user behavioral profile.
-        
+
         Args:
             user_id: User identifier
-            
+
         Returns:
             User profile or None if not found
         """
