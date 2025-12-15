@@ -23,7 +23,7 @@ from app.services.ai_model_metrics_service import (
 )
 
 # 6. API Advanced Analytics Service
-from app.services.api_advanced_analytics_service import (
+from app.services.api_advanced_analytics import (
     AdvancedAnalyticsService,
     get_advanced_analytics_service,
 )

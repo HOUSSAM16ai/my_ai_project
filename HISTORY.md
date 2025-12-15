@@ -136,3 +136,6 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Deployment Orchestrator Cleanup:**
         *   Deleted `app/services/deployment_orchestrator_service.py` (legacy wrapper).
         *   Refactored `tests/test_deployment_orchestration.py` to use `app.services.deployment`.
+    *   **Advanced Analytics Cleanup:**
+        *   Deleted `app/services/api_advanced_analytics_service.py` (deprecated shim).
+        *   Updated `tests/services/test_coverage_omnibus.py` to import directly from `app.services.api_advanced_analytics`.
