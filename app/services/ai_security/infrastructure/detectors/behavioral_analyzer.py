@@ -9,13 +9,19 @@ Basic behavioral analysis implementation.
 import uuid
 from datetime import datetime
 
-from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType, UserBehaviorProfile
+from ...domain.models import (
+    SecurityEvent,
+    ThreatDetection,
+    ThreatLevel,
+    ThreatType,
+    UserBehaviorProfile,
+)
 
 
 class SimpleBehavioralAnalyzer:
     """
     محلل سلوك بسيط
-    
+
     Simple implementation of behavioral analysis.
     """
 
@@ -24,11 +30,11 @@ class SimpleBehavioralAnalyzer:
     ) -> list[ThreatDetection]:
         """
         Analyze event against user profile.
-        
+
         Args:
             event: Current security event
             profile: User's behavioral profile
-            
+
         Returns:
             List of detected anomalies
         """
@@ -56,7 +62,7 @@ class SimpleBehavioralAnalyzer:
     def update_profile(self, event: SecurityEvent, profile: UserBehaviorProfile) -> None:
         """
         Update user profile with new event.
-        
+
         Args:
             event: New security event
             profile: Profile to update (modified in place)

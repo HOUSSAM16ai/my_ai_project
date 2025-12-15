@@ -41,7 +41,7 @@ class ThreatType(Enum):
 class SecurityEvent:
     """
     حدث أمني - Security event from system monitoring
-    
+
     Represents a single security-relevant event in the system.
     """
 
@@ -76,7 +76,7 @@ class SecurityEvent:
 class ThreatDetection:
     """
     اكتشاف تهديد - Detected security threat
-    
+
     Represents a detected threat with evidence and recommended action.
     """
 
@@ -113,7 +113,7 @@ class ThreatDetection:
 class UserBehaviorProfile:
     """
     ملف سلوك المستخدم - User behavioral profile
-    
+
     Tracks normal user behavior patterns for anomaly detection.
     """
 
@@ -129,9 +129,9 @@ class UserBehaviorProfile:
 
 
 __all__ = [
-    "ThreatLevel",
-    "ThreatType",
     "SecurityEvent",
     "ThreatDetection",
+    "ThreatLevel",
+    "ThreatType",
     "UserBehaviorProfile",
 ]

@@ -16,7 +16,7 @@ from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, Threat
 class DeepLearningThreatDetector:
     """
     كاشف التهديدات بالتعلم العميق
-    
+
     Implements ThreatDetectorPort using pattern matching and heuristics.
     """
 
@@ -44,10 +44,10 @@ class DeepLearningThreatDetector:
     def detect_threats(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         Detect threats in security event.
-        
+
         Args:
             event: Security event to analyze
-            
+
         Returns:
             List of detected threats
         """
@@ -94,10 +94,10 @@ class DeepLearningThreatDetector:
     def analyze_payload(self, payload: dict) -> list[str]:
         """
         Analyze payload for malicious patterns.
-        
+
         Args:
             payload: Request payload
-            
+
         Returns:
             List of detected issues
         """

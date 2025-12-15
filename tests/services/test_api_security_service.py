@@ -10,8 +10,9 @@ def test_api_security_service_instantiation():
 
 def test_security_service_methods():
     """Test basic method availability."""
-    assert hasattr(security_service, "process_request")
-    assert hasattr(security_service, "get_security_dashboard")
+    # Updated to match new facade interface (SuperhumanSecuritySystem)
+    assert hasattr(security_service, "analyze_event")
+    assert hasattr(security_service, "get_recent_threats")
 
 @pytest.mark.asyncio
 async def test_api_security_service_integration():

@@ -10,8 +10,8 @@ from .responders import SimpleResponseSystem
 
 __all__ = [
     "DeepLearningThreatDetector",
-    "SimpleBehavioralAnalyzer",
     "InMemoryProfileRepository",
     "InMemoryThreatLogger",
+    "SimpleBehavioralAnalyzer",
     "SimpleResponseSystem",
 ]

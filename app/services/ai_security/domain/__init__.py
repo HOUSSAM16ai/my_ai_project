@@ -20,16 +20,16 @@ from .ports import (
 )
 
 __all__ = [
+    "BehavioralAnalyzerPort",
+    "ProfileRepositoryPort",
+    "ResponseSystemPort",
     # Models
     "SecurityEvent",
     "ThreatDetection",
-    "ThreatLevel",
-    "ThreatType",
-    "UserBehaviorProfile",
     # Ports
     "ThreatDetectorPort",
-    "BehavioralAnalyzerPort",
-    "ResponseSystemPort",
-    "ProfileRepositoryPort",
+    "ThreatLevel",
     "ThreatLoggerPort",
+    "ThreatType",
+    "UserBehaviorProfile",
 ]

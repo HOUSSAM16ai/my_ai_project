@@ -7,7 +7,6 @@ Simple in-memory storage for profiles and logs.
 """
 
 from collections import deque
-from typing import Optional
 
 from ...domain.models import ThreatDetection, UserBehaviorProfile
 
@@ -15,7 +14,7 @@ from ...domain.models import ThreatDetection, UserBehaviorProfile
 class InMemoryProfileRepository:
     """
     مستودع الملفات الشخصية في الذاكرة
-    
+
     In-memory storage for user behavioral profiles.
     """
 
@@ -23,7 +22,7 @@ class InMemoryProfileRepository:
         """Initialize empty profile storage"""
         self._profiles: dict[str, UserBehaviorProfile] = {}
 
-    def get_profile(self, user_id: str) -> Optional[UserBehaviorProfile]:
+    def get_profile(self, user_id: str) -> UserBehaviorProfile | None:
         """Get user profile by ID"""
         return self._profiles.get(user_id)
 
@@ -39,14 +38,14 @@ class InMemoryProfileRepository:
 class InMemoryThreatLogger:
     """
     مسجل التهديدات في الذاكرة
-    
+
     In-memory storage for detected threats.
     """
 
     def __init__(self, max_size: int = 10000):
         """
         Initialize threat logger.
-        
+
         Args:
             max_size: Maximum number of threats to keep in memory
         """
