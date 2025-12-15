@@ -22,16 +22,19 @@ class TaskExecutorAdapter:
 
     def execute(self, task: Any, model: str | None = None) -> None:
         """
-        Execute task using TaskExecutor.
+        Execute task (stub implementation).
+        
+        Note: Task execution has been moved to overmind/executor.py.
+        This adapter is kept for backward compatibility but does not execute tasks.
         
         Args:
             task: Task to execute
             model: Optional model override
         """
-        from app.services.task_executor_refactored import TaskExecutor
-
-        executor = TaskExecutor(self.generation_manager)
-        executor.execute(task, model)
+        raise NotImplementedError(
+            "Task execution has been moved to app.services.overmind.executor.TaskExecutor. "
+            "Use the Overmind orchestrator for task execution."
+        )
 
 
 __all__ = ["TaskExecutorAdapter"]
