@@ -127,3 +127,9 @@ This document records the architectural evolution of the CogniForge platform, sp
     *   **Legacy Config Removal:** Verified deletion of `app/core/config.py` (deprecated legacy config).
     *   **Analytics Service Cleanup:** Deleted `app/services/analytics/facade_old.py` (legacy backup) and `app/services/analytics/facade_complete.py` (redundant duplicate) after confirming `app/services/analytics/facade.py` fully implements the required functionality.
     *   **Verification Script Purification:** Removed obsolete verification scripts `verify_final.py` (ephemeral Playwright check) and `verify_comprehensive_fix_final.py` (redundant hardcoded path checker) to reduce root directory noise and prevent confusion with actual CI verification steps.
+    *   **Legacy Validators Removal (Wave 8 Continuation):**
+        *   Deleted `app/validators/` (directory) including `schemas.py`, `base.py`, and `__init__.py`. This legacy layer used Marshmallow and Werkzeug, introducing security vulnerabilities and dependency bloat. It has been fully superseded by Pydantic models in the new architecture.
+        *   Deleted `tests/integration/test_validators_integration.py` as it tested the dead code.
+        *   Deleted `scripts/verify_wave8.py` (obsolete check script).
+        *   Deleted `scripts/verify_actions_fix.sh` (obsolete fix script).
+        *   Deleted `scripts/verify_all_workflows.sh` (obsolete verification script).
