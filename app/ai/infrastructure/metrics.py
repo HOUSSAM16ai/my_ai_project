@@ -1,4 +1,3 @@
-# app/ai/infrastructure/metrics.py
 """
 Metrics Infrastructure Implementations
 =======================================
@@ -9,9 +8,7 @@ Provides comprehensive metrics collection and observability:
 - Time-series data collection
 - Distributed tracing support
 """
-
 from __future__ import annotations
-
 import logging
 import threading
 import time
@@ -20,15 +17,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
-
 from app.ai.domain.ports import MetricsPort, ObservabilityPort
-
 _LOG = logging.getLogger(__name__)
-
-
-# ======================================================================================
-# METRICS DATA STRUCTURES
-# ======================================================================================
 
 
 @dataclass
@@ -36,8 +26,8 @@ class Counter:
     """Counter metric that increments."""
     value: float = 0.0
     tags: dict[str, str] = field(default_factory=dict)
-    
-    def increment(self, value: float = 1.0) -> None:
+
+    def increment(self, value: float=1.0) ->None:
         """Increment counter."""
         self.value += value
 
@@ -47,8 +37,8 @@ class Gauge:
     """Gauge metric for current values."""
     value: float = 0.0
     tags: dict[str, str] = field(default_factory=dict)
-    
-    def set(self, value: float) -> None:
+
+    def set(self, value: float) ->None:
         """Set gauge value."""
         self.value = value
 
@@ -58,35 +48,30 @@ class Histogram:
     """Histogram for distribution of values."""
     values: list[float] = field(default_factory=list)
     tags: dict[str, str] = field(default_factory=dict)
-    
-    def record(self, value: float) -> None:
+
+    def record(self, value: float) ->None:
         """Record a value."""
         self.values.append(value)
-    
-    def percentile(self, p: float) -> float:
+
+    def percentile(self, p: float) ->float:
         """Calculate percentile (p in 0-1)."""
         if not self.values:
             return 0.0
         sorted_values = sorted(self.values)
         idx = int(len(sorted_values) * p)
         return sorted_values[min(idx, len(sorted_values) - 1)]
-    
-    def mean(self) -> float:
+
+    def mean(self) ->float:
         """Calculate mean."""
         return sum(self.values) / len(self.values) if self.values else 0.0
-    
-    def min(self) -> float:
+
+    def min(self) ->float:
         """Get minimum value."""
         return min(self.values) if self.values else 0.0
-    
-    def max(self) -> float:
+
+    def max(self) ->float:
         """Get maximum value."""
         return max(self.values) if self.values else 0.0
-
-
-# ======================================================================================
-# IN-MEMORY METRICS
-# ======================================================================================
 
 
 class InMemoryMetrics(MetricsPort):
@@ -107,19 +92,15 @@ class InMemoryMetrics(MetricsPort):
         self._histograms: dict[str, Histogram] = defaultdict(Histogram)
         self._lock = threading.Lock()
 
-    def _get_key(self, name: str, tags: dict[str, str] | None) -> str:
+    def _get_key(self, name: str, tags: (dict[str, str] | None)) ->str:
         """Generate unique key from name and tags."""
         if not tags:
             return name
-        tag_str = ",".join(f"{k}={v}" for k, v in sorted(tags.items()))
-        return f"{name}:{tag_str}"
+        tag_str = ','.join(f'{k}={v}' for k, v in sorted(tags.items()))
+        return f'{name}:{tag_str}'
 
-    def increment_counter(
-        self,
-        name: str,
-        value: float = 1.0,
-        tags: dict[str, str] | None = None,
-    ) -> None:
+    def increment_counter(self, name: str, value: float=1.0, tags: (dict[
+        str, str] | None)=None) ->None:
         """Increment a counter metric."""
         key = self._get_key(name, tags)
         with self._lock:
@@ -128,12 +109,8 @@ class InMemoryMetrics(MetricsPort):
             if tags:
                 counter.tags = tags
 
-    def record_gauge(
-        self,
-        name: str,
-        value: float,
-        tags: dict[str, str] | None = None,
-    ) -> None:
+    def record_gauge(self, name: str, value: float, tags: (dict[str, str] |
+        None)=None) ->None:
         """Record a gauge metric."""
         key = self._get_key(name, tags)
         with self._lock:
@@ -142,12 +119,8 @@ class InMemoryMetrics(MetricsPort):
             if tags:
                 gauge.tags = tags
 
-    def record_histogram(
-        self,
-        name: str,
-        value: float,
-        tags: dict[str, str] | None = None,
-    ) -> None:
+    def record_histogram(self, name: str, value: float, tags: (dict[str,
+        str] | None)=None) ->None:
         """Record a histogram metric."""
         key = self._get_key(name, tags)
         with self._lock:
@@ -156,55 +129,31 @@ class InMemoryMetrics(MetricsPort):
             if tags:
                 histogram.tags = tags
 
-    def get_metrics(self) -> dict[str, Any]:
+    def get_metrics(self) ->dict[str, Any]:
         """Get all collected metrics."""
         with self._lock:
-            metrics: dict[str, Any] = {
-                "counters": {},
-                "gauges": {},
-                "histograms": {},
-            }
-            
-            # Counters
+            metrics: dict[str, Any] = {'counters': {}, 'gauges': {},
+                'histograms': {}}
             for key, counter in self._counters.items():
-                metrics["counters"][key] = {
-                    "value": counter.value,
-                    "tags": counter.tags,
-                }
-            
-            # Gauges
+                metrics['counters'][key] = {'value': counter.value, 'tags':
+                    counter.tags}
             for key, gauge in self._gauges.items():
-                metrics["gauges"][key] = {
-                    "value": gauge.value,
-                    "tags": gauge.tags,
-                }
-            
-            # Histograms with stats
+                metrics['gauges'][key] = {'value': gauge.value, 'tags':
+                    gauge.tags}
             for key, histogram in self._histograms.items():
-                metrics["histograms"][key] = {
-                    "count": len(histogram.values),
-                    "mean": histogram.mean(),
-                    "min": histogram.min(),
-                    "max": histogram.max(),
-                    "p50": histogram.percentile(0.5),
-                    "p95": histogram.percentile(0.95),
-                    "p99": histogram.percentile(0.99),
-                    "tags": histogram.tags,
-                }
-            
+                metrics['histograms'][key] = {'count': len(histogram.values
+                    ), 'mean': histogram.mean(), 'min': histogram.min(),
+                    'max': histogram.max(), 'p50': histogram.percentile(0.5
+                    ), 'p95': histogram.percentile(0.95), 'p99': histogram.
+                    percentile(0.99), 'tags': histogram.tags}
             return metrics
 
-    def reset(self) -> None:
+    def reset(self) ->None:
         """Reset all metrics."""
         with self._lock:
             self._counters.clear()
             self._gauges.clear()
             self._histograms.clear()
-
-
-# ======================================================================================
-# SPAN TRACKING
-# ======================================================================================
 
 
 @dataclass
@@ -216,21 +165,16 @@ class Span:
     parent_span: Span | None = None
     tags: dict[str, Any] = field(default_factory=dict)
     events: list[dict[str, Any]] = field(default_factory=list)
-    status: str = "pending"
+    status: str = 'pending'
     error: Exception | None = None
     end_time: float | None = None
-    
+
     @property
-    def duration_ms(self) -> float:
+    def duration_ms(self) ->float:
         """Get duration in milliseconds."""
         if self.end_time is None:
             return (time.time() - self.start_time) * 1000
         return (self.end_time - self.start_time) * 1000
-
-
-# ======================================================================================
-# SIMPLE OBSERVER
-# ======================================================================================
 
 
 class SimpleObserver(ObservabilityPort):
@@ -247,132 +191,80 @@ class SimpleObserver(ObservabilityPort):
     def __init__(self):
         """Initialize simple observer."""
         self._spans: dict[str, Span] = {}
-        self._active_spans: dict[str, str] = {}  # thread_id -> span_id
+        self._active_spans: dict[str, str] = {}
         self._lock = threading.Lock()
 
-    def start_span(
-        self,
-        operation: str,
-        parent_span: Any | None = None,
-        tags: dict[str, Any] | None = None,
-    ) -> Span:
+    def start_span(self, operation: str, parent_span: (Any | None)=None,
+        tags: (dict[str, Any] | None)=None) ->Span:
         """Start a new tracing span."""
         span_id = str(uuid.uuid4())
-        span = Span(
-            span_id=span_id,
-            operation=operation,
-            start_time=time.time(),
-            parent_span=parent_span,
-            tags=tags or {},
-        )
-        
+        span = Span(span_id=span_id, operation=operation, start_time=time.
+            time(), parent_span=parent_span, tags=tags or {})
         with self._lock:
             self._spans[span_id] = span
-            # Track active span for current thread
             thread_id = str(threading.get_ident())
             self._active_spans[thread_id] = span_id
-        
         return span
 
-    def finish_span(
-        self,
-        span: Span,
-        status: str = "success",
-        error: Exception | None = None,
-    ) -> None:
+    def finish_span(self, span: Span, status: str='success', error: (
+        Exception | None)=None) ->None:
         """Finish a tracing span."""
         with self._lock:
             span.end_time = time.time()
             span.status = status
             span.error = error
-            
-            # Remove from active spans
             thread_id = str(threading.get_ident())
             if self._active_spans.get(thread_id) == span.span_id:
                 del self._active_spans[thread_id]
 
-    def record_event(
-        self,
-        event_name: str,
-        attributes: dict[str, Any] | None = None,
-    ) -> None:
+    def record_event(self, event_name: str, attributes: (dict[str, Any] |
+        None)=None) ->None:
         """Record a discrete event."""
-        event = {
-            "name": event_name,
-            "timestamp": time.time(),
-            "attributes": attributes or {},
-        }
-        
-        # Try to attach to current span
+        event = {'name': event_name, 'timestamp': time.time(), 'attributes':
+            attributes or {}}
         thread_id = str(threading.get_ident())
         with self._lock:
             span_id = self._active_spans.get(thread_id)
             if span_id and span_id in self._spans:
                 self._spans[span_id].events.append(event)
 
-    def get_spans(self) -> list[dict[str, Any]]:
-        """Get all recorded spans."""
-        with self._lock:
-            return [
-                {
-                    "span_id": span.span_id,
-                    "operation": span.operation,
-                    "duration_ms": span.duration_ms,
-                    "status": span.status,
-                    "tags": span.tags,
-                    "events": span.events,
-                    "error": str(span.error) if span.error else None,
-                }
-                for span in self._spans.values()
-            ]
-
-    def reset(self) -> None:
+    def reset(self) ->None:
         """Reset all spans."""
         with self._lock:
             self._spans.clear()
             self._active_spans.clear()
 
 
-# ======================================================================================
-# FACTORIES
-# ======================================================================================
-
 _METRICS_INSTANCE: MetricsPort | None = None
 _OBSERVER_INSTANCE: ObservabilityPort | None = None
 _LOCK = threading.Lock()
 
 
-def get_metrics() -> MetricsPort:
+def get_metrics() ->MetricsPort:
     """Get or create metrics instance."""
     global _METRICS_INSTANCE
-    
     if _METRICS_INSTANCE is not None:
         return _METRICS_INSTANCE
-    
     with _LOCK:
         if _METRICS_INSTANCE is not None:
             return _METRICS_INSTANCE
-        
         _METRICS_INSTANCE = InMemoryMetrics()
         return _METRICS_INSTANCE
 
 
-def get_observer() -> ObservabilityPort:
+def get_observer() ->ObservabilityPort:
     """Get or create observer instance."""
     global _OBSERVER_INSTANCE
-    
     if _OBSERVER_INSTANCE is not None:
         return _OBSERVER_INSTANCE
-    
     with _LOCK:
         if _OBSERVER_INSTANCE is not None:
             return _OBSERVER_INSTANCE
-        
         _OBSERVER_INSTANCE = SimpleObserver()
         return _OBSERVER_INSTANCE
 
 
-def reset_observability() -> None:
+def reset_observability() ->None:
     """Reset observability singletons (for testing)."""
     global _METRICS_INSTANCE, _OBSERVER_INSTANCE
     with _LOCK:
@@ -380,15 +272,5 @@ def reset_observability() -> None:
         _OBSERVER_INSTANCE = None
 
 
-# ======================================================================================
-# EXPORTS
-# ======================================================================================
-
-__all__ = [
-    "InMemoryMetrics",
-    "SimpleObserver",
-    "Span",
-    "get_metrics",
-    "get_observer",
-    "reset_observability",
-]
+__all__ = ['InMemoryMetrics', 'SimpleObserver', 'Span', 'get_metrics',
+    'get_observer', 'reset_observability']

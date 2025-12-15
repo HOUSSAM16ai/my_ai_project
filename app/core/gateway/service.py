@@ -169,13 +169,13 @@ api_gateway_service = APIGatewayService()
 # ======================================================================================
 
 
-def gateway_process(protocol: ProtocolType = ProtocolType.REST, cacheable: bool = False):
+def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False):
     """
     Decorator to process requests through API Gateway (FastAPI Dependency Injection Friendly)
 
     Usage:
         @router.get("/my-endpoint")
-        @gateway_process(protocol=ProtocolType.REST, cacheable=True)
+        @gateway_process(protocol=ProtocolType.REST, _cacheable=True)
         async def my_endpoint(request: Request):
             ...
     """

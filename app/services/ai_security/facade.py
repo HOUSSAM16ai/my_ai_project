@@ -5,18 +5,10 @@ Unified entry point maintaining backward compatibility.
 
 واجهة خدمة الأمان AI - نقطة دخول موحدة
 """
-
 from typing import Optional
-
 from .application.security_manager import SecurityManager
 from .domain.models import SecurityEvent, ThreatDetection, UserBehaviorProfile
-from .infrastructure import (
-    DeepLearningThreatDetector,
-    InMemoryProfileRepository,
-    InMemoryThreatLogger,
-    SimpleBehavioralAnalyzer,
-    SimpleResponseSystem,
-)
+from .infrastructure import DeepLearningThreatDetector, InMemoryProfileRepository, InMemoryThreatLogger, SimpleBehavioralAnalyzer, SimpleResponseSystem
 
 
 class SuperhumanSecuritySystem:
@@ -33,23 +25,17 @@ class SuperhumanSecuritySystem:
         
         Creates all necessary components using dependency injection.
         """
-        # Initialize infrastructure
         self._threat_detector = DeepLearningThreatDetector()
         self._behavioral_analyzer = SimpleBehavioralAnalyzer()
         self._response_system = SimpleResponseSystem()
         self._profile_repo = InMemoryProfileRepository()
         self._threat_logger = InMemoryThreatLogger()
+        self._security_manager = SecurityManager(threat_detector=self.
+            _threat_detector, behavioral_analyzer=self._behavioral_analyzer,
+            response_system=self._response_system, profile_repo=self.
+            _profile_repo, threat_logger=self._threat_logger)
 
-        # Initialize application service
-        self._security_manager = SecurityManager(
-            threat_detector=self._threat_detector,
-            behavioral_analyzer=self._behavioral_analyzer,
-            response_system=self._response_system,
-            profile_repo=self._profile_repo,
-            threat_logger=self._threat_logger,
-        )
-
-    def analyze_event(self, event: SecurityEvent) -> list[ThreatDetection]:
+    def analyze_event(self, event: SecurityEvent) ->list[ThreatDetection]:
         """
         Analyze security event for threats.
         
@@ -61,7 +47,7 @@ class SuperhumanSecuritySystem:
         """
         return self._security_manager.analyze_event(event)
 
-    def get_recent_threats(self, limit: int = 100) -> list[ThreatDetection]:
+    def get_recent_threats(self, limit: int=100) ->list[ThreatDetection]:
         """
         Get recently detected threats.
         
@@ -73,7 +59,7 @@ class SuperhumanSecuritySystem:
         """
         return self._security_manager.get_recent_threats(limit)
 
-    def get_user_profile(self, user_id: str) -> Optional[UserBehaviorProfile]:
+    def get_user_profile(self, user_id: str) ->Optional[UserBehaviorProfile]:
         """
         Get user behavioral profile.
         
@@ -85,24 +71,11 @@ class SuperhumanSecuritySystem:
         """
         return self._security_manager.get_user_profile(user_id)
 
-    def is_ip_blocked(self, ip_address: str) -> bool:
-        """
-        Check if IP address is blocked.
-        
-        Args:
-            ip_address: IP address to check
-            
-        Returns:
-            True if IP is blocked
-        """
-        return self._response_system.is_blocked(ip_address)
 
-
-# Singleton instance for backward compatibility
 _security_system_instance: Optional[SuperhumanSecuritySystem] = None
 
 
-def get_superhuman_security_system() -> SuperhumanSecuritySystem:
+def get_superhuman_security_system() ->SuperhumanSecuritySystem:
     """
     Get singleton instance of security system.
     
@@ -115,7 +88,4 @@ def get_superhuman_security_system() -> SuperhumanSecuritySystem:
     return _security_system_instance
 
 
-__all__ = [
-    "SuperhumanSecuritySystem",
-    "get_superhuman_security_system",
-]
+__all__ = ['SuperhumanSecuritySystem', 'get_superhuman_security_system']
