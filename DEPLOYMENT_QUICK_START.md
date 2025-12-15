@@ -16,7 +16,7 @@
 ## 🎯 Example 1: Blue-Green Deployment (2 minutes)
 
 ```python
-from app.services.deployment_orchestrator_service import (
+from app.services.deployment import (
     get_deployment_orchestrator,
     ServiceVersion,
 )

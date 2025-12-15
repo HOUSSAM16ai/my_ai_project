@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from app.services.deployment_orchestrator_service import (
+from app.services.deployment import (
     CircuitState,
     DeploymentOrchestrator,
     DeploymentPhase,

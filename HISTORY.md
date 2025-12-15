@@ -133,3 +133,6 @@ This document records the architectural evolution of the CogniForge platform, sp
         *   Deleted `scripts/verify_wave8.py` (obsolete check script).
         *   Deleted `scripts/verify_actions_fix.sh` (obsolete fix script).
         *   Deleted `scripts/verify_all_workflows.sh` (obsolete verification script).
+    *   **Deployment Orchestrator Cleanup:**
+        *   Deleted `app/services/deployment_orchestrator_service.py` (legacy wrapper).
+        *   Refactored `tests/test_deployment_orchestration.py` to use `app.services.deployment`.
