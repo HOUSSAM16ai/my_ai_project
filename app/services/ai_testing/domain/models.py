@@ -6,6 +6,7 @@ from typing import Any
 
 class TestType(Enum):
     """أنواع الاختبارات"""
+    __test__ = False  # Tell pytest this is not a test class
 
     UNIT = "unit"
     INTEGRATION = "integration"
@@ -28,6 +29,7 @@ class CoverageType(Enum):
 @dataclass
 class TestCase:
     """حالة اختبار مولدة بالذكاء الاصطناعي"""
+    __test__ = False  # Tell pytest this is not a test class
 
     test_id: str
     test_name: str

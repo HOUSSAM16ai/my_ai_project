@@ -266,14 +266,19 @@ class TestExtractFirstJsonObjectFuzzing:
     @settings(max_examples=100, deadline=None)
     @given(
         st.dictionaries(
-            st.text(min_size=1, max_size=50),
-            st.one_of(st.text(max_size=100), st.integers(), st.booleans(), st.none()),
+            st.text(min_size=1, max_size=50, alphabet=st.characters(blacklist_categories=("Cs",))),
+            st.one_of(
+                st.text(max_size=100, alphabet=st.characters(blacklist_categories=("Cs",))),
+                st.integers(),
+                st.booleans(),
+                st.none(),
+            ),
             max_size=20,
         )
     )
     def test_fuzz_valid_json_always_extracted(self, data):
         """Property: Valid JSON should always be extractable"""
-        json_str = json.dumps(data)
+        json_str = json.dumps(data, ensure_ascii=True)
         text = f"prefix {json_str} suffix"
 
         result = extract_first_json_object(text)

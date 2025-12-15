@@ -253,7 +253,12 @@ async def test_stream_chat_response_error_handling(service):
     question = "Hello"
     history = []
     ai_client = MagicMock()
-    session_factory = MagicMock()
+    
+    # Mock session factory with proper async mocks
+    mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session_factory = MagicMock()
+    mock_session_factory.return_value.__aenter__.return_value = mock_session
 
     with patch("app.services.admin.chat_streamer.get_chat_orchestrator") as mock_get_orch:
         mock_orch = MagicMock()
@@ -261,7 +266,7 @@ async def test_stream_chat_response_error_handling(service):
         mock_get_orch.return_value = mock_orch
 
         generator = service.stream_chat_response(
-            user_id, conversation, question, history, ai_client, session_factory
+            user_id, conversation, question, history, ai_client, mock_session_factory
         )
 
         events = []
