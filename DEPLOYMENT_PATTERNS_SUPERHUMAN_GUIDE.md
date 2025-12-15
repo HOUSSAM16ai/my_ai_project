@@ -580,7 +580,7 @@ print(f"Total cost: ${response.cost_usd}")
 ### Example 1: Zero-Downtime Production Deployment
 
 ```python
-from app.services.deployment_orchestrator_service import (
+from app.services.deployment import (
     get_deployment_orchestrator,
     ServiceVersion,
 )
@@ -835,7 +835,7 @@ print(f"Status: {model.status}")
 
 ## 📚 موارد إضافية | Additional Resources
 
-- [Deployment Orchestrator Service](../app/services/deployment_orchestrator_service.py)
+- [Deployment Orchestrator Service](../app/services/deployment/orchestrator.py)
 - [Kubernetes Orchestration Service](../app/services/kubernetes_orchestration_service.py)
 - [Model Serving Infrastructure](../app/services/model_serving_infrastructure.py)
 - [Deployment Tests](../tests/test_deployment_orchestration.py)
