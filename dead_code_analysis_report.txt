@@ -1,0 +1,2125 @@
+================================================================================
+COMPREHENSIVE DEAD CODE ANALYSIS REPORT
+================================================================================
+
+📊 SUMMARY
+--------------------------------------------------------------------------------
+Total files analyzed: 987
+Total definitions: 5661
+Total unique usages: 8244
+Errors encountered: 0
+
+🔴 UNUSED DEFINITIONS: 997
+--------------------------------------------------------------------------------
+
+app/ai/application/circuit_breaker.py:
+  - call_async
+  - get_registry
+
+app/ai/application/cost_manager.py:
+  - get_cost_breakdown
+  - get_optimization_recommendations
+  - register_model_pricing
+  - reset_metrics
+
+app/ai/application/retry_strategy.py:
+  - FibonacciBackoffRetry
+  - LinearBackoffRetry
+  - execute_async
+  - get_default_executor
+  - with_retry
+
+app/ai/domain/models.py:
+  - CircuitBreakerStats
+  - LLMRequest
+  - add_usage
+  - from_dict
+  - increment_attempts
+  - record_rejection
+  - to_api_params
+
+app/ai/domain/ports/__init__.py:
+  - CircuitBreakerPort
+  - CostManagerPort
+  - RetryStrategyPort
+  - get_delay
+  - get_total_cost
+  - get_usage_stats
+  - record_event
+  - record_gauge
+  - record_histogram
+  - record_usage
+
+app/ai/facade.py:
+  - get_retry_metrics
+  - register_post_hook
+  - register_pre_hook
+  - reset_circuit_breaker
+  - reset_llm_client_service
+  - set_project_budget
+  - set_user_budget
+
+app/ai/infrastructure/cache.py:
+  - get_cache
+  - reset_cache
+
+app/ai/infrastructure/metrics.py:
+  - get_observer
+  - get_spans
+  - record_event
+  - record_gauge
+  - record_histogram
+  - reset_observability
+
+app/ai/infrastructure/transports/__init__.py:
+  - create_llm_transport
+  - get_call_count
+  - register_transport
+  - reset_call_count
+
+app/ai/observability/__init__.py:
+  - MetricPoint
+  - add_log
+  - finish_operation
+  - get_counter
+  - get_dashboard_data
+  - get_gauge
+  - get_observability
+  - get_span
+  - register_span_hook
+  - set_tag
+  - trace_operation
+
+app/ai/optimization/__init__.py:
+  - RequestBatcher
+  - deduplicate
+  - get_cache
+  - get_deduplicator
+  - stop
+
+app/analysis/anomaly_detector.py:
+  - detect_collective_anomaly
+  - get_recent_anomalies
+
+app/analysis/pattern_recognizer.py:
+  - PatternRecognizer
+  - analyze_traffic_pattern
+  - detect_error_pattern
+  - detect_security_pattern
+  - get_recent_patterns
+
+app/analysis/predictor.py:
+  - PredictiveAnalytics
+  - add_observation
+  - get_recent_predictions
+  - predict_resource_exhaustion
+
+app/analysis/root_cause.py:
+  - RootCauseAnalyzer
+  - add_dependency
+  - analyze_incident
+  - record_change
+  - record_event
+
+app/analytics/__init__.py:
+  - get_user_analytics_service
+
+app/analytics/api/analytics_facade.py:
+  - analyze_user
+  - get_analytics_service
+  - get_anomalies
+
+app/analytics/application/custom_report_generators.py:
+  - PerformanceReportGenerator
+
+app/analytics/application/ml_anomaly_detection.py:
+  - CompositeAnomalyDetector
+  - MLBasedAnomalyDetector
+
+app/analytics/domain/models.py:
+  - CohortAnalysis
+  - RevenueMetrics
+
+app/analytics/domain/models/event.py:
+  - add_superposition_state
+  - collapse
+  - from_dict
+  - sliding_windows
+  - tumbling_windows
+
+app/analytics/domain/ports.py:
+  - clear_period
+  - get_all_tests
+  - get_users_by_segment
+
+app/analytics/infrastructure/in_memory_stores.py:
+  - clear_period
+  - get_all_tests
+  - get_users_by_segment
+
+app/analytics/infrastructure/stores/hyperloglog.py:
+  - HyperLogLogPlusPlus
+
+app/api/exceptions.py:
+  - generic_handler
+  - register_exception_handlers
+
+app/api/middleware.py:
+  - add_middlewares
+  - log_requests
+
+app/api/routers/gateway.py:
+  - get_cache_stats
+  - get_routes
+  - get_services
+
+app/api/routers/security.py:
+  - generate_token
+  - get_current_user_endpoint
+  - login
+  - lowercase_email
+  - verify_token
+
+app/api/v2/dependencies.py:
+  - get_db_session
+  - verify_api_key
+
+app/api/v2/endpoints/health.py:
+  - liveness_check
+  - readiness_check
+
+app/api/v2/endpoints/tools.py:
+  - execute_tool
+  - get_tool_stats
+
+app/api/v2/router.py:
+  - create_api_router
+
+app/api/v2/schemas.py:
+  - ErrorResponse
+  - validate_question
+
+app/api_docs.py:
+  - get_api_endpoints_documentation
+  - get_openapi_config
+
+app/application/use_cases/planning/refactored_planner.py:
+  - RefactoredPlanner
+  - get_capabilities
+
+app/application/use_cases/routing/routing_strategies.py:
+  - StrategyFactory
+  - is_applicable
+  - list_strategies
+  - record_performance
+
+app/blueprints/gateway_blueprint.py:
+  - get_cache_stats
+  - get_routes
+  - get_services
+
+app/blueprints/system_blueprint.py:
+  - healthz
+
+app/boundaries/data_boundaries.py:
+  - CommandHandler
+  - EventSourcedAggregate
+  - QueryHandler
+  - add_step
+  - create_saga
+  - from_domain_model
+  - get_by_id
+  - get_current_version
+  - get_data_boundary
+  - get_or_create_read_model
+  - get_status
+  - load_from_history
+  - normalize_error
+  - to_domain_model
+  - update_from_event
+  - validate_access
+
+app/boundaries/policy/auth.py:
+  - AuthenticationService
+  - authenticate
+  - has_claim
+  - refresh_token
+  - revoke_token
+
+app/boundaries/policy/compliance.py:
+  - add_rule
+
+app/boundaries/policy/governance.py:
+  - calculate_deletion_date
+  - is_location_allowed
+  - should_backup
+  - should_encrypt
+
+app/boundaries/policy/layers.py:
+  - get_audit_log
+
+app/boundaries/service_boundaries.py:
+  - aggregate_response
+  - call_protected
+  - get_event_history
+  - get_ubiquitous_language
+  - validate_business_rules
+
+app/cli_handlers/maintenance_cli.py:
+  - placeholder
+
+app/cli_handlers/migrate_cli.py:
+  - db_migrate
+
+app/config/ai_models.py:
+  - get_tier_model
+  - openai_api_key
+
+app/config/settings.py:
+  - detect_codespaces
+  - fix_database_url
+  - parse_cors_origins
+  - validate_integrity
+
+app/core/ai_client_factory.py:
+  - AIClientProtocol
+  - get_client_metadata
+
+app/core/ai_gateway.py:
+  - get_performance_report
+
+app/core/base_profiler.py:
+  - CountProfiler
+  - TimeProfiler
+  - enable
+  - record_duration
+
+app/core/cli_logging.py:
+  - create_logger
+
+app/core/common_imports.py:
+  - FeatureFlags
+  - ImportHelper
+  - check_feature
+  - has_module
+  - safe_import_ai_client
+  - safe_import_db
+  - safe_import_models
+
+app/core/di.py:
+  - get_di_session_factory
+
+app/core/engine/diagnostics.py:
+  - EngineDiagnostics
+  - get_engine_info
+  - verify_pgbouncer_compatibility
+
+app/core/engine/factory.py:
+  - create_unified_sync_engine
+
+app/core/engine/pooler.py:
+  - requires_prepared_statement_protection
+
+app/core/error_handling.py:
+  - ErrorHandler
+  - capture_errors
+  - format_exception
+  - log_exception
+  - retry_on_failure
+  - safe_context
+  - safe_execute
+  - suppress_errors
+  - wrap_function
+
+app/core/factories.py:
+  - get_db_service
+
+app/core/gateway/exceptions.py:
+  - AICircuitOpenError
+  - AIProviderError
+
+app/core/gateway/models.py:
+  - ModelProvider
+
+app/core/gateway/protocols/base.py:
+  - transform_response
+
+app/core/gateway/protocols/graphql.py:
+  - transform_response
+
+app/core/gateway/protocols/grpc.py:
+  - transform_response
+
+app/core/gateway/protocols/rest.py:
+  - transform_response
+
+app/core/gateway/providers/anthropic.py:
+  - call_model
+
+app/core/gateway/providers/base.py:
+  - call_model
+
+app/core/gateway/providers/openai.py:
+  - call_model
+
+app/core/gateway/routing.py:
+  - route_request
+  - update_provider_stats
+
+app/core/gateway/service.py:
+  - gateway_process
+  - get_gateway_service
+  - get_gateway_stats
+  - register_route
+  - register_upstream_service
+
+app/core/http_client_factory.py:
+  - close_all_http_clients
+  - close_http_client
+  - get_http_client
+  - get_http_client_stats
+
+app/core/interfaces/data.py:
+  - ICommand
+  - IQuery
+  - IRepository
+
+app/core/interfaces/planner_interface.py:
+  - get_capabilities
+
+app/core/interfaces/processing.py:
+  - IHandler
+  - IProcessor
+  - IValidator
+  - get_errors
+
+app/core/interfaces/repository_interface.py:
+  - RepositoryInterface
+  - find_all
+  - find_by_id
+
+app/core/interfaces/service_interface.py:
+  - ServiceInterface
+
+app/core/interfaces/strategy_interface.py:
+  - is_applicable
+
+app/core/math/cognitive_fingerprint.py:
+  - CognitiveFingerprint
+
+app/core/math/kalman.py:
+  - get_estimate
+
+app/core/patterns/chain.py:
+  - Chain
+
+app/core/patterns/command.py:
+  - CommandBus
+
+app/core/protocols.py:
+  - AIClientProtocol
+  - CacheProtocol
+  - DatabaseProtocol
+  - MessageQueueProtocol
+  - NotificationProtocol
+  - UserRepositoryProtocol
+  - VectorStoreProtocol
+  - create_record
+  - delete_record
+  - get_all_records
+  - get_record
+  - update_record
+  - upsert
+
+app/core/rate_limiter.py:
+  - get_rate_limiter
+
+app/core/registry/plugin_discovery.py:
+  - discover_and_configure
+
+app/core/registry/plugin_loader.py:
+  - PluginLoader
+  - get_loaded
+  - is_loaded
+  - unload
+
+app/core/registry/plugin_registry.py:
+  - get_by_type
+  - unregister
+
+app/core/resilience/circuit_breaker.py:
+  - CircuitOpenError
+  - get_all_circuit_breaker_stats
+  - reset_all_circuit_breakers
+  - reset_circuit_breaker
+
+app/core/resilience/composite.py:
+  - CompositeResiliencePolicy
+
+app/core/scaling/health_checker.py:
+  - register_health_check
+  - stop
+
+app/core/scaling/load_balancer.py:
+  - RandomStrategy
+  - WeightedRandomStrategy
+  - execute_on_instance
+
+app/core/scaling/service_registry.py:
+  - deregister
+  - heartbeat
+
+app/core/security.py:
+  - generate_service_token
+  - get_password_hash
+
+app/core/self_healing_db.py:
+  - heal_api_error
+  - quick_fix_linked_mission_id
+  - run_self_healing
+
+app/core/startup_diagnostics.py:
+  - run_diagnostics
+
+app/core/superhuman_performance_optimizer.py:
+  - add_request
+  - get_optimal_timeout
+  - group_by_similarity
+  - reset_optimizer
+  - should_switch_model
+
+app/core/time.py:
+  - legacy_context
+
+app/core/yaml_utils.py:
+  - load_yaml_file_safely
+
+app/infrastructure/config/env_reader.py:
+  - read_bool_env
+  - read_float_env
+  - read_int_env
+  - read_str_env
+
+app/infrastructure/patterns/chain_of_responsibility.py:
+  - CachingHandler
+  - build_request_pipeline
+  - cache_response
+
+app/infrastructure/patterns/dependency_injection.py:
+  - inject
+  - register_factory
+  - register_singleton
+
+app/infrastructure/patterns/event_bus.py:
+  - clear_history
+  - get_history
+  - publish_async
+  - subscribe_async
+
+app/middleware/config/middleware_settings.py:
+  - MiddlewareSettings
+
+app/middleware/core/base_middleware.py:
+  - MetricsMiddleware
+  - dispatch
+
+app/middleware/core/context.py:
+  - set_user_context
+
+app/middleware/core/hooks.py:
+  - get_global_hooks
+  - get_hook_count
+  - on_after_execution
+  - on_after_failure
+  - on_after_success
+  - on_before_execution
+  - trigger
+  - unregister
+
+app/middleware/core/pipeline.py:
+  - get_middleware_list
+  - remove_middleware
+  - reset_statistics
+  - run_async
+
+app/middleware/core/registry.py:
+  - create_middleware
+  - get_class
+  - get_global_registry
+  - list_registered
+  - register_middleware
+  - unregister
+
+app/middleware/core/response_factory.py:
+  - from_middleware_result
+
+app/middleware/core/result.py:
+  - bad_request
+
+app/middleware/error_handling/exception_mapper.py:
+  - ExceptionMapper
+  - map_exception
+  - register_exception
+
+app/middleware/error_response_factory.py:
+  - create_database_error_response
+  - create_internal_error_response
+  - create_unexpected_error_response
+  - create_validation_error_response
+
+app/middleware/factory/middleware_factory.py:
+  - MiddlewareFactory
+  - create_development_pipeline
+  - create_minimal_pipeline
+  - create_production_pipeline
+
+app/middleware/fastapi_observability.py:
+  - dispatch
+
+app/middleware/observability/analytics_adapter.py:
+  - AnalyticsAdapter
+
+app/middleware/observability/anomaly_inspector.py:
+  - AnomalyInspector
+
+app/middleware/observability/observability_middleware.py:
+  - ObservabilityMiddleware
+
+app/middleware/observability/performance_profiler.py:
+  - get_endpoint_statistics
+
+app/middleware/observability/telemetry_bridge.py:
+  - TelemetryBridge
+
+app/middleware/rate_limiter_middleware.py:
+  - cleanup_expired
+  - get_rate_limiter
+
+app/middleware/security/policy_enforcer.py:
+  - remove_policy
+
+app/middleware/security/telemetry_guard.py:
+  - get_audit_trail
+
+app/middleware/security/zero_trust_middleware.py:
+  - ZeroTrustMiddleware
+
+app/middleware/security_logger.py:
+  - log_data_access
+  - log_login_failure
+  - log_login_success
+  - log_password_change
+  - log_permission_change
+  - log_rate_limit_exceeded
+  - log_suspicious_activity
+  - log_unauthorized_access
+
+app/middleware/superhuman_security.py:
+  - SuperhumanSecurityMiddleware
+  - dispatch
+
+app/models.py:
+  - log_mission_event
+  - process_bind_param
+  - process_result_value
+
+app/overmind/code_intelligence/analyzers/complexity.py:
+  - visit_AsyncFunctionDef
+  - visit_ClassDef
+  - visit_Import
+  - visit_ImportFrom
+
+app/overmind/graph/orchestrator.py:
+  - broadcast
+  - create_link
+  - dispatch
+  - get_graph_orchestrator
+  - run_step
+
+app/overmind/planning/_drift_detection.py:
+  - DriftResult
+  - clear_drift_snapshots
+  - get_drift_snapshot
+
+app/overmind/planning/_layer_detection.py:
+  - add_layer_rule
+
+app/overmind/planning/_self_test_runner.py:
+  - run_self_test
+
+app/overmind/planning/_tag_detection.py:
+  - add_tag_rule
+
+app/overmind/planning/base_planner.py:
+  - list_planner_metadata
+  - manual_unquarantine
+  - reliability_snapshot
+
+app/overmind/planning/deep_indexer_v2/visitor.py:
+  - visit_AsyncFor
+  - visit_AsyncWith
+  - visit_BoolOp
+  - visit_Call
+  - visit_ClassDef
+  - visit_DictComp
+  - visit_ExceptHandler
+  - visit_For
+  - visit_GeneratorExp
+  - visit_If
+  - visit_Import
+  - visit_ImportFrom
+  - visit_ListComp
+  - visit_Match
+  - visit_SetComp
+  - visit_Try
+  - visit_While
+  - visit_With
+
+app/overmind/planning/discovery.py:
+  - PlannerDiscovery
+  - discover_planners
+  - get_import_failures
+  - sync_with_registry
+
+app/overmind/planning/exceptions.py:
+  - ExternalServiceError
+  - PlannerDiscoveryError
+  - PlannerInstantiationError
+  - PlannerQuarantined
+  - PlannerSelectionError
+
+app/overmind/planning/factory.py:
+  - a_get_planner
+  - a_select_best_planner
+  - batch_select_best_planners
+  - instantiation_profiles
+  - list_quarantined
+  - select_best_planner_name
+  - selection_profiles
+
+app/overmind/planning/fault_tolerance.py:
+  - ResilientPlanner
+  - a_generate_safely
+  - generate_safely
+
+app/overmind/planning/generators/plan_generator.py:
+  - PlanGenerator
+
+app/overmind/planning/hyper_planner/planning_logic.py:
+  - read_from_file
+
+app/overmind/planning/sandbox.py:
+  - safe_import
+
+app/overmind/planning/schemas.py:
+  - PlanGenerationResult
+  - children_of
+  - leaves
+  - parents_of
+  - to_d3_json
+  - to_mermaid
+  - to_networkx
+
+app/overmind/planning/telemetry.py:
+  - TelemetryManager
+  - clear_all
+  - enable
+  - get_all_samples
+  - get_instantiation_samples
+  - get_selection_samples
+
+app/protocols/http_client.py:
+  - HttpClient
+  - RequestsAdapter
+  - iter_lines
+
+app/security/encryption.py:
+  - QuantumSafeEncryption
+  - rotate_keys
+
+app/security/owasp_validator.py:
+  - run_security_scan
+
+app/security/secure_auth.py:
+  - SecureAuthenticationService
+  - authenticate
+  - hash_password
+
+app/security_metrics/api/security_metrics_facade.py:
+  - add_finding
+  - calculate_risk
+  - get_developer_score
+  - get_findings_summary
+  - get_security_metrics_service
+
+app/security_metrics/domain/entities.py:
+  - SecurityDebt
+
+app/security_metrics/domain/interfaces.py:
+  - get_metrics_history
+
+app/security_metrics/infrastructure/in_memory_repository.py:
+  - count_findings
+  - get_metrics_history
+
+app/services/adaptive/application/intelligent_router.py:
+  - update_instance_score
+
+app/services/adaptive/application/scaling_engine.py:
+  - learn_from_decision
+
+app/services/adaptive/domain/ports.py:
+  - ServiceInstanceRepository
+  - get_metrics_in_range
+  - get_recent_metrics
+  - list_by_service
+  - store_metrics
+
+app/services/adaptive/facade.py:
+  - auto_scale
+  - get_adaptive_microservices
+  - get_service_status
+  - route_request
+
+app/services/adaptive/infrastructure/in_memory_repository.py:
+  - InMemoryServiceInstanceRepository
+  - get_metrics_in_range
+  - get_recent_metrics
+  - list_by_service
+  - store_metrics
+
+app/services/admin_ai/facade.py:
+  - AdminAiFacade
+
+app/services/admin_ai_service.py:
+  - answer_question
+  - create_conversation
+  - get_conversation_history
+
+app/services/admin_chat_boundary/facade.py:
+  - AdminChatBoundaryFacade
+
+app/services/admin_chat_performance/facade.py:
+  - AdminChatPerformanceFacade
+
+app/services/admin_chat_performance_service.py:
+  - assign_ab_variant
+  - get_ab_results
+  - get_optimization_suggestions
+  - get_performance_service
+
+app/services/admin_chat_streaming/facade.py:
+  - AdminChatStreamingFacade
+
+app/services/admin_chat_streaming_service.py:
+  - async_stream_response
+  - get_streaming_service
+  - predict_next_tokens
+
+app/services/advanced_streaming/facade.py:
+  - AdvancedStreamingFacade
+
+app/services/advanced_streaming_service.py:
+  - create_stream
+  - get_platform_metrics
+  - get_schema
+  - get_stream
+  - get_stream_metrics
+  - get_streaming_service
+  - process_stream
+  - register_schema
+  - replicate_stream
+
+app/services/agent_tools/__init__.py:
+  - analyze_path_semantics_tool
+  - append_file_tool
+  - code_index_project_tool
+  - code_search_lexical_tool
+  - code_search_semantic_tool
+  - delete_file_tool
+  - dispatch_tool_tool
+  - ensure_directory_tool
+  - ensure_file_tool
+  - file_exists_tool
+  - generic_think_tool
+  - introspect_tools_tool
+  - list_dir_tool
+  - memory_get_tool
+  - memory_put_tool
+  - read_bulk_files_tool
+  - read_file_tool
+  - refine_text_tool
+  - reload_deep_struct_map_tool
+  - summarize_text_tool
+  - write_file_if_changed_tool
+  - write_file_tool
+
+app/services/agent_tools/core.py:
+  - get_tool
+  - get_tools_schema
+  - has_tool
+
+app/services/agent_tools/refactored/builder.py:
+  - tool_decorator
+
+app/services/agent_tools/refactored/registry.py:
+  - disable_tool
+  - enable_tool
+  - get_canonical_name
+  - unregister
+
+app/services/ai_auto_refactoring/domain/ports.py:
+  - CodeAnalyzerPort
+  - RefactoringEnginePort
+  - check_complexity
+  - check_security
+  - generate_suggestions
+
+app/services/ai_project_management/application/services.py:
+  - ProjectOrchestrator
+  - add_task
+  - add_team_member
+  - generate_smart_insights
+  - optimize_schedule
+  - predict_completion_date
+
+app/services/ai_project_management/domain/models.py:
+  - completion_percentage
+
+app/services/ai_security/domain/ports.py:
+  - analyze_payload
+
+app/services/ai_security/facade.py:
+  - get_superhuman_security_system
+  - is_ip_blocked
+
+app/services/ai_security/infrastructure/detectors/ml_threat_detector.py:
+  - analyze_payload
+
+app/services/ai_security/infrastructure/repositories/in_memory_repos.py:
+  - delete_profile
+
+app/services/ai_testing/application/manager.py:
+  - analyze_and_generate
+  - optimize_suite
+
+app/services/ai_testing/domain/models.py:
+  - CoverageType
+
+app/services/ai_testing/selectors/smart_selector.py:
+  - record_test_result
+
+app/services/aiops_self_healing/application/service.py:
+  - analyze_root_cause
+  - generate_capacity_plan
+  - get_service_health
+
+app/services/analytics/application/conversion_analyzer.py:
+  - get_by_type
+
+app/services/analytics/application/engagement_analyzer.py:
+  - get_active_users_count
+  - get_user_engagement_score
+
+app/services/analytics/application/event_tracker.py:
+  - get_user_events
+  - track_conversion
+  - track_page_view
+  - track_purchase
+
+app/services/analytics/application/nps_manager.py:
+  - get_recent_comments
+
+app/services/analytics/application/session_manager.py:
+  - update_session_activity
+
+app/services/analytics/domain/models.py:
+  - CohortAnalysis
+  - RevenueMetrics
+  - arpu
+  - average_transaction_value
+  - detractor_percentage
+  - get_retention_curve
+  - get_winner
+  - has_conversion
+  - promoter_percentage
+  - record_retention
+  - record_transaction
+  - record_variant_view
+  - stickiness
+
+app/services/analytics/domain/ports.py:
+  - calculate_conversion_metrics
+  - calculate_retention_metrics
+  - classify_user
+  - count_events
+  - delete_old_events
+  - get_segment_users
+  - get_test_results
+  - update_segmentation
+
+app/services/analytics/facade.py:
+  - get_user_analytics_service
+  - reset_analytics_service
+
+app/services/analytics/infrastructure/ab_test_repository.py:
+  - InMemoryABTestRepository
+  - get_all_tests
+  - get_test_results
+  - stop_test
+
+app/services/analytics/infrastructure/analytics_aggregator.py:
+  - InMemoryAnalyticsAggregator
+  - calculate_conversion_metrics
+  - calculate_retention_metrics
+
+app/services/analytics/infrastructure/in_memory_repository.py:
+  - count_events
+  - delete_old_events
+
+app/services/analytics/infrastructure/user_segmentation.py:
+  - InMemoryUserSegmentation
+  - classify_user
+  - get_segment_stats
+  - get_segment_users
+  - update_segmentation
+
+app/services/api_advanced_analytics/domain/models.py:
+  - is_at_risk
+  - is_valuable
+
+app/services/api_advanced_analytics/domain/ports.py:
+  - get_aggregated_metrics
+  - get_all_profiles
+  - get_recent_reports
+  - get_report
+
+app/services/api_advanced_analytics/facade.py:
+  - get_advanced_analytics_service
+
+app/services/api_advanced_analytics/infrastructure/repositories.py:
+  - get_aggregated_metrics
+  - get_all_profiles
+  - get_recent_reports
+  - get_report
+
+app/services/api_chaos_monkey/facade.py:
+  - ApiChaosMonkeyFacade
+
+app/services/api_config_secrets/domain/ports.py:
+  - delete_secret
+  - list_secrets
+
+app/services/api_config_secrets/infrastructure/vault_adapters.py:
+  - delete_secret
+  - list_secrets
+
+app/services/api_config_secrets_service.py:
+  - access_logs
+  - config_store
+  - get_config_secrets_service
+  - secrets_registry
+
+app/services/api_contract/domain/ports.py:
+  - is_version_active
+
+app/services/api_contract/infrastructure/version_manager.py:
+  - is_version_active
+
+app/services/api_contract_service.py:
+  - APIContractService
+
+app/services/api_gateway_chaos.py:
+  - get_active_experiments
+  - get_all_states
+  - get_bulkhead_service
+  - get_chaos_service
+  - get_experiment_results
+  - inject_fault
+  - reset_stats
+  - start_experiment
+
+app/services/api_gateway_deployment.py:
+  - create_experiment
+  - create_flag
+  - end_experiment
+  - get_ab_testing_service
+  - get_all_flags
+  - get_canary_deployment_service
+  - get_experiment_results
+  - get_feature_flag_service
+  - get_version_for_request
+  - increment_traffic
+  - record_request_outcome
+  - should_increment_traffic
+  - start_deployment
+  - update_flag
+
+app/services/api_governance_service.py:
+  - get_governance_service
+
+app/services/api_observability/facade.py:
+  - ApiObservabilityFacade
+
+app/services/api_observability_service.py:
+  - monitor_performance
+  - start_request_trace
+
+app/services/api_security_service.py:
+  - get_security_service
+
+app/services/api_slo_sli/facade.py:
+  - ApiSloSliFacade
+
+app/services/api_slo_sli_service.py:
+  - end_incident
+  - get_dashboard
+  - get_slo_service
+  - start_incident
+
+app/services/api_subscription/facade.py:
+  - ApiSubscriptionFacade
+
+app/services/api_subscription_service.py:
+  - create_subscription
+  - get_customer_subscriptions
+  - get_revenue_metrics
+  - get_subscription
+  - get_subscription_service
+  - get_usage_analytics
+  - record_usage
+  - upgrade_subscription
+
+app/services/async_tool_bridge.py:
+  - get_async_overmind
+  - get_async_tools
+
+app/services/auth_boundary/facade.py:
+  - AuthBoundaryFacade
+
+app/services/breakthrough_streaming.py:
+  - AdaptiveCache
+  - BreakthroughStreamingService
+  - get_or_compute
+  - predict_next_tokens
+  - stream_with_smart_chunking
+
+app/services/chaos_engineering.py:
+  - apply_fault
+  - clear_fault
+  - create_experiment
+  - disable_chaos_monkey
+  - enable_chaos_monkey
+  - get_chaos_engineer
+  - get_experiment_report
+  - maybe_inject_fault
+  - run_experiment
+  - schedule_game_day
+
+app/services/chat/context.py:
+  - with_param
+
+app/services/chat/handlers/base.py:
+  - execute_resilient
+
+app/services/chat/handlers/file_handler.py:
+  - handle_file_read
+  - handle_file_write
+
+app/services/chat/handlers/mission_handler.py:
+  - handle_deep_analysis
+  - handle_mission
+
+app/services/chat/handlers/search_handler.py:
+  - handle_code_search
+
+app/services/chat/handlers/system_handler.py:
+  - handle_help
+  - handle_project_index
+
+app/services/chat/telemetry.py:
+  - ChatTelemetry
+  - record_intent
+
+app/services/crud/crud_persistence.py:
+  - get_task_by_id
+
+app/services/crud_boundary/facade.py:
+  - CrudBoundaryFacade
+
+app/services/data_mesh/infrastructure/repository.py:
+  - InMemoryDataMeshRepository
+
+app/services/database_service.py:
+  - create_record
+  - delete_record
+  - get_all_tables
+  - get_database_health
+  - get_record
+  - get_table_data
+  - get_table_schema
+  - update_record
+
+app/services/database_sharding/application/query_router.py:
+  - is_cross_shard_query
+
+app/services/database_sharding_service.py:
+  - DatabaseShardingService
+
+app/services/deployment/orchestrator.py:
+  - deploy_blue_green
+  - deploy_canary
+  - deploy_rolling
+  - execute_with_circuit_breaker
+  - get_deployment_orchestrator
+
+app/services/deployment/types.py:
+  - RollbackTrigger
+
+app/services/developer_portal/application/code_example_manager.py:
+  - get_example
+
+app/services/developer_portal/application/sdk_generator.py:
+  - increment_download_count
+
+app/services/developer_portal/facade.py:
+  - add_ticket_message
+  - create_code_example
+  - create_support_ticket
+  - generate_api_key
+  - get_developer_portal_service
+  - list_developer_keys
+  - list_developer_tickets
+  - list_sdks_by_language
+  - revoke_api_key
+  - rotate_api_key
+  - validate_api_key
+
+app/services/disaster_recovery/facade.py:
+  - dr_plans
+  - escalation_policies
+  - get_disaster_recovery_service
+  - get_oncall_incident_service
+  - on_call_schedules
+  - post_incident_reviews
+  - recovery_history
+
+app/services/disaster_recovery/infrastructure/repositories.py:
+  - get_pir
+
+app/services/distributed_resilience/facade.py:
+  - DistributedResilienceFacade
+
+app/services/distributed_tracing.py:
+  - add_baggage
+  - find_error_traces
+  - find_slow_traces
+  - get_distributed_tracer
+  - get_recent_traces
+  - get_service_dependencies
+  - inject
+  - trace_request
+
+app/services/domain_events.py:
+  - get_event_class
+  - list_events
+
+app/services/ensemble_ai.py:
+  - get_next_tier
+  - get_router
+  - record_cost
+
+app/services/event_driven/domain/models.py:
+  - EventProcessingResult
+  - MessageBrokerType
+
+app/services/event_driven/facade.py:
+  - get_cqrs_service
+  - get_event_driven_service
+
+app/services/execution/retry/retry_orchestrator.py:
+  - RetryOrchestrator
+
+app/services/fastapi_generation/__init__.py:
+  - register_post_finalize_hook
+
+app/services/fastapi_generation/domain/models.py:
+  - GenerationRequest
+  - GenerationResponse
+
+app/services/fastapi_generation/domain/ports.py:
+  - ContextFinderPort
+  - find_related_context
+
+app/services/gitops_policy/application/policy_manager.py:
+  - disable_policy
+
+app/services/governance/domain/models.py:
+  - CouncilDecision
+  - PolicyStatus
+  - ProtocolCompliance
+  - TransparencyEvent
+
+app/services/governance/facade.py:
+  - add_council_member
+  - create_cosmic_council
+  - create_existential_protocol
+  - propose_council_decision
+  - query_transparency_logs
+  - reach_consciousness_consensus
+
+app/services/history_service.py:
+  - get_recent_conversations
+  - rate_message_in_db
+
+app/services/horizontal_scaling/application/chaos_monkey.py:
+  - disable_chaos
+  - enable_chaos
+  - unleash_chaos
+
+app/services/horizontal_scaling/application/manager.py:
+  - analyze_scaling_needs
+  - create_load_balancer
+  - execute_scaling
+  - health_check_all_servers
+  - route_request
+
+app/services/horizontal_scaling/domain/models.py:
+  - ConsistentHashNode
+  - load_factor
+
+app/services/horizontal_scaling/domain/ports.py:
+  - LoadBalancerPort
+  - ServerRepositoryPort
+  - get_history
+  - get_latest
+
+app/services/horizontal_scaling/facade.py:
+  - get_chaos_monkey
+
+app/services/infra_metrics/application/manager.py:
+  - export_prometheus_metrics
+  - get_availability_metrics
+  - get_infrastructure_service
+  - get_metrics_summary
+  - record_service_down
+  - record_service_up
+  - stop_background_collection
+
+app/services/k8s/application/consensus_manager.py:
+  - stop_consensus_protocol
+
+app/services/k8s/application/health_monitor.py:
+  - stop_monitoring
+
+app/services/k8s/domain/ports.py:
+  - AutoScalerPort
+  - ConsensusPort
+  - HealthMonitorPort
+  - SchedulerPort
+  - SelfHealingPort
+  - record_healing_event
+  - update_node_resources
+
+app/services/k8s/facade.py:
+  - get_kubernetes_orchestrator
+  - get_node_status
+  - get_pod_status
+
+app/services/k8s/infrastructure/in_memory_node_repository.py:
+  - update_node_resources
+
+app/services/llm/circuit_breaker.py:
+  - maybe_close
+
+app/services/llm/invocation_handler.py:
+  - LLMRequestExecutor
+  - stream_generator
+
+app/services/llm/retry_strategy.py:
+  - get_backoff
+
+app/services/llm_client/facade.py:
+  - LlmClientFacade
+
+app/services/llm_client_service.py:
+  - invoke_chat_stream
+  - llm_health
+  - register_llm_post_hook
+  - register_llm_pre_hook
+  - reset_llm_client
+
+app/services/master_agent/facade.py:
+  - MasterAgentFacade
+
+app/services/metrics/service.py:
+  - calculate_accuracy_metrics
+  - calculate_bleu_score
+  - calculate_fairness_metrics
+  - calculate_perplexity
+  - calculate_rouge_scores
+  - get_ai_model_service
+  - record_inference
+
+app/services/micro_frontends/facade.py:
+  - MicroFrontendsFacade
+
+app/services/micro_frontends_service.py:
+  - create_federation
+  - get_federation_config
+  - get_micro_frontends_service
+  - get_modules_by_framework
+  - get_shared_state
+  - register_module
+  - set_shared_state
+
+app/services/multi_layer_cache/application/manager.py:
+  - get_overall_stats
+
+app/services/multi_layer_cache/domain/models.py:
+  - EvictionPolicy
+  - age_seconds
+
+app/services/multi_layer_cache/domain/ports.py:
+  - ClusterCachePort
+  - EdgeCachePort
+
+app/services/observability_integration/domain/ports.py:
+  - IAnomalyDetector
+  - IHealthMonitor
+  - IPerformanceTracker
+
+app/services/observability_integration/facade.py:
+  - get_all_traces
+  - get_health_status
+
+app/services/observability_integration/infrastructure/in_memory_repositories.py:
+  - update_health_status
+
+app/services/observability_integration_service.py:
+  - ObservabilityIntegration
+
+app/services/orchestration/application/node_manager.py:
+  - cordon_node
+  - get_all_nodes
+  - mark_node_not_ready
+  - uncordon_node
+  - update_node_heartbeat
+
+app/services/orchestration/application/raft_consensus.py:
+  - stop
+
+app/services/orchestration/domain/models.py:
+  - deallocate_pod
+  - mark_failed
+
+app/services/orchestration/domain/ports.py:
+  - ConsensusEngine
+  - ScalingEngine
+  - check_scaling_needed
+  - stop
+
+app/services/orchestration/facade.py:
+  - get_kubernetes_orchestrator
+  - get_node_status
+  - get_pod_status
+
+app/services/overmind/tool_canonicalizer.py:
+  - add_strategy
+  - remove_strategy
+
+app/services/project_context/application/context_analyzer.py:
+  - get_comprehensive_analysis
+  - intelligent_code_search
+  - invalidate_cache
+
+app/services/project_context/domain/models.py:
+  - ProjectHealth
+
+app/services/prompt_engineering_service.py:
+  - generate_prompt
+
+app/services/resilience/fallback.py:
+  - register_handler
+
+app/services/resilience/rate_limit.py:
+  - LeakyBucket
+  - SlidingWindowCounter
+  - TokenBucket
+
+app/services/resilience/service.py:
+  - get_comprehensive_stats
+  - resilient
+
+app/services/resilience/timeout.py:
+  - record_latency
+
+app/services/saga_orchestrator.py:
+  - create_saga
+  - execute_saga
+  - get_saga_events
+  - get_saga_orchestrator
+  - get_saga_status
+
+app/services/security_metrics/domain/ports.py:
+  - AnomalyDetectorPort
+  - FindingsRepositoryPort
+  - update_finding
+
+app/services/security_metrics/facade.py:
+  - add_finding
+  - calculate_comprehensive_metrics
+  - get_security_metrics_engine
+
+app/services/security_metrics/infrastructure/in_memory_repositories.py:
+  - update_finding
+
+app/services/service_catalog/facade.py:
+  - ServiceCatalogFacade
+
+app/services/service_catalog_service.py:
+  - get_api_specs
+  - get_catalog_metrics
+  - get_dependency_graph
+  - get_service_catalog
+  - get_service_health
+  - get_templates
+  - register_api_spec
+  - scaffold_service
+  - search_services
+  - update_service_health
+
+app/services/service_mesh_integration.py:
+  - call_with_resilience
+  - configure_circuit_breaker
+  - configure_retry_policy
+  - configure_timeout_policy
+  - configure_traffic_split
+  - deregister_service
+  - get_endpoint
+  - get_service_health
+  - get_service_mesh
+
+app/services/serving/domain/models.py:
+  - ServingStrategy
+
+app/services/serving/domain/ports.py:
+  - CostCalculator
+  - ModelInvoker
+  - ModelRepository
+
+app/services/serving/facade.py:
+  - get_ab_test_status
+  - get_model_serving_infrastructure
+  - get_model_status
+  - get_shadow_deployment_stats
+
+app/services/subscription_plan_factory.py:
+  - get_plan_names
+
+app/services/superhuman_integration.py:
+  - run_comprehensive_analysis
+
+app/services/task_execution_helpers.py:
+  - MessageBuilder
+  - StagnationDetector
+  - TaskFinalizer
+  - TaskInitializer
+  - ToolCallHandler
+  - UsageTracker
+  - accumulate_usage
+  - build_initial_messages
+  - build_result
+  - check_repeat_pattern
+  - determine_final_status
+  - extract_usage
+  - initialize_context
+  - is_stagnation
+  - normalize_assistant_message
+  - should_abort_on_limit
+
+app/services/user_service.py:
+  - create_new_user_async
+  - ensure_admin_user_exists_async
+  - get_all_users_async
+
+app/services/workflow_orchestration/facade.py:
+  - WorkflowOrchestrationFacade
+
+app/services/workflow_orchestration_service.py:
+  - publish_event
+  - register_activity_handler
+  - register_workflow
+
+app/serving/application/ab_test_engine.py:
+  - ABTestEngine
+  - get_ab_test_status
+  - route_ab_test_request
+
+app/serving/application/ensemble_router.py:
+  - EnsembleRouter
+  - aggregate_responses
+  - create_ensemble
+  - create_ensemble_response
+  - get_ensemble_config
+
+app/serving/application/model_invoker.py:
+  - ModelInvoker
+  - get_request_history
+  - get_response_history
+
+app/serving/application/model_registry.py:
+  - get_model_status
+
+app/serving/application/shadow_deployment.py:
+  - ShadowDeploymentManager
+  - get_deployment
+  - get_shadow_deployment_stats
+  - record_comparison
+  - should_shadow_request
+
+app/serving/domain/entities/experiment_config.py:
+  - ServingStrategy
+
+app/serving/infrastructure/metrics_collector.py:
+  - get_model_metrics_summary
+  - start_performance_monitoring
+  - stop_performance_monitoring
+
+app/telemetry/events.py:
+  - query_events
+  - track_business_event
+  - track_error
+  - track_security_event
+  - track_system_event
+  - track_user_event
+
+app/telemetry/metrics.py:
+  - dec
+  - export_prometheus
+  - get_metric_value
+  - get_percentiles
+  - get_quantiles
+  - inc_counter
+  - observe_histogram
+  - observe_summary
+  - register_summary
+  - set_gauge
+
+app/telemetry/performance.py:
+  - PerformanceMonitor
+  - export_vitals
+  - get_vital_percentiles
+  - mark
+  - record_cls
+  - record_entry
+  - record_fcp
+  - record_fid
+  - record_inp
+  - record_lcp
+  - record_ttfb
+
+app/telemetry/tracing.py:
+  - export_traces
+  - extract_trace_context
+  - get_trace_context
+  - record_exception
+  - set_span_attribute
+
+app/telemetry/unified_observability.py:
+  - SamplingDecision
+  - export_prometheus_metrics
+  - find_traces_by_criteria
+  - get_percentiles
+  - get_service_dependencies
+  - get_trace_with_correlation
+  - set_baggage
+  - set_gauge
+
+app/utils/model_registry.py:
+  - get_admin_conversation_model
+  - get_admin_message_model
+  - get_mission_model
+  - get_task_model
+  - get_user_model
+
+app/utils/service_locator.py:
+  - get_admin_ai
+  - get_database_service
+  - get_maestro
+  - get_overmind
+
+📄 EMPTY FILES: 4
+--------------------------------------------------------------------------------
+  - app/core/governor.py
+  - app/core/identity.py
+  - app/services/ai_project_management/domain/ports.py
+  - app/services/aiops_self_healing/facade.py
+
+📦 UNUSED IMPORTS: 1941
+--------------------------------------------------------------------------------
+
+app/services/distributed_resilience_service.py:
+  - AdaptiveTimeout
+  - Bulkhead
+  - BulkheadConfig
+  - BulkheadFullError
+  - CircuitBreaker
+  - CircuitBreakerConfig
+  - CircuitBreakerOpenError
+  - CircuitBreakerState
+  - CircuitState
+  - DistributedResilienceService
+  - FallbackChain
+  - FallbackLevel
+  - HealthCheckConfig
+  - HealthCheckResult
+  - HealthCheckType
+  - HealthChecker
+  - IdempotencyKey
+  - LatencyMetrics
+  - LeakyBucket
+  - PriorityLevel
+  - RateLimitConfig
+  - RetryAttempt
+  - RetryBudget
+  - RetryBudgetExhaustedError
+  - RetryConfig
+  - RetryManager
+  - RetryStrategy
+  - RetryableError
+  - SlidingWindowCounter
+  - TimeoutConfig
+  - TokenBucket
+  - get_resilience_service
+  - resilient
+
+app/services/resilience/__init__.py:
+  - AdaptiveTimeout
+  - Bulkhead
+  - BulkheadConfig
+  - BulkheadFullError
+  - CircuitBreaker
+  - CircuitBreakerConfig
+  - CircuitBreakerOpenError
+  - CircuitBreakerState
+  - CircuitState
+  - DistributedResilienceService
+  - FallbackChain
+  - FallbackLevel
+  - HealthCheckConfig
+  - HealthCheckResult
+  - HealthCheckType
+  - HealthChecker
+  - IdempotencyKey
+  - LatencyMetrics
+  - LeakyBucket
+  - PriorityLevel
+  - RateLimitConfig
+  - RetryAttempt
+  - RetryBudget
+  - RetryBudgetExhaustedError
+  - RetryConfig
+  - RetryManager
+  - RetryStrategy
+  - RetryableError
+  - SlidingWindowCounter
+  - TimeoutConfig
+  - TokenBucket
+  - get_resilience_service
+  - resilient
+
+app/core/common_imports.py:
+  - BaseModel
+  - Callable
+  - Column
+  - DateTime
+  - Depends
+  - FastAPI
+  - Field
+  - ForeignKey
+  - HTTPException
+  - Integer
+  - JSONResponse
+  - Path
+  - Protocol
+  - Session
+  - StreamingResponse
+  - TYPE_CHECKING
+  - Text
+  - TypeVar
+  - asdict
+  - cast
+  - dataclass
+  - datetime
+  - defaultdict
+  - field
+  - logging
+  - os
+  - relationship
+  - status
+  - sys
+  - time
+  - traceback
+  - validator
+
+app/boundaries/policy_boundaries.py:
+  - AuditLoggingLayer
+  - AuthenticationService
+  - AuthorizationLayer
+  - ComplianceEngine
+  - ComplianceRegulation
+  - ComplianceRule
+  - DataClassification
+  - DataGovernanceFramework
+  - DataGovernancePolicy
+  - Effect
+  - InputValidationLayer
+  - JWTValidationLayer
+  - Policy
+  - PolicyBoundary
+  - PolicyEngine
+  - PolicyRule
+  - Principal
+  - RateLimitingLayer
+  - SecurityException
+  - SecurityLayer
+  - SecurityPipeline
+  - TLSLayer
+  - get_policy_boundary
+
+app/boundaries/policy/__init__.py:
+  - AuditLoggingLayer
+  - AuthenticationService
+  - AuthorizationLayer
+  - ComplianceEngine
+  - ComplianceRegulation
+  - ComplianceRule
+  - DataClassification
+  - DataGovernanceFramework
+  - DataGovernancePolicy
+  - Effect
+  - InputValidationLayer
+  - JWTValidationLayer
+  - Policy
+  - PolicyBoundary
+  - PolicyEngine
+  - PolicyRule
+  - Principal
+  - RateLimitingLayer
+  - SecurityException
+  - SecurityLayer
+  - SecurityPipeline
+  - TLSLayer
+  - get_policy_boundary
+
+app/services/api_gateway_service.py:
+  - APIGatewayService
+  - AnthropicAdapter
+  - CacheStrategy
+  - GRPCAdapter
+  - GatewayRoute
+  - GraphQLAdapter
+  - IntelligentCache
+  - IntelligentRouter
+  - LoadBalancerState
+  - ModelProvider
+  - ModelProviderAdapter
+  - OpenAIAdapter
+  - PolicyEngine
+  - PolicyRule
+  - ProtocolAdapter
+  - ProtocolType
+  - RESTAdapter
+  - RoutingDecision
+  - RoutingStrategy
+  - UpstreamService
+  - api_gateway_service
+  - gateway_process
+  - get_gateway_service
+
+app/services/api_event_driven_service.py:
+  - CQRSManager
+  - CQRSService
+  - Command
+  - DomainEvent
+  - DomainEventRegistry
+  - Event
+  - EventDrivenService
+  - EventManager
+  - EventPriority
+  - EventProcessingResult
+  - EventStatus
+  - EventStream
+  - EventSubscription
+  - InMemoryBroker
+  - KafkaBroker
+  - MessageBroker
+  - MessageBrokerType
+  - Query
+  - RabbitMQBroker
+  - annotations
+  - get_cqrs_service
+  - get_event_driven_service
+
+app/services/model_serving_infrastructure.py:
+  - ABTestConfig
+  - EnsembleConfig
+  - ExperimentManager
+  - InMemoryMetricsRepository
+  - InMemoryModelRepository
+  - InferenceRouter
+  - MockModelInvoker
+  - ModelMetrics
+  - ModelRegistry
+  - ModelRequest
+  - ModelResponse
+  - ModelServingInfrastructure
+  - ModelStatus
+  - ModelType
+  - ModelVersion
+  - RoutingStrategy
+  - ServingStrategy
+  - ShadowDeployment
+  - annotations
+  - get_model_serving_infrastructure
+
+app/analytics/domain/__init__.py:
+  - ABTestResults
+  - ABTestStorePort
+  - ABTestVariant
+  - ActiveUsersStorePort
+  - CohortAnalysis
+  - ConversionMetrics
+  - EngagementMetrics
+  - EventStorePort
+  - EventType
+  - NPSMetrics
+  - NPSStorePort
+  - RetentionMetrics
+  - RevenueMetrics
+  - SessionStorePort
+  - UserData
+  - UserEvent
+  - UserSegment
+  - UserSession
+  - UserStorePort
+
+app/boundaries/__init__.py:
+  - APIGateway
+  - BulkheadExecutor
+  - CircuitBreaker
+  - CircuitBreakerConfig
+  - ComplianceEngine
+  - DataBoundary
+  - DataGovernanceFramework
+  - DatabaseBoundary
+  - EventBus
+  - PolicyBoundary
+  - PolicyEngine
+  - Principal
+  - SagaOrchestrator
+  - SecurityPipeline
+  - ServiceBoundary
+  - annotations
+  - get_data_boundary
+  - get_policy_boundary
+  - get_service_boundary
+
+app/services/api_developer_portal_service.py:
+  - APIKey
+  - APIKeyManager
+  - APIKeyStatus
+  - CodeExample
+  - CodeExampleManager
+  - DeveloperPortalService
+  - InMemoryAPIKeyRepository
+  - InMemoryCodeExampleRepository
+  - InMemorySDKRepository
+  - InMemoryTicketRepository
+  - SDKGenerator
+  - SDKLanguage
+  - SDKPackage
+  - SupportTicket
+  - TicketManager
+  - TicketPriority
+  - TicketStatus
+  - annotations
+  - get_developer_portal_service
+
+app/services/analytics/__init__.py:
+  - ABTestResults
+  - ABTestVariant
+  - CohortAnalysis
+  - ConversionMetrics
+  - EngagementAnalyzer
+  - EngagementMetrics
+  - EventTracker
+  - EventType
+  - InMemoryEventRepository
+  - InMemorySessionRepository
+  - NPSMetrics
+  - RetentionMetrics
+  - RevenueMetrics
+  - UserAnalyticsMetricsService
+  - UserEvent
+  - UserSegment
+  - UserSession
+  - get_user_analytics_service
+  - reset_analytics_service
+
+app/services/event_driven/__init__.py:
+  - CQRSManager
+  - CQRSService
+  - Command
+  - Event
+  - EventDrivenService
+  - EventManager
+  - EventPriority
+  - EventProcessingResult
+  - EventStatus
+  - EventStream
+  - EventSubscription
+  - InMemoryBroker
+  - KafkaBroker
+  - MessageBroker
+  - MessageBrokerType
+  - Query
+  - RabbitMQBroker
+  - get_cqrs_service
+  - get_event_driven_service
+
+app/services/serving/__init__.py:
+  - ABTestConfig
+  - EnsembleConfig
+  - ExperimentManager
+  - InMemoryMetricsRepository
+  - InMemoryModelRepository
+  - InferenceRouter
+  - MockModelInvoker
+  - ModelMetrics
+  - ModelRegistry
+  - ModelRequest
+  - ModelResponse
+  - ModelServingInfrastructure
+  - ModelStatus
+  - ModelType
+  - ModelVersion
+  - RoutingStrategy
+  - ServingStrategy
+  - ShadowDeployment
+  - get_model_serving_infrastructure
+
+app/services/developer_portal/__init__.py:
+  - APIKey
+  - APIKeyManager
+  - APIKeyStatus
+  - CodeExample
+  - CodeExampleManager
+  - DeveloperPortalService
+  - InMemoryAPIKeyRepository
+  - InMemoryCodeExampleRepository
+  - InMemorySDKRepository
+  - InMemoryTicketRepository
+  - SDKGenerator
+  - SDKLanguage
+  - SDKPackage
+  - SupportTicket
+  - TicketManager
+  - TicketPriority
+  - TicketStatus
+  - get_developer_portal_service
+
+app/overmind/planning/__init__.py:
+  - BasePlanner
+  - MissionPlanSchema
+  - PlanGenerationResult
+  - PlanValidationError
+  - PlanValidationIssue
+  - PlanWarning
+  - PlannedTask
+  - PlannerAdmissionError
+  - PlannerError
+  - PlannerTimeoutError
+  - PlanningContext
+  - annotations
+  - discover
+  - get_all_planners
+  - get_planner
+  - list_planner_metadata
+  - llm_planner
+
+app/infrastructure/patterns/__init__.py:
+  - AuthenticationHandler
+  - AuthorizationHandler
+  - CircuitBreaker
+  - CircuitBreakerConfig
+  - CircuitState
+  - DIContainer
+  - Event
+  - EventBus
+  - Handler
+  - RateLimitHandler
+  - RequestContext
+  - ValidationHandler
+  - build_request_pipeline
+  - circuit_breaker
+  - get_container
+  - get_event_bus
+  - inject
+
+app/core/ai_gateway.py:
+  - AIAllModelsExhaustedError
+  - AICircuitOpenError
+  - AIClient
+  - AIConnectionError
+  - AIError
+  - AIProviderError
+  - AIRateLimitError
+  - Any
+  - CircuitBreaker
+  - CircuitState
+  - ConnectionManager
+  - NeuralNode
+  - NeuralRoutingMesh
+  - Protocol
+  - get_ai_client
+  - runtime_checkable
+
+app/ai/infrastructure/__init__.py:
+  - DiskCache
+  - InMemoryCache
+  - InMemoryMetrics
+  - MockLLMTransport
+  - NoOpCache
+  - OpenRouterTransport
+  - SimpleObserver
+  - Span
+  - create_llm_transport
+  - get_cache
+  - get_metrics
+  - get_observer
+  - get_transport
+  - register_transport
+  - reset_cache
+  - reset_observability
+
+app/services/api_disaster_recovery_service.py:
+  - BackupMetadata
+  - DisasterRecoveryPlan
+  - DisasterRecoveryService
+  - EscalationPolicy
+  - Incident
+  - IncidentSeverity
+  - IncidentStatus
+  - NotificationChannel
+  - OnCallIncidentService
+  - OnCallRole
+  - OnCallSchedule
+  - PostIncidentReview
+  - RecoveryStrategy
+  - annotations
+  - get_disaster_recovery_service
+  - get_oncall_incident_service
+
+================================================================================

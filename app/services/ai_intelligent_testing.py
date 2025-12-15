@@ -14,10 +14,7 @@ from app.services.ai_testing.domain.models import (
 from app.services.ai_testing.generators.test_generator import AITestGenerator
 from app.services.ai_testing.selectors.smart_selector import SmartTestSelector
 from app.services.ai_testing.optimizers.coverage_optimizer import CoverageOptimizer
-from app.services.ai_testing.application.manager import (
-    IntelligentTestingSystem,
-    testing_system,
-)
+from app.services.ai_testing.application.manager import IntelligentTestingSystem
 
 # Re-export all public members
 __all__ = [

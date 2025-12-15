@@ -1,7 +1,3 @@
-# app/middleware/core/registry.py
-# ======================================================================================
-# ==                    MIDDLEWARE REGISTRY (v∞)                                    ==
-# ======================================================================================
 """
 سجل الوسيط - Middleware Registry
 
@@ -10,9 +6,7 @@ Enables plugin-based architecture with runtime registration.
 
 Design Pattern: Registry Pattern + Service Locator
 """
-
 from typing import Any
-
 from .base_middleware import BaseMiddleware
 
 
@@ -31,12 +25,8 @@ class MiddlewareRegistry:
         self._instances: dict[str, BaseMiddleware] = {}
         self._metadata: dict[str, dict[str, Any]] = {}
 
-    def register(
-        self,
-        name: str,
-        middleware_class: type[BaseMiddleware],
-        metadata: dict[str, Any] | None = None,
-    ):
+    def register(self, name: str, middleware_class: type[BaseMiddleware],
+        metadata: (dict[str, Any] | None)=None):
         """
         Register a middleware class
 
@@ -47,11 +37,10 @@ class MiddlewareRegistry:
         """
         if name in self._registry:
             raise ValueError(f"Middleware '{name}' is already registered")
-
         self._registry[name] = middleware_class
         self._metadata[name] = metadata or {}
 
-    def unregister(self, name: str) -> bool:
+    def unregister(self, name: str) ->bool:
         """
         Unregister a middleware
 
@@ -70,21 +59,8 @@ class MiddlewareRegistry:
             return True
         return False
 
-    def get_class(self, name: str) -> type[BaseMiddleware] | None:
-        """
-        Get middleware class by name
-
-        Args:
-            name: Middleware name
-
-        Returns:
-            Middleware class or None if not found
-        """
-        return self._registry.get(name)
-
-    def create_instance(
-        self, name: str, config: dict[str, Any] | None = None, cache: bool = True
-    ) -> BaseMiddleware | None:
+    def create_instance(self, name: str, config: (dict[str, Any] | None)=
+        None, cache: bool=True) ->(BaseMiddleware | None):
         """
         Create or retrieve middleware instance
 
@@ -96,24 +72,17 @@ class MiddlewareRegistry:
         Returns:
             Middleware instance or None if not found
         """
-        # Return cached instance if available
         if cache and name in self._instances:
             return self._instances[name]
-
-        # Get class and create instance
         middleware_class = self._registry.get(name)
         if not middleware_class:
             return None
-
         instance = middleware_class(config=config)
-
-        # Cache if requested
         if cache:
             self._instances[name] = instance
-
         return instance
 
-    def get_instance(self, name: str) -> BaseMiddleware | None:
+    def get_instance(self, name: str) ->(BaseMiddleware | None):
         """
         Get cached middleware instance
 
@@ -125,11 +94,7 @@ class MiddlewareRegistry:
         """
         return self._instances.get(name)
 
-    def list_registered(self) -> list[str]:
-        """Get list of all registered middleware names"""
-        return list(self._registry.keys())
-
-    def get_metadata(self, name: str) -> dict[str, Any]:
+    def get_metadata(self, name: str) ->dict[str, Any]:
         """
         Get metadata for a middleware
 
@@ -147,29 +112,20 @@ class MiddlewareRegistry:
         self._instances.clear()
         self._metadata.clear()
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: str) ->bool:
         """Check if middleware is registered"""
         return name in self._registry
 
-    def __len__(self) -> int:
+    def __len__(self) ->int:
         """Get count of registered middleware"""
         return len(self._registry)
 
 
-# Global registry instance
 _global_registry = MiddlewareRegistry()
 
 
-def get_global_registry() -> MiddlewareRegistry:
-    """Get the global middleware registry"""
-    return _global_registry
-
-
-def register_middleware(
-    name: str,
-    middleware_class: type[BaseMiddleware],
-    metadata: dict[str, Any] | None = None,
-):
+def register_middleware(name: str, middleware_class: type[BaseMiddleware],
+    metadata: (dict[str, Any] | None)=None):
     """
     Register middleware in global registry
 
@@ -181,7 +137,8 @@ def register_middleware(
     _global_registry.register(name, middleware_class, metadata)
 
 
-def create_middleware(name: str, config: dict[str, Any] | None = None) -> BaseMiddleware | None:
+def create_middleware(name: str, config: (dict[str, Any] | None)=None) ->(
+    BaseMiddleware | None):
     """
     Create middleware instance from global registry
 

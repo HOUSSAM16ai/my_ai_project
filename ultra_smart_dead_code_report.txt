@@ -1,0 +1,997 @@
+================================================================================
+ULTRA SMART DEAD CODE ANALYSIS
+================================================================================
+
+📊 SUMMARY
+--------------------------------------------------------------------------------
+App files: 987
+Test files: 206
+Total usages: 9508
+Truly dead: 536
+
+🔴 TRULY DEAD CODE
+--------------------------------------------------------------------------------
+
+app/services/api_gateway_deployment.py (11):
+  - end_experiment
+  - get_ab_testing_service
+  - get_all_flags
+  - get_canary_deployment_service
+  - get_experiment_results
+  - get_feature_flag_service
+  - get_version_for_request
+  - increment_traffic
+  - record_request_outcome
+  - should_increment_traffic
+  - update_flag
+
+app/services/analytics/domain/models.py (11):
+  - arpu
+  - average_transaction_value
+  - detractor_percentage
+  - get_retention_curve
+  - get_winner
+  - has_conversion
+  - promoter_percentage
+  - record_retention
+  - record_transaction
+  - record_variant_view
+  - stickiness
+
+app/telemetry/performance.py (10):
+  - PerformanceMonitor
+  - export_vitals
+  - get_vital_percentiles
+  - record_cls
+  - record_entry
+  - record_fcp
+  - record_fid
+  - record_inp
+  - record_lcp
+  - record_ttfb
+
+app/services/developer_portal/facade.py (10):
+  - add_ticket_message
+  - create_code_example
+  - create_support_ticket
+  - generate_api_key
+  - list_developer_keys
+  - list_developer_tickets
+  - list_sdks_by_language
+  - revoke_api_key
+  - rotate_api_key
+  - validate_api_key
+
+app/ai/observability/__init__.py (9):
+  - add_log
+  - finish_operation
+  - get_counter
+  - get_dashboard_data
+  - get_gauge
+  - get_span
+  - register_span_hook
+  - set_tag
+  - trace_operation
+
+app/services/service_catalog_service.py (9):
+  - get_api_specs
+  - get_catalog_metrics
+  - get_dependency_graph
+  - get_service_catalog
+  - get_templates
+  - register_api_spec
+  - scaffold_service
+  - search_services
+  - update_service_health
+
+app/telemetry/metrics.py (8):
+  - dec
+  - export_prometheus
+  - get_metric_value
+  - get_quantiles
+  - inc_counter
+  - observe_histogram
+  - observe_summary
+  - register_summary
+
+app/boundaries/data_boundaries.py (8):
+  - CommandHandler
+  - QueryHandler
+  - from_domain_model
+  - get_or_create_read_model
+  - get_status
+  - normalize_error
+  - to_domain_model
+  - update_from_event
+
+app/services/chaos_engineering.py (8):
+  - apply_fault
+  - clear_fault
+  - disable_chaos_monkey
+  - enable_chaos_monkey
+  - get_experiment_report
+  - maybe_inject_fault
+  - run_experiment
+  - schedule_game_day
+
+app/core/protocols.py (7):
+  - AIClientProtocol
+  - CacheProtocol
+  - DatabaseProtocol
+  - MessageQueueProtocol
+  - NotificationProtocol
+  - UserRepositoryProtocol
+  - VectorStoreProtocol
+
+app/ai/facade.py (7):
+  - get_retry_metrics
+  - register_post_hook
+  - register_pre_hook
+  - reset_circuit_breaker
+  - reset_llm_client_service
+  - set_project_budget
+  - set_user_budget
+
+app/services/api_gateway_chaos.py (7):
+  - get_active_experiments
+  - get_all_states
+  - get_bulkhead_service
+  - get_chaos_service
+  - get_experiment_results
+  - inject_fault
+  - reset_stats
+
+app/services/micro_frontends_service.py (7):
+  - create_federation
+  - get_federation_config
+  - get_micro_frontends_service
+  - get_modules_by_framework
+  - get_shared_state
+  - register_module
+  - set_shared_state
+
+app/telemetry/events.py (6):
+  - query_events
+  - track_business_event
+  - track_error
+  - track_security_event
+  - track_system_event
+  - track_user_event
+
+app/overmind/planning/schemas.py (6):
+  - children_of
+  - leaves
+  - parents_of
+  - to_d3_json
+  - to_mermaid
+  - to_networkx
+
+app/services/advanced_streaming_service.py (6):
+  - create_stream
+  - get_platform_metrics
+  - get_schema
+  - get_stream
+  - get_stream_metrics
+  - replicate_stream
+
+app/services/database_service.py (6):
+  - create_record
+  - delete_record
+  - get_all_tables
+  - get_table_data
+  - get_table_schema
+  - update_record
+
+app/services/governance/facade.py (6):
+  - add_council_member
+  - create_cosmic_council
+  - create_existential_protocol
+  - propose_council_decision
+  - query_transparency_logs
+  - reach_consciousness_consensus
+
+app/services/ai_project_management/application/services.py (6):
+  - ProjectOrchestrator
+  - add_task
+  - add_team_member
+  - generate_smart_insights
+  - optimize_schedule
+  - predict_completion_date
+
+app/services/metrics/service.py (6):
+  - calculate_accuracy_metrics
+  - calculate_bleu_score
+  - calculate_fairness_metrics
+  - calculate_perplexity
+  - calculate_rouge_scores
+  - record_inference
+
+app/analytics/domain/models/event.py (5):
+  - add_superposition_state
+  - collapse
+  - from_dict
+  - sliding_windows
+  - tumbling_windows
+
+app/core/gateway/service.py (5):
+  - gateway_process
+  - get_gateway_service
+  - get_gateway_stats
+  - register_route
+  - register_upstream_service
+
+app/telemetry/tracing.py (5):
+  - export_traces
+  - extract_trace_context
+  - get_trace_context
+  - record_exception
+  - set_span_attribute
+
+app/ai/domain/models.py (5):
+  - add_usage
+  - from_dict
+  - increment_attempts
+  - record_rejection
+  - to_api_params
+
+app/middleware/security_logger.py (5):
+  - log_data_access
+  - log_password_change
+  - log_permission_change
+  - log_rate_limit_exceeded
+  - log_suspicious_activity
+
+app/middleware/core/registry.py (5):
+  - create_middleware
+  - get_class
+  - get_global_registry
+  - list_registered
+  - register_middleware
+
+app/overmind/graph/orchestrator.py (5):
+  - broadcast
+  - create_link
+  - dispatch
+  - get_graph_orchestrator
+  - run_step
+
+app/services/distributed_tracing.py (5):
+  - find_error_traces
+  - find_slow_traces
+  - get_distributed_tracer
+  - get_recent_traces
+  - trace_request
+
+app/services/orchestration/application/node_manager.py (5):
+  - cordon_node
+  - get_all_nodes
+  - mark_node_not_ready
+  - uncordon_node
+  - update_node_heartbeat
+
+app/services/adaptive/infrastructure/in_memory_repository.py (5):
+  - InMemoryServiceInstanceRepository
+  - get_metrics_in_range
+  - get_recent_metrics
+  - list_by_service
+  - store_metrics
+
+app/services/k8s/domain/ports.py (5):
+  - AutoScalerPort
+  - ConsensusPort
+  - HealthMonitorPort
+  - SchedulerPort
+  - SelfHealingPort
+
+app/core/superhuman_performance_optimizer.py (4):
+  - add_request
+  - get_optimal_timeout
+  - group_by_similarity
+  - should_switch_model
+
+app/core/registry/plugin_loader.py (4):
+  - PluginLoader
+  - get_loaded
+  - is_loaded
+  - unload
+
+app/ai/infrastructure/metrics.py (4):
+  - get_spans
+  - record_event
+  - record_gauge
+  - record_histogram
+
+app/middleware/error_response_factory.py (4):
+  - create_database_error_response
+  - create_internal_error_response
+  - create_unexpected_error_response
+  - create_validation_error_response
+
+app/middleware/factory/middleware_factory.py (4):
+  - MiddlewareFactory
+  - create_development_pipeline
+  - create_minimal_pipeline
+  - create_production_pipeline
+
+app/overmind/planning/discovery.py (4):
+  - PlannerDiscovery
+  - discover_planners
+  - get_import_failures
+  - sync_with_registry
+
+app/overmind/planning/telemetry.py (4):
+  - clear_all
+  - get_all_samples
+  - get_instantiation_samples
+  - get_selection_samples
+
+app/api/routers/security.py (4):
+  - generate_token
+  - get_current_user_endpoint
+  - login
+  - verify_token
+
+app/serving/application/ensemble_router.py (4):
+  - EnsembleRouter
+  - aggregate_responses
+  - create_ensemble_response
+  - get_ensemble_config
+
+app/serving/application/shadow_deployment.py (4):
+  - ShadowDeploymentManager
+  - get_deployment
+  - record_comparison
+  - should_shadow_request
+
+app/services/analytics/application/event_tracker.py (4):
+  - get_user_events
+  - track_conversion
+  - track_page_view
+  - track_purchase
+
+app/services/analytics/infrastructure/user_segmentation.py (4):
+  - classify_user
+  - get_segment_stats
+  - get_segment_users
+  - update_segmentation
+
+app/services/governance/domain/models.py (4):
+  - CouncilDecision
+  - PolicyStatus
+  - ProtocolCompliance
+  - TransparencyEvent
+
+app/services/api_advanced_analytics/infrastructure/repositories.py (4):
+  - get_aggregated_metrics
+  - get_all_profiles
+  - get_recent_reports
+  - get_report
+
+app/config/settings.py (4):
+  - detect_codespaces
+  - fix_database_url
+  - parse_cors_origins
+  - validate_integrity
+
+app/analysis/root_cause.py (4):
+  - add_dependency
+  - analyze_incident
+  - record_change
+  - record_event
+
+app/analytics/infrastructure/in_memory_stores.py (3):
+  - clear_period
+  - get_all_tests
+  - get_users_by_segment
+
+app/blueprints/gateway_blueprint.py (3):
+  - get_cache_stats
+  - get_routes
+  - get_services
+
+app/core/interfaces/processing.py (3):
+  - IHandler
+  - IProcessor
+  - IValidator
+
+app/core/interfaces/data.py (3):
+  - ICommand
+  - IQuery
+  - IRepository
+
+app/core/scaling/load_balancer.py (3):
+  - RandomStrategy
+  - WeightedRandomStrategy
+  - execute_on_instance
+
+app/middleware/error_handling/exception_mapper.py (3):
+  - ExceptionMapper
+  - map_exception
+  - register_exception
+
+app/overmind/planning/_drift_detection.py (3):
+  - DriftResult
+  - clear_drift_snapshots
+  - get_drift_snapshot
+
+app/api/routers/gateway.py (3):
+  - get_cache_stats
+  - get_routes
+  - get_services
+
+app/serving/application/model_invoker.py (3):
+  - ModelInvoker
+  - get_request_history
+  - get_response_history
+
+app/serving/infrastructure/metrics_collector.py (3):
+  - get_model_metrics_summary
+  - start_performance_monitoring
+  - stop_performance_monitoring
+
+app/infrastructure/patterns/event_bus.py (3):
+  - clear_history
+  - publish_async
+  - subscribe_async
+
+app/services/admin_chat_performance_service.py (3):
+  - assign_ab_variant
+  - get_ab_results
+  - get_optimization_suggestions
+
+app/services/service_mesh_integration.py (3):
+  - configure_timeout_policy
+  - deregister_service
+  - get_service_mesh
+
+app/services/api_config_secrets_service.py (3):
+  - access_logs
+  - config_store
+  - secrets_registry
+
+app/services/user_service.py (3):
+  - create_new_user_async
+  - ensure_admin_user_exists_async
+  - get_all_users_async
+
+app/services/api_subscription_service.py (3):
+  - get_customer_subscriptions
+  - get_subscription
+  - get_subscription_service
+
+app/services/api_slo_sli_service.py (3):
+  - end_incident
+  - get_dashboard
+  - start_incident
+
+app/services/analytics/infrastructure/ab_test_repository.py (3):
+  - get_all_tests
+  - get_test_results
+  - stop_test
+
+app/services/agent_tools/core.py (3):
+  - get_tool
+  - get_tools_schema
+  - has_tool
+
+app/services/agent_tools/refactored/registry.py (3):
+  - disable_tool
+  - enable_tool
+  - get_canonical_name
+
+app/services/observability_integration/domain/ports.py (3):
+  - IAnomalyDetector
+  - IHealthMonitor
+  - IPerformanceTracker
+
+app/services/serving/domain/ports.py (3):
+  - CostCalculator
+  - ModelInvoker
+  - ModelRepository
+
+app/analysis/predictor.py (3):
+  - add_observation
+  - get_recent_predictions
+  - predict_resource_exhaustion
+
+app/api_docs.py (2):
+  - get_api_endpoints_documentation
+  - get_openapi_config
+
+app/analytics/api/analytics_facade.py (2):
+  - get_analytics_service
+  - get_anomalies
+
+app/analytics/domain/models.py (2):
+  - CohortAnalysis
+  - RevenueMetrics
+
+app/core/self_healing_db.py (2):
+  - quick_fix_linked_mission_id
+  - run_self_healing
+
+app/core/gateway/exceptions.py (2):
+  - AICircuitOpenError
+  - AIProviderError
+
+app/core/scaling/service_registry.py (2):
+  - deregister
+  - heartbeat
+
+app/telemetry/unified_observability.py (2):
+  - SamplingDecision
+  - set_baggage
+
+app/protocols/http_client.py (2):
+  - HttpClient
+  - RequestsAdapter
+
+app/ai/application/retry_strategy.py (2):
+  - get_default_executor
+  - with_retry
+
+app/ai/infrastructure/transports/__init__.py (2):
+  - get_call_count
+  - reset_call_count
+
+app/boundaries/service_boundaries.py (2):
+  - call_protected
+  - get_event_history
+
+app/boundaries/policy/governance.py (2):
+  - calculate_deletion_date
+  - should_backup
+
+app/boundaries/policy/auth.py (2):
+  - AuthenticationService
+  - has_claim
+
+app/overmind/planning/base_planner.py (2):
+  - manual_unquarantine
+  - reliability_snapshot
+
+app/api/middleware.py (2):
+  - add_middlewares
+  - log_requests
+
+app/api/exceptions.py (2):
+  - generic_handler
+  - register_exception_handlers
+
+app/api/v2/schemas.py (2):
+  - ErrorResponse
+  - validate_question
+
+app/api/v2/dependencies.py (2):
+  - get_db_session
+  - verify_api_key
+
+app/api/v2/endpoints/health.py (2):
+  - liveness_check
+  - readiness_check
+
+app/api/v2/endpoints/tools.py (2):
+  - execute_tool
+  - get_tool_stats
+
+app/serving/application/ab_test_engine.py (2):
+  - ABTestEngine
+  - route_ab_test_request
+
+app/infrastructure/patterns/chain_of_responsibility.py (2):
+  - CachingHandler
+  - cache_response
+
+app/services/async_tool_bridge.py (2):
+  - get_async_overmind
+  - get_async_tools
+
+app/services/workflow_orchestration_service.py (2):
+  - publish_event
+  - register_activity_handler
+
+app/services/analytics/facade.py (2):
+  - get_user_analytics_service
+  - reset_analytics_service
+
+app/services/analytics/application/engagement_analyzer.py (2):
+  - get_active_users_count
+  - get_user_engagement_score
+
+app/services/analytics/infrastructure/analytics_aggregator.py (2):
+  - calculate_conversion_metrics
+  - calculate_retention_metrics
+
+app/services/analytics/infrastructure/in_memory_repository.py (2):
+  - count_events
+  - delete_old_events
+
+app/services/orchestration/domain/models.py (2):
+  - deallocate_pod
+  - mark_failed
+
+app/services/orchestration/domain/ports.py (2):
+  - ConsensusEngine
+  - ScalingEngine
+
+app/services/horizontal_scaling/domain/ports.py (2):
+  - LoadBalancerPort
+  - ServerRepositoryPort
+
+app/services/observability_integration/facade.py (2):
+  - get_all_traces
+  - get_health_status
+
+app/services/chat/telemetry.py (2):
+  - ChatTelemetry
+  - record_intent
+
+app/services/llm/invocation_handler.py (2):
+  - LLMRequestExecutor
+  - stream_generator
+
+app/services/api_config_secrets/infrastructure/vault_adapters.py (2):
+  - delete_secret
+  - list_secrets
+
+app/services/security_metrics/facade.py (2):
+  - calculate_comprehensive_metrics
+  - get_security_metrics_engine
+
+app/services/security_metrics/domain/ports.py (2):
+  - AnomalyDetectorPort
+  - FindingsRepositoryPort
+
+app/services/api_advanced_analytics/domain/models.py (2):
+  - is_at_risk
+  - is_valuable
+
+app/services/ai_testing/application/manager.py (2):
+  - analyze_and_generate
+  - optimize_suite
+
+app/services/ai_auto_refactoring/domain/ports.py (2):
+  - CodeAnalyzerPort
+  - RefactoringEnginePort
+
+app/config/ai_models.py (2):
+  - get_tier_model
+  - openai_api_key
+
+app/blueprints/system_blueprint.py (1):
+  - healthz
+
+app/core/startup_diagnostics.py (1):
+  - run_diagnostics
+
+app/core/security.py (1):
+  - get_password_hash
+
+app/core/di.py (1):
+  - get_di_session_factory
+
+app/core/rate_limiter.py (1):
+  - get_rate_limiter
+
+app/core/cli_logging.py (1):
+  - create_logger
+
+app/core/common_imports.py (1):
+  - check_feature
+
+app/core/time.py (1):
+  - legacy_context
+
+app/core/gateway/protocols/rest.py (1):
+  - transform_response
+
+app/core/gateway/protocols/grpc.py (1):
+  - transform_response
+
+app/core/gateway/protocols/graphql.py (1):
+  - transform_response
+
+app/core/gateway/providers/anthropic.py (1):
+  - call_model
+
+app/core/gateway/providers/openai.py (1):
+  - call_model
+
+app/core/resilience/composite.py (1):
+  - CompositeResiliencePolicy
+
+app/core/engine/diagnostics.py (1):
+  - get_engine_info
+
+app/core/interfaces/repository_interface.py (1):
+  - RepositoryInterface
+
+app/core/interfaces/service_interface.py (1):
+  - ServiceInterface
+
+app/core/scaling/health_checker.py (1):
+  - register_health_check
+
+app/core/registry/plugin_registry.py (1):
+  - get_by_type
+
+app/core/registry/plugin_discovery.py (1):
+  - discover_and_configure
+
+app/core/math/cognitive_fingerprint.py (1):
+  - CognitiveFingerprint
+
+app/core/math/kalman.py (1):
+  - get_estimate
+
+app/core/patterns/command.py (1):
+  - CommandBus
+
+app/core/patterns/chain.py (1):
+  - Chain
+
+app/ai/application/circuit_breaker.py (1):
+  - get_registry
+
+app/ai/optimization/__init__.py (1):
+  - deduplicate
+
+app/boundaries/policy/layers.py (1):
+  - get_audit_log
+
+app/middleware/fastapi_observability.py (1):
+  - dispatch
+
+app/middleware/superhuman_security.py (1):
+  - dispatch
+
+app/middleware/rate_limiter_middleware.py (1):
+  - cleanup_expired
+
+app/middleware/core/base_middleware.py (1):
+  - MetricsMiddleware
+
+app/middleware/core/response_factory.py (1):
+  - from_middleware_result
+
+app/middleware/observability/telemetry_bridge.py (1):
+  - TelemetryBridge
+
+app/middleware/observability/performance_profiler.py (1):
+  - get_endpoint_statistics
+
+app/middleware/observability/anomaly_inspector.py (1):
+  - AnomalyInspector
+
+app/middleware/observability/observability_middleware.py (1):
+  - ObservabilityMiddleware
+
+app/middleware/observability/analytics_adapter.py (1):
+  - AnalyticsAdapter
+
+app/middleware/security/zero_trust_middleware.py (1):
+  - ZeroTrustMiddleware
+
+app/middleware/security/telemetry_guard.py (1):
+  - get_audit_trail
+
+app/middleware/security/policy_enforcer.py (1):
+  - remove_policy
+
+app/middleware/config/middleware_settings.py (1):
+  - MiddlewareSettings
+
+app/overmind/planning/_layer_detection.py (1):
+  - add_layer_rule
+
+app/overmind/planning/_self_test_runner.py (1):
+  - run_self_test
+
+app/overmind/planning/_tag_detection.py (1):
+  - add_tag_rule
+
+app/overmind/planning/fault_tolerance.py (1):
+  - a_generate_safely
+
+app/overmind/planning/generators/plan_generator.py (1):
+  - PlanGenerator
+
+app/overmind/planning/hyper_planner/planning_logic.py (1):
+  - read_from_file
+
+app/api/v2/router.py (1):
+  - create_api_router
+
+app/application/use_cases/routing/routing_strategies.py (1):
+  - record_performance
+
+app/security/secure_auth.py (1):
+  - authenticate
+
+app/security/owasp_validator.py (1):
+  - run_security_scan
+
+app/security_metrics/api/security_metrics_facade.py (1):
+  - get_security_metrics_service
+
+app/security_metrics/infrastructure/in_memory_repository.py (1):
+  - get_metrics_history
+
+app/security_metrics/domain/entities.py (1):
+  - SecurityDebt
+
+app/cli_handlers/migrate_cli.py (1):
+  - db_migrate
+
+app/cli_handlers/maintenance_cli.py (1):
+  - placeholder
+
+app/serving/domain/entities/experiment_config.py (1):
+  - ServingStrategy
+
+app/infrastructure/patterns/dependency_injection.py (1):
+  - register_factory
+
+app/services/database_sharding_service.py (1):
+  - DatabaseShardingService
+
+app/services/saga_orchestrator.py (1):
+  - get_saga_orchestrator
+
+app/services/workflow_orchestration/facade.py (1):
+  - WorkflowOrchestrationFacade
+
+app/services/analytics/application/nps_manager.py (1):
+  - get_recent_comments
+
+app/services/analytics/application/session_manager.py (1):
+  - update_session_activity
+
+app/services/service_catalog/facade.py (1):
+  - ServiceCatalogFacade
+
+app/services/auth_boundary/facade.py (1):
+  - AuthBoundaryFacade
+
+app/services/execution/retry/retry_orchestrator.py (1):
+  - RetryOrchestrator
+
+app/services/ai_project_management/domain/models.py (1):
+  - completion_percentage
+
+app/services/agent_tools/refactored/builder.py (1):
+  - tool_decorator
+
+app/services/disaster_recovery/facade.py (1):
+  - escalation_policies
+
+app/services/disaster_recovery/infrastructure/repositories.py (1):
+  - get_pir
+
+app/services/developer_portal/application/code_example_manager.py (1):
+  - get_example
+
+app/services/developer_portal/application/sdk_generator.py (1):
+  - increment_download_count
+
+app/services/gitops_policy/application/policy_manager.py (1):
+  - disable_policy
+
+app/services/horizontal_scaling/facade.py (1):
+  - get_chaos_monkey
+
+app/services/horizontal_scaling/domain/models.py (1):
+  - ConsistentHashNode
+
+app/services/observability_integration/infrastructure/in_memory_repositories.py (1):
+  - update_health_status
+
+app/services/admin_chat_streaming/facade.py (1):
+  - AdminChatStreamingFacade
+
+app/services/crud/crud_persistence.py (1):
+  - get_task_by_id
+
+app/services/master_agent/facade.py (1):
+  - MasterAgentFacade
+
+app/services/micro_frontends/facade.py (1):
+  - MicroFrontendsFacade
+
+app/services/adaptive/facade.py (1):
+  - get_adaptive_microservices
+
+app/services/adaptive/application/scaling_engine.py (1):
+  - learn_from_decision
+
+app/services/adaptive/domain/ports.py (1):
+  - ServiceInstanceRepository
+
+app/services/crud_boundary/facade.py (1):
+  - CrudBoundaryFacade
+
+app/services/chat/context.py (1):
+  - with_param
+
+app/services/chat/handlers/base.py (1):
+  - execute_resilient
+
+app/services/api_chaos_monkey/facade.py (1):
+  - ApiChaosMonkeyFacade
+
+app/services/llm_client/facade.py (1):
+  - LlmClientFacade
+
+app/services/llm/retry_strategy.py (1):
+  - get_backoff
+
+app/services/llm/circuit_breaker.py (1):
+  - maybe_close
+
+app/services/ai_security/facade.py (1):
+  - is_ip_blocked
+
+app/services/ai_security/infrastructure/repositories/in_memory_repos.py (1):
+  - delete_profile
+
+app/services/ai_security/infrastructure/detectors/ml_threat_detector.py (1):
+  - analyze_payload
+
+app/services/distributed_resilience/facade.py (1):
+  - DistributedResilienceFacade
+
+app/services/advanced_streaming/facade.py (1):
+  - AdvancedStreamingFacade
+
+app/services/api_contract/infrastructure/version_manager.py (1):
+  - is_version_active
+
+app/services/api_slo_sli/facade.py (1):
+  - ApiSloSliFacade
+
+app/services/security_metrics/infrastructure/in_memory_repositories.py (1):
+  - update_finding
+
+app/services/data_mesh/infrastructure/repository.py (1):
+  - InMemoryDataMeshRepository
+
+app/services/admin_chat_performance/facade.py (1):
+  - AdminChatPerformanceFacade
+
+app/services/deployment/types.py (1):
+  - RollbackTrigger
+
+app/services/api_subscription/facade.py (1):
+  - ApiSubscriptionFacade
+
+app/services/k8s/application/consensus_manager.py (1):
+  - stop_consensus_protocol
+
+app/services/k8s/application/health_monitor.py (1):
+  - stop_monitoring
+
+app/services/k8s/infrastructure/in_memory_node_repository.py (1):
+  - update_node_resources
+
+app/services/admin_chat_boundary/facade.py (1):
+  - AdminChatBoundaryFacade
+
+app/services/serving/domain/models.py (1):
+  - ServingStrategy
+
+app/services/admin_ai/facade.py (1):
+  - AdminAiFacade
+
+app/services/api_observability/facade.py (1):
+  - ApiObservabilityFacade
+
+app/services/database_sharding/application/query_router.py (1):
+  - is_cross_shard_query
+
+app/services/ai_testing/selectors/smart_selector.py (1):
+  - record_test_result
+
+app/services/ai_testing/domain/models.py (1):
+  - CoverageType
+
+================================================================================

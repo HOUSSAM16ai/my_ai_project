@@ -1,4 +1,3 @@
-# app/config/ai_models.py
 """
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
 ║                                                                                          ║
@@ -28,18 +27,10 @@
 ║                                                                                          ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 """
-
 from __future__ import annotations
-
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-
-# ══════════════════════════════════════════════════════════════════════════════════════════
-# 📋 AVAILABLE MODELS CATALOG | كتالوج النماذج المتاحة
-# ══════════════════════════════════════════════════════════════════════════════════════════
-# Reference only - Copy the model ID you want to use
-# للمرجع فقط - انسخ معرف النموذج الذي تريد استخدامه
 
 
 class AvailableModels:
@@ -49,60 +40,25 @@ class AvailableModels:
     Copy the model ID (the string value) to use in the configuration below.
     انسخ معرف النموذج (القيمة النصية) لاستخدامه في التكوين أدناه.
     """
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 🟢 OPENAI MODELS | نماذج OpenAI
-    # ─────────────────────────────────────────────────────────────────────────
-    GPT_4O = "openai/gpt-4o"  # 🏆 الأقوى، متعدد الوسائط
-    GPT_4O_MINI = "openai/gpt-4o-mini"  # ⚡ سريع، موفر التكلفة
-    GPT_4_TURBO = "openai/gpt-4-turbo"  # 🚀 GPT-4 محسّن
-    GPT_4 = "openai/gpt-4"  # 📚 الكلاسيكي
-    GPT_35_TURBO = "openai/gpt-3.5-turbo"  # 💨 سريع جداً، رخيص
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 🟣 ANTHROPIC MODELS | نماذج Anthropic
-    # ─────────────────────────────────────────────────────────────────────────
-    CLAUDE_37_SONNET_THINKING = "anthropic/claude-3.7-sonnet:thinking"  # 🧠 تفكير متقدم
-    CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"  # 🎯 استدلال ممتاز
-    CLAUDE_OPUS_4_5 = "anthropic/claude-opus-4.5"  # 🔮 النموذج الجديد (كما طلب المستخدم)
-    CLAUDE_3_OPUS = "anthropic/claude-3-opus"  # 🎓 الأكثر قدرة
-    CLAUDE_3_HAIKU = "anthropic/claude-3-haiku"  # ⚡ سريع ورخيص
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 🔵 GOOGLE MODELS | نماذج Google
-    # ─────────────────────────────────────────────────────────────────────────
-    GEMINI_PRO = "google/gemini-pro"  # 🌟 الرئيسي
-    GEMINI_PRO_15 = "google/gemini-pro-1.5"  # 🚀 الأحدث
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 🟠 META MODELS (Open Source) | نماذج Meta
-    # ─────────────────────────────────────────────────────────────────────────
-    LLAMA_3_70B = "meta-llama/llama-3-70b-instruct"  # 🔓 مفتوح المصدر قوي
-    LLAMA_3_8B = "meta-llama/llama-3-8b-instruct"  # 💨 سريع ومجاني
-    LLAMA_3_2_11B_VISION_FREE = "meta-llama/llama-3.2-11b-vision-instruct:free"  # 👁️ رؤية مجانية
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 🆓 FREE MODELS (High Quality) | نماذج مجانية عالية الجودة
-    # ─────────────────────────────────────────────────────────────────────────
-    GEMINI_2_FLASH_EXP_FREE = "google/gemini-2.0-flash-exp:free"  # ⚡ سريع جداً ومجاني (LIMITED)
-    PHI_3_MINI_FREE = "microsoft/phi-3-mini-128k-instruct:free"  # 🤏 صغير جداً ومجاني
-    KAT_CODER_PRO_FREE = "kwaipilot/kat-coder-pro:free"  # 👨‍💻 مبرمج ممتاز ومجاني
-    QWEN_QWEN3_CODER_FREE = "qwen/qwen3-coder:free"  # 💻 مبرمج كوين الجديد
-
-
-# ══════════════════════════════════════════════════════════════════════════════════════════
-#
-#   ███████╗██████╗ ██╗████████╗    ██╗  ██╗███████╗██████╗ ███████╗
-#   ██╔════╝██╔══██╗██║╚══██╔══╝    ██║  ██║██╔════╝██╔══██╗██╔════╝
-#   █████╗  ██║  ██║██║   ██║       ███████║█████╗  ██████╔╝█████╗
-#   ██╔══╝  ██║  ██║██║   ██║       ██╔══██║██╔══╝  ██╔══██╗██╔══╝
-#   ███████╗██████╔╝██║   ██║       ██║  ██║███████╗██║  ██║███████╗
-#   ╚══════╝╚═════╝ ╚═╝   ╚═╝       ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝
-#
-#   👇👇👇 ACTIVE CONFIGURATION - EDIT BELOW TO CHANGE MODELS 👇👇👇
-#   👇👇👇 التكوين النشط - عدّل أدناه لتغيير النماذج 👇👇👇
-#
-# ══════════════════════════════════════════════════════════════════════════════════════════
+    GPT_4O = 'openai/gpt-4o'
+    GPT_4O_MINI = 'openai/gpt-4o-mini'
+    GPT_4_TURBO = 'openai/gpt-4-turbo'
+    GPT_4 = 'openai/gpt-4'
+    GPT_35_TURBO = 'openai/gpt-3.5-turbo'
+    CLAUDE_37_SONNET_THINKING = 'anthropic/claude-3.7-sonnet:thinking'
+    CLAUDE_35_SONNET = 'anthropic/claude-3.5-sonnet'
+    CLAUDE_OPUS_4_5 = 'anthropic/claude-opus-4.5'
+    CLAUDE_3_OPUS = 'anthropic/claude-3-opus'
+    CLAUDE_3_HAIKU = 'anthropic/claude-3-haiku'
+    GEMINI_PRO = 'google/gemini-pro'
+    GEMINI_PRO_15 = 'google/gemini-pro-1.5'
+    LLAMA_3_70B = 'meta-llama/llama-3-70b-instruct'
+    LLAMA_3_8B = 'meta-llama/llama-3-8b-instruct'
+    LLAMA_3_2_11B_VISION_FREE = 'meta-llama/llama-3.2-11b-vision-instruct:free'
+    GEMINI_2_FLASH_EXP_FREE = 'google/gemini-2.0-flash-exp:free'
+    PHI_3_MINI_FREE = 'microsoft/phi-3-mini-128k-instruct:free'
+    KAT_CODER_PRO_FREE = 'kwaipilot/kat-coder-pro:free'
+    QWEN_QWEN3_CODER_FREE = 'qwen/qwen3-coder:free'
 
 
 class ActiveModels:
@@ -123,60 +79,18 @@ class ActiveModels:
     ║                                                                                   ║
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
-
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # 🎯 PRIMARY MODEL | النموذج الرئيسي
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # This is the MAIN model used for most AI operations in the application.
-    # هذا هو النموذج الرئيسي المستخدم لمعظم عمليات الذكاء الاصطناعي.
-    #
-    # 👉 CHANGE THIS to switch the main AI model
-    # 👉 غيّر هذا لتبديل نموذج الذكاء الاصطناعي الرئيسي
-    # ═══════════════════════════════════════════════════════════════════════════════════
-
     PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
-
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # 💰 LOW COST MODEL | نموذج منخفض التكلفة
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # Used for simple, quick tasks to save money.
-    # يُستخدم للمهام البسيطة والسريعة لتوفير المال.
-    # ═══════════════════════════════════════════════════════════════════════════════════
-
-    LOW_COST = "deepseek/deepseek-v3.2-exp"
-
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # 🌟 GATEWAY MODELS | نماذج البوابة
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # Used by the Neural Routing Mesh for intelligent request routing.
-    # تُستخدم من قبل شبكة التوجيه العصبي للتوجيه الذكي للطلبات.
-    # ═══════════════════════════════════════════════════════════════════════════════════
-
-    GATEWAY_PRIMARY = AvailableModels.CLAUDE_OPUS_4_5  # 🏆 Stabilized Primary
-    GATEWAY_FALLBACK_1 = (
-        AvailableModels.GEMINI_2_FLASH_EXP_FREE
-    )  # ⚡ First fallback (Fast but rate-limited)
-    GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE  # 💻 Second fallback
-    GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE  # 👨‍💻 Third fallback
-    GATEWAY_FALLBACK_4 = AvailableModels.PHI_3_MINI_FREE  # 🤏 Fourth fallback
-    GATEWAY_FALLBACK_5 = AvailableModels.LLAMA_3_2_11B_VISION_FREE  # 👁️ Fifth fallback
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # ⚡ TIERED MODELS | النماذج المتدرجة
-    # ═══════════════════════════════════════════════════════════════════════════════════
-    # Different models for different complexity levels (intelligent routing).
-    # نماذج مختلفة لمستويات تعقيد مختلفة (التوجيه الذكي).
-    # ═══════════════════════════════════════════════════════════════════════════════════
-
-    TIER_NANO = AvailableModels.GPT_4O_MINI  # ⚡ Ultra-fast (<50ms) | فائق السرعة
-    TIER_FAST = AvailableModels.GPT_4O_MINI  # 🚀 Fast (<200ms) | سريع
-    TIER_SMART = AvailableModels.CLAUDE_35_SONNET  # 🧠 Smart (<1s) | ذكي
-    TIER_GENIUS = AvailableModels.CLAUDE_3_OPUS  # 🎓 Genius (<5s) | عبقري
-
-
-# ══════════════════════════════════════════════════════════════════════════════════════════
-#   👆👆👆 END OF CONFIGURATION - DO NOT EDIT BELOW THIS LINE 👆👆👆
-#   👆👆👆 نهاية التكوين - لا تعدل أسفل هذا الخط 👆👆👆
-# ══════════════════════════════════════════════════════════════════════════════════════════
+    LOW_COST = 'deepseek/deepseek-v3.2-exp'
+    GATEWAY_PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
+    GATEWAY_FALLBACK_1 = AvailableModels.GEMINI_2_FLASH_EXP_FREE
+    GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE
+    GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE
+    GATEWAY_FALLBACK_4 = AvailableModels.PHI_3_MINI_FREE
+    GATEWAY_FALLBACK_5 = AvailableModels.LLAMA_3_2_11B_VISION_FREE
+    TIER_NANO = AvailableModels.GPT_4O_MINI
+    TIER_FAST = AvailableModels.GPT_4O_MINI
+    TIER_SMART = AvailableModels.CLAUDE_35_SONNET
+    TIER_GENIUS = AvailableModels.CLAUDE_3_OPUS
 
 
 @dataclass(frozen=True)
@@ -184,130 +98,90 @@ class AIConfig:
     """
     AI Configuration singleton - reads from ActiveModels class.
     """
-
-    # Primary
     primary_model: str = ActiveModels.PRIMARY
     low_cost_model: str = ActiveModels.LOW_COST
-
-    # Gateway
     gateway_primary: str = ActiveModels.GATEWAY_PRIMARY
     gateway_fallback_1: str = ActiveModels.GATEWAY_FALLBACK_1
     gateway_fallback_2: str = ActiveModels.GATEWAY_FALLBACK_2
     gateway_fallback_3: str = ActiveModels.GATEWAY_FALLBACK_3
     gateway_fallback_4: str = ActiveModels.GATEWAY_FALLBACK_4
     gateway_fallback_5: str = ActiveModels.GATEWAY_FALLBACK_5
-
-    # Tiers
     tier_nano: str = ActiveModels.TIER_NANO
     tier_fast: str = ActiveModels.TIER_FAST
     tier_smart: str = ActiveModels.TIER_SMART
     tier_genius: str = ActiveModels.TIER_GENIUS
 
-    # API Keys (from environment - these ARE secrets)
     @property
-    def openrouter_api_key(self) -> str | None:
-        return os.getenv("OPENROUTER_API_KEY")
+    def openrouter_api_key(self) ->(str | None):
+        return os.getenv('OPENROUTER_API_KEY')
 
-    @property
-    def openai_api_key(self) -> str | None:
-        return os.getenv("OPENAI_API_KEY")
-
-    def get_fallback_models(self) -> list[str]:
+    def get_fallback_models(self) ->list[str]:
         """Get list of fallback models."""
-        return [
-            self.gateway_fallback_1,
-            self.gateway_fallback_2,
-            self.gateway_fallback_3,
-            self.gateway_fallback_4,
-            self.gateway_fallback_5,
-        ]
+        return [self.gateway_fallback_1, self.gateway_fallback_2, self.
+            gateway_fallback_3, self.gateway_fallback_4, self.
+            gateway_fallback_5]
 
-    def get_tier_model(self, tier: str) -> str:
-        """Get model for a specific tier."""
-        tier_map = {
-            "nano": self.tier_nano,
-            "fast": self.tier_fast,
-            "smart": self.tier_smart,
-            "genius": self.tier_genius,
-        }
-        return tier_map.get(tier.lower(), self.primary_model)
-
-    def to_dict(self) -> dict:
+    def to_dict(self) ->dict:
         """Export configuration as dictionary."""
-        return {
-            "primary_model": self.primary_model,
-            "low_cost_model": self.low_cost_model,
-            "gateway": {
-                "primary": self.gateway_primary,
-                "fallback_1": self.gateway_fallback_1,
-                "fallback_2": self.gateway_fallback_2,
-                "fallback_3": self.gateway_fallback_3,
-                "fallback_4": self.gateway_fallback_4,
-                "fallback_5": self.gateway_fallback_5,
-            },
-            "tiers": {
-                "nano": self.tier_nano,
-                "fast": self.tier_fast,
-                "smart": self.tier_smart,
-                "genius": self.tier_genius,
-            },
-        }
+        return {'primary_model': self.primary_model, 'low_cost_model': self
+            .low_cost_model, 'gateway': {'primary': self.gateway_primary,
+            'fallback_1': self.gateway_fallback_1, 'fallback_2': self.
+            gateway_fallback_2, 'fallback_3': self.gateway_fallback_3,
+            'fallback_4': self.gateway_fallback_4, 'fallback_5': self.
+            gateway_fallback_5}, 'tiers': {'nano': self.tier_nano, 'fast':
+            self.tier_fast, 'smart': self.tier_smart, 'genius': self.
+            tier_genius}}
 
-    def print_config(self) -> None:
+    def print_config(self) ->None:
         """Print current configuration."""
-        print("""
+        print(
+            """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🧠 CURRENT AI MODELS CONFIGURATION                        ║
-╠══════════════════════════════════════════════════════════════════════════════╣""")
-        print(f"║  🎯 Primary Model:     {self.primary_model:<50} ║")
-        print(f"║  💰 Low Cost Model:    {self.low_cost_model:<50} ║")
-        print("╠══════════════════════════════════════════════════════════════════════════════╣")
-        print(f"║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║")
-        print(f"║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║")
-        print(f"║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║")
-        print(f"║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║")
-        print(f"║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║")
-        print(f"║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║")
-        print("╠══════════════════════════════════════════════════════════════════════════════╣")
-        print(f"║  ⚡ Tier NANO:         {self.tier_nano:<50} ║")
-        print(f"║  🚀 Tier FAST:         {self.tier_fast:<50} ║")
-        print(f"║  🧠 Tier SMART:        {self.tier_smart:<50} ║")
-        print(f"║  🎓 Tier GENIUS:       {self.tier_genius:<50} ║")
-        print("╚══════════════════════════════════════════════════════════════════════════════╝")
+╠══════════════════════════════════════════════════════════════════════════════╣"""
+            )
+        print(f'║  🎯 Primary Model:     {self.primary_model:<50} ║')
+        print(f'║  💰 Low Cost Model:    {self.low_cost_model:<50} ║')
+        print(
+            '╠══════════════════════════════════════════════════════════════════════════════╣'
+            )
+        print(f'║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║')
+        print(f'║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║')
+        print(f'║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║')
+        print(f'║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║')
+        print(f'║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║')
+        print(f'║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║')
+        print(
+            '╠══════════════════════════════════════════════════════════════════════════════╣'
+            )
+        print(f'║  ⚡ Tier NANO:         {self.tier_nano:<50} ║')
+        print(f'║  🚀 Tier FAST:         {self.tier_fast:<50} ║')
+        print(f'║  🧠 Tier SMART:        {self.tier_smart:<50} ║')
+        print(f'║  🎓 Tier GENIUS:       {self.tier_genius:<50} ║')
+        print(
+            '╚══════════════════════════════════════════════════════════════════════════════╝'
+            )
 
 
 @lru_cache(maxsize=1)
-def get_ai_config() -> AIConfig:
+def get_ai_config() ->AIConfig:
     """Get the AI configuration singleton."""
     return AIConfig()
 
 
-# Singleton instance
 ai_config = get_ai_config()
-
-
-__all__ = [
-    "AIConfig",
-    "ActiveModels",
-    "AvailableModels",
-    "ai_config",
-    "get_ai_config",
-]
-
-
-# ══════════════════════════════════════════════════════════════════════════════════════════
-# 🧪 QUICK TEST | اختبار سريع
-# ══════════════════════════════════════════════════════════════════════════════════════════
-
-if __name__ == "__main__":
-    print("\n📋 Available Models for Reference:")
-    print("─" * 60)
-    print(f"  OpenAI GPT-4o:           {AvailableModels.GPT_4O}")
-    print(f"  OpenAI GPT-4o-mini:      {AvailableModels.GPT_4O_MINI}")
-    print(f"  Claude 3.7 Sonnet:       {AvailableModels.CLAUDE_37_SONNET_THINKING}")
-    print(f"  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}")
-    print(f"  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}")
-    print("─" * 60)
-
+__all__ = ['AIConfig', 'ActiveModels', 'AvailableModels', 'ai_config',
+    'get_ai_config']
+if __name__ == '__main__':
+    print('\n📋 Available Models for Reference:')
+    print('─' * 60)
+    print(f'  OpenAI GPT-4o:           {AvailableModels.GPT_4O}')
+    print(f'  OpenAI GPT-4o-mini:      {AvailableModels.GPT_4O_MINI}')
+    print(
+        f'  Claude 3.7 Sonnet:       {AvailableModels.CLAUDE_37_SONNET_THINKING}'
+        )
+    print(f'  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}')
+    print(f'  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}')
+    print('─' * 60)
     config = get_ai_config()
     config.print_config()

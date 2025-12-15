@@ -1,0 +1,416 @@
+================================================================================
+SMART DEAD CODE ANALYSIS REPORT
+================================================================================
+
+📊 SUMMARY
+--------------------------------------------------------------------------------
+App files analyzed: 987
+Test files analyzed: 206
+Total usages found: 9508
+Truly dead definitions: 569
+
+🔴 TRULY DEAD CODE (excluding false positives)
+--------------------------------------------------------------------------------
+
+app/overmind/planning/deep_indexer_v2/visitor.py (18 dead):
+  - visit_AsyncFor
+  - visit_AsyncWith
+  - visit_BoolOp
+  - visit_Call
+  - visit_ClassDef
+  - visit_DictComp
+  - visit_ExceptHandler
+  - visit_For
+  - visit_GeneratorExp
+  - visit_If
+  - visit_Import
+  - visit_ImportFrom
+  - visit_ListComp
+  - visit_Match
+  - visit_SetComp
+  - visit_Try
+  - visit_While
+  - visit_With
+
+app/services/api_gateway_deployment.py (11 dead):
+  - end_experiment
+  - get_ab_testing_service
+  - get_all_flags
+  - get_canary_deployment_service
+  - get_experiment_results
+  - get_feature_flag_service
+  - get_version_for_request
+  - increment_traffic
+  - record_request_outcome
+  - should_increment_traffic
+  - update_flag
+
+app/services/analytics/domain/models.py (11 dead):
+  - arpu
+  - average_transaction_value
+  - detractor_percentage
+  - get_retention_curve
+  - get_winner
+  - has_conversion
+  - promoter_percentage
+  - record_retention
+  - record_transaction
+  - record_variant_view
+  - stickiness
+
+app/telemetry/performance.py (10 dead):
+  - PerformanceMonitor
+  - export_vitals
+  - get_vital_percentiles
+  - record_cls
+  - record_entry
+  - record_fcp
+  - record_fid
+  - record_inp
+  - record_lcp
+  - record_ttfb
+
+app/services/developer_portal/facade.py (10 dead):
+  - add_ticket_message
+  - create_code_example
+  - create_support_ticket
+  - generate_api_key
+  - list_developer_keys
+  - list_developer_tickets
+  - list_sdks_by_language
+  - revoke_api_key
+  - rotate_api_key
+  - validate_api_key
+
+app/ai/observability/__init__.py (9 dead):
+  - add_log
+  - finish_operation
+  - get_counter
+  - get_dashboard_data
+  - get_gauge
+  - get_span
+  - register_span_hook
+  - set_tag
+  - trace_operation
+
+app/services/service_catalog_service.py (9 dead):
+  - get_api_specs
+  - get_catalog_metrics
+  - get_dependency_graph
+  - get_service_catalog
+  - get_templates
+  - register_api_spec
+  - scaffold_service
+  - search_services
+  - update_service_health
+
+app/telemetry/metrics.py (8 dead):
+  - dec
+  - export_prometheus
+  - get_metric_value
+  - get_quantiles
+  - inc_counter
+  - observe_histogram
+  - observe_summary
+  - register_summary
+
+app/boundaries/data_boundaries.py (8 dead):
+  - CommandHandler
+  - QueryHandler
+  - from_domain_model
+  - get_or_create_read_model
+  - get_status
+  - normalize_error
+  - to_domain_model
+  - update_from_event
+
+app/services/chaos_engineering.py (8 dead):
+  - apply_fault
+  - clear_fault
+  - disable_chaos_monkey
+  - enable_chaos_monkey
+  - get_experiment_report
+  - maybe_inject_fault
+  - run_experiment
+  - schedule_game_day
+
+app/core/protocols.py (7 dead):
+  - AIClientProtocol
+  - CacheProtocol
+  - DatabaseProtocol
+  - MessageQueueProtocol
+  - NotificationProtocol
+  - UserRepositoryProtocol
+  - VectorStoreProtocol
+
+app/ai/facade.py (7 dead):
+  - get_retry_metrics
+  - register_post_hook
+  - register_pre_hook
+  - reset_circuit_breaker
+  - reset_llm_client_service
+  - set_project_budget
+  - set_user_budget
+
+app/services/advanced_streaming_service.py (7 dead):
+  - create_stream
+  - get_platform_metrics
+  - get_schema
+  - get_stream
+  - get_stream_metrics
+  - process_stream
+  - replicate_stream
+
+app/services/api_gateway_chaos.py (7 dead):
+  - get_active_experiments
+  - get_all_states
+  - get_bulkhead_service
+  - get_chaos_service
+  - get_experiment_results
+  - inject_fault
+  - reset_stats
+
+app/services/micro_frontends_service.py (7 dead):
+  - create_federation
+  - get_federation_config
+  - get_micro_frontends_service
+  - get_modules_by_framework
+  - get_shared_state
+  - register_module
+  - set_shared_state
+
+app/telemetry/events.py (6 dead):
+  - query_events
+  - track_business_event
+  - track_error
+  - track_security_event
+  - track_system_event
+  - track_user_event
+
+app/overmind/planning/schemas.py (6 dead):
+  - children_of
+  - leaves
+  - parents_of
+  - to_d3_json
+  - to_mermaid
+  - to_networkx
+
+app/services/database_service.py (6 dead):
+  - create_record
+  - delete_record
+  - get_all_tables
+  - get_table_data
+  - get_table_schema
+  - update_record
+
+app/services/governance/facade.py (6 dead):
+  - add_council_member
+  - create_cosmic_council
+  - create_existential_protocol
+  - propose_council_decision
+  - query_transparency_logs
+  - reach_consciousness_consensus
+
+app/services/ai_project_management/application/services.py (6 dead):
+  - ProjectOrchestrator
+  - add_task
+  - add_team_member
+  - generate_smart_insights
+  - optimize_schedule
+  - predict_completion_date
+
+app/services/metrics/service.py (6 dead):
+  - calculate_accuracy_metrics
+  - calculate_bleu_score
+  - calculate_fairness_metrics
+  - calculate_perplexity
+  - calculate_rouge_scores
+  - record_inference
+
+app/analytics/domain/models/event.py (5 dead):
+  - add_superposition_state
+  - collapse
+  - from_dict
+  - sliding_windows
+  - tumbling_windows
+
+app/core/gateway/service.py (5 dead):
+  - gateway_process
+  - get_gateway_service
+  - get_gateway_stats
+  - register_route
+  - register_upstream_service
+
+app/telemetry/tracing.py (5 dead):
+  - export_traces
+  - extract_trace_context
+  - get_trace_context
+  - record_exception
+  - set_span_attribute
+
+app/ai/domain/models.py (5 dead):
+  - add_usage
+  - from_dict
+  - increment_attempts
+  - record_rejection
+  - to_api_params
+
+app/middleware/security_logger.py (5 dead):
+  - log_data_access
+  - log_password_change
+  - log_permission_change
+  - log_rate_limit_exceeded
+  - log_suspicious_activity
+
+app/middleware/core/registry.py (5 dead):
+  - create_middleware
+  - get_class
+  - get_global_registry
+  - list_registered
+  - register_middleware
+
+app/overmind/graph/orchestrator.py (5 dead):
+  - broadcast
+  - create_link
+  - dispatch
+  - get_graph_orchestrator
+  - run_step
+
+app/services/distributed_tracing.py (5 dead):
+  - find_error_traces
+  - find_slow_traces
+  - get_distributed_tracer
+  - get_recent_traces
+  - trace_request
+
+app/services/orchestration/application/node_manager.py (5 dead):
+  - cordon_node
+  - get_all_nodes
+  - mark_node_not_ready
+  - uncordon_node
+  - update_node_heartbeat
+
+app/services/adaptive/infrastructure/in_memory_repository.py (5 dead):
+  - InMemoryServiceInstanceRepository
+  - get_metrics_in_range
+  - get_recent_metrics
+  - list_by_service
+  - store_metrics
+
+app/services/k8s/domain/ports.py (5 dead):
+  - AutoScalerPort
+  - ConsensusPort
+  - HealthMonitorPort
+  - SchedulerPort
+  - SelfHealingPort
+
+app/core/superhuman_performance_optimizer.py (4 dead):
+  - add_request
+  - get_optimal_timeout
+  - group_by_similarity
+  - should_switch_model
+
+app/core/registry/plugin_loader.py (4 dead):
+  - PluginLoader
+  - get_loaded
+  - is_loaded
+  - unload
+
+app/ai/infrastructure/metrics.py (4 dead):
+  - get_spans
+  - record_event
+  - record_gauge
+  - record_histogram
+
+app/middleware/error_response_factory.py (4 dead):
+  - create_database_error_response
+  - create_internal_error_response
+  - create_unexpected_error_response
+  - create_validation_error_response
+
+app/middleware/factory/middleware_factory.py (4 dead):
+  - MiddlewareFactory
+  - create_development_pipeline
+  - create_minimal_pipeline
+  - create_production_pipeline
+
+app/overmind/planning/discovery.py (4 dead):
+  - PlannerDiscovery
+  - discover_planners
+  - get_import_failures
+  - sync_with_registry
+
+app/overmind/planning/telemetry.py (4 dead):
+  - clear_all
+  - get_all_samples
+  - get_instantiation_samples
+  - get_selection_samples
+
+app/overmind/code_intelligence/analyzers/complexity.py (4 dead):
+  - visit_AsyncFunctionDef
+  - visit_ClassDef
+  - visit_Import
+  - visit_ImportFrom
+
+app/api/routers/security.py (4 dead):
+  - generate_token
+  - get_current_user_endpoint
+  - login
+  - verify_token
+
+app/serving/application/ensemble_router.py (4 dead):
+  - EnsembleRouter
+  - aggregate_responses
+  - create_ensemble_response
+  - get_ensemble_config
+
+app/serving/application/shadow_deployment.py (4 dead):
+  - ShadowDeploymentManager
+  - get_deployment
+  - record_comparison
+  - should_shadow_request
+
+app/services/analytics/application/event_tracker.py (4 dead):
+  - get_user_events
+  - track_conversion
+  - track_page_view
+  - track_purchase
+
+app/services/analytics/infrastructure/user_segmentation.py (4 dead):
+  - classify_user
+  - get_segment_stats
+  - get_segment_users
+  - update_segmentation
+
+app/services/governance/domain/models.py (4 dead):
+  - CouncilDecision
+  - PolicyStatus
+  - ProtocolCompliance
+  - TransparencyEvent
+
+app/services/api_advanced_analytics/infrastructure/repositories.py (4 dead):
+  - get_aggregated_metrics
+  - get_all_profiles
+  - get_recent_reports
+  - get_report
+
+app/config/settings.py (4 dead):
+  - detect_codespaces
+  - fix_database_url
+  - parse_cors_origins
+  - validate_integrity
+
+app/analysis/root_cause.py (4 dead):
+  - add_dependency
+  - analyze_incident
+  - record_change
+  - record_event
+
+app/analytics/infrastructure/in_memory_stores.py (3 dead):
+  - clear_period
+  - get_all_tests
+  - get_users_by_segment
+
+... and 179 more files with 270 dead definitions
+
+================================================================================

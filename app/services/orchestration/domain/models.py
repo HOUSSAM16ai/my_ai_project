@@ -1,57 +1,44 @@
-# app/services/orchestration/domain/models.py
 """
 Orchestration Domain Models
 ============================
 Domain entities for Kubernetes orchestration.
 """
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any
 
 
-# ======================================================================================
-# ENUMERATIONS
-# ======================================================================================
-
-
 class PodPhase(Enum):
     """Pod lifecycle phases"""
-    PENDING = "pending"
-    RUNNING = "running"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-    UNKNOWN = "unknown"
+    PENDING = 'pending'
+    RUNNING = 'running'
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+    UNKNOWN = 'unknown'
 
 
 class NodeState(Enum):
     """Node states"""
-    READY = "ready"
-    NOT_READY = "not_ready"
-    UNKNOWN = "unknown"
-    CORDONED = "cordoned"
+    READY = 'ready'
+    NOT_READY = 'not_ready'
+    UNKNOWN = 'unknown'
+    CORDONED = 'cordoned'
 
 
 class ConsensusRole(Enum):
     """Raft consensus roles"""
-    LEADER = "leader"
-    FOLLOWER = "follower"
-    CANDIDATE = "candidate"
+    LEADER = 'leader'
+    FOLLOWER = 'follower'
+    CANDIDATE = 'candidate'
 
 
 class ScalingDirection(Enum):
     """Auto-scaling direction"""
-    UP = "up"
-    DOWN = "down"
-    NONE = "none"
-
-
-# ======================================================================================
-# ENTITIES
-# ======================================================================================
+    UP = 'up'
+    DOWN = 'down'
+    NONE = 'none'
 
 
 @dataclass
@@ -72,14 +59,8 @@ class Pod:
     labels: dict[str, str] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     last_restart: datetime | None = None
-    
-    def mark_failed(self) -> None:
-        """Mark pod as failed"""
-        self.phase = PodPhase.FAILED
-        self.restart_count += 1
-        self.last_restart = datetime.utcnow()
-    
-    def mark_running(self) -> None:
+
+    def mark_running(self) ->None:
         """Mark pod as running"""
         self.phase = PodPhase.RUNNING
 
@@ -98,32 +79,23 @@ class Node:
     labels: dict[str, str] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     last_heartbeat: datetime = field(default_factory=datetime.utcnow)
-    
+
     @property
-    def cpu_available(self) -> float:
+    def cpu_available(self) ->float:
         return self.cpu_capacity - self.cpu_allocated
-    
+
     @property
-    def memory_available(self) -> float:
+    def memory_available(self) ->float:
         return self.memory_capacity - self.memory_allocated
-    
-    def can_fit_pod(self, cpu_request: float, memory_request: float) -> bool:
-        return (
-            self.state == NodeState.READY and
-            self.cpu_available >= cpu_request and
-            self.memory_available >= memory_request
-        )
-    
-    def allocate_pod(self, pod: Pod) -> None:
+
+    def can_fit_pod(self, cpu_request: float, memory_request: float) ->bool:
+        return (self.state == NodeState.READY and self.cpu_available >=
+            cpu_request and self.memory_available >= memory_request)
+
+    def allocate_pod(self, pod: Pod) ->None:
         self.pods.add(pod.pod_id)
         self.cpu_allocated += pod.cpu_request
         self.memory_allocated += pod.memory_request
-    
-    def deallocate_pod(self, pod: Pod) -> None:
-        if pod.pod_id in self.pods:
-            self.pods.remove(pod.pod_id)
-            self.cpu_allocated -= pod.cpu_request
-            self.memory_allocated -= pod.memory_request
 
 
 @dataclass

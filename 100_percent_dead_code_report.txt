@@ -1,0 +1,1869 @@
+================================================================================
+ULTRA CONSERVATIVE DEAD CODE ANALYSIS
+100% CERTAINTY ONLY
+================================================================================
+
+📊 SUMMARY
+--------------------------------------------------------------------------------
+Files analyzed: 1193
+Total usages: 9613
+Protected items: 2990
+Public API patterns: 150
+100% DEAD functions: 269
+
+🔴 100% CONFIRMED DEAD CODE (Safe to remove)
+--------------------------------------------------------------------------------
+
+app/telemetry/performance.py (9 dead):
+  ✅ record_cls
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_ttfb
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ export_vitals
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_lcp
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_entry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_fcp
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_fid
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_vital_percentiles
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_inp
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/analytics/domain/models.py (9 dead):
+  ✅ record_transaction
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ arpu
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_retention
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ promoter_percentage
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ detractor_percentage
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ stickiness
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ has_conversion
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_variant_view
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ average_transaction_value
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/observability/__init__.py (8 dead):
+  ✅ get_counter
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_log
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_gauge
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ set_tag
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_span
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ trace_operation
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_dashboard_data
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ finish_operation
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/boundaries/data_boundaries.py (8 dead):
+  ✅ normalize_error
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ to_domain_model
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ from_domain_model
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_or_create_read_model
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ QueryHandler
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_status
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ CommandHandler
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ update_from_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/telemetry/metrics.py (7 dead):
+  ✅ export_prometheus
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_quantiles
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ inc_counter
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_metric_value
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ dec
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ observe_histogram
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ observe_summary
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/chaos_engineering.py (7 dead):
+  ✅ disable_chaos_monkey
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ clear_fault
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ run_experiment
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ enable_chaos_monkey
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ schedule_game_day
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ apply_fault
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ maybe_inject_fault
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/protocols.py (6 dead):
+  ✅ VectorStoreProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ NotificationProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ MessageQueueProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ UserRepositoryProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ CacheProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ DatabaseProtocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/telemetry/events.py (6 dead):
+  ✅ track_error
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_system_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_user_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_security_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_business_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ query_events
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/metrics/service.py (6 dead):
+  ✅ calculate_accuracy_metrics
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ calculate_perplexity
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ calculate_bleu_score
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ calculate_rouge_scores
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_inference
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ calculate_fairness_metrics
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/telemetry/tracing.py (5 dead):
+  ✅ export_traces
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ set_span_attribute
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ extract_trace_context
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_exception
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_trace_context
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/security_logger.py (5 dead):
+  ✅ log_suspicious_activity
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ log_password_change
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ log_data_access
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ log_rate_limit_exceeded
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ log_permission_change
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/ai_project_management/application/services.py (5 dead):
+  ✅ add_team_member
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ optimize_schedule
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ generate_smart_insights
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_task
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ predict_completion_date
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/developer_portal/facade.py (5 dead):
+  ✅ add_ticket_message
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ revoke_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ validate_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ generate_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ rotate_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/analytics/domain/models/event.py (4 dead):
+  ✅ sliding_windows
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_superposition_state
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ tumbling_windows
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ collapse
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/superhuman_performance_optimizer.py (4 dead):
+  ✅ should_switch_model
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_optimal_timeout
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_request
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ group_by_similarity
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/domain/models.py (4 dead):
+  ✅ record_rejection
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_usage
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ to_api_params
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ increment_attempts
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/telemetry.py (4 dead):
+  ✅ clear_all
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_all_samples
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_selection_samples
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_instantiation_samples
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/api_gateway_deployment.py (4 dead):
+  ✅ end_experiment
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ increment_traffic
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ should_increment_traffic
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_request_outcome
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/governance/facade.py (4 dead):
+  ✅ query_transparency_logs
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ propose_council_decision
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ reach_consciousness_consensus
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ add_council_member
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/scaling/load_balancer.py (3 dead):
+  ✅ execute_on_instance
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ WeightedRandomStrategy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ RandomStrategy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/registry/plugin_loader.py (3 dead):
+  ✅ is_loaded
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ unload
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_loaded
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/facade.py (3 dead):
+  ✅ reset_llm_client_service
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ set_project_budget
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ set_user_budget
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/core/registry.py (3 dead):
+  ✅ list_registered
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_class
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_global_registry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/discovery.py (3 dead):
+  ✅ get_import_failures
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ sync_with_registry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ discover_planners
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/_drift_detection.py (3 dead):
+  ✅ clear_drift_snapshots
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_drift_snapshot
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ DriftResult
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/graph/orchestrator.py (3 dead):
+  ✅ run_step
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ broadcast
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_graph_orchestrator
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/serving/application/shadow_deployment.py (3 dead):
+  ✅ record_comparison
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_deployment
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ should_shadow_request
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/serving/infrastructure/metrics_collector.py (3 dead):
+  ✅ start_performance_monitoring
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_model_metrics_summary
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ stop_performance_monitoring
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/infrastructure/patterns/event_bus.py (3 dead):
+  ✅ publish_async
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ subscribe_async
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ clear_history
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/api_config_secrets_service.py (3 dead):
+  ✅ config_store
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ access_logs
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ secrets_registry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/distributed_tracing.py (3 dead):
+  ✅ find_error_traces
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ trace_request
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ find_slow_traces
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/analytics/application/event_tracker.py (3 dead):
+  ✅ track_page_view
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_conversion
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ track_purchase
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/orchestration/application/node_manager.py (3 dead):
+  ✅ cordon_node
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ mark_node_not_ready
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ uncordon_node
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/analysis/predictor.py (3 dead):
+  ✅ add_observation
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_recent_predictions
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ predict_resource_exhaustion
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/analysis/root_cause.py (3 dead):
+  ✅ add_dependency
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ analyze_incident
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ record_change
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/api_docs.py (2 dead):
+  ✅ get_openapi_config
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_api_endpoints_documentation
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/self_healing_db.py (2 dead):
+  ✅ run_self_healing
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ quick_fix_linked_mission_id
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/scaling/service_registry.py (2 dead):
+  ✅ heartbeat
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ deregister
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/telemetry/unified_observability.py (2 dead):
+  ✅ SamplingDecision
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ set_baggage
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/protocols/http_client.py (2 dead):
+  ✅ HttpClient
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ RequestsAdapter
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/application/retry_strategy.py (2 dead):
+  ✅ with_retry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_default_executor
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/infrastructure/transports/__init__.py (2 dead):
+  ✅ get_call_count
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ reset_call_count
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/boundaries/policy/governance.py (2 dead):
+  ✅ calculate_deletion_date
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ should_backup
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/base_planner.py (2 dead):
+  ✅ reliability_snapshot
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ manual_unquarantine
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/api/middleware.py (2 dead):
+  ✅ add_middlewares
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ log_requests
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/api/v2/dependencies.py (2 dead):
+  ✅ verify_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_db_session
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/serving/application/ensemble_router.py (2 dead):
+  ✅ get_ensemble_config
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ aggregate_responses
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/serving/application/model_invoker.py (2 dead):
+  ✅ get_request_history
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_response_history
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/infrastructure/patterns/chain_of_responsibility.py (2 dead):
+  ✅ CachingHandler
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ cache_response
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/service_mesh_integration.py (2 dead):
+  ✅ configure_timeout_policy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ deregister_service
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/service_catalog_service.py (2 dead):
+  ✅ scaffold_service
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ search_services
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/api_gateway_chaos.py (2 dead):
+  ✅ inject_fault
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ reset_stats
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/api_slo_sli_service.py (2 dead):
+  ✅ start_incident
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ end_incident
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/orchestration/domain/models.py (2 dead):
+  ✅ deallocate_pod
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ mark_failed
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/orchestration/domain/ports.py (2 dead):
+  ✅ ScalingEngine
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ ConsensusEngine
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/agent_tools/refactored/registry.py (2 dead):
+  ✅ enable_tool
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ disable_tool
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/observability_integration/domain/ports.py (2 dead):
+  ✅ IAnomalyDetector
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ IPerformanceTracker
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/llm/invocation_handler.py (2 dead):
+  ✅ stream_generator
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ LLMRequestExecutor
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/serving/domain/ports.py (2 dead):
+  ✅ ModelRepository
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ CostCalculator
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/api_advanced_analytics/domain/models.py (2 dead):
+  ✅ is_at_risk
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ is_valuable
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/ai_testing/application/manager.py (2 dead):
+  ✅ analyze_and_generate
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ optimize_suite
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/config/ai_models.py (2 dead):
+  ✅ openai_api_key
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+  ✅ get_tier_model
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/startup_diagnostics.py (1 dead):
+  ✅ run_diagnostics
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/security.py (1 dead):
+  ✅ get_password_hash
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/di.py (1 dead):
+  ✅ get_di_session_factory
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/common_imports.py (1 dead):
+  ✅ check_feature
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/time.py (1 dead):
+  ✅ legacy_context
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/resilience/composite.py (1 dead):
+  ✅ CompositeResiliencePolicy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/engine/diagnostics.py (1 dead):
+  ✅ get_engine_info
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/registry/plugin_discovery.py (1 dead):
+  ✅ discover_and_configure
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/math/cognitive_fingerprint.py (1 dead):
+  ✅ CognitiveFingerprint
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/core/math/kalman.py (1 dead):
+  ✅ get_estimate
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/application/circuit_breaker.py (1 dead):
+  ✅ get_registry
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/optimization/__init__.py (1 dead):
+  ✅ deduplicate
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/ai/infrastructure/metrics.py (1 dead):
+  ✅ get_spans
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/boundaries/service_boundaries.py (1 dead):
+  ✅ call_protected
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/boundaries/policy/auth.py (1 dead):
+  ✅ has_claim
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/boundaries/policy/layers.py (1 dead):
+  ✅ get_audit_log
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/rate_limiter_middleware.py (1 dead):
+  ✅ cleanup_expired
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/core/base_middleware.py (1 dead):
+  ✅ MetricsMiddleware
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/core/response_factory.py (1 dead):
+  ✅ from_middleware_result
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/observability/performance_profiler.py (1 dead):
+  ✅ get_endpoint_statistics
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/error_handling/exception_mapper.py (1 dead):
+  ✅ map_exception
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/security/telemetry_guard.py (1 dead):
+  ✅ get_audit_trail
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/middleware/security/policy_enforcer.py (1 dead):
+  ✅ remove_policy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/_layer_detection.py (1 dead):
+  ✅ add_layer_rule
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/_self_test_runner.py (1 dead):
+  ✅ run_self_test
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/_tag_detection.py (1 dead):
+  ✅ add_tag_rule
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/fault_tolerance.py (1 dead):
+  ✅ a_generate_safely
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/overmind/planning/hyper_planner/planning_logic.py (1 dead):
+  ✅ read_from_file
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/api/exceptions.py (1 dead):
+  ✅ generic_handler
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/api/v2/schemas.py (1 dead):
+  ✅ ErrorResponse
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/application/use_cases/routing/routing_strategies.py (1 dead):
+  ✅ record_performance
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/security/owasp_validator.py (1 dead):
+  ✅ run_security_scan
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/cli_handlers/migrate_cli.py (1 dead):
+  ✅ db_migrate
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/serving/application/ab_test_engine.py (1 dead):
+  ✅ route_ab_test_request
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/database_sharding_service.py (1 dead):
+  ✅ DatabaseShardingService
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/admin_chat_performance_service.py (1 dead):
+  ✅ assign_ab_variant
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/advanced_streaming_service.py (1 dead):
+  ✅ replicate_stream
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/workflow_orchestration_service.py (1 dead):
+  ✅ publish_event
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/micro_frontends_service.py (1 dead):
+  ✅ set_shared_state
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/user_service.py (1 dead):
+  ✅ ensure_admin_user_exists_async
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/analytics/infrastructure/ab_test_repository.py (1 dead):
+  ✅ stop_test
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/ai_project_management/domain/models.py (1 dead):
+  ✅ completion_percentage
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/agent_tools/refactored/builder.py (1 dead):
+  ✅ tool_decorator
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/disaster_recovery/facade.py (1 dead):
+  ✅ escalation_policies
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/developer_portal/application/sdk_generator.py (1 dead):
+  ✅ increment_download_count
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/gitops_policy/application/policy_manager.py (1 dead):
+  ✅ disable_policy
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/adaptive/application/scaling_engine.py (1 dead):
+  ✅ learn_from_decision
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/chat/context.py (1 dead):
+  ✅ with_param
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/chat/telemetry.py (1 dead):
+  ✅ record_intent
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/chat/handlers/base.py (1 dead):
+  ✅ execute_resilient
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/llm/circuit_breaker.py (1 dead):
+  ✅ maybe_close
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/ai_security/facade.py (1 dead):
+  ✅ is_ip_blocked
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/security_metrics/facade.py (1 dead):
+  ✅ calculate_comprehensive_metrics
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/k8s/application/consensus_manager.py (1 dead):
+  ✅ stop_consensus_protocol
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/k8s/application/health_monitor.py (1 dead):
+  ✅ stop_monitoring
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/database_sharding/application/query_router.py (1 dead):
+  ✅ is_cross_shard_query
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+app/services/ai_testing/selectors/smart_selector.py (1 dead):
+  ✅ record_test_result
+      ✅ No usage found
+      ✅ Not protected
+      ✅ Not in __all__
+      ✅ Not public API pattern
+      ✅ 100% CERTAIN DEAD
+
+================================================================================
