@@ -138,7 +138,7 @@ else
     echo -e "⚠️  Some issues may remain. Please review the output above."
     echo ""
     echo "Most likely, the remaining issues are acceptable warnings."
-    echo "Run 'bash scripts/verify_all_workflows.sh' for a complete check."
+    echo "Code formatting complete."
 fi
 
 echo ""
