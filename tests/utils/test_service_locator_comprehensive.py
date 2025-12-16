@@ -17,7 +17,6 @@ from app.utils.service_locator import (
     ServiceLocator,
     get_admin_ai,
     get_database_service,
-    get_maestro,
     get_overmind,
 )
 
@@ -70,11 +69,6 @@ class TestConvenienceFunctions:
     def test_get_overmind(self):
         """Test get_overmind convenience function"""
         result = get_overmind()
-        assert result is None or result is not None
-
-    def test_get_maestro(self):
-        """Test get_maestro convenience function"""
-        result = get_maestro()
         assert result is None or result is not None
 
     def test_get_admin_ai(self):

@@ -47,8 +47,6 @@ class ServiceLocator:
             # Lazy import to avoid circular dependencies
             if service_name == "master_agent_service":
                 from app.services import master_agent_service as service_module
-            elif service_name == "generation_service":
-                from app.services import generation_service as service_module
             elif service_name == "admin_ai_service":
                 from app.services.admin_ai_service import admin_ai_service as service_module
             elif service_name == "database_service":
@@ -116,11 +114,6 @@ class ServiceLocator:
 def get_overmind():
     """Get the master agent (overmind) service."""
     return ServiceLocator.get_service("master_agent_service")
-
-
-def get_maestro():
-    """Get the generation (maestro) service."""
-    return ServiceLocator.get_service("generation_service")
 
 
 def get_admin_ai():
