@@ -14,26 +14,30 @@ CogniForge is an advanced, AI-powered educational platform built on a next-gener
 
 ## 🎯 Quick Start | البدء السريع
 
-### 1️⃣ Automated Setup & Run | الإعداد والتشغيل الآلي
+### 1️⃣ Automated Setup & Run (Superhuman Environment) | الإعداد والتشغيل الآلي الخارق
 
-To get started, simply run the development setup script. This will handle everything: installing dependencies, creating the `.env` file, building the frontend, and starting the server.
+To get started, simply run the robust development setup script. This **"Superhuman Setup"** handles the entire lifecycle with zero friction:
+
+1.  **Dependencies:** Automatically verifies and installs Python packages.
+2.  **Configuration:** Auto-generates a secure `.env` file if missing (or respects existing secrets).
+3.  **Codespaces Automation:** **Automatically enforces "Public" visibility** for Port 8000, ensuring the browser opens instantly without "White Page" errors.
+4.  **Auto-Healing:** Kills stale processes locking the port and runs the server in an **auto-restart loop** (crash-proof).
 
 ```bash
 # Make the script executable (only needs to be done once)
 chmod +x scripts/setup_dev.sh
 
-# Run the setup script
+# Run the Superhuman Setup script
 ./scripts/setup_dev.sh
 ```
 
-The application will be available at `http://localhost:8000`.
+The application will be automatically exposed at `http://localhost:8000` (or your Codespace URL).
 
-### ❗️ Important Note for GitHub Codespaces Users
+### ❗️ Automated Port Visibility (Codespaces)
 
-When you start the application in a GitHub Codespace, the backend server will run on port 8000. For you to be able to access it from your browser, the port's visibility must be set to **Public**.
+The new setup script (`scripts/setup_dev.sh`) explicitly runs `gh codespace ports visibility 8000:public`. This ensures that the environment transition is seamless and the "Open in Browser" notification appears immediately.
 
-- **Automated Configuration:** The repository is already configured to do this automatically.
-- **Manual Verification:** If you are unable to access the application, please go to the **PORTS** tab in your Codespace and ensure that port 8000 has its "Visibility" set to "Public". If it is "Private", you can click on it to change the setting.
+- **Manual Verification (Fallback):** If for some reason the automation fails, go to the **PORTS** tab and ensure port 8000 is **Public**.
 
 ### Codespaces / Preview Troubleshooting
 
