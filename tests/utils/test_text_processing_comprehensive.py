@@ -13,7 +13,8 @@ Features:
 """
 
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from app.utils.text_processing import extract_first_json_object, strip_markdown_fences
 

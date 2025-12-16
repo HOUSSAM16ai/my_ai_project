@@ -1,23 +1,20 @@
-import pytest
-import os
-import json
 import gzip
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
+
 from app.services.agent_tools.fs_tools import (
-    ensure_directory,
-    write_file,
-    write_file_if_changed,
     append_file,
-    read_file,
+    delete_file,
+    ensure_directory,
+    ensure_file,
     file_exists,
     list_dir,
-    delete_file,
-    ensure_file,
     read_bulk_files,
-    ToolResult,
+    read_file,
+    write_file,
+    write_file_if_changed,
 )
-from app.services.agent_tools.definitions import MAX_WRITE_BYTES
 
 # We need to mock PROJECT_ROOT in fs_tools.utils via patch,
 # because fs_tools imports _safe_path from .utils

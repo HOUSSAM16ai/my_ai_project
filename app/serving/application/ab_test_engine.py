@@ -5,13 +5,15 @@ Manages A/B tests between different model versions.
 Responsible for test configuration, traffic splitting, and analysis.
 """
 from __future__ import annotations
-import random
+
 import threading
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+
 from app.serving.domain.entities import ABTestConfig
+
 if TYPE_CHECKING:
     from app.serving.application.model_registry import ModelRegistry
 
@@ -19,7 +21,7 @@ if TYPE_CHECKING:
 class ABTestEngine:
     """
     A/B Testing Engine - محرك اختبار A/B
-    
+
     Responsibilities:
     - Create and manage A/B test configurations
     - Route requests based on split percentages
@@ -35,13 +37,13 @@ class ABTestEngine:
         split_percentage: float=50.0, duration_hours: int=24) ->str:
         """
         بدء اختبار A/B بين نموذجين
-        
+
         Args:
             model_a_id: معرف النموذج A
             model_b_id: معرف النموذج B
             split_percentage: نسبة الطلبات للنموذج A (الباقي لـ B)
             duration_hours: مدة الاختبار بالساعات
-            
+
         Returns:
             معرف الاختبار
         """
@@ -63,11 +65,11 @@ class ABTestEngine:
         str, Any]:
         """
         تحليل نتائج اختبار A/B وتحديد الفائز
-        
+
         Args:
             test_id: معرف الاختبار
             metrics_getter: دالة للحصول على مقاييس النموذج
-            
+
         Returns:
             نتائج التحليل
         """
@@ -94,10 +96,10 @@ class ABTestEngine:
     def get_ab_test_status(self, test_id: str) ->(ABTestConfig | None):
         """
         الحصول على حالة اختبار A/B
-        
+
         Args:
             test_id: معرف الاختبار
-            
+
         Returns:
             تكوين الاختبار أو None
         """

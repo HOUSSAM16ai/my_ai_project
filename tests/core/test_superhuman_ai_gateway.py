@@ -2,11 +2,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.gateway.mesh import NeuralRoutingMesh, SAFETY_NET_MODEL_ID
+from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.exceptions import AIAllModelsExhaustedError
-from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
+from app.core.gateway.mesh import SAFETY_NET_MODEL_ID, NeuralRoutingMesh
 from app.core.gateway.node import NeuralNode
-from app.core.gateway.connection import ConnectionManager
+
 
 # Mock ModelProvider for tests
 class ModelProvider:

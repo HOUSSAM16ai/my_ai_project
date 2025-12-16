@@ -1,6 +1,12 @@
 # tests/services/test_api_governance_service.py
 import pytest
-from app.services.api_governance_service import get_governance_service, governance_service, CosmicGovernanceService
+
+from app.services.api_governance_service import (
+    CosmicGovernanceService,
+    get_governance_service,
+    governance_service,
+)
+
 
 def test_api_governance_service_instantiation():
     """Test that the governance service is instantiated correctly."""

@@ -6,7 +6,11 @@ from app.security_metrics.application.developer_scoring import DeveloperSecurity
 from app.security_metrics.application.report_generation import SecurityReportGenerator
 from app.security_metrics.application.risk_scoring import RiskScoreCalculator
 from app.security_metrics.domain.entities import DeveloperSecurityScore, RiskScore, SecurityFinding
-from app.security_metrics.domain.interfaces import ReportGenerator, RiskCalculator, SecurityRepository
+from app.security_metrics.domain.interfaces import (
+    ReportGenerator,
+    RiskCalculator,
+    SecurityRepository,
+)
 from app.security_metrics.domain.value_objects import Severity
 from app.security_metrics.infrastructure.in_memory_repository import InMemorySecurityRepository
 

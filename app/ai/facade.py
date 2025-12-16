@@ -20,30 +20,45 @@ Architecture:
 - Transports: Provider-specific implementations
 """
 from __future__ import annotations
+
 import logging
 import os
 import threading
 import time
-from typing import Any, Callable, Generator
-from app.ai.application.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, get_circuit_breaker
-from app.ai.application.cost_manager import BudgetConfig, BudgetPeriod, CostManager, get_cost_manager
+from collections.abc import Callable, Generator
+from typing import Any
+
+from app.ai.application.circuit_breaker import (
+    CircuitBreakerConfig,
+    get_circuit_breaker,
+)
+from app.ai.application.cost_manager import (
+    BudgetConfig,
+    BudgetPeriod,
+    get_cost_manager,
+)
 from app.ai.application.payload_builder import PayloadBuilder
 from app.ai.application.response_normalizer import ResponseNormalizer
-from app.ai.application.retry_strategy import AdaptiveRetry, ExponentialBackoffRetry, RetryConfig, RetryExecutor
-from app.ai.infrastructure.transports import MockLLMTransport, OpenRouterTransport, get_transport
+from app.ai.application.retry_strategy import (
+    AdaptiveRetry,
+    RetryConfig,
+    RetryExecutor,
+)
+from app.ai.infrastructure.transports import get_transport
+
 _LOG = logging.getLogger(__name__)
 
 
 class LLMClientService:
     """
     Facade for LLM Client operations.
-    
+
     **REFACTORED**: This class now delegates to specialized services
     instead of implementing everything inline.
-    
+
     Maintains 100% backward compatibility with original API while
     using clean layered architecture internally.
-    
+
     Original responsibilities now delegated to:
     - PayloadBuilder: Request construction
     - ResponseNormalizer: Response processing
@@ -58,7 +73,7 @@ class LLMClientService:
         None)=None):
         """
         Initialize LLM Client Service.
-        
+
         Args:
             provider: LLM provider (openrouter, openai, anthropic, mock)
             circuit_breaker_config: Circuit breaker configuration
@@ -111,7 +126,7 @@ class LLMClientService:
         Generator[dict[str, Any], None, None]):
         """
         Invoke LLM chat completion.
-        
+
         Args:
             model: Model identifier
             messages: List of message dictionaries
@@ -123,10 +138,10 @@ class LLMClientService:
             user_id: Optional user identifier for cost tracking
             project_id: Optional project identifier for cost tracking
             extra: Additional parameters
-            
+
         Returns:
             Response dictionary or generator for streaming
-            
+
         Raises:
             CircuitBreakerOpenError: If circuit breaker is open
             BudgetExceededError: If budget limit exceeded
@@ -270,10 +285,10 @@ _GLOBAL_LOCK = threading.RLock()
 def get_llm_client_service(provider: (str | None)=None) ->LLMClientService:
     """
     Get global LLM client service instance.
-    
+
     Args:
         provider: Optional provider override
-        
+
     Returns:
         LLMClientService instance
     """
@@ -282,8 +297,8 @@ def get_llm_client_service(provider: (str | None)=None) ->LLMClientService:
         _GLOBAL_CLIENT.provider):
         return _GLOBAL_CLIENT
     with _GLOBAL_LOCK:
-        if (_GLOBAL_CLIENT is None or provider and provider !=
-            _GLOBAL_CLIENT.provider):
+        if (_GLOBAL_CLIENT is None or (provider and provider !=
+            _GLOBAL_CLIENT.provider)):
             _GLOBAL_CLIENT = LLMClientService(provider)
             _LOG.info(
                 f'Initialized global LLM client service: {_GLOBAL_CLIENT.provider}'

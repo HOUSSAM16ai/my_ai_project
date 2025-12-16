@@ -25,6 +25,7 @@ VERSION: 1.0.0
 ======================================================================================
 """
 from __future__ import annotations
+
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -33,6 +34,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any
+
 logger = logging.getLogger(__name__)
 
 

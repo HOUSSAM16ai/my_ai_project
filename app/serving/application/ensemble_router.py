@@ -4,18 +4,19 @@ Ensemble Router
 Routes requests to multiple models and aggregates their responses.
 """
 from __future__ import annotations
+
 import threading
-import time
 import uuid
 from collections import Counter
 from typing import Any
+
 from app.serving.domain.entities import EnsembleConfig, ModelResponse
 
 
 class EnsembleRouter:
     """
     Ensemble Router - موجه التجميع
-    
+
     Responsibilities:
     - Create and manage ensemble configurations
     - Route requests to multiple models
@@ -30,12 +31,12 @@ class EnsembleRouter:
         str='voting', weights: (dict[str, float] | None)=None) ->str:
         """
         إنشاء تجميع نماذج (Ensemble)
-        
+
         Args:
             model_versions: قائمة معرفات النماذج
             aggregation_method: طريقة الدمج (voting, averaging, stacking)
             weights: أوزان النماذج (اختياري)
-            
+
         Returns:
             معرف التجميع
         """
@@ -73,13 +74,13 @@ class EnsembleRouter:
         ) ->ModelResponse:
         """
         إنشاء استجابة التجميع
-        
+
         Args:
             ensemble_id: معرف التجميع
             aggregated_output: النتيجة المدمجة
             responses: قائمة استجابات النماذج الفردية
             total_latency: إجمالي وقت الاستجابة
-            
+
         Returns:
             استجابة التجميع
         """

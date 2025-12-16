@@ -3,7 +3,7 @@
 import statistics
 from datetime import datetime
 
-from app.security_metrics.domain.entities import DeveloperSecurityScore, SecurityFinding
+from app.security_metrics.domain.entities import DeveloperSecurityScore
 from app.security_metrics.domain.interfaces import SecurityRepository
 
 

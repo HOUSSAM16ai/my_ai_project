@@ -1,10 +1,7 @@
 """
 FastAPI dependencies for dependency injection.
 """
-from collections.abc import AsyncGenerator
 from typing import Any as AIClient
-from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def get_ai_client():

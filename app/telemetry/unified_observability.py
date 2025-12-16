@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
+
 from fastapi import Request
 
 
@@ -368,7 +369,7 @@ class UnifiedObservabilityService:
             recent_traces = [t for t in self.completed_traces if t.
                 start_time >= cutoff]
             if not recent_traces:
-                return {'latency': {'p50': 0, 'p95': 0, 'p99': 0, 'p99.9': 
+                return {'latency': {'p50': 0, 'p95': 0, 'p99': 0, 'p99.9':
                     0}, 'traffic': {'requests_per_second': 0,
                     'total_requests': 0}, 'errors': {'error_rate': 0,
                     'error_count': 0}, 'saturation': {'active_requests': 0,
@@ -378,18 +379,18 @@ class UnifiedObservabilityService:
             sorted_durations = sorted(durations) if durations else []
             latency = {'p50': self._percentile(sorted_durations, 50) if
                 sorted_durations else 0, 'p95': self._percentile(
-                sorted_durations, 95) if sorted_durations else 0, 'p99': 
+                sorted_durations, 95) if sorted_durations else 0, 'p99':
                 self._percentile(sorted_durations, 99) if sorted_durations else
                 0, 'p99.9': self._percentile(sorted_durations, 99.9) if
                 sorted_durations else 0, 'avg': statistics.mean(durations) if
                 durations else 0}
             total_requests = len(recent_traces)
-            rps = (total_requests / time_window_seconds if 
+            rps = (total_requests / time_window_seconds if
                 time_window_seconds > 0 else 0)
             traffic = {'requests_per_second': rps, 'total_requests':
                 total_requests, 'time_window_seconds': time_window_seconds}
             error_count = sum(1 for t in recent_traces if t.error_count > 0)
-            error_rate = (error_count / total_requests * 100 if 
+            error_rate = (error_count / total_requests * 100 if
                 total_requests > 0 else 0)
             errors = {'error_rate': error_rate, 'error_count': error_count,
                 'success_count': total_requests - error_count}
@@ -525,7 +526,7 @@ class UnifiedObservabilityService:
         return {'span_id': span.span_id, 'parent_span_id': span.
             parent_span_id, 'operation_name': span.operation_name,
             'service_name': span.service_name, 'start_time': datetime.
-            fromtimestamp(span.start_time, UTC).isoformat(), 'end_time': 
+            fromtimestamp(span.start_time, UTC).isoformat(), 'end_time':
             datetime.fromtimestamp(span.end_time, UTC).isoformat() if span.
             end_time else None, 'duration_ms': span.duration_ms, 'status':
             span.status, 'error_message': span.error_message, 'tags': span.

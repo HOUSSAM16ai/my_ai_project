@@ -34,6 +34,7 @@ from app.services.domain_events import (
     TaskAssigned,
     UserCreated,
 )
+
 # from app.services.graphql_federation import GraphQLFederationManager  # Removed
 from app.services.saga_orchestrator import SagaOrchestrator, SagaStatus, SagaType
 from app.services.service_mesh_integration import (

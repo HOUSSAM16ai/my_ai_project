@@ -11,8 +11,9 @@ Features:
 - Convenience functions
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from app.utils.model_registry import (
     ModelRegistry,
@@ -70,7 +71,7 @@ class TestModelRegistryCore:
         """Test that cache persists across multiple calls"""
         mock_model = MagicMock()
         ModelRegistry._models_cache["TestModel"] = mock_model
-        
+
         result = ModelRegistry.get_model("TestModel")
         assert result is mock_model
 

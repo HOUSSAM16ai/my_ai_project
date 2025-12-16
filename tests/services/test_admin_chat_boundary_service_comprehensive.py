@@ -253,7 +253,7 @@ async def test_stream_chat_response_error_handling(service):
     question = "Hello"
     history = []
     ai_client = MagicMock()
-    
+
     # Mock session factory with proper async mocks
     mock_session = AsyncMock()
     mock_session.add = MagicMock()

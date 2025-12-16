@@ -13,13 +13,14 @@ Features:
 - Metrics and observability
 """
 from __future__ import annotations
-import math
+
 import random
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 
 class ErrorCategory(Enum):
@@ -61,7 +62,7 @@ class RetryMetrics:
 class RetryStrategy(ABC):
     """
     Abstract base class for retry strategies.
-    
+
     Defines the interface for calculating retry delays
     and determining retry eligibility.
     """
@@ -74,10 +75,10 @@ class RetryStrategy(ABC):
     def calculate_delay(self, attempt: int) ->float:
         """
         Calculate delay before next retry attempt.
-        
+
         Args:
             attempt: Current attempt number (0-indexed)
-            
+
         Returns:
             Delay in seconds
         """
@@ -86,11 +87,11 @@ class RetryStrategy(ABC):
     def should_retry(self, error: Exception, attempt: int) ->bool:
         """
         Determine if request should be retried.
-        
+
         Args:
             error: The exception that occurred
             attempt: Current attempt number (0-indexed)
-            
+
         Returns:
             True if should retry, False otherwise
         """
@@ -102,10 +103,10 @@ class RetryStrategy(ABC):
     def classify_error(self, error: Exception) ->ErrorCategory:
         """
         Classify error into category for retry decision.
-        
+
         Args:
             error: The exception to classify
-            
+
         Returns:
             ErrorCategory enum value
         """
@@ -128,10 +129,10 @@ class RetryStrategy(ABC):
     def add_jitter(self, delay: float) ->float:
         """
         Add jitter to delay to prevent thundering herd.
-        
+
         Args:
             delay: Base delay in seconds
-            
+
         Returns:
             Delay with jitter applied
         """
@@ -163,9 +164,9 @@ class RetryStrategy(ABC):
 class ExponentialBackoffRetry(RetryStrategy):
     """
     Exponential backoff retry strategy.
-    
+
     Delay increases exponentially: base * (exponential_base ^ attempt)
-    
+
     Example with base=1, exponential_base=2:
     - Attempt 0: 1s
     - Attempt 1: 2s
@@ -184,9 +185,9 @@ class ExponentialBackoffRetry(RetryStrategy):
 class LinearBackoffRetry(RetryStrategy):
     """
     Linear backoff retry strategy.
-    
+
     Delay increases linearly: base * (attempt + 1)
-    
+
     Example with base=1:
     - Attempt 0: 1s
     - Attempt 1: 2s
@@ -204,9 +205,9 @@ class LinearBackoffRetry(RetryStrategy):
 class FibonacciBackoffRetry(RetryStrategy):
     """
     Fibonacci backoff retry strategy.
-    
+
     Delay follows fibonacci sequence.
-    
+
     Example with base=1:
     - Attempt 0: 1s
     - Attempt 1: 1s
@@ -238,7 +239,7 @@ class FibonacciBackoffRetry(RetryStrategy):
 class AdaptiveRetry(RetryStrategy):
     """
     Adaptive retry strategy that adjusts based on error patterns.
-    
+
     Features:
     - Learns from error patterns
     - Adjusts delays based on error category
@@ -303,7 +304,7 @@ class AdaptiveRetry(RetryStrategy):
 class RetryExecutor:
     """
     Executor for retry operations with strategy pattern.
-    
+
     Handles the actual retry loop with configurable strategy.
     """
 
@@ -314,15 +315,15 @@ class RetryExecutor:
         ) ->Any:
         """
         Execute function with retry logic.
-        
+
         Args:
             func: Function to execute
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             Exception: Last exception if all retries fail
         """
@@ -357,15 +358,15 @@ class RetryExecutor:
         kwargs: Any) ->Any:
         """
         Execute async function with retry logic.
-        
+
         Args:
             func: Async function to execute
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             Exception: Last exception if all retries fail
         """

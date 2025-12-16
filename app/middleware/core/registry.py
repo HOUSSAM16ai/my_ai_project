@@ -7,6 +7,7 @@ Enables plugin-based architecture with runtime registration.
 Design Pattern: Registry Pattern + Service Locator
 """
 from typing import Any
+
 from .base_middleware import BaseMiddleware
 
 

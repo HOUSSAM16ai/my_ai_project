@@ -5,7 +5,11 @@ from datetime import datetime
 from typing import Any
 
 from app.security_metrics.domain.entities import RiskScore, SecurityFinding
-from app.security_metrics.domain.interfaces import ReportGenerator, RiskCalculator, SecurityRepository
+from app.security_metrics.domain.interfaces import (
+    ReportGenerator,
+    RiskCalculator,
+    SecurityRepository,
+)
 from app.security_metrics.domain.value_objects import RiskLevel, Severity
 
 

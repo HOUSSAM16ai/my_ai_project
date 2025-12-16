@@ -9,6 +9,7 @@ Following Domain-Driven Design (DDD) principles:
 - Clear boundaries and invariants
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -55,7 +56,7 @@ class CircuitState(str, Enum):
 class Message:
     """
     Chat message value object.
-    
+
     Immutable representation of a single message in a conversation.
     """
     role: MessageRole
@@ -88,7 +89,7 @@ class Message:
 class TokenUsage:
     """
     Token usage value object.
-    
+
     Tracks token consumption for billing and optimization.
     """
     prompt_tokens: int
@@ -105,7 +106,7 @@ class TokenUsage:
 class ModelResponse:
     """
     LLM response value object.
-    
+
     Immutable representation of a complete LLM response.
     """
     content: str
@@ -129,7 +130,7 @@ class ModelResponse:
 class LLMRequest:
     """
     LLM request entity.
-    
+
     Mutable entity representing a request in progress.
     Tracks state, attempts, and history.
     """
@@ -156,7 +157,7 @@ class LLMRequest:
 class CostRecord:
     """
     Cost tracking entity.
-    
+
     Mutable entity for tracking cumulative costs.
     """
     model: str
@@ -183,7 +184,7 @@ class CostRecord:
 class CircuitBreakerStats:
     """
     Circuit breaker statistics entity.
-    
+
     Tracks circuit breaker health and performance.
     """
     name: str
@@ -222,6 +223,15 @@ class CircuitBreakerStats:
         return self.failure_count / self.total_calls
 
 
-__all__ = ['LLMProvider', 'MessageRole', 'ErrorCategory', 'CircuitState',
-    'Message', 'TokenUsage', 'ModelResponse', 'LLMRequest', 'CostRecord',
-    'CircuitBreakerStats']
+__all__ = [
+    'CircuitBreakerStats',
+    'CircuitState',
+    'CostRecord',
+    'ErrorCategory',
+    'LLMProvider',
+    'LLMRequest',
+    'Message',
+    'MessageRole',
+    'ModelResponse',
+    'TokenUsage',
+]

@@ -11,13 +11,16 @@ Features:
 - Prompt compression
 """
 from __future__ import annotations
+
 import hashlib
+import logging
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
-import logging
+from typing import Any
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -45,7 +48,7 @@ class CacheEntry:
 class SemanticCache:
     """
     Semantic cache for LLM responses.
-    
+
     Uses content hashing and optional semantic similarity
     to cache and retrieve responses.
     """
@@ -63,10 +66,10 @@ class SemanticCache:
     def get(self, key: (str | dict[str, Any])) ->(Any | None):
         """
         Get value from cache.
-        
+
         Args:
             key: Cache key (string or dict to be hashed)
-            
+
         Returns:
             Cached value or None
         """
@@ -88,7 +91,7 @@ class SemanticCache:
         None)=None, **metadata: Any) ->None:
         """
         Set value in cache.
-        
+
         Args:
             key: Cache key
             value: Value to cache
@@ -107,10 +110,10 @@ class SemanticCache:
     def invalidate(self, key: (str | dict[str, Any])) ->bool:
         """
         Invalidate cache entry.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             True if entry was removed
         """
@@ -157,7 +160,7 @@ class SemanticCache:
 class RequestBatcher:
     """
     Batches multiple requests for efficient processing.
-    
+
     Collects requests over a time window and processes them together.
     """
 
@@ -189,10 +192,10 @@ class RequestBatcher:
     def submit(self, request: Any) ->Any:
         """
         Submit request for batching.
-        
+
         Args:
             request: Request to batch
-            
+
         Returns:
             Response for the request
         """
@@ -223,11 +226,8 @@ class RequestBatcher:
         self._pending.clear()
         requests = [item[0] for item in batch]
         try:
-            if self.processor:
-                results = self.processor(requests)
-            else:
-                results = requests
-            for (_, event, result_container), result in zip(batch, results):
+            results = self.processor(requests) if self.processor else requests
+            for (_, event, result_container), result in zip(batch, results, strict=False):
                 result_container.append(result)
                 event.set()
         except Exception as e:
@@ -239,7 +239,7 @@ class RequestBatcher:
 class PromptOptimizer:
     """
     Optimizes prompts for token efficiency.
-    
+
     Provides strategies for reducing token usage while
     maintaining semantic meaning.
     """
@@ -266,12 +266,12 @@ class PromptOptimizer:
         'cl100k_base') ->str:
         """
         Truncate text to maximum token count.
-        
+
         Args:
             text: Text to truncate
             max_tokens: Maximum tokens
             encoding: Tokenizer encoding
-            
+
         Returns:
             Truncated text
         """
@@ -296,12 +296,12 @@ class PromptOptimizer:
         remove_redundancy: bool=True) ->str:
         """
         Apply all optimization strategies.
-        
+
         Args:
             text: Text to optimize
             max_tokens: Optional token limit
             remove_redundancy: Whether to remove redundant phrases
-            
+
         Returns:
             Optimized text
         """
@@ -316,7 +316,7 @@ class PromptOptimizer:
 class ResponseDeduplicator:
     """
     Deduplicates similar requests to avoid redundant API calls.
-    
+
     Tracks in-flight requests and returns cached results for
     identical concurrent requests.
     """
@@ -340,5 +340,11 @@ def get_deduplicator() ->ResponseDeduplicator:
     return _global_deduplicator
 
 
-__all__ = ['SemanticCache', 'RequestBatcher', 'PromptOptimizer',
-    'ResponseDeduplicator', 'get_cache', 'get_deduplicator']
+__all__ = [
+    'PromptOptimizer',
+    'RequestBatcher',
+    'ResponseDeduplicator',
+    'SemanticCache',
+    'get_cache',
+    'get_deduplicator',
+]

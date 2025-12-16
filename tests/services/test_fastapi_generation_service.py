@@ -16,7 +16,7 @@ def mock_llm_client(monkeypatch):
     Patches the LLM client at the infrastructure layer.
     """
     mock = MagicMock()
-    
+
     # Patch at the infrastructure adapter level
     monkeypatch.setattr("app.services.llm_client_service.get_llm_client", lambda: mock)
 
@@ -56,7 +56,7 @@ def test_diagnostics(service):
 def test_execute_task_delegation(service):
     """
     Verify that execute_task raises NotImplementedError.
-    
+
     Task execution has been moved to overmind/executor.py.
     This test verifies the adapter correctly indicates the feature is not available.
     """

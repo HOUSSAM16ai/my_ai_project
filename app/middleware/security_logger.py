@@ -14,9 +14,10 @@ Features:
 - Integration with monitoring systems
 """
 from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import Any
+
 security_logger = logging.getLogger('security')
 
 

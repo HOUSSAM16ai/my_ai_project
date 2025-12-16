@@ -5,7 +5,7 @@ from app.security_metrics.application.report_generation import SecurityReportGen
 from app.security_metrics.application.risk_scoring import RiskScoreCalculator
 
 __all__ = [
-    "RiskScoreCalculator",
     "DeveloperSecurityScorer",
+    "RiskScoreCalculator",
     "SecurityReportGenerator",
 ]

@@ -43,10 +43,10 @@ async def get_user(
 ):
     """Get a single user by ID."""
     result = await service.get_user_by_id(user_id)
-    
+
     if result["status"] == "error":
         raise HTTPException(status_code=404, detail=result["message"])
-    
+
     return result
 
 
@@ -66,10 +66,10 @@ async def get_mission(
 ):
     """Get a single mission by ID."""
     result = await service.get_mission_by_id(mission_id)
-    
+
     if result["status"] == "error":
         raise HTTPException(status_code=404, detail=result["message"])
-    
+
     return result
 
 

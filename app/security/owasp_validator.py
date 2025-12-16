@@ -226,7 +226,7 @@ class OWASPValidator:
                 start = max(0, match.start() - self._CONTEXT_BEFORE)
                 end = min(len(code), match.end() + self._CONTEXT_AFTER)
                 context = code[start:end]
-                if ('usedforsecurity=False' in context or 
+                if ('usedforsecurity=False' in context or
                     'usedforsecurity = False' in context):
                     continue
                 if 'import hashlib' in context:
@@ -358,8 +358,8 @@ class OWASPValidator:
         for issue in issues:
             category_counts[issue.category] = category_counts.get(issue.
                 category, 0) + 1
-        risk_score = min(100, severity_counts[SecuritySeverity.CRITICAL] * 
-            20 + severity_counts[SecuritySeverity.HIGH] * 10 + 
+        risk_score = min(100, severity_counts[SecuritySeverity.CRITICAL] *
+            20 + severity_counts[SecuritySeverity.HIGH] * 10 +
             severity_counts[SecuritySeverity.MEDIUM] * 5 + severity_counts[
             SecuritySeverity.LOW] * 2)
         return {'total_issues': len(issues), 'risk_score': risk_score,

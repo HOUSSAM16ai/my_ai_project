@@ -12,14 +12,17 @@ Features:
 - Real-time dashboards
 """
 from __future__ import annotations
+
 import logging
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -70,7 +73,7 @@ class MetricPoint:
 class MetricsCollector:
     """
     Collects and aggregates metrics.
-    
+
     Supports:
     - Counters
     - Gauges
@@ -135,13 +138,13 @@ class MetricsCollector:
         count = len(sorted_values)
         return {'count': count, 'min': sorted_values[0], 'max':
             sorted_values[-1], 'mean': sum(sorted_values) / count, 'median':
-            sorted_values[count // 2], 'p95': sorted_values[int(count * 
+            sorted_values[count // 2], 'p95': sorted_values[int(count *
             0.95)], 'p99': sorted_values[int(count * 0.99)]}
 
     def get_timing_stats(self, name: str, tags: (dict[str, str] | None)=None
         ) ->dict[str, float]:
         """Get timing statistics."""
-        key = self._make_key(name, tags)
+        self._make_key(name, tags)
         return self.get_histogram_stats(name, tags)
 
     def get_all_metrics(self) ->dict[str, Any]:
@@ -149,9 +152,9 @@ class MetricsCollector:
         with self._lock:
             return {'counters': dict(self._counters), 'gauges': dict(self.
                 _gauges), 'histograms': {k: self.get_histogram_stats(k.
-                split('[')[0]) for k in self._histograms.keys()}, 'timers':
+                split('[')[0]) for k in self._histograms}, 'timers':
                 {k: self.get_timing_stats(k.split('[')[0]) for k in self.
-                _timers.keys()}}
+                _timers}}
 
     def reset(self) ->None:
         """Reset all metrics."""
@@ -165,7 +168,7 @@ class MetricsCollector:
 class Tracer:
     """
     Distributed tracing implementation.
-    
+
     Tracks request flows across components with spans.
     """
 
@@ -218,7 +221,7 @@ class Tracer:
 class ObservabilityManager:
     """
     Central observability manager.
-    
+
     Coordinates metrics, tracing, and monitoring.
     """
 
@@ -254,7 +257,7 @@ class ObservabilityManager:
                 op_stats['errors'] += 1
             if span.duration_ms:
                 op_stats['total_duration'] += span.duration_ms
-        for op, op_stats in stats.items():
+        for _op, op_stats in stats.items():
             if op_stats['count'] > 0:
                 op_stats['avg_duration'] = op_stats['total_duration'
                     ] / op_stats['count']
@@ -271,5 +274,12 @@ def get_observability() ->ObservabilityManager:
     return _global_observability
 
 
-__all__ = ['TraceLevel', 'TraceSpan', 'MetricPoint', 'MetricsCollector',
-    'Tracer', 'ObservabilityManager', 'get_observability']
+__all__ = [
+    'MetricPoint',
+    'MetricsCollector',
+    'ObservabilityManager',
+    'TraceLevel',
+    'TraceSpan',
+    'Tracer',
+    'get_observability',
+]

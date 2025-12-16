@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, List, Dict, Optional
+from typing import Any
 
 
 class PayloadBuilder:
@@ -10,21 +10,21 @@ class PayloadBuilder:
     Encapsulates logic for model selection, parameter validation, and formatting.
     """
 
-    def __init__(self, default_model: Optional[str] = None):
+    def __init__(self, default_model: str | None = None):
         self._force_model = os.getenv("LLM_FORCE_MODEL", "").strip() or None
         self._default_model = default_model
 
     def build(
         self,
         model: str,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         *,
-        tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[str] = None,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        extra: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Builds and returns the standardized payload dictionary.
         Applies environment overrides (LLM_FORCE_MODEL).

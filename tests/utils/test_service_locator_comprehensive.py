@@ -11,11 +11,7 @@ Features:
 - Error handling and resilience
 """
 
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from app.utils.service_locator import (
     ServiceLocator,

@@ -66,7 +66,7 @@ class EventTracker:
         self.event_batch: list[Event] = []
         self.seen_events: set = set()
         self.stats = {'total_events': 0, 'user_events': 0, 'system_events':
-            0, 'business_events': 0, 'error_events': 0, 'security_events': 
+            0, 'business_events': 0, 'error_events': 0, 'security_events':
             0, 'duplicates_filtered': 0}
 
     def track(self, event_type: EventType, name: str, user_id: (str | None)

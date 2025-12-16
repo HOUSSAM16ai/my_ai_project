@@ -11,7 +11,7 @@ Features surpassing tech giants:
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -94,7 +94,7 @@ class RootCauseAnalyzer:
         issues = []
         for dep in self.dependencies.get(service, []):
             dep_events = [event for event in self.event_timeline if event[
-                'service'] == dep and event['timestamp'] >= cutoff and 
+                'service'] == dep and event['timestamp'] >= cutoff and
                 event['event_type'] in ['error', 'failure']]
             if dep_events:
                 issues.append({'dependency': dep, 'error_count': len(

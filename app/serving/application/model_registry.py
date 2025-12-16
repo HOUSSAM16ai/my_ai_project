@@ -17,7 +17,7 @@ from app.serving.domain.entities import ModelStatus, ModelVersion
 class ModelRegistry:
     """
     Model Registry - إدارة دورة حياة النماذج
-    
+
     Responsibilities:
     - Register new model versions
     - Load and unload models
@@ -32,10 +32,10 @@ class ModelRegistry:
     def register_model(self, model: ModelVersion) -> bool:
         """
         تسجيل نموذج جديد
-        
+
         Args:
             model: نسخة النموذج
-            
+
         Returns:
             نجاح التسجيل
         """
@@ -60,10 +60,10 @@ class ModelRegistry:
     def unload_model(self, version_id: str) -> bool:
         """
         إلغاء تحميل نموذج
-        
+
         Args:
             version_id: معرف النسخة
-            
+
         Returns:
             نجاح الإلغاء
         """
@@ -92,10 +92,10 @@ class ModelRegistry:
     def get_latest_ready_model(self, model_name: str) -> ModelVersion | None:
         """
         الحصول على أحدث نسخة جاهزة من النموذج
-        
+
         Args:
             model_name: اسم النموذج
-            
+
         Returns:
             أحدث نسخة جاهزة أو None
         """
@@ -115,7 +115,7 @@ class ModelRegistry:
     def list_models(self) -> list[ModelVersion]:
         """
         قائمة بكل النماذج المسجلة
-        
+
         Returns:
             قائمة النماذج
         """
@@ -125,10 +125,10 @@ class ModelRegistry:
     def get_model_status(self, version_id: str) -> ModelVersion | None:
         """
         الحصول على حالة النموذج
-        
+
         Args:
             version_id: معرف النسخة
-            
+
         Returns:
             النموذج أو None
         """

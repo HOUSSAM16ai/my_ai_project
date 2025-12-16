@@ -12,10 +12,12 @@ Features:
 - Clean up of expired requests
 """
 from __future__ import annotations
+
 import logging
 import time
 from collections.abc import Callable
 from functools import wraps
+
 try:
     from fastapi import HTTPException, Request
     FASTAPI_AVAILABLE = True
@@ -110,7 +112,7 @@ class TokenBucketRateLimiter:
         tokens, _ = self._refill_bucket(client_id, now)
         if tokens >= 1.0:
             self._buckets[client_id] = tokens - 1.0, now
-            metadata = {'client_id': client_id, 'remaining': int(tokens - 
+            metadata = {'client_id': client_id, 'remaining': int(tokens -
                 1.0), 'reset_at': int(now + self.window_seconds)}
             return True, metadata
         else:

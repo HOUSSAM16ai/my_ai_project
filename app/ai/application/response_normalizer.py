@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import contextlib
+import json
 import logging
 import os
 import re
-import contextlib
-import json
-from typing import Any, Optional
+from typing import Any
 
 from app.services.llm.cost_manager import CostManager
 
@@ -18,7 +18,7 @@ class ResponseNormalizer:
     Handles data extraction, sanitization, and metric updates.
     """
 
-    def __init__(self, cost_manager: Optional[CostManager] = None):
+    def __init__(self, cost_manager: CostManager | None = None):
         self._cost_manager = cost_manager or CostManager()
         self._sanitize_enabled = os.getenv("LLM_SANITIZE_OUTPUT", "0") == "1"
         self._sanitize_regexes = []

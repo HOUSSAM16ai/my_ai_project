@@ -9,8 +9,8 @@ Following Hexagonal Architecture / Ports & Adapters pattern.
 
 from __future__ import annotations
 
-from typing import Any, Generator, Protocol
-
+from collections.abc import Generator
+from typing import Any, Protocol
 
 # ======================================================================================
 # LLM CLIENT PORT
@@ -20,7 +20,7 @@ from typing import Any, Generator, Protocol
 class LLMClientPort(Protocol):
     """
     Port for LLM client interactions.
-    
+
     Infrastructure implementations:
     - OpenRouterTransport
     - OpenAITransport
@@ -36,12 +36,12 @@ class LLMClientPort(Protocol):
     ) -> dict[str, Any]:
         """
         Execute a chat completion request.
-        
+
         Args:
             messages: List of message dictionaries
             model: Model identifier
             **kwargs: Additional parameters (temperature, max_tokens, etc.)
-            
+
         Returns:
             Response dictionary with 'content', 'usage', etc.
         """
@@ -55,12 +55,12 @@ class LLMClientPort(Protocol):
     ) -> Generator[dict[str, Any], None, None]:
         """
         Execute a streaming chat completion request.
-        
+
         Args:
             messages: List of message dictionaries
             model: Model identifier
             **kwargs: Additional parameters
-            
+
         Yields:
             Response chunks with incremental content
         """
@@ -75,7 +75,7 @@ class LLMClientPort(Protocol):
 class RetryStrategyPort(Protocol):
     """
     Port for retry logic.
-    
+
     Implementations handle different retry patterns:
     - ExponentialBackoffRetry
     - LinearRetry
@@ -85,11 +85,11 @@ class RetryStrategyPort(Protocol):
     def should_retry(self, error: Exception, attempt: int) -> bool:
         """
         Determine if request should be retried.
-        
+
         Args:
             error: The exception that occurred
             attempt: Current attempt number (0-indexed)
-            
+
         Returns:
             True if should retry, False otherwise
         """
@@ -98,10 +98,10 @@ class RetryStrategyPort(Protocol):
     def get_delay(self, attempt: int) -> float:
         """
         Calculate delay before next retry.
-        
+
         Args:
             attempt: Current attempt number (0-indexed)
-            
+
         Returns:
             Delay in seconds
         """
@@ -111,10 +111,10 @@ class RetryStrategyPort(Protocol):
     def classify_error(error: Exception) -> str:
         """
         Classify error type for appropriate handling.
-        
+
         Args:
             error: The exception to classify
-            
+
         Returns:
             Error category (e.g., 'rate_limit', 'network', 'authentication')
         """
@@ -129,7 +129,7 @@ class RetryStrategyPort(Protocol):
 class CircuitBreakerPort(Protocol):
     """
     Port for circuit breaker pattern.
-    
+
     Implementations:
     - SimpleCircuitBreaker
     - SlidingWindowCircuitBreaker
@@ -139,15 +139,15 @@ class CircuitBreakerPort(Protocol):
     def call(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Execute function with circuit breaker protection.
-        
+
         Args:
             func: Function to execute
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             CircuitBreakerOpenError: If circuit is open
         """
@@ -178,7 +178,7 @@ class CircuitBreakerPort(Protocol):
 class CostManagerPort(Protocol):
     """
     Port for cost tracking and management.
-    
+
     Implementations:
     - BasicCostManager
     - TieredCostManager
@@ -193,12 +193,12 @@ class CostManagerPort(Protocol):
     ) -> float:
         """
         Record token usage and calculate cost.
-        
+
         Args:
             model: Model identifier
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
-            
+
         Returns:
             Cost in USD
         """
@@ -207,10 +207,10 @@ class CostManagerPort(Protocol):
     def get_total_cost(self, model: str | None = None) -> float:
         """
         Get total accumulated cost.
-        
+
         Args:
             model: Optional model filter
-            
+
         Returns:
             Total cost in USD
         """
@@ -219,7 +219,7 @@ class CostManagerPort(Protocol):
     def get_usage_stats(self) -> dict[str, Any]:
         """
         Get usage statistics.
-        
+
         Returns:
             Dictionary with usage stats (tokens, costs, etc.)
         """
@@ -234,7 +234,7 @@ class CostManagerPort(Protocol):
 class CachePort(Protocol):
     """
     Port for caching LLM responses.
-    
+
     Implementations:
     - RedisCache
     - InMemoryCache
@@ -244,10 +244,10 @@ class CachePort(Protocol):
     def get(self, key: str) -> Any | None:
         """
         Retrieve cached value.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             Cached value or None if not found
         """
@@ -256,7 +256,7 @@ class CachePort(Protocol):
     def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """
         Store value in cache.
-        
+
         Args:
             key: Cache key
             value: Value to cache
@@ -267,7 +267,7 @@ class CachePort(Protocol):
     def delete(self, key: str) -> None:
         """
         Delete cached value.
-        
+
         Args:
             key: Cache key
         """
@@ -280,10 +280,10 @@ class CachePort(Protocol):
     def exists(self, key: str) -> bool:
         """
         Check if key exists in cache.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             True if key exists, False otherwise
         """
@@ -298,7 +298,7 @@ class CachePort(Protocol):
 class MetricsPort(Protocol):
     """
     Port for metrics collection and reporting.
-    
+
     Implementations:
     - PrometheusMetrics
     - DatadogMetrics
@@ -314,7 +314,7 @@ class MetricsPort(Protocol):
     ) -> None:
         """
         Increment a counter metric.
-        
+
         Args:
             name: Metric name
             value: Increment value
@@ -330,7 +330,7 @@ class MetricsPort(Protocol):
     ) -> None:
         """
         Record a gauge metric.
-        
+
         Args:
             name: Metric name
             value: Current value
@@ -346,7 +346,7 @@ class MetricsPort(Protocol):
     ) -> None:
         """
         Record a histogram/distribution metric.
-        
+
         Args:
             name: Metric name
             value: Observed value
@@ -357,7 +357,7 @@ class MetricsPort(Protocol):
     def get_metrics(self) -> dict[str, Any]:
         """
         Get all collected metrics.
-        
+
         Returns:
             Dictionary of metrics data
         """
@@ -372,7 +372,7 @@ class MetricsPort(Protocol):
 class ObservabilityPort(Protocol):
     """
     Port for distributed tracing and observability.
-    
+
     Implementations:
     - OpenTelemetryObserver
     - DatadogTracer
@@ -388,12 +388,12 @@ class ObservabilityPort(Protocol):
     ) -> Any:
         """
         Start a new tracing span.
-        
+
         Args:
             operation: Operation name
             parent_span: Parent span (for nested operations)
             tags: Optional metadata tags
-            
+
         Returns:
             Span object
         """
@@ -407,7 +407,7 @@ class ObservabilityPort(Protocol):
     ) -> None:
         """
         Finish a tracing span.
-        
+
         Args:
             span: Span to finish
             status: Operation status (success/error)
@@ -422,7 +422,7 @@ class ObservabilityPort(Protocol):
     ) -> None:
         """
         Record a discrete event.
-        
+
         Args:
             event_name: Event name
             attributes: Optional event attributes
@@ -435,11 +435,11 @@ class ObservabilityPort(Protocol):
 # ======================================================================================
 
 __all__ = [
-    "LLMClientPort",
-    "RetryStrategyPort",
+    "CachePort",
     "CircuitBreakerPort",
     "CostManagerPort",
-    "CachePort",
+    "LLMClientPort",
     "MetricsPort",
     "ObservabilityPort",
+    "RetryStrategyPort",
 ]
