@@ -12,7 +12,6 @@ from app.core.engine.naming import QuantumStatementNameGenerator
 from app.core.engine.pooler import AdaptivePoolerDetector
 from app.core.engine.types import DatabaseType, PoolerType
 from app.core.engine.url_tools import DatabaseURLSanitizer
-from app.core.engine.diagnostics import EngineDiagnostics
 
 logger = logging.getLogger(__name__)
 

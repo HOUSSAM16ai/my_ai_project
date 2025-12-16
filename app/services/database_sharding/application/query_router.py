@@ -1,8 +1,10 @@
 """Query routing application service."""
 import logging
 from typing import Any
+
 from ..domain.models import QueryRoute, ShardingConfig
 from ..domain.ports import ShardingRouter
+
 logger = logging.getLogger(__name__)
 
 
