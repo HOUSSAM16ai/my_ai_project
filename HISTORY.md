@@ -115,3 +115,35 @@ Continued the aggressive purification of the codebase by targeting deep-seated t
 *   **Test Suite:** Green.
 *   **Linting:** 2500+ issues detected but manageable; critical areas are clean.
 *   **Efficiency:** Maximized by removing dead weight.
+
+---
+
+## 2025-12-17: Protocol Dead Code Necrosis (Final Purge)
+
+### Part 1: Legacy "Intelligent Platform" Decommissioning
+
+Completed the final phase of the "Intelligent Platform" to "Observability/Data Mesh" migration by removing the last remaining V2 artifacts.
+
+1.  **Deleted Legacy Router:**
+    *   **Deleted:** `app/api/routers/intelligent_platform.py`
+    *   **Context:** This router was a legacy remnant superseded by `app/api/routers/observability.py`. It contained deprecated `POST /aiops/telemetry` endpoints that are no longer part of the V3 architecture.
+    *   **Impact:** Eliminated duplicate/ambiguous routing logic and reduced attack surface.
+
+2.  **Deleted Legacy Blueprint:**
+    *   **Deleted:** `app/blueprints/intelligent_platform_blueprint.py`
+    *   **Context:** The blueprint wrapping the legacy router. Its removal is automatically handled by the `RealityKernel` dynamic discovery mechanism (`os.walk`), ensuring no broken imports in the application entry point.
+
+3.  **Deleted Legacy Tests:**
+    *   **Deleted:** `tests/test_intelligent_platform.py`
+    *   **Reason:** This test file was fully marked with `@pytest.mark.skip` and served no purpose.
+    *   **Impact:** Removed 300+ lines of dead test code.
+
+4.  **Regression Test Update:**
+    *   **Updated:** `tests/services/test_data_mesh_refactor.py`
+    *   **Action:** Modified the test to explicitly verify that the legacy endpoints (e.g., `/api/v1/platform/aiops/telemetry`) now return `404 Not Found`.
+    *   **Rationale:** Ensures that the cleanup is permanent and that these routes do not accidentally resurface.
+
+### Part 2: Verification
+
+*   **Test Integrity:** `pytest tests/services/test_data_mesh_refactor.py` passed, confirming the successful removal of legacy routes and the stability of the remaining system.
+*   **System Health:** `ruff check` confirmed no lingering import errors related to the deleted files.

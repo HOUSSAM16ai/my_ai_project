@@ -11,7 +11,7 @@ async def test_data_mesh_refactor_verification():
     Verifies that the Data Mesh endpoints have been successfully moved to their own router
     and that the legacy Intelligent Platform endpoints are updated/removed.
     """
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=None, app=app, base_url="http://test") as client:
         # 1. Verify New Data Mesh Contract Endpoint (POST /api/v1/data-mesh/contracts)
         # Note: The Blueprint maps it to /api/v1/data-mesh
 
@@ -22,11 +22,6 @@ async def test_data_mesh_refactor_verification():
             "schema_version": "1.0",
             "schema_definition": {"type": "record", "fields": []}
         }
-
-        # We need to mock the service dependency or expect a 500/401/422 if not mocked.
-        # However, we are checking *reachability* primarily.
-        # If the router is wired, we should get 422 (validation) or 500 (db) or 200.
-        # We should definitely NOT get 404.
 
         response = await client.post("/api/v1/data-mesh/contracts", json=contract_payload)
 
@@ -42,23 +37,15 @@ async def test_data_mesh_refactor_verification():
         assert response.status_code != 404, "Observability Metrics endpoint not found"
 
         # 4. Verify AIOps Telemetry (POST /api/v1/platform/aiops/telemetry)
-        # This one remained in platform router (intelligent_platform.py) but we updated the code
+        # Verify legacy endpoint is removed (Dead Code Cleanup)
         telemetry_payload = {
             "service_name": "test-service",
             "metric_type": "gauge",
             "value": 42.0
         }
         response = await client.post("/api/v1/platform/aiops/telemetry", json=telemetry_payload)
-        assert response.status_code != 404, "Telemetry endpoint lost"
+        assert response.status_code == 404, "Legacy Telemetry endpoint should be removed (Dead Code Cleanup)"
 
-        # 5. Verify Dummy Endpoints are GONE
-        # The intelligent_platform_blueprint.py used to have /api/v1/platform/data-mesh/contracts
-        # Wait, the Blueprint name is "api/v1/platform".
-        # The old route was @router.post("/data-mesh/contracts") inside that blueprint.
-        # So path was /api/v1/platform/data-mesh/contracts.
-        # I REMOVED that route from the blueprint and the router.
-        # So it SHOULD return 404 now.
-
+        # 5. Verify that legacy endpoints are gone
         response = await client.post("/api/v1/platform/data-mesh/contracts", json=contract_payload)
         assert response.status_code == 404, "Legacy Data Mesh endpoint should be removed from Platform router"
-
