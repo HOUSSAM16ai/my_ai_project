@@ -1,11 +1,10 @@
 
-import pytest
-import asyncio
-from typing import AsyncGenerator
-from unittest.mock import MagicMock, AsyncMock
+from collections.abc import AsyncGenerator
 
-from app.core.patterns.strategy import StrategyRegistry, Strategy
-from app.services.chat.context import ChatContext
+import pytest
+
+from app.core.patterns.strategy import Strategy, StrategyRegistry
+
 
 # Mock Strategies
 class AsyncGenStrategy(Strategy[str, AsyncGenerator[str, None]]):

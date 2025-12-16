@@ -34,7 +34,7 @@ _LOG = logging.getLogger(__name__)
 class InMemoryCache(CachePort):
     """
     Thread-safe in-memory cache with LRU eviction.
-    
+
     Features:
     - LRU eviction when max_size is reached
     - TTL support for automatic expiration
@@ -45,7 +45,7 @@ class InMemoryCache(CachePort):
     def __init__(self, max_size: int = 1000, default_ttl: int | None = 3600):
         """
         Initialize in-memory cache.
-        
+
         Args:
             max_size: Maximum number of entries (LRU eviction when exceeded)
             default_ttl: Default TTL in seconds (None = no expiry)
@@ -63,15 +63,15 @@ class InMemoryCache(CachePort):
             if key not in self._cache:
                 self._misses += 1
                 return None
-            
+
             value, expiry = self._cache[key]
-            
+
             # Check expiration
             if expiry is not None and time.time() > expiry:
                 del self._cache[key]
                 self._misses += 1
                 return None
-            
+
             # Move to end (LRU)
             self._cache.move_to_end(key)
             self._hits += 1
@@ -84,11 +84,11 @@ class InMemoryCache(CachePort):
             if ttl is None:
                 ttl = self._default_ttl
             expiry = time.time() + ttl if ttl is not None else None
-            
+
             # Add/update entry
             self._cache[key] = (value, expiry)
             self._cache.move_to_end(key)
-            
+
             # Evict oldest if size exceeded
             if len(self._cache) > self._max_size:
                 self._cache.popitem(last=False)
@@ -114,7 +114,7 @@ class InMemoryCache(CachePort):
         with self._lock:
             total = self._hits + self._misses
             hit_rate = self._hits / total if total > 0 else 0.0
-            
+
             return {
                 "size": len(self._cache),
                 "max_size": self._max_size,
@@ -132,7 +132,7 @@ class InMemoryCache(CachePort):
 class DiskCache(CachePort):
     """
     Persistent disk-based cache.
-    
+
     Features:
     - Persistent storage across restarts
     - JSON serialization
@@ -147,7 +147,7 @@ class DiskCache(CachePort):
     ):
         """
         Initialize disk cache.
-        
+
         Args:
             cache_dir: Directory for cache files
             default_ttl: Default TTL in seconds
@@ -166,21 +166,21 @@ class DiskCache(CachePort):
     def get(self, key: str) -> Any | None:
         """Retrieve cached value from disk."""
         path = self._get_path(key)
-        
+
         if not path.exists():
             return None
-        
+
         try:
             with self._lock:
                 with open(path) as f:
                     data = json.load(f)
-                
+
                 # Check expiration
                 expiry = data.get("expiry")
                 if expiry is not None and time.time() > expiry:
                     path.unlink()
                     return None
-                
+
                 return data.get("value")
         except Exception as e:
             _LOG.warning(f"Disk cache read error for {key}: {e}")
@@ -189,17 +189,17 @@ class DiskCache(CachePort):
     def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Store value to disk with optional TTL."""
         path = self._get_path(key)
-        
+
         if ttl is None:
             ttl = self._default_ttl
         expiry = time.time() + ttl if ttl is not None else None
-        
+
         data = {
             "value": value,
             "expiry": expiry,
             "created_at": time.time(),
         }
-        
+
         try:
             with self._lock:
                 with open(path, "w") as f:
@@ -239,7 +239,7 @@ class DiskCache(CachePort):
 class NoOpCache(CachePort):
     """
     No-operation cache that doesn't store anything.
-    
+
     Useful for disabling caching without changing code.
     """
 
@@ -278,32 +278,32 @@ def get_cache(
 ) -> CachePort:
     """
     Get or create cache instance.
-    
+
     Args:
         cache_type: Type of cache (memory, disk, noop, redis)
         **kwargs: Additional arguments for cache initialization
-        
+
     Returns:
         Cache instance implementing CachePort
     """
     global _CACHE_INSTANCE
-    
+
     # Check environment
     if os.getenv("LLM_CACHE_ENABLED", "1") == "0":
         return NoOpCache()
-    
+
     if cache_type is None:
         cache_type = os.getenv("LLM_CACHE_TYPE", "memory")
-    
+
     # Return singleton if exists
     if _CACHE_INSTANCE is not None:
         return _CACHE_INSTANCE
-    
+
     with _CACHE_LOCK:
         # Double-check after acquiring lock
         if _CACHE_INSTANCE is not None:
             return _CACHE_INSTANCE
-        
+
         # Create cache instance
         if cache_type == "memory":
             _CACHE_INSTANCE = InMemoryCache(**kwargs)
@@ -314,7 +314,7 @@ def get_cache(
         else:
             _LOG.warning(f"Unknown cache type {cache_type}, using memory cache")
             _CACHE_INSTANCE = InMemoryCache(**kwargs)
-        
+
         return _CACHE_INSTANCE
 
 
@@ -330,8 +330,8 @@ def reset_cache() -> None:
 # ======================================================================================
 
 __all__ = [
-    "InMemoryCache",
     "DiskCache",
+    "InMemoryCache",
     "NoOpCache",
     "get_cache",
     "reset_cache",

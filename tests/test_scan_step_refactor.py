@@ -1,9 +1,7 @@
 
-import pytest
-from app.overmind.planning.hyper_planner import scan_logic
+from app.overmind.planning.hyper_planner import config, scan_logic
 from app.overmind.planning.hyper_planner.steps.scan_step import ScanRepoStep
-from app.overmind.planning.schemas import PlannedTask
-from app.overmind.planning.hyper_planner import config
+
 
 class TestScanLogicRefactor:
     """Verifies that the refactoring of ScanRepoStep and scan_logic preserves behavior."""
@@ -72,7 +70,7 @@ class TestScanLogicRefactor:
         tasks = []
         context = {"objective": "Just write a poem"}
 
-        next_idx = step.execute(tasks, 1, context)
+        step.execute(tasks, 1, context)
 
         # Should imply no repo scan tasks were added (idx stays same or increases only if extra files exist)
         # Assuming no extra files in this test env by default

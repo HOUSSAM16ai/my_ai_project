@@ -4,18 +4,26 @@ Model Invoker
 Handles the actual invocation of models and request processing.
 """
 from __future__ import annotations
+
 import random
 import time
 import uuid
 from collections import deque
 from typing import Any
-from app.serving.domain.entities import ModelRequest, ModelResponse, ModelStatus, ModelType, ModelVersion
+
+from app.serving.domain.entities import (
+    ModelRequest,
+    ModelResponse,
+    ModelStatus,
+    ModelType,
+    ModelVersion,
+)
 
 
 class ModelInvoker:
     """
     Model Invoker - منفذ النماذج
-    
+
     Responsibilities:
     - Execute model inference
     - Track request/response history
@@ -32,14 +40,14 @@ class ModelInvoker:
         ) ->ModelResponse:
         """
         خدمة طلب للنموذج
-        
+
         Args:
             model: نسخة النموذج
             input_data: بيانات الإدخال
             parameters: معاملات الطلب
             cost_calculator: دالة لحساب التكلفة
             metrics_updater: دالة لتحديث المقاييس
-            
+
         Returns:
             استجابة النموذج
         """
@@ -77,11 +85,11 @@ class ModelInvoker:
         parameters: dict[str, Any]) ->Any:
         """
         استدعاء النموذج الفعلي
-        
+
         في النظام الحقيقي:
         - يتم استدعاء API الفعلي للنموذج
         - أو تشغيل النموذج محلياً
-        
+
         هنا نحاكي العملية
         """
         time.sleep(random.uniform(0.1, 0.5))

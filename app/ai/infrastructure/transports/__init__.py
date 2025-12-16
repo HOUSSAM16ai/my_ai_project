@@ -6,17 +6,21 @@ Concrete implementations of domain ports.
 These adapters connect the domain layer to external LLM services.
 """
 from __future__ import annotations
+
 import logging
 import os
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
+
 from app.ai.domain.ports import LLMClientPort
+
 _LOG = logging.getLogger(__name__)
 
 
 class OpenRouterTransport:
     """
     OpenRouter API transport implementation.
-    
+
     Implements LLMClientPort for OpenRouter service.
     Uses centralized AI client factory for actual HTTP communication.
     """
@@ -24,7 +28,7 @@ class OpenRouterTransport:
     def __init__(self, client: Any):
         """
         Initialize OpenRouter transport.
-        
+
         Args:
             client: OpenRouter client instance (from ai_client_factory)
         """
@@ -34,7 +38,7 @@ class OpenRouterTransport:
         **kwargs: Any) ->dict[str, Any]:
         """
         Execute chat completion via OpenRouter.
-        
+
         Delegates to the underlying OpenRouter client.
         """
         try:
@@ -71,7 +75,7 @@ class OpenRouterTransport:
 class MockLLMTransport:
     """
     Mock LLM transport for testing.
-    
+
     Returns predefined responses without calling external APIs.
     Useful for testing and development.
     """
@@ -79,7 +83,7 @@ class MockLLMTransport:
     def __init__(self, default_response: str='Mock LLM response'):
         """
         Initialize mock transport.
-        
+
         Args:
             default_response: Default text to return
         """
@@ -114,11 +118,11 @@ def create_llm_transport(client: (Any | None)=None, force_mock: bool=False
     ) ->LLMClientPort:
     """
     Factory function to create appropriate LLM transport.
-    
+
     Args:
         client: Optional client instance (if None, will be created)
         force_mock: Force mock transport regardless of environment
-        
+
     Returns:
         Transport implementing LLMClientPort
     """
@@ -144,11 +148,11 @@ def register_transport(name: str, transport_class: type) ->None:
 def get_transport(provider: str='openrouter', **kwargs: Any) ->LLMClientPort:
     """
     Get transport instance for provider.
-    
+
     Args:
         provider: Provider name (openrouter, openai, anthropic, mock)
         **kwargs: Additional arguments for transport initialization
-        
+
     Returns:
         Transport instance implementing LLMClientPort
     """
@@ -171,5 +175,10 @@ def get_transport(provider: str='openrouter', **kwargs: Any) ->LLMClientPort:
     raise ValueError(f'Unknown provider: {provider}')
 
 
-__all__ = ['OpenRouterTransport', 'MockLLMTransport',
-    'create_llm_transport', 'get_transport', 'register_transport']
+__all__ = [
+    'MockLLMTransport',
+    'OpenRouterTransport',
+    'create_llm_transport',
+    'get_transport',
+    'register_transport',
+]

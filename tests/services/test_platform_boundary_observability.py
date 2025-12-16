@@ -1,8 +1,13 @@
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.platform_boundary_service import PlatformBoundaryService, get_platform_boundary_service
+
+import pytest
+
 from app.api.routers import observability
+from app.services.platform_boundary_service import (
+    PlatformBoundaryService,
+)
+
 
 @pytest.fixture
 def mock_platform_boundary():

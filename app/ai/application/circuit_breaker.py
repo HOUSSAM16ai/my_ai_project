@@ -12,13 +12,15 @@ Features:
 - Metrics collection
 """
 from __future__ import annotations
-import asyncio
+
 import random
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
+
 T = TypeVar('T')
 
 
@@ -77,13 +79,13 @@ class CircuitBreakerConfig:
 class CircuitBreaker:
     """
     Advanced circuit breaker with adaptive behavior.
-    
+
     Implements the Circuit Breaker pattern with:
     - Automatic failure detection
     - Exponential backoff
     - Health check probing
     - Metrics collection
-    
+
     Thread-safe implementation using locks.
     """
 
@@ -100,15 +102,15 @@ class CircuitBreaker:
     def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) ->T:
         """
         Execute function with circuit breaker protection.
-        
+
         Args:
             func: Function to execute
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             CircuitBreakerOpenError: If circuit is open
             Exception: Original exception from function
@@ -133,15 +135,15 @@ class CircuitBreaker:
         kwargs: Any) ->Any:
         """
         Execute async function with circuit breaker protection.
-        
+
         Args:
             func: Async function to execute
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             CircuitBreakerOpenError: If circuit is open
             Exception: Original exception from function
@@ -276,7 +278,7 @@ class CircuitBreakerOpenError(Exception):
 class CircuitBreakerRegistry:
     """
     Registry for managing multiple circuit breakers.
-    
+
     Provides centralized management and monitoring of circuit breakers
     across different services or endpoints.
     """

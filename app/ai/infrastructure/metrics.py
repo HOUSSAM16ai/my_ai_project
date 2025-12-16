@@ -9,15 +9,17 @@ Provides comprehensive metrics collection and observability:
 - Distributed tracing support
 """
 from __future__ import annotations
+
 import logging
 import threading
 import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
+
 from app.ai.domain.ports import MetricsPort, ObservabilityPort
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -77,7 +79,7 @@ class Histogram:
 class InMemoryMetrics(MetricsPort):
     """
     In-memory metrics collector.
-    
+
     Features:
     - Thread-safe operations
     - Support for counters, gauges, histograms
@@ -180,7 +182,7 @@ class Span:
 class SimpleObserver(ObservabilityPort):
     """
     Simple in-memory observability implementation.
-    
+
     Features:
     - Distributed tracing with spans
     - Event recording

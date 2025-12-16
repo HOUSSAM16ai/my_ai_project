@@ -132,7 +132,7 @@ class PredictiveAnalytics:
                 PredictionType.FAILURE_PREDICTION, timestamp=datetime.now(
                 UTC), forecast_horizon=time_to_threshold, predicted_value=
                 predicted_error_rate, confidence=0.8 if abs(trend) > 0.01 else
-                0.6, confidence_interval=(predicted_error_rate * 0.8, 
+                0.6, confidence_interval=(predicted_error_rate * 0.8,
                 predicted_error_rate * 1.2), current_trend='increasing',
                 recommendations=['Enable circuit breakers',
                 'Scale up capacity', 'Alert on-call team',
@@ -179,5 +179,5 @@ class PredictiveAnalytics:
         """Get predictor statistics"""
         total = self.stats['total_predictions']
         accurate = self.stats['accurate_predictions']
-        return {**self.stats, 'accuracy_rate': accurate / total * 100 if 
+        return {**self.stats, 'accuracy_rate': accurate / total * 100 if
             total > 0 else 0, 'time_series_tracked': len(self.time_series)}

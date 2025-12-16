@@ -7,9 +7,9 @@ from .model_registry import ModelRegistry
 from .shadow_deployment import ShadowDeploymentManager
 
 __all__ = [
-    "ModelRegistry",
     "ABTestEngine",
-    "ShadowDeploymentManager",
     "EnsembleRouter",
     "ModelInvoker",
+    "ModelRegistry",
+    "ShadowDeploymentManager",
 ]

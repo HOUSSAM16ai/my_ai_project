@@ -4,18 +4,19 @@ Metrics Collector
 Collects and manages performance metrics for model serving.
 """
 from __future__ import annotations
+
 import random
 import threading
-import time
 from collections import defaultdict, deque
 from typing import Any
+
 from app.serving.domain.entities import ModelMetrics, ModelResponse, ModelVersion
 
 
 class MetricsCollector:
     """
     Metrics Collector - جامع المقاييس
-    
+
     Responsibilities:
     - Collect performance metrics for each model
     - Monitor model health
@@ -37,7 +38,7 @@ class MetricsCollector:
     def update_metrics(self, version_id: str, response: ModelResponse):
         """
         تحديث مقاييس النموذج
-        
+
         Args:
             version_id: معرف النسخة
             response: استجابة النموذج
@@ -48,11 +49,11 @@ class MetricsCollector:
     def calculate_cost(self, model: ModelVersion, output: Any) ->float:
         """
         حساب تكلفة الطلب
-        
+
         Args:
             model: نسخة النموذج
             output: نتيجة النموذج
-            
+
         Returns:
             التكلفة بالدولار
         """
@@ -61,10 +62,10 @@ class MetricsCollector:
     def get_all_metrics(self, version_id: str) ->list[ModelMetrics]:
         """
         الحصول على جميع مقاييس النموذج
-        
+
         Args:
             version_id: معرف النسخة
-            
+
         Returns:
             قائمة المقاييس
         """

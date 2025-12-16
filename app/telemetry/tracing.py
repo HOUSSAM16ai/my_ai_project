@@ -183,7 +183,7 @@ class DistributedTracer:
         if span_id not in self.active_spans:
             return
         span = self.active_spans[span_id]
-        event = {'name': name, 'timestamp': time.time(), 'attributes': 
+        event = {'name': name, 'timestamp': time.time(), 'attributes':
             attributes or {}}
         span.events.append(event)
 
@@ -221,5 +221,5 @@ class DistributedTracer:
         return {**self.stats, 'active_traces': len(self.traces),
             'active_spans': len(self.active_spans), 'sample_rate': self.
             sample_rate, 'avg_spans_per_trace': self.stats['spans_created'] /
-            self.stats['traces_started'] if self.stats['traces_started'] > 
+            self.stats['traces_started'] if self.stats['traces_started'] >
             0 else 0}

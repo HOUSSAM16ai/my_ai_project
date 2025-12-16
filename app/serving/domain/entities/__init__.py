@@ -6,15 +6,15 @@ from .model_version import ModelStatus, ModelType, ModelVersion
 from .request_response import ModelRequest, ModelResponse, RoutingStrategy
 
 __all__ = [
+    "ABTestConfig",
+    "EnsembleConfig",
+    "ModelMetrics",
+    "ModelRequest",
+    "ModelResponse",
     "ModelStatus",
     "ModelType",
     "ModelVersion",
-    "ModelMetrics",
-    "ServingStrategy",
-    "ABTestConfig",
-    "ShadowDeployment",
-    "EnsembleConfig",
     "RoutingStrategy",
-    "ModelRequest",
-    "ModelResponse",
+    "ServingStrategy",
+    "ShadowDeployment",
 ]

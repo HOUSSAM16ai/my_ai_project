@@ -6,6 +6,7 @@ Integrates with observability systems for security monitoring.
 """
 import time
 from typing import Any
+
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
@@ -115,7 +116,7 @@ class TelemetryGuard(BaseMiddleware):
         stats = super().get_statistics()
         stats.update({'metrics': self.metrics.copy(),
             'security_events_count': len(self.security_events),
-            'audit_entries_count': len(self.audit_trail), 'block_rate': 
+            'audit_entries_count': len(self.audit_trail), 'block_rate':
             self.metrics['blocked_requests'] / self.metrics[
             'total_requests'] if self.metrics['total_requests'] > 0 else 0.0})
         return stats

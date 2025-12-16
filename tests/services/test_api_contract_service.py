@@ -1,7 +1,5 @@
 # tests/services/test_api_contract_service.py
-import pytest
-from app.services.api_contract_service import APIContractService, _service
-from app.services.api_contract.domain.models import ContractValidationResult, ContractSchema
+from app.services.api_contract_service import APIContractService
 
 
 def test_singleton():

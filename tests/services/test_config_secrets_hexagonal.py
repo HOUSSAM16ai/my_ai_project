@@ -1,12 +1,13 @@
 
 import pytest
+
 from app.services.api_config_secrets_service import (
     ConfigSecretsService,
     Environment,
     SecretType,
-    RotationPolicy,
     get_config_secrets_service,
 )
+
 
 @pytest.fixture
 def service():

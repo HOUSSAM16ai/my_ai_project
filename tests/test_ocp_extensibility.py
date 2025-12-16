@@ -5,8 +5,14 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.analytics.application.anomaly_detection import StatisticalAnomalyDetector
-from app.analytics.application.custom_report_generators import PerformanceReportGenerator, SecurityReportGenerator
-from app.analytics.application.ml_anomaly_detection import CompositeAnomalyDetector, MLBasedAnomalyDetector
+from app.analytics.application.custom_report_generators import (
+    PerformanceReportGenerator,
+    SecurityReportGenerator,
+)
+from app.analytics.application.ml_anomaly_detection import (
+    CompositeAnomalyDetector,
+    MLBasedAnomalyDetector,
+)
 from app.analytics.domain.entities import UsageMetric
 from app.analytics.domain.value_objects import MetricType
 from app.analytics.infrastructure.in_memory_repository import InMemoryMetricsRepository
@@ -155,7 +161,6 @@ class TestExtensibilityWithoutModification:
         import inspect
 
         from app.analytics.application.anomaly_detection import StatisticalAnomalyDetector
-        from app.analytics.application.ml_anomaly_detection import MLBasedAnomalyDetector
 
         stat_source = inspect.getsource(StatisticalAnomalyDetector)
 
@@ -166,7 +171,6 @@ class TestExtensibilityWithoutModification:
         """Verify SecurityReportGenerator doesn't modify existing code."""
         import inspect
 
-        from app.analytics.application.custom_report_generators import SecurityReportGenerator
         from app.analytics.application.report_generation import UsageReportGenerator
 
         usage_source = inspect.getsource(UsageReportGenerator)

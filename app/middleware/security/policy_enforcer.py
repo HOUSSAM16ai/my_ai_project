@@ -5,6 +5,7 @@ Policy-Based Access Control (PBAC) middleware.
 Enforces access rules based on configurable policies.
 """
 from typing import Any
+
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult

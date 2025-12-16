@@ -6,6 +6,7 @@ throughput, and identifies bottlenecks.
 """
 import time
 from typing import Any
+
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
@@ -65,7 +66,7 @@ class PerformanceProfiler(BaseMiddleware):
             self.latencies = self.latencies[-self.max_latencies:]
         endpoint = ctx.path
         if endpoint not in self.endpoint_stats:
-            self.endpoint_stats[endpoint] = {'count': 0, 'total_duration': 
+            self.endpoint_stats[endpoint] = {'count': 0, 'total_duration':
                 0.0, 'min_duration': float('inf'), 'max_duration': 0.0}
         stats = self.endpoint_stats[endpoint]
         stats['count'] += 1

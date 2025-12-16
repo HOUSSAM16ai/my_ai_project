@@ -7,24 +7,23 @@ Validates that the layered architecture works correctly.
 Phase 3 Wave 1 - Verification Tests
 """
 
-import pytest
 import time
-from datetime import datetime
+
+import pytest
 
 from app.services.serving import (
-    # Domain models
-    ModelVersion,
-    ModelStatus,
-    ModelType,
-    # Application services
-    ModelRegistry,
     InferenceRouter,
-    ExperimentManager,
     # Infrastructure
     InMemoryModelRepository,
     MockModelInvoker,
+    # Application services
+    ModelRegistry,
     # Facade (backward compatibility)
     ModelServingInfrastructure,
+    ModelStatus,
+    ModelType,
+    # Domain models
+    ModelVersion,
     get_model_serving_infrastructure,
 )
 

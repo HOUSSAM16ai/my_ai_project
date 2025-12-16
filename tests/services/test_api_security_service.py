@@ -1,6 +1,12 @@
 # tests/services/test_api_security_service.py
 import pytest
-from app.services.api_security_service import get_security_service, security_service, SuperhumanSecuritySystem
+
+from app.services.api_security_service import (
+    SuperhumanSecuritySystem,
+    get_security_service,
+    security_service,
+)
+
 
 def test_api_security_service_instantiation():
     """Test that the security service is instantiated correctly."""

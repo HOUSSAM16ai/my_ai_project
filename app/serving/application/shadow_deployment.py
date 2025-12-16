@@ -4,20 +4,21 @@ Shadow Deployment Manager
 Manages shadow deployments for testing new models in production without affecting users.
 """
 from __future__ import annotations
-import random
+
 import threading
 import uuid
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+
 from app.serving.domain.entities import ShadowDeployment
+
 if TYPE_CHECKING:
-    from app.serving.domain.entities import ModelResponse
+    pass
 
 
 class ShadowDeploymentManager:
     """
     Shadow Deployment Manager - مدير النشر الخفي
-    
+
     Responsibilities:
     - Create and manage shadow deployments
     - Route traffic to shadow models in background
@@ -32,12 +33,12 @@ class ShadowDeploymentManager:
         shadow_model_id: str, traffic_percentage: float=100.0) ->str:
         """
         بدء نشر في الوضع الخفي (Shadow Mode)
-        
+
         Args:
             primary_model_id: النموذج الأساسي (الإنتاج)
             shadow_model_id: النموذج الخفي (الاختبار)
             traffic_percentage: نسبة الطلبات لنسخها
-            
+
         Returns:
             معرف النشر الخفي
         """
@@ -53,10 +54,10 @@ class ShadowDeploymentManager:
         None):
         """
         الحصول على إحصائيات النشر الخفي
-        
+
         Args:
             shadow_id: معرف النشر الخفي
-            
+
         Returns:
             إحصائيات النشر أو None
         """

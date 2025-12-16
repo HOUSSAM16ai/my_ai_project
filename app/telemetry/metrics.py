@@ -83,7 +83,7 @@ class Histogram:
     """Histogram metric (observations in buckets)"""
     name: str
     help: str
-    buckets: list[float] = field(default_factory=lambda : [0.005, 0.01, 
+    buckets: list[float] = field(default_factory=lambda : [0.005, 0.01,
         0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10])
     observations: deque = field(default_factory=lambda : deque(maxlen=10000))
     bucket_counts: dict[float, int] = field(default_factory=lambda :
