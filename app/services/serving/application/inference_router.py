@@ -29,13 +29,13 @@ _LOG = logging.getLogger(__name__)
 class InferenceRouter:
     """
     Routes and executes inference requests.
-    
+
     Responsibilities:
     - Route requests to appropriate model versions
     - Execute inference via model invoker
     - Track request/response history
     - Update metrics
-    
+
     Does NOT handle:
     - Model lifecycle (ModelRegistry)
     - A/B testing logic (ExperimentManager)
@@ -50,7 +50,7 @@ class InferenceRouter:
     ):
         """
         Initialize inference router.
-        
+
         Args:
             registry: Model registry for model lookup
             invoker: Model invoker for actual inference
@@ -69,13 +69,13 @@ class InferenceRouter:
     ) -> ModelResponse:
         """
         Serve an inference request.
-        
+
         Args:
             model_name: Name of the model
             input_data: Input data for inference
             version_id: Optional specific version ID
             parameters: Optional request parameters
-            
+
         Returns:
             Model response with results or error
         """
@@ -122,7 +122,7 @@ class InferenceRouter:
         # Execute inference
         try:
             response = self._invoker.invoke(model, request)
-            
+
             # Log success
             if response.success:
                 _LOG.debug(
@@ -134,7 +134,7 @@ class InferenceRouter:
                 _LOG.warning(
                     f"Request {request_id} failed: {response.error}"
                 )
-            
+
             return response
 
         except Exception as e:

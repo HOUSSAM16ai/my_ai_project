@@ -3,7 +3,6 @@
 These can be added WITHOUT modifying existing code.
 """
 
-from datetime import timedelta
 from typing import Any
 
 from app.analytics.domain.entities import UsageMetric

@@ -296,7 +296,7 @@ class FeatureFlagService:
         """Get all feature flags"""
         with self.lock:
             return {flag_id: {'name': flag.name, 'status': flag.status.
-                value, 'enabled_percentage': flag.enabled_percentage} for 
+                value, 'enabled_percentage': flag.enabled_percentage} for
                 flag_id, flag in self.flags.items()}
 
 

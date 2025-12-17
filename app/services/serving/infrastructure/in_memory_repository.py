@@ -19,7 +19,7 @@ from app.services.serving.domain.models import ModelMetrics, ModelVersion
 class InMemoryModelRepository:
     """
     In-memory implementation of ModelRepository port.
-    
+
     Thread-safe storage using RLock.
     Suitable for single-instance deployments or testing.
     """
@@ -74,7 +74,7 @@ class InMemoryModelRepository:
 class InMemoryMetricsRepository:
     """
     In-memory implementation of MetricsRepository port.
-    
+
     Stores metrics in a circular buffer (deque) per model.
     Limited history to prevent memory overflow.
     """

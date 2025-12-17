@@ -49,11 +49,11 @@ class AuthPersistence:
             is_admin=is_admin,
         )
         new_user.set_password(password)
-        
+
         self.db.add(new_user)
         await self.db.commit()
         await self.db.refresh(new_user)
-        
+
         return new_user
 
     async def user_exists(self, email: str) -> bool:

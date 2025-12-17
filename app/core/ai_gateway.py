@@ -7,7 +7,7 @@ This maintains backward compatibility while enforcing SRP via the new structure.
 """
 
 import logging
-from typing import Protocol, runtime_checkable, Any
+from typing import Any
 
 # --- Import Atomic Modules ---
 from app.core.gateway.exceptions import (

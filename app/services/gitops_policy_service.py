@@ -14,9 +14,6 @@ from .gitops_policy import get_gitops_policy_service
 from .gitops_policy.domain import (
     GitOpsApplication,
     Policy,
-    PolicyEnforcementMode,
-    ResourceType,
-    SyncStatus,
 )
 
 logger = logging.getLogger(__name__)

@@ -43,7 +43,7 @@ class BehaviorPattern(Enum):
 class UsageMetric:
     """
     Immutable usage metric data point.
-    
+
     Represents a single measurement at a specific point in time.
     """
     timestamp: datetime
@@ -68,7 +68,7 @@ class UsageMetric:
 class UserJourney:
     """
     Tracks a user's journey through the system.
-    
+
     Represents a session with all events and interactions.
     """
     user_id: str
@@ -104,7 +104,7 @@ class UserJourney:
 class AnalyticsReport:
     """
     Generated analytics report with insights.
-    
+
     Aggregates metrics over a time range with actionable insights.
     """
     report_id: str
@@ -133,7 +133,7 @@ class AnalyticsReport:
 class BehaviorProfile:
     """
     User behavior analysis profile.
-    
+
     Machine learning-derived insights about user patterns.
     """
     user_id: str

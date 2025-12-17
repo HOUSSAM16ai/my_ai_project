@@ -57,7 +57,6 @@ class MLBasedAnomalyDetector(AnomalyDetector):
 
     def _convert_to_anomalies(self, predictions: list[bool], metrics: list[UsageMetric]) -> list[Anomaly]:
         """Convert predictions to Anomaly objects."""
-        from datetime import UTC, datetime
 
         anomalies = []
         for i, is_anomaly in enumerate(predictions):

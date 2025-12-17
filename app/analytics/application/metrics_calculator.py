@@ -32,7 +32,7 @@ class MetricsCalculator:
 
     def get_engagement_metrics(self, time_window: str = "30d") -> EngagementMetrics:
         """Get user engagement metrics"""
-        now = datetime.now(UTC)
+        datetime.now(UTC)
 
         # Active users
         dau = len(self.active_users_store.get_active_users("1d"))
@@ -83,7 +83,7 @@ class MetricsCalculator:
 
     def get_conversion_metrics(self, conversion_event: str = "conversion") -> ConversionMetrics:
         """Get conversion metrics"""
-        now = datetime.now(UTC)
+        datetime.now(UTC)
         recent_events = self.event_store.get_recent_events(days=30)
 
         # Count conversions

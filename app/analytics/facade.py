@@ -33,7 +33,7 @@ from app.analytics.infrastructure import (
 class UserAnalyticsMetricsService:
     """
     User Analytics & Business Metrics Service Facade
-    
+
     Provides backward-compatible interface while delegating to specialized services.
     """
 

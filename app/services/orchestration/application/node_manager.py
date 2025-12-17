@@ -28,7 +28,7 @@ class NodeRepository(Protocol):
 class NodeManager:
     """
     Cluster node manager.
-    
+
     Responsibilities:
     - Add/remove nodes
     - Monitor node health

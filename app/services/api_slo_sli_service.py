@@ -322,7 +322,7 @@ class SLOService:
                 'status': slo.status.value, 'burn_rate': {'level':
                 burn_rate.level.value, '1h': burn_rate.burn_rate_1h, '6h':
                 burn_rate.burn_rate_6h, '24h': burn_rate.burn_rate_24h,
-                '7d': burn_rate.burn_rate_7d, 'projected_depletion': 
+                '7d': burn_rate.burn_rate_7d, 'projected_depletion':
                 burn_rate.projected_depletion.isoformat() if burn_rate.
                 projected_depletion else None} if burn_rate else None}
 

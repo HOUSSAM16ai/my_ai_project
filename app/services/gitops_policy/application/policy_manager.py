@@ -1,6 +1,5 @@
 """Policy management application service."""
 import logging
-import uuid
 from datetime import UTC, datetime
 from typing import Any
 from ..domain.models import Policy, PolicyViolation

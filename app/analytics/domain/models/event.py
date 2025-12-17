@@ -40,7 +40,7 @@ class EventPriority(Enum):
 class EventId:
     """
     Immutable event identifier with content-based hashing.
-    
+
     Uses SHA-256 for deterministic ID generation enabling
     deduplication and idempotency.
     """
@@ -84,7 +84,7 @@ class EventMetadata:
 class Event:
     """
     Core event entity with quantum-inspired superposition.
-    
+
     Events can exist in multiple states simultaneously until
     observed/processed, enabling speculative execution and
     parallel hypothesis testing.
@@ -130,7 +130,7 @@ class Event:
 class EventBatch:
     """
     Batch of events for efficient processing.
-    
+
     Implements interference pattern where operations
     can be combined or cancelled.
     """
@@ -141,7 +141,7 @@ class EventBatch:
     def optimize(self) ->EventBatch:
         """
         Optimize batch using interference patterns.
-        
+
         - Combine similar events (constructive interference)
         - Cancel opposing events (destructive interference)
         - Deduplicate identical events
@@ -187,7 +187,7 @@ class EventBatch:
 class EventStream:
     """
     Continuous stream of events with windowing support.
-    
+
     Implements tumbling and sliding windows for
     real-time aggregation.
     """
@@ -216,6 +216,5 @@ class EventStream:
             window_end]
 
 
-from datetime import timedelta
 __all__ = ['EventType', 'EventPriority', 'EventId', 'EventMetadata',
     'Event', 'EventBatch', 'EventStream']

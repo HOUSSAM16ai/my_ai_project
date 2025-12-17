@@ -29,7 +29,7 @@ from app.services.analytics.domain.models import (
 class EventRepositoryPort(Protocol):
     """
     Port for event storage and retrieval.
-    
+
     Implementations:
     - InMemoryEventRepository
     - PostgreSQLEventRepository
@@ -39,7 +39,7 @@ class EventRepositoryPort(Protocol):
     def store_event(self, event: UserEvent) -> None:
         """
         Store a user event.
-        
+
         Args:
             event: UserEvent to store
         """
@@ -56,7 +56,7 @@ class EventRepositoryPort(Protocol):
     ) -> list[UserEvent]:
         """
         Retrieve events matching filters.
-        
+
         Args:
             user_id: Filter by user ID
             session_id: Filter by session ID
@@ -64,7 +64,7 @@ class EventRepositoryPort(Protocol):
             start_time: Filter events after this time
             end_time: Filter events before this time
             limit: Maximum number of events to return
-            
+
         Returns:
             List of matching events
         """
@@ -79,13 +79,13 @@ class EventRepositoryPort(Protocol):
     ) -> int:
         """
         Count events matching filters.
-        
+
         Args:
             user_id: Filter by user ID
             event_type: Filter by event type
             start_time: Filter events after this time
             end_time: Filter events before this time
-            
+
         Returns:
             Number of matching events
         """
@@ -94,10 +94,10 @@ class EventRepositoryPort(Protocol):
     def delete_old_events(self, before: datetime) -> int:
         """
         Delete events older than specified time.
-        
+
         Args:
             before: Delete events before this time
-            
+
         Returns:
             Number of deleted events
         """
@@ -112,7 +112,7 @@ class EventRepositoryPort(Protocol):
 class SessionRepositoryPort(Protocol):
     """
     Port for session storage and retrieval.
-    
+
     Implementations:
     - InMemorySessionRepository
     - RedisSessionRepository
@@ -122,7 +122,7 @@ class SessionRepositoryPort(Protocol):
     def store_session(self, session: UserSession) -> None:
         """
         Store or update a user session.
-        
+
         Args:
             session: UserSession to store
         """
@@ -131,10 +131,10 @@ class SessionRepositoryPort(Protocol):
     def get_session(self, session_id: str) -> UserSession | None:
         """
         Retrieve session by ID.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
             UserSession if found, None otherwise
         """
@@ -148,12 +148,12 @@ class SessionRepositoryPort(Protocol):
     ) -> list[UserSession]:
         """
         Retrieve all sessions for a user.
-        
+
         Args:
             user_id: User identifier
             start_time: Filter sessions after this time
             end_time: Filter sessions before this time
-            
+
         Returns:
             List of user sessions
         """
@@ -162,10 +162,10 @@ class SessionRepositoryPort(Protocol):
     def get_active_sessions(self, since: datetime | None = None) -> list[UserSession]:
         """
         Get all active sessions.
-        
+
         Args:
             since: Only include sessions active since this time
-            
+
         Returns:
             List of active sessions
         """
@@ -180,7 +180,7 @@ class SessionRepositoryPort(Protocol):
 class AnalyticsAggregatorPort(Protocol):
     """
     Port for analytics calculations and aggregations.
-    
+
     Implementations:
     - InMemoryAggregator
     - SparkAggregator
@@ -194,11 +194,11 @@ class AnalyticsAggregatorPort(Protocol):
     ) -> dict[str, Any]:
         """
         Calculate engagement metrics for time period.
-        
+
         Args:
             start_time: Start of analysis period
             end_time: End of analysis period
-            
+
         Returns:
             Dictionary with engagement metrics
         """
@@ -212,12 +212,12 @@ class AnalyticsAggregatorPort(Protocol):
     ) -> dict[str, Any]:
         """
         Calculate conversion metrics for funnel.
-        
+
         Args:
             funnel_steps: List of event types in funnel
             start_time: Start of analysis period
             end_time: End of analysis period
-            
+
         Returns:
             Dictionary with conversion metrics
         """
@@ -230,11 +230,11 @@ class AnalyticsAggregatorPort(Protocol):
     ) -> dict[str, Any]:
         """
         Calculate retention metrics for cohort.
-        
+
         Args:
             cohort_id: Cohort identifier
             days: Number of days to analyze
-            
+
         Returns:
             Dictionary with retention metrics
         """
@@ -249,7 +249,7 @@ class AnalyticsAggregatorPort(Protocol):
 class UserSegmentationPort(Protocol):
     """
     Port for user segmentation and classification.
-    
+
     Implementations:
     - RuleBasedSegmentation
     - MLSegmentation
@@ -263,11 +263,11 @@ class UserSegmentationPort(Protocol):
     ) -> UserSegment:
         """
         Classify user into a segment.
-        
+
         Args:
             user_id: User identifier
             user_data: User behavior data
-            
+
         Returns:
             UserSegment classification
         """
@@ -279,10 +279,10 @@ class UserSegmentationPort(Protocol):
     ) -> list[int]:
         """
         Get all users in a segment.
-        
+
         Args:
             segment: User segment
-            
+
         Returns:
             List of user IDs in segment
         """
@@ -291,7 +291,7 @@ class UserSegmentationPort(Protocol):
     def update_segmentation(self) -> dict[UserSegment, int]:
         """
         Update all user segments.
-        
+
         Returns:
             Dictionary mapping segments to user counts
         """
@@ -306,7 +306,7 @@ class UserSegmentationPort(Protocol):
 class ABTestManagerPort(Protocol):
     """
     Port for A/B testing management.
-    
+
     Implementations:
     - SimpleABTestManager
     - BayesianABTestManager
@@ -321,7 +321,7 @@ class ABTestManagerPort(Protocol):
     ) -> None:
         """
         Create a new A/B test.
-        
+
         Args:
             test_id: Test identifier
             test_name: Test name
@@ -336,11 +336,11 @@ class ABTestManagerPort(Protocol):
     ) -> ABTestVariant:
         """
         Assign user to a test variant.
-        
+
         Args:
             test_id: Test identifier
             user_id: User identifier
-            
+
         Returns:
             Assigned variant
         """
@@ -354,7 +354,7 @@ class ABTestManagerPort(Protocol):
     ) -> None:
         """
         Record conversion for test variant.
-        
+
         Args:
             test_id: Test identifier
             user_id: User identifier
@@ -368,10 +368,10 @@ class ABTestManagerPort(Protocol):
     ) -> dict[str, Any]:
         """
         Get A/B test results.
-        
+
         Args:
             test_id: Test identifier
-            
+
         Returns:
             Dictionary with test results
         """

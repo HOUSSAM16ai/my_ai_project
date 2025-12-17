@@ -4,8 +4,7 @@ Developer Portal Service Facade
 Backward-compatible facade maintaining original API.
 """
 import threading
-from typing import Any
-from app.services.developer_portal.domain.models import APIKey, APIKeyStatus, CodeExample, SDKLanguage, SDKPackage, SupportTicket, TicketPriority, TicketStatus
+from app.services.developer_portal.domain.models import APIKey, CodeExample, SDKLanguage, SDKPackage, SupportTicket, TicketPriority
 from app.services.developer_portal.application.api_key_manager import APIKeyManager
 from app.services.developer_portal.application.ticket_manager import TicketManager
 from app.services.developer_portal.application.sdk_generator import SDKGenerator
@@ -16,7 +15,7 @@ from app.services.developer_portal.infrastructure.in_memory_repository import In
 class DeveloperPortalService:
     """
     Developer Portal Service Facade.
-    
+
     Maintains backward compatibility with original monolithic API
     while delegating to clean hexagonal architecture.
     """

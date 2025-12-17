@@ -4,9 +4,8 @@ Contains business logic for scheduling, risk assessment, and predictions.
 """
 import statistics
 from collections import defaultdict
-from datetime import datetime, timedelta
 from typing import Any
-from ..domain.models import Risk, RiskLevel, Task, TaskPriority, TaskStatus, TeamMember
+from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
 
 
 class PredictiveTaskAnalyzer:

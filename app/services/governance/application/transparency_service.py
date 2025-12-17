@@ -22,16 +22,16 @@ class TransparencyRepository(Protocol):
 class TransparencyService:
     """
     Existential transparency service.
-    
+
     Responsibilities:
     - Log all governance events
     - Provide audit trail
     - Enable transparency queries
     """
-    
+
     def __init__(self, transparency_repository: TransparencyRepository):
         self._transparency_repo = transparency_repository
-    
+
     def log_event(
         self,
         event_type: str,
@@ -44,7 +44,7 @@ class TransparencyService:
         event_id = hashlib.sha256(
             f"{event_type}{subject}{datetime.utcnow()}".encode()
         ).hexdigest()[:16]
-        
+
         log = ExistentialTransparencyLog(
             event_type=event_type,
             subject=subject,
@@ -53,9 +53,9 @@ class TransparencyService:
             impact_json=impact,
             event_hash=event_id,
         )
-        
+
         self._transparency_repo.save(log)
-    
+
     def query_logs(
         self,
         event_type: str | None = None,

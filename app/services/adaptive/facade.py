@@ -28,7 +28,7 @@ from app.services.adaptive.application.health_monitor import PredictiveHealthMon
 class SelfAdaptiveMicroservices:
     """
     النظام الرئيسي للخدمات المصغرة ذاتية التكيف
-    
+
     Maintains backward compatibility with original monolithic API
     while delegating to clean hexagonal architecture.
     """

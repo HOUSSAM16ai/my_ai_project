@@ -11,7 +11,7 @@ Architecture:
 
 Usage:
     from app.services.api_advanced_analytics import AdvancedAnalyticsService
-    
+
     service = AdvancedAnalyticsService()
     service.track_request(endpoint="/api/users", method="GET", ...)
 """

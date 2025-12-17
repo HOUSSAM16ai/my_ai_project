@@ -1,15 +1,10 @@
-import hashlib
-import itertools
-import math
 import statistics
 import threading
-import time
 from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from app.core.utils.text import get_lcs_length, get_ngrams
 from app.services.metrics.calculators.drift import DriftCalculatorContext
-from app.services.metrics.types import AccuracyMetrics, CostMetrics, DriftStatus, FairnessMetrics, InferenceMetrics, LatencyMetrics, ModelDriftMetrics, ModelPerformanceSnapshot, ModelType
+from app.services.metrics.types import CostMetrics, DriftStatus, LatencyMetrics, ModelDriftMetrics, ModelPerformanceSnapshot, ModelType
 
 
 class AIModelMetricsService:
@@ -74,7 +69,7 @@ class AIModelMetricsService:
             model_key = f'{model_name}:{model_version}'
             if model_key not in self.models:
                 return None
-            recent_inferences = [inf for inf in self.inference_buffer if 
+            recent_inferences = [inf for inf in self.inference_buffer if
                 inf.model_name == model_name and inf.model_version ==
                 model_version]
             if not recent_inferences:

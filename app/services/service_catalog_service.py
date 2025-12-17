@@ -214,7 +214,7 @@ RUN pip install -r requirements.txt"""
             self.api_specs.values()), 'templates_available': len(self.
             templates), 'health_status_summary': {'healthy': len([h for h in
             self.health_status.values() if h.status == HealthStatus.HEALTHY
-            ]), 'degraded': len([h for h in self.health_status.values() if 
+            ]), 'degraded': len([h for h in self.health_status.values() if
             h.status == HealthStatus.DEGRADED]), 'down': len([h for h in
             self.health_status.values() if h.status == HealthStatus.DOWN])}}
 

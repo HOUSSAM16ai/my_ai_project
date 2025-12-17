@@ -12,7 +12,7 @@ from app.services.developer_portal.domain.ports import APIKeyRepository
 class APIKeyManager:
     """
     Manages API key lifecycle.
-    
+
     Single Responsibility: API key creation, validation, rotation, revocation.
     """
 

@@ -150,7 +150,7 @@ class AdminChatPerformanceService:
         perf_dist = defaultdict(int)
         for m in filtered_metrics:
             perf_dist[m.get_category().value] += 1
-        return {'total_requests': len(filtered_metrics), 'avg_latency_ms': 
+        return {'total_requests': len(filtered_metrics), 'avg_latency_ms':
             sum(latencies) / n, 'p50_latency_ms': latencies[int(n * 0.5)],
             'p95_latency_ms': latencies[int(n * 0.95)], 'p99_latency_ms':
             latencies[int(n * 0.99)], 'total_tokens': sum(m.tokens for m in

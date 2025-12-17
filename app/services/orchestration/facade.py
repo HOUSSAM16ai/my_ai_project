@@ -19,10 +19,8 @@ from app.services.orchestration.application import (
     SelfHealer,
 )
 from app.services.orchestration.domain.models import (
-    ConsensusRole,
     NodeState,
     PodPhase,
-    ScalingDirection,
 )
 from app.services.orchestration.infrastructure import (
     InMemoryHealingEventRepository,
@@ -34,24 +32,24 @@ from app.services.orchestration.infrastructure import (
 class KubernetesOrchestrator:
     """
     Kubernetes Orchestration Service - Complete Facade
-    
+
     100% backward compatible with original 715-line service.
     Delegates to specialized services following SRP.
-    
+
     Features:
     - Pod scheduling
     - Self-healing
     - Distributed consensus (Raft)
     - Auto-scaling
     """
-    
+
     def __init__(self, cluster_size: int = 5):
         """Initialize orchestrator"""
         # Infrastructure layer
         self._pod_repo = InMemoryPodRepository()
         self._node_repo = InMemoryNodeRepository()
         self._healing_event_repo = InMemoryHealingEventRepository()
-        
+
         # Application layer
         self._node_manager = NodeManager(self._node_repo)
         self._pod_scheduler = PodScheduler(self._pod_repo, self._node_repo)
@@ -66,14 +64,14 @@ class KubernetesOrchestrator:
             node_id="node-0",
             cluster_nodes=[f"node-{i}" for i in range(cluster_size)],
         )
-        
+
         # Initialize cluster
         self._initialize_cluster(cluster_size)
-        
+
         # Start background services
         self._start_health_monitoring()
         self._start_consensus_protocol()
-        
+
         # Legacy compatibility
         self._lock = threading.RLock()
         self._pods = {}
@@ -81,7 +79,7 @@ class KubernetesOrchestrator:
         self._healing_events = []
         self._raft_state = None
         self._autoscaling_configs = {}
-    
+
     def _initialize_cluster(self, cluster_size: int) -> None:
         """Initialize cluster with nodes"""
         for i in range(cluster_size):
@@ -94,7 +92,7 @@ class KubernetesOrchestrator:
                     "node-type": "worker",
                 },
             )
-    
+
     def _start_health_monitoring(self) -> None:
         """Start health monitoring background thread"""
         def monitor():
@@ -106,18 +104,18 @@ class KubernetesOrchestrator:
                     time.sleep(10)
                 except Exception:
                     pass
-        
+
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
-    
+
     def _start_consensus_protocol(self) -> None:
         """Start Raft consensus protocol"""
         self._raft_consensus.start()
-    
+
     # ==================================================================================
     # POD SCHEDULING
     # ==================================================================================
-    
+
     def schedule_pod(
         self,
         pod_name: str,
@@ -141,11 +139,11 @@ class KubernetesOrchestrator:
             memory_limit=memory_limit,
             labels=labels,
         )
-    
+
     # ==================================================================================
     # AUTO-SCALING
     # ==================================================================================
-    
+
     def configure_autoscaling(
         self,
         deployment_name: str,
@@ -162,7 +160,7 @@ class KubernetesOrchestrator:
             target_cpu_percent=target_cpu_percent,
             target_memory_percent=target_memory_percent,
         )
-    
+
     def check_autoscaling(self) -> dict[str, Any]:
         """Check and apply auto-scaling rules"""
         # This would check all deployments in production
@@ -171,15 +169,15 @@ class KubernetesOrchestrator:
             "scaled_deployments": [],
             "timestamp": datetime.utcnow().isoformat(),
         }
-    
+
     # ==================================================================================
     # RAFT CONSENSUS
     # ==================================================================================
-    
+
     def append_log_entry(self, entry: dict[str, Any]) -> bool:
         """Append entry to distributed log"""
         return self._raft_consensus.append_log_entry(entry)
-    
+
     def get_raft_state(self) -> dict[str, Any]:
         """Get Raft consensus state"""
         state = self._raft_consensus.get_state()
@@ -190,17 +188,17 @@ class KubernetesOrchestrator:
             "log_size": len(state.log),
             "is_leader": self._raft_consensus.is_leader(),
         }
-    
+
     # ==================================================================================
     # STATUS & MONITORING
     # ==================================================================================
-    
+
     def get_pod_status(self, pod_id: str) -> dict[str, Any] | None:
         """Get pod status"""
         pod = self._pod_repo.get(pod_id)
         if not pod:
             return None
-        
+
         return {
             "pod_id": pod.pod_id,
             "name": pod.name,
@@ -211,13 +209,13 @@ class KubernetesOrchestrator:
             "cpu_request": pod.cpu_request,
             "memory_request": pod.memory_request,
         }
-    
+
     def get_node_status(self, node_id: str) -> dict[str, Any] | None:
         """Get node status"""
         node = self._node_repo.get(node_id)
         if not node:
             return None
-        
+
         return {
             "node_id": node.node_id,
             "name": node.name,
@@ -230,12 +228,12 @@ class KubernetesOrchestrator:
             "memory_available": node.memory_available,
             "pod_count": len(node.pods),
         }
-    
+
     def get_cluster_stats(self) -> dict[str, Any]:
         """Get cluster statistics"""
         nodes = self._node_repo.get_all()
         pods = self._pod_repo.get_all()
-        
+
         return {
             "total_nodes": len(nodes),
             "ready_nodes": sum(1 for n in nodes if n.state == NodeState.READY),
@@ -247,7 +245,7 @@ class KubernetesOrchestrator:
             "total_memory_capacity": sum(n.memory_capacity for n in nodes),
             "total_memory_allocated": sum(n.memory_allocated for n in nodes),
         }
-    
+
     def get_healing_events(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get recent healing events"""
         events = self._healing_event_repo.get_recent(limit)
@@ -275,10 +273,10 @@ _ORCHESTRATOR_LOCK = threading.Lock()
 def get_kubernetes_orchestrator(cluster_size: int = 5) -> KubernetesOrchestrator:
     """Get or create orchestrator singleton"""
     global _ORCHESTRATOR_INSTANCE
-    
+
     if _ORCHESTRATOR_INSTANCE is not None:
         return _ORCHESTRATOR_INSTANCE
-    
+
     with _ORCHESTRATOR_LOCK:
         if _ORCHESTRATOR_INSTANCE is None:
             _ORCHESTRATOR_INSTANCE = KubernetesOrchestrator(cluster_size)

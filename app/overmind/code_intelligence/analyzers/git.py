@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from pathlib import Path
 from typing import Dict, Any, Set
 
@@ -103,7 +102,7 @@ class GitAnalyzer:
                 "branches_modified": len(branches),
             }
 
-        except Exception as e:
+        except Exception:
             # Silence errors in non-git environments or timeouts
             # print(f"Warning: Git analysis failed for {file_path}: {e}", file=sys.stderr)
             return {

@@ -11,7 +11,7 @@ from app.services.developer_portal.domain.ports import CodeExampleRepository
 class CodeExampleManager:
     """
     Manages code examples.
-    
+
     Single Responsibility: Code example creation, organization, retrieval.
     """
 

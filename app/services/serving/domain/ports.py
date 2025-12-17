@@ -27,7 +27,7 @@ from app.services.serving.domain.models import (
 class ModelRepository(Protocol):
     """
     Port for model storage and retrieval.
-    
+
     Infrastructure implementations:
     - InMemoryModelRepository
     - RedisModelRepository
@@ -58,7 +58,7 @@ class ModelRepository(Protocol):
 class MetricsRepository(Protocol):
     """
     Port for metrics storage.
-    
+
     Infrastructure implementations:
     - InMemoryMetricsRepository
     - TimeSeriesMetricsRepository (Prometheus, InfluxDB)
@@ -85,7 +85,7 @@ class MetricsRepository(Protocol):
 class ModelInvoker(Protocol):
     """
     Port for actual model inference.
-    
+
     Infrastructure implementations:
     - OpenAIModelInvoker
     - TorchServeInvoker
@@ -109,7 +109,7 @@ class ModelInvoker(Protocol):
 class CostCalculator(Protocol):
     """
     Port for cost calculation.
-    
+
     Different pricing strategies for different providers.
     """
 
@@ -131,7 +131,7 @@ class CostCalculator(Protocol):
 class LoadBalancer(Protocol):
     """
     Port for load balancing strategies.
-    
+
     Implementations:
     - RoundRobinBalancer
     - LeastLatencyBalancer

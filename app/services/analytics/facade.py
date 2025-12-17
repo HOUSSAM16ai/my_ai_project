@@ -24,7 +24,7 @@ from app.services.analytics.application import (
     RetentionAnalyzer,
     SessionManager,
 )
-from app.services.analytics.domain.models import EventType, UserSegment
+from app.services.analytics.domain.models import EventType
 from app.services.analytics.infrastructure.in_memory_repository import (
     InMemoryEventRepository,
     InMemorySessionRepository,
@@ -37,18 +37,18 @@ _LOG = logging.getLogger(__name__)
 class UserAnalyticsMetricsService:
     """
     User Analytics & Metrics Service - Complete Facade
-    
+
     100% backward compatible with original 800-line service.
     Now delegates to specialized services following SRP.
     """
-    
+
     def __init__(self):
         """Initialize analytics service with all components"""
         # Infrastructure layer
         self._event_repo = InMemoryEventRepository(max_events=100000)
         self._session_repo = InMemorySessionRepository()
         self._user_repo = InMemoryUserRepository()
-        
+
         # Application layer
         self._event_tracker = EventTracker(
             event_repository=self._event_repo,
@@ -76,17 +76,17 @@ class UserAnalyticsMetricsService:
             nps_manager=self._nps_manager,
             user_repository=self._user_repo,
         )
-        
+
         # Legacy compatibility
         self.lock = threading.RLock()
         self.active_users_1d: set[int] = set()
         self.active_users_7d: set[int] = set()
         self.active_users_30d: set[int] = set()
-    
+
     # ==================================================================================
     # EVENT TRACKING
     # ==================================================================================
-    
+
     def track_event(
         self,
         user_id: int,
@@ -102,13 +102,13 @@ class UserAnalyticsMetricsService:
         # Convert string to EventType if needed
         if isinstance(event_type, str):
             event_type = EventType(event_type)
-        
+
         # Update legacy sets
         with self.lock:
             self.active_users_1d.add(user_id)
             self.active_users_7d.add(user_id)
             self.active_users_30d.add(user_id)
-        
+
         return self._event_tracker.track_event(
             user_id=user_id,
             event_type=event_type,
@@ -118,17 +118,17 @@ class UserAnalyticsMetricsService:
             page_url=page_url,
             device_type=device_type,
         )
-    
+
     # ==================================================================================
     # SESSION MANAGEMENT
     # ==================================================================================
-    
+
     def _generate_session_id(self, user_id: int) -> str:
         """Generate unique session ID"""
         return hashlib.sha256(
             f"{user_id}{time.time_ns()}".encode()
         ).hexdigest()[:16]
-    
+
     def start_session(
         self,
         user_id: int,
@@ -141,24 +141,24 @@ class UserAnalyticsMetricsService:
             device_type=device_type,
             entry_page=entry_page,
         )
-    
+
     def end_session(self, session_id: str) -> None:
         """End user session"""
         self._session_manager.end_session(session_id)
-    
+
     # ==================================================================================
     # ENGAGEMENT METRICS
     # ==================================================================================
-    
+
     def get_engagement_metrics(self, time_window: str = "30d") -> dict[str, Any]:
         """Get engagement metrics"""
         # Map time_window to engagement analyzer format
         return self._engagement_analyzer.calculate_engagement_metrics()
-    
+
     # ==================================================================================
     # CONVERSION METRICS
     # ==================================================================================
-    
+
     def get_conversion_metrics(
         self,
         conversion_event: str = "conversion",
@@ -168,11 +168,11 @@ class UserAnalyticsMetricsService:
             conversion_event=conversion_event,
             days=30,
         )
-    
+
     # ==================================================================================
     # RETENTION METRICS
     # ==================================================================================
-    
+
     def get_retention_metrics(
         self,
         cohort_date: datetime | None = None,
@@ -181,11 +181,11 @@ class UserAnalyticsMetricsService:
         return self._retention_analyzer.get_retention_metrics(
             cohort_date=cohort_date,
         )
-    
+
     # ==================================================================================
     # NPS (NET PROMOTER SCORE)
     # ==================================================================================
-    
+
     def record_nps_response(
         self,
         user_id: int,
@@ -198,15 +198,15 @@ class UserAnalyticsMetricsService:
             score=score,
             comment=comment,
         )
-    
+
     def get_nps_metrics(self) -> dict[str, Any]:
         """Get NPS metrics"""
         return self._nps_manager.get_metrics()
-    
+
     # ==================================================================================
     # A/B TESTING
     # ==================================================================================
-    
+
     def create_ab_test(
         self,
         test_name: str,
@@ -219,33 +219,33 @@ class UserAnalyticsMetricsService:
             variants=variants,
             traffic_split=traffic_split,
         )
-    
+
     def assign_variant(self, test_id: str, user_id: int) -> str:
         """Assign variant to user"""
         return self._ab_test_manager.assign_variant(
             test_id=test_id,
             user_id=user_id,
         )
-    
+
     def record_ab_conversion(self, test_id: str, user_id: int) -> None:
         """Record A/B test conversion"""
         self._ab_test_manager.record_conversion(
             test_id=test_id,
             user_id=user_id,
         )
-    
+
     def get_ab_test_results(self, test_id: str) -> dict[str, Any] | None:
         """Get A/B test results"""
         return self._ab_test_manager.get_results(test_id)
-    
+
     # ==================================================================================
     # REPORTING & SEGMENTATION
     # ==================================================================================
-    
+
     def segment_users(self) -> dict[str, list[int]]:
         """Segment users by behavior"""
         return self._report_generator.segment_users()
-    
+
     def export_metrics_summary(self) -> dict[str, Any]:
         """Export comprehensive metrics summary"""
         return self._report_generator.export_metrics_summary()
@@ -262,10 +262,10 @@ _SERVICE_LOCK = threading.Lock()
 def get_user_analytics_service() -> UserAnalyticsMetricsService:
     """Get or create analytics service singleton"""
     global _SERVICE_INSTANCE
-    
+
     if _SERVICE_INSTANCE is not None:
         return _SERVICE_INSTANCE
-    
+
     with _SERVICE_LOCK:
         if _SERVICE_INSTANCE is None:
             _SERVICE_INSTANCE = UserAnalyticsMetricsService()

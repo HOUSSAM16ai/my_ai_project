@@ -1,6 +1,5 @@
 """In-memory implementation of contract repository."""
 
-from typing import Any
 
 from ..domain.models import ContractSchema
 from ..domain.ports import ContractRepository

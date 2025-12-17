@@ -10,8 +10,6 @@ from typing import Any, Protocol
 
 from .models import (
     CompletionRequest,
-    GenerationRequest,
-    GenerationResponse,
     StructuredJsonRequest,
 )
 
@@ -22,13 +20,13 @@ class LLMClientPort(Protocol):
     def text_completion(self, request: CompletionRequest) -> str:
         """
         Generate text completion.
-        
+
         Args:
             request: Completion request parameters
-            
+
         Returns:
             Generated text
-            
+
         Raises:
             RuntimeError: If completion fails
         """
@@ -37,10 +35,10 @@ class LLMClientPort(Protocol):
     def structured_json(self, request: StructuredJsonRequest) -> dict[str, Any] | None:
         """
         Generate structured JSON response.
-        
+
         Args:
             request: Structured JSON request parameters
-            
+
         Returns:
             Parsed JSON object or None if failed
         """
@@ -55,11 +53,11 @@ class ModelSelectorPort(Protocol):
     ) -> str:
         """
         Select appropriate model based on context.
-        
+
         Args:
             explicit: Explicitly requested model
             task: Task object for context
-            
+
         Returns:
             Selected model name
         """
@@ -74,12 +72,12 @@ class ErrorMessageBuilderPort(Protocol):
     ) -> str:
         """
         Build bilingual error message.
-        
+
         Args:
             error: Error description
             prompt_length: Length of prompt
             max_tokens: Max tokens used
-            
+
         Returns:
             Formatted error message
         """
@@ -92,10 +90,10 @@ class ContextFinderPort(Protocol):
     def find_related_context(self, description: str) -> Any:
         """
         Find related context for a description.
-        
+
         Args:
             description: Description to find context for
-            
+
         Returns:
             Context object
         """
@@ -108,7 +106,7 @@ class TaskExecutorPort(Protocol):
     def execute(self, task: Any, model: str | None = None) -> None:
         """
         Execute a task.
-        
+
         Args:
             task: Task to execute
             model: Optional model override

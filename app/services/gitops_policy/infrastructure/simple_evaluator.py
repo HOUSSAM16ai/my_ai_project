@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from ..domain.models import Policy, PolicyEnforcementMode, PolicyViolation, ResourceType
+from ..domain.models import Policy, PolicyViolation, ResourceType
 from ..domain.ports import PolicyEvaluator
 
 logger = logging.getLogger(__name__)

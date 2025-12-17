@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from jsonschema import Draft7Validator, ValidationError
+from jsonschema import Draft7Validator
 
 from ..domain.models import ContractValidationResult
 from ..domain.ports import SchemaValidator

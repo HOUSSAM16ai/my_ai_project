@@ -10,11 +10,6 @@ from typing import Any, Callable
 from app.models import Task
 
 from .application.generation_manager import GenerationManager
-from .domain.models import (
-    OrchestratorConfig,
-    OrchestratorTelemetry,
-    StepState,
-)
 from .infrastructure.error_builder import ErrorMessageBuilder
 from .infrastructure.llm_adapter import LLMAdapter
 from .infrastructure.model_selector import ModelSelector
@@ -24,7 +19,7 @@ from .infrastructure.task_executor_adapter import TaskExecutorAdapter
 class MaestroGenerationService:
     """
     Backward-compatible facade for the generation service.
-    
+
     Delegates to the new hexagonal architecture implementation.
     """
 

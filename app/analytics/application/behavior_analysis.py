@@ -2,7 +2,6 @@
 
 import statistics
 from collections import Counter
-from datetime import timedelta
 
 from app.analytics.domain.entities import BehaviorProfile, UsageMetric
 from app.analytics.domain.interfaces import MetricsRepository

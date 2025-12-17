@@ -12,7 +12,6 @@ import time
 from typing import Any
 
 from ..domain.models import CompletionRequest, StructuredJsonRequest
-from ..domain.ports import LLMClientPort
 
 
 class LLMAdapter:
@@ -21,7 +20,7 @@ class LLMAdapter:
     def __init__(self, get_llm_client_func):
         """
         Initialize adapter with LLM client getter.
-        
+
         Args:
             get_llm_client_func: Function to get LLM client instance
         """
@@ -30,13 +29,9 @@ class LLMAdapter:
     def text_completion(self, request: CompletionRequest) -> str:
         """
         Generate text completion using LLM.
-        
+
         Implements retry logic with exponential backoff.
         """
-        from app.utils.text_processing import (
-            extract_first_json_object,
-            strip_markdown_fences,
-        )
 
         model_name = request.model or self._select_default_model()
         backoff_base = 0.25
@@ -60,7 +55,7 @@ class LLMAdapter:
             except Exception as e:
                 last_err = e
                 error_msg = str(e).lower()
-                
+
                 if "500" in error_msg or "server" in error_msg:
                     self._log(
                         f"[text_completion] Server error (500) on attempt {attempt + 1}: {e}",
@@ -89,7 +84,7 @@ class LLMAdapter:
     def structured_json(self, request: StructuredJsonRequest) -> dict[str, Any] | None:
         """
         Generate structured JSON response.
-        
+
         Implements JSON extraction and validation.
         """
         from app.utils.text_processing import (
@@ -161,16 +156,16 @@ class LLMAdapter:
         from app.config.ai_models import get_ai_config
 
         ai_config = get_ai_config()
-        
+
         # Check for overrides
         force_model = os.getenv("MAESTRO_FORCE_MODEL")
         if force_model:
             return force_model
-        
+
         override_model = os.getenv("AI_MODEL_OVERRIDE")
         if override_model:
             return override_model
-        
+
         return ai_config.primary_model
 
     def _soft_recover_json(self, raw: str, strip_fences_func) -> str | None:

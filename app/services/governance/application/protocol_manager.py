@@ -26,13 +26,13 @@ class TransparencyLogger(Protocol):
 class ProtocolManager:
     """
     Existential protocol manager.
-    
+
     Responsibilities:
     - Create protocols
     - Activate protocols
     - Check compliance
     """
-    
+
     def __init__(
         self,
         protocol_repository: ProtocolRepository,
@@ -40,7 +40,7 @@ class ProtocolManager:
     ):
         self._protocol_repo = protocol_repository
         self._transparency = transparency_logger
-    
+
     def create_protocol(
         self,
         protocol_name: str,
@@ -60,9 +60,9 @@ class ProtocolManager:
                 "creation_method": "standard",
             },
         )
-        
+
         saved_protocol = self._protocol_repo.save(protocol)
-        
+
         # Log transparency event
         self._transparency.log_event(
             event_type="PROTOCOL_CREATED",
@@ -76,16 +76,16 @@ class ProtocolManager:
             reasoning=f"Protocol created to govern: {description}",
             impact={"new_protocol": True, "governance_expanded": True},
         )
-        
+
         return saved_protocol
-    
+
     def activate_protocol(self, protocol: ExistentialProtocol) -> bool:
         """Activate existential protocol"""
         try:
             protocol.status = CosmicPolicyStatus.ACTIVE
             protocol.activated_at = datetime.utcnow()
             self._protocol_repo.update(protocol)
-            
+
             self._transparency.log_event(
                 event_type="PROTOCOL_ACTIVATED",
                 subject=f"Protocol Activated: {protocol.protocol_name}",
@@ -93,11 +93,11 @@ class ProtocolManager:
                 reasoning="Protocol ready for adoption",
                 impact={"protocol_active": True},
             )
-            
+
             return True
         except Exception:
             return False
-    
+
     def check_protocol_compliance(
         self,
         protocol: ExistentialProtocol,
@@ -105,14 +105,14 @@ class ProtocolManager:
     ) -> tuple[bool, list[str]]:
         """Check if consciousness complies with protocol"""
         violations = []
-        
+
         for rule_name, rule_spec in protocol.cosmic_rules.items():
             if not self._check_rule(rule_name, rule_spec, consciousness_data):
                 violations.append(f"Violation: {rule_name}")
-        
+
         is_compliant = len(violations) == 0
         return is_compliant, violations
-    
+
     def _check_rule(
         self,
         rule_name: str,
@@ -125,5 +125,5 @@ class ProtocolManager:
             field = rule_spec.get("field")
             if field and field not in consciousness_data:
                 return False
-        
+
         return True
