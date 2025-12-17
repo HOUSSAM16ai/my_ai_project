@@ -1,5 +1,4 @@
-from typing import Any
-from app.services.ai_testing.domain.models import CodeAnalysis, TestCase
+from app.services.ai_testing.domain.models import TestCase
 from app.services.ai_testing.generators.test_generator import AITestGenerator
 from app.services.ai_testing.optimizers.coverage_optimizer import CoverageOptimizer
 from app.services.ai_testing.selectors.smart_selector import SmartTestSelector

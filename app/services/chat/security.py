@@ -2,7 +2,6 @@
 Security utilities for chat.
 """
 
-import os
 import re
 
 

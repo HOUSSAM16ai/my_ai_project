@@ -38,11 +38,11 @@ class CrudPersistence:
         Retrieve users with pagination and filtering.
         """
         query = select(User)
-        
+
         # Apply email filter
         if email:
             query = query.where(User.email == email)
-        
+
         # Apply sorting
         if sort_by and hasattr(User, sort_by):
             col = getattr(User, sort_by)
@@ -50,27 +50,27 @@ class CrudPersistence:
                 query = query.order_by(col.desc())
             else:
                 query = query.order_by(col.asc())
-        
+
         # Get total count for pagination
         count_query = select(func.count()).select_from(User)
         if email:
             count_query = count_query.where(User.email == email)
-        
+
         total_result = await self.db.execute(count_query)
         total_items = total_result.scalar() or 0
-        
+
         # Apply pagination
         query = query.offset((page - 1) * per_page).limit(per_page)
-        
+
         # Execute query
         result = await self.db.execute(query)
         users = result.scalars().all()
-        
+
         # Calculate pagination metadata
         total_pages = (total_items + per_page - 1) // per_page
         has_next = page < total_pages
         has_prev = page > 1
-        
+
         return {
             "items": list(users),
             "pagination": {
@@ -94,10 +94,10 @@ class CrudPersistence:
         Retrieve missions with optional status filter.
         """
         query = select(Mission)
-        
+
         if status:
             query = query.where(Mission.status == status)
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -112,10 +112,10 @@ class CrudPersistence:
         Retrieve tasks with optional mission filter.
         """
         query = select(Task)
-        
+
         if mission_id:
             query = query.where(Task.mission_id == mission_id)
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 

@@ -5,7 +5,6 @@ Developer Portal Domain Ports
 Interface definitions for repositories and external services.
 """
 
-from abc import ABC, abstractmethod
 from typing import Protocol
 
 from app.services.developer_portal.domain.models import (

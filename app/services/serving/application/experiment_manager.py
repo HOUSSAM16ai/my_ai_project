@@ -20,7 +20,6 @@ from typing import Any
 from app.services.serving.domain.models import (
     ABTestConfig,
     EnsembleConfig,
-    ModelRequest,
     ModelResponse,
     ShadowDeployment,
 )
@@ -33,13 +32,13 @@ _LOG = logging.getLogger(__name__)
 class ExperimentManager:
     """
     Manages experimental model serving strategies.
-    
+
     Responsibilities:
     - A/B test creation and management
     - Shadow deployment orchestration
     - Ensemble serving coordination
     - Experiment analysis and reporting
-    
+
     Does NOT handle:
     - Model loading (ModelRegistry)
     - Actual inference (InferenceRouter)
@@ -53,7 +52,7 @@ class ExperimentManager:
     ):
         """
         Initialize experiment manager.
-        
+
         Args:
             registry: Model registry for model lookup
             router: Inference router for execution
@@ -79,14 +78,14 @@ class ExperimentManager:
     ) -> str:
         """
         Start an A/B test between two models.
-        
+
         Args:
             model_a_id: Model A version ID
             model_b_id: Model B version ID
             split_percentage: Traffic percentage for model A (0-100)
             duration_hours: Test duration in hours
             success_metric: Metric to optimize (latency, cost, accuracy)
-            
+
         Returns:
             Test ID
         """
@@ -128,14 +127,14 @@ class ExperimentManager:
     ) -> ModelResponse:
         """
         Serve request within an A/B test.
-        
+
         Randomly routes to model A or B based on configured percentages.
-        
+
         Args:
             test_id: A/B test ID
             input_data: Input data
             parameters: Optional parameters
-            
+
         Returns:
             Model response
         """
@@ -164,10 +163,10 @@ class ExperimentManager:
     def analyze_ab_test(self, test_id: str) -> dict[str, Any]:
         """
         Analyze A/B test results and determine winner.
-        
+
         Args:
             test_id: Test ID
-            
+
         Returns:
             Analysis results with winner determination
         """
@@ -180,7 +179,7 @@ class ExperimentManager:
             InMemoryMetricsRepository
         )
         metrics_repo = InMemoryMetricsRepository()
-        
+
         metrics_a = metrics_repo.get_summary(config.model_a_id)
         metrics_b = metrics_repo.get_summary(config.model_b_id)
 
@@ -239,12 +238,12 @@ class ExperimentManager:
     ) -> str:
         """
         Start shadow deployment for testing new model.
-        
+
         Args:
             primary_model_id: Production model ID
             shadow_model_id: Shadow model ID (being tested)
             traffic_percentage: % of requests to shadow (0-100)
-            
+
         Returns:
             Shadow deployment ID
         """

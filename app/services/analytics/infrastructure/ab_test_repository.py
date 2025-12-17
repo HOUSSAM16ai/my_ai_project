@@ -18,7 +18,7 @@ from app.services.analytics.domain.ports import ABTestManagerPort
 class InMemoryABTestRepository(ABTestManagerPort):
     """
     In-memory A/B test repository.
-    
+
     Features:
     - Thread-safe test management
     - Deterministic user assignment
@@ -37,7 +37,7 @@ class InMemoryABTestRepository(ABTestManagerPort):
         ABTestVariant]) ->None:
         """
         Create a new A/B test.
-        
+
         Args:
             test_id: Test identifier
             test_name: Test name
@@ -56,14 +56,14 @@ class InMemoryABTestRepository(ABTestManagerPort):
     def assign_variant(self, test_id: str, user_id: int) ->ABTestVariant:
         """
         Assign user to a test variant.
-        
+
         Uses deterministic hash-based assignment to ensure
         consistent variant assignment for the same user.
-        
+
         Args:
             test_id: Test identifier
             user_id: User identifier
-            
+
         Returns:
             Assigned variant
         """
@@ -83,7 +83,7 @@ class InMemoryABTestRepository(ABTestManagerPort):
         ABTestVariant) ->None:
         """
         Record conversion for test variant.
-        
+
         Args:
             test_id: Test identifier
             user_id: User identifier
@@ -102,10 +102,10 @@ class InMemoryABTestRepository(ABTestManagerPort):
     def get_test_results(self, test_id: str) ->dict[str, Any]:
         """
         Get A/B test results with statistical analysis.
-        
+
         Args:
             test_id: Test identifier
-            
+
         Returns:
             Dictionary with test results including:
             - test_id: Test identifier
@@ -124,7 +124,7 @@ class InMemoryABTestRepository(ABTestManagerPort):
                 assigned_count = sum(1 for v in self._user_assignments[
                     test_id].values() if v == variant)
                 conversion_count = len(self._conversions[test_id][variant])
-                conversion_rate = (conversion_count / assigned_count if 
+                conversion_rate = (conversion_count / assigned_count if
                     assigned_count > 0 else 0.0)
                 variant_stats[variant.value] = {'variant': variant.value,
                     'assigned': assigned_count, 'conversions':
@@ -145,13 +145,13 @@ class InMemoryABTestRepository(ABTestManagerPort):
     def _calculate_confidence(self, total_samples: int) ->float:
         """
         Calculate statistical confidence level.
-        
+
         Simplified calculation based on sample size.
         Production systems should use proper statistical tests.
-        
+
         Args:
             total_samples: Total number of samples
-            
+
         Returns:
             Confidence level (0.0 to 1.0)
         """
@@ -169,14 +169,14 @@ class InMemoryABTestRepository(ABTestManagerPort):
     def get_all_tests(self) ->list[dict[str, Any]]:
         """
         Get all A/B tests.
-        
+
         Returns:
             List of test metadata
         """
         with self._lock:
             return [{'test_id': test_id, 'test_name': test['test_name'],
                 'status': test['status'], 'created_at': test['created_at'].
-                isoformat(), 'variant_count': len(test['variants'])} for 
+                isoformat(), 'variant_count': len(test['variants'])} for
                 test_id, test in self._tests.items()]
 
 

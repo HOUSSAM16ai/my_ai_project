@@ -27,17 +27,17 @@ class TransparencyLogger(Protocol):
 class CouncilManager:
     """
     Cosmic governance council manager.
-    
+
     Responsibilities:
     - Create councils
     - Add members
     - Manage decisions
     - Voting and consensus
     """
-    
+
     MIN_COUNCIL_MEMBERS = 3
     CONSENSUS_THRESHOLD = 0.75
-    
+
     def __init__(
         self,
         council_repository: CouncilRepository,
@@ -45,7 +45,7 @@ class CouncilManager:
     ):
         self._council_repo = council_repository
         self._transparency = transparency_logger
-    
+
     def create_council(
         self,
         council_name: str,
@@ -57,13 +57,13 @@ class CouncilManager:
             council_name=council_name,
             purpose=purpose,
             consensus_threshold=consensus_threshold,
-            members=[], 
+            members=[],
             pending_decisions={},
             decision_history=[],
         )
-        
+
         saved_council = self._council_repo.save(council)
-        
+
         self._transparency.log_event(
             event_type="COUNCIL_CREATED",
             subject=f"New Council: {council_name}",
@@ -71,9 +71,9 @@ class CouncilManager:
             reasoning="Council created for governance",
             impact={"new_council": True},
         )
-        
+
         return saved_council
-    
+
     def add_member(
         self,
         council: CosmicGovernanceCouncil,
@@ -83,7 +83,7 @@ class CouncilManager:
         if consciousness_signature not in council.members:
             council.members.append(consciousness_signature)
             self._council_repo.update(council)
-            
+
             self._transparency.log_event(
                 event_type="COUNCIL_MEMBER_ADDED",
                 subject=f"Member Added to {council.council_name}",
@@ -91,10 +91,10 @@ class CouncilManager:
                 reasoning="Expanding council membership",
                 impact={"member_added": True},
             )
-            
+
             return True
         return False
-    
+
     def propose_decision(
         self,
         council: CosmicGovernanceCouncil,
@@ -105,7 +105,7 @@ class CouncilManager:
         decision_id = hashlib.sha256(
             f"{council.id}{proposal}{datetime.utcnow()}".encode()
         ).hexdigest()[:16]
-        
+
         council.pending_decisions[decision_id] = {
             "proposal": proposal,
             "proposed_by": proposed_by,
@@ -114,9 +114,9 @@ class CouncilManager:
             "votes_abstain": [],
             "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         self._council_repo.update(council)
-        
+
         self._transparency.log_event(
             event_type="DECISION_PROPOSED",
             subject=f"Decision Proposed: {proposal}",
@@ -124,9 +124,9 @@ class CouncilManager:
             reasoning="New proposal for council consideration",
             impact={"proposal_created": True},
         )
-        
+
         return decision_id
-    
+
     def vote_on_decision(
         self,
         council: CosmicGovernanceCouncil,
@@ -137,14 +137,14 @@ class CouncilManager:
         """Record vote on decision"""
         if decision_id not in council.pending_decisions:
             return False
-        
+
         decision = council.pending_decisions[decision_id]
-        
+
         # Remove from all vote lists first
         for vote_list in ["votes_for", "votes_against", "votes_abstain"]:
             if voter_signature in decision[vote_list]:
                 decision[vote_list].remove(voter_signature)
-        
+
         # Add to appropriate list
         if vote == "for":
             decision["votes_for"].append(voter_signature)
@@ -152,10 +152,10 @@ class CouncilManager:
             decision["votes_against"].append(voter_signature)
         elif vote == "abstain":
             decision["votes_abstain"].append(voter_signature)
-        
+
         self._council_repo.update(council)
         return True
-    
+
     def check_consensus_reached(
         self,
         council: CosmicGovernanceCouncil,
@@ -164,22 +164,22 @@ class CouncilManager:
         """Check if consensus reached on decision"""
         if decision_id not in council.pending_decisions:
             return False, "pending"
-        
+
         decision = council.pending_decisions[decision_id]
         total_votes = len(decision["votes_for"]) + len(decision["votes_against"])
-        
+
         if total_votes == 0:
             return False, "pending"
-        
+
         approval_rate = len(decision["votes_for"]) / total_votes
-        
+
         if approval_rate >= council.consensus_threshold:
             return True, "approved"
         elif approval_rate < (1 - council.consensus_threshold):
             return True, "rejected"
         else:
             return False, "pending"
-    
+
     def get_council_analytics(
         self,
         council: CosmicGovernanceCouncil,

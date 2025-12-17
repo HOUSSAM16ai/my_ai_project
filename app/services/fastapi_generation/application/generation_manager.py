@@ -13,9 +13,6 @@ from typing import Any, Callable
 
 from ..domain.models import (
     CompletionRequest,
-    GenerationRequest,
-    GenerationResponse,
-    StructuredJsonRequest,
 )
 from ..domain.ports import (
     ErrorMessageBuilderPort,
@@ -56,7 +53,7 @@ class GenerationManager:
                 logging.Formatter("[%(asctime)s][%(levelname)s][gen.service] %(message)s")
             )
             log.addHandler(handler)
-        
+
         level_env = (
             os.getenv("GEN_SERVICE_LOG_LEVEL")
             or os.getenv("MAESTRO_ADAPTER_LOG_LEVEL")
@@ -66,7 +63,7 @@ class GenerationManager:
             log.setLevel(level_env.upper())
         except Exception:
             log.setLevel("INFO")
-        
+
         return log
 
     def forge_new_code(
@@ -77,7 +74,7 @@ class GenerationManager:
     ) -> dict[str, Any]:
         """
         Generate new code based on prompt.
-        
+
         Handles complexity modes:
         - Ultimate: >50k chars or ULTIMATE_MODE=1
         - Extreme: >20k chars or EXTREME_MODE=1

@@ -120,7 +120,7 @@ def _get_system_health() -> str:
 # =============================================================================
 
 
-def get_system_prompt(include_health=True, include_capabilities=True, include_dynamic=True) -> str:
+def get_system_prompt(include_health=True, include_dynamic=True) -> str:
     parts = [
         "You are OVERMIND CLI MINDGATE.",
         OVERMIND_IDENTITY.strip(),

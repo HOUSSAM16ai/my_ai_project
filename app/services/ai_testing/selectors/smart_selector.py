@@ -1,5 +1,4 @@
 from collections import defaultdict
-from datetime import datetime
 from app.services.ai_testing.domain.models import TestCase, TestType
 
 

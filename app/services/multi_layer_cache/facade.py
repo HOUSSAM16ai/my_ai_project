@@ -27,7 +27,7 @@ _cache_manager_instance: MultiLayerCacheManager | None = None
 def get_cache_orchestrator() -> MultiLayerCacheManager:
     """
     Get the singleton instance of the Multi-Layer Cache Manager.
-    
+
     الحصول على instance واحد من منسق التخزين المؤقت
     """
     global _cache_manager_instance

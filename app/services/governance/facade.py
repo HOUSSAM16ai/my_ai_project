@@ -53,10 +53,10 @@ from app.services.governance.infrastructure import SQLAlchemyConsciousnessReposi
 class CosmicGovernanceService:
     """
     Cosmic Governance Service - Complete Facade
-    
+
     100% backward compatible with original 714-line service.
     Delegates to specialized services following SRP.
-    
+
     Features:
     - Existential protocols
     - Cosmic governance councils

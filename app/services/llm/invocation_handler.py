@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import time
-from collections.abc import Generator
 from typing import Any
 from app.core.ai_client_factory import get_ai_client
 from app.services.llm.circuit_breaker import CircuitBreaker
@@ -146,7 +145,7 @@ class LLMRequestExecutor:
         cost = self.cost_manager.estimate_cost(payload.model, pt, ct)
         self.cost_manager.update_metrics(pt, ct, total, latency_ms, cost)
         return {'content': content, 'tool_calls': tool_calls, 'usage':
-            usage, 'model': payload.model, 'latency_ms': round(latency_ms, 
+            usage, 'model': payload.model, 'latency_ms': round(latency_ms,
             2), 'cost': cost, 'raw': completion, 'meta': {'attempts':
             attempts, 'forced_model': False, 'stream': False, 'start_ts':
             start_time, 'end_ts': time.time(), 'retry_schedule': self.

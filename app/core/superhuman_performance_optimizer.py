@@ -19,7 +19,6 @@
 """
 from __future__ import annotations
 import asyncio
-import hashlib
 import logging
 import time
 from collections import defaultdict, deque
@@ -84,7 +83,7 @@ class PerformanceMetrics:
     def to_dict(self) ->dict[str, Any]:
         """Export metrics as dictionary."""
         return {'model_id': self.model_id, 'total_requests': self.
-            total_requests, 'success_rate': round(self.get_success_rate(), 
+            total_requests, 'success_rate': round(self.get_success_rate(),
             2), 'empty_rate': round(self.get_empty_rate(), 2), 'latency': {
             'avg_ms': round(self.avg_latency_ms, 2), 'p50_ms': round(self.
             p50_latency_ms, 2), 'p95_ms': round(self.p95_latency_ms, 2),

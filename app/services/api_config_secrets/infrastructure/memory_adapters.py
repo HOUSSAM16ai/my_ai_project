@@ -1,5 +1,4 @@
 from collections import defaultdict, deque
-from typing import Any
 import threading
 
 from app.services.api_config_secrets.domain.models import ConfigEntry, Secret, SecretAccessLog, Environment

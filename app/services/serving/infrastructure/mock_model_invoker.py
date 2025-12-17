@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import random
 import time
-import uuid
 
 from app.services.serving.domain.models import (
     ModelRequest,
@@ -24,7 +23,7 @@ from app.services.serving.domain.models import (
 class MockModelInvoker:
     """
     Mock implementation of ModelInvoker port.
-    
+
     Simulates inference with configurable latency and responses.
     Useful for testing, development, and load testing.
     """
@@ -38,7 +37,7 @@ class MockModelInvoker:
     ):
         """
         Initialize mock invoker.
-        
+
         Args:
             simulate_latency: Whether to simulate processing time
             min_latency_ms: Minimum simulated latency
@@ -57,7 +56,7 @@ class MockModelInvoker:
     ) -> ModelResponse:
         """
         Simulate model inference.
-        
+
         Returns a mock response with simulated processing time.
         """
         start_time = time.time()

@@ -63,7 +63,7 @@ def calculateTotal(items):
     engine = AIAutoRefactoringService()
     issues, metrics = engine.analyze_file(sample_code, "utils.py")
 
-    print(f"\n📊 Code Quality Metrics:")
+    print("\n📊 Code Quality Metrics:")
     print(f"  Grade: {metrics.overall_grade}")
     print(f"  Maintainability: {metrics.maintainability_index:.1f}/100")
 

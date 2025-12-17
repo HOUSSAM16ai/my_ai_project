@@ -9,7 +9,7 @@ from app.services.developer_portal.domain.ports import SDKRepository
 class SDKGenerator:
     """
     Generates SDK packages.
-    
+
     Single Responsibility: SDK generation, versioning, distribution.
     """
 

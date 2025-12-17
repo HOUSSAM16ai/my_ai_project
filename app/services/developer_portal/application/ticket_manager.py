@@ -3,7 +3,6 @@
 
 import uuid
 from datetime import datetime, UTC
-from typing import Any
 
 from app.services.developer_portal.domain.models import (
     SupportTicket,
@@ -16,7 +15,7 @@ from app.services.developer_portal.domain.ports import TicketRepository
 class TicketManager:
     """
     Manages support tickets.
-    
+
     Single Responsibility: Ticket creation, assignment, resolution.
     """
 

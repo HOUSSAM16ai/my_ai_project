@@ -343,7 +343,7 @@ class ServiceMeshManager:
             except Exception as e:
                 if attempt >= retry_policy.max_retries:
                     raise e
-                backoff_ms = min(retry_policy.initial_backoff_ms * 
+                backoff_ms = min(retry_policy.initial_backoff_ms *
                     retry_policy.backoff_multiplier ** attempt,
                     retry_policy.max_backoff_ms)
                 logging.warning(

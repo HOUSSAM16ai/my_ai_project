@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import random
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from dataclasses import dataclass
+from typing import List, Dict, Optional
 
 from ..domain.models import Server, LoadBalancingAlgorithm, RegionZone
 

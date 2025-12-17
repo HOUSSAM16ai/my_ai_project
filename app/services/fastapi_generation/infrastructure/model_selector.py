@@ -15,18 +15,18 @@ class ModelSelector:
     def select_model(self, explicit: str | None = None, task: Any = None) -> str:
         """
         Select model based on explicit request, task context, or defaults.
-        
+
         Priority:
         1. Explicit model parameter
         2. MAESTRO_FORCE_MODEL env var
         3. AI_MODEL_OVERRIDE env var
         4. Task-specific model (if task provided)
         5. Central config primary model
-        
+
         Args:
             explicit: Explicitly requested model
             task: Task object for context-based selection
-            
+
         Returns:
             Selected model name
         """

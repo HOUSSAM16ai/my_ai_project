@@ -2,12 +2,11 @@ from __future__ import annotations
 import logging
 import random
 import threading
-import time
 import uuid
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -192,7 +191,7 @@ class ChaosEngineer:
             validated = sum(1 for e in self.experiments.values() if e.
                 hypothesis_validated is True)
             return {'total_experiments': total_experiments, 'completed':
-                completed, 'validated': validated, 'validation_rate': 
+                completed, 'validated': validated, 'validation_rate':
                 validated / completed * 100 if completed > 0 else 0,
                 'chaos_monkey_enabled': self.chaos_monkey.enabled,
                 'active_faults': len(self.chaos_monkey.active_faults),

@@ -23,10 +23,10 @@ from .infrastructure import (
 class AdvancedAnalyticsService:
     """
     Backward-compatible facade for Advanced Analytics Service.
-    
+
     Maintains the same API as the original monolithic service
     but delegates to the new hexagonal architecture.
-    
+
     This is a thin shim (facade pattern) that ensures zero breaking changes.
     """
 
@@ -105,7 +105,7 @@ _service_instance: AdvancedAnalyticsService | None = None
 def get_advanced_analytics_service() -> AdvancedAnalyticsService:
     """
     Get singleton instance of Advanced Analytics Service.
-    
+
     Maintains backward compatibility with the original factory function.
     """
     global _service_instance

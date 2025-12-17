@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from .models import CacheLayer
 
 
 class CachePort(Protocol):

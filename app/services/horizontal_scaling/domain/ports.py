@@ -8,7 +8,7 @@ Defines contracts for repositories and external services.
 from __future__ import annotations
 
 from typing import Protocol, List, Optional
-from .models import Server, ScalingMetrics, ScalingEvent, LoadBalancingAlgorithm
+from .models import Server, ScalingMetrics
 
 
 class LoadBalancerPort(Protocol):

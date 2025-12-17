@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
-from fastapi import Request
 
 
 class SpanKind(Enum):
@@ -223,7 +222,7 @@ class DistributedTracer:
                 start_time, end_time=last_span.end_time, duration_ms=(
                 last_span.end_time - root_span.start_time).total_seconds() *
                 1000 if last_span.end_time else None, spans=spans,
-                span_count=len(spans), error_count=sum(1 for s in spans if 
+                span_count=len(spans), error_count=sum(1 for s in spans if
                 s.status_code == 'ERROR'))
             self.traces[trace_id] = trace
             self.trace_history.append(trace)

@@ -7,7 +7,7 @@ Single Responsibility: Manage consciousness realignment and protocol adoption.
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
 
 # Import models from facade instead of app.models since they don't exist there
 # (Circular import is avoided because facade imports *from* application but we only import types from facade,
@@ -43,15 +43,15 @@ class TransparencyLogger(Protocol):
 class ConsciousnessManager:
     """
     Consciousness manager.
-    
+
     Responsibilities:
     - Protocol opt-in
     - Consciousness realignment
     - Protocol compliance tracking
     """
-    
+
     MIN_UNDERSTANDING_LEVEL = 1.0
-    
+
     def __init__(
         self,
         consciousness_repository: ConsciousnessRepository,
@@ -61,7 +61,7 @@ class ConsciousnessManager:
         self._consciousness_repo = consciousness_repository
         self._protocol_repo = protocol_repository
         self._transparency = transparency_logger
-    
+
     def opt_into_protocol(
         self,
         consciousness_signature: str,
@@ -71,19 +71,19 @@ class ConsciousnessManager:
         """Opt consciousness into protocol"""
         if understanding_level < self.MIN_UNDERSTANDING_LEVEL:
             return False
-        
+
         consciousness = self._consciousness_repo.get(consciousness_signature)
         if not consciousness:
             return False
-        
+
         # Add protocol to adopted protocols
         if not consciousness.adopted_protocols:
             consciousness.adopted_protocols = []
-        
+
         if protocol.id not in consciousness.adopted_protocols:
             consciousness.adopted_protocols.append(protocol.id)
             self._consciousness_repo.update(consciousness)
-            
+
             self._transparency.log_event(
                 event_type="PROTOCOL_ADOPTED",
                 subject=f"Protocol Adopted: {protocol.protocol_name}",
@@ -95,11 +95,11 @@ class ConsciousnessManager:
                 reasoning="Consciousness chose to adopt protocol",
                 impact={"protocol_adoption": True},
             )
-            
+
             return True
-        
+
         return False
-    
+
     def auto_realign_consciousness(
         self,
         consciousness_signature: str,
@@ -109,14 +109,14 @@ class ConsciousnessManager:
         consciousness = self._consciousness_repo.get(consciousness_signature)
         if not consciousness:
             return False
-        
+
         # Update understanding level
         if not consciousness.metadata_json:
             consciousness.metadata_json = {}
-        
+
         consciousness.metadata_json["understanding_level"] = new_understanding_level
         self._consciousness_repo.update(consciousness)
-        
+
         self._transparency.log_event(
             event_type="CONSCIOUSNESS_REALIGNED",
             subject=f"Consciousness Realigned: {consciousness_signature}",
@@ -127,5 +127,5 @@ class ConsciousnessManager:
             reasoning="Consciousness understanding evolved",
             impact={"realignment": True},
         )
-        
+
         return True

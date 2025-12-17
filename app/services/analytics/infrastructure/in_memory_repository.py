@@ -27,7 +27,7 @@ from app.services.analytics.domain.ports import EventRepositoryPort, SessionRepo
 class InMemoryEventRepository(EventRepositoryPort):
     """
     In-memory event repository.
-    
+
     Features:
     - Thread-safe operations
     - Bounded deque for memory management
@@ -37,7 +37,7 @@ class InMemoryEventRepository(EventRepositoryPort):
     def __init__(self, max_events: int = 100000):
         """
         Initialize event repository.
-        
+
         Args:
             max_events: Maximum number of events to retain
         """
@@ -71,25 +71,25 @@ class InMemoryEventRepository(EventRepositoryPort):
                 candidates = self._events_by_session.get(session_id, [])
             else:
                 candidates = list(self._events)
-            
+
             # Apply filters
             results = []
             for event in candidates:
                 # Type filter
                 if event_type is not None and event.event_type != event_type:
                     continue
-                
+
                 # Time filters
                 if start_time is not None and event.timestamp < start_time:
                     continue
                 if end_time is not None and event.timestamp > end_time:
                     continue
-                
+
                 results.append(event)
-                
+
                 if len(results) >= limit:
                     break
-            
+
             return results
 
     def count_events(
@@ -115,17 +115,17 @@ class InMemoryEventRepository(EventRepositoryPort):
             # Filter out old events
             new_events = [e for e in self._events if e.timestamp >= before]
             deleted_count = len(self._events) - len(new_events)
-            
+
             # Rebuild indices
             self._events.clear()
             self._events_by_user.clear()
             self._events_by_session.clear()
-            
+
             for event in new_events:
                 self._events.append(event)
                 self._events_by_user[event.user_id].append(event)
                 self._events_by_session[event.session_id].append(event)
-            
+
             return deleted_count
 
 
@@ -137,7 +137,7 @@ class InMemoryEventRepository(EventRepositoryPort):
 class InMemorySessionRepository(SessionRepositoryPort):
     """
     In-memory session repository.
-    
+
     Features:
     - Thread-safe operations
     - Fast lookups by session ID and user ID
@@ -155,10 +155,10 @@ class InMemorySessionRepository(SessionRepositoryPort):
         with self._lock:
             session_id = session.session_id
             user_id = session.user_id
-            
+
             # Store session
             self._sessions[session_id] = session
-            
+
             # Update user index if new session
             if session_id not in self._sessions_by_user[user_id]:
                 self._sessions_by_user[user_id].append(session_id)
@@ -178,27 +178,27 @@ class InMemorySessionRepository(SessionRepositoryPort):
         with self._lock:
             session_ids = self._sessions_by_user.get(user_id, [])
             sessions = []
-            
+
             for session_id in session_ids:
                 session = self._sessions.get(session_id)
                 if session is None:
                     continue
-                
+
                 # Time filters
                 if start_time is not None and session.start_time < start_time:
                     continue
                 if end_time is not None and session.start_time > end_time:
                     continue
-                
+
                 sessions.append(session)
-            
+
             return sessions
 
     def get_active_sessions(self, since: datetime | None = None) -> list[UserSession]:
         """Get all active sessions."""
         with self._lock:
             active = []
-            
+
             for session in self._sessions.values():
                 # Consider session active if no end time or recent activity
                 if session.end_time is None:
@@ -206,7 +206,7 @@ class InMemorySessionRepository(SessionRepositoryPort):
                         active.append(session)
                 elif since is not None and session.end_time >= since:
                     active.append(session)
-            
+
             return active
 
 
@@ -218,19 +218,19 @@ class InMemorySessionRepository(SessionRepositoryPort):
 class InMemoryUserRepository:
     """
     In-memory user repository.
-    
+
     Stores user metadata and activity tracking.
     """
-    
+
     def __init__(self):
         self._users: dict[int, dict[str, Any]] = {}
         self._lock = threading.RLock()
-    
+
     def get_all(self) -> dict[int, dict[str, Any]]:
         """Get all users"""
         with self._lock:
             return dict(self._users)
-    
+
     def get_or_create(self, user_id: int) -> dict[str, Any]:
         """Get or create user record"""
         with self._lock:
@@ -245,19 +245,19 @@ class InMemoryUserRepository:
                     "total_sessions": 0,
                 }
             return self._users[user_id]
-    
+
     def update(self, user_id: int, data: dict[str, Any]) -> None:
         """Update user data"""
         with self._lock:
             if user_id in self._users:
                 self._users[user_id].update(data)
-    
+
     def get_active_users(self, days: int) -> set[int]:
         """Get active users within days"""
         with self._lock:
             now = datetime.utcnow()
             cutoff = now - timedelta(days=days)
-            
+
             return {
                 user_id
                 for user_id, data in self._users.items()

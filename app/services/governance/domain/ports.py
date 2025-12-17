@@ -49,7 +49,7 @@ class TransparencyLogger(Protocol):
         reasoning: str,
         impact: dict[str, Any],
     ) -> None: ...
-    
+
     def query_logs(
         self,
         event_type: str | None = None,

@@ -14,7 +14,7 @@ class TaskExecutorAdapter:
     def __init__(self, generation_manager):
         """
         Initialize with generation manager reference.
-        
+
         Args:
             generation_manager: Reference to generation manager
         """
@@ -23,10 +23,10 @@ class TaskExecutorAdapter:
     def execute(self, task: Any, model: str | None = None) -> None:
         """
         Execute task (stub implementation).
-        
+
         Note: Task execution has been moved to overmind/executor.py.
         This adapter is kept for backward compatibility but does not execute tasks.
-        
+
         Args:
             task: Task to execute
             model: Optional model override

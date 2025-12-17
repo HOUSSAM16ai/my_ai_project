@@ -19,9 +19,7 @@ Status: ✅ Wave 10 Refactored
 """
 from __future__ import annotations
 
-from typing import Any, Callable
 
-from app.models import Task
 
 # Import from new modular structure
 from .fastapi_generation import (
@@ -62,7 +60,7 @@ generation_service = get_generation_service()
 
 if __name__ == "__main__":
     import json
-    
+
     svc = generation_service
     print("=== FastAPI Generation Service Diagnostics ===")
     print(json.dumps(svc.diagnostics(), ensure_ascii=False, indent=2))

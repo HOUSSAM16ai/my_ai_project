@@ -20,16 +20,8 @@ from typing import Any
 
 from app.services.serving.domain.models import (
     ABTestConfig,
-    EnsembleConfig,
-    ModelMetrics,
-    ModelRequest,
     ModelResponse,
-    ModelStatus,
-    ModelType,
     ModelVersion,
-    RoutingStrategy,
-    ServingStrategy,
-    ShadowDeployment,
 )
 from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.application.inference_router import InferenceRouter
@@ -44,13 +36,13 @@ from app.services.serving.infrastructure.mock_model_invoker import MockModelInvo
 class ModelServingInfrastructure:
     """
     Facade for Model Serving Infrastructure.
-    
+
     **REFACTORED**: This class now delegates to specialized services
     instead of implementing everything inline.
-    
+
     Maintains 100% backward compatibility with original API while
     using clean layered architecture internally.
-    
+
     Original responsibilities (851 lines) now delegated to:
     - ModelRegistry: Model lifecycle management
     - InferenceRouter: Request routing and execution

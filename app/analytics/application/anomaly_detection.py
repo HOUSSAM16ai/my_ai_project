@@ -2,7 +2,7 @@
 
 import statistics
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from app.analytics.domain.entities import Anomaly, UsageMetric
 from app.analytics.domain.interfaces import AnomalyDetector

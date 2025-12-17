@@ -52,7 +52,7 @@ class ABTestVariant(Enum):
 class UserEvent:
     """
     Immutable user event value object.
-    
+
     Represents a single user interaction with the system.
     """
     event_id: str
@@ -78,7 +78,7 @@ class UserEvent:
 class EngagementMetrics:
     """
     Engagement metrics value object.
-    
+
     Calculated metrics for user engagement analysis.
     """
     dau: int
@@ -94,7 +94,7 @@ class EngagementMetrics:
 class ConversionMetrics:
     """
     Conversion metrics value object.
-    
+
     Tracks conversion rates and funnel performance.
     """
     total_sessions: int
@@ -115,7 +115,7 @@ class ConversionMetrics:
 class RetentionMetrics:
     """
     User retention metrics value object.
-    
+
     Tracks user retention and churn.
     """
     retention_rate_7d: float
@@ -134,7 +134,7 @@ class RetentionMetrics:
 class NPSMetrics:
     """
     Net Promoter Score metrics value object.
-    
+
     Customer satisfaction and loyalty metrics.
     """
     nps_score: float
@@ -148,7 +148,7 @@ class NPSMetrics:
 class UserSession:
     """
     User session entity.
-    
+
     Mutable entity representing an active user session.
     Tracks interactions and state changes over time.
     """
@@ -190,7 +190,7 @@ class UserSession:
 class ABTestResults:
     """
     A/B test results entity.
-    
+
     Mutable entity for tracking A/B test performance.
     """
     test_id: str
@@ -231,7 +231,7 @@ class ABTestResults:
 class CohortAnalysis:
     """
     Cohort analysis entity.
-    
+
     Tracks behavior of user cohorts over time.
     """
     cohort_id: str
@@ -253,7 +253,7 @@ class CohortAnalysis:
 class RevenueMetrics:
     """
     Revenue metrics entity.
-    
+
     Tracks financial performance metrics.
     """
     total_revenue: float = 0.0

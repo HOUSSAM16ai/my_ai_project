@@ -14,7 +14,7 @@ from typing import Any
 @dataclass
 class StepState:
     """Represents the state of a single orchestration step."""
-    
+
     step_index: int
     started_ms: float = field(default_factory=lambda: time.perf_counter() * 1000)
     decision: str = ""
@@ -30,7 +30,7 @@ class StepState:
 @dataclass
 class OrchestratorConfig:
     """Configuration for the orchestrator."""
-    
+
     model_name: str
     max_steps: int
 
@@ -38,7 +38,7 @@ class OrchestratorConfig:
 @dataclass
 class OrchestratorTelemetry:
     """Telemetry data for orchestration execution."""
-    
+
     steps_taken: int = 0
     tools_invoked: int = 0
     distinct_tools: int = 0
@@ -57,7 +57,7 @@ class OrchestratorTelemetry:
 @dataclass
 class GenerationRequest:
     """Request for code generation."""
-    
+
     prompt: str
     conversation_id: str | None = None
     model: str | None = None
@@ -69,7 +69,7 @@ class GenerationRequest:
 @dataclass
 class GenerationResponse:
     """Response from code generation."""
-    
+
     status: str  # "success" or "error"
     answer: str
     error: str | None = None
@@ -79,7 +79,7 @@ class GenerationResponse:
 @dataclass
 class CompletionRequest:
     """Request for text completion."""
-    
+
     system_prompt: str
     user_prompt: str
     temperature: float = 0.3
@@ -92,7 +92,7 @@ class CompletionRequest:
 @dataclass
 class StructuredJsonRequest:
     """Request for structured JSON generation."""
-    
+
     system_prompt: str
     user_prompt: str
     format_schema: dict[str, Any]

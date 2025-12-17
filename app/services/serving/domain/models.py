@@ -71,7 +71,7 @@ class RoutingStrategy(Enum):
 class ModelVersion:
     """
     نسخة من النموذج
-    
+
     Entity representing a specific version of a model.
     Immutable after creation (except status transitions).
     """
@@ -96,7 +96,7 @@ class ModelVersion:
 class ModelMetrics:
     """
     مقاييس أداء النموذج
-    
+
     Value Object containing performance metrics snapshot.
     """
 
@@ -120,7 +120,7 @@ class ModelMetrics:
 class ABTestConfig:
     """
     تكوين اختبار A/B
-    
+
     Entity representing an A/B test configuration.
     """
 
@@ -140,7 +140,7 @@ class ABTestConfig:
 class ShadowDeployment:
     """
     نشر في الوضع الخفي
-    
+
     Entity for shadow deployment configuration.
     """
 
@@ -158,7 +158,7 @@ class ShadowDeployment:
 class ModelRequest:
     """
     طلب للنموذج
-    
+
     Value Object representing an inference request.
     """
 
@@ -174,7 +174,7 @@ class ModelRequest:
 class ModelResponse:
     """
     استجابة النموذج
-    
+
     Value Object representing an inference response.
     """
 
@@ -194,7 +194,7 @@ class ModelResponse:
 class EnsembleConfig:
     """
     تكوين التجميع (Ensemble)
-    
+
     Configuration for ensemble serving strategy.
     """
 

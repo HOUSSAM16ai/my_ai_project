@@ -7,7 +7,6 @@ Protocols for orchestration dependencies.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Protocol
 
 from app.services.orchestration.domain.models import (

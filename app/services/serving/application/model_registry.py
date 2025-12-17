@@ -25,13 +25,13 @@ _LOG = logging.getLogger(__name__)
 class ModelRegistry:
     """
     Application service for model registration and lifecycle management.
-    
+
     Responsibilities:
     - Register new models
     - Load/unload models
     - Track model status
     - Query model information
-    
+
     Does NOT handle:
     - Inference execution (InferenceRouter)
     - Metrics collection (MetricsCollector)
@@ -41,7 +41,7 @@ class ModelRegistry:
     def __init__(self, repository: InMemoryModelRepository | None = None):
         """
         Initialize model registry.
-        
+
         Args:
             repository: Model storage repository (defaults to in-memory)
         """
@@ -51,19 +51,19 @@ class ModelRegistry:
     def register_model(self, model: ModelVersion) -> bool:
         """
         Register a new model version.
-        
+
         Sets initial status to LOADING and starts async loading process.
-        
+
         Args:
             model: Model version to register
-            
+
         Returns:
             True if registration successful, False if already exists
         """
         with self._lock:
             # Set initial status
             model.status = ModelStatus.LOADING
-            
+
             # Save to repository
             if not self._repository.save(model):
                 _LOG.warning(f"Model {model.version_id} already registered")
@@ -83,12 +83,12 @@ class ModelRegistry:
     def unload_model(self, version_id: str) -> bool:
         """
         Unload a model (graceful shutdown).
-        
+
         Transitions to DRAINING status, then STOPPED after cooldown.
-        
+
         Args:
             version_id: Model version ID
-            
+
         Returns:
             True if unload initiated, False if model not found
         """
@@ -120,10 +120,10 @@ class ModelRegistry:
     def list_models(self, model_name: str | None = None) -> list[ModelVersion]:
         """
         List all models or models by name.
-        
+
         Args:
             model_name: Optional filter by model name
-            
+
         Returns:
             List of model versions
         """
@@ -134,10 +134,10 @@ class ModelRegistry:
     def get_latest_ready_model(self, model_name: str) -> ModelVersion | None:
         """
         Get the latest READY version of a model.
-        
+
         Args:
             model_name: Model name
-            
+
         Returns:
             Latest ready model version, or None if none available
         """
@@ -154,7 +154,7 @@ class ModelRegistry:
     def _load_model_async(self, version_id: str) -> None:
         """
         Async model loading simulation.
-        
+
         In real implementation, this would:
         - Download model weights
         - Initialize model on device
@@ -183,7 +183,7 @@ class ModelRegistry:
     def _drain_and_stop(self, version_id: str) -> None:
         """
         Drain active requests and stop model.
-        
+
         Waits for cooldown period before transitioning to STOPPED.
         """
         try:

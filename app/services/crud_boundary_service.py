@@ -46,7 +46,7 @@ class CrudBoundaryService:
             sort_by=sort_by,
             sort_order=sort_order,
         )
-        
+
         return {
             "status": "success",
             "message": "Users retrieved",
@@ -60,7 +60,7 @@ class CrudBoundaryService:
         Returns formatted response for API.
         """
         user = await self.persistence.get_user_by_id(user_id)
-        
+
         if not user:
             return {
                 "status": "error",
@@ -68,7 +68,7 @@ class CrudBoundaryService:
                 "data": None,
                 "timestamp": datetime.utcnow().isoformat() + "Z",
             }
-        
+
         return {
             "status": "success",
             "data": user,
@@ -82,7 +82,7 @@ class CrudBoundaryService:
         Returns formatted response for API.
         """
         missions = await self.persistence.get_missions(status=status)
-        
+
         return {
             "status": "success",
             "data": {"items": missions},
@@ -95,14 +95,14 @@ class CrudBoundaryService:
         Returns formatted response for API.
         """
         mission = await self.persistence.get_mission_by_id(mission_id)
-        
+
         if not mission:
             return {
                 "status": "error",
                 "message": "Mission not found",
                 "data": None,
             }
-        
+
         return {
             "status": "success",
             "data": mission,
@@ -115,7 +115,7 @@ class CrudBoundaryService:
         Returns formatted response for API.
         """
         tasks = await self.persistence.get_tasks(mission_id=mission_id)
-        
+
         return {
             "status": "success",
             "data": {"items": tasks},

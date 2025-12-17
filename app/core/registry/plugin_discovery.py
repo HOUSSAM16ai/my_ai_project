@@ -11,7 +11,7 @@ import importlib
 import logging
 import pkgutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List
 from app.core.interfaces import IPlugin
 from app.core.registry.plugin_registry import registry
 logger = logging.getLogger(__name__)
@@ -22,10 +22,10 @@ def discover_plugins(plugin_dir: str='app.plugins', auto_register: bool=True
     """
     اكتشاف جميع الإضافات
     Discover all plugins in directory
-    
+
     Convention: Each plugin module must have a 'plugin' variable
     that contains the plugin instance.
-    
+
     Example:
         app/plugins/chat/plugin.py:
             from .service import ChatPlugin

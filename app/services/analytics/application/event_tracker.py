@@ -19,7 +19,7 @@ _LOG = logging.getLogger(__name__)
 class EventTracker:
     """
     Event tracking service.
-    
+
     Responsibilities:
     - Create and validate user events
     - Store events via repository
@@ -31,7 +31,7 @@ class EventTracker:
         session_repository: SessionRepositoryPort):
         """
         Initialize event tracker.
-        
+
         Args:
             event_repository: Event storage repository
             session_repository: Session storage repository
@@ -45,7 +45,7 @@ class EventTracker:
         None, timestamp: (datetime | None)=None) ->str:
         """
         Track a user event.
-        
+
         Args:
             user_id: User identifier
             event_type: Type of event
@@ -55,7 +55,7 @@ class EventTracker:
             page_url: Page URL where event occurred
             device_type: Device type (mobile, desktop, tablet)
             timestamp: Event timestamp (current time if None)
-            
+
         Returns:
             Generated event ID
         """
@@ -76,12 +76,12 @@ class EventTracker:
         None, limit: int=100) ->list[UserEvent]:
         """
         Get events for a user.
-        
+
         Args:
             user_id: User identifier
             event_type: Optional event type filter
             limit: Maximum number of events
-            
+
         Returns:
             List of user events
         """

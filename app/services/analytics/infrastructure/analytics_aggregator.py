@@ -10,7 +10,7 @@ distributed analytics engines like Spark, Presto, or BigQuery.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from app.services.analytics.domain.models import EventType
@@ -24,14 +24,14 @@ from app.services.analytics.domain.ports import (
 class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
     """
     In-memory analytics aggregator.
-    
+
     Features:
     - Real-time metric calculations
     - Time-series aggregations
     - Funnel analysis
     - Cohort analytics
     """
-    
+
     def __init__(
         self,
         event_repository: EventRepositoryPort,
@@ -39,14 +39,14 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
     ):
         """
         Initialize aggregator.
-        
+
         Args:
             event_repository: Event storage repository
             session_repository: Session storage repository
         """
         self._event_repo = event_repository
         self._session_repo = session_repository
-    
+
     def calculate_engagement_metrics(
         self,
         start_time: datetime,
@@ -54,11 +54,11 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
     ) -> dict[str, Any]:
         """
         Calculate engagement metrics for time period.
-        
+
         Args:
             start_time: Start of analysis period
             end_time: End of analysis period
-            
+
         Returns:
             Dictionary with engagement metrics including:
             - total_events: Total number of events
@@ -73,31 +73,31 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
             end_time=end_time,
             limit=float('inf'),  # type: ignore
         )
-        
+
         # Get all sessions in period
         sessions = self._session_repo.get_active_sessions(since=start_time)
         sessions = [s for s in sessions if s.start_time <= end_time]
-        
+
         # Calculate metrics
         unique_users = len(set(e.user_id for e in events))
         total_events = len(events)
         total_sessions = len(sessions)
-        
+
         avg_events_per_user = total_events / unique_users if unique_users > 0 else 0.0
-        
+
         # Calculate average session duration
         session_durations = []
         for session in sessions:
             if session.end_time and session.start_time:
                 duration = (session.end_time - session.start_time).total_seconds()
                 session_durations.append(duration)
-        
+
         avg_session_duration = (
             sum(session_durations) / len(session_durations)
             if session_durations
             else 0.0
         )
-        
+
         return {
             "total_events": total_events,
             "unique_users": unique_users,
@@ -105,7 +105,7 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
             "total_sessions": total_sessions,
             "avg_session_duration": avg_session_duration,
         }
-    
+
     def calculate_conversion_metrics(
         self,
         funnel_steps: list[EventType],
@@ -114,12 +114,12 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
     ) -> dict[str, Any]:
         """
         Calculate conversion metrics for funnel.
-        
+
         Args:
             funnel_steps: List of event types in funnel
             start_time: Start of analysis period
             end_time: End of analysis period
-            
+
         Returns:
             Dictionary with conversion metrics including:
             - funnel_steps: List of funnel steps with counts
@@ -132,10 +132,10 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
                 "overall_conversion_rate": 0.0,
                 "step_conversion_rates": [],
             }
-        
+
         # Track users at each step
         users_at_step: list[set[int]] = []
-        
+
         for step in funnel_steps:
             # Get events for this step
             events = self._event_repo.get_events(
@@ -144,32 +144,32 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
                 end_time=end_time,
                 limit=float('inf'),  # type: ignore
             )
-            
+
             # Get unique users who reached this step
             users = set(e.user_id for e in events)
-            
+
             # Filter to only users who completed previous steps
             if users_at_step:
                 users = users.intersection(users_at_step[-1])
-            
+
             users_at_step.append(users)
-        
+
         # Calculate conversion rates
         step_counts = [len(users) for users in users_at_step]
-        
+
         step_conversion_rates = []
         for i in range(1, len(step_counts)):
             prev_count = step_counts[i - 1]
             curr_count = step_counts[i]
             rate = curr_count / prev_count if prev_count > 0 else 0.0
             step_conversion_rates.append(rate)
-        
+
         overall_conversion_rate = (
             step_counts[-1] / step_counts[0]
             if step_counts and step_counts[0] > 0
             else 0.0
         )
-        
+
         funnel_data = [
             {
                 "step": str(step),
@@ -177,13 +177,13 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
             }
             for step, count in zip(funnel_steps, step_counts)
         ]
-        
+
         return {
             "funnel_steps": funnel_data,
             "overall_conversion_rate": overall_conversion_rate,
             "step_conversion_rates": step_conversion_rates,
         }
-    
+
     def calculate_retention_metrics(
         self,
         cohort_id: str,
@@ -191,11 +191,11 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
     ) -> dict[str, Any]:
         """
         Calculate retention metrics for cohort.
-        
+
         Args:
             cohort_id: Cohort identifier
             days: Number of days to analyze
-            
+
         Returns:
             Dictionary with retention metrics including:
             - cohort_id: Cohort identifier
@@ -205,7 +205,7 @@ class InMemoryAnalyticsAggregator(AnalyticsAggregatorPort):
         """
         # For simplicity, return placeholder metrics
         # In production, this would query cohort data and calculate retention
-        
+
         return {
             "cohort_id": cohort_id,
             "cohort_size": 0,

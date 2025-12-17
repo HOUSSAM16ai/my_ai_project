@@ -13,11 +13,9 @@ compatibility while using the new centralized infrastructure.
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
 import random
-import re
 import threading
 import time
 from collections.abc import Callable, Generator

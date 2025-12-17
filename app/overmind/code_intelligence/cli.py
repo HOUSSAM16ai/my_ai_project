@@ -57,7 +57,7 @@ def main():
     generate_markdown_report(analysis, args.output_dir / "report_latest.md")
 
     print("\n✅ Analysis complete!")
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"  - Files analyzed: {analysis.total_files}")
     print(f"  - Critical hotspots: {len(analysis.critical_hotspots)}")
     print(f"  - High hotspots: {len(analysis.high_hotspots)}")

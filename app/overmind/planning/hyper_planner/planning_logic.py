@@ -7,11 +7,9 @@ This module contains pure planning logic functions that operate without
 controller/orchestrator concerns, making them easier to test and reuse.
 """
 from __future__ import annotations
-import json
 import logging
 import math
 import os
-from typing import Any
 from ..schemas import PlannedTask
 from . import config, utils
 _LOG = logging.getLogger('ultra_hyper_planner.planning_logic')
@@ -21,7 +19,7 @@ def calculate_chunking(files: list[str], req_lines: int) ->tuple[int, int, bool
     ]:
     """
     Calculate optimal chunking strategy for the given files and requested lines.
-    
+
     Returns:
         tuple: (total_chunks, per_chunk, adaptive_chunking)
     """
@@ -44,11 +42,11 @@ def calculate_chunking(files: list[str], req_lines: int) ->tuple[int, int, bool
 def determine_streaming_strategy(total_chunks: int, can_stream: bool) ->bool:
     """
     Determine if streaming should be used based on configuration and chunk count.
-    
+
     Args:
         total_chunks: Number of chunks to process
         can_stream: Whether streaming is technically possible
-        
+
     Returns:
         bool: True if streaming should be used
     """
@@ -59,7 +57,7 @@ def determine_streaming_strategy(total_chunks: int, can_stream: bool) ->bool:
 def can_stream() ->bool:
     """
     Check if streaming/append mode is allowed based on configuration.
-    
+
     Returns:
         bool: True if streaming is allowed
     """
@@ -79,12 +77,12 @@ def prune_tasks_if_needed(tasks: list[PlannedTask], idx: int, final_writes:
     list[str]) ->tuple[int, list[str]]:
     """
     Prune optional tasks if the total exceeds the global task cap.
-    
+
     Args:
         tasks: List of planned tasks (modified in place)
         idx: Current task index
         final_writes: List of final write task IDs that should not be pruned
-        
+
     Returns:
         tuple: (next_idx, list of pruned task IDs)
     """
@@ -92,7 +90,7 @@ def prune_tasks_if_needed(tasks: list[PlannedTask], idx: int, final_writes:
         return idx, []
     pruned = []
     group_map = {'semantic': lambda t: 'Semantic structural JSON' in t.
-        description, 'global_summary': lambda t: 
+        description, 'global_summary': lambda t:
         'Global code semantic summary' in t.description, 'deep_arch_report':
         lambda t: 'deep architecture report' in t.description.lower()}
     for group in config.OPTIONAL_GROUPS:
@@ -118,7 +116,7 @@ def build_plan_metadata(ctx: dict, tasks: list, tasks_pruned: list,
     planned_count: int, container_files: bool, append_allowed: bool) ->dict:
     """
     Build comprehensive metadata for the mission plan.
-    
+
     Args:
         ctx: Planning context dictionary
         tasks: List of planned tasks
@@ -126,7 +124,7 @@ def build_plan_metadata(ctx: dict, tasks: list, tasks_pruned: list,
         planned_count: Total number of tasks planned
         container_files: Whether container files were detected
         append_allowed: Whether append mode is allowed
-        
+
     Returns:
         dict: Metadata dictionary
     """
@@ -155,10 +153,10 @@ def build_plan_metadata(ctx: dict, tasks: list, tasks_pruned: list,
 def resolve_target_files(objective: str) ->list[str]:
     """
     Extract and normalize file names from the objective.
-    
+
     Args:
         objective: The mission objective string
-        
+
     Returns:
         list: Normalized file names (up to MAX_FILES)
     """
@@ -176,10 +174,10 @@ def resolve_target_files(objective: str) ->list[str]:
 def validate_objective(objective: str) ->bool:
     """
     Validate that the objective is meaningful and not trivial.
-    
+
     Args:
         objective: The objective string to validate
-        
+
     Returns:
         bool: True if valid, False otherwise
     """
@@ -192,15 +190,15 @@ def validate_plan(tasks: list[PlannedTask], files: list[str], objective:
     str, planner_name: str) ->None:
     """
     Validate the generated plan for consistency and completeness.
-    
+
     Raises PlanValidationError if validation fails.
-    
+
     Args:
         tasks: List of planned tasks
         files: List of target files
         objective: The mission objective
         planner_name: Name of the planner (for error reporting)
-        
+
     Raises:
         PlanValidationError: If validation fails
     """
