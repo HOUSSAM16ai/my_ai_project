@@ -15,6 +15,7 @@ from .service_locator import (
     ServiceLocator,
     get_admin_ai,
     get_database_service,
+    get_maestro,
     get_overmind,
 )
 from .text_processing import extract_first_json_object, strip_markdown_fences
@@ -29,6 +30,7 @@ __all__ = [
     "get_admin_conversation_model",
     "get_admin_message_model",
     "get_database_service",
+    "get_maestro",
     "get_mission_model",
     "get_overmind",
     "get_task_model",
