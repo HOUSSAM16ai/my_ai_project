@@ -5,12 +5,15 @@ Core Factory Logic for Planner Management and Strategy Selection.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import logging
 import pkgutil
 import threading
+import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from .base_planner import BasePlanner, instantiate_all_planners
@@ -293,7 +296,6 @@ class PlannerFactory:
     ) -> BasePlanningStrategy:
         """
         Selects the optimal strategy based on objective complexity and context.
-        Static method for backward compatibility if used directly.
         """
         complexity_score = len(objective.split())
         if context and context.constraints.get("fast_mode"):
@@ -306,3 +308,253 @@ class PlannerFactory:
 # Alias for static usage if needed
 def select_strategy(objective: str, context: PlanningContext | None = None) -> BasePlanningStrategy:
     return PlannerFactory.select_strategy(objective, context)
+
+
+# ======================================================================================
+# GLOBAL SINGLETON FACTORY (Consolidated from legacy wrapper)
+# ======================================================================================
+
+_GLOBAL_FACTORY = PlannerFactory(config=DEFAULT_CONFIG)
+
+# Legacy state access
+_STATE = _GLOBAL_FACTORY._state
+_INSTANCE_CACHE = _GLOBAL_FACTORY._instance_cache
+
+# ======================================================================================
+# PUBLIC API WRAPPERS
+# ======================================================================================
+
+
+def discover(force: bool = False, package: str | None = None):
+    """Discover planners. Wraps global factory instance."""
+    _GLOBAL_FACTORY.discover(force=force, package=package)
+
+
+def refresh_metadata():
+    """Refresh planner metadata. Wraps global factory instance."""
+    _GLOBAL_FACTORY.refresh_metadata()
+
+
+def get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
+    return _GLOBAL_FACTORY.get_planner(name, auto_instantiate=auto_instantiate)
+
+
+def list_planners(include_quarantined: bool = False, include_errors: bool = False) -> list[str]:
+    return _GLOBAL_FACTORY.list_planners(
+        include_quarantined=include_quarantined, include_errors=include_errors
+    )
+
+
+def get_all_planners(
+    include_quarantined: bool = True, include_errors: bool = False, auto_instantiate: bool = True
+):
+    """
+    Legacy compatibility wrapper.
+    Historically returned list of instantiated planner objects.
+    """
+    names = list_planners(include_quarantined=include_quarantined, include_errors=include_errors)
+    if not auto_instantiate:
+        return names
+    instances = []
+    for n in names:
+        with contextlib.suppress(Exception):
+            instances.append(get_planner(n, auto_instantiate=True))
+    return instances
+
+
+def select_best_planner(
+    objective: str,
+    required_capabilities: Iterable[str] | None = None,
+    prefer_production: bool = True,
+    auto_instantiate: bool = True,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+):
+    return _GLOBAL_FACTORY.select_best_planner(
+        objective=objective,
+        required_capabilities=required_capabilities,
+        prefer_production=prefer_production,
+        auto_instantiate=auto_instantiate,
+        self_heal_on_empty=self_heal_on_empty,
+        deep_context=deep_context,
+    )
+
+
+def select_best_planner_name(
+    objective: str,
+    required_capabilities: Iterable[str] | None = None,
+    prefer_production: bool = True,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+) -> str:
+    return select_best_planner(
+        objective=objective,
+        required_capabilities=required_capabilities,
+        prefer_production=prefer_production,
+        auto_instantiate=False,
+        self_heal_on_empty=self_heal_on_empty,
+        deep_context=deep_context,
+    )
+
+
+def batch_select_best_planners(
+    objective: str,
+    required_capabilities: Iterable[str] | None = None,
+    n: int = 3,
+    prefer_production: bool = True,
+    auto_instantiate: bool = False,
+    deep_context: dict[str, Any] | None = None,
+) -> list:
+    if n <= 0:
+        return []
+    if not _GLOBAL_FACTORY._state.discovered:
+        _GLOBAL_FACTORY.discover()
+
+    # Re-implementing correctly:
+    req_set = {s.lower().strip() for s in (required_capabilities or [])}
+    active = _GLOBAL_FACTORY._active_planner_names()
+    if not active:
+        return []
+
+    active_records = {
+        name: rec
+        for name, rec in _GLOBAL_FACTORY._state.planner_records.items()
+        if name in active and not rec.quarantined
+    }
+
+    if not active_records:
+        return []
+
+    ranked = rank_planners(
+        candidates=active_records,
+        objective=objective,
+        required_capabilities=req_set,
+        prefer_production=prefer_production,
+        deep_context=deep_context,
+        config=_GLOBAL_FACTORY._config,
+    )
+
+    selected_names = [name for _, name, _ in ranked[:n]]
+    if auto_instantiate:
+        return [get_planner(n) for n in selected_names]
+    return selected_names
+
+
+def self_heal(
+    force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
+) -> dict[str, Any]:
+    return _GLOBAL_FACTORY.self_heal(
+        force=force, cooldown_seconds=cooldown_seconds, max_attempts=max_attempts
+    )
+
+
+def planner_stats() -> dict[str, Any]:
+    return _GLOBAL_FACTORY.planner_stats()
+
+
+def describe_planner(name: str) -> dict[str, Any]:
+    return _GLOBAL_FACTORY.describe_planner(name)
+
+
+def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
+    # Simplified diagnostics wrapper
+    stats = planner_stats()
+    return {
+        "version": FACTORY_VERSION,
+        "stats": stats,
+        "active": _GLOBAL_FACTORY._active_planner_names(),
+        "timestamp": time.time(),
+    }
+
+
+def diagnostics_report(verbose: bool = False) -> str:
+    # Simplified report wrapper
+    d = diagnostics_json(verbose)
+    return f"Diagnostics: {d}"
+
+
+def export_diagnostics(
+    path: str | Path, fmt: str = "json", verbose: bool = False, ensure_dir: bool = True
+) -> Path:
+    p = Path(path)
+    if ensure_dir and p.parent and not p.parent.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(str(diagnostics_json(verbose)), encoding="utf-8")
+    return p
+
+
+def health_check(min_required: int = 1) -> dict[str, Any]:
+    return _GLOBAL_FACTORY.health_check(min_required=min_required)
+
+
+def list_quarantined() -> list[str]:
+    return sorted([n for n, r in _GLOBAL_FACTORY._state.planner_records.items() if r.quarantined])
+
+
+def reload_planners():
+    _GLOBAL_FACTORY.reload_planners()
+
+
+async def a_get_planner(name: str, auto_instantiate: bool = True) -> BasePlanner:
+    return get_planner(name, auto_instantiate=auto_instantiate)
+
+
+async def a_select_best_planner(
+    objective: str,
+    required_capabilities: Iterable[str] | None = None,
+    prefer_production: bool = True,
+    auto_instantiate: bool = True,
+    self_heal_on_empty: bool | None = None,
+    deep_context: dict[str, Any] | None = None,
+):
+    return select_best_planner(
+        objective,
+        required_capabilities,
+        prefer_production,
+        auto_instantiate,
+        self_heal_on_empty,
+        deep_context,
+    )
+
+
+def selection_profiles(limit: int = 50) -> list[dict[str, Any]]:
+    return _GLOBAL_FACTORY.get_telemetry_samples(selection_limit=limit)["selection"]
+
+
+def instantiation_profiles(limit: int = 50) -> list[dict[str, Any]]:
+    return _GLOBAL_FACTORY.get_telemetry_samples(instantiation_limit=limit)["instantiation"]
+
+
+def list_planner_metadata():
+    """Wrapper for legacy metadata listing."""
+    return _GLOBAL_FACTORY._state.planner_records
+
+
+# ======================================================================================
+# LEGACY SHIMS FOR BasePlanner
+# ======================================================================================
+
+# Inject available_planners into BasePlanner if not present or needs wrapping
+# This replicates the logic from the old factory.py
+try:
+    if not hasattr(BasePlanner, "available_planners"):
+
+        def _legacy_available_planners() -> list[str]:
+            return _GLOBAL_FACTORY._active_planner_names()
+
+        BasePlanner.available_planners = staticmethod(_legacy_available_planners)  # type: ignore
+    else:
+        # We don't overwrite if it exists unless we are sure, but let's assume we want the factory to drive it
+        original_available = BasePlanner.available_planners
+
+        def _wrapped_available_planners():
+            try:
+                base = set(original_available())
+            except Exception:
+                base = set()
+            base.update(_GLOBAL_FACTORY._active_planner_names())
+            return sorted(base)
+
+        BasePlanner.available_planners = staticmethod(_wrapped_available_planners)
+except Exception:
+    pass
