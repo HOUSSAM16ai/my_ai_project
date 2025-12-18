@@ -1,36 +1,82 @@
-from typing import Any, Dict, List
-
 from fastapi import APIRouter, Depends
 
-from app.services.aiops.service import get_aiops_service
-# Replaced missing service with the unified telemetry one
-from app.telemetry.unified_observability import get_unified_observability
+from app.services.observability_boundary_service import ObservabilityBoundaryService
 
 router = APIRouter()
 
-async def health_check():
-    return {"status": "ok", "system": "superhuman"}
 
-async def get_metrics():
-    obs = get_unified_observability()
-    return obs.get_golden_signals()
+def get_observability_service() -> ObservabilityBoundaryService:
+    """Dependency to get the Observability Boundary Service."""
+    return ObservabilityBoundaryService()
 
-async def get_aiops_metrics():
-    service = get_aiops_service()
-    return service.get_aiops_metrics()
 
+@router.get("/health", summary="System Health Check")
+async def health_check(
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get the overall system health status.
+    Delegates to ObservabilityBoundaryService.
+    """
+    return await service.get_system_health()
+
+
+@router.get("/metrics", summary="Get Golden Signals")
+async def get_metrics(
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get SRE Golden Signals (Latency, Traffic, Errors, Saturation).
+    """
+    return await service.get_golden_signals()
+
+
+@router.get("/aiops", summary="Get AIOps Metrics")
+async def get_aiops_metrics(
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get AIOps anomaly detection and self-healing metrics.
+    """
+    return await service.get_aiops_metrics()
+
+
+@router.get("/gitops", summary="Get GitOps Status")
 async def get_gitops_metrics():
+    """
+    Get GitOps synchronization status.
+    Note: Currently a placeholder awaiting GitOps Service integration.
+    """
     # Placeholder for GitOps metrics
     return {"status": "gitops_active", "sync_rate": 100}
 
-async def get_performance_snapshot():
-    obs = get_unified_observability()
-    return obs.get_statistics()
 
-async def get_endpoint_analytics(path: str):
-    obs = get_unified_observability()
-    return obs.find_traces_by_criteria(operation_name=path)
+@router.get("/performance", summary="Get Performance Snapshot")
+async def get_performance_snapshot(
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get detailed performance statistics for the runtime.
+    """
+    return await service.get_performance_snapshot()
 
-async def get_alerts():
-    obs = get_unified_observability()
-    return list(obs.anomaly_alerts)
+
+@router.get("/analytics/{path:path}", summary="Get Endpoint Analytics")
+async def get_endpoint_analytics(
+    path: str,
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get trace analytics for a specific API path.
+    """
+    return await service.get_endpoint_analytics(path)
+
+
+@router.get("/alerts", summary="Get Active Alerts")
+async def get_alerts(
+    service: ObservabilityBoundaryService = Depends(get_observability_service),
+):
+    """
+    Get currently active anomaly alerts.
+    """
+    return await service.get_active_alerts()
