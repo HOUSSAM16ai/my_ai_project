@@ -1,3 +1,4 @@
+"""Policy Engine - Policy evaluation and enforcement engine."""
 from __future__ import annotations
 
 import logging

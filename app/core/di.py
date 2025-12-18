@@ -26,3 +26,30 @@ async def get_di_db() ->AsyncGenerator[AsyncSession, None]:
 get_session = get_di_db
 get_db = get_di_db
 get_logger = _get_logger
+
+
+# Application Service Dependencies (Clean Architecture)
+async def get_health_check_service():
+    """
+    Get HealthCheckService implementation.
+    Returns interface, not concrete class (DIP).
+    """
+    from app.application.services import DefaultHealthCheckService
+    from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
+
+    async with _session_factory_singleton() as session:
+        db_repo = SQLAlchemyDatabaseRepository(session)
+        return DefaultHealthCheckService(db_repo)
+
+
+async def get_system_service():
+    """
+    Get SystemService implementation.
+    Returns interface, not concrete class (DIP).
+    """
+    from app.application.services import DefaultSystemService
+    from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
+
+    async with _session_factory_singleton() as session:
+        db_repo = SQLAlchemyDatabaseRepository(session)
+        return DefaultSystemService(db_repo)

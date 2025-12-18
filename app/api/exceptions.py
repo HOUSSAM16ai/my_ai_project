@@ -1,3 +1,4 @@
+"""API Exceptions - Custom exception classes for API errors."""
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 

@@ -1,4 +1,5 @@
 # app/cli_handlers/db_cli.py
+"""Database CLI - Database management commands."""
 import asyncio
 import os
 from collections.abc import AsyncGenerator

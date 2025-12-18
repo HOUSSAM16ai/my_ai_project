@@ -1,4 +1,5 @@
 # app/core/protocols.py
+"""Protocols - Protocol definitions for type checking."""
 """
 Service Layer Protocols - Enterprise-Grade Interfaces for DI and Testing
 
@@ -61,9 +62,9 @@ class AIClientProtocol(Protocol):
 class MessageQueueProtocol(Protocol):
     """Interface for a message broker (e.g., RabbitMQ, Kafka)."""
 
-    def publish(self, topic: str, message: dict[str, Any]) -> None: ...
+    def publish(self, topic: str, message: dict[str, Any]) -> None: ...  # noqa: unused variable
 
-    def subscribe(self, topic: str, callback: Any) -> None: ...
+    def subscribe(self, topic: str, callback: Any) -> None: ...  # noqa: unused variable
 
 
 class CacheProtocol(Protocol):
@@ -85,6 +86,6 @@ class NotificationProtocol(Protocol):
 class VectorStoreProtocol(Protocol):
     """Interface for a vector database (e.g., Pinecone, Weaviate)."""
 
-    def upsert(self, vectors: list[dict[str, Any]], namespace: str) -> None: ...
+    def upsert(self, vectors: list[dict[str, Any]], namespace: str) -> None: ...  # noqa: unused variable
 
-    def query(self, vector: list[float], top_k: int, namespace: str) -> list[dict[str, Any]]: ...
+    def query(self, vector: list[float], top_k: int, namespace: str) -> list[dict[str, Any]]: ...  # noqa: unused variable

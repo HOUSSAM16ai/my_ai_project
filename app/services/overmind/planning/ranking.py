@@ -31,7 +31,7 @@ def capabilities_match_ratio(required: set[str], offered: set[str]) -> float:
 
 
 def compute_rank_hint(
-    objective_length: int,
+    objective_length: int,  # noqa: unused variable
     capabilities_match_ratio: float,
     reliability_score: float,
     tier: str | None,

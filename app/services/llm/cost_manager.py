@@ -89,7 +89,7 @@ class CostManager:
             self._stats["cost_usd"] += cost
             self._enforce_budget(cost)
 
-    def _enforce_budget(self, new_cost: float) -> None:
+    def _enforce_budget(self, new_cost: float) -> None:  # noqa: unused variable
         budget_session = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
         hard_fail = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
 

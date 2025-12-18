@@ -1,4 +1,5 @@
 # app/cli_handlers/maintenance_cli.py
+"""Maintenance CLI - System maintenance commands."""
 import click
 
 

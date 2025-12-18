@@ -258,7 +258,7 @@ class PlannerFactory:
         return {}
 
     def get_telemetry_samples(
-        self, selection_limit: int = 25, instantiation_limit: int = 25
+        self, selection_limit: int = 25, instantiation_limit: int = 25  # noqa: unused variable  # noqa: unused variable
     ) -> dict[str, list]:
         """Get telemetry samples."""
         return {"selection": [], "instantiation": []}

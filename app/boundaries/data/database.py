@@ -1,3 +1,4 @@
+"""Data Boundary Database - Database access layer."""
 from __future__ import annotations
 
 import logging

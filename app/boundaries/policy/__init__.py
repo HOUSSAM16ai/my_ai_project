@@ -1,3 +1,4 @@
+"""Policy Boundary - Policy enforcement and governance."""
 from .auth import AuthenticationService, Principal
 from .compliance import ComplianceEngine, ComplianceRegulation, ComplianceRule
 from .engine import Effect, Policy, PolicyEngine, PolicyRule

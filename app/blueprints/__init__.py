@@ -1,4 +1,5 @@
 # app/blueprints/__init__.py
+"""Blueprints - Modular API route organization."""
 from fastapi import APIRouter
 
 

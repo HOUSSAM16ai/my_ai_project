@@ -123,7 +123,7 @@ class SmartScheduler:
         return None
 
     def _calculate_assignment_score(self, task: Task, member: TeamMember,
-        current_tasks: list[Task]) ->float:
+        current_tasks: list[Task]) ->float:  # noqa: unused variable
         """حساب درجة ملاءمة العضو للمهمة"""
         score = 0.0
         score += member.availability() * 40

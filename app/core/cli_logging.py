@@ -1,4 +1,5 @@
 # app/core/logging.py
+"""CLI Logging - Logging configuration for CLI commands."""
 import logging
 import sys
 

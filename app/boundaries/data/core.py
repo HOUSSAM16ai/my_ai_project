@@ -1,3 +1,4 @@
+"""Data Boundary Core - Core data access abstractions."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

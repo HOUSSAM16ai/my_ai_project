@@ -32,7 +32,7 @@ class ErrorResponseFactory:
 
     @staticmethod
     def create_error_response(
-        code: int, message: str, details: Any = None, include_debug_info: bool = False
+        code: int, message: str, details: Any = None, include_debug_info: bool = False  # noqa: unused variable
     ) -> dict:
         """
         Create a standardized error response dictionary.

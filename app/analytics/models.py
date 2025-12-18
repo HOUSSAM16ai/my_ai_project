@@ -1,7 +1,12 @@
 """Analytics domain models."""
 
+from __future__ import annotations
+
+import hashlib
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from .enums import EventType
@@ -151,33 +156,6 @@ class UserData:
     total_sessions: int
     total_conversions: int
     segment: Any  # UserSegment, but avoiding circular import
-"""
-Event Domain Models
-===================
-Core event entities with quantum-inspired state management.
-"""
-from __future__ import annotations
-import hashlib
-import uuid
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Any
-
-
-class EventType(Enum):
-    """Event type enumeration."""
-    PAGE_VIEW = 'page_view'
-    CLICK = 'click'
-    FORM_SUBMIT = 'form_submit'
-    CONVERSION = 'conversion'
-    PURCHASE = 'purchase'
-    SIGNUP = 'signup'
-    LOGIN = 'login'
-    LOGOUT = 'logout'
-    FEATURE_USE = 'feature_use'
-    ERROR = 'error'
-    CUSTOM = 'custom'
 
 
 class EventPriority(Enum):

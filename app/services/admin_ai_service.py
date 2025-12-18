@@ -67,7 +67,7 @@ class AdminAIService:
         question: str,
         user: Any,
         conversation_id: str | None = None,
-        use_deep_context: bool = False,
+        use_deep_context: bool = False,  # noqa: unused variable
     ):
         """
         Answer a question using AI.
