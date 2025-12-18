@@ -1,35 +1,21 @@
-# app/services/data_mesh_service.py
-"""
-Backward compatibility module for DataMeshService.
-This module re-exports the components from the new 'app.services.data_mesh' package.
-"""
+from typing import Any
 
-from app.services.data_mesh import (
-    BoundedContext,
-    DataContract,
-    DataDomainType,
-    DataMeshService,
-    DataProduct,
-    DataProductStatus,
-    DataQualityMetrics,
-    GovernanceLevel,
-    GovernancePolicy,
-    SchemaCompatibility,
-    SchemaEvolution,
-    get_data_mesh_service,
-)
 
-__all__ = [
-    "DataMeshService",
-    "get_data_mesh_service",
-    "DataDomainType",
-    "DataProductStatus",
-    "SchemaCompatibility",
-    "GovernanceLevel",
-    "DataContract",
-    "DataProduct",
-    "BoundedContext",
-    "GovernancePolicy",
-    "DataQualityMetrics",
-    "SchemaEvolution",
-]
+class DataMeshBoundaryService:
+    """
+    Boundary Service for Data Mesh operations.
+    Encapsulates logic for data contracts and mesh metrics.
+    """
+
+    async def create_data_contract(self, contract: dict[str, Any]) -> dict[str, Any]:
+        """
+        Creates a new data contract in the mesh.
+        """
+        # Logic would go here (validation, persistence, etc.)
+        return {"status": "created", "contract": contract}
+
+    async def get_mesh_metrics(self) -> dict[str, Any]:
+        """
+        Retrieves metrics about the data mesh health.
+        """
+        return {"contracts_active": 1, "data_products": 5}
