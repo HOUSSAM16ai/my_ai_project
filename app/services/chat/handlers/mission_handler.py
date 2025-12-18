@@ -16,6 +16,119 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# ======================================================================================
+# Helper Functions for Mission Handler
+# ======================================================================================
+async def _check_preconditions(
+    context: ChatContext, user_id: int
+) -> AsyncGenerator[str | None, None]:
+    """Check rate limits and circuit breaker before mission creation."""
+    allowed, msg = await context.check_rate_limit(user_id, "mission")
+    if not allowed:
+        yield f"⚠️ {msg}\n"
+        return
+
+    circuit = get_circuit_breaker("mission")
+    can_execute, circuit_msg = circuit.can_execute()
+    if not can_execute:
+        yield f"⚠️ الخدمة غير متاحة مؤقتاً: {circuit_msg}\n"
+        return
+
+    yield None
+
+
+async def _create_mission(
+    context: ChatContext, objective: str, user_id: int, circuit
+) -> dict | None:
+    """Create mission with timeout and error handling."""
+    try:
+        async with asyncio.timeout(15):
+            result = await context.async_overmind.start_mission(
+                objective=objective, user_id=user_id
+            )
+        circuit.record_success()
+        return result
+    except TimeoutError:
+        circuit.record_failure()
+        return {"ok": False, "error": "timeout"}
+    except Exception as e:
+        circuit.record_failure()
+        return {"ok": False, "error": str(e)}
+
+
+def _format_task_info(tasks: dict) -> str:
+    """Format task progress information."""
+    if not tasks:
+        return ""
+    
+    total = tasks.get("total", 0)
+    success = tasks.get("success", 0)
+    running = tasks.get("running", 0)
+    failed = tasks.get("failed", 0)
+    
+    info = f" | المهام: {success}/{total} ✅"
+    if running:
+        info += f" {running} 🔄"
+    if failed:
+        info += f" {failed} ❌"
+    return info
+
+
+def _get_status_emoji(status: str) -> str:
+    """Get emoji for mission status."""
+    return {
+        "pending": "⏳",
+        "planning": "📋",
+        "planned": "📝",
+        "running": "🔄",
+        "adapting": "🔧",
+        "success": "✅",
+        "failed": "❌",
+        "canceled": "🚫",
+    }.get(status, "❓")
+
+
+async def _poll_mission_status(
+    context: ChatContext, mission_id: int
+) -> AsyncGenerator[str, None]:
+    """Poll mission status until completion or timeout."""
+    poll_count = 0
+    max_polls = 15
+    poll_interval = 2
+
+    try:
+        while poll_count < max_polls:
+            await asyncio.sleep(poll_interval)
+            poll_count += 1
+
+            try:
+                status_result = await context.async_overmind.get_mission_status(mission_id)
+            except Exception:
+                break
+
+            if not status_result.get("ok"):
+                break
+
+            status = status_result.get("status", "unknown")
+            tasks = status_result.get("tasks", {})
+            is_terminal = status_result.get("is_terminal", False)
+
+            task_info = _format_task_info(tasks)
+            status_emoji = _get_status_emoji(status)
+
+            yield f"{status_emoji} الحالة: **{status}**{task_info}\n"
+
+            if is_terminal:
+                yield f"\n🏁 **انتهت المهمة بحالة: {status}**\n"
+                break
+
+    except asyncio.CancelledError:
+        yield "\n⚠️ تم إلغاء المتابعة.\n"
+
+    if poll_count >= max_polls:
+        yield "\nℹ️ المهمة تعمل في الخلفية. يمكنك متابعة حالتها من لوحة التحكم.\n"
+
+
 async def handle_deep_analysis(
     context: ChatContext,
     question: str,
@@ -106,16 +219,10 @@ async def handle_mission(
     """Handle complex mission request with Overmind and polling."""
     start_time = time.time()
 
-    allowed, msg = await context.check_rate_limit(user_id, "mission")
-    if not allowed:
-        yield f"⚠️ {msg}\n"
-        return
-
-    circuit = get_circuit_breaker("mission")
-    can_execute, circuit_msg = circuit.can_execute()
-    if not can_execute:
-        yield f"⚠️ الخدمة غير متاحة مؤقتاً: {circuit_msg}\n"
-        return
+    async for error_msg in _check_preconditions(context, user_id):
+        if error_msg:
+            yield error_msg
+            return
 
     yield "🚀 **إنشاء مهمة Overmind**\n\n"
     yield f"**الهدف:** {objective[:150]}{'...' if len(objective) > 150 else ''}\n\n"
@@ -127,90 +234,26 @@ async def handle_mission(
 
     yield "⏳ جارٍ إنشاء المهمة...\n\n"
 
-    try:
-        async with asyncio.timeout(15):
-            result = await context.async_overmind.start_mission(
-                objective=objective, user_id=user_id
-            )
-        circuit.record_success()
-    except TimeoutError:
-        circuit.record_failure()
-        yield "⏱️ انتهت المهلة أثناء إنشاء المهمة.\n"
-        return
-    except Exception as e:
-        circuit.record_failure()
-        yield f"❌ خطأ: {ErrorSanitizer.sanitize(str(e))}\n"
-        return
+    circuit = get_circuit_breaker("mission")
+    result = await _create_mission(context, objective, user_id, circuit)
 
-    if not result.get("ok"):
-        error = ErrorSanitizer.sanitize(result.get("error", "خطأ غير معروف"))
-        yield f"❌ فشل إنشاء المهمة: {error}\n"
+    if not result or not result.get("ok"):
+        error = result.get("error", "خطأ غير معروف") if result else "خطأ غير معروف"
+        if error == "timeout":
+            yield "⏱️ انتهت المهلة أثناء إنشاء المهمة.\n"
+        else:
+            yield f"❌ خطأ: {ErrorSanitizer.sanitize(error)}\n"
         return
 
     mission_id = result.get("mission_id")
     yield f"✅ تم إنشاء المهمة #{mission_id}\n"
     yield f"📋 الحالة: {result.get('status', 'pending')}\n\n"
 
-    # Link mission to conversation
     await _link_mission_to_conversation(conversation_id, mission_id)
 
-    # Mission Polling
     yield "📊 **متابعة تقدم المهمة:**\n\n"
-    poll_count = 0
-    max_polls = 15
-    poll_interval = 2
-
-    try:
-        while poll_count < max_polls:
-            await asyncio.sleep(poll_interval)
-            poll_count += 1
-
-            try:
-                status_result = await context.async_overmind.get_mission_status(mission_id)
-            except Exception:
-                break
-
-            if not status_result.get("ok"):
-                break
-
-            status = status_result.get("status", "unknown")
-            tasks = status_result.get("tasks", {})
-            is_terminal = status_result.get("is_terminal", False)
-
-            task_info = ""
-            if tasks:
-                total = tasks.get("total", 0)
-                success = tasks.get("success", 0)
-                running = tasks.get("running", 0)
-                failed = tasks.get("failed", 0)
-                task_info = f" | المهام: {success}/{total} ✅"
-                if running:
-                    task_info += f" {running} 🔄"
-                if failed:
-                    task_info += f" {failed} ❌"
-
-            status_emoji = {
-                "pending": "⏳",
-                "planning": "📋",
-                "planned": "📝",
-                "running": "🔄",
-                "adapting": "🔧",
-                "success": "✅",
-                "failed": "❌",
-                "canceled": "🚫",
-            }.get(status, "❓")
-
-            yield f"{status_emoji} الحالة: **{status}**{task_info}\n"
-
-            if is_terminal:
-                yield f"\n🏁 **انتهت المهمة بحالة: {status}**\n"
-                break
-
-    except asyncio.CancelledError:
-        yield "\n⚠️ تم إلغاء المتابعة.\n"
-
-    if poll_count >= max_polls:
-        yield "\nℹ️ المهمة تعمل في الخلفية. يمكنك متابعة حالتها من لوحة التحكم.\n"
+    async for status_msg in _poll_mission_status(context, mission_id):
+        yield status_msg
 
     logger.debug(f"mission handler completed in {(time.time() - start_time) * 1000:.2f}ms")
 
