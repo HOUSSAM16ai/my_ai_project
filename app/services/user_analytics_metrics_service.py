@@ -11,21 +11,26 @@ For new code, import from: app.services.analytics
 """
 
 # Legacy imports for backward compatibility
-from app.services.analytics.domain.models import (
-    ABTestResults,
-    ABTestVariant,
-    CohortAnalysis,
-    ConversionMetrics,
-    EngagementMetrics,
-    EventType,
-    NPSMetrics,
-    RetentionMetrics,
-    RevenueMetrics,
+# We import actual models from app.analytics.models and entities
+from app.analytics.models import (
     UserEvent,
-    UserSegment,
     UserSession,
+    EngagementMetrics,
+    ConversionMetrics,
+    RetentionMetrics,
+    NPSMetrics,
+    ABTestResults,
+    CohortAnalysis,
+    RevenueMetrics,
 )
-from app.services.analytics.facade import (
+
+from app.analytics.enums import (
+    EventType,
+    UserSegment,
+    ABTestVariant,
+)
+
+from app.analytics.service import (
     UserAnalyticsMetricsService,
     get_user_analytics_service,
     reset_analytics_service,
