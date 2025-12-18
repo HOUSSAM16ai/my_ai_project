@@ -162,6 +162,136 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
 
 
 # ======================================================================================
+# Helper Functions for Tool Decorator
+# ======================================================================================
+def _register_tool_metadata(
+    name: str,
+    description: str,
+    parameters: dict[str, Any],
+    category: str,
+    aliases: list[str],
+    allow_disable: bool,
+    capabilities: list[str],
+):
+    """Register tool and its aliases in the registry."""
+    if name in _TOOL_REGISTRY:
+        raise ValueError(f"Tool '{name}' already registered.")
+    for a in aliases:
+        if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
+            raise ValueError(f"Alias '{a}' already registered.")
+
+    meta = {
+        "name": name,
+        "description": description,
+        "parameters": parameters,
+        "handler": None,
+        "category": category,
+        "canonical": name,
+        "is_alias": False,
+        "aliases": aliases,
+        "disabled": (allow_disable and name in DISABLED),
+    }
+    _TOOL_REGISTRY[name] = meta
+    _CAPABILITIES[name] = capabilities
+    _init_tool_stats(name)
+
+    for a in aliases:
+        _ALIAS_INDEX[a] = name
+        _TOOL_REGISTRY[a] = {
+            "name": a,
+            "description": f"[alias of {name}] {description}",
+            "parameters": parameters,
+            "handler": None,
+            "category": category,
+            "canonical": name,
+            "is_alias": True,
+            "aliases": [],
+            "disabled": (allow_disable and name in DISABLED),
+        }
+        _CAPABILITIES[a] = capabilities
+        _init_tool_stats(a)
+
+
+def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
+    """Apply autofill logic for write operations."""
+    if not AUTOFILL:
+        return
+    
+    write_tools = {CANON_WRITE, CANON_WRITE_IF_CHANGED}
+    if canonical_name not in write_tools:
+        return
+    
+    if not kwargs.get("path"):
+        kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
+    if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
+        kwargs["content"] = "Auto-generated content placeholder."
+
+
+def _execute_tool(
+    func: Callable[..., Any],
+    kwargs: dict[str, Any],
+    meta_entry: dict[str, Any],
+    trace_id: str,
+) -> ToolResult:
+    """Execute tool with validation and error handling."""
+    canonical_name = meta_entry["canonical"]
+    
+    if meta_entry.get("disabled"):
+        raise PermissionError("TOOL_DISABLED")
+
+    schema = meta_entry.get("parameters") or {}
+    _apply_autofill(kwargs, canonical_name, trace_id)
+
+    try:
+        validated = _validate_arguments(schema, kwargs)
+    except Exception as ve:
+        raise ValueError(f"Argument validation failed: {ve}") from ve
+
+    if not policy_can_execute(canonical_name, validated):
+        raise PermissionError("POLICY_DENIED")
+
+    transformed = transform_arguments(canonical_name, validated)
+    raw = func(**transformed)
+    return _coerce_to_tool_result(raw)
+
+
+def _enrich_result_metadata(
+    result: ToolResult,
+    reg_name: str,
+    canonical_name: str,
+    elapsed_ms: float,
+    category: str,
+    capabilities: list[str],
+    meta_entry: dict[str, Any],
+    trace_id: str,
+):
+    """Add metadata to tool result."""
+    stats = _TOOL_STATS[reg_name]
+    if result.meta is None:
+        result.meta = {}
+    
+    result.meta.update({
+        "tool": reg_name,
+        "canonical": canonical_name,
+        "elapsed_ms": round(elapsed_ms, 2),
+        "invocations": stats["invocations"],
+        "errors": stats["errors"],
+        "avg_ms": (
+            round(stats["total_ms"] / stats["invocations"], 2)
+            if stats["invocations"]
+            else 0.0
+        ),
+        "version": __version__,
+        "category": category,
+        "capabilities": capabilities,
+        "is_alias": meta_entry.get("is_alias", False),
+        "disabled": meta_entry.get("disabled", False),
+        "last_error": stats["last_error"],
+    })
+    result.trace_id = trace_id
+
+
+# ======================================================================================
 # Decorator
 # ======================================================================================
 def tool(
@@ -174,125 +304,36 @@ def tool(
     allow_disable: bool = True,
     capabilities: list[str] | None = None,
 ):
-    if parameters is None:
-        parameters = {"type": "object", "properties": {}}
-    if aliases is None:
-        aliases = []
-    if capabilities is None:
-        capabilities = []
+    parameters = parameters or {"type": "object", "properties": {}}
+    aliases = aliases or []
+    capabilities = capabilities or []
 
     def decorator(func: Callable[..., Any]):
         with _REGISTRY_LOCK:
-            if name in _TOOL_REGISTRY:
-                raise ValueError(f"Tool '{name}' already registered.")
-            for a in aliases:
-                if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
-                    raise ValueError(f"Alias '{a}' already registered.")
-
-            meta = {
-                "name": name,
-                "description": description,
-                "parameters": parameters,
-                "handler": None,
-                "category": category,
-                "canonical": name,
-                "is_alias": False,
-                "aliases": aliases,
-                "disabled": (allow_disable and name in DISABLED),
-            }
-            _TOOL_REGISTRY[name] = meta
-            _CAPABILITIES[name] = capabilities
-            _init_tool_stats(name)
-
-            for a in aliases:
-                _ALIAS_INDEX[a] = name
-                _TOOL_REGISTRY[a] = {
-                    "name": a,
-                    "description": f"[alias of {name}] {description}",
-                    "parameters": parameters,
-                    "handler": None,
-                    "category": category,
-                    "canonical": name,
-                    "is_alias": True,
-                    "aliases": [],
-                    "disabled": (allow_disable and name in DISABLED),
-                }
-                _CAPABILITIES[a] = capabilities
-                _init_tool_stats(a)
+            _register_tool_metadata(
+                name, description, parameters, category, 
+                aliases, allow_disable, capabilities
+            )
 
             def wrapper(**kwargs):
                 trace_id = _generate_trace_id()
-                reg_name = name
                 start = time.perf_counter()
-                meta_entry = _TOOL_REGISTRY[reg_name]
+                meta_entry = _TOOL_REGISTRY[name]
                 canonical_name = meta_entry["canonical"]
+                
                 try:
-                    if meta_entry.get("disabled"):
-                        raise PermissionError("TOOL_DISABLED")
-
-                    schema = meta_entry.get("parameters") or {}
-
-                    if (
-                        AUTOFILL
-                        and canonical_name
-                        in {
-                            CANON_WRITE,
-                            CANON_WRITE_IF_CHANGED,
-                            CANON_READ,
-                        }
-                        and canonical_name in {CANON_WRITE, CANON_WRITE_IF_CHANGED}
-                    ):
-                        if not kwargs.get("path"):
-                            kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
-                        if (
-                            not isinstance(kwargs.get("content"), str)
-                            or not kwargs["content"].strip()
-                        ):
-                            kwargs["content"] = "Auto-generated content placeholder."
-
-                    try:
-                        validated = _validate_arguments(schema, kwargs)
-                    except Exception as ve:
-                        raise ValueError(f"Argument validation failed: {ve}") from ve
-
-                    if not policy_can_execute(canonical_name, validated):
-                        raise PermissionError("POLICY_DENIED")
-
-                    transformed = transform_arguments(canonical_name, validated)
-                    raw = func(**transformed)
-                    result = _coerce_to_tool_result(raw)
-
+                    result = _execute_tool(func, kwargs, meta_entry, trace_id)
                 except Exception as e:
-                    _dbg(f"Tool '{reg_name}' exception: {e}")
+                    _dbg(f"Tool '{name}' exception: {e}")
                     _dbg("Traceback:\n" + traceback.format_exc())
                     result = ToolResult(ok=False, error=str(e))
 
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
-                _record_invocation(reg_name, elapsed_ms, result.ok, result.error)
-                stats = _TOOL_STATS[reg_name]
-                if result.meta is None:
-                    result.meta = {}
-                result.meta.update(
-                    {
-                        "tool": reg_name,
-                        "canonical": canonical_name,
-                        "elapsed_ms": round(elapsed_ms, 2),
-                        "invocations": stats["invocations"],
-                        "errors": stats["errors"],
-                        "avg_ms": (
-                            round(stats["total_ms"] / stats["invocations"], 2)
-                            if stats["invocations"]
-                            else 0.0
-                        ),
-                        "version": __version__,
-                        "category": category,
-                        "capabilities": capabilities,
-                        "is_alias": meta_entry.get("is_alias", False),
-                        "disabled": meta_entry.get("disabled", False),
-                        "last_error": stats["last_error"],
-                    }
+                _record_invocation(name, elapsed_ms, result.ok, result.error)
+                _enrich_result_metadata(
+                    result, name, canonical_name, elapsed_ms,
+                    category, capabilities, meta_entry, trace_id
                 )
-                result.trace_id = trace_id
                 return result
 
             _TOOL_REGISTRY[name]["handler"] = wrapper
