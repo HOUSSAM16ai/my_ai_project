@@ -45,40 +45,21 @@ class ServiceLocator:
 
         try:
             # Lazy import to avoid circular dependencies
+            # Only active services after simplification
             if service_name == "master_agent_service":
                 from app.services import master_agent_service as service_module
             elif service_name == "generation_service":
                 from app.services import generation_service as service_module
-            elif service_name == "admin_ai_service":
-                from app.services.admin_ai_service import admin_ai_service as service_module
             elif service_name == "database_service":
                 from app.services.database_service import database_service as service_module
-            elif service_name == "api_gateway_service":
-                from app.services.api_gateway_service import api_gateway_service as service_module
             elif service_name == "api_security_service":
                 from app.services.api_security_service import security_service as service_module
-            elif service_name == "api_observability_service":
-                from app.services.api_observability_service import (
-                    observability_service as service_module,
-                )
-            elif service_name == "api_contract_service":
-                from app.services.api_contract_service import contract_service as service_module
             elif service_name == "api_governance_service":
                 from app.services.api_governance_service import governance_service as service_module
-            elif service_name == "api_slo_sli_service":
-                from app.services.api_slo_sli_service import slo_service as service_module
             elif service_name == "api_config_secrets_service":
                 from app.services.api_config_secrets_service import (
                     config_secrets_service as service_module,
                 )
-            elif service_name == "api_disaster_recovery_service":
-                from app.services.api_disaster_recovery_service import (
-                    disaster_recovery_service as service_module,
-                )
-            elif service_name == "api_gateway_chaos":
-                from app.services.api_gateway_chaos import chaos_service as service_module
-            elif service_name == "api_gateway_deployment":
-                from app.services.api_gateway_deployment import deployment_service as service_module
             else:
                 logger.warning(f"Unknown service: {service_name}")
                 return None
@@ -123,9 +104,7 @@ def get_maestro():
     return ServiceLocator.get_service("generation_service")
 
 
-def get_admin_ai():
-    """Get the admin AI service."""
-    return ServiceLocator.get_service("admin_ai_service")
+
 
 
 def get_database_service():
