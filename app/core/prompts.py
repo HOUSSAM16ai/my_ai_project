@@ -53,7 +53,7 @@ def _get_static_structure() -> str:
 def _get_deep_index_summary() -> str:
     """Retrieves deep structural analysis summary safely."""
     try:
-        from app.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+        from app.services.overmind.planning.deep_indexer import build_index, summarize_for_prompt
 
         index = build_index(".")
         if not index:
