@@ -112,7 +112,7 @@ def resilient(
     circuit_breaker_name: str | None = None,
     retry_config: RetryConfig | None = None,
     bulkhead_name: str | None = None,
-    fallback_chain: FallbackChain | None = None,
+    fallback_chain: FallbackChain | None = None,  # noqa: unused variable
 ):
     """
     Decorator to make functions resilient

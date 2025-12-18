@@ -1,3 +1,8 @@
+"""
+Observability Router - System Health and Metrics
+Provides endpoints for system observability and monitoring.
+Follows Clean Architecture by using Boundary Services.
+"""
 from fastapi import APIRouter, Depends
 
 from app.services.observability_boundary_service import ObservabilityBoundaryService

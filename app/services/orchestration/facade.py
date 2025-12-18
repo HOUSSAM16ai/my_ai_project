@@ -125,7 +125,7 @@ class KubernetesOrchestrator:
         memory_request: float = 512,
         cpu_limit: float = 1.0,
         memory_limit: float = 1024,
-        replicas: int = 1,
+        replicas: int = 1,  # noqa: unused variable
         labels: dict[str, str] | None = None,
     ) -> str:
         """Schedule new pod"""

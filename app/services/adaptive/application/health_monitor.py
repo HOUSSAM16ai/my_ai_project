@@ -109,7 +109,7 @@ class PredictiveHealthMonitor:
         return anomalies
 
     def predict_failure(
-        self, service_name: str, lookahead_minutes: int = 15
+        self, service_name: str, lookahead_minutes: int = 15  # noqa: unused variable
     ) -> tuple[float, list[str]]:
         """
         التنبؤ باحتمالية الفشل في المستقبل القريب

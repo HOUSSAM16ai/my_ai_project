@@ -397,7 +397,7 @@ class ProjectContextService:
     # 🔬 SUPERHUMAN SEARCH ALGORITHMS - خوارزميات بحث فائقة الذكاء
     # =========================================================================
 
-    def deep_search_issues(self, search_pattern: str | None = None) -> dict[str, Any]:
+    def deep_search_issues(self, search_pattern: str | None = None) -> dict[str, Any]:  # noqa: unused variable
         """
         🔍 SUPERHUMAN ISSUE DETECTION
         خوارزمية فائقة الذكاء للبحث عن المشاكل في ملايين الملفات.

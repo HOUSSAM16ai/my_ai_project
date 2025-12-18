@@ -124,6 +124,6 @@ def summarize_for_prompt(index_result: Any, max_len: int = 4000) -> str:
     return "\n".join(summary_lines)
 
 
-def _format_function_signature(func_node: Any) -> str:
+def _format_function_signature(func_node: Any) -> str:  # noqa: unused variable
     """Extracts a simple signature string."""
     return "func(...)"

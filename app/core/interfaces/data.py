@@ -24,7 +24,7 @@ class IRepository(ABC, Generic[T, ID]):
         pass
 
     @abstractmethod
-    async def save(self, entity: T) -> T:
+    async def save(self, entity: T) -> T:  # noqa: unused variable
         """Save entity"""
         pass
 

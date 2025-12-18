@@ -10,7 +10,7 @@ class RepositoryInterface[T](ABC):
     """Abstract repository interface for data access."""
 
     @abstractmethod
-    def save(self, entity: T) -> T:
+    def save(self, entity: T) -> T:  # noqa: unused variable
         """Save an entity.
 
         Args:

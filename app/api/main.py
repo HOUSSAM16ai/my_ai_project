@@ -1,3 +1,4 @@
+"""API Main Module - API router configuration and setup."""
 from fastapi import FastAPI
 
 from app.api.routers import system

@@ -1,5 +1,9 @@
 # app/blueprints/admin_blueprint.py
-
+"""
+Admin Blueprint - Administrative API Endpoints
+Provides admin-facing endpoints for chat and conversation management.
+Follows Clean Architecture by delegating to Application Services.
+"""
 
 from app.api.routers.admin import chat_stream, get_conversation, get_latest_chat, list_conversations
 from app.blueprints import Blueprint

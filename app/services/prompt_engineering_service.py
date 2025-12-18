@@ -16,7 +16,7 @@ class PromptEngineeringService:
         user: User,
         template_name: str,
         variables: dict,
-        user_description: str | None = None,
+        user_description: str | None = None,  # noqa: unused variable
     ) -> str:
         result = await db.execute(
             select(PromptTemplate).where(PromptTemplate.name == template_name)

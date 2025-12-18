@@ -1,3 +1,8 @@
+"""
+Data Mesh Router - Data Contract Management
+Provides endpoints for data mesh operations and metrics.
+Follows Clean Architecture by using Boundary Services.
+"""
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends

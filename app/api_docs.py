@@ -1,3 +1,4 @@
+"""API Documentation - OpenAPI documentation configuration."""
 from typing import Any
 
 

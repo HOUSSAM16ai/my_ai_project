@@ -1,4 +1,5 @@
 # app/cli_handlers/migrate_cli.py
+"""Migration CLI - Database migration commands."""
 import click
 from alembic import command
 from alembic.config import Config

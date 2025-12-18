@@ -1,3 +1,4 @@
+"""Policy Layers - Layered policy enforcement architecture."""
 from __future__ import annotations
 
 import logging

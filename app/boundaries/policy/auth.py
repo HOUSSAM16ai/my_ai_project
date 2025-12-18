@@ -1,3 +1,4 @@
+"""Policy Auth - Authentication and authorization policies."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

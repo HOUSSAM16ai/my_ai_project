@@ -1,4 +1,5 @@
 # app/blueprints/security_blueprint.py
+"""Security Blueprint - Security-related API endpoints."""
 from app.api.routers.security import router as security_router
 from app.blueprints import Blueprint
 

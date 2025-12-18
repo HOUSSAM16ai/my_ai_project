@@ -1,4 +1,5 @@
 # app/config/dependencies.py
+"""Dependencies - Dependency injection configuration."""
 from .settings import AppSettings
 from .settings import get_settings as get_cached_settings
 

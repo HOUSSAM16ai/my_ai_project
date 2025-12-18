@@ -1,3 +1,4 @@
+"""Error Messages - Standardized error message formatting."""
 import os
 import re
 

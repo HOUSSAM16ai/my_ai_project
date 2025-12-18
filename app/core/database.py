@@ -1,3 +1,4 @@
+"""Database - Database connection and session management."""
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager

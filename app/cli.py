@@ -1,4 +1,5 @@
 # app/cli.py
+"""CLI - Command-line interface for application management."""
 import os
 
 import click

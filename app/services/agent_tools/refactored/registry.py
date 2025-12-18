@@ -21,17 +21,29 @@ class ToolRegistry:
         self._lock = threading.RLock()
 
     def register(self, tool: Tool) ->None:
-        """Register a tool."""
+        """Register a tool. Complexity: 3"""
         with self._lock:
-            if tool.name in self._tools:
-                raise ValueError(f"Tool '{tool.name}' already registered")
-            for alias in tool.config.aliases:
-                if alias in self._tools or alias in self._aliases:
-                    raise ValueError(f"Alias '{alias}' already registered")
-            self._tools[tool.name] = tool
-            for alias in tool.config.aliases:
-                self._aliases[alias] = tool.name
+            self._validate_registration(tool)
+            self._register_tool(tool)
+            self._register_aliases(tool)
             logger.info(f'Tool registered: {tool.name}')
+
+    def _validate_registration(self, tool: Tool) -> None:
+        """Validate tool can be registered. Complexity: 2"""
+        if tool.name in self._tools:
+            raise ValueError(f"Tool '{tool.name}' already registered")
+        for alias in tool.config.aliases:
+            if alias in self._tools or alias in self._aliases:
+                raise ValueError(f"Alias '{alias}' already registered")
+
+    def _register_tool(self, tool: Tool) -> None:
+        """Register tool in registry. Complexity: 1"""
+        self._tools[tool.name] = tool
+
+    def _register_aliases(self, tool: Tool) -> None:
+        """Register tool aliases. Complexity: 1"""
+        for alias in tool.config.aliases:
+            self._aliases[alias] = tool.name
 
     def unregister(self, name: str) ->None:
         """Unregister a tool."""

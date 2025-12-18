@@ -52,7 +52,7 @@ class DatabaseService:
         per_page: int = 50,
         search: str | None = None,
         order_by: str | None = None,
-        order_dir: str = "asc",
+        order_dir: str = "asc",  # noqa: unused variable
     ) -> dict[str, Any]:
         return {"items": [], "total": 0}
 

@@ -96,6 +96,6 @@ class CommandMiddleware(ABC):
     """Base middleware for command processing."""
 
     @abstractmethod
-    def wrap(self, command: Command, next_handler):
+    def wrap(self, command: Command, next_handler):  # noqa: unused variable
         """Wrap the next handler with middleware logic."""
         pass
