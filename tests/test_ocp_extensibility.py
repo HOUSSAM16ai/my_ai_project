@@ -4,18 +4,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.analytics.application.anomaly_detection import StatisticalAnomalyDetector
-from app.analytics.application.custom_report_generators import (
+from app.analytics.anomaly_detection import StatisticalAnomalyDetector
+from app.analytics.custom_report_generators import (
     PerformanceReportGenerator,
     SecurityReportGenerator,
 )
-from app.analytics.application.ml_anomaly_detection import (
+from app.analytics.ml_anomaly_detection import (
     CompositeAnomalyDetector,
     MLBasedAnomalyDetector,
 )
-from app.analytics.domain.entities import UsageMetric
-from app.analytics.domain.value_objects import MetricType
-from app.analytics.infrastructure.in_memory_repository import InMemoryMetricsRepository
+from app.analytics.entities import UsageMetric
+from app.analytics.value_objects import MetricType
+from app.analytics.in_memory_repository import InMemoryMetricsRepository
 
 
 class TestOCPAnomalyDetection:

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from app.overmind.planning.base_planner import BasePlanner
-from app.overmind.planning.fault_tolerance import ResilientPlanner
+from app.services.overmind.planning.base_planner import BasePlanner
+from app.services.overmind.planning.fault_tolerance import ResilientPlanner
 
 
 def test_circuit_breaker_activates():

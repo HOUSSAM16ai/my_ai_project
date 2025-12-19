@@ -15,7 +15,7 @@ from app.models import (
     Task,
     TaskStatus,
 )
-from app.services.overmind.core import OvermindOrchestrator
+from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.state import MissionStateManager
 
@@ -227,7 +227,7 @@ class TestOvermindOrchestrator:
         mission = Mission(id=1, status=MissionStatus.PENDING, objective="obj")
         mock_state.get_mission.return_value = mission
 
-        with patch("app.services.overmind.core.get_all_planners", return_value=[]):
+        with patch("app.services.overmind.orchestrator.get_all_planners", return_value=[]):
             await orchestrator._phase_planning(mission)
             mock_state.update_mission_status.assert_awaited_with(
                 1, MissionStatus.FAILED, "No planners available"
@@ -244,7 +244,7 @@ class TestOvermindOrchestrator:
         }
         mock_planner.name = "mock_planner"
 
-        with patch("app.services.overmind.core.get_all_planners", return_value=[mock_planner]):
+        with patch("app.services.overmind.orchestrator.get_all_planners", return_value=[mock_planner]):
             await orchestrator._phase_planning(mission)
             mock_state.persist_plan.assert_awaited()
             mock_state.update_mission_status.assert_awaited_with(

@@ -1,4 +1,4 @@
-from app.overmind.planning.deep_indexer_v2.summary import summarize_for_prompt
+from app.services.overmind.planning.deep_indexer_v2.summary import summarize_for_prompt
 
 
 class MockObject:
