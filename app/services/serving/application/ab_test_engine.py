@@ -12,10 +12,10 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from app.serving.domain.entities import ABTestConfig
+from app.services.serving.domain.entities import ABTestConfig
 
 if TYPE_CHECKING:
-    from app.serving.application.model_registry import ModelRegistry
+    from app.services.serving.application.model_registry import ModelRegistry
 
 
 class ABTestEngine:
