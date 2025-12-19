@@ -17,14 +17,14 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from app.services.serving.application.inference_router import InferenceRouter
+from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.domain.models import (
     ABTestConfig,
     EnsembleConfig,
     ModelResponse,
     ShadowDeployment,
 )
-from app.services.serving.application.model_registry import ModelRegistry
-from app.services.serving.application.inference_router import InferenceRouter
 
 _LOG = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class ExperimentManager:
 
         # Get metrics for both models
         from app.services.serving.infrastructure.in_memory_repository import (
-            InMemoryMetricsRepository
+            InMemoryMetricsRepository,
         )
         metrics_repo = InMemoryMetricsRepository()
 

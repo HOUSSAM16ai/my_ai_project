@@ -15,8 +15,8 @@ import time
 from app.services.serving.domain.models import (
     ModelRequest,
     ModelResponse,
-    ModelVersion,
     ModelStatus,
+    ModelVersion,
 )
 
 

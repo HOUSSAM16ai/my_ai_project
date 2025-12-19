@@ -164,3 +164,4 @@ app/static/build/
 actionlint*
 .coverage.*
 *.backup
+__pycache__/

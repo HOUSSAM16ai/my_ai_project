@@ -11,6 +11,11 @@ Phase 3 - Wave 1 Refactoring:
 """
 
 # Domain models (pure entities)
+from app.services.serving.application.experiment_manager import ExperimentManager
+from app.services.serving.application.inference_router import InferenceRouter
+
+# Application layer services
+from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.domain.models import (
     ABTestConfig,
     EnsembleConfig,
@@ -25,46 +30,32 @@ from app.services.serving.domain.models import (
     ShadowDeployment,
 )
 
-# Application layer services
-from app.services.serving.application.model_registry import ModelRegistry
-from app.services.serving.application.inference_router import InferenceRouter
-from app.services.serving.application.experiment_manager import ExperimentManager
-
 # Infrastructure layer
 from app.services.serving.infrastructure.in_memory_repository import (
-    InMemoryModelRepository,
     InMemoryMetricsRepository,
+    InMemoryModelRepository,
 )
 from app.services.serving.infrastructure.mock_model_invoker import MockModelInvoker
 
-# Facade for backward compatibility
-from app.services.serving.facade import (
-    ModelServingInfrastructure,
-    get_model_serving_infrastructure,
-)
-
 __all__ = [
-    # Domain models
-    "ModelVersion",
-    "ModelMetrics",
-    "ModelRequest",
-    "ModelResponse",
     "ABTestConfig",
-    "ShadowDeployment",
     "EnsembleConfig",
-    "ModelStatus",
-    "ModelType",
-    "ServingStrategy",
-    "RoutingStrategy",
-    # Application services
-    "ModelRegistry",
-    "InferenceRouter",
     "ExperimentManager",
+    "InMemoryMetricsRepository",
     # Infrastructure
     "InMemoryModelRepository",
-    "InMemoryMetricsRepository",
+    "InferenceRouter",
     "MockModelInvoker",
-    # Facade (backward compatibility)
-    "ModelServingInfrastructure",
-    "get_model_serving_infrastructure",
+    "ModelMetrics",
+    # Application services
+    "ModelRegistry",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelStatus",
+    "ModelType",
+    # Domain models
+    "ModelVersion",
+    "RoutingStrategy",
+    "ServingStrategy",
+    "ShadowDeployment",
 ]
