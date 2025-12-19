@@ -12,16 +12,16 @@ from __future__ import annotations
 import logging
 import uuid
 
+from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.domain.models import (
     ModelRequest,
     ModelResponse,
     ModelStatus,
 )
-from app.services.serving.application.model_registry import ModelRegistry
-from app.services.serving.infrastructure.mock_model_invoker import MockModelInvoker
 from app.services.serving.infrastructure.in_memory_repository import (
     InMemoryMetricsRepository,
 )
+from app.services.serving.infrastructure.mock_model_invoker import MockModelInvoker
 
 _LOG = logging.getLogger(__name__)
 
@@ -146,5 +146,5 @@ class InferenceRouter:
                 output_data=None,
                 latency_ms=0.0,
                 success=False,
-                error=f"Inference failed: {str(e)}",
+                error=f"Inference failed: {e!s}",
             )
