@@ -5,32 +5,32 @@ import statistics
 import threading
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, List, Dict, Optional
+from typing import Any
 
 from .models import (
-    TelemetryData,
     AnomalyDetection,
-    AnomalyType,
     AnomalySeverity,
-    MetricType,
-    HealingDecision,
+    AnomalyType,
+    CapacityPlan,
     HealingAction,
+    HealingDecision,
     LoadForecast,
-    CapacityPlan
+    MetricType,
+    TelemetryData,
 )
 from .ports import (
-    TelemetryRepository,
     AnomalyRepository,
-    HealingDecisionRepository,
+    CapacityPlanRepository,
     ForecastRepository,
-    CapacityPlanRepository
+    HealingDecisionRepository,
+    TelemetryRepository,
 )
 from .repositories import (
-    InMemoryTelemetryRepository,
     InMemoryAnomalyRepository,
-    InMemoryHealingDecisionRepository,
+    InMemoryCapacityPlanRepository,
     InMemoryForecastRepository,
-    InMemoryCapacityPlanRepository
+    InMemoryHealingDecisionRepository,
+    InMemoryTelemetryRepository,
 )
 
 
@@ -55,7 +55,7 @@ class AIOpsService:
         self.forecast_repo = forecast_repo or InMemoryForecastRepository()
         self.capacity_repo = capacity_repo or InMemoryCapacityPlanRepository()
 
-        self.baseline_metrics: Dict[str, Dict[str, float]] = {}
+        self.baseline_metrics: dict[str, dict[str, float]] = {}
         self.lock = threading.RLock()
 
         self.anomaly_thresholds = {
@@ -92,7 +92,7 @@ class AIOpsService:
             }
 
     @staticmethod
-    def _percentile(values: List[float], percentile: int) -> float:
+    def _percentile(values: list[float], percentile: int) -> float:
         """Calculate percentile"""
         sorted_values = sorted(values)
         index = int(len(sorted_values) * percentile / 100)
@@ -134,8 +134,8 @@ class AIOpsService:
                 self._trigger_healing(anomaly)
 
     def _detect_zscore_anomaly(
-        self, data: TelemetryData, baseline: Dict[str, float]
-    ) -> Optional[AnomalyDetection]:
+        self, data: TelemetryData, baseline: dict[str, float]
+    ) -> AnomalyDetection | None:
         """Detect anomaly using Z-score"""
         mean = baseline["mean"]
         stdev = baseline["stdev"]
@@ -200,7 +200,7 @@ class AIOpsService:
 
         self._execute_healing(decision)
 
-    def _determine_healing_action(self, anomaly: AnomalyDetection) -> Optional[Dict[str, Any]]:
+    def _determine_healing_action(self, anomaly: AnomalyDetection) -> dict[str, Any] | None:
         """Determine appropriate healing action"""
         if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
             return {
@@ -254,7 +254,7 @@ class AIOpsService:
 
     def forecast_load(
         self, service_name: str, metric_type: MetricType, hours_ahead: int = 24
-    ) -> Optional[LoadForecast]:
+    ) -> LoadForecast | None:
         """Forecast future load using ML"""
         data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
 
@@ -286,7 +286,7 @@ class AIOpsService:
         return forecast
 
     @staticmethod
-    def _calculate_trend(values: List[float]) -> float:
+    def _calculate_trend(values: list[float]) -> float:
         """Calculate trend using simple linear regression"""
         n = len(values)
         if n < 2:
@@ -307,7 +307,7 @@ class AIOpsService:
 
     def generate_capacity_plan(
         self, service_name: str, forecast_horizon_hours: int = 72
-    ) -> Optional[CapacityPlan]:
+    ) -> CapacityPlan | None:
         """Generate capacity planning recommendation"""
         forecast = self.forecast_load(service_name, MetricType.REQUEST_RATE, forecast_horizon_hours)
 
@@ -338,7 +338,7 @@ class AIOpsService:
     # ROOT CAUSE ANALYSIS
     # ==================================================================================
 
-    def analyze_root_cause(self, anomaly_id: str) -> List[str]:
+    def analyze_root_cause(self, anomaly_id: str) -> list[str]:
         """Analyze root cause of anomaly using AI"""
         anomaly = self.anomaly_repo.get(anomaly_id)
         if not anomaly:
@@ -367,7 +367,7 @@ class AIOpsService:
 
         return root_causes
 
-    def _get_service_metrics(self, service_name: str, minutes: int = 30) -> List[TelemetryData]:
+    def _get_service_metrics(self, service_name: str, minutes: int = 30) -> list[TelemetryData]:
         """Get service metrics for time window"""
         cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         all_metrics = self.telemetry_repo.get_all()
@@ -383,7 +383,7 @@ class AIOpsService:
     # METRICS & MONITORING
     # ==================================================================================
 
-    def get_aiops_metrics(self) -> Dict[str, Any]:
+    def get_aiops_metrics(self) -> dict[str, Any]:
         """Get AIOps service metrics"""
         all_anomalies = self.anomaly_repo.get_all()
         total_anomalies = len(all_anomalies)
@@ -409,7 +409,7 @@ class AIOpsService:
             "services_monitored": len({a.service_name for a in all_anomalies.values()}),
         }
 
-    def get_service_health(self, service_name: str) -> Dict[str, Any]:
+    def get_service_health(self, service_name: str) -> dict[str, Any]:
         """Get service health status"""
         all_anomalies = self.anomaly_repo.get_all()
         recent_anomalies = [
@@ -441,7 +441,7 @@ class AIOpsService:
         }
 
 # Singleton Instance
-_aiops_instance: Optional[AIOpsService] = None
+_aiops_instance: AIOpsService | None = None
 _aiops_lock = threading.Lock()
 
 def get_aiops_service() -> AIOpsService:
