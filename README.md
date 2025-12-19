@@ -1,119 +1,71 @@
-# 🌟 CogniForge - The Superior AI-Powered Educational Platform
+# 🌟 CogniForge - منصة تعليمية ذكية
 
-> **نظام تعليمي ذكي خارق مدعوم بالذكاء الاصطناعي**
+> **نظام تعليمي مدعوم بالذكاء الاصطناعي - بسيط وقوي**
 
-> **🔥 REALITY KERNEL V3 ARCHITECTURE** → The project is now powered by a framework-agnostic, hyper-modular, self-healing architecture.
-
----
-
-## 🚀 Overview | نظرة عامة
-
-CogniForge is an advanced, AI-powered educational platform built on a next-generation system where Reality Kernel v3 is the central execution spine. All APIs are built in a fully framework-agnostic, hyper-modular architecture.
+مشروع CogniForge هو منصة تعليمية متقدمة تعتمد على بنية برمجية حديثة ونظيفة. تم تصميم هذا المشروع ليكون مرجعاً للمطورين المبتدئين والمحترفين، مع التركيز على البساطة، التنظيم، وكفاءة الأداء.
 
 ---
 
-## 🎯 Quick Start | البدء السريع
+## 🚀 البداية السريعة (Quick Start)
 
-### 1️⃣ Automated Setup & Run | الإعداد والتشغيل الآلي
+### للمبتدئين (في بيئة Codespaces أو Linux/Mac)
 
-To get started, simply run the development setup script. This will handle everything: installing dependencies, creating the `.env` file, building the frontend, and starting the server.
+كل ما تحتاجه هو أمر واحد فقط لتجهيز وتشغيل كل شيء:
 
 ```bash
-# Make the script executable (only needs to be done once)
-chmod +x scripts/setup_dev.sh
-
-# Run the setup script
+# تشغيل سكريبت الإعداد الآلي
 ./scripts/setup_dev.sh
 ```
 
-The application will be available at `http://localhost:8000`.
+سيقوم هذا السكريبت بـ:
+1. تثبيت كل المكتبات اللازمة.
+2. تجهيز ملفات الإعدادات (`.env`).
+3. تشغيل الخادم (Server).
 
-### ❗️ Important Note for GitHub Codespaces Users
-
-When you start the application in a GitHub Codespace, the backend server will run on port 8000. For you to be able to access it from your browser, the port's visibility must be set to **Public**.
-
-- **Automated Configuration:** The repository is already configured to do this automatically.
-- **Manual Verification:** If you are unable to access the application, please go to the **PORTS** tab in your Codespace and ensure that port 8000 has its "Visibility" set to "Public". If it is "Private", you can click on it to change the setting.
-
-### Codespaces / Preview Troubleshooting
-
-If you see a **White Page** or blank screen in the Codespaces preview, but the `/health` endpoint is working:
-1.  Ensure you are in a dev environment (`ENVIRONMENT=development` or running inside Codespaces).
-2.  Run the verification script to check for header issues:
-    ```bash
-    ./scripts/codespace_guardian.sh
-    ```
-    This script verifies that the security headers blocking iframe embedding (`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`) are correctly relaxed for the preview environment.
-
-**How it works:**
-The application includes a development-only middleware (`app/middleware/remove_blocking_headers.py`) that:
-*   Removes `X-Frame-Options`.
-*   Relaxes `Content-Security-Policy` by removing `frame-ancestors`.
-
-This allows the application to be embedded in the Codespaces preview iframe. **This relaxation is strictly disabled in production.**
-
-**Rollback:**
-To disable this behavior, set `ENVIRONMENT=production` or remove `RemoveBlockingHeadersMiddleware` from `app/main.py`.
-
-### 2️⃣ Manual Setup (For Advanced Users) | الإعداد اليدوي
-
-If you prefer to set up the environment manually, follow these steps:
-
-1.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    npm install
-    ```
-2.  **Configure Environment:**
-    -   Copy `.env.example` to `.env`.
-    -   Update `DATABASE_URL` and other critical variables.
-3.  **Build Frontend:**
-    ```bash
-    npm run build
-    ```
-4.  **Run Migrations:**
-    ```bash
-    python -m cli db-migrate
-    ```
-5.  **Run Application:**
-    ```bash
-    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-    ```
+بعد الانتهاء، افتح الرابط: `http://localhost:8000`
 
 ---
 
-## 🔧 Database CLI Commands | أوامر CLI لقاعدة البيانات
+## 📁 هيكلية المشروع (Project Structure)
 
-All CLI commands are now run through the unified `cli.py` entrypoint.
+تم تنظيم المشروع ليكون بديهياً للغاية:
 
-### Create Tables | إنشاء الجداول
+- **`app/`**: الكود الأساسي للمشروع (Backend).
+  - **`api/`**: نقاط الاتصال (Endpoints) الخاصة بالـ API.
+  - **`core/`**: الإعدادات الأساسية (قواعد البيانات، الأمان).
+  - **`services/`**: منطق العمل (Business Logic) والذكاء الاصطناعي.
+  - **`models.py`**: تعريف جداول قاعدة البيانات.
+- **`tests/`**: اختبارات النظام لضمان الجودة.
+- **`infra/`**: ملفات البنية التحتية (Docker, Kubernetes).
+- **`reports/`**: وثائق وتقارير تحليل النظام (للأرشفة).
+- **`legacy/`**: أكواد وخدمات قديمة (للمرجعية فقط).
+
+---
+
+## 🔧 الأوامر المهمة (Commands)
+
+### تشغيل الاختبارات
+للتأكد من أن كل شيء يعمل بكفاءة خارقة:
 ```bash
-python -m cli db create-all
+python3 -m pytest
 ```
 
-### Seed Database | ملء قاعدة البيانات
+### التعامل مع قاعدة البيانات
 ```bash
+# إنشاء الجداول
+python -m cli db create-all
+
+# ملء بيانات تجريبية
 python -m cli db seed --confirm
 ```
 
-### Run Migrations | تشغيل الترحيلات
-```bash
-python -m cli db-migrate
-```
 ---
 
-## 🛠️ Technology Stack | التقنيات المستخدمة
+## 📚 التوثيق المتقدم
 
-### Backend
-- **FastAPI** - High-performance web framework
-- **SQLAlchemy 2.0 / SQLModel** - ORM
-- **Alembic** - Database migrations
-- **PostgreSQL / Supabase** - Primary database
-- **SQLite** - Development/Testing
-- **Typer** - Modern CLI framework
-
-### Frontend
-- **React + TypeScript** - Modern UI
-- **Vite** - Build tool
+للمزيد من التفاصيل حول البنية المعمارية المتقدمة (Hexagonal Architecture, Dependency Injection)، يرجى مراجعة مجلد `docs/`.
 
 ---
+
+**ملاحظة لمستخدمي GitHub Codespaces:**
+تأكد من أن المنفذ (Port) 8000 مضبوط على "Public" في تبويب "PORTS" لتتمكن من رؤية التطبيق.
