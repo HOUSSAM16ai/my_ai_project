@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from app.overmind.planning import base_planner, governance
-from app.overmind.planning.base_planner import BasePlanner
+from app.services.overmind.planning import base_planner, governance
+from app.services.overmind.planning.base_planner import BasePlanner
 
 
 class MockPlanner(BasePlanner):

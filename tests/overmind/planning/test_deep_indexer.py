@@ -1,4 +1,4 @@
-from app.overmind.planning import deep_indexer
+from app.services.overmind.planning import deep_indexer
 
 
 def test_deep_indexer_build_index_structure(tmp_path):

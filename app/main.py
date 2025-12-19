@@ -46,8 +46,21 @@ def _setup_monitoring(app: FastAPI):
 
 def create_app(static_dir: str | None = None) -> FastAPI:
     """
-    Application factory. Creates and configures the FastAPI application
-    by invoking the RealityKernel.
+    Application factory function (The "Big Bang" of the application).
+
+    This function is responsible for bootstrapping the entire application lifecycle:
+    1. Instantiates the Reality Kernel (the central engine).
+    2. Weaves together middleware (Security, CORS, Logging, etc.).
+    3. Mounts routers and API endpoints.
+    4. Configures static file serving for the frontend.
+    5. Sets up system health monitoring.
+
+    Args:
+        static_dir (str | None): Optional override for the static files directory path.
+                                 Useful for testing environments.
+
+    Returns:
+        FastAPI: A fully configured and "woven" FastAPI application instance ready to serve traffic.
     """
     kernel = get_kernel()
     app = kernel.get_app()

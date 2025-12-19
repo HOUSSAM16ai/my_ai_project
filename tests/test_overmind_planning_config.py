@@ -1,4 +1,4 @@
-from app.overmind.planning.config import (
+from app.services.overmind.planning.config import (
     DEFAULT_CONFIG,
     _parse_bool,
     _parse_csv,

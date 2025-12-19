@@ -1,6 +1,6 @@
 
-from app.overmind.planning.hyper_planner import config, scan_logic
-from app.overmind.planning.hyper_planner.steps.scan_step import ScanRepoStep
+from app.services.overmind.planning.hyper_planner import config, scan_logic
+from app.services.overmind.planning.hyper_planner.steps.scan_step import ScanRepoStep
 
 
 class TestScanLogicRefactor:

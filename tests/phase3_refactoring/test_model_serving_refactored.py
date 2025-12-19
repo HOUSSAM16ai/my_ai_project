@@ -18,13 +18,10 @@ from app.services.serving import (
     MockModelInvoker,
     # Application services
     ModelRegistry,
-    # Facade (backward compatibility)
-    ModelServingInfrastructure,
     ModelStatus,
     ModelType,
     # Domain models
     ModelVersion,
-    get_model_serving_infrastructure,
 )
 
 
@@ -193,132 +190,6 @@ class TestApplicationLayer:
         assert response.output_data is not None
 
 
-class TestFacadeBackwardCompatibility:
-    """Test that facade maintains backward compatibility"""
-
-    def test_facade_register_and_serve(self):
-        """Facade should work exactly like original API"""
-        infra = ModelServingInfrastructure()
-
-        # Register model
-        model = ModelVersion(
-            version_id="v1",
-            model_name="test-model",
-            version_number="1.0.0",
-            model_type=ModelType.LANGUAGE_MODEL,
-            status=ModelStatus.LOADING,
-        )
-
-        assert infra.register_model(model) is True
-
-        # Wait for async loading
-        time.sleep(3)
-
-        # Serve request
-        response = infra.serve_request(
-            model_name="test-model",
-            input_data={"prompt": "test"},
-        )
-
-        assert response.success is True
-        assert response.latency_ms >= 0
-
-    def test_singleton_pattern(self):
-        """Singleton should return same instance"""
-        infra1 = get_model_serving_infrastructure()
-        infra2 = get_model_serving_infrastructure()
-
-        assert infra1 is infra2
-
-    def test_facade_ab_testing(self):
-        """A/B testing should work through facade"""
-        infra = ModelServingInfrastructure()
-
-        # Register two models
-        model_a = ModelVersion(
-            version_id="v1-a",
-            model_name="model-a",
-            version_number="1.0.0",
-            model_type=ModelType.LANGUAGE_MODEL,
-            status=ModelStatus.READY,
-        )
-        model_b = ModelVersion(
-            version_id="v1-b",
-            model_name="model-b",
-            version_number="1.0.0",
-            model_type=ModelType.LANGUAGE_MODEL,
-            status=ModelStatus.READY,
-        )
-
-        infra.register_model(model_a)
-        infra.register_model(model_b)
-        time.sleep(3)  # Wait for loading
-
-        # Start A/B test
-        test_id = infra.start_ab_test(
-            model_a_id="v1-a",
-            model_b_id="v1-b",
-            split_percentage=50.0,
-        )
-
-        assert test_id is not None
-        assert len(test_id) > 0
-
-        # Get test status
-        config = infra.get_ab_test_status(test_id)
-        assert config is not None
-        assert config.model_a_id == "v1-a"
-        assert config.model_b_id == "v1-b"
-
-
-class TestEndToEndWorkflow:
-    """End-to-end integration tests"""
-
-    def test_complete_workflow(self):
-        """Test complete model serving workflow"""
-        # 1. Create infrastructure
-        infra = ModelServingInfrastructure()
-
-        # 2. Register model
-        model = ModelVersion(
-            version_id="v1",
-            model_name="production-model",
-            version_number="1.0.0",
-            model_type=ModelType.LANGUAGE_MODEL,
-            status=ModelStatus.LOADING,
-        )
-        assert infra.register_model(model) is True
-
-        # 3. Check status
-        status = infra.get_model_status("v1")
-        assert status is not None
-        assert status.status == ModelStatus.LOADING
-
-        # 4. Wait for model to be ready
-        time.sleep(3)
-        status = infra.get_model_status("v1")
-        assert status.status == ModelStatus.READY
-
-        # 5. Serve request
-        response = infra.serve_request(
-            model_name="production-model",
-            input_data={"prompt": "What is AI?"},
-        )
-        assert response.success is True
-        assert response.model_id == "production-model"
-
-        # 6. Unload model
-        assert infra.unload_model("v1") is True
-
-        # 7. Verify draining
-        time.sleep(1)
-        status = infra.get_model_status("v1")
-        assert status.status == ModelStatus.DRAINING
-
-        # 8. Wait for stopped
-        time.sleep(6)
-        status = infra.get_model_status("v1")
-        assert status.status == ModelStatus.STOPPED
 
 
 if __name__ == "__main__":

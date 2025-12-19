@@ -19,15 +19,16 @@ logger = logging.getLogger(__name__)
 engine = create_unified_async_engine()
 
 # --- SESSION FACTORY (ASYNC) ---
+# The core session factory used throughout the application for async DB access.
 async_session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
+    expire_on_commit=False,  # Prevent attributes from being expired after commit, reducing DB roundtrips
+    autocommit=False,       # Explicit transaction management is safer
+    autoflush=False,        # Changes are not flushed to DB until flush() or commit() is called
 )
 
-# Alias for backward compatibility / preference
+# Alias for backward compatibility with older parts of the codebase
 AsyncSessionLocal = async_session_factory
 
 
@@ -279,8 +280,16 @@ def get_sync_session():
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    FastAPI dependency to get a database session.
-    Ensures sessions are closed after use.
+    Dependency Injection provider for Database Sessions.
+
+    This function is designed to be used with `Depends()` in FastAPI routes.
+    It guarantees:
+    1. A fresh session is created for each request.
+    2. The session is properly closed (returned to pool) even if errors occur.
+    3. Transactions are rolled back automatically on exceptions.
+
+    Yields:
+        AsyncSession: An active SQLAlchemy async session.
     """
     async with async_session_factory() as session:
         try:

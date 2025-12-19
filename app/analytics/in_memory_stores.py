@@ -166,3 +166,41 @@ class InMemoryNPSStore:
                 return list(self.responses)
             cutoff = datetime.now(UTC) - timedelta(days=days)
             return [r for r in self.responses if r["timestamp"] >= cutoff]
+
+class InMemoryCohortStore:
+    """In-memory cohort storage"""
+
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.cohorts: dict[str, dict] = {}
+
+    def add_cohort(self, cohort_id: str, cohort_data: dict) -> None:
+        with self.lock:
+            self.cohorts[cohort_id] = cohort_data
+
+    def get_cohort(self, cohort_id: str) -> dict | None:
+        with self.lock:
+            return self.cohorts.get(cohort_id)
+
+    def update_cohort(self, cohort_id: str, cohort_data: dict) -> None:
+        with self.lock:
+            self.cohorts[cohort_id] = cohort_data
+
+    def list_cohorts(self) -> list[dict]:
+        with self.lock:
+            return list(self.cohorts.values())
+
+class InMemoryRevenueStore:
+    """In-memory revenue storage"""
+
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.transactions: list[dict] = []
+
+    def add_transaction(self, transaction: dict) -> None:
+        with self.lock:
+            self.transactions.append(transaction)
+
+    def get_transactions(self) -> list[dict]:
+        with self.lock:
+            return list(self.transactions)
