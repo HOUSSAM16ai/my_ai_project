@@ -17,10 +17,31 @@ logger = logging.getLogger(__name__)
 
 class OvermindOrchestrator:
     """
-    The Brain. Coordinates the Planning-Execution loop asynchronously.
+    Overmind Orchestrator (The Cognitive Brain).
+
+    This class serves as the central command center for the AI's autonomous operations.
+    It manages the entire lifecycle of a "Mission" (a high-level user request) by coordinating
+    between specialized sub-systems: Planning and Execution.
+
+    Key Responsibilities (The Role):
+    1.  **Mission Lifecycle Management**: Transitions missions through states (PENDING -> PLANNING -> PLANNED -> RUNNING -> SUCCESS/FAILED).
+    2.  **Strategic Planning**: Selects and invokes the appropriate AI Planner to break down complex objectives into executable tasks.
+    3.  **Execution Coordination**: Monitors the state of tasks, resolving dependencies (Topological Sort), and scheduling them for execution.
+    4.  **Resilience**: Handles failures, ensuring the system can recover or gracefully terminate catastrophic errors.
+
+    Why this class exists:
+    To implement the "Plan-Execute" cognitive architecture, allowing the AI to solve complex,
+    multi-step problems autonomously without constant human intervention.
     """
 
     def __init__(self, state_manager: MissionStateManager, executor: TaskExecutor):
+        """
+        Initialize the Orchestrator with its dependencies.
+
+        Args:
+            state_manager (MissionStateManager): Handles persistence and state transitions of missions/tasks.
+            executor (TaskExecutor): The "Hands" of the system, responsible for actually running the tasks (e.g., generating code, running tests).
+        """
         self.state = state_manager
         self.executor = executor
 

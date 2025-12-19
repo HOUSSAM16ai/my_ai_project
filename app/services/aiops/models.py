@@ -1,7 +1,7 @@
-from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, List, Dict, Optional
+from enum import Enum
+from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
@@ -68,7 +68,7 @@ class TelemetryData:
     metric_type: MetricType
     value: float
     timestamp: datetime
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
     unit: str = ""
 
 
@@ -85,9 +85,9 @@ class AnomalyDetection:
     expected_value: float
     confidence: float  # 0-1
     description: str
-    root_causes: List[str] = field(default_factory=list)
+    root_causes: list[str] = field(default_factory=list)
     resolved: bool = False
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
 
 
 @dataclass
@@ -112,10 +112,10 @@ class HealingDecision:
     service_name: str
     action: HealingAction
     reason: str
-    parameters: Dict[str, Any]
-    executed_at: Optional[datetime] = None
-    success: Optional[bool] = None
-    impact: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any]
+    executed_at: datetime | None = None
+    success: bool | None = None
+    impact: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

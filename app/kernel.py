@@ -21,22 +21,33 @@ logger = logging.getLogger(__name__)
 
 class RealityKernel:
     """
-    Cognitive Reality Weaver V4.
+    Cognitive Reality Weaver V4 (The Core Application Engine).
 
-    The Reality Kernel is the central orchestration engine for the application.
-    It is responsible for:
-    1. Creating the base FastAPI application.
-    2. Configuring the middleware stack (Security, CORS, GZip).
-    3. Managing the application lifespan (Startup/Shutdown events).
-    4. Dynamically discovering and weaving Blueprints (Routes).
+    The Reality Kernel acts as the central nervous system of the CogniForge application.
+    It is designed to be the single source of truth for application initialization, ensuring
+    consistency and stability across all services.
+
+    Key Responsibilities (The Role):
+    1.  **Application Factory**: It instantiates the FastAPI application, the heart of the system.
+    2.  **Middleware Orchestration**: It layers essential middleware (Security, CORS, GZip) to protect and optimize traffic.
+    3.  **Lifespan Management**: It governs the birth (startup) and death (shutdown) of the application, handling database connections and cleanup.
+    4.  **Dynamic Routing (Weaving)**: It automatically discovers and registers "Blueprints" (modular routes), allowing the system to expand without modifying the core.
+
+    Why this class exists:
+    To decouple configuration and startup logic from the global scope, making the application
+    testable, modular, and easy to configure for different environments (Dev, Test, Prod).
     """
 
     def __init__(self, settings: dict[str, Any]):
         """
-        Initialize the Kernel with configuration settings.
+        Initialize the Reality Kernel with the provided configuration.
+
+        This constructor accepts a dictionary of settings, which allows dependency injection
+        of configuration values. This is crucial for testing, where we might want to inject
+        test-specific settings (like a test database URL) instead of loading them from the environment.
 
         Args:
-            settings: A dictionary of configuration values (from AppSettings).
+            settings (dict[str, Any]): A dictionary containing application configuration (e.g., SECRET_KEY, DATABASE_URL).
         """
         self.settings = settings
         self.app: FastAPI = self._create_pristine_app()
