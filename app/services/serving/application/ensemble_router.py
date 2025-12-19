@@ -10,7 +10,7 @@ import uuid
 from collections import Counter
 from typing import Any
 
-from app.serving.domain.entities import EnsembleConfig, ModelResponse
+from app.services.serving.domain.entities import EnsembleConfig, ModelResponse
 
 
 class EnsembleRouter:

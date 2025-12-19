@@ -11,7 +11,7 @@ import uuid
 from collections import deque
 from typing import Any
 
-from app.serving.domain.entities import (
+from app.services.serving.domain.entities import (
     ModelRequest,
     ModelResponse,
     ModelStatus,
