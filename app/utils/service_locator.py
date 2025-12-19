@@ -60,6 +60,8 @@ class ServiceLocator:
                 from app.services.api_config_secrets_service import (
                     config_secrets_service as service_module,
                 )
+            elif service_name == "admin_ai_service":
+                from app.services import admin_ai_service as service_module
             else:
                 logger.warning(f"Unknown service: {service_name}")
                 return None
@@ -104,9 +106,10 @@ def get_maestro():
     return ServiceLocator.get_service("generation_service")
 
 
-
-
-
 def get_database_service():
     """Get the database service."""
     return ServiceLocator.get_service("database_service")
+
+def get_admin_ai():
+    """Get the admin AI service."""
+    return ServiceLocator.get_service("admin_ai_service")

@@ -3,8 +3,15 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+import asyncio
 
 import bcrypt
+import pytest
+from fastapi.testclient import TestClient
+import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
 
 # 🛡️ QUANTUM COMPATIBILITY PATCH (Test Scope)
 # Ensure bcrypt is patched before any other import that might use passlib
@@ -29,12 +36,27 @@ def _quantum_hashpw(password, salt):
 
 bcrypt.hashpw = _quantum_hashpw
 
-import pytest
-from fastapi.testclient import TestClient
 
 # Set environment variables for testing
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["SECRET_KEY"] = "test-secret-key"
+
+from app.core.database import get_db
+from app.core.engine_factory import create_unified_async_engine
+
+# --- Event Loop Fixture for Session Scope ---
+@pytest.fixture(scope="session")
+def event_loop():
+    """
+    Creates an instance of the default event loop for the test session.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -71,14 +93,6 @@ def client(test_app):
 
 
 # --- Database Fixtures ---
-
-import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel
-
-from app.core.database import get_db
-from app.core.engine_factory import create_unified_async_engine
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
