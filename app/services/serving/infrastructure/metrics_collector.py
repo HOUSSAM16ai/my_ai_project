@@ -10,7 +10,7 @@ import threading
 from collections import defaultdict, deque
 from typing import Any
 
-from app.services.serving.domain.entities import ModelMetrics, ModelResponse, ModelVersion
+from app.services.serving.domain.models import ModelMetrics, ModelResponse, ModelVersion
 
 
 class MetricsCollector:
