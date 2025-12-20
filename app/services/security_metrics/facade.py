@@ -6,7 +6,10 @@ from .application.metrics_calculator import ComprehensiveMetricsCalculator
 from .application.predictive_analytics import LinearRegressionPredictor
 from .application.risk_calculator import AdvancedRiskCalculator
 from .domain.models import RiskPrediction, SecurityFinding, SecurityMetrics
-from .infrastructure.in_memory_repositories import InMemoryFindingsRepository, InMemoryMetricsRepository
+from .infrastructure.in_memory_repositories import (
+    InMemoryFindingsRepository,
+    InMemoryMetricsRepository,
+)
 
 
 class SecurityMetricsEngine:

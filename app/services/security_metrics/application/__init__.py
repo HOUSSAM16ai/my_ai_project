@@ -6,6 +6,6 @@ from .risk_calculator import AdvancedRiskCalculator
 
 __all__ = [
     "AdvancedRiskCalculator",
-    "LinearRegressionPredictor",
     "ComprehensiveMetricsCalculator",
+    "LinearRegressionPredictor",
 ]

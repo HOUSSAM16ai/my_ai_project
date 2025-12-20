@@ -45,7 +45,7 @@ class ComprehensiveMetricsCalculator(MetricsCalculatorPort):
 
     def _count_by_severity(self, findings: list[SecurityFinding]) -> dict[Severity, int]:
         """Count findings by severity"""
-        counts = {severity: 0 for severity in Severity}
+        counts = dict.fromkeys(Severity, 0)
         for finding in findings:
             if not finding.fixed and not finding.false_positive:
                 counts[finding.severity] += 1

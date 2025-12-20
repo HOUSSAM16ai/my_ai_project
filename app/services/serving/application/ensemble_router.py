@@ -10,7 +10,7 @@ import uuid
 from collections import Counter
 from typing import Any
 
-from app.services.serving.domain.entities import EnsembleConfig, ModelResponse
+from app.services.serving.domain.models import EnsembleConfig, ModelResponse
 
 
 class EnsembleRouter:
@@ -41,7 +41,7 @@ class EnsembleRouter:
             معرف التجميع
         """
         ensemble_id = str(uuid.uuid4())
-        config = EnsembleConfig(ensemble_id=ensemble_id, model_versions=
+        config = EnsembleConfig(ensemble_id=ensemble_id, model_ids=
             model_versions, aggregation_method=aggregation_method, weights=
             weights or {})
         with self._lock:

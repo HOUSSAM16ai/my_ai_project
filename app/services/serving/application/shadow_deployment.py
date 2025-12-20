@@ -9,7 +9,7 @@ import threading
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from app.services.serving.domain.entities import ShadowDeployment
+from app.services.serving.domain.models import ShadowDeployment
 
 if TYPE_CHECKING:
     pass
