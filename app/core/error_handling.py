@@ -1,3 +1,9 @@
+"""
+Error Handling
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/core/error_handling.py
 """
 SUPERHUMAN ERROR HANDLING FRAMEWORK
@@ -112,7 +118,9 @@ def retry_on_failure(
                         current_delay *= backoff
                     else:
                         if log_retry:
-                            logger.error(f"Failed after {max_retries} retries: {func.__name__}")
+                            logger.error(
+                                f"Failed after {max_retries} retries: {func.__name__}"
+                            )
 
             # All retries exhausted
             if last_exception:

@@ -1,3 +1,9 @@
+"""
+Base Middleware
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/core/base_middleware.py
 # ======================================================================================
 # ==                    BASE MIDDLEWARE ABSTRACT CLASS (v∞)                         ==
@@ -94,7 +100,9 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
         """
         return self.process_request(ctx)
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """
         ASGI Dispatch method (Starlette/FastAPI integration)
         """
@@ -123,7 +131,8 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
                     status = 429
 
                 return JSONResponse(
-                    status_code=status, content={"error": result.message, "details": result.details}
+                    status_code=status,
+                    content={"error": result.message, "details": result.details},
                 )
 
             # Call Next
@@ -238,7 +247,9 @@ class MetricsMiddleware(BaseMiddleware):
                 "success_count": self.success_count,
                 "failure_count": self.failure_count,
                 "success_rate": (
-                    self.success_count / self.request_count if self.request_count > 0 else 0.0
+                    self.success_count / self.request_count
+                    if self.request_count > 0
+                    else 0.0
                 ),
             }
         )

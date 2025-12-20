@@ -1,3 +1,9 @@
+"""
+Observability
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/api/routers/observability.py
 """
 Observability Router - System Health and Metrics

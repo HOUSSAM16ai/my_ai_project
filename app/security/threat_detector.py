@@ -1,3 +1,9 @@
+"""
+Threat Detector
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/security/threat_detector.py
 from collections import deque
 from dataclasses import dataclass

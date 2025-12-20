@@ -3,11 +3,12 @@ Circuit Breaker Module.
 Part of the Atomic Modularization Protocol.
 """
 
-import time
 import logging
+import time
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
 
 class CircuitState(Enum):
     CLOSED = "CLOSED"  # Normal operation

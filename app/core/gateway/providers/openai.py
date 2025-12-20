@@ -1,3 +1,9 @@
+"""
+Openai
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from typing import Any
 
 from .base import ModelProviderAdapter
@@ -6,7 +12,9 @@ from .base import ModelProviderAdapter
 class OpenAIAdapter(ModelProviderAdapter):
     """OpenAI model provider adapter"""
 
-    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
+    def call_model(
+        self, model: str, prompt: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Call OpenAI model (placeholder)"""
         return {
             "provider": "openai",

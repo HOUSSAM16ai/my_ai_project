@@ -1,3 +1,9 @@
+"""
+Fastapi Error Handlers
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/fastapi_error_handlers.py
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError

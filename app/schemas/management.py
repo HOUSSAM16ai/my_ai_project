@@ -14,6 +14,7 @@ T = TypeVar("T")
 
 class PaginationMeta(BaseModel):
     """Metadata for paginated responses."""
+
     page: int
     per_page: int
     total_items: int
@@ -27,6 +28,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     Generic wrapper for paginated data.
     Standardizes response format across the API.
     """
+
     items: list[T]
     pagination: PaginationMeta
 
@@ -36,6 +38,7 @@ class UserResponse(BaseModel):
     DTO for User data.
     Excludes sensitive fields like password hashes.
     """
+
     id: int
     email: str
     full_name: str | None = None
@@ -50,6 +53,7 @@ class UserResponse(BaseModel):
 
 class MissionResponse(BaseModel):
     """DTO for Mission data."""
+
     id: int
     name: str | None = None
     objective: str | None = None
@@ -63,6 +67,7 @@ class MissionResponse(BaseModel):
 
 class TaskResponse(BaseModel):
     """DTO for Task data."""
+
     id: int
     mission_id: int | None = None
     name: str | None = None
@@ -76,6 +81,7 @@ class TaskResponse(BaseModel):
 
 class GenericResponse(BaseModel):
     """Simple success/error response."""
+
     status: str = "success"
     message: str | None = None
     data: Any | None = None

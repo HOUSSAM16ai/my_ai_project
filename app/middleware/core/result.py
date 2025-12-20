@@ -1,3 +1,9 @@
+"""
+Result
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/core/result.py
 # ======================================================================================
 # ==                    UNIFIED MIDDLEWARE RESULT (v∞)                              ==
@@ -112,7 +118,9 @@ class MiddlewareResult:
         )
 
     @classmethod
-    def internal_error(cls, message: str = "Internal Server Error") -> "MiddlewareResult":
+    def internal_error(
+        cls, message: str = "Internal Server Error"
+    ) -> "MiddlewareResult":
         """Create a 500 Internal Server Error result"""
         return cls.failure(
             status_code=500,

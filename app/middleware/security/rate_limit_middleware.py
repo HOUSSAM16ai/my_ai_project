@@ -1,3 +1,9 @@
+"""
+Rate Limit Middleware
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/security/rate_limit_middleware.py
 # ======================================================================================
 # ==                    RATE LIMIT MIDDLEWARE ADAPTER (v∞)                          ==
@@ -118,7 +124,9 @@ class RateLimitMiddleware(BaseMiddleware):
                 "checked_count": self.checked_count,
                 "rate_limited_count": self.rate_limited_count,
                 "rate_limit_rate": (
-                    self.rate_limited_count / self.checked_count if self.checked_count > 0 else 0.0
+                    self.rate_limited_count / self.checked_count
+                    if self.checked_count > 0
+                    else 0.0
                 ),
             }
         )

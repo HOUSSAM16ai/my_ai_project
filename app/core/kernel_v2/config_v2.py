@@ -1,3 +1,9 @@
+"""
+Config V2
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/core/kernel_v2/config_v2.py
 """
 The Unified Configuration System (ConfigV2) for Reality Kernel v2.
@@ -14,7 +20,9 @@ class ConfigV2(BaseSettings):
     Settings are loaded from environment variables and a .env file.
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     DATABASE_URL: str = "sqlite:///./default.db"
     SECRET_KEY: str = "a_default_secret_key"

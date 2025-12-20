@@ -1,3 +1,9 @@
+"""
+History Service
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/services/history_service.py - The Akashic Records Ministry
 """
 History Service - Async-compatible service for conversation history operations.
@@ -43,7 +49,10 @@ async def get_recent_conversations(user_id: int, limit: int = 5):
             conversations = result.scalars().all()
             return list(conversations)
     except Exception as e:
-        logger.error(f"Failed to fetch recent conversations for user {user_id}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to fetch recent conversations for user {user_id}: {e}",
+            exc_info=True,
+        )
         return []
 
 
@@ -77,7 +86,10 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int):
             message_to_rate = result.scalar_one_or_none()
 
             if not message_to_rate:
-                return {"status": "error", "message": f"Message with ID {message_id} not found."}
+                return {
+                    "status": "error",
+                    "message": f"Message with ID {message_id} not found.",
+                }
 
             # --- [SECURITY PROTOCOL] ---
             # Ensure the user can only rate messages from their own conversations.
@@ -103,8 +115,12 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int):
             }
 
     except sqlalchemy_exc.SQLAlchemyError as e:
-        logger.error(f"Database error while rating message {message_id}: {e}", exc_info=True)
+        logger.error(
+            f"Database error while rating message {message_id}: {e}", exc_info=True
+        )
         return {"status": "error", "message": "A database error occurred."}
     except Exception as e:
-        logger.error(f"Unexpected error while rating message {message_id}: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error while rating message {message_id}: {e}", exc_info=True
+        )
         return {"status": "error", "message": "An unexpected error occurred."}
