@@ -70,9 +70,9 @@ class KeyComponent:
 
 
 __all__ = [
-    "ProjectHealth",
     "CodeStatistics",
-    "ProjectStructure",
     "FileAnalysis",
     "KeyComponent",
+    "ProjectHealth",
+    "ProjectStructure",
 ]

@@ -1,14 +1,19 @@
-# app/services/project_context/__init__.py
 """
 Project Context Service
-=======================
-Refactored using Hexagonal Architecture for maximum maintainability
+======================
 
-Import everything from this module for backward compatibility
+This module provides services for managing project context, including:
+- Knowledge graph management
+- Codebase indexing and retrieval
+- Context summarization
+- Dependency analysis
+
+The service is designed with a hexagonal architecture, separating domain logic
+from infrastructure concerns.
 """
 
-# Domain models
-from .domain.models import (
+from app.services.project_context.application.context_analyzer import ProjectContextService
+from app.services.project_context.domain.models import (
     CodeStatistics,
     FileAnalysis,
     KeyComponent,
@@ -16,22 +21,13 @@ from .domain.models import (
     ProjectStructure,
 )
 
-# Application service
-from .application.context_analyzer import ProjectContextService
-
-# Facade (backward compatible)
-from .facade import get_project_context_for_ai, get_project_context_service
-
 __all__ = [
-    # Domain models
-    "ProjectHealth",
     "CodeStatistics",
-    "ProjectStructure",
     "FileAnalysis",
     "KeyComponent",
     # Application service
     "ProjectContextService",
-    # Facade functions
-    "get_project_context_service",
-    "get_project_context_for_ai",
+    # Domain models
+    "ProjectHealth",
+    "ProjectStructure",
 ]

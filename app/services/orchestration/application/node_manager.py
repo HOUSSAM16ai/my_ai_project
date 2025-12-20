@@ -4,9 +4,11 @@ Node Manager Service
 Single Responsibility: Manage cluster nodes.
 """
 from __future__ import annotations
+
 import hashlib
 from datetime import datetime
 from typing import Protocol
+
 from app.services.orchestration.domain.models import Node, NodeState
 
 

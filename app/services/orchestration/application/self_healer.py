@@ -73,9 +73,8 @@ class SelfHealer:
         healed_pods = []
 
         for pod in self._pod_repo.get_all():
-            if self._is_pod_unhealthy(pod):
-                if self._heal_pod(pod):
-                    healed_pods.append(pod.pod_id)
+            if self._is_pod_unhealthy(pod) and self._heal_pod(pod):
+                healed_pods.append(pod.pod_id)
 
         return healed_pods
 
@@ -84,9 +83,8 @@ class SelfHealer:
         evacuated_nodes = []
 
         for node in self._node_repo.get_all():
-            if self._is_node_unhealthy(node):
-                if self._evacuate_node(node):
-                    evacuated_nodes.append(node.node_id)
+            if self._is_node_unhealthy(node) and self._evacuate_node(node):
+                evacuated_nodes.append(node.node_id)
 
         return evacuated_nodes
 
@@ -108,10 +106,7 @@ class SelfHealer:
             return True
 
         # Check resource pressure
-        if node.cpu_utilization > 95 or node.memory_utilization > 95:
-            return True
-
-        return False
+        return bool(node.cpu_utilization > 95 or node.memory_utilization > 95)
 
     def _heal_pod(self, pod: Pod) -> bool:
         """Heal failed pod"""
