@@ -1,7 +1,4 @@
-import importlib
-import inspect
 import logging
-import os
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -10,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from app.blueprints import Blueprint
+# Import Routers explicitly
+from app.api.routers import admin, crud, data_mesh, observability, security, system
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -23,33 +21,24 @@ class RealityKernel:
     """
     نواة الواقع الإدراكي - الإصدار الرابع (Cognitive Reality Weaver V4).
 
-    تخيل أن هذا الكلاس (Class) هو "المدير العام" أو "العقل المدبر" للنظام بأكمله.
-    هو المسؤول عن توصيل كل أجزاء النظام ببعضها البعض، تماماً مثل الجهاز العصبي في جسم الإنسان.
+    النسخة المبسطة (Simplified Version):
+    تم إزالة الطبقات السحرية (Magic Layers) مثل التحميل الديناميكي للمخططات (Dynamic Blueprints).
+    الآن، كل شيء واضح وصريح (Explicit is better than implicit).
 
     المسؤوليات الرئيسية (الدور):
     1. **مصنع التطبيق (Application Factory)**: هو الذي يقوم بإنشاء "القلب" النابض للنظام (تطبيق FastAPI).
     2. **قائد الأوركسترا (Middleware Orchestration)**: يرتب الطبقات الأمنية والتحسينات (Middleware) لضمان حماية النظام وسرعته.
-    3. **إدارة دورة الحياة (Lifespan Management)**: يتحكم في لحظة تشغيل النظام (الولادة) ولحظة إيقافه بسلام (الوفاة)، بما في ذلك الاتصال بقواعد البيانات.
-    4. **حائك المسارات (Dynamic Routing)**: يكتشف "المخططات" (Blueprints) والمسارات تلقائياً ويربطها بالنظام بذكاء دون الحاجة لتعديل الكود الأساسي.
-
-    لماذا هذا الكود موجود؟
-    لفصل إعدادات التشغيل عن المنطق البرمجي، مما يجعل النظام قابلاً للاختبار، سهلاً في التعديل، ومنظماً بشكل خارق.
+    3. **إدارة دورة الحياة (Lifespan Management)**: يتحكم في لحظة تشغيل النظام (الولادة) ولحظة إيقافه بسلام (الوفاة).
+    4. **حائك المسارات (Route Weaver)**: يربط المسارات (Routers) بشكل مباشر.
     """
 
     def __init__(self, settings: dict[str, Any]):
         """
         تهيئة نواة الواقع (The Constructor).
-
-        هذه الدالة هي "نقطة البداية" للكلاس. تستقبل الإعدادات (Settings) كمدخلات.
-        لماذا نمرر الإعدادات هنا؟ لكي نتمكن من تغييرها بسهولة (مثلاً، استخدام قاعدة بيانات تجريبية أثناء الاختبارات)
-        بدلاً من الاعتماد على المتغيرات العامة التي يصعب تغييرها.
-
-        المعاملات:
-            settings (dict[str, Any]): قاموس يحتوي على أسرار وإعدادات التطبيق.
         """
         self.settings = settings
         self.app: FastAPI = self._create_pristine_app()
-        self._discover_and_weave_blueprints()
+        self._weave_routes()
 
     def get_app(self) -> FastAPI:
         """يعيد تطبيق FastAPI الجاهز والمنسوج بالكامل (The Fully Woven App)."""
@@ -58,7 +47,6 @@ class RealityKernel:
     def _create_pristine_app(self) -> FastAPI:
         """
         ينشئ النسخة الأساسية من تطبيق FastAPI مع كل الإعدادات والطبقات اللازمة.
-        هنا يتم تركيب "الدروع" (Middleware) وتجهيز "القلب".
         """
 
         @asynccontextmanager
@@ -70,7 +58,7 @@ class RealityKernel:
         # تهيئة FastAPI (تجهيز الإطار العام)
         app = FastAPI(
             title=self.settings.get("PROJECT_NAME", "CogniForge"),
-            version="v4.0-woven",
+            version="v4.1-simplified",
             docs_url="/docs" if self.settings.get("ENVIRONMENT") == "development" else None,
             redoc_url="/redoc" if self.settings.get("ENVIRONMENT") == "development" else None,
             lifespan=lifespan,
@@ -155,37 +143,27 @@ class RealityKernel:
             expose_headers=["Content-Length", "Content-Range"],
         )
 
-    def _discover_and_weave_blueprints(self):
+    def _weave_routes(self):
         """
-        يكتشف ويسجل كل المخططات (Blueprints) تلقائياً.
-        يقوم هذا الكود بالبحث داخل مجلد `app/blueprints` عن أي ملف ينتهي بـ `_blueprint.py` ويقوم بتحميله.
+        يربط المسارات (Routers) بشكل صريح.
+        Explicit is better than implicit.
         """
-        blueprints_path = os.path.join(os.path.dirname(__file__), "blueprints")
-        logger.info(f"Reality Kernel: Weaving blueprints from {blueprints_path}")
+        logger.info("Reality Kernel: Weaving explicit routes.")
 
-        # المشي عبر المجلدات (Walk)
-        for _, _, files in os.walk(blueprints_path):
-            for filename in files:
-                if filename.endswith("_blueprint.py"):
-                    self._load_blueprint_module(filename)
+        # System Routes (Health, Info) - often mounted at root or /system
+        self.app.include_router(system.router)
 
-    def _load_blueprint_module(self, filename: str):
-        """دالة مساعدة لتحميل ملف مخطط واحد."""
-        module_name = f"app.blueprints.{filename[:-3]}"
-        try:
-            module = importlib.import_module(module_name)
-            # فحص محتويات الملف للبحث عن كائن من نوع Blueprint
-            for _, obj in inspect.getmembers(module):
-                if isinstance(obj, Blueprint):
-                    self._register_blueprint(obj)
-        except ImportError as e:
-            logger.error(f"Failed to import blueprint module {module_name}: {e}")
+        # Admin Routes
+        self.app.include_router(admin.router)
 
-    def _register_blueprint(self, blueprint: Blueprint):
-        """تسجيل المخطط في التطبيق الرئيسي."""
-        logger.info(f"Weaving blueprint: {blueprint.name}")
-        self.app.include_router(
-            blueprint.router,
-            prefix=f"/{blueprint.name}",
-            tags=[blueprint.name.capitalize()]
-        )
+        # Security Routes (prefixed with /api/security usually, checking original blueprint)
+        self.app.include_router(security.router, prefix="/api/security")
+
+        # Data Mesh
+        self.app.include_router(data_mesh.router, prefix="/data-mesh")
+
+        # Observability
+        self.app.include_router(observability.router, prefix="/observability")
+
+        # CRUD / API v1
+        self.app.include_router(crud.router, prefix="/api/v1")
