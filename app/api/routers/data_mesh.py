@@ -1,3 +1,4 @@
+# app/api/routers/data_mesh.py
 """
 Data Mesh Router - Data Contract Management
 Provides endpoints for data mesh operations and metrics.
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Body, Depends
 
 from app.services.data_mesh_service import DataMeshBoundaryService
 
-router = APIRouter()
+router = APIRouter(tags=["Data Mesh"])
 
 
 def get_data_mesh_service() -> DataMeshBoundaryService:

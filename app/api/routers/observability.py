@@ -1,3 +1,4 @@
+# app/api/routers/observability.py
 """
 Observability Router - System Health and Metrics
 Provides endpoints for system observability and monitoring.
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Depends
 
 from app.services.observability_boundary_service import ObservabilityBoundaryService
 
-router = APIRouter()
+router = APIRouter(tags=["Observability"])
 
 
 def get_observability_service() -> ObservabilityBoundaryService:

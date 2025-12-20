@@ -1,21 +1,20 @@
-# app/blueprints/system_blueprint.py
+# app/api/routers/system/__init__.py
 """
-System Blueprint - Refactored for Clean Architecture
+System Router - Refactored for Clean Architecture
 Presentation layer that depends only on Application layer (not Infrastructure).
 Follows Dependency Inversion Principle.
 """
-from fastapi import Depends, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.application.interfaces import HealthCheckService, SystemService
-from app.blueprints import Blueprint
 from app.core.di import get_health_check_service, get_system_service
 
-# Create a blueprint instance
-system_blueprint = Blueprint("system")
+# Create router instance
+router = APIRouter(prefix="/system", tags=["System"])
 
 
-@system_blueprint.router.get(
+@router.get(
     "/health",
     summary="Application Health Check",
     response_description="Returns the operational status of the application and its dependencies.",
@@ -43,7 +42,7 @@ async def health_check(
     )
 
 
-@system_blueprint.router.get(
+@router.get(
     "/healthz",
     summary="Kubernetes Liveness Probe",
 )
@@ -63,7 +62,7 @@ async def healthz(
     )
 
 
-@system_blueprint.router.get(
+@router.get(
     "/info",
     summary="System Information",
 )
