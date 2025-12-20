@@ -15,8 +15,8 @@ from .steps import (
 __all__ = [
     "AnalysisContext",
     "AnalysisPipeline",
-    "FileReadStep",
-    "ParseStep",
     "ComplexityAnalysisStep",
+    "FileReadStep",
     "FormatStep",
+    "ParseStep",
 ]

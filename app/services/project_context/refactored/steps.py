@@ -3,7 +3,6 @@ Analysis Steps - Individual responsibilities
 Each step has single responsibility and low complexity (~2-3).
 """
 import ast
-from pathlib import Path
 
 from .context import AnalysisContext
 

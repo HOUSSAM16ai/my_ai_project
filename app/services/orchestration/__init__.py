@@ -11,7 +11,6 @@ Architecture:
 - Domain Layer: Pure business logic and entities
 - Application Layer: Use cases and orchestration
 - Infrastructure Layer: External adapters and persistence
-- Facade: Backward-compatible API
 """
 
 from app.services.orchestration.domain import (
@@ -25,10 +24,6 @@ from app.services.orchestration.domain import (
     ScalingDirection,
     SelfHealingEvent,
 )
-from app.services.orchestration.facade import (
-    KubernetesOrchestrator,
-    get_kubernetes_orchestrator,
-)
 
 __all__ = [
     # Domain models
@@ -41,7 +36,4 @@ __all__ = [
     "RaftState",
     "ScalingDirection",
     "SelfHealingEvent",
-    # Facade
-    "KubernetesOrchestrator",
-    "get_kubernetes_orchestrator",
 ]
