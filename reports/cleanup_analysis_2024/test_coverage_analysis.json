@@ -1,0 +1,3273 @@
+{
+  "test_coverage": {
+    "total_app_files": 621,
+    "total_test_files": 142,
+    "tested_modules": 133,
+    "untested_modules": [
+      {
+        "file": "/app/app/api_docs.py",
+        "module": "api_docs",
+        "functions": 3,
+        "classes": 0,
+        "lines": 53
+      },
+      {
+        "file": "/app/app/main.py",
+        "module": "main",
+        "functions": 4,
+        "classes": 0,
+        "lines": 85
+      },
+      {
+        "file": "/app/app/config/dependencies.py",
+        "module": "dependencies",
+        "functions": 1,
+        "classes": 0,
+        "lines": 20
+      },
+      {
+        "file": "/app/app/application/interfaces.py",
+        "module": "interfaces",
+        "functions": 7,
+        "classes": 3,
+        "lines": 46
+      },
+      {
+        "file": "/app/app/application/use_cases/planning/refactored_planner.py",
+        "module": "refactored_planner",
+        "functions": 18,
+        "classes": 7,
+        "lines": 344
+      },
+      {
+        "file": "/app/app/application/use_cases/routing/routing_strategies.py",
+        "module": "routing_strategies",
+        "functions": 21,
+        "classes": 10,
+        "lines": 191
+      },
+      {
+        "file": "/app/app/security/secure_auth.py",
+        "module": "secure_auth",
+        "functions": 4,
+        "classes": 1,
+        "lines": 23
+      },
+      {
+        "file": "/app/app/security/zero_trust.py",
+        "module": "zero_trust",
+        "functions": 2,
+        "classes": 1,
+        "lines": 20
+      },
+      {
+        "file": "/app/app/security/chrono_shield.py",
+        "module": "chrono_shield",
+        "functions": 6,
+        "classes": 1,
+        "lines": 138
+      },
+      {
+        "file": "/app/app/security/waf.py",
+        "module": "waf",
+        "functions": 4,
+        "classes": 1,
+        "lines": 43
+      },
+      {
+        "file": "/app/app/security/rate_limiter.py",
+        "module": "rate_limiter",
+        "functions": 4,
+        "classes": 3,
+        "lines": 96
+      },
+      {
+        "file": "/app/app/security/threat_detector.py",
+        "module": "threat_detector",
+        "functions": 2,
+        "classes": 2,
+        "lines": 22
+      },
+      {
+        "file": "/app/app/security/owasp_validator.py",
+        "module": "owasp_validator",
+        "functions": 9,
+        "classes": 4,
+        "lines": 374
+      },
+      {
+        "file": "/app/app/schemas/management.py",
+        "module": "management",
+        "functions": 0,
+        "classes": 9,
+        "lines": 81
+      },
+      {
+        "file": "/app/app/api/main.py",
+        "module": "main",
+        "functions": 1,
+        "classes": 0,
+        "lines": 10
+      },
+      {
+        "file": "/app/app/api/dependencies.py",
+        "module": "dependencies",
+        "functions": 1,
+        "classes": 0,
+        "lines": 27
+      },
+      {
+        "file": "/app/app/api/exceptions.py",
+        "module": "exceptions",
+        "functions": 2,
+        "classes": 0,
+        "lines": 9
+      },
+      {
+        "file": "/app/app/api/v2/dependencies.py",
+        "module": "dependencies",
+        "functions": 5,
+        "classes": 0,
+        "lines": 33
+      },
+      {
+        "file": "/app/app/api/v2/schemas.py",
+        "module": "schemas",
+        "functions": 1,
+        "classes": 6,
+        "lines": 74
+      },
+      {
+        "file": "/app/app/simulation/mission_simulator.py",
+        "module": "mission_simulator",
+        "functions": 5,
+        "classes": 1,
+        "lines": 56
+      },
+      {
+        "file": "/app/app/domain/repositories.py",
+        "module": "repositories",
+        "functions": 6,
+        "classes": 2,
+        "lines": 39
+      },
+      {
+        "file": "/app/app/infrastructure/repositories/user_repository.py",
+        "module": "user_repository",
+        "functions": 6,
+        "classes": 1,
+        "lines": 58
+      },
+      {
+        "file": "/app/app/infrastructure/repositories/database_repository.py",
+        "module": "database_repository",
+        "functions": 2,
+        "classes": 1,
+        "lines": 22
+      },
+      {
+        "file": "/app/app/infrastructure/patterns/chain_of_responsibility.py",
+        "module": "chain_of_responsibility",
+        "functions": 20,
+        "classes": 8,
+        "lines": 197
+      },
+      {
+        "file": "/app/app/infrastructure/patterns/dependency_injection.py",
+        "module": "dependency_injection",
+        "functions": 10,
+        "classes": 1,
+        "lines": 100
+      },
+      {
+        "file": "/app/app/infrastructure/patterns/event_bus.py",
+        "module": "event_bus",
+        "functions": 8,
+        "classes": 2,
+        "lines": 87
+      },
+      {
+        "file": "/app/app/middleware/fastapi_error_handlers.py",
+        "module": "fastapi_error_handlers",
+        "functions": 4,
+        "classes": 0,
+        "lines": 47
+      },
+      {
+        "file": "/app/app/middleware/remove_blocking_headers.py",
+        "module": "remove_blocking_headers",
+        "functions": 4,
+        "classes": 1,
+        "lines": 54
+      },
+      {
+        "file": "/app/app/middleware/superhuman_security.py",
+        "module": "superhuman_security",
+        "functions": 1,
+        "classes": 1,
+        "lines": 27
+      },
+      {
+        "file": "/app/app/middleware/rate_limiter_middleware.py",
+        "module": "rate_limiter_middleware",
+        "functions": 9,
+        "classes": 3,
+        "lines": 179
+      },
+      {
+        "file": "/app/app/middleware/error_response_factory.py",
+        "module": "error_response_factory",
+        "functions": 5,
+        "classes": 1,
+        "lines": 167
+      },
+      {
+        "file": "/app/app/middleware/security_logger.py",
+        "module": "security_logger",
+        "functions": 5,
+        "classes": 1,
+        "lines": 104
+      },
+      {
+        "file": "/app/app/middleware/fastapi_observability.py",
+        "module": "fastapi_observability",
+        "functions": 1,
+        "classes": 1,
+        "lines": 109
+      },
+      {
+        "file": "/app/app/middleware/config/middleware_settings.py",
+        "module": "middleware_settings",
+        "functions": 4,
+        "classes": 1,
+        "lines": 55
+      },
+      {
+        "file": "/app/app/middleware/security/telemetry_guard.py",
+        "module": "telemetry_guard",
+        "functions": 8,
+        "classes": 1,
+        "lines": 122
+      },
+      {
+        "file": "/app/app/middleware/security/waf_middleware.py",
+        "module": "waf_middleware",
+        "functions": 3,
+        "classes": 1,
+        "lines": 88
+      },
+      {
+        "file": "/app/app/middleware/security/zero_trust_middleware.py",
+        "module": "zero_trust_middleware",
+        "functions": 3,
+        "classes": 1,
+        "lines": 99
+      },
+      {
+        "file": "/app/app/middleware/security/ai_threat_middleware.py",
+        "module": "ai_threat_middleware",
+        "functions": 3,
+        "classes": 1,
+        "lines": 110
+      },
+      {
+        "file": "/app/app/middleware/security/policy_enforcer.py",
+        "module": "policy_enforcer",
+        "functions": 6,
+        "classes": 1,
+        "lines": 127
+      },
+      {
+        "file": "/app/app/middleware/security/security_headers.py",
+        "module": "security_headers",
+        "functions": 3,
+        "classes": 1,
+        "lines": 111
+      },
+      {
+        "file": "/app/app/middleware/cors/cors_middleware.py",
+        "module": "cors_middleware",
+        "functions": 2,
+        "classes": 1,
+        "lines": 61
+      },
+      {
+        "file": "/app/app/middleware/error_handling/exception_mapper.py",
+        "module": "exception_mapper",
+        "functions": 1,
+        "classes": 1,
+        "lines": 39
+      },
+      {
+        "file": "/app/app/middleware/error_handling/recovery_middleware.py",
+        "module": "recovery_middleware",
+        "functions": 5,
+        "classes": 1,
+        "lines": 94
+      },
+      {
+        "file": "/app/app/middleware/observability/observability_middleware.py",
+        "module": "observability_middleware",
+        "functions": 5,
+        "classes": 1,
+        "lines": 222
+      },
+      {
+        "file": "/app/app/middleware/observability/telemetry_bridge.py",
+        "module": "telemetry_bridge",
+        "functions": 10,
+        "classes": 1,
+        "lines": 161
+      },
+      {
+        "file": "/app/app/middleware/observability/analytics_adapter.py",
+        "module": "analytics_adapter",
+        "functions": 6,
+        "classes": 1,
+        "lines": 128
+      },
+      {
+        "file": "/app/app/middleware/observability/performance_profiler.py",
+        "module": "performance_profiler",
+        "functions": 5,
+        "classes": 1,
+        "lines": 109
+      },
+      {
+        "file": "/app/app/middleware/observability/anomaly_inspector.py",
+        "module": "anomaly_inspector",
+        "functions": 4,
+        "classes": 1,
+        "lines": 110
+      },
+      {
+        "file": "/app/app/middleware/observability/request_logger.py",
+        "module": "request_logger",
+        "functions": 5,
+        "classes": 1,
+        "lines": 123
+      },
+      {
+        "file": "/app/app/middleware/core/pipeline.py",
+        "module": "pipeline",
+        "functions": 12,
+        "classes": 1,
+        "lines": 267
+      },
+      {
+        "file": "/app/app/middleware/core/base_middleware.py",
+        "module": "base_middleware",
+        "functions": 17,
+        "classes": 3,
+        "lines": 245
+      },
+      {
+        "file": "/app/app/middleware/core/hooks.py",
+        "module": "hooks",
+        "functions": 11,
+        "classes": 1,
+        "lines": 154
+      },
+      {
+        "file": "/app/app/middleware/core/response_factory.py",
+        "module": "response_factory",
+        "functions": 3,
+        "classes": 1,
+        "lines": 54
+      },
+      {
+        "file": "/app/app/middleware/core/registry.py",
+        "module": "registry",
+        "functions": 11,
+        "classes": 1,
+        "lines": 153
+      },
+      {
+        "file": "/app/app/middleware/core/result.py",
+        "module": "result",
+        "functions": 10,
+        "classes": 1,
+        "lines": 149
+      },
+      {
+        "file": "/app/app/middleware/factory/middleware_factory.py",
+        "module": "middleware_factory",
+        "functions": 3,
+        "classes": 1,
+        "lines": 92
+      },
+      {
+        "file": "/app/app/telemetry/performance.py",
+        "module": "performance",
+        "functions": 8,
+        "classes": 5,
+        "lines": 163
+      },
+      {
+        "file": "/app/app/telemetry/events.py",
+        "module": "events",
+        "functions": 7,
+        "classes": 3,
+        "lines": 119
+      },
+      {
+        "file": "/app/app/telemetry/tracing.py",
+        "module": "tracing",
+        "functions": 8,
+        "classes": 1,
+        "lines": 147
+      },
+      {
+        "file": "/app/app/telemetry/structured_logging.py",
+        "module": "structured_logging",
+        "functions": 2,
+        "classes": 1,
+        "lines": 41
+      },
+      {
+        "file": "/app/app/security_metrics/application/developer_scoring.py",
+        "module": "developer_scoring",
+        "functions": 4,
+        "classes": 1,
+        "lines": 61
+      },
+      {
+        "file": "/app/app/security_metrics/application/report_generation.py",
+        "module": "report_generation",
+        "functions": 7,
+        "classes": 1,
+        "lines": 102
+      },
+      {
+        "file": "/app/app/security_metrics/application/risk_scoring.py",
+        "module": "risk_scoring",
+        "functions": 5,
+        "classes": 1,
+        "lines": 79
+      },
+      {
+        "file": "/app/app/security_metrics/api/security_metrics_facade.py",
+        "module": "security_metrics_facade",
+        "functions": 8,
+        "classes": 1,
+        "lines": 134
+      },
+      {
+        "file": "/app/app/security_metrics/domain/entities.py",
+        "module": "entities",
+        "functions": 0,
+        "classes": 5,
+        "lines": 82
+      },
+      {
+        "file": "/app/app/security_metrics/domain/interfaces.py",
+        "module": "interfaces",
+        "functions": 7,
+        "classes": 3,
+        "lines": 48
+      },
+      {
+        "file": "/app/app/security_metrics/domain/value_objects.py",
+        "module": "value_objects",
+        "functions": 0,
+        "classes": 3,
+        "lines": 31
+      },
+      {
+        "file": "/app/app/security_metrics/infrastructure/in_memory_repository.py",
+        "module": "in_memory_repository",
+        "functions": 8,
+        "classes": 1,
+        "lines": 52
+      },
+      {
+        "file": "/app/app/cli_handlers/db_cli.py",
+        "module": "db_cli",
+        "functions": 7,
+        "classes": 0,
+        "lines": 102
+      },
+      {
+        "file": "/app/app/cli_handlers/migrate_cli.py",
+        "module": "migrate_cli",
+        "functions": 2,
+        "classes": 0,
+        "lines": 20
+      },
+      {
+        "file": "/app/app/cli_handlers/maintenance_cli.py",
+        "module": "maintenance_cli",
+        "functions": 3,
+        "classes": 0,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/core/prompts.py",
+        "module": "prompts",
+        "functions": 5,
+        "classes": 0,
+        "lines": 148
+      },
+      {
+        "file": "/app/app/core/base_profiler.py",
+        "module": "base_profiler",
+        "functions": 22,
+        "classes": 5,
+        "lines": 281
+      },
+      {
+        "file": "/app/app/core/protocols.py",
+        "module": "protocols",
+        "functions": 0,
+        "classes": 2,
+        "lines": 18
+      },
+      {
+        "file": "/app/app/core/error_messages.py",
+        "module": "error_messages",
+        "functions": 9,
+        "classes": 0,
+        "lines": 239
+      },
+      {
+        "file": "/app/app/core/ai_client_factory.py",
+        "module": "ai_client_factory",
+        "functions": 32,
+        "classes": 11,
+        "lines": 403
+      },
+      {
+        "file": "/app/app/core/rate_limiter.py",
+        "module": "rate_limiter",
+        "functions": 6,
+        "classes": 2,
+        "lines": 138
+      },
+      {
+        "file": "/app/app/core/cli_logging.py",
+        "module": "cli_logging",
+        "functions": 1,
+        "classes": 0,
+        "lines": 15
+      },
+      {
+        "file": "/app/app/core/cognitive_cache.py",
+        "module": "cognitive_cache",
+        "functions": 8,
+        "classes": 2,
+        "lines": 173
+      },
+      {
+        "file": "/app/app/core/http_client_factory.py",
+        "module": "http_client_factory",
+        "functions": 14,
+        "classes": 2,
+        "lines": 242
+      },
+      {
+        "file": "/app/app/core/superhuman_performance_optimizer.py",
+        "module": "superhuman_performance_optimizer",
+        "functions": 18,
+        "classes": 4,
+        "lines": 285
+      },
+      {
+        "file": "/app/app/core/yaml_utils.py",
+        "module": "yaml_utils",
+        "functions": 2,
+        "classes": 1,
+        "lines": 38
+      },
+      {
+        "file": "/app/app/core/common_imports.py",
+        "module": "common_imports",
+        "functions": 5,
+        "classes": 2,
+        "lines": 120
+      },
+      {
+        "file": "/app/app/core/self_healing_db.py",
+        "module": "self_healing_db",
+        "functions": 30,
+        "classes": 10,
+        "lines": 341
+      },
+      {
+        "file": "/app/app/core/factories.py",
+        "module": "factories",
+        "functions": 1,
+        "classes": 0,
+        "lines": 50
+      },
+      {
+        "file": "/app/app/core/registry/plugin_registry.py",
+        "module": "plugin_registry",
+        "functions": 9,
+        "classes": 1,
+        "lines": 89
+      },
+      {
+        "file": "/app/app/core/registry/plugin_discovery.py",
+        "module": "plugin_discovery",
+        "functions": 1,
+        "classes": 0,
+        "lines": 63
+      },
+      {
+        "file": "/app/app/core/registry/plugin_loader.py",
+        "module": "plugin_loader",
+        "functions": 2,
+        "classes": 1,
+        "lines": 54
+      },
+      {
+        "file": "/app/app/core/engine/url_tools.py",
+        "module": "url_tools",
+        "functions": 6,
+        "classes": 1,
+        "lines": 148
+      },
+      {
+        "file": "/app/app/core/engine/diagnostics.py",
+        "module": "diagnostics",
+        "functions": 1,
+        "classes": 1,
+        "lines": 24
+      },
+      {
+        "file": "/app/app/core/engine/types.py",
+        "module": "types",
+        "functions": 0,
+        "classes": 3,
+        "lines": 30
+      },
+      {
+        "file": "/app/app/core/engine/pooler.py",
+        "module": "pooler",
+        "functions": 2,
+        "classes": 1,
+        "lines": 121
+      },
+      {
+        "file": "/app/app/core/engine/exceptions.py",
+        "module": "exceptions",
+        "functions": 0,
+        "classes": 1,
+        "lines": 9
+      },
+      {
+        "file": "/app/app/core/engine/naming.py",
+        "module": "naming",
+        "functions": 2,
+        "classes": 1,
+        "lines": 66
+      },
+      {
+        "file": "/app/app/core/scaling/load_balancer.py",
+        "module": "load_balancer",
+        "functions": 10,
+        "classes": 6,
+        "lines": 129
+      },
+      {
+        "file": "/app/app/core/scaling/service_registry.py",
+        "module": "service_registry",
+        "functions": 7,
+        "classes": 2,
+        "lines": 93
+      },
+      {
+        "file": "/app/app/core/kernel_v2/state_engine.py",
+        "module": "state_engine",
+        "functions": 6,
+        "classes": 1,
+        "lines": 56
+      },
+      {
+        "file": "/app/app/core/kernel_v2/config_v2.py",
+        "module": "config_v2",
+        "functions": 1,
+        "classes": 1,
+        "lines": 32
+      },
+      {
+        "file": "/app/app/core/kernel_v2/meta_kernel.py",
+        "module": "meta_kernel",
+        "functions": 2,
+        "classes": 1,
+        "lines": 44
+      },
+      {
+        "file": "/app/app/core/kernel_v2/logging_spine.py",
+        "module": "logging_spine",
+        "functions": 2,
+        "classes": 0,
+        "lines": 64
+      },
+      {
+        "file": "/app/app/core/patterns/builder.py",
+        "module": "builder",
+        "functions": 4,
+        "classes": 2,
+        "lines": 35
+      },
+      {
+        "file": "/app/app/core/patterns/chain.py",
+        "module": "chain",
+        "functions": 8,
+        "classes": 2,
+        "lines": 67
+      },
+      {
+        "file": "/app/app/core/patterns/command.py",
+        "module": "command",
+        "functions": 11,
+        "classes": 4,
+        "lines": 101
+      },
+      {
+        "file": "/app/app/core/interfaces/planner_interface.py",
+        "module": "planner_interface",
+        "functions": 3,
+        "classes": 1,
+        "lines": 45
+      },
+      {
+        "file": "/app/app/core/interfaces/processing.py",
+        "module": "processing",
+        "functions": 5,
+        "classes": 3,
+        "lines": 58
+      },
+      {
+        "file": "/app/app/core/interfaces/repository_interface.py",
+        "module": "repository_interface",
+        "functions": 5,
+        "classes": 1,
+        "lines": 66
+      },
+      {
+        "file": "/app/app/core/interfaces/service_interface.py",
+        "module": "service_interface",
+        "functions": 3,
+        "classes": 1,
+        "lines": 38
+      },
+      {
+        "file": "/app/app/core/interfaces/strategy_interface.py",
+        "module": "strategy_interface",
+        "functions": 3,
+        "classes": 1,
+        "lines": 41
+      },
+      {
+        "file": "/app/app/core/gateway/node.py",
+        "module": "node",
+        "functions": 0,
+        "classes": 1,
+        "lines": 29
+      },
+      {
+        "file": "/app/app/core/gateway/policy.py",
+        "module": "policy",
+        "functions": 6,
+        "classes": 1,
+        "lines": 96
+      },
+      {
+        "file": "/app/app/core/gateway/connection.py",
+        "module": "connection",
+        "functions": 2,
+        "classes": 1,
+        "lines": 33
+      },
+      {
+        "file": "/app/app/core/gateway/exceptions.py",
+        "module": "exceptions",
+        "functions": 0,
+        "classes": 6,
+        "lines": 27
+      },
+      {
+        "file": "/app/app/core/gateway/providers/anthropic.py",
+        "module": "anthropic",
+        "functions": 3,
+        "classes": 1,
+        "lines": 25
+      },
+      {
+        "file": "/app/app/core/gateway/providers/openai.py",
+        "module": "openai",
+        "functions": 3,
+        "classes": 1,
+        "lines": 26
+      },
+      {
+        "file": "/app/app/core/gateway/protocols/grpc.py",
+        "module": "grpc",
+        "functions": 3,
+        "classes": 1,
+        "lines": 21
+      },
+      {
+        "file": "/app/app/core/gateway/protocols/rest.py",
+        "module": "rest",
+        "functions": 3,
+        "classes": 1,
+        "lines": 33
+      },
+      {
+        "file": "/app/app/core/gateway/protocols/graphql.py",
+        "module": "graphql",
+        "functions": 3,
+        "classes": 1,
+        "lines": 34
+      },
+      {
+        "file": "/app/app/core/gateway/strategies/implementations.py",
+        "module": "implementations",
+        "functions": 6,
+        "classes": 5,
+        "lines": 66
+      },
+      {
+        "file": "/app/app/core/math/kalman.py",
+        "module": "kalman",
+        "functions": 2,
+        "classes": 1,
+        "lines": 53
+      },
+      {
+        "file": "/app/app/core/math/hyper_flux.py",
+        "module": "hyper_flux",
+        "functions": 2,
+        "classes": 1,
+        "lines": 68
+      },
+      {
+        "file": "/app/app/core/resilience/timeout.py",
+        "module": "timeout",
+        "functions": 2,
+        "classes": 2,
+        "lines": 48
+      },
+      {
+        "file": "/app/app/core/resilience/composite.py",
+        "module": "composite",
+        "functions": 8,
+        "classes": 1,
+        "lines": 103
+      },
+      {
+        "file": "/app/app/core/resilience/bulkhead.py",
+        "module": "bulkhead",
+        "functions": 3,
+        "classes": 2,
+        "lines": 68
+      },
+      {
+        "file": "/app/app/protocols/http_client.py",
+        "module": "http_client",
+        "functions": 6,
+        "classes": 3,
+        "lines": 58
+      },
+      {
+        "file": "/app/app/analysis/anomaly_detector.py",
+        "module": "anomaly_detector",
+        "functions": 15,
+        "classes": 4,
+        "lines": 432
+      },
+      {
+        "file": "/app/app/analysis/predictor.py",
+        "module": "predictor",
+        "functions": 7,
+        "classes": 3,
+        "lines": 183
+      },
+      {
+        "file": "/app/app/analysis/pattern_recognizer.py",
+        "module": "pattern_recognizer",
+        "functions": 10,
+        "classes": 3,
+        "lines": 376
+      },
+      {
+        "file": "/app/app/analysis/root_cause.py",
+        "module": "root_cause",
+        "functions": 10,
+        "classes": 3,
+        "lines": 175
+      },
+      {
+        "file": "/app/app/boundaries/service_boundaries.py",
+        "module": "service_boundaries",
+        "functions": 25,
+        "classes": 12,
+        "lines": 433
+      },
+      {
+        "file": "/app/app/boundaries/policy/compliance.py",
+        "module": "compliance",
+        "functions": 3,
+        "classes": 3,
+        "lines": 91
+      },
+      {
+        "file": "/app/app/boundaries/policy/governance.py",
+        "module": "governance",
+        "functions": 5,
+        "classes": 3,
+        "lines": 75
+      },
+      {
+        "file": "/app/app/boundaries/policy/main.py",
+        "module": "main",
+        "functions": 3,
+        "classes": 1,
+        "lines": 62
+      },
+      {
+        "file": "/app/app/boundaries/policy/layers.py",
+        "module": "layers",
+        "functions": 13,
+        "classes": 9,
+        "lines": 159
+      },
+      {
+        "file": "/app/app/boundaries/data/events.py",
+        "module": "events",
+        "functions": 11,
+        "classes": 4,
+        "lines": 112
+      },
+      {
+        "file": "/app/app/utils/model_registry.py",
+        "module": "model_registry",
+        "functions": 7,
+        "classes": 1,
+        "lines": 93
+      },
+      {
+        "file": "/app/app/utils/text_processing.py",
+        "module": "text_processing",
+        "functions": 2,
+        "classes": 0,
+        "lines": 95
+      },
+      {
+        "file": "/app/app/utils/service_locator.py",
+        "module": "service_locator",
+        "functions": 7,
+        "classes": 1,
+        "lines": 115
+      },
+      {
+        "file": "/app/app/ai/facade.py",
+        "module": "facade",
+        "functions": 18,
+        "classes": 1,
+        "lines": 325
+      },
+      {
+        "file": "/app/app/ai/application/retry_strategy.py",
+        "module": "retry_strategy",
+        "functions": 22,
+        "classes": 9,
+        "lines": 402
+      },
+      {
+        "file": "/app/app/ai/application/payload_builder.py",
+        "module": "payload_builder",
+        "functions": 2,
+        "classes": 1,
+        "lines": 47
+      },
+      {
+        "file": "/app/app/ai/application/response_normalizer.py",
+        "module": "response_normalizer",
+        "functions": 3,
+        "classes": 1,
+        "lines": 123
+      },
+      {
+        "file": "/app/app/ai/application/cost_manager.py",
+        "module": "cost_manager",
+        "functions": 22,
+        "classes": 8,
+        "lines": 509
+      },
+      {
+        "file": "/app/app/ai/infrastructure/transports/openai_transport.py",
+        "module": "openai_transport",
+        "functions": 4,
+        "classes": 1,
+        "lines": 158
+      },
+      {
+        "file": "/app/app/ai/infrastructure/transports/anthropic_transport.py",
+        "module": "anthropic_transport",
+        "functions": 5,
+        "classes": 1,
+        "lines": 221
+      },
+      {
+        "file": "/app/app/analytics/behavior_analysis.py",
+        "module": "behavior_analysis",
+        "functions": 9,
+        "classes": 1,
+        "lines": 115
+      },
+      {
+        "file": "/app/app/analytics/entities.py",
+        "module": "entities",
+        "functions": 0,
+        "classes": 5,
+        "lines": 78
+      },
+      {
+        "file": "/app/app/analytics/ml_anomaly_detection.py",
+        "module": "ml_anomaly_detection",
+        "functions": 9,
+        "classes": 2,
+        "lines": 106
+      },
+      {
+        "file": "/app/app/analytics/interfaces.py",
+        "module": "interfaces",
+        "functions": 6,
+        "classes": 3,
+        "lines": 44
+      },
+      {
+        "file": "/app/app/analytics/nps_manager.py",
+        "module": "nps_manager",
+        "functions": 3,
+        "classes": 1,
+        "lines": 67
+      },
+      {
+        "file": "/app/app/analytics/event_tracker.py",
+        "module": "event_tracker",
+        "functions": 6,
+        "classes": 1,
+        "lines": 146
+      },
+      {
+        "file": "/app/app/analytics/enums.py",
+        "module": "enums",
+        "functions": 0,
+        "classes": 3,
+        "lines": 39
+      },
+      {
+        "file": "/app/app/analytics/in_memory_repository.py",
+        "module": "in_memory_repository",
+        "functions": 7,
+        "classes": 1,
+        "lines": 46
+      },
+      {
+        "file": "/app/app/analytics/metrics_calculator.py",
+        "module": "metrics_calculator",
+        "functions": 4,
+        "classes": 1,
+        "lines": 176
+      },
+      {
+        "file": "/app/app/analytics/session_manager.py",
+        "module": "session_manager",
+        "functions": 4,
+        "classes": 1,
+        "lines": 55
+      },
+      {
+        "file": "/app/app/analytics/in_memory_stores.py",
+        "module": "in_memory_stores",
+        "functions": 35,
+        "classes": 8,
+        "lines": 206
+      },
+      {
+        "file": "/app/app/analytics/anomaly_detection.py",
+        "module": "anomaly_detection",
+        "functions": 5,
+        "classes": 1,
+        "lines": 92
+      },
+      {
+        "file": "/app/app/analytics/ports.py",
+        "module": "ports",
+        "functions": 21,
+        "classes": 6,
+        "lines": 117
+      },
+      {
+        "file": "/app/app/analytics/user_segmentation.py",
+        "module": "user_segmentation",
+        "functions": 2,
+        "classes": 1,
+        "lines": 38
+      },
+      {
+        "file": "/app/app/analytics/custom_report_generators.py",
+        "module": "custom_report_generators",
+        "functions": 9,
+        "classes": 2,
+        "lines": 120
+      },
+      {
+        "file": "/app/app/analytics/value_objects.py",
+        "module": "value_objects",
+        "functions": 0,
+        "classes": 3,
+        "lines": 32
+      },
+      {
+        "file": "/app/app/analytics/report_generation.py",
+        "module": "report_generation",
+        "functions": 5,
+        "classes": 1,
+        "lines": 67
+      },
+      {
+        "file": "/app/app/analytics/ab_test_manager.py",
+        "module": "ab_test_manager",
+        "functions": 5,
+        "classes": 1,
+        "lines": 130
+      },
+      {
+        "file": "/app/app/analytics/stores/hyperloglog.py",
+        "module": "hyperloglog",
+        "functions": 25,
+        "classes": 4,
+        "lines": 421
+      },
+      {
+        "file": "/app/app/services/admin_ai_service.py",
+        "module": "admin_ai_service",
+        "functions": 7,
+        "classes": 1,
+        "lines": 170
+      },
+      {
+        "file": "/app/app/services/chaos_engineering.py",
+        "module": "chaos_engineering",
+        "functions": 9,
+        "classes": 9,
+        "lines": 212
+      },
+      {
+        "file": "/app/app/services/auth_boundary_service.py",
+        "module": "auth_boundary_service",
+        "functions": 5,
+        "classes": 1,
+        "lines": 159
+      },
+      {
+        "file": "/app/app/services/micro_frontends_service.py",
+        "module": "micro_frontends_service",
+        "functions": 10,
+        "classes": 6,
+        "lines": 170
+      },
+      {
+        "file": "/app/app/services/crud_boundary_service.py",
+        "module": "crud_boundary_service",
+        "functions": 6,
+        "classes": 1,
+        "lines": 111
+      },
+      {
+        "file": "/app/app/services/data_mesh_service.py",
+        "module": "data_mesh_service",
+        "functions": 2,
+        "classes": 1,
+        "lines": 21
+      },
+      {
+        "file": "/app/app/services/observability_boundary_service.py",
+        "module": "observability_boundary_service",
+        "functions": 7,
+        "classes": 1,
+        "lines": 68
+      },
+      {
+        "file": "/app/app/services/service_catalog_service.py",
+        "module": "service_catalog_service",
+        "functions": 13,
+        "classes": 8,
+        "lines": 234
+      },
+      {
+        "file": "/app/app/services/distributed_tracing.py",
+        "module": "distributed_tracing",
+        "functions": 17,
+        "classes": 7,
+        "lines": 317
+      },
+      {
+        "file": "/app/app/services/api_governance_service.py",
+        "module": "api_governance_service",
+        "functions": 1,
+        "classes": 0,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/admin_chat_performance_service.py",
+        "module": "admin_chat_performance_service",
+        "functions": 9,
+        "classes": 5,
+        "lines": 249
+      },
+      {
+        "file": "/app/app/services/advanced_streaming_service.py",
+        "module": "advanced_streaming_service",
+        "functions": 17,
+        "classes": 9,
+        "lines": 288
+      },
+      {
+        "file": "/app/app/services/async_tool_bridge.py",
+        "module": "async_tool_bridge",
+        "functions": 19,
+        "classes": 2,
+        "lines": 380
+      },
+      {
+        "file": "/app/app/services/api_config_secrets_service.py",
+        "module": "api_config_secrets_service",
+        "functions": 15,
+        "classes": 1,
+        "lines": 125
+      },
+      {
+        "file": "/app/app/services/api_contract_service.py",
+        "module": "api_contract_service",
+        "functions": 0,
+        "classes": 1,
+        "lines": 6
+      },
+      {
+        "file": "/app/app/services/saga_orchestrator.py",
+        "module": "saga_orchestrator",
+        "functions": 10,
+        "classes": 7,
+        "lines": 510
+      },
+      {
+        "file": "/app/app/services/domain_events.py",
+        "module": "domain_events",
+        "functions": 27,
+        "classes": 27,
+        "lines": 596
+      },
+      {
+        "file": "/app/app/services/admin_chat_streaming/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/admin_chat_streaming/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/admin_chat_streaming/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/auth_boundary/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/auth_boundary/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/auth_boundary/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/security/auth_persistence.py",
+        "module": "auth_persistence",
+        "functions": 5,
+        "classes": 1,
+        "lines": 64
+      },
+      {
+        "file": "/app/app/services/crud_boundary/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/crud_boundary/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/crud_boundary/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/master_agent/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/master_agent/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/master_agent/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/execution/retry/retry_orchestrator.py",
+        "module": "retry_orchestrator",
+        "functions": 9,
+        "classes": 4,
+        "lines": 107
+      },
+      {
+        "file": "/app/app/services/advanced_streaming/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/advanced_streaming/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/advanced_streaming/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/security_metrics/facade.py",
+        "module": "facade",
+        "functions": 8,
+        "classes": 1,
+        "lines": 75
+      },
+      {
+        "file": "/app/app/services/security_metrics/application/metrics_calculator.py",
+        "module": "metrics_calculator",
+        "functions": 5,
+        "classes": 1,
+        "lines": 92
+      },
+      {
+        "file": "/app/app/services/security_metrics/application/predictive_analytics.py",
+        "module": "predictive_analytics",
+        "functions": 2,
+        "classes": 1,
+        "lines": 72
+      },
+      {
+        "file": "/app/app/services/security_metrics/application/risk_calculator.py",
+        "module": "risk_calculator",
+        "functions": 4,
+        "classes": 1,
+        "lines": 98
+      },
+      {
+        "file": "/app/app/services/security_metrics/domain/ports.py",
+        "module": "ports",
+        "functions": 10,
+        "classes": 6,
+        "lines": 86
+      },
+      {
+        "file": "/app/app/services/security_metrics/infrastructure/in_memory_repositories.py",
+        "module": "in_memory_repositories",
+        "functions": 7,
+        "classes": 2,
+        "lines": 61
+      },
+      {
+        "file": "/app/app/services/llm/retry_strategy.py",
+        "module": "retry_strategy",
+        "functions": 11,
+        "classes": 1,
+        "lines": 148
+      },
+      {
+        "file": "/app/app/services/llm/cost_manager.py",
+        "module": "cost_manager",
+        "functions": 6,
+        "classes": 1,
+        "lines": 128
+      },
+      {
+        "file": "/app/app/services/llm/invocation_handler.py",
+        "module": "invocation_handler",
+        "functions": 10,
+        "classes": 4,
+        "lines": 178
+      },
+      {
+        "file": "/app/app/services/aiops/ports.py",
+        "module": "ports",
+        "functions": 15,
+        "classes": 5,
+        "lines": 37
+      },
+      {
+        "file": "/app/app/services/aiops/repositories.py",
+        "module": "repositories",
+        "functions": 20,
+        "classes": 5,
+        "lines": 85
+      },
+      {
+        "file": "/app/app/services/llm_client/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/llm_client/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/llm_client/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/crud/crud_persistence.py",
+        "module": "crud_persistence",
+        "functions": 7,
+        "classes": 1,
+        "lines": 126
+      },
+      {
+        "file": "/app/app/services/orchestration/application/pod_scheduler.py",
+        "module": "pod_scheduler",
+        "functions": 8,
+        "classes": 3,
+        "lines": 116
+      },
+      {
+        "file": "/app/app/services/orchestration/application/raft_consensus.py",
+        "module": "raft_consensus",
+        "functions": 10,
+        "classes": 1,
+        "lines": 130
+      },
+      {
+        "file": "/app/app/services/orchestration/application/auto_scaler.py",
+        "module": "auto_scaler",
+        "functions": 7,
+        "classes": 2,
+        "lines": 106
+      },
+      {
+        "file": "/app/app/services/orchestration/application/node_manager.py",
+        "module": "node_manager",
+        "functions": 9,
+        "classes": 2,
+        "lines": 66
+      },
+      {
+        "file": "/app/app/services/orchestration/application/self_healer.py",
+        "module": "self_healer",
+        "functions": 20,
+        "classes": 5,
+        "lines": 224
+      },
+      {
+        "file": "/app/app/services/orchestration/domain/ports.py",
+        "module": "ports",
+        "functions": 19,
+        "classes": 5,
+        "lines": 57
+      },
+      {
+        "file": "/app/app/services/orchestration/infrastructure/in_memory_repository.py",
+        "module": "in_memory_repository",
+        "functions": 14,
+        "classes": 3,
+        "lines": 111
+      },
+      {
+        "file": "/app/app/services/project_context/application/context_analyzer.py",
+        "module": "context_analyzer",
+        "functions": 17,
+        "classes": 1,
+        "lines": 637
+      },
+      {
+        "file": "/app/app/services/project_context/refactored/pipeline.py",
+        "module": "pipeline",
+        "functions": 3,
+        "classes": 2,
+        "lines": 45
+      },
+      {
+        "file": "/app/app/services/project_context/refactored/steps.py",
+        "module": "steps",
+        "functions": 5,
+        "classes": 4,
+        "lines": 96
+      },
+      {
+        "file": "/app/app/services/metrics/types.py",
+        "module": "types",
+        "functions": 0,
+        "classes": 11,
+        "lines": 174
+      },
+      {
+        "file": "/app/app/services/metrics/calculators/drift.py",
+        "module": "drift",
+        "functions": 4,
+        "classes": 4,
+        "lines": 83
+      },
+      {
+        "file": "/app/app/services/admin_chat_performance/facade.py",
+        "module": "facade",
+        "functions": 1,
+        "classes": 1,
+        "lines": 19
+      },
+      {
+        "file": "/app/app/services/admin_chat_performance/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/admin_chat_performance/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/api_config_secrets/application/config_secrets_manager.py",
+        "module": "config_secrets_manager",
+        "functions": 12,
+        "classes": 1,
+        "lines": 277
+      },
+      {
+        "file": "/app/app/services/api_config_secrets/domain/ports.py",
+        "module": "ports",
+        "functions": 13,
+        "classes": 4,
+        "lines": 87
+      },
+      {
+        "file": "/app/app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "module": "vault_adapters",
+        "functions": 21,
+        "classes": 4,
+        "lines": 121
+      },
+      {
+        "file": "/app/app/services/api_config_secrets/infrastructure/memory_adapters.py",
+        "module": "memory_adapters",
+        "functions": 11,
+        "classes": 3,
+        "lines": 63
+      },
+      {
+        "file": "/app/app/services/data_mesh/facade.py",
+        "module": "facade",
+        "functions": 28,
+        "classes": 1,
+        "lines": 157
+      },
+      {
+        "file": "/app/app/services/data_mesh/application/mesh_manager.py",
+        "module": "mesh_manager",
+        "functions": 21,
+        "classes": 1,
+        "lines": 329
+      },
+      {
+        "file": "/app/app/services/data_mesh/application/manager.py",
+        "module": "manager",
+        "functions": 1,
+        "classes": 1,
+        "lines": 12
+      },
+      {
+        "file": "/app/app/services/data_mesh/infrastructure/repository.py",
+        "module": "repository",
+        "functions": 1,
+        "classes": 1,
+        "lines": 16
+      },
+      {
+        "file": "/app/app/services/ai_security/facade.py",
+        "module": "facade",
+        "functions": 5,
+        "classes": 1,
+        "lines": 97
+      },
+      {
+        "file": "/app/app/services/ai_security/application/security_manager.py",
+        "module": "security_manager",
+        "functions": 4,
+        "classes": 1,
+        "lines": 123
+      },
+      {
+        "file": "/app/app/services/ai_security/domain/ports.py",
+        "module": "ports",
+        "functions": 10,
+        "classes": 5,
+        "lines": 145
+      },
+      {
+        "file": "/app/app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+        "module": "in_memory_repos",
+        "functions": 8,
+        "classes": 2,
+        "lines": 72
+      },
+      {
+        "file": "/app/app/services/ai_security/infrastructure/responders/auto_responder.py",
+        "module": "auto_responder",
+        "functions": 4,
+        "classes": 1,
+        "lines": 65
+      },
+      {
+        "file": "/app/app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py",
+        "module": "behavioral_analyzer",
+        "functions": 2,
+        "classes": 1,
+        "lines": 80
+      },
+      {
+        "file": "/app/app/services/ai_security/infrastructure/detectors/ml_threat_detector.py",
+        "module": "ml_threat_detector",
+        "functions": 5,
+        "classes": 1,
+        "lines": 132
+      },
+      {
+        "file": "/app/app/services/ai_testing/application/manager.py",
+        "module": "manager",
+        "functions": 2,
+        "classes": 1,
+        "lines": 24
+      },
+      {
+        "file": "/app/app/services/ai_testing/generators/test_generator.py",
+        "module": "test_generator",
+        "functions": 15,
+        "classes": 1,
+        "lines": 393
+      },
+      {
+        "file": "/app/app/services/ai_testing/optimizers/coverage_optimizer.py",
+        "module": "coverage_optimizer",
+        "functions": 3,
+        "classes": 1,
+        "lines": 59
+      },
+      {
+        "file": "/app/app/services/ai_testing/selectors/smart_selector.py",
+        "module": "smart_selector",
+        "functions": 3,
+        "classes": 1,
+        "lines": 47
+      },
+      {
+        "file": "/app/app/services/overmind/executor.py",
+        "module": "executor",
+        "functions": 1,
+        "classes": 1,
+        "lines": 74
+      },
+      {
+        "file": "/app/app/services/overmind/state.py",
+        "module": "state",
+        "functions": 11,
+        "classes": 1,
+        "lines": 189
+      },
+      {
+        "file": "/app/app/services/overmind/orchestrator.py",
+        "module": "orchestrator",
+        "functions": 7,
+        "classes": 1,
+        "lines": 237
+      },
+      {
+        "file": "/app/app/services/overmind/graph/nodes.py",
+        "module": "nodes",
+        "functions": 5,
+        "classes": 3,
+        "lines": 92
+      },
+      {
+        "file": "/app/app/services/overmind/graph/orchestrator.py",
+        "module": "orchestrator",
+        "functions": 4,
+        "classes": 1,
+        "lines": 39
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_layer_detection.py",
+        "module": "_layer_detection",
+        "functions": 2,
+        "classes": 1,
+        "lines": 50
+      },
+      {
+        "file": "/app/app/services/overmind/planning/sandbox.py",
+        "module": "sandbox",
+        "functions": 6,
+        "classes": 0,
+        "lines": 170
+      },
+      {
+        "file": "/app/app/services/overmind/planning/multi_pass_arch_planner.py",
+        "module": "multi_pass_arch_planner",
+        "functions": 7,
+        "classes": 1,
+        "lines": 584
+      },
+      {
+        "file": "/app/app/services/overmind/planning/base_planner.py",
+        "module": "base_planner",
+        "functions": 21,
+        "classes": 1,
+        "lines": 375
+      },
+      {
+        "file": "/app/app/services/overmind/planning/governance.py",
+        "module": "governance",
+        "functions": 1,
+        "classes": 0,
+        "lines": 57
+      },
+      {
+        "file": "/app/app/services/overmind/planning/execution.py",
+        "module": "execution",
+        "functions": 4,
+        "classes": 0,
+        "lines": 86
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_structural_scoring.py",
+        "module": "_structural_scoring",
+        "functions": 7,
+        "classes": 1,
+        "lines": 152
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_configs.py",
+        "module": "_configs",
+        "functions": 0,
+        "classes": 3,
+        "lines": 53
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_drift_detection.py",
+        "module": "_drift_detection",
+        "functions": 1,
+        "classes": 1,
+        "lines": 57
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_tag_detection.py",
+        "module": "_tag_detection",
+        "functions": 2,
+        "classes": 1,
+        "lines": 44
+      },
+      {
+        "file": "/app/app/services/overmind/planning/reliability.py",
+        "module": "reliability",
+        "functions": 4,
+        "classes": 1,
+        "lines": 75
+      },
+      {
+        "file": "/app/app/services/overmind/planning/schemas.py",
+        "module": "schemas",
+        "functions": 26,
+        "classes": 14,
+        "lines": 570
+      },
+      {
+        "file": "/app/app/services/overmind/planning/ranking.py",
+        "module": "ranking",
+        "functions": 6,
+        "classes": 0,
+        "lines": 252
+      },
+      {
+        "file": "/app/app/services/overmind/planning/discovery.py",
+        "module": "discovery",
+        "functions": 12,
+        "classes": 2,
+        "lines": 124
+      },
+      {
+        "file": "/app/app/services/overmind/planning/exceptions.py",
+        "module": "exceptions",
+        "functions": 8,
+        "classes": 13,
+        "lines": 202
+      },
+      {
+        "file": "/app/app/services/overmind/planning/factory_core.py",
+        "module": "factory_core",
+        "functions": 43,
+        "classes": 3,
+        "lines": 560
+      },
+      {
+        "file": "/app/app/services/overmind/planning/telemetry.py",
+        "module": "telemetry",
+        "functions": 24,
+        "classes": 4,
+        "lines": 167
+      },
+      {
+        "file": "/app/app/services/overmind/planning/_self_test_runner.py",
+        "module": "_self_test_runner",
+        "functions": 5,
+        "classes": 1,
+        "lines": 166
+      },
+      {
+        "file": "/app/app/services/overmind/planning/dependency_grapher.py",
+        "module": "dependency_grapher",
+        "functions": 5,
+        "classes": 1,
+        "lines": 70
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/prompts.py",
+        "module": "prompts",
+        "functions": 9,
+        "classes": 0,
+        "lines": 203
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/deep_index_logic.py",
+        "module": "deep_index_logic",
+        "functions": 2,
+        "classes": 0,
+        "lines": 126
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/scan_logic.py",
+        "module": "scan_logic",
+        "functions": 4,
+        "classes": 0,
+        "lines": 112
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/planning_logic.py",
+        "module": "planning_logic",
+        "functions": 8,
+        "classes": 0,
+        "lines": 221
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/utils.py",
+        "module": "utils",
+        "functions": 12,
+        "classes": 0,
+        "lines": 231
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/steps/semantic_step.py",
+        "module": "semantic_step",
+        "functions": 4,
+        "classes": 1,
+        "lines": 137
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/steps/index_step.py",
+        "module": "index_step",
+        "functions": 1,
+        "classes": 1,
+        "lines": 22
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/steps/structure_step.py",
+        "module": "structure_step",
+        "functions": 3,
+        "classes": 1,
+        "lines": 99
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/steps/reporting_step.py",
+        "module": "reporting_step",
+        "functions": 4,
+        "classes": 1,
+        "lines": 154
+      },
+      {
+        "file": "/app/app/services/overmind/planning/hyper_planner/steps/generation_step.py",
+        "module": "generation_step",
+        "functions": 7,
+        "classes": 1,
+        "lines": 335
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/task_decomposer.py",
+        "module": "task_decomposer",
+        "functions": 6,
+        "classes": 2,
+        "lines": 100
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/plan_generator.py",
+        "module": "plan_generator",
+        "functions": 2,
+        "classes": 2,
+        "lines": 69
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/plan_optimizer.py",
+        "module": "plan_optimizer",
+        "functions": 2,
+        "classes": 1,
+        "lines": 33
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/context_enricher.py",
+        "module": "context_enricher",
+        "functions": 5,
+        "classes": 2,
+        "lines": 96
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/dependency_builder.py",
+        "module": "dependency_builder",
+        "functions": 3,
+        "classes": 2,
+        "lines": 56
+      },
+      {
+        "file": "/app/app/services/overmind/planning/generators/objective_analyzer.py",
+        "module": "objective_analyzer",
+        "functions": 6,
+        "classes": 4,
+        "lines": 143
+      },
+      {
+        "file": "/app/app/services/overmind/planning/deep_indexer_v2/graph.py",
+        "module": "graph",
+        "functions": 2,
+        "classes": 0,
+        "lines": 54
+      },
+      {
+        "file": "/app/app/services/overmind/planning/deep_indexer_v2/visitor.py",
+        "module": "visitor",
+        "functions": 22,
+        "classes": 1,
+        "lines": 156
+      },
+      {
+        "file": "/app/app/services/overmind/planning/strategies/base_strategy.py",
+        "module": "base_strategy",
+        "functions": 2,
+        "classes": 1,
+        "lines": 31
+      },
+      {
+        "file": "/app/app/services/overmind/planning/strategies/linear_strategy.py",
+        "module": "linear_strategy",
+        "functions": 4,
+        "classes": 1,
+        "lines": 48
+      },
+      {
+        "file": "/app/app/services/overmind/planning/strategies/recursive_strategy.py",
+        "module": "recursive_strategy",
+        "functions": 4,
+        "classes": 1,
+        "lines": 45
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/depth_validator.py",
+        "module": "depth_validator",
+        "functions": 2,
+        "classes": 1,
+        "lines": 41
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/heuristic_validator.py",
+        "module": "heuristic_validator",
+        "functions": 6,
+        "classes": 1,
+        "lines": 153
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/hash_computer.py",
+        "module": "hash_computer",
+        "functions": 4,
+        "classes": 1,
+        "lines": 85
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/graph_builder.py",
+        "module": "graph_builder",
+        "functions": 8,
+        "classes": 2,
+        "lines": 119
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/stats_computer.py",
+        "module": "stats_computer",
+        "functions": 5,
+        "classes": 1,
+        "lines": 107
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/basic_validator.py",
+        "module": "basic_validator",
+        "functions": 2,
+        "classes": 1,
+        "lines": 40
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/fanout_validator.py",
+        "module": "fanout_validator",
+        "functions": 2,
+        "classes": 1,
+        "lines": 40
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/orchestrator.py",
+        "module": "orchestrator",
+        "functions": 4,
+        "classes": 1,
+        "lines": 137
+      },
+      {
+        "file": "/app/app/services/overmind/planning/validators/topology_validator.py",
+        "module": "topology_validator",
+        "functions": 4,
+        "classes": 1,
+        "lines": 97
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/reporters/csv_reporter.py",
+        "module": "csv_reporter",
+        "functions": 1,
+        "classes": 0,
+        "lines": 35
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/reporters/json_reporter.py",
+        "module": "json_reporter",
+        "functions": 1,
+        "classes": 0,
+        "lines": 11
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/reporters/markdown_reporter.py",
+        "module": "markdown_reporter",
+        "functions": 1,
+        "classes": 0,
+        "lines": 90
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/reporters/html_reporter.py",
+        "module": "html_reporter",
+        "functions": 1,
+        "classes": 0,
+        "lines": 286
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "module": "complexity",
+        "functions": 10,
+        "classes": 1,
+        "lines": 108
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/analyzers/smells.py",
+        "module": "smells",
+        "functions": 2,
+        "classes": 1,
+        "lines": 61
+      },
+      {
+        "file": "/app/app/services/overmind/code_intelligence/analyzers/git.py",
+        "module": "git",
+        "functions": 2,
+        "classes": 1,
+        "lines": 115
+      },
+      {
+        "file": "/app/app/services/adaptive/facade.py",
+        "module": "facade",
+        "functions": 10,
+        "classes": 1,
+        "lines": 241
+      },
+      {
+        "file": "/app/app/services/adaptive/application/intelligent_router.py",
+        "module": "intelligent_router",
+        "functions": 4,
+        "classes": 1,
+        "lines": 127
+      },
+      {
+        "file": "/app/app/services/adaptive/application/health_monitor.py",
+        "module": "health_monitor",
+        "functions": 4,
+        "classes": 1,
+        "lines": 154
+      },
+      {
+        "file": "/app/app/services/adaptive/application/scaling_engine.py",
+        "module": "scaling_engine",
+        "functions": 3,
+        "classes": 1,
+        "lines": 90
+      },
+      {
+        "file": "/app/app/services/adaptive/domain/ports.py",
+        "module": "ports",
+        "functions": 8,
+        "classes": 2,
+        "lines": 56
+      },
+      {
+        "file": "/app/app/services/adaptive/infrastructure/in_memory_repository.py",
+        "module": "in_memory_repository",
+        "functions": 10,
+        "classes": 2,
+        "lines": 83
+      },
+      {
+        "file": "/app/app/services/admin/chat_streamer.py",
+        "module": "chat_streamer",
+        "functions": 3,
+        "classes": 1,
+        "lines": 100
+      },
+      {
+        "file": "/app/app/services/admin/chat_persistence.py",
+        "module": "chat_persistence",
+        "functions": 8,
+        "classes": 1,
+        "lines": 126
+      },
+      {
+        "file": "/app/app/services/agent_tools/memory_tools.py",
+        "module": "memory_tools",
+        "functions": 2,
+        "classes": 0,
+        "lines": 55
+      },
+      {
+        "file": "/app/app/services/agent_tools/dispatch_tools.py",
+        "module": "dispatch_tools",
+        "functions": 2,
+        "classes": 0,
+        "lines": 129
+      },
+      {
+        "file": "/app/app/services/agent_tools/definitions.py",
+        "module": "definitions",
+        "functions": 3,
+        "classes": 1,
+        "lines": 155
+      },
+      {
+        "file": "/app/app/services/agent_tools/search_tools.py",
+        "module": "search_tools",
+        "functions": 3,
+        "classes": 0,
+        "lines": 249
+      },
+      {
+        "file": "/app/app/services/agent_tools/structural_tools.py",
+        "module": "structural_tools",
+        "functions": 2,
+        "classes": 0,
+        "lines": 56
+      },
+      {
+        "file": "/app/app/services/agent_tools/utils.py",
+        "module": "utils",
+        "functions": 9,
+        "classes": 0,
+        "lines": 139
+      },
+      {
+        "file": "/app/app/services/agent_tools/structural_logic.py",
+        "module": "structural_logic",
+        "functions": 6,
+        "classes": 0,
+        "lines": 116
+      },
+      {
+        "file": "/app/app/services/agent_tools/cognitive_tools.py",
+        "module": "cognitive_tools",
+        "functions": 3,
+        "classes": 0,
+        "lines": 159
+      },
+      {
+        "file": "/app/app/services/agent_tools/refactored/builder.py",
+        "module": "builder",
+        "functions": 10,
+        "classes": 1,
+        "lines": 71
+      },
+      {
+        "file": "/app/app/services/agent_tools/refactored/registry.py",
+        "module": "registry",
+        "functions": 12,
+        "classes": 1,
+        "lines": 104
+      },
+      {
+        "file": "/app/app/services/serving/application/shadow_deployment.py",
+        "module": "shadow_deployment",
+        "functions": 3,
+        "classes": 1,
+        "lines": 86
+      },
+      {
+        "file": "/app/app/services/serving/application/ensemble_router.py",
+        "module": "ensemble_router",
+        "functions": 6,
+        "classes": 1,
+        "lines": 92
+      },
+      {
+        "file": "/app/app/services/serving/application/model_invoker.py",
+        "module": "model_invoker",
+        "functions": 3,
+        "classes": 1,
+        "lines": 101
+      },
+      {
+        "file": "/app/app/services/serving/application/experiment_manager.py",
+        "module": "experiment_manager",
+        "functions": 9,
+        "classes": 1,
+        "lines": 275
+      },
+      {
+        "file": "/app/app/services/serving/application/model_registry.py",
+        "module": "model_registry",
+        "functions": 8,
+        "classes": 1,
+        "lines": 201
+      },
+      {
+        "file": "/app/app/services/serving/application/inference_router.py",
+        "module": "inference_router",
+        "functions": 2,
+        "classes": 1,
+        "lines": 150
+      },
+      {
+        "file": "/app/app/services/serving/application/ab_test_engine.py",
+        "module": "ab_test_engine",
+        "functions": 5,
+        "classes": 1,
+        "lines": 107
+      },
+      {
+        "file": "/app/app/services/serving/domain/ports.py",
+        "module": "ports",
+        "functions": 12,
+        "classes": 5,
+        "lines": 146
+      },
+      {
+        "file": "/app/app/services/serving/infrastructure/mock_model_invoker.py",
+        "module": "mock_model_invoker",
+        "functions": 5,
+        "classes": 1,
+        "lines": 162
+      },
+      {
+        "file": "/app/app/services/serving/infrastructure/in_memory_repository.py",
+        "module": "in_memory_repository",
+        "functions": 11,
+        "classes": 2,
+        "lines": 130
+      },
+      {
+        "file": "/app/app/services/serving/infrastructure/metrics_collector.py",
+        "module": "metrics_collector",
+        "functions": 5,
+        "classes": 1,
+        "lines": 73
+      },
+      {
+        "file": "/app/app/services/chat/intent_detector.py",
+        "module": "intent_detector",
+        "functions": 6,
+        "classes": 3,
+        "lines": 87
+      },
+      {
+        "file": "/app/app/services/chat/orchestrator.py",
+        "module": "orchestrator",
+        "functions": 3,
+        "classes": 1,
+        "lines": 103
+      },
+      {
+        "file": "/app/app/services/chat/telemetry.py",
+        "module": "telemetry",
+        "functions": 0,
+        "classes": 1,
+        "lines": 7
+      },
+      {
+        "file": "/app/app/services/chat/handlers/search_handler.py",
+        "module": "search_handler",
+        "functions": 1,
+        "classes": 0,
+        "lines": 83
+      },
+      {
+        "file": "/app/app/services/chat/handlers/system_handler.py",
+        "module": "system_handler",
+        "functions": 2,
+        "classes": 0,
+        "lines": 118
+      },
+      {
+        "file": "/app/app/services/chat/handlers/mission_handler.py",
+        "module": "mission_handler",
+        "functions": 10,
+        "classes": 0,
+        "lines": 291
+      },
+      {
+        "file": "/app/app/services/chat/handlers/strategy_handlers.py",
+        "module": "strategy_handlers",
+        "functions": 24,
+        "classes": 9,
+        "lines": 200
+      },
+      {
+        "file": "/app/app/services/chat/handlers/file_handler.py",
+        "module": "file_handler",
+        "functions": 2,
+        "classes": 0,
+        "lines": 134
+      },
+      {
+        "file": "/app/app/services/resilience/timeout.py",
+        "module": "timeout",
+        "functions": 5,
+        "classes": 3,
+        "lines": 82
+      },
+      {
+        "file": "/app/app/services/resilience/bulkhead.py",
+        "module": "bulkhead",
+        "functions": 3,
+        "classes": 4,
+        "lines": 107
+      }
+    ]
+  },
+  "services": {
+    "user_analytics_metrics_service.py": {
+      "files": [
+        "/app/app/services/user_analytics_metrics_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 59
+    },
+    "ai_intelligent_testing.py": {
+      "files": [
+        "/app/app/services/ai_intelligent_testing.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 34
+    },
+    "llm_client_service.py": {
+      "files": [
+        "/app/app/services/llm_client_service.py"
+      ],
+      "total_functions": 13,
+      "total_classes": 0,
+      "total_lines": 357
+    },
+    "admin_ai_service.py": {
+      "files": [
+        "/app/app/services/admin_ai_service.py"
+      ],
+      "total_functions": 7,
+      "total_classes": 1,
+      "total_lines": 170
+    },
+    "chaos_engineering.py": {
+      "files": [
+        "/app/app/services/chaos_engineering.py"
+      ],
+      "total_functions": 9,
+      "total_classes": 9,
+      "total_lines": 212
+    },
+    "auth_boundary_service.py": {
+      "files": [
+        "/app/app/services/auth_boundary_service.py"
+      ],
+      "total_functions": 5,
+      "total_classes": 1,
+      "total_lines": 159
+    },
+    "micro_frontends_service.py": {
+      "files": [
+        "/app/app/services/micro_frontends_service.py"
+      ],
+      "total_functions": 10,
+      "total_classes": 6,
+      "total_lines": 170
+    },
+    "crud_boundary_service.py": {
+      "files": [
+        "/app/app/services/crud_boundary_service.py"
+      ],
+      "total_functions": 6,
+      "total_classes": 1,
+      "total_lines": 111
+    },
+    "infrastructure_metrics_service.py": {
+      "files": [
+        "/app/app/services/infrastructure_metrics_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 37
+    },
+    "data_mesh_service.py": {
+      "files": [
+        "/app/app/services/data_mesh_service.py"
+      ],
+      "total_functions": 2,
+      "total_classes": 1,
+      "total_lines": 21
+    },
+    "breakthrough_streaming.py": {
+      "files": [
+        "/app/app/services/breakthrough_streaming.py"
+      ],
+      "total_functions": 6,
+      "total_classes": 3,
+      "total_lines": 105
+    },
+    "observability_boundary_service.py": {
+      "files": [
+        "/app/app/services/observability_boundary_service.py"
+      ],
+      "total_functions": 7,
+      "total_classes": 1,
+      "total_lines": 68
+    },
+    "api_event_driven_service.py": {
+      "files": [
+        "/app/app/services/api_event_driven_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 95
+    },
+    "service_catalog_service.py": {
+      "files": [
+        "/app/app/services/service_catalog_service.py"
+      ],
+      "total_functions": 13,
+      "total_classes": 8,
+      "total_lines": 234
+    },
+    "distributed_tracing.py": {
+      "files": [
+        "/app/app/services/distributed_tracing.py"
+      ],
+      "total_functions": 17,
+      "total_classes": 7,
+      "total_lines": 317
+    },
+    "api_governance_service.py": {
+      "files": [
+        "/app/app/services/api_governance_service.py"
+      ],
+      "total_functions": 1,
+      "total_classes": 0,
+      "total_lines": 19
+    },
+    "fastapi_generation_service.py": {
+      "files": [
+        "/app/app/services/fastapi_generation_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 66
+    },
+    "distributed_resilience_service.py": {
+      "files": [
+        "/app/app/services/distributed_resilience_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 101
+    },
+    "project_context_service.py": {
+      "files": [
+        "/app/app/services/project_context_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 53
+    },
+    "ai_model_metrics_service.py": {
+      "files": [
+        "/app/app/services/ai_model_metrics_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 40
+    },
+    "admin_chat_performance_service.py": {
+      "files": [
+        "/app/app/services/admin_chat_performance_service.py"
+      ],
+      "total_functions": 9,
+      "total_classes": 5,
+      "total_lines": 249
+    },
+    "admin_chat_boundary_service.py": {
+      "files": [
+        "/app/app/services/admin_chat_boundary_service.py"
+      ],
+      "total_functions": 12,
+      "total_classes": 1,
+      "total_lines": 240
+    },
+    "horizontal_scaling_service.py": {
+      "files": [
+        "/app/app/services/horizontal_scaling_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 60
+    },
+    "ensemble_ai.py": {
+      "files": [
+        "/app/app/services/ensemble_ai.py"
+      ],
+      "total_functions": 21,
+      "total_classes": 4,
+      "total_lines": 354
+    },
+    "api_security_service.py": {
+      "files": [
+        "/app/app/services/api_security_service.py"
+      ],
+      "total_functions": 1,
+      "total_classes": 0,
+      "total_lines": 19
+    },
+    "system_service.py": {
+      "files": [
+        "/app/app/services/system_service.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 1,
+      "total_lines": 74
+    },
+    "advanced_streaming_service.py": {
+      "files": [
+        "/app/app/services/advanced_streaming_service.py"
+      ],
+      "total_functions": 17,
+      "total_classes": 9,
+      "total_lines": 288
+    },
+    "admin_chat_streaming_service.py": {
+      "files": [
+        "/app/app/services/admin_chat_streaming_service.py"
+      ],
+      "total_functions": 13,
+      "total_classes": 5,
+      "total_lines": 351
+    },
+    "ai_adaptive_microservices.py": {
+      "files": [
+        "/app/app/services/ai_adaptive_microservices.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 64
+    },
+    "async_tool_bridge.py": {
+      "files": [
+        "/app/app/services/async_tool_bridge.py"
+      ],
+      "total_functions": 19,
+      "total_classes": 2,
+      "total_lines": 380
+    },
+    "__init__.py": {
+      "files": [
+        "/app/app/services/__init__.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 1
+    },
+    "history_service.py": {
+      "files": [
+        "/app/app/services/history_service.py"
+      ],
+      "total_functions": 2,
+      "total_classes": 0,
+      "total_lines": 110
+    },
+    "api_config_secrets_service.py": {
+      "files": [
+        "/app/app/services/api_config_secrets_service.py"
+      ],
+      "total_functions": 15,
+      "total_classes": 1,
+      "total_lines": 125
+    },
+    "database_service.py": {
+      "files": [
+        "/app/app/services/database_service.py"
+      ],
+      "total_functions": 11,
+      "total_classes": 1,
+      "total_lines": 81
+    },
+    "duplication_buster.py": {
+      "files": [
+        "/app/app/services/duplication_buster.py"
+      ],
+      "total_functions": 4,
+      "total_classes": 1,
+      "total_lines": 67
+    },
+    "ai_advanced_security.py": {
+      "files": [
+        "/app/app/services/ai_advanced_security.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 73
+    },
+    "multi_layer_cache_service.py": {
+      "files": [
+        "/app/app/services/multi_layer_cache_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 54
+    },
+    "prompt_engineering_service.py": {
+      "files": [
+        "/app/app/services/prompt_engineering_service.py"
+      ],
+      "total_functions": 1,
+      "total_classes": 1,
+      "total_lines": 42
+    },
+    "api_contract_service.py": {
+      "files": [
+        "/app/app/services/api_contract_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 1,
+      "total_lines": 6
+    },
+    "user_service.py": {
+      "files": [
+        "/app/app/services/user_service.py"
+      ],
+      "total_functions": 10,
+      "total_classes": 1,
+      "total_lines": 174
+    },
+    "saga_orchestrator.py": {
+      "files": [
+        "/app/app/services/saga_orchestrator.py"
+      ],
+      "total_functions": 10,
+      "total_classes": 7,
+      "total_lines": 510
+    },
+    "chat_orchestrator_service.py": {
+      "files": [
+        "/app/app/services/chat_orchestrator_service.py"
+      ],
+      "total_functions": 0,
+      "total_classes": 0,
+      "total_lines": 20
+    },
+    "domain_events.py": {
+      "files": [
+        "/app/app/services/domain_events.py"
+      ],
+      "total_functions": 27,
+      "total_classes": 27,
+      "total_lines": 596
+    },
+    "admin_chat_streaming": {
+      "files": [
+        "/app/app/services/admin_chat_streaming/facade.py",
+        "/app/app/services/admin_chat_streaming/__init__.py",
+        "/app/app/services/admin_chat_streaming/application/manager.py",
+        "/app/app/services/admin_chat_streaming/application/__init__.py",
+        "/app/app/services/admin_chat_streaming/domain/ports.py",
+        "/app/app/services/admin_chat_streaming/domain/__init__.py",
+        "/app/app/services/admin_chat_streaming/domain/models.py",
+        "/app/app/services/admin_chat_streaming/infrastructure/repository.py",
+        "/app/app/services/admin_chat_streaming/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "auth_boundary": {
+      "files": [
+        "/app/app/services/auth_boundary/facade.py",
+        "/app/app/services/auth_boundary/__init__.py",
+        "/app/app/services/auth_boundary/application/manager.py",
+        "/app/app/services/auth_boundary/application/__init__.py",
+        "/app/app/services/auth_boundary/domain/ports.py",
+        "/app/app/services/auth_boundary/domain/__init__.py",
+        "/app/app/services/auth_boundary/domain/models.py",
+        "/app/app/services/auth_boundary/infrastructure/repository.py",
+        "/app/app/services/auth_boundary/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "security": {
+      "files": [
+        "/app/app/services/security/auth_persistence.py",
+        "/app/app/services/security/__init__.py"
+      ],
+      "total_functions": 5,
+      "total_classes": 1,
+      "total_lines": 72
+    },
+    "crud_boundary": {
+      "files": [
+        "/app/app/services/crud_boundary/facade.py",
+        "/app/app/services/crud_boundary/__init__.py",
+        "/app/app/services/crud_boundary/application/manager.py",
+        "/app/app/services/crud_boundary/application/__init__.py",
+        "/app/app/services/crud_boundary/domain/ports.py",
+        "/app/app/services/crud_boundary/domain/__init__.py",
+        "/app/app/services/crud_boundary/domain/models.py",
+        "/app/app/services/crud_boundary/infrastructure/repository.py",
+        "/app/app/services/crud_boundary/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "master_agent": {
+      "files": [
+        "/app/app/services/master_agent/facade.py",
+        "/app/app/services/master_agent/__init__.py",
+        "/app/app/services/master_agent/application/manager.py",
+        "/app/app/services/master_agent/application/__init__.py",
+        "/app/app/services/master_agent/domain/ports.py",
+        "/app/app/services/master_agent/domain/__init__.py",
+        "/app/app/services/master_agent/domain/models.py",
+        "/app/app/services/master_agent/infrastructure/repository.py",
+        "/app/app/services/master_agent/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "execution": {
+      "files": [
+        "/app/app/services/execution/retry/retry_orchestrator.py",
+        "/app/app/services/execution/retry/__init__.py"
+      ],
+      "total_functions": 9,
+      "total_classes": 4,
+      "total_lines": 113
+    },
+    "advanced_streaming": {
+      "files": [
+        "/app/app/services/advanced_streaming/facade.py",
+        "/app/app/services/advanced_streaming/__init__.py",
+        "/app/app/services/advanced_streaming/application/manager.py",
+        "/app/app/services/advanced_streaming/application/__init__.py",
+        "/app/app/services/advanced_streaming/domain/ports.py",
+        "/app/app/services/advanced_streaming/domain/__init__.py",
+        "/app/app/services/advanced_streaming/domain/models.py",
+        "/app/app/services/advanced_streaming/infrastructure/repository.py",
+        "/app/app/services/advanced_streaming/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "security_metrics": {
+      "files": [
+        "/app/app/services/security_metrics/facade.py",
+        "/app/app/services/security_metrics/__init__.py",
+        "/app/app/services/security_metrics/application/metrics_calculator.py",
+        "/app/app/services/security_metrics/application/__init__.py",
+        "/app/app/services/security_metrics/application/predictive_analytics.py",
+        "/app/app/services/security_metrics/application/risk_calculator.py",
+        "/app/app/services/security_metrics/domain/ports.py",
+        "/app/app/services/security_metrics/domain/__init__.py",
+        "/app/app/services/security_metrics/domain/models.py",
+        "/app/app/services/security_metrics/infrastructure/in_memory_repositories.py",
+        "/app/app/services/security_metrics/infrastructure/__init__.py"
+      ],
+      "total_functions": 38,
+      "total_classes": 17,
+      "total_lines": 640
+    },
+    "llm": {
+      "files": [
+        "/app/app/services/llm/retry_strategy.py",
+        "/app/app/services/llm/circuit_breaker.py",
+        "/app/app/services/llm/cost_manager.py",
+        "/app/app/services/llm/invocation_handler.py"
+      ],
+      "total_functions": 32,
+      "total_classes": 7,
+      "total_lines": 515
+    },
+    "aiops": {
+      "files": [
+        "/app/app/services/aiops/service.py",
+        "/app/app/services/aiops/ports.py",
+        "/app/app/services/aiops/models.py",
+        "/app/app/services/aiops/repositories.py"
+      ],
+      "total_functions": 53,
+      "total_classes": 20,
+      "total_lines": 707
+    },
+    "llm_client": {
+      "files": [
+        "/app/app/services/llm_client/facade.py",
+        "/app/app/services/llm_client/__init__.py",
+        "/app/app/services/llm_client/application/manager.py",
+        "/app/app/services/llm_client/application/__init__.py",
+        "/app/app/services/llm_client/domain/ports.py",
+        "/app/app/services/llm_client/domain/__init__.py",
+        "/app/app/services/llm_client/domain/models.py",
+        "/app/app/services/llm_client/infrastructure/repository.py",
+        "/app/app/services/llm_client/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "crud": {
+      "files": [
+        "/app/app/services/crud/crud_persistence.py",
+        "/app/app/services/crud/__init__.py"
+      ],
+      "total_functions": 7,
+      "total_classes": 1,
+      "total_lines": 134
+    },
+    "orchestration": {
+      "files": [
+        "/app/app/services/orchestration/__init__.py",
+        "/app/app/services/orchestration/application/pod_scheduler.py",
+        "/app/app/services/orchestration/application/raft_consensus.py",
+        "/app/app/services/orchestration/application/auto_scaler.py",
+        "/app/app/services/orchestration/application/node_manager.py",
+        "/app/app/services/orchestration/application/self_healer.py",
+        "/app/app/services/orchestration/application/__init__.py",
+        "/app/app/services/orchestration/domain/ports.py",
+        "/app/app/services/orchestration/domain/__init__.py",
+        "/app/app/services/orchestration/domain/models.py",
+        "/app/app/services/orchestration/infrastructure/in_memory_repository.py",
+        "/app/app/services/orchestration/infrastructure/__init__.py"
+      ],
+      "total_functions": 92,
+      "total_classes": 30,
+      "total_lines": 1055
+    },
+    "project_context": {
+      "files": [
+        "/app/app/services/project_context/__init__.py",
+        "/app/app/services/project_context/application/context_analyzer.py",
+        "/app/app/services/project_context/application/__init__.py",
+        "/app/app/services/project_context/refactored/pipeline.py",
+        "/app/app/services/project_context/refactored/steps.py",
+        "/app/app/services/project_context/refactored/context.py",
+        "/app/app/services/project_context/refactored/__init__.py",
+        "/app/app/services/project_context/domain/__init__.py",
+        "/app/app/services/project_context/domain/models.py"
+      ],
+      "total_functions": 29,
+      "total_classes": 13,
+      "total_lines": 980
+    },
+    "metrics": {
+      "files": [
+        "/app/app/services/metrics/service.py",
+        "/app/app/services/metrics/types.py",
+        "/app/app/services/metrics/calculators/drift.py"
+      ],
+      "total_functions": 20,
+      "total_classes": 16,
+      "total_lines": 526
+    },
+    "admin_chat_performance": {
+      "files": [
+        "/app/app/services/admin_chat_performance/facade.py",
+        "/app/app/services/admin_chat_performance/__init__.py",
+        "/app/app/services/admin_chat_performance/application/manager.py",
+        "/app/app/services/admin_chat_performance/application/__init__.py",
+        "/app/app/services/admin_chat_performance/domain/ports.py",
+        "/app/app/services/admin_chat_performance/domain/__init__.py",
+        "/app/app/services/admin_chat_performance/domain/models.py",
+        "/app/app/services/admin_chat_performance/infrastructure/repository.py",
+        "/app/app/services/admin_chat_performance/infrastructure/__init__.py"
+      ],
+      "total_functions": 3,
+      "total_classes": 3,
+      "total_lines": 86
+    },
+    "api_config_secrets": {
+      "files": [
+        "/app/app/services/api_config_secrets/application/config_secrets_manager.py",
+        "/app/app/services/api_config_secrets/domain/ports.py",
+        "/app/app/services/api_config_secrets/domain/models.py",
+        "/app/app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "/app/app/services/api_config_secrets/infrastructure/memory_adapters.py"
+      ],
+      "total_functions": 57,
+      "total_classes": 19,
+      "total_lines": 640
+    },
+    "data_mesh": {
+      "files": [
+        "/app/app/services/data_mesh/facade.py",
+        "/app/app/services/data_mesh/__init__.py",
+        "/app/app/services/data_mesh/application/mesh_manager.py",
+        "/app/app/services/data_mesh/application/manager.py",
+        "/app/app/services/data_mesh/application/__init__.py",
+        "/app/app/services/data_mesh/domain/ports.py",
+        "/app/app/services/data_mesh/domain/__init__.py",
+        "/app/app/services/data_mesh/domain/models.py",
+        "/app/app/services/data_mesh/infrastructure/repository.py",
+        "/app/app/services/data_mesh/infrastructure/__init__.py"
+      ],
+      "total_functions": 51,
+      "total_classes": 14,
+      "total_lines": 704
+    },
+    "ai_security": {
+      "files": [
+        "/app/app/services/ai_security/facade.py",
+        "/app/app/services/ai_security/__init__.py",
+        "/app/app/services/ai_security/application/security_manager.py",
+        "/app/app/services/ai_security/application/__init__.py",
+        "/app/app/services/ai_security/domain/ports.py",
+        "/app/app/services/ai_security/domain/__init__.py",
+        "/app/app/services/ai_security/domain/models.py",
+        "/app/app/services/ai_security/infrastructure/__init__.py",
+        "/app/app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+        "/app/app/services/ai_security/infrastructure/repositories/__init__.py",
+        "/app/app/services/ai_security/infrastructure/responders/__init__.py",
+        "/app/app/services/ai_security/infrastructure/responders/auto_responder.py",
+        "/app/app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py",
+        "/app/app/services/ai_security/infrastructure/detectors/__init__.py",
+        "/app/app/services/ai_security/infrastructure/detectors/ml_threat_detector.py"
+      ],
+      "total_functions": 40,
+      "total_classes": 17,
+      "total_lines": 986
+    },
+    "ai_testing": {
+      "files": [
+        "/app/app/services/ai_testing/application/manager.py",
+        "/app/app/services/ai_testing/domain/models.py",
+        "/app/app/services/ai_testing/generators/test_generator.py",
+        "/app/app/services/ai_testing/optimizers/coverage_optimizer.py",
+        "/app/app/services/ai_testing/selectors/smart_selector.py"
+      ],
+      "total_functions": 24,
+      "total_classes": 8,
+      "total_lines": 598
+    },
+    "ai_project_management": {
+      "files": [
+        "/app/app/services/ai_project_management/facade.py",
+        "/app/app/services/ai_project_management/__init__.py",
+        "/app/app/services/ai_project_management/application/services.py",
+        "/app/app/services/ai_project_management/domain/models.py"
+      ],
+      "total_functions": 16,
+      "total_classes": 10,
+      "total_lines": 370
+    },
+    "overmind": {
+      "files": [
+        "/app/app/services/overmind/executor.py",
+        "/app/app/services/overmind/state.py",
+        "/app/app/services/overmind/__init__.py",
+        "/app/app/services/overmind/tool_canonicalizer.py",
+        "/app/app/services/overmind/orchestrator.py",
+        "/app/app/services/overmind/graph/nodes.py",
+        "/app/app/services/overmind/graph/orchestrator.py",
+        "/app/app/services/overmind/planning/_layer_detection.py",
+        "/app/app/services/overmind/planning/llm_planner.py",
+        "/app/app/services/overmind/planning/sandbox.py",
+        "/app/app/services/overmind/planning/multi_pass_arch_planner.py",
+        "/app/app/services/overmind/planning/factory.py",
+        "/app/app/services/overmind/planning/deep_indexer.py",
+        "/app/app/services/overmind/planning/base_planner.py",
+        "/app/app/services/overmind/planning/governance.py",
+        "/app/app/services/overmind/planning/execution.py",
+        "/app/app/services/overmind/planning/_structural_scoring.py",
+        "/app/app/services/overmind/planning/fault_tolerance.py",
+        "/app/app/services/overmind/planning/_configs.py",
+        "/app/app/services/overmind/planning/_drift_detection.py",
+        "/app/app/services/overmind/planning/_tag_detection.py",
+        "/app/app/services/overmind/planning/reliability.py",
+        "/app/app/services/overmind/planning/schemas.py",
+        "/app/app/services/overmind/planning/ranking.py",
+        "/app/app/services/overmind/planning/discovery.py",
+        "/app/app/services/overmind/planning/__init__.py",
+        "/app/app/services/overmind/planning/exceptions.py",
+        "/app/app/services/overmind/planning/factory_core.py",
+        "/app/app/services/overmind/planning/telemetry.py",
+        "/app/app/services/overmind/planning/_self_test_runner.py",
+        "/app/app/services/overmind/planning/config.py",
+        "/app/app/services/overmind/planning/dependency_grapher.py",
+        "/app/app/services/overmind/planning/hyper_planner/prompts.py",
+        "/app/app/services/overmind/planning/hyper_planner/core.py",
+        "/app/app/services/overmind/planning/hyper_planner/deep_index_logic.py",
+        "/app/app/services/overmind/planning/hyper_planner/scan_logic.py",
+        "/app/app/services/overmind/planning/hyper_planner/__init__.py",
+        "/app/app/services/overmind/planning/hyper_planner/planning_logic.py",
+        "/app/app/services/overmind/planning/hyper_planner/utils.py",
+        "/app/app/services/overmind/planning/hyper_planner/config.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/scan_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/semantic_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/index_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/structure_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/reporting_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/generation_step.py",
+        "/app/app/services/overmind/planning/hyper_planner/steps/base.py",
+        "/app/app/services/overmind/planning/generators/task_decomposer.py",
+        "/app/app/services/overmind/planning/generators/plan_generator.py",
+        "/app/app/services/overmind/planning/generators/plan_optimizer.py",
+        "/app/app/services/overmind/planning/generators/context_enricher.py",
+        "/app/app/services/overmind/planning/generators/dependency_builder.py",
+        "/app/app/services/overmind/planning/generators/objective_analyzer.py",
+        "/app/app/services/overmind/planning/generators/__init__.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/graph.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/core.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/analysis.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/summary.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/visitor.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/__init__.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/models.py",
+        "/app/app/services/overmind/planning/deep_indexer_v2/config.py",
+        "/app/app/services/overmind/planning/strategies/base_strategy.py",
+        "/app/app/services/overmind/planning/strategies/linear_strategy.py",
+        "/app/app/services/overmind/planning/strategies/__init__.py",
+        "/app/app/services/overmind/planning/strategies/recursive_strategy.py",
+        "/app/app/services/overmind/planning/validators/depth_validator.py",
+        "/app/app/services/overmind/planning/validators/heuristic_validator.py",
+        "/app/app/services/overmind/planning/validators/hash_computer.py",
+        "/app/app/services/overmind/planning/validators/graph_builder.py",
+        "/app/app/services/overmind/planning/validators/stats_computer.py",
+        "/app/app/services/overmind/planning/validators/__init__.py",
+        "/app/app/services/overmind/planning/validators/basic_validator.py",
+        "/app/app/services/overmind/planning/validators/fanout_validator.py",
+        "/app/app/services/overmind/planning/validators/orchestrator.py",
+        "/app/app/services/overmind/planning/validators/topology_validator.py",
+        "/app/app/services/overmind/code_intelligence/core.py",
+        "/app/app/services/overmind/code_intelligence/cli.py",
+        "/app/app/services/overmind/code_intelligence/models.py",
+        "/app/app/services/overmind/code_intelligence/reporters/csv_reporter.py",
+        "/app/app/services/overmind/code_intelligence/reporters/json_reporter.py",
+        "/app/app/services/overmind/code_intelligence/reporters/markdown_reporter.py",
+        "/app/app/services/overmind/code_intelligence/reporters/html_reporter.py",
+        "/app/app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "/app/app/services/overmind/code_intelligence/analyzers/smells.py",
+        "/app/app/services/overmind/code_intelligence/analyzers/git.py"
+      ],
+      "total_functions": 505,
+      "total_classes": 115,
+      "total_lines": 11442
+    },
+    "adaptive": {
+      "files": [
+        "/app/app/services/adaptive/facade.py",
+        "/app/app/services/adaptive/__init__.py",
+        "/app/app/services/adaptive/application/intelligent_router.py",
+        "/app/app/services/adaptive/application/health_monitor.py",
+        "/app/app/services/adaptive/application/scaling_engine.py",
+        "/app/app/services/adaptive/application/__init__.py",
+        "/app/app/services/adaptive/domain/ports.py",
+        "/app/app/services/adaptive/domain/__init__.py",
+        "/app/app/services/adaptive/domain/models.py",
+        "/app/app/services/adaptive/infrastructure/in_memory_repository.py",
+        "/app/app/services/adaptive/infrastructure/__init__.py"
+      ],
+      "total_functions": 41,
+      "total_classes": 13,
+      "total_lines": 949
+    },
+    "admin": {
+      "files": [
+        "/app/app/services/admin/chat_streamer.py",
+        "/app/app/services/admin/chat_persistence.py"
+      ],
+      "total_functions": 11,
+      "total_classes": 2,
+      "total_lines": 226
+    },
+    "agent_tools": {
+      "files": [
+        "/app/app/services/agent_tools/memory_tools.py",
+        "/app/app/services/agent_tools/dispatch_tools.py",
+        "/app/app/services/agent_tools/fs_tools.py",
+        "/app/app/services/agent_tools/definitions.py",
+        "/app/app/services/agent_tools/core.py",
+        "/app/app/services/agent_tools/search_tools.py",
+        "/app/app/services/agent_tools/__init__.py",
+        "/app/app/services/agent_tools/structural_tools.py",
+        "/app/app/services/agent_tools/utils.py",
+        "/app/app/services/agent_tools/globals.py",
+        "/app/app/services/agent_tools/structural_logic.py",
+        "/app/app/services/agent_tools/cognitive_tools.py",
+        "/app/app/services/agent_tools/refactored/builder.py",
+        "/app/app/services/agent_tools/refactored/tool.py",
+        "/app/app/services/agent_tools/refactored/registry.py",
+        "/app/app/services/agent_tools/refactored/__init__.py"
+      ],
+      "total_functions": 111,
+      "total_classes": 5,
+      "total_lines": 2496
+    },
+    "serving": {
+      "files": [
+        "/app/app/services/serving/__init__.py",
+        "/app/app/services/serving/application/shadow_deployment.py",
+        "/app/app/services/serving/application/ensemble_router.py",
+        "/app/app/services/serving/application/model_invoker.py",
+        "/app/app/services/serving/application/experiment_manager.py",
+        "/app/app/services/serving/application/model_registry.py",
+        "/app/app/services/serving/application/inference_router.py",
+        "/app/app/services/serving/application/ab_test_engine.py",
+        "/app/app/services/serving/domain/ports.py",
+        "/app/app/services/serving/domain/models.py",
+        "/app/app/services/serving/infrastructure/mock_model_invoker.py",
+        "/app/app/services/serving/infrastructure/in_memory_repository.py",
+        "/app/app/services/serving/infrastructure/metrics_collector.py"
+      ],
+      "total_functions": 69,
+      "total_classes": 27,
+      "total_lines": 1787
+    },
+    "chat": {
+      "files": [
+        "/app/app/services/chat/context.py",
+        "/app/app/services/chat/security.py",
+        "/app/app/services/chat/intent_detector.py",
+        "/app/app/services/chat/__init__.py",
+        "/app/app/services/chat/orchestrator.py",
+        "/app/app/services/chat/telemetry.py",
+        "/app/app/services/chat/handlers/search_handler.py",
+        "/app/app/services/chat/handlers/system_handler.py",
+        "/app/app/services/chat/handlers/mission_handler.py",
+        "/app/app/services/chat/handlers/strategy_handlers.py",
+        "/app/app/services/chat/handlers/base.py",
+        "/app/app/services/chat/handlers/file_handler.py"
+      ],
+      "total_functions": 66,
+      "total_classes": 22,
+      "total_lines": 1211
+    },
+    "resilience": {
+      "files": [
+        "/app/app/services/resilience/service.py",
+        "/app/app/services/resilience/health.py",
+        "/app/app/services/resilience/circuit_breaker.py",
+        "/app/app/services/resilience/timeout.py",
+        "/app/app/services/resilience/__init__.py",
+        "/app/app/services/resilience/fallback.py",
+        "/app/app/services/resilience/rate_limit.py",
+        "/app/app/services/resilience/bulkhead.py",
+        "/app/app/services/resilience/retry.py"
+      ],
+      "total_functions": 48,
+      "total_classes": 30,
+      "total_lines": 1160
+    }
+  }
+}

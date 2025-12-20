@@ -1,3 +1,9 @@
+"""
+Policy
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 import logging
 import threading
 from datetime import UTC, datetime
@@ -38,7 +44,9 @@ class PolicyEngine:
         """
         with self.lock:
             # Sort by priority
-            sorted_policies = sorted(self.policies.values(), key=lambda p: p.priority, reverse=True)
+            sorted_policies = sorted(
+                self.policies.values(), key=lambda p: p.priority, reverse=True
+            )
 
             for policy in sorted_policies:
                 if not policy.enabled:

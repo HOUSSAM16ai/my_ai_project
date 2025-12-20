@@ -1,3 +1,9 @@
+"""
+Logging Spine
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/core/kernel_v2/logging_spine.py
 """
 The Logging Spine for Reality Kernel v2.

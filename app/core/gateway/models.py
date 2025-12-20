@@ -1,3 +1,9 @@
+"""
+Models
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum

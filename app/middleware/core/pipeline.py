@@ -1,3 +1,9 @@
+"""
+Pipeline
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/core/pipeline.py
 # ======================================================================================
 # ==                    SMART MIDDLEWARE PIPELINE (v∞)                              ==
@@ -115,7 +121,9 @@ class SmartPipeline:
             mw_time = time.time() - mw_start
             self._update_middleware_stats(mw.name, False, mw_time)
             mw.on_error(ctx, e)
-            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {e!s}")
+            result = MiddlewareResult.internal_error(
+                f"Middleware {mw.name} failed: {e!s}"
+            )
             mw.on_complete(ctx, result)
             return result
 
@@ -157,7 +165,9 @@ class SmartPipeline:
             if not mw.should_process(ctx):
                 continue
 
-            result = await self._execute_middleware_async(mw, ctx, mw.process_request_async)
+            result = await self._execute_middleware_async(
+                mw, ctx, mw.process_request_async
+            )
             if result:
                 final_result = result
                 if not result.is_success:
@@ -195,7 +205,9 @@ class SmartPipeline:
             mw_time = time.time() - mw_start
             self._update_middleware_stats(mw.name, False, mw_time)
             mw.on_error(ctx, e)
-            result = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {e!s}")
+            result = MiddlewareResult.internal_error(
+                f"Middleware {mw.name} failed: {e!s}"
+            )
             mw.on_complete(ctx, result)
             return result
 

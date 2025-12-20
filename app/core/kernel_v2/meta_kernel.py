@@ -1,3 +1,9 @@
+"""
+Meta Kernel
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/core/kernel_v2/meta_kernel.py
 """
 The Meta-Kernel, the central nervous system of Reality Kernel v2.

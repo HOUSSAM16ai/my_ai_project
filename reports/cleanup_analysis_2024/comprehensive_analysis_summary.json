@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "project_name": "CogniForge",
+    "analysis_date": "2025-12-20T16:00:37.403112",
+    "version": "1.0",
+    "description": "تحليل شامل للمشروع بعد Wave 12"
+  },
+  "statistics": {
+    "total_files": 763,
+    "total_functions": 4487,
+    "total_classes": 1287,
+    "total_lines": 82576,
+    "app_files": 621,
+    "test_files": 142,
+    "empty_files": 25
+  },
+  "metrics": {
+    "avg_functions_per_file": 5.88,
+    "avg_classes_per_file": 1.69,
+    "avg_lines_per_file": 108.23,
+    "duplication_rate": 9.14,
+    "dead_code_rate": 9.74,
+    "test_coverage_percentage": 21.42
+  },
+  "issues": {
+    "duplicate_functions": 410,
+    "duplicate_classes": 93,
+    "unused_functions": 437,
+    "unused_classes": 553,
+    "large_files": 15,
+    "untested_modules": 346,
+    "small_services": 41,
+    "circular_dependencies": 0
+  },
+  "priorities": {
+    "priority_1_immediate": {
+      "title": "الملفات الفارغة والخدمات الصغيرة",
+      "items": [
+        {
+          "action": "حذف الملفات الفارغة",
+          "count": 1,
+          "files": [
+            "/app/app/core/startup.py"
+          ]
+        },
+        {
+          "action": "دمج الخدمات الصغيرة جداً",
+          "count": 10,
+          "services": [
+            "__init__.py",
+            "api_contract_service.py",
+            "api_governance_service.py",
+            "api_security_service.py",
+            "chat_orchestrator_service.py",
+            "data_mesh_service.py",
+            "ai_intelligent_testing.py",
+            "infrastructure_metrics_service.py",
+            "ai_model_metrics_service.py",
+            "prompt_engineering_service.py"
+          ]
+        }
+      ]
+    },
+    "priority_2_duplication": {
+      "title": "الكود المكرر",
+      "critical_functions": [
+        "verify_password",
+        "get_settings",
+        "to_dict",
+        "get_user_by_id",
+        "authenticate_user"
+      ],
+      "critical_classes": [
+        "MessageRole",
+        "TaskStatus",
+        "Task",
+        "RoutingStrategy"
+      ]
+    },
+    "priority_3_dead_code": {
+      "title": "الكود الميت",
+      "note": "يتطلب مراجعة يدوية",
+      "count": 990
+    },
+    "priority_4_large_files": {
+      "title": "الملفات الكبيرة",
+      "files": [
+        {
+          "name": "test_middleware_core.py",
+          "path": "/app/tests/test_middleware_core.py",
+          "lines": 857
+        },
+        {
+          "name": "test_analysis_module.py",
+          "path": "/app/tests/test_analysis_module.py",
+          "lines": 769
+        },
+        {
+          "name": "test_distributed_resilience.py",
+          "path": "/app/tests/test_distributed_resilience.py",
+          "lines": 715
+        },
+        {
+          "name": "test_separation_of_concerns.py",
+          "path": "/app/tests/test_separation_of_concerns.py",
+          "lines": 656
+        },
+        {
+          "name": "context_analyzer.py",
+          "path": "/app/app/services/project_context/application/context_analyzer.py",
+          "lines": 637
+        },
+        {
+          "name": "test_models_comprehensive.py",
+          "path": "/app/tests/test_models_comprehensive.py",
+          "lines": 636
+        },
+        {
+          "name": "domain_events.py",
+          "path": "/app/app/services/domain_events.py",
+          "lines": 596
+        },
+        {
+          "name": "factory.py",
+          "path": "/app/app/services/overmind/planning/factory.py",
+          "lines": 589
+        },
+        {
+          "name": "multi_pass_arch_planner.py",
+          "path": "/app/app/services/overmind/planning/multi_pass_arch_planner.py",
+          "lines": 584
+        },
+        {
+          "name": "schemas.py",
+          "path": "/app/app/services/overmind/planning/schemas.py",
+          "lines": 570
+        }
+      ]
+    },
+    "priority_5_tests": {
+      "title": "الاختبارات المفقودة",
+      "coverage_percentage": 21.42,
+      "critical_modules": [
+        {
+          "module": "context_analyzer",
+          "lines": 637,
+          "file": "/app/app/services/project_context/application/context_analyzer.py"
+        },
+        {
+          "module": "domain_events",
+          "lines": 596,
+          "file": "/app/app/services/domain_events.py"
+        },
+        {
+          "module": "multi_pass_arch_planner",
+          "lines": 584,
+          "file": "/app/app/services/overmind/planning/multi_pass_arch_planner.py"
+        },
+        {
+          "module": "schemas",
+          "lines": 570,
+          "file": "/app/app/services/overmind/planning/schemas.py"
+        },
+        {
+          "module": "factory_core",
+          "lines": 560,
+          "file": "/app/app/services/overmind/planning/factory_core.py"
+        },
+        {
+          "module": "saga_orchestrator",
+          "lines": 510,
+          "file": "/app/app/services/saga_orchestrator.py"
+        },
+        {
+          "module": "cost_manager",
+          "lines": 509,
+          "file": "/app/app/ai/application/cost_manager.py"
+        },
+        {
+          "module": "service_boundaries",
+          "lines": 433,
+          "file": "/app/app/boundaries/service_boundaries.py"
+        },
+        {
+          "module": "anomaly_detector",
+          "lines": 432,
+          "file": "/app/app/analysis/anomaly_detector.py"
+        },
+        {
+          "module": "hyperloglog",
+          "lines": 421,
+          "file": "/app/app/analytics/stores/hyperloglog.py"
+        }
+      ]
+    },
+    "priority_6_services": {
+      "title": "بنية الخدمات",
+      "large_services": [
+        {
+          "name": "overmind",
+          "lines": 11442,
+          "files": 86,
+          "functions": 505,
+          "classes": 115
+        },
+        {
+          "name": "agent_tools",
+          "lines": 2496,
+          "files": 16,
+          "functions": 111,
+          "classes": 5
+        },
+        {
+          "name": "serving",
+          "lines": 1787,
+          "files": 13,
+          "functions": 69,
+          "classes": 27
+        },
+        {
+          "name": "chat",
+          "lines": 1211,
+          "files": 12,
+          "functions": 66,
+          "classes": 22
+        },
+        {
+          "name": "resilience",
+          "lines": 1160,
+          "files": 9,
+          "functions": 48,
+          "classes": 30
+        }
+      ]
+    }
+  },
+  "action_plan": {
+    "immediate_actions": [
+      "حذف /app/app/core/startup.py",
+      "دمج خدمات API الثلاث",
+      "دمج خدمات Metrics الثلاث",
+      "توحيد verify_password",
+      "توحيد get_settings"
+    ],
+    "short_term_actions": [
+      "توحيد الكلاسات المكررة",
+      "إضافة اختبارات للوحدات الحرجة",
+      "مراجعة الكود الميت"
+    ],
+    "medium_term_actions": [
+      "تقسيم الملفات الكبيرة",
+      "إعادة هيكلة خدمة overmind",
+      "تحسين تغطية الاختبارات إلى 60%+"
+    ],
+    "long_term_actions": [
+      "إعادة التصميم المعماري",
+      "أتمتة كشف المشاكل",
+      "تحسين التوثيق"
+    ]
+  },
+  "kpis": {
+    "current": {
+      "test_coverage": 21.4,
+      "duplication_rate": 9.14,
+      "avg_file_size": 108,
+      "large_files_count": 15,
+      "dead_code_rate": 9.74,
+      "small_services_count": 41
+    },
+    "target_3_months": {
+      "test_coverage": 60,
+      "duplication_rate": 5,
+      "avg_file_size": 100,
+      "large_files_count": 8,
+      "dead_code_rate": 5,
+      "small_services_count": 20
+    },
+    "target_6_months": {
+      "test_coverage": 85,
+      "duplication_rate": 3,
+      "avg_file_size": 90,
+      "large_files_count": 3,
+      "dead_code_rate": 2,
+      "small_services_count": 10
+    }
+  },
+  "assessment": {
+    "strengths": [
+      "بنية معمارية واضحة",
+      "لا اعتماديات دائرية",
+      "متوسط حجم ملفات ممتاز",
+      "استخدام أنماط معمارية حديثة"
+    ],
+    "weaknesses": [
+      "تغطية اختبارات ضعيفة جداً (21%)",
+      "معدل تكرار مرتفع (9%)",
+      "خدمة overmind ضخمة جداً",
+      "كود ميت كثير"
+    ],
+    "overall_rating": "جيد - يحتاج تحسين",
+    "estimated_improvement_time": "3-6 أشهر"
+  }
+}

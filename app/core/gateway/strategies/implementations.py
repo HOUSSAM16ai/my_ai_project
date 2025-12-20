@@ -1,3 +1,9 @@
+"""
+Implementations
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -38,12 +44,16 @@ class IntelligentRoutingStrategy(BaseRoutingStrategy):
         for c in candidates:
             norm_cost = (c["cost"] - min_cost) / cost_range if cost_range > 0 else 0.0
             norm_latency = (
-                (c["latency"] - min_latency) / latency_range if latency_range > 0 else 0.0
+                (c["latency"] - min_latency) / latency_range
+                if latency_range > 0
+                else 0.0
             )
 
             # Score: Higher is better.
             c["score"] = (
-                (1.0 - norm_cost) * 0.3 + (1.0 - norm_latency) * 0.5 + c["health_score"] * 0.2
+                (1.0 - norm_cost) * 0.3
+                + (1.0 - norm_latency) * 0.5
+                + c["health_score"] * 0.2
             )
 
 
@@ -52,7 +62,9 @@ class FallbackStrategy(BaseRoutingStrategy):
         for c in candidates:
             cost_score = 1.0 / (c["cost"] + 0.001)
             latency_score = 1.0 / (c["latency"] + 0.001)
-            c["score"] = cost_score * 0.3 + latency_score * 0.5 + c["health_score"] * 0.2
+            c["score"] = (
+                cost_score * 0.3 + latency_score * 0.5 + c["health_score"] * 0.2
+            )
 
 
 STRATEGY_MAP = {

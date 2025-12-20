@@ -1,3 +1,10 @@
+"""
+Exceptions
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
+
 class FatalEngineError(Exception):
     """
     Raised when an unsafe or invalid engine configuration is detected.

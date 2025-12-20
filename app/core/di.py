@@ -1,21 +1,30 @@
+"""
+Di
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config.settings import AppSettings
 from app.config.settings import get_settings as _get_settings_config
 from app.core.database import async_session_factory
 from app.core.kernel_v2.logging_spine import get_logger as _get_logger
+
 _settings_singleton = _get_settings_config()
 _session_factory_singleton = async_session_factory
 
 
-def get_di_settings() ->AppSettings:
+def get_di_settings() -> AppSettings:
     return _settings_singleton
 
 
 get_settings = get_di_settings
 
 
-async def get_di_db() ->AsyncGenerator[AsyncSession, None]:
+async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency Injection compliant database session provider.
     """

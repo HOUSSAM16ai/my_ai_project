@@ -1,3 +1,9 @@
+"""
+Static Handler
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/core/static_handler.py
 """
 Static File Serving & SPA Fallback Handler.
@@ -61,7 +67,11 @@ def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
         # 2. If file doesn't exist, THEN enforce API restrictions
         # If path starts with api or contains /api/, return 404 (don't serve HTML)
         # This ensures nested API routes (e.g. /admin/api/...) also return 404 when not found
-        if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
+        if (
+            full_path.startswith("api")
+            or "/api/" in full_path
+            or full_path.endswith("/api")
+        ):
             raise HTTPException(status_code=404, detail="Not Found")
 
         # 3. If it is NOT a GET/HEAD request, and it fell through to here, it's a 404

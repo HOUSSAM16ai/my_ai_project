@@ -6,10 +6,10 @@ Data Interfaces - واجهات البيانات
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
-T = TypeVar('T')
-ID = TypeVar('ID')
+T = TypeVar("T")
+ID = TypeVar("ID")
 
 
 class IRepository(ABC, Generic[T, ID]):
@@ -19,7 +19,7 @@ class IRepository(ABC, Generic[T, ID]):
     """
 
     @abstractmethod
-    async def get(self, id: ID) -> Optional[T]:
+    async def get(self, id: ID) -> T | None:
         """Get entity by ID"""
         pass
 

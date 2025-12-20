@@ -1,3 +1,9 @@
+"""
+Security Headers
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/security/security_headers.py
 # ======================================================================================
 # ==                    SECURITY HEADERS MIDDLEWARE (v∞)                            ==
@@ -46,7 +52,9 @@ class SecurityHeadersMiddleware(BaseMiddleware):
         # Add HSTS if enabled
         if self.config.get("enable_hsts", True):
             max_age = self.config.get("hsts_max_age", 31536000)  # 1 year
-            self.headers["Strict-Transport-Security"] = f"max-age={max_age}; includeSubDomains"
+            self.headers["Strict-Transport-Security"] = (
+                f"max-age={max_age}; includeSubDomains"
+            )
 
         # Add CSP if provided
         csp = self.config.get("content_security_policy")

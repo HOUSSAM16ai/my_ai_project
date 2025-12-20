@@ -1,3 +1,9 @@
+"""
+Settings
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/config/settings.py
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -42,10 +48,13 @@ class AppSettings(BaseSettings):
     """
 
     # --- Core Identity & Environment ---
-    PROJECT_NAME: str = Field("CogniForge Reality Kernel V3", description="The project name.")
+    PROJECT_NAME: str = Field(
+        "CogniForge Reality Kernel V3", description="The project name."
+    )
     VERSION: str = Field("3.0-hyper", description="The application version.")
     ENVIRONMENT: str = Field(
-        "development", description="The deployment environment (development, staging, production)."
+        "development",
+        description="The deployment environment (development, staging, production).",
     )
     DEBUG: bool = Field(False, description="Enable debug mode.")
     API_V1_STR: str = "/api/v1"
@@ -54,7 +63,9 @@ class AppSettings(BaseSettings):
     CODESPACES: bool = Field(
         False, description="Auto-detected: True if running in GitHub Codespaces."
     )
-    CODESPACE_NAME: str | None = Field(None, description="The name of the Codespace environment.")
+    CODESPACE_NAME: str | None = Field(
+        None, description="The name of the Codespace environment."
+    )
     GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(
         None, description="Domain suffix for port forwarding."
     )
@@ -110,8 +121,12 @@ class AppSettings(BaseSettings):
     )
 
     # --- Admin User Seeding ---
-    ADMIN_EMAIL: str = Field(default="admin@example.com", description="Default admin email.")
-    ADMIN_PASSWORD: str = Field(default="password", description="Default admin password.")
+    ADMIN_EMAIL: str = Field(
+        default="admin@example.com", description="Default admin email."
+    )
+    ADMIN_PASSWORD: str = Field(
+        default="password", description="Default admin password."
+    )
     ADMIN_NAME: str = Field(default="Admin User", description="Default admin name.")
 
     # --- Pydantic Model Configuration ---

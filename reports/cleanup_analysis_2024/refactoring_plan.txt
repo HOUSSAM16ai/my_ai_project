@@ -1,0 +1,138 @@
+================================================================================
+خطة إعادة الهيكلة التفصيلية
+================================================================================
+
+📋 خطة 1: توحيد الدوال المكررة
+================================================================================
+
+🔧 الدالة: verify_password
+   الموقع الموصى به: /app/app/core/security.py
+   الإجراء: الاحتفاظ بالنسخة في core/security.py وحذف الباقي
+
+   الملفات الحالية:
+      • /app/app/models.py
+      • /app/app/security/secure_auth.py
+      • /app/app/core/security.py
+
+🔧 الدالة: get_settings
+   الموقع الموصى به: /app/app/config/settings.py
+   الإجراء: الاحتفاظ بالنسخة في config/settings.py وحذف الباقي
+
+   الملفات الحالية:
+      • /app/app/config/settings.py
+      • /app/app/config/dependencies.py
+      • /app/app/core/kernel_v2/config_v2.py
+
+🔧 الدالة: authenticate_user
+   الموقع الموصى به: /app/app/services/auth_boundary_service.py
+   الإجراء: توحيد في auth_boundary_service.py
+
+   الملفات الحالية:
+      • /app/app/application/interfaces.py
+      • /app/app/application/services.py
+      • /app/app/services/auth_boundary_service.py
+
+================================================================================
+📋 خطة 2: توحيد الكلاسات المكررة
+================================================================================
+
+🔧 الكلاس: MessageRole
+   الموقع الموصى به: /app/app/models.py
+   الإجراء: الاحتفاظ بالنسخة في models.py (قاعدة البيانات)
+
+   الملفات الحالية:
+      • /app/app/models.py
+      • /app/app/ai/domain/models.py
+
+🔧 الكلاس: TaskStatus
+   الموقع الموصى به: /app/app/models.py
+   الإجراء: الاحتفاظ بالنسخة في models.py
+
+   الملفات الحالية:
+      • /app/app/models.py
+      • /app/app/services/ai_project_management/domain/models.py
+
+🔧 الكلاس: Task
+   الموقع الموصى به: /app/app/models.py
+   الإجراء: الاحتفاظ بنموذج قاعدة البيانات في models.py، استخدام DTOs للباقي
+
+   الملفات الحالية:
+      • /app/app/models.py
+      • /app/app/application/use_cases/planning/refactored_planner.py
+      • /app/app/services/ai_project_management/domain/models.py
+
+================================================================================
+📋 خطة 3: تقسيم الملفات الكبيرة
+================================================================================
+
+📄 الملف: /app/app/services/project_context/application/context_analyzer.py
+   الحجم: 637 سطر
+
+   التقسيم المقترح:
+      • context_analyzer_core.py (الوظائف الأساسية)
+      • context_analyzer_metrics.py (المقاييس والإحصائيات)
+      • context_analyzer_utils.py (الأدوات المساعدة)
+
+📄 الملف: /app/app/services/domain_events.py
+   الحجم: 596 سطر
+
+   التقسيم المقترح:
+      • domain_events/base.py (الكلاسات الأساسية)
+      • domain_events/handlers.py (معالجات الأحداث)
+      • domain_events/bus.py (ناقل الأحداث)
+
+📄 الملف: /app/app/services/overmind/planning/multi_pass_arch_planner.py
+   الحجم: 584 سطر
+
+   التقسيم المقترح:
+      • multi_pass_arch_planner/planner.py (المخطط الرئيسي)
+      • multi_pass_arch_planner/passes.py (المراحل المختلفة)
+      • multi_pass_arch_planner/validators.py (التحقق)
+
+================================================================================
+📋 خطة 4: دمج الخدمات الصغيرة
+================================================================================
+
+🔀 الملف الهدف: /app/app/services/api/api_services.py
+   السبب: خدمات API صغيرة جداً ومترابطة
+
+   الملفات المصدر:
+      • /app/app/services/api_contract_service.py (6 سطر)
+      • /app/app/services/api_governance_service.py (19 سطر)
+      • /app/app/services/api_security_service.py (19 سطر)
+
+🔀 الملف الهدف: /app/app/services/metrics/metrics_services.py
+   السبب: خدمات مقاييس صغيرة يمكن دمجها
+
+   الملفات المصدر:
+      • /app/app/services/ai_model_metrics_service.py (40 سطر)
+      • /app/app/services/infrastructure_metrics_service.py (37 سطر)
+      • /app/app/services/user_analytics_metrics_service.py (59 سطر)
+
+================================================================================
+📋 خطة 5: إضافة الاختبارات المفقودة (الأولوية العالية)
+================================================================================
+
+🧪 الوحدة: context_analyzer
+   الملف: /app/app/services/project_context/application/context_analyzer.py
+   ملف الاختبار المقترح: /app/tests/test_context_analyzer.py
+   الأولوية: عالية جداً
+   السبب: ملف كبير وحرج بدون اختبارات
+
+🧪 الوحدة: domain_events
+   الملف: /app/app/services/domain_events.py
+   ملف الاختبار المقترح: /app/tests/test_domain_events.py
+   الأولوية: عالية جداً
+   السبب: نظام الأحداث الأساسي
+
+🧪 الوحدة: saga_orchestrator
+   الملف: /app/app/services/saga_orchestrator.py
+   ملف الاختبار المقترح: /app/tests/test_saga_orchestrator.py
+   الأولوية: عالية
+   السبب: منسق المعاملات الموزعة
+
+🧪 الوحدة: cost_manager
+   الملف: /app/app/ai/application/cost_manager.py
+   ملف الاختبار المقترح: /app/tests/test_cost_manager.py
+   الأولوية: عالية
+   السبب: إدارة التكاليف الحرجة
