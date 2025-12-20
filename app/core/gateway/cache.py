@@ -1,3 +1,9 @@
+"""
+Cache
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 import hashlib
 import json
 import threading
@@ -69,7 +75,10 @@ class IntelligentCache:
             return None
 
     def put(
-        self, request_data: dict[str, Any], response_data: dict[str, Any], ttl_seconds: int = 300
+        self,
+        request_data: dict[str, Any],
+        response_data: dict[str, Any],
+        ttl_seconds: int = 300,
     ):
         """Put into cache"""
         key = self._generate_key(request_data)

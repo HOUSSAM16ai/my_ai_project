@@ -1,3 +1,9 @@
+"""
+Text
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from collections import Counter
 
 

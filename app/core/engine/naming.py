@@ -1,3 +1,9 @@
+"""
+Naming
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 import os
 import threading
 import time

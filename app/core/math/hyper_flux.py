@@ -50,7 +50,9 @@ class HyperFluxCapacitor:
 
         # Calculate Dimensional Z-Score of the recent flux
         mean_flux = statistics.mean(self._flux_history)
-        stdev_flux = statistics.stdev(self._flux_history) if len(self._flux_history) > 1 else 0.0
+        stdev_flux = (
+            statistics.stdev(self._flux_history) if len(self._flux_history) > 1 else 0.0
+        )
 
         if stdev_flux == 0:
             return 1.0

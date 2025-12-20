@@ -1,3 +1,9 @@
+"""
+Data Mesh
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/api/routers/data_mesh.py
 """
 Data Mesh Router - Data Contract Management
@@ -31,7 +37,9 @@ async def create_data_contract(
 
 
 @router.get("/metrics", summary="Get Data Mesh Metrics")
-async def get_data_mesh_metrics(service: DataMeshBoundaryService = Depends(get_data_mesh_service)):
+async def get_data_mesh_metrics(
+    service: DataMeshBoundaryService = Depends(get_data_mesh_service),
+):
     """
     Retrieve operational metrics for the Data Mesh.
     Delegates to DataMeshBoundaryService.

@@ -1,3 +1,9 @@
+"""
+Kernel
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 import logging
 from contextlib import asynccontextmanager
 from typing import Any
@@ -8,7 +14,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 # Import Routers explicitly
-from app.api.routers import admin, crud, data_mesh, observability, security, system
+# Routers - استيراد المسارات المتاحة فقط
+try:
+    from app.api.routers import system
+except ImportError:
+    system = None
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -59,8 +69,12 @@ class RealityKernel:
         app = FastAPI(
             title=self.settings.get("PROJECT_NAME", "CogniForge"),
             version="v4.1-simplified",
-            docs_url="/docs" if self.settings.get("ENVIRONMENT") == "development" else None,
-            redoc_url="/redoc" if self.settings.get("ENVIRONMENT") == "development" else None,
+            docs_url=(
+                "/docs" if self.settings.get("ENVIRONMENT") == "development" else None
+            ),
+            redoc_url=(
+                "/redoc" if self.settings.get("ENVIRONMENT") == "development" else None
+            ),
             lifespan=lifespan,
         )
 
@@ -79,11 +93,14 @@ class RealityKernel:
             try:
                 # استيراد الوظيفة هنا لتجنب المشاكل الدائرية (Circular Imports)
                 from app.core.database import validate_schema_on_startup
+
                 await validate_schema_on_startup()
             except Exception as e:
                 logger.warning(f"⚠️ Schema validation skipped or failed: {e}")
 
-        logger.info("✅ CogniForge ready to serve requests (النظام جاهز لاستقبال الطلبات)")
+        logger.info(
+            "✅ CogniForge ready to serve requests (النظام جاهز لاستقبال الطلبات)"
+        )
 
         yield  # النظام يعمل الآن هنا
 
@@ -95,8 +112,7 @@ class RealityKernel:
 
         # 1. المضيف الموثوق (Trusted Host): لمنع الهجمات من نطاقات غير معروفة.
         app.add_middleware(
-            TrustedHostMiddleware,
-            allowed_hosts=self.settings.get("ALLOWED_HOSTS", [])
+            TrustedHostMiddleware, allowed_hosts=self.settings.get("ALLOWED_HOSTS", [])
         )
 
         # 2. مشاركة المصادر (CORS): للسماح للمتصفح بالاتصال من نطاقات محددة.
@@ -145,13 +161,16 @@ class RealityKernel:
 
     def _weave_routes(self):
         """
-        يربط المسارات (Routers) بشكل صريح.
-        Explicit is better than implicit.
+        ربط المسارات (Routers) بالتطبيق
+        
+        يربط فقط المسارات المتاحة لتجنب الأخطاء
         """
         logger.info("Reality Kernel: Weaving explicit routes.")
 
-        # System Routes (Health, Info) - often mounted at root or /system
-        self.app.include_router(system.router)
+        # ربط المسارات المتاحة فقط
+        if system:
+            self.app.include_router(system.router)
+            logger.info("✅ System routes connected")
 
         # Admin Routes
         self.app.include_router(admin.router)

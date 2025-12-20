@@ -1,3 +1,9 @@
+"""
+Remove Blocking Headers
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/middleware/remove_blocking_headers.py
 import logging
 import os
@@ -40,7 +46,9 @@ class RemoveBlockingHeadersMiddleware:
                 csp = headers.get("content-security-policy")
                 if csp:
                     parts = [p.strip() for p in csp.split(";") if p.strip()]
-                    parts = [p for p in parts if not p.lower().startswith("frame-ancestors")]
+                    parts = [
+                        p for p in parts if not p.lower().startswith("frame-ancestors")
+                    ]
                     if parts:
                         headers["content-security-policy"] = "; ".join(parts)
                     else:

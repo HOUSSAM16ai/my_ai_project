@@ -3,6 +3,7 @@ AI Gateway Exceptions.
 Part of the Atomic Modularization Protocol.
 """
 
+
 class AIError(Exception):
     """Base class for AI Gateway errors."""
 

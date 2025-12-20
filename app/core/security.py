@@ -4,16 +4,20 @@ This includes functions for handling JWTs, passwords, and other
 cryptographic operations. All functions in this module are designed
 to be pure and framework-agnostic.
 """
+
 from datetime import UTC, datetime, timedelta
+
 import bcrypt
 import jwt
-if not hasattr(bcrypt, '__about__'):
+
+if not hasattr(bcrypt, "__about__"):
     import contextlib
+
     with contextlib.suppress(Exception):
-        bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.
-            __version__})
+        bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
 from app.config.settings import get_settings
 from app.models import pwd_context
+
 settings = get_settings()
 
 
@@ -32,11 +36,11 @@ def generate_service_token(user_id: str) -> str:
         str: A signed JWT string encoded with HS256 algorithm.
     """
     payload = {
-        'exp': datetime.now(UTC) + timedelta(minutes=5),
-        'iat': datetime.now(UTC),
-        'sub': user_id
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "iat": datetime.now(UTC),
+        "sub": user_id,
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

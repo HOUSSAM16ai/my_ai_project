@@ -1,3 +1,9 @@
+"""
+Factory
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 import copy
 import logging
 import os
@@ -49,7 +55,9 @@ def create_unified_async_engine(
     # --- Phase 3: Adaptive Pooler Detection ---
     pooler_type = AdaptivePoolerDetector.detect(database_url)
 
-    logger.info(f"🧠 Quantum Engine Factory: DB={db_type.name}, Pooler={pooler_type.name}")
+    logger.info(
+        f"🧠 Quantum Engine Factory: DB={db_type.name}, Pooler={pooler_type.name}"
+    )
 
     # --- Phase 4: Deep Copy kwargs for Immutability ---
     engine_kwargs = copy.deepcopy(kwargs)
@@ -69,7 +77,9 @@ def create_unified_async_engine(
             database_url, engine_kwargs, pooler_type, pool_class
         )
     elif db_type == DatabaseType.SQLITE:
-        database_url, engine_kwargs = _configure_sqlite_engine(database_url, engine_kwargs)
+        database_url, engine_kwargs = _configure_sqlite_engine(
+            database_url, engine_kwargs
+        )
 
     # --- Phase 7: Security Validation ---
     if db_type == DatabaseType.POSTGRESQL:

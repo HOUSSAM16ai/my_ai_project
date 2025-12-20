@@ -1,3 +1,9 @@
+"""
+System Service
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 # app/services/system_service.py
 """
 نظام فحص صحة وسلامة البنية التحتية (System Service).
@@ -54,7 +60,9 @@ class SystemService:
 
                 # الفحص 2: وجود المسؤول
                 # نبحث عن البريد الإلكتروني الافتراضي للمسؤول
-                res = await session.execute(select(User).where(User.email == "admin@example.com"))
+                res = await session.execute(
+                    select(User).where(User.email == "admin@example.com")
+                )
                 if res.scalars().first():
                     admin_present = True
         except Exception:

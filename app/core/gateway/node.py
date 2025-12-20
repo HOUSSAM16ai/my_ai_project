@@ -5,7 +5,9 @@ Part of the Atomic Modularization Protocol.
 
 import asyncio
 from dataclasses import dataclass, field
+
 from app.core.gateway.circuit_breaker import CircuitBreaker
+
 
 @dataclass
 class NeuralNode:

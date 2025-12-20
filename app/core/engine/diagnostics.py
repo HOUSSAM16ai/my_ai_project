@@ -1,3 +1,9 @@
+"""
+Diagnostics
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from typing import Any
 
 
@@ -13,12 +19,14 @@ class EngineDiagnostics:
     """
 
     @staticmethod
-    def verify_pgbouncer_compatibility(connect_args: dict[str, Any]) ->dict[
-        str, bool]:
+    def verify_pgbouncer_compatibility(connect_args: dict[str, Any]) -> dict[str, bool]:
         """Verify all PgBouncer compatibility settings are in place."""
-        return {'statement_cache_disabled': connect_args.get(
-            'statement_cache_size') == 0, 'prepared_stmt_cache_disabled':
-            connect_args.get('prepared_statement_cache_size') == 0,
-            'quantum_naming_enabled': 'prepared_statement_name_func' in
-            connect_args, 'command_timeout_set': 'command_timeout' in
-            connect_args}
+        return {
+            "statement_cache_disabled": connect_args.get("statement_cache_size") == 0,
+            "prepared_stmt_cache_disabled": connect_args.get(
+                "prepared_statement_cache_size"
+            )
+            == 0,
+            "quantum_naming_enabled": "prepared_statement_name_func" in connect_args,
+            "command_timeout_set": "command_timeout" in connect_args,
+        }

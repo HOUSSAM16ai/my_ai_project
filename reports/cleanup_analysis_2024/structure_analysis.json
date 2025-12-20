@@ -1,0 +1,364 @@
+{
+  "empty_files": {
+    "total": 25,
+    "init_files": [
+      "/app/app/core/engine/__init__.py",
+      "/app/app/services/ai_testing/__init__.py",
+      "/app/app/services/ai_testing/application/__init__.py",
+      "/app/app/services/ai_testing/domain/__init__.py",
+      "/app/app/services/ai_testing/generators/__init__.py",
+      "/app/app/services/ai_testing/optimizers/__init__.py",
+      "/app/app/services/ai_testing/selectors/__init__.py",
+      "/app/app/services/ai_project_management/application/__init__.py",
+      "/app/app/services/ai_project_management/domain/__init__.py",
+      "/app/app/services/ai_project_management/infrastructure/__init__.py",
+      "/app/app/services/overmind/planning/hyper_planner/steps/__init__.py",
+      "/app/app/services/overmind/code_intelligence/__init__.py",
+      "/app/app/services/overmind/code_intelligence/reporters/__init__.py",
+      "/app/app/services/overmind/code_intelligence/analyzers/__init__.py",
+      "/app/app/services/admin/__init__.py",
+      "/app/app/services/serving/application/__init__.py",
+      "/app/app/services/serving/domain/__init__.py",
+      "/app/app/services/serving/infrastructure/__init__.py",
+      "/app/app/services/serving/observability/__init__.py",
+      "/app/app/services/chat/handlers/__init__.py",
+      "/app/tests/__init__.py",
+      "/app/tests/utils/__init__.py",
+      "/app/tests/phase3_refactoring/__init__.py",
+      "/app/tests/services/overmind/__init__.py"
+    ],
+    "other_files": [
+      "/app/app/core/startup.py"
+    ]
+  },
+  "small_services": [
+    {
+      "name": "__init__.py",
+      "files": 1,
+      "size": 1,
+      "patterns": []
+    },
+    {
+      "name": "api_contract_service.py",
+      "files": 1,
+      "size": 6,
+      "patterns": []
+    },
+    {
+      "name": "api_governance_service.py",
+      "files": 1,
+      "size": 19,
+      "patterns": []
+    },
+    {
+      "name": "api_security_service.py",
+      "files": 1,
+      "size": 19,
+      "patterns": []
+    },
+    {
+      "name": "chat_orchestrator_service.py",
+      "files": 1,
+      "size": 20,
+      "patterns": []
+    },
+    {
+      "name": "data_mesh_service.py",
+      "files": 1,
+      "size": 21,
+      "patterns": []
+    },
+    {
+      "name": "ai_intelligent_testing.py",
+      "files": 1,
+      "size": 34,
+      "patterns": []
+    },
+    {
+      "name": "infrastructure_metrics_service.py",
+      "files": 1,
+      "size": 37,
+      "patterns": []
+    },
+    {
+      "name": "ai_model_metrics_service.py",
+      "files": 1,
+      "size": 40,
+      "patterns": []
+    },
+    {
+      "name": "prompt_engineering_service.py",
+      "files": 1,
+      "size": 42,
+      "patterns": []
+    },
+    {
+      "name": "project_context_service.py",
+      "files": 1,
+      "size": 53,
+      "patterns": []
+    },
+    {
+      "name": "multi_layer_cache_service.py",
+      "files": 1,
+      "size": 54,
+      "patterns": []
+    },
+    {
+      "name": "user_analytics_metrics_service.py",
+      "files": 1,
+      "size": 59,
+      "patterns": []
+    },
+    {
+      "name": "horizontal_scaling_service.py",
+      "files": 1,
+      "size": 60,
+      "patterns": []
+    },
+    {
+      "name": "ai_adaptive_microservices.py",
+      "files": 1,
+      "size": 64,
+      "patterns": []
+    },
+    {
+      "name": "fastapi_generation_service.py",
+      "files": 1,
+      "size": 66,
+      "patterns": []
+    },
+    {
+      "name": "duplication_buster.py",
+      "files": 1,
+      "size": 67,
+      "patterns": []
+    },
+    {
+      "name": "observability_boundary_service.py",
+      "files": 1,
+      "size": 68,
+      "patterns": []
+    },
+    {
+      "name": "security",
+      "files": 2,
+      "size": 72,
+      "patterns": [
+        "__init__.py",
+        "auth_persistence.py"
+      ]
+    },
+    {
+      "name": "ai_advanced_security.py",
+      "files": 1,
+      "size": 73,
+      "patterns": []
+    },
+    {
+      "name": "system_service.py",
+      "files": 1,
+      "size": 74,
+      "patterns": []
+    },
+    {
+      "name": "database_service.py",
+      "files": 1,
+      "size": 81,
+      "patterns": []
+    },
+    {
+      "name": "admin_chat_streaming",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "auth_boundary",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "crud_boundary",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "master_agent",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "advanced_streaming",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "llm_client",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "admin_chat_performance",
+      "files": 9,
+      "size": 86,
+      "patterns": [
+        "application",
+        "infrastructure",
+        "domain",
+        "facade.py",
+        "__init__.py"
+      ]
+    },
+    {
+      "name": "api_event_driven_service.py",
+      "files": 1,
+      "size": 95,
+      "patterns": []
+    },
+    {
+      "name": "distributed_resilience_service.py",
+      "files": 1,
+      "size": 101,
+      "patterns": []
+    },
+    {
+      "name": "breakthrough_streaming.py",
+      "files": 1,
+      "size": 105,
+      "patterns": []
+    },
+    {
+      "name": "history_service.py",
+      "files": 1,
+      "size": 110,
+      "patterns": []
+    },
+    {
+      "name": "crud_boundary_service.py",
+      "files": 1,
+      "size": 111,
+      "patterns": []
+    },
+    {
+      "name": "execution",
+      "files": 2,
+      "size": 113,
+      "patterns": [
+        "retry"
+      ]
+    },
+    {
+      "name": "api_config_secrets_service.py",
+      "files": 1,
+      "size": 125,
+      "patterns": []
+    },
+    {
+      "name": "crud",
+      "files": 2,
+      "size": 134,
+      "patterns": [
+        "__init__.py",
+        "crud_persistence.py"
+      ]
+    },
+    {
+      "name": "auth_boundary_service.py",
+      "files": 1,
+      "size": 159,
+      "patterns": []
+    },
+    {
+      "name": "admin_ai_service.py",
+      "files": 1,
+      "size": 170,
+      "patterns": []
+    },
+    {
+      "name": "micro_frontends_service.py",
+      "files": 1,
+      "size": 170,
+      "patterns": []
+    },
+    {
+      "name": "user_service.py",
+      "files": 1,
+      "size": 174,
+      "patterns": []
+    }
+  ],
+  "api_endpoints": [
+    {
+      "file": "/app/app/api/routers/crud.py",
+      "functions": 6,
+      "lines": 94
+    },
+    {
+      "file": "/app/app/api/routers/security.py",
+      "functions": 10,
+      "lines": 127
+    },
+    {
+      "file": "/app/app/api/routers/observability.py",
+      "functions": 8,
+      "lines": 88
+    },
+    {
+      "file": "/app/app/api/routers/data_mesh.py",
+      "functions": 3,
+      "lines": 39
+    },
+    {
+      "file": "/app/app/api/routers/admin.py",
+      "functions": 7,
+      "lines": 111
+    },
+    {
+      "file": "/app/app/api/routers/system/__init__.py",
+      "functions": 3,
+      "lines": 77
+    }
+  ]
+}

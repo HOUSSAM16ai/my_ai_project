@@ -1,3 +1,9 @@
+"""
+Base
+
+هذا الملف جزء من مشروع CogniForge.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -6,7 +12,9 @@ class ModelProviderAdapter(ABC):
     """Abstract model provider interface"""
 
     @abstractmethod
-    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
+    def call_model(
+        self, model: str, prompt: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Call AI model"""
         pass
 
