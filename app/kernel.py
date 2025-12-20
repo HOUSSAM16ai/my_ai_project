@@ -21,54 +21,53 @@ logger = logging.getLogger(__name__)
 
 class RealityKernel:
     """
-    Cognitive Reality Weaver V4 (The Core Application Engine).
+    نواة الواقع الإدراكي - الإصدار الرابع (Cognitive Reality Weaver V4).
 
-    The Reality Kernel acts as the central nervous system of the CogniForge application.
-    It is designed to be the single source of truth for application initialization, ensuring
-    consistency and stability across all services.
+    تخيل أن هذا الكلاس (Class) هو "المدير العام" أو "العقل المدبر" للنظام بأكمله.
+    هو المسؤول عن توصيل كل أجزاء النظام ببعضها البعض، تماماً مثل الجهاز العصبي في جسم الإنسان.
 
-    Key Responsibilities (The Role):
-    1.  **Application Factory**: It instantiates the FastAPI application, the heart of the system.
-    2.  **Middleware Orchestration**: It layers essential middleware (Security, CORS, GZip) to protect and optimize traffic.
-    3.  **Lifespan Management**: It governs the birth (startup) and death (shutdown) of the application, handling database connections and cleanup.
-    4.  **Dynamic Routing (Weaving)**: It automatically discovers and registers "Blueprints" (modular routes), allowing the system to expand without modifying the core.
+    المسؤوليات الرئيسية (الدور):
+    1. **مصنع التطبيق (Application Factory)**: هو الذي يقوم بإنشاء "القلب" النابض للنظام (تطبيق FastAPI).
+    2. **قائد الأوركسترا (Middleware Orchestration)**: يرتب الطبقات الأمنية والتحسينات (Middleware) لضمان حماية النظام وسرعته.
+    3. **إدارة دورة الحياة (Lifespan Management)**: يتحكم في لحظة تشغيل النظام (الولادة) ولحظة إيقافه بسلام (الوفاة)، بما في ذلك الاتصال بقواعد البيانات.
+    4. **حائك المسارات (Dynamic Routing)**: يكتشف "المخططات" (Blueprints) والمسارات تلقائياً ويربطها بالنظام بذكاء دون الحاجة لتعديل الكود الأساسي.
 
-    Why this class exists:
-    To decouple configuration and startup logic from the global scope, making the application
-    testable, modular, and easy to configure for different environments (Dev, Test, Prod).
+    لماذا هذا الكود موجود؟
+    لفصل إعدادات التشغيل عن المنطق البرمجي، مما يجعل النظام قابلاً للاختبار، سهلاً في التعديل، ومنظماً بشكل خارق.
     """
 
     def __init__(self, settings: dict[str, Any]):
         """
-        Initialize the Reality Kernel with the provided configuration.
+        تهيئة نواة الواقع (The Constructor).
 
-        This constructor accepts a dictionary of settings, which allows dependency injection
-        of configuration values. This is crucial for testing, where we might want to inject
-        test-specific settings (like a test database URL) instead of loading them from the environment.
+        هذه الدالة هي "نقطة البداية" للكلاس. تستقبل الإعدادات (Settings) كمدخلات.
+        لماذا نمرر الإعدادات هنا؟ لكي نتمكن من تغييرها بسهولة (مثلاً، استخدام قاعدة بيانات تجريبية أثناء الاختبارات)
+        بدلاً من الاعتماد على المتغيرات العامة التي يصعب تغييرها.
 
-        Args:
-            settings (dict[str, Any]): A dictionary containing application configuration (e.g., SECRET_KEY, DATABASE_URL).
+        المعاملات:
+            settings (dict[str, Any]): قاموس يحتوي على أسرار وإعدادات التطبيق.
         """
         self.settings = settings
         self.app: FastAPI = self._create_pristine_app()
         self._discover_and_weave_blueprints()
 
     def get_app(self) -> FastAPI:
-        """Returns the fully woven FastAPI application."""
+        """يعيد تطبيق FastAPI الجاهز والمنسوج بالكامل (The Fully Woven App)."""
         return self.app
 
     def _create_pristine_app(self) -> FastAPI:
         """
-        Creates the core FastAPI instance with essential configuration and middleware.
+        ينشئ النسخة الأساسية من تطبيق FastAPI مع كل الإعدادات والطبقات اللازمة.
+        هنا يتم تركيب "الدروع" (Middleware) وتجهيز "القلب".
         """
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
-            """Application lifespan handler - manages startup and shutdown logic."""
+            """مدير دورة الحياة - ما يحدث عند التشغيل وعند الإغلاق."""
             async for _ in self._handle_lifespan_events():
                 yield
 
-        # Initialize FastAPI
+        # تهيئة FastAPI (تجهيز الإطار العام)
         app = FastAPI(
             title=self.settings.get("PROJECT_NAME", "CogniForge"),
             version="v4.0-woven",
@@ -83,61 +82,60 @@ class RealityKernel:
         return app
 
     async def _handle_lifespan_events(self):
-        """Executes logic during application startup and shutdown."""
-        # === STARTUP ===
-        logger.info("🚀 CogniForge starting up...")
+        """ينفذ المهام الضرورية عند بدء التشغيل وعند الإيقاف."""
+        # === لحظة التشغيل (STARTUP) ===
+        logger.info("🚀 CogniForge starting up... (النظام يبدأ العمل)")
 
-        # Schema Validation (Skipped in testing to save time/avoid conflicts)
+        # التحقق من صحة هيكل قاعدة البيانات (يتم تخطيه في الاختبارات للسرعة)
         if self.settings.get("ENVIRONMENT") != "testing":
             try:
-                # Import here to avoid circular dependencies or early DB init
+                # استيراد الوظيفة هنا لتجنب المشاكل الدائرية (Circular Imports)
                 from app.core.database import validate_schema_on_startup
                 await validate_schema_on_startup()
             except Exception as e:
                 logger.warning(f"⚠️ Schema validation skipped or failed: {e}")
 
-        logger.info("✅ CogniForge ready to serve requests")
+        logger.info("✅ CogniForge ready to serve requests (النظام جاهز لاستقبال الطلبات)")
 
-        yield  # Application is running
+        yield  # النظام يعمل الآن هنا
 
-        # === SHUTDOWN ===
-        logger.info("👋 CogniForge shutting down...")
+        # === لحظة الإيقاف (SHUTDOWN) ===
+        logger.info("👋 CogniForge shutting down... (جاري إيقاف النظام)")
 
     def _configure_middleware(self, app: FastAPI):
-        """Configures the middleware stack for the application."""
+        """تجهيز طبقات الحماية والتحسين (Middleware Stack)."""
 
-        # 1. Trusted Host
+        # 1. المضيف الموثوق (Trusted Host): لمنع الهجمات من نطاقات غير معروفة.
         app.add_middleware(
             TrustedHostMiddleware,
             allowed_hosts=self.settings.get("ALLOWED_HOSTS", [])
         )
 
-        # 2. CORS (Cross-Origin Resource Sharing)
+        # 2. مشاركة المصادر (CORS): للسماح للمتصفح بالاتصال من نطاقات محددة.
         self._configure_cors(app)
 
-        # 3. Security Headers
+        # 3. ترويسات الأمان (Security Headers): إضافة دروع إضافية لردود الخادم.
         app.add_middleware(SecurityHeadersMiddleware)
 
-        # 4. Rate Limiting (Disabled in testing)
+        # 4. تحديد معدل الطلبات (Rate Limiting): لمنع الإغراق (DDOS) - معطل أثناء الاختبار.
         if self.settings.get("ENVIRONMENT") != "testing":
             app.add_middleware(RateLimitMiddleware)
 
-        # 5. Remove Blocking Headers (Dev/Codespaces support)
-        # This wraps inner layers, so it ensures headers are stripped from responses
+        # 5. تنظيف الترويسات (Remove Blocking Headers): لضمان التوافق مع بيئات التطوير.
         app.add_middleware(RemoveBlockingHeadersMiddleware)
 
-        # 6. GZip Compression
+        # 6. ضغط البيانات (GZip): لتقليل حجم البيانات المرسلة وتسريع النظام.
         app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     def _configure_cors(self, app: FastAPI):
-        """Configures CORS settings based on environment."""
+        """إعدادات CORS بناءً على البيئة (تطوير أو إنتاج)."""
         raw_origins = self.settings.get("BACKEND_CORS_ORIGINS", [])
         allow_origins = raw_origins if isinstance(raw_origins, list) else []
 
-        # Fallback: If no explicit origins, derive from environment
+        # إذا لم يتم تحديد مصادر، نستخدم القيم الافتراضية الذكية
         if not allow_origins:
             if self.settings.get("ENVIRONMENT") == "development":
-                allow_origins = ["*"]
+                allow_origins = ["*"]  # السماح للكل في التطوير
             else:
                 allow_origins = [self.settings.get("FRONTEND_URL")]
 
@@ -159,24 +157,24 @@ class RealityKernel:
 
     def _discover_and_weave_blueprints(self):
         """
-        Discovers and registers all blueprints from the app.blueprints package.
-        Uses introspection to find Blueprint instances.
+        يكتشف ويسجل كل المخططات (Blueprints) تلقائياً.
+        يقوم هذا الكود بالبحث داخل مجلد `app/blueprints` عن أي ملف ينتهي بـ `_blueprint.py` ويقوم بتحميله.
         """
         blueprints_path = os.path.join(os.path.dirname(__file__), "blueprints")
         logger.info(f"Reality Kernel: Weaving blueprints from {blueprints_path}")
 
-        # Walk through the blueprints directory
+        # المشي عبر المجلدات (Walk)
         for _, _, files in os.walk(blueprints_path):
             for filename in files:
                 if filename.endswith("_blueprint.py"):
                     self._load_blueprint_module(filename)
 
     def _load_blueprint_module(self, filename: str):
-        """Helper to load a single blueprint module."""
+        """دالة مساعدة لتحميل ملف مخطط واحد."""
         module_name = f"app.blueprints.{filename[:-3]}"
         try:
             module = importlib.import_module(module_name)
-            # Inspect module members for Blueprint instances
+            # فحص محتويات الملف للبحث عن كائن من نوع Blueprint
             for _, obj in inspect.getmembers(module):
                 if isinstance(obj, Blueprint):
                     self._register_blueprint(obj)
@@ -184,7 +182,7 @@ class RealityKernel:
             logger.error(f"Failed to import blueprint module {module_name}: {e}")
 
     def _register_blueprint(self, blueprint: Blueprint):
-        """Registers a single blueprint with the application."""
+        """تسجيل المخطط في التطبيق الرئيسي."""
         logger.info(f"Weaving blueprint: {blueprint.name}")
         self.app.include_router(
             blueprint.router,

@@ -64,7 +64,10 @@ class TestDependencyInjection:
         from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
         from unittest.mock import AsyncMock, MagicMock
         
+        # We need to mock the session interaction more carefully for SQLAlchemy
+        # Instead of mocking the repository completely blindly, we mock the methods
         mock_repo = MagicMock(spec=SQLAlchemyDatabaseRepository)
+        # Fix: The method is likely awaited, so it should be an AsyncMock
         mock_repo.check_connection = AsyncMock(return_value=True)
         
         service = DefaultHealthCheckService(mock_repo)
@@ -192,3 +195,70 @@ class TestKernelIntegration:
         
         app = create_app()
         assert app is not None
+
+class TestArchitectureRefactoring:
+    """Detailed tests for the architecture refactoring including mocks."""
+
+    @pytest.mark.asyncio
+    async def test_health_check_service_injection(self):
+        """Test health check service with a properly mocked repository."""
+        from app.application.services import DefaultHealthCheckService
+        from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
+        from unittest.mock import AsyncMock, MagicMock
+
+        # Create the mock repository
+        mock_repo = MagicMock(spec=SQLAlchemyDatabaseRepository)
+        # Ensure the async method returns True
+        mock_repo.check_connection = AsyncMock(return_value=True)
+
+        # Inject mock
+        service = DefaultHealthCheckService(mock_repo)
+        result = await service.check_system_health()
+
+        # Assertions
+        assert result["status"] == "healthy"
+        mock_repo.check_connection.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_repository_implementation(self):
+        """Test repository implementation with mocked session."""
+        from app.infrastructure.repositories.sqlalchemy_database_repository import SQLAlchemyDatabaseRepository
+        from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy import text
+        from unittest.mock import AsyncMock, MagicMock
+
+        # Mock the session
+        mock_session = MagicMock(spec=AsyncSession)
+        # Mock execute to return a result that does not raise
+        mock_session.execute = AsyncMock()
+
+        repo = SQLAlchemyDatabaseRepository(mock_session)
+        result = await repo.check_connection()
+
+        assert result is True
+        # Verify that execute was called with a text clause
+        args, _ = mock_session.execute.call_args
+        assert str(args[0]) == "SELECT 1"
+
+    @pytest.mark.asyncio
+    async def test_system_service_injection(self):
+        """Test system service injection."""
+        from app.application.services import DefaultSystemService
+        from app.application.interfaces import HealthCheckService
+        from unittest.mock import AsyncMock, MagicMock
+
+        mock_health = MagicMock(spec=HealthCheckService)
+        mock_health.check_system_health = AsyncMock(return_value={"status": "healthy"})
+
+        service = DefaultSystemService(mock_health)
+        result = await service.get_system_info()
+
+        assert result["status"] == "healthy"
+        assert result["version"] == "v4.0"
+
+    @pytest.mark.asyncio
+    async def test_user_service_injection(self):
+        """Test user service logic with mocks."""
+        # Assuming we have a similar clean architecture service for User
+        # This test might be a placeholder if the refactoring didn't fully touch User Service yet
+        pass

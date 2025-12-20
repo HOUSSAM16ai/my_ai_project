@@ -1,7 +1,7 @@
 # app/services/system_service.py
 """
-System Service for infrastructure health and integrity checks.
-Encapsulates database connectivity verification and critical user checks.
+نظام فحص صحة وسلامة البنية التحتية (System Service).
+هذه الخدمة تعمل كـ "طبيب" للنظام، حيث تقوم بفحص القلب (قاعدة البيانات) والأعضاء الحيوية الأخرى.
 """
 
 from sqlalchemy import select, text
@@ -12,54 +12,63 @@ from app.models import User
 
 
 class SystemService:
+    """
+    خدمة النظام (The Doctor).
+    المسؤولية: التأكد من أن كل شيء يعمل بشكل صحيح.
+    """
+
     async def check_database_status(self, db: AsyncSession) -> str:
         """
-        Executes a simple query to verify database connectivity.
+        فحص نبض قاعدة البيانات.
+        يقوم بتنفيذ استعلام بسيط جداً (SELECT 1) للتأكد من أن الاتصال يعمل.
         """
         try:
             await db.execute(text("SELECT 1"))
-            return "healthy"
+            return "healthy"  # سليم
         except Exception:
-            return "unhealthy"
+            return "unhealthy"  # مريض
 
     async def is_database_connected(self, db: AsyncSession) -> bool:
-        """Checks if the database is connected."""
+        """هل قاعدة البيانات متصلة؟ (نعم/لا)"""
         status = await self.check_database_status(db)
         return status == "healthy"
 
     async def verify_system_integrity(self) -> dict:
         """
-        Performs a deep system integrity check.
-        Verifies DB connectivity and Admin user presence without requiring an external session.
-        Uses a dedicated session to ensure independence from request scope.
+        الفحص الشامل (Deep Scan).
+        يقوم بفحص أعمق للنظام:
+        1. هل قاعدة البيانات تستجيب؟
+        2. هل المستخدم المسؤول (Admin) موجود؟
+
+        يستخدم جلسة (Session) منفصلة لضمان عدم التأثير على الطلبات الحالية.
         """
         admin_present = False
         db_status = "unknown"
 
         try:
-            # Create a dedicated session for the health check
+            # إنشاء جلسة خاصة للفحص
             async with async_session_factory() as session:
-                # Check 1: DB Connectivity
+                # الفحص 1: اتصال قاعدة البيانات
                 await session.execute(text("SELECT 1"))
                 db_status = "connected"
 
-                # Check 2: Admin Presence
-                # We check for the canonical admin email
-                # Using scalar_one_or_none would be safer but first() is robust enough for boolean check
+                # الفحص 2: وجود المسؤول
+                # نبحث عن البريد الإلكتروني الافتراضي للمسؤول
                 res = await session.execute(select(User).where(User.email == "admin@example.com"))
                 if res.scalars().first():
                     admin_present = True
         except Exception:
-            # Log could be added here, but we return structured status
+            # في حال حدوث خطأ كارثي، نعتبر قاعدة البيانات غير قابلة للوصول
             db_status = "unreachable"
 
         return {
             "status": "ok",
             "service": "backend running",
-            "secrets_ok": True,  # Implied if app reached this point
+            "secrets_ok": True,  # ضمناً صحيح إذا وصلنا لهذه النقطة
             "admin_present": admin_present,
             "db": db_status,
         }
 
 
+# مثيل واحد للخدمة يمكن استخدامه في كل مكان
 system_service = SystemService()
