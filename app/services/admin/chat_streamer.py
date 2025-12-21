@@ -25,7 +25,7 @@ class AdminChatStreamer:
 
     المبادئ المعمارية:
     - **فصل الاهتمامات (Separation of Concerns)**: منطق البث مفصول تماماً عن منطق التخزين.
-    - **المرونة (Resilience)**: استخدام `asyncio.shield` لضمان حفظ البيانات حتى عند انقطاع الاتصال.
+    - **المرونة (Resilience)**: استخدام `asyncio.create_task` لضمان عدم حجب التدفق أثناء الحفظ.
     - **الاستجابة الفورية (Low Latency)**: إرسال الأجزاء (Chunks) فور وصولها.
     """
 
@@ -56,7 +56,7 @@ class AdminChatStreamer:
         3. إرسال حدث بدء المحادثة.
         4. استدعاء المنسق (Orchestrator) لمعالجة الطلب.
         5. بث النتائج جزئياً (Streaming).
-        6. حفظ النتيجة النهائية في قاعدة البيانات (بشكل آمن).
+        6. بدء حفظ النتيجة في الخلفية (Background Persistence) لعدم تأخير إشارة النهاية.
 
         Yields:
             str: أحداث SSE بتنسيق `event: type\ndata: json\n\n`.
@@ -103,6 +103,7 @@ class AdminChatStreamer:
                 async with session_factory_func() as session:
                     p = AdminChatPersistence(session)
                     await p.save_message(conversation.id, MessageRole.ASSISTANT, assistant_content)
+                logger.info(f"✅ Conversation {conversation.id} saved successfully in background.")
             except Exception as e:
                 logger.error(f"❌ Failed to save assistant message: {e}")
 
@@ -124,11 +125,12 @@ class AdminChatStreamer:
                         yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
 
             finally:
-                # حماية عملية الحفظ من الإلغاء (Cancellation)
-                await asyncio.shield(safe_persist())
+                # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
+                # هذا يضمن وصول إشارة [DONE] إلى العميل فوراً دون انتظار قاعدة البيانات
+                asyncio.create_task(safe_persist())
 
             # 5. إشارة الانتهاء (Completion Signal)
-            # ضرورية للواجهات الأمامية لإنهاء حالة التحميل وتحديث العرض
+            # تصل للعميل فوراً بفضل فصل عملية الحفظ
             yield "event: done\ndata: [DONE]\n\n"
 
         except Exception as e:

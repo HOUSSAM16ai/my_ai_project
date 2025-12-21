@@ -102,6 +102,7 @@ async def chat_stream(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "Content-Encoding": "identity",  # منع الضغط (GZip) لضمان الوصول الفوري
             "X-Accel-Buffering": "no",  # تعطيل التخزين المؤقت في Nginx
         },
     )

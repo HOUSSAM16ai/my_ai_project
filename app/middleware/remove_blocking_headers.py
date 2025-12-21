@@ -17,7 +17,7 @@ BLOCKED_HEADERS: Final[set[str]] = {
     "x-powered-by",
     "x-aspnet-version",
     "x-runtime",
-    "keep-alive",  # قد يتعارض مع إدارة الاتصالات الحديثة
+    # "keep-alive",  # REMOVED: Essential for SSE and persistent connections
 }
 
 
