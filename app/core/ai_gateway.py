@@ -1,9 +1,3 @@
-"""
-Ai Gateway
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/core/ai_gateway.py
 """
 The ENERGY-ENGINE (V7.2 - SUPERHUMAN EDITION - ULTRA-OPTIMIZED).
@@ -15,36 +9,35 @@ This maintains backward compatibility while enforcing SRP via the new structure.
 import logging
 from typing import Any
 
-from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
-from app.core.gateway.connection import ConnectionManager
-
 # --- Import Atomic Modules ---
 from app.core.gateway.exceptions import (
-    AIAllModelsExhaustedError,
-    AICircuitOpenError,
-    AIConnectionError,
     AIError,
     AIProviderError,
+    AICircuitOpenError,
+    AIConnectionError,
+    AIAllModelsExhaustedError,
     AIRateLimitError,
 )
-from app.core.gateway.mesh import AIClient, NeuralRoutingMesh, get_ai_client
+from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
 from app.core.gateway.node import NeuralNode
+from app.core.gateway.connection import ConnectionManager
+from app.core.gateway.mesh import NeuralRoutingMesh, AIClient, get_ai_client
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 # Re-export key components for backward compatibility
 __all__ = [
-    "AIAllModelsExhaustedError",
-    "AICircuitOpenError",
-    "AIClient",
-    "AIConnectionError",
     "AIError",
     "AIProviderError",
+    "AICircuitOpenError",
+    "AIConnectionError",
+    "AIAllModelsExhaustedError",
     "AIRateLimitError",
     "CircuitBreaker",
     "CircuitState",
-    "ConnectionManager",
     "NeuralNode",
+    "ConnectionManager",
     "NeuralRoutingMesh",
+    "AIClient",
     "get_ai_client",
     "get_performance_report",
     "get_recommended_model",

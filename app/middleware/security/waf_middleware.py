@@ -1,9 +1,3 @@
-"""
-Waf Middleware
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/middleware/security/waf_middleware.py
 # ======================================================================================
 # ==                    WAF MIDDLEWARE ADAPTER (v∞)                                 ==
@@ -87,9 +81,7 @@ class WAFMiddleware(BaseMiddleware):
                 "checked_count": self.checked_count,
                 "blocked_count": self.blocked_count,
                 "block_rate": (
-                    self.blocked_count / self.checked_count
-                    if self.checked_count > 0
-                    else 0.0
+                    self.blocked_count / self.checked_count if self.checked_count > 0 else 0.0
                 ),
             }
         )

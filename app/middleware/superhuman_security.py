@@ -1,9 +1,3 @@
-"""
-Superhuman Security
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/middleware/superhuman_security.py
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -13,9 +7,7 @@ from app.security.waf import waf
 
 
 class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         try:
             await waf.check_request(request)
             # The rate limiter is now a dependency, so it's not called here

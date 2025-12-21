@@ -31,9 +31,7 @@ async def execute_tool(
 
     tool = registry.get(request.tool_name)
     if not tool:
-        raise HTTPException(
-            status_code=404, detail=f"Tool '{request.tool_name}' not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Tool '{request.tool_name}' not found")
 
     try:
         result = await tool.execute(**request.parameters)
@@ -47,8 +45,7 @@ async def execute_tool(
         )
     except Exception as e:
         logger.error(
-            f"Tool execution failed: {e}",
-            extra={"tool": request.tool_name, "user_id": user_id},
+            f"Tool execution failed: {e}", extra={"tool": request.tool_name, "user_id": user_id}
         )
         execution_time = time.time() - start_time
 

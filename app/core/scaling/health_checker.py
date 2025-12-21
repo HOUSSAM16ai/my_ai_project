@@ -69,9 +69,7 @@ class HealthChecker:
         stats = self.registry.get_stats()
 
         for service_name in stats:
-            instances = await self.registry.get_instances(
-                service_name, healthy_only=False
-            )
+            instances = await self.registry.get_instances(service_name, healthy_only=False)
 
             for instance in instances:
                 healthy = await self._check_instance_health(instance)

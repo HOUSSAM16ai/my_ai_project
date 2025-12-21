@@ -1,9 +1,3 @@
-"""
-Main
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/main.py
 """
 Entry point for the CogniForge Reality Kernel V3.
@@ -88,6 +82,4 @@ if hasattr(app, "logger"):
     app.logger.info("Application initialized with unified kernel middleware stack.")
 
 if not isinstance(app, FastAPI):
-    raise RuntimeError(
-        "CRITICAL: Reality Kernel failed to weave a valid FastAPI instance."
-    )
+    raise RuntimeError("CRITICAL: Reality Kernel failed to weave a valid FastAPI instance.")

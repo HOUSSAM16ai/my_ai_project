@@ -1,9 +1,3 @@
-"""
-Types
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 from dataclasses import dataclass
 from enum import Enum, auto
 

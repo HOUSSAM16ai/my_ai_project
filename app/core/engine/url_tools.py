@@ -1,9 +1,3 @@
-"""
-Url Tools
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import logging
 import os
 import sys
@@ -54,9 +48,7 @@ class DatabaseURLSanitizer:
         if not url:
             # Check for test environment
             if cls._is_test_environment():
-                logger.warning(
-                    "⚠️ DATABASE_URL not set. Using SQLite fallback for testing."
-                )
+                logger.warning("⚠️ DATABASE_URL not set. Using SQLite fallback for testing.")
                 return "sqlite+aiosqlite:///:memory:"
             raise FatalEngineError(
                 "🚨 CRITICAL: DATABASE_URL is not set. Please configure your database connection."
@@ -146,14 +138,10 @@ class DatabaseURLSanitizer:
             # SQLite URLs don't have netloc (e.g., sqlite:///./test.db)
             is_sqlite = "sqlite" in url.lower()
             if not parts.scheme:
-                raise FatalEngineError(
-                    "🚨 Invalid DATABASE_URL structure: missing scheme"
-                )
+                raise FatalEngineError("🚨 Invalid DATABASE_URL structure: missing scheme")
             # Only require netloc for non-SQLite databases
             if not is_sqlite and not parts.netloc:
-                raise FatalEngineError(
-                    "🚨 Invalid DATABASE_URL structure: missing host"
-                )
+                raise FatalEngineError("🚨 Invalid DATABASE_URL structure: missing host")
         except Exception as e:
             if isinstance(e, FatalEngineError):
                 raise

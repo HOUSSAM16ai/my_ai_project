@@ -1,9 +1,3 @@
-"""
-Circuit Breaker
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/core/resilience/circuit_breaker.py
 """
 CIRCUIT BREAKER — CENTRALIZED IMPLEMENTATION
@@ -324,9 +318,7 @@ class CircuitBreakerRegistry:
     def get_all_stats(self) -> dict[str, dict[str, Any]]:
         """Get statistics for all circuit breakers"""
         with self._breakers_lock:
-            return {
-                name: breaker.get_stats() for name, breaker in self._breakers.items()
-            }
+            return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
 
     def remove(self, name: str):
         """Remove a circuit breaker from registry"""

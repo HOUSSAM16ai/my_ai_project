@@ -1,9 +1,3 @@
-"""
-Base
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 from abc import ABC, abstractmethod
 from typing import Any
 

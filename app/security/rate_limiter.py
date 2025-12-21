@@ -1,9 +1,3 @@
-"""
-Rate Limiter
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/security/rate_limiter.py
 import time
 from collections import defaultdict
@@ -57,10 +51,7 @@ class AdaptiveRateLimiter:
         self.memory_store = defaultdict(list)
 
     def check_rate_limit(
-        self,
-        request: Request,
-        user_id: str | None = None,
-        tier: UserTier = UserTier.FREE,
+        self, request: Request, user_id: str | None = None, tier: UserTier = UserTier.FREE
     ) -> tuple[bool, dict]:
         """
         التحقق من حد المعدل للمستخدم أو عنوان IP
@@ -74,11 +65,7 @@ class AdaptiveRateLimiter:
             (is_allowed, info_dict)
         """
         # Determine identification key (User ID preferred, else IP)
-        key = (
-            str(user_id)
-            if user_id
-            else (request.client.host if request.client else "unknown")
-        )
+        key = str(user_id) if user_id else (request.client.host if request.client else "unknown")
 
         limit, window = self.limits.get(tier, self.limits[UserTier.FREE])
         now = time.time()

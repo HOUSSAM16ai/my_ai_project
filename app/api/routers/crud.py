@@ -1,16 +1,10 @@
-"""
-Crud
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/api/routers/crud.py
 """
 CRUD Router - Generic Data Operations
 Provides standardized CRUD endpoints for resources.
 Handles pagination, filtering, and sorting.
 """
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -29,9 +23,9 @@ async def list_resources(
     resource_type: str,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-    sort_by: str | None = Query(None, description="Field to sort by"),
-    order: str | None = Query("asc", description="Sort order (asc/desc)"),
-    search: str | None = Query(None, description="Search query"),
+    sort_by: Optional[str] = Query(None, description="Field to sort by"),
+    order: Optional[str] = Query("asc", description="Sort order (asc/desc)"),
+    search: Optional[str] = Query(None, description="Search query"),
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
@@ -47,7 +41,7 @@ async def list_resources(
         per_page=per_page,
         sort_by=sort_by,
         order=order,
-        filters=filters,
+        filters=filters
     )
 
 

@@ -1,9 +1,3 @@
-"""
-Chrono Shield
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import asyncio
 import logging
 import time
@@ -74,9 +68,7 @@ class ChronoShield:
 
         # Emergency purge if under attack (Too many keys)
         if len(self._failures) > self.MAX_KEYS:
-            logger.warning(
-                "ChronoShield: ENTROPY LIMIT REACHED. Initiating Emergency Purge."
-            )
+            logger.warning("ChronoShield: ENTROPY LIMIT REACHED. Initiating Emergency Purge.")
             self._failures.clear()
 
     async def check_allowance(self, request: Request, identifier: str) -> None:
@@ -101,9 +93,7 @@ class ChronoShield:
 
         # Phase 1: Event Horizon (Hard Lockout)
         if threat_level >= self.LOCKOUT_THRESHOLD:
-            logger.warning(
-                f"ChronoShield: EVENT HORIZON REACHED for IP={ip} Target={identifier}"
-            )
+            logger.warning(f"ChronoShield: EVENT HORIZON REACHED for IP={ip} Target={identifier}")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Security protocol activated. Access suspended due to anomalous kinetic energy.",

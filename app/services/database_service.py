@@ -1,34 +1,3 @@
-"""
-Database Service
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
-# app/services/database_service.py
-"""
-خدمة قاعدة البيانات (Database Service)
-======================================
-
-الدور (Purpose):
-    توفير واجهة موحدة للتعامل مع قاعدة البيانات، بما في ذلك:
-    - فحص صحة الاتصال
-    - الحصول على معلومات الجداول
-    - تنفيذ الاستعلامات
-
-المسؤوليات (Responsibilities):
-    1. إدارة الاتصال بقاعدة البيانات
-    2. فحص صحة قاعدة البيانات
-    3. توفير معلومات عن البنية (Schema)
-    4. تنفيذ العمليات الأساسية
-
-الاستخدام (Usage):
-    ```python
-    from app.services.database_service import DatabaseService
-
-    service = DatabaseService(session=db_session)
-    health = await service.check_health()
-    ```
-"""
 import asyncio
 import logging
 from typing import Any
@@ -42,42 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
-    """
-    خدمة قاعدة البيانات
-
-    توفر واجهة موحدة للتعامل مع قاعدة البيانات
-    """
-
     def __init__(
         self,
         session: AsyncSession | None = None,
         settings: AppSettings | None = None,
         logger: logging.Logger | None = None,
     ):
-        """
-        تهيئة خدمة قاعدة البيانات
-
-        Args:
-            session: جلسة قاعدة البيانات
-            settings: إعدادات التطبيق
-            logger: مسجل الأحداث
-        """
         self.session = session
         self.settings = settings
         self.logger = logger or logging.getLogger(__name__)
 
     async def check_health(self) -> dict[str, Any]:
         """
-        فحص صحة قاعدة البيانات
-
-        يقوم بتنفيذ استعلام بسيط للتحقق من أن الاتصال يعمل
-        ويقيس زمن الاستجابة
-
-        Returns:
-            dict: حالة الصحة وزمن الاستجابة
-                - status: "healthy" أو "unhealthy"
-                - latency_ms: زمن الاستجابة بالميلي ثانية
-                - error: رسالة الخطأ (إن وجد)
+        Checks database health.
         """
         try:
             start = asyncio.get_event_loop().time()
@@ -113,9 +59,7 @@ class DatabaseService:
     async def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
         return {}
 
-    async def create_record(
-        self, table_name: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
         return data
 
     async def update_record(

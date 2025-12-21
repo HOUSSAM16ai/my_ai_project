@@ -1,9 +1,3 @@
-"""
-Routing
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import logging
 import threading
 from collections import deque
@@ -165,14 +159,10 @@ class IntelligentRouter:
         """
         constraints = constraints or {}
 
-        candidates = self._evaluate_candidates(
-            model_type, estimated_tokens, constraints
-        )
+        candidates = self._evaluate_candidates(model_type, estimated_tokens, constraints)
 
         if not candidates:
-            raise ValueError(
-                "No suitable provider found for routing (or all circuits open)"
-            )
+            raise ValueError("No suitable provider found for routing (or all circuits open)")
 
         # Apply Strategy Pattern
         strategy_impl = get_strategy(strategy)
@@ -226,8 +216,6 @@ class IntelligentRouter:
 
             # Update health status based on error rate
             error_rate = (
-                stats.total_errors / stats.total_requests
-                if stats.total_requests > 0
-                else 0
+                stats.total_errors / stats.total_requests if stats.total_requests > 0 else 0
             )
             stats.is_healthy = error_rate < 0.1  # Unhealthy if >10% error rate

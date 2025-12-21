@@ -1,9 +1,3 @@
-"""
-Waf
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/security/waf.py
 import contextlib
 import re

@@ -1,9 +1,3 @@
-"""
-Yaml Utils
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 from __future__ import annotations
 
 import logging

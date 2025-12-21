@@ -1,0 +1,47 @@
+"""Payload Builder - Constructs AI model request payloads."""
+from __future__ import annotations
+
+import os
+from typing import Any
+
+
+class PayloadBuilder:
+    """
+    Responsible for constructing the payload for LLM invocations.
+    Encapsulates logic for model selection, parameter validation, and formatting.
+    """
+
+    def __init__(self, default_model: str | None = None):
+        self._force_model = os.getenv("LLM_FORCE_MODEL", "").strip() or None
+        self._default_model = default_model
+
+    def build(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Builds and returns the standardized payload dictionary.
+        Applies environment overrides (LLM_FORCE_MODEL).
+        """
+
+        # Apply force model override if present
+        effective_model = self._force_model if self._force_model else model
+
+        payload = {
+            "model": effective_model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": tool_choice,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "extra": extra or {},
+        }
+
+        return payload

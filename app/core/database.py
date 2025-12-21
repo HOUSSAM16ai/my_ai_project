@@ -1,5 +1,4 @@
 """Database - Database connection and session management."""
-
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
@@ -25,8 +24,8 @@ async_session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,  # Prevent attributes from being expired after commit, reducing DB roundtrips
-    autocommit=False,  # Explicit transaction management is safer
-    autoflush=False,  # Changes are not flushed to DB until flush() or commit() is called
+    autocommit=False,       # Explicit transaction management is safer
+    autoflush=False,        # Changes are not flushed to DB until flush() or commit() is called
 )
 
 # Alias for backward compatibility with older parts of the codebase
@@ -125,9 +124,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                 missing = required_columns - existing_columns
 
                 if missing:
-                    results["missing_columns"].extend(
-                        [f"{table_name}.{col}" for col in missing]
-                    )
+                    results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
 
                     if auto_fix:
                         # محاولة إصلاح الأعمدة المفقودة (SQL مُعرّف مسبقاً)
@@ -139,19 +136,13 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                                 try:
                                     # SQL is predefined, not from user input
                                     await conn.execute(text(auto_fix_queries[col]))
-                                    logger.info(
-                                        f"✅ Added missing column: {table_name}.{col}"
-                                    )
-                                    results["fixed_columns"].append(
-                                        f"{table_name}.{col}"
-                                    )
+                                    logger.info(f"✅ Added missing column: {table_name}.{col}")
+                                    results["fixed_columns"].append(f"{table_name}.{col}")
 
                                     # إضافة الفهرس إذا كان موجوداً
                                     if col in index_queries:
                                         await conn.execute(text(index_queries[col]))
-                                        logger.info(
-                                            f"✅ Created index for: {table_name}.{col}"
-                                        )
+                                        logger.info(f"✅ Created index for: {table_name}.{col}")
 
                                 except Exception as e:
                                     error_msg = f"Failed to fix {table_name}.{col}: {e}"
@@ -190,9 +181,7 @@ async def validate_schema_on_startup() -> None:
     if results["status"] == "ok":
         logger.info("✅ Schema validation passed - all columns present")
     elif results["fixed_columns"]:
-        logger.warning(
-            f"⚠️ Schema had issues but was auto-fixed: {results['fixed_columns']}"
-        )
+        logger.warning(f"⚠️ Schema had issues but was auto-fixed: {results['fixed_columns']}")
     elif results["missing_columns"]:
         missing = ", ".join(results["missing_columns"])
         logger.error(f"❌ CRITICAL: Missing columns could not be fixed: {missing}")
@@ -234,9 +223,7 @@ def _get_sync_engine():
         if "sqlite" in db_url:
             connect_args["check_same_thread"] = False
 
-        _sync_engine = create_engine(
-            db_url, connect_args=connect_args, pool_pre_ping=True
-        )
+        _sync_engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
     return _sync_engine
 
 

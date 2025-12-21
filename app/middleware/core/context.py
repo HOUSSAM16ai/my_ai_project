@@ -1,9 +1,3 @@
-"""
-Context
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/middleware/core/context.py
 # ======================================================================================
 # ==                    UNIFIED REQUEST CONTEXT (FASTAPI EDITION)                   ==

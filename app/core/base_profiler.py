@@ -1,9 +1,3 @@
-"""
-Base Profiler
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/core/base_profiler.py
 """
 SUPERHUMAN BASE PROFILER - DRY PRINCIPLE ENFORCEMENT

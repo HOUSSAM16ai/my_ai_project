@@ -1,9 +1,3 @@
-"""
-Admin
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/api/routers/admin.py
 """
 Admin-facing API endpoints for the CogniForge platform.

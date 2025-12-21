@@ -1,9 +1,3 @@
-"""
-Pooler
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import logging
 import os
 import re
@@ -92,9 +86,7 @@ class AdaptivePoolerDetector:
             return PoolerType.PGBOUNCER
 
         # Check for Supabase with pooler port
-        if (
-            os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_DB_URL")
-        ) and ":6543" in url:
+        if (os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_DB_URL")) and ":6543" in url:
             logger.info("🔍 APDA: Detected Supabase Pooler via env + port")
             return PoolerType.SUPABASE_POOLER
 

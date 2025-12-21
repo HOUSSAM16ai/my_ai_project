@@ -1,9 +1,3 @@
-"""
-Encryption
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/security/encryption.py
 # ======================================================================================
 # ==        QUANTUM-SAFE ENCRYPTION (v1.0 - FUTURE-PROOF EDITION)                   ==

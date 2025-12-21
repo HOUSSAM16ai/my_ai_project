@@ -13,19 +13,19 @@ from typing import Protocol, runtime_checkable
 
 import httpx
 
-# Config imports
-from app.config.ai_models import get_ai_config
-from app.core.cognitive_cache import get_cognitive_engine
-from app.core.gateway.circuit_breaker import CircuitBreaker
-from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
-
 # Import new atomic modules
 from app.core.gateway.exceptions import (
     AIAllModelsExhaustedError,
     AIConnectionError,
     AIRateLimitError,
 )
+from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.node import NeuralNode
+from app.core.gateway.connection import ConnectionManager, BASE_TIMEOUT
+
+# Config imports
+from app.config.ai_models import get_ai_config
+from app.core.cognitive_cache import get_cognitive_engine
 from app.core.math.omni_router import get_omni_router
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
@@ -197,18 +197,14 @@ class NeuralRoutingMesh:
         if messages[-1].get("role") == "user":
             cached_memory = get_cognitive_engine().recall(prompt, context_hash)
             if cached_memory:
-                logger.info(
-                    f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'"
-                )
+                logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
                 for chunk in cached_memory:
                     yield chunk
                 return
 
         priority_nodes = self._get_prioritized_nodes(prompt)
         if not priority_nodes:
-            raise AIAllModelsExhaustedError(
-                "All circuits are open, no models available."
-            )
+            raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         errors = []
 
@@ -235,16 +231,14 @@ class NeuralRoutingMesh:
                 ).strip()
 
                 if not full_content and full_response_chunks:
-                    # It yielded chunks but empty content? Only if chunks were metadata?
-                    pass
+                     # It yielded chunks but empty content? Only if chunks were metadata?
+                     pass
 
                 quality_score = self._calculate_quality_score(full_content)
                 node.circuit_breaker.record_success()
 
                 if node.model_id != SAFETY_NET_MODEL_ID:
-                    get_cognitive_engine().memorize(
-                        prompt, context_hash, full_response_chunks
-                    )
+                     get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
 
                 return
 
@@ -257,10 +251,8 @@ class NeuralRoutingMesh:
             except (AIConnectionError, ValueError, Exception) as e:
                 # IMPORTANT FIX: If we have already yielded data, we CANNOT failover.
                 # It would result in a corrupted stream (e.g. half of Model A + full Model B).
-                if "chunks_yielded" in locals() and chunks_yielded > 0:
-                    logger.critical(
-                        f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely."
-                    )
+                if 'chunks_yielded' in locals() and chunks_yielded > 0:
+                    logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
                     node.circuit_breaker.record_failure()
                     self._record_metrics(node, prompt, 0, False)
                     # We must raise the error to the client
@@ -269,7 +261,7 @@ class NeuralRoutingMesh:
                 # Connection errors or "Empty response" errors
                 node.circuit_breaker.record_failure()
                 self._record_metrics(node, prompt, 0, False)
-                errors.append(f"{node.model_id}: {e!s}")
+                errors.append(f"{node.model_id}: {str(e)}")
                 logger.warning(f"Node {node.model_id} failed: {e}")
                 continue
 
@@ -284,9 +276,7 @@ class NeuralRoutingMesh:
         # Safety Net Implementation
         if node.model_id == SAFETY_NET_MODEL_ID:
             logger.warning("⚠️ Engaging Safety Net Protocol.")
-            safety_msg = (
-                "⚠️ System Alert: Unable to reach external intelligence providers."
-            )
+            safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
             for word in safety_msg.split(" "):
                 yield {"choices": [{"delta": {"content": word + " "}}]}
                 await asyncio.sleep(0.05)
@@ -317,15 +307,11 @@ class NeuralRoutingMesh:
 
                     if response.status_code >= 400:
                         raise httpx.HTTPStatusError(
-                            f"HTTP {response.status_code}",
-                            request=response.request,
-                            response=response,
+                            f"HTTP {response.status_code}", request=response.request, response=response
                         )
 
                     stream_started = True
-                    node.consecutive_rate_limits = (
-                        0  # Reset on connection success (even if stream fails later?)
-                    )
+                    node.consecutive_rate_limits = 0 # Reset on connection success (even if stream fails later?)
 
                     chunk_count = 0
                     async for line in response.aiter_lines():
@@ -346,14 +332,9 @@ class NeuralRoutingMesh:
                     return
 
             except AIRateLimitError:
-                raise  # Propagate to main loop to trigger failover
+                raise # Propagate to main loop to trigger failover
 
-            except (
-                httpx.ConnectError,
-                httpx.ReadTimeout,
-                httpx.HTTPStatusError,
-                ValueError,
-            ) as e:
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
                 if stream_started:
                     # If we started streaming and failed, we can't retry cleanly without potentially duplicating content
                     # or sending half-baked responses. Ideally we should raise to failover.
@@ -361,9 +342,9 @@ class NeuralRoutingMesh:
                     raise AIConnectionError("Stream severed") from e
 
                 if attempt > MAX_RETRIES:
-                    raise AIConnectionError("Max retries exceeded") from e
+                     raise AIConnectionError("Max retries exceeded") from e
 
-                await asyncio.sleep(0.5 * attempt)  # Simple backoff for retries
+                await asyncio.sleep(0.5 * attempt) # Simple backoff for retries
 
 
 def get_ai_client() -> AIClient:
@@ -372,9 +353,7 @@ def get_ai_client() -> AIClient:
     """
     api_key = _ai_config.openrouter_api_key
     if not api_key:
-        logger.warning(
-            "OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode."
-        )
+        logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
     elif api_key.startswith("sk-or-v1-xxx"):
         logger.warning("OPENROUTER_API_KEY appears to be a placeholder value.")
     else:

@@ -1,9 +1,3 @@
-"""
-State Engine
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/core/kernel_v2/state_engine.py
 """
 The State Engine for Reality Kernel v2.

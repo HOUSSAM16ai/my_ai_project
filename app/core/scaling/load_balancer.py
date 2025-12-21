@@ -1,24 +1,22 @@
 """
 Load balancer for distributing requests across instances.
 """
-
 import asyncio
 import logging
 import random
 from abc import ABC, abstractmethod
 from typing import TypeVar
-
 from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
-
 logger = logging.getLogger(__name__)
-T = TypeVar("T")
+T = TypeVar('T')
 
 
 class LoadBalancingStrategy(ABC):
     """Base load balancing strategy."""
 
     @abstractmethod
-    async def select(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
+    async def select(self, instances: list[ServiceInstance]) ->(ServiceInstance
+         | None):
         """Select instance using strategy."""
         pass
 
@@ -30,7 +28,8 @@ class RoundRobinStrategy(LoadBalancingStrategy):
         self._counter = 0
         self._lock = asyncio.Lock()
 
-    async def select(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
+    async def select(self, instances: list[ServiceInstance]) ->(ServiceInstance
+         | None):
         """Select next instance in round-robin fashion."""
         if not instances:
             return None
@@ -43,7 +42,8 @@ class RoundRobinStrategy(LoadBalancingStrategy):
 class RandomStrategy(LoadBalancingStrategy):
     """Random load balancing."""
 
-    async def select(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
+    async def select(self, instances: list[ServiceInstance]) ->(ServiceInstance
+         | None):
         """Select random instance."""
         if not instances:
             return None
@@ -53,7 +53,8 @@ class RandomStrategy(LoadBalancingStrategy):
 class WeightedRandomStrategy(LoadBalancingStrategy):
     """Weighted random load balancing."""
 
-    async def select(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
+    async def select(self, instances: list[ServiceInstance]) ->(ServiceInstance
+         | None):
         """Select instance based on weights."""
         if not instances:
             return None
@@ -76,28 +77,29 @@ class LeastConnectionsStrategy(LoadBalancingStrategy):
         self._connections: dict[str, int] = {}
         self._lock = asyncio.Lock()
 
-    async def select(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
+    async def select(self, instances: list[ServiceInstance]) ->(ServiceInstance
+         | None):
         """Select instance with least connections."""
         if not instances:
             return None
         async with self._lock:
-            min_conn = float("inf")
+            min_conn = float('inf')
             selected = instances[0]
             for instance in instances:
                 conn = self._connections.get(instance.id, 0)
                 if conn < min_conn:
                     min_conn = conn
                     selected = instance
-            self._connections[selected.id] = self._connections.get(selected.id, 0) + 1
+            self._connections[selected.id] = self._connections.get(selected
+                .id, 0) + 1
             return selected
 
-    async def release(self, instance_id: str) -> None:
+    async def release(self, instance_id: str) ->None:
         """Release connection."""
         async with self._lock:
             if instance_id in self._connections:
-                self._connections[instance_id] = max(
-                    0, self._connections[instance_id] - 1
-                )
+                self._connections[instance_id] = max(0, self._connections[
+                    instance_id] - 1)
 
 
 class LoadBalancer:
@@ -107,22 +109,21 @@ class LoadBalancer:
     Critical component for horizontal scaling.
     """
 
-    def __init__(
-        self,
-        service_registry: ServiceRegistry,
-        strategy: LoadBalancingStrategy | None = None,
-    ):
+    def __init__(self, service_registry: ServiceRegistry, strategy: (
+        LoadBalancingStrategy | None)=None):
         self.registry = service_registry
         self.strategy = strategy or RoundRobinStrategy()
 
-    async def get_instance(self, service_name: str) -> ServiceInstance | None:
+    async def get_instance(self, service_name: str) ->(ServiceInstance | None):
         """
         Get instance for service using load balancing strategy.
 
         Complexity: 2
         """
-        instances = await self.registry.get_instances(service_name, healthy_only=True)
+        instances = await self.registry.get_instances(service_name,
+            healthy_only=True)
         if not instances:
-            logger.warning(f"No healthy instances available for {service_name}")
+            logger.warning(f'No healthy instances available for {service_name}'
+                )
             return None
         return await self.strategy.select(instances)

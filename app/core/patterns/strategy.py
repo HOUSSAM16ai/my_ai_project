@@ -4,9 +4,9 @@ Strategy Pattern Implementation
 Enables runtime selection of algorithms without conditional logic.
 """
 
-import inspect
 from abc import ABC, abstractmethod
 from typing import TypeVar
+import inspect
 
 T = TypeVar("T")
 R = TypeVar("R")

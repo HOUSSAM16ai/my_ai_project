@@ -8,8 +8,8 @@ Processing Interfaces - واجهات المعالجة
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-TInput = TypeVar("TInput")
-TOutput = TypeVar("TOutput")
+TInput = TypeVar('TInput')
+TOutput = TypeVar('TOutput')
 
 
 class IProcessor(ABC, Generic[TInput, TOutput]):
@@ -36,7 +36,7 @@ class IHandler(ABC, Generic[TInput, TOutput]):
         pass
 
     @abstractmethod
-    def set_next(self, handler: "IHandler") -> "IHandler":
+    def set_next(self, handler: 'IHandler') -> 'IHandler':
         """Set next handler in chain"""
         pass
 

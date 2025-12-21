@@ -1,9 +1,3 @@
-"""
-Zero Trust Middleware
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/middleware/security/zero_trust_middleware.py
 # ======================================================================================
 # ==                    ZERO TRUST MIDDLEWARE ADAPTER (v∞)                          ==
@@ -89,9 +83,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
 
         except Exception as e:
             self.failed_count += 1
-            return MiddlewareResult.unauthorized(
-                message=f"Zero Trust verification error: {e!s}"
-            )
+            return MiddlewareResult.unauthorized(message=f"Zero Trust verification error: {e!s}")
 
     def get_statistics(self) -> dict:
         """Return Zero Trust statistics"""
@@ -101,9 +93,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
             {
                 "verified_count": self.verified_count,
                 "failed_count": self.failed_count,
-                "verification_rate": (
-                    self.verified_count / total if total > 0 else 0.0
-                ),
+                "verification_rate": (self.verified_count / total if total > 0 else 0.0),
             }
         )
         return stats

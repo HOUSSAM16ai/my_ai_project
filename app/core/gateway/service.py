@@ -1,9 +1,3 @@
-"""
-Service
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import logging
 import time
 from collections.abc import Callable
@@ -150,11 +144,7 @@ class APIGatewayService:
 
         except Exception as e:
             logger.error(f"Gateway processing error: {e}", exc_info=True)
-            return {
-                "error": "Internal gateway error",
-                "status": "error",
-                "message": str(e),
-            }, 500
+            return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
 
     def get_gateway_stats(self) -> dict[str, Any]:
         """Get comprehensive gateway statistics"""
@@ -179,9 +169,7 @@ api_gateway_service = APIGatewayService()
 # ======================================================================================
 
 
-def gateway_process(
-    protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False
-):
+def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False):
     """
     Decorator to process requests through API Gateway (FastAPI Dependency Injection Friendly)
 
@@ -200,9 +188,7 @@ def gateway_process(
             gateway = api_gateway_service
 
             # Process through gateway
-            response_data, status_code = await gateway.process_request(
-                request, protocol=protocol
-            )
+            response_data, status_code = await gateway.process_request(request, protocol=protocol)
 
             if status_code != 200:
                 return JSONResponse(content=response_data, status_code=status_code)
@@ -214,8 +200,7 @@ def gateway_process(
             except Exception as e:
                 logger.error(f"Endpoint error: {e}", exc_info=True)
                 return JSONResponse(
-                    content={"error": "Internal error", "message": str(e)},
-                    status_code=500,
+                    content={"error": "Internal error", "message": str(e)}, status_code=500
                 )
 
         return decorated_function

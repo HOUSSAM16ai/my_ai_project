@@ -1,9 +1,3 @@
-"""
-Cognitive Cache
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/core/cognitive_cache.py
 """
 THE COGNITIVE RESONANCE ENGINE (V1 - OMEGA).
@@ -74,19 +68,7 @@ class CognitiveResonanceEngine:
         text = re.sub(r"[^a-z0-9\s]", "", text)
         tokens = set(text.split())
         # Basic stop words (can be expanded)
-        stop_words = {
-            "the",
-            "is",
-            "at",
-            "which",
-            "on",
-            "a",
-            "an",
-            "and",
-            "or",
-            "of",
-            "to",
-        }
+        stop_words = {"the", "is", "at", "which", "on", "a", "an", "and", "or", "of", "to"}
         return tokens - stop_words
 
     def _calculate_resonance(
@@ -117,9 +99,7 @@ class CognitiveResonanceEngine:
 
         # Weighted Average:
         # Jaccard: 30%, Containment: 30%, Structure: 40%
-        final_score = (
-            (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
-        )
+        final_score = (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
 
         return final_score
 
@@ -178,17 +158,11 @@ class CognitiveResonanceEngine:
             normalized_tokens=tokens,
             response_payload=response,
         )
-        self.memory.appendleft(
-            engram
-        )  # MRU (Most Recently Used) logic via appendleft + maxlen
+        self.memory.appendleft(engram)  # MRU (Most Recently Used) logic via appendleft + maxlen
         logger.debug(f"Memorized new pattern: '{prompt[:30]}...'")
 
     def get_stats(self):
-        return {
-            **self._stats,
-            "memory_usage": len(self.memory),
-            "capacity": MAX_MEMORY_SLOTS,
-        }
+        return {**self._stats, "memory_usage": len(self.memory), "capacity": MAX_MEMORY_SLOTS}
 
 
 # Singleton Instance

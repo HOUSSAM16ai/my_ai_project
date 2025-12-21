@@ -3,14 +3,12 @@ Connection Manager Module.
 Part of the Atomic Modularization Protocol.
 """
 
-import logging
-
 import httpx
+import logging
 
 logger = logging.getLogger(__name__)
 
 BASE_TIMEOUT = 30.0
-
 
 class ConnectionManager:
     """

@@ -1,9 +1,3 @@
-"""
-Models
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/models.py
 from __future__ import annotations
 
@@ -161,9 +155,7 @@ class User(SQLModel, table=True):
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
@@ -248,15 +240,11 @@ class Mission(SQLModel, table=True):
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
-    initiator: User = Relationship(
-        sa_relationship=relationship("User", back_populates="missions")
-    )
+    initiator: User = Relationship(sa_relationship=relationship("User", back_populates="missions"))
     tasks: list[Task] = Relationship(
         sa_relationship=relationship(
             "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
@@ -264,9 +252,7 @@ class Mission(SQLModel, table=True):
     )
     mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship(
-            "MissionPlan",
-            back_populates="mission",
-            foreign_keys="[MissionPlan.mission_id]",
+            "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
         )
     )
     events: list[MissionEvent] = Relationship(
@@ -326,23 +312,17 @@ class MissionPlan(SQLModel, table=True):
     # Relationships
     mission: Mission = Relationship(
         sa_relationship=relationship(
-            "Mission",
-            back_populates="mission_plans",
-            foreign_keys="[MissionPlan.mission_id]",
+            "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    tasks: list[Task] = Relationship(
-        sa_relationship=relationship("Task", back_populates="plan")
-    )
+    tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
 
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    plan_id: int | None = Field(
-        default=None, foreign_key="mission_plans.id", index=True
-    )
+    plan_id: int | None = Field(default=None, foreign_key="mission_plans.id", index=True)
     task_key: str = Field(max_length=50)
     description: str | None = Field(sa_column=Column(Text))
     tool_name: str | None = Field(max_length=100)
@@ -375,9 +355,7 @@ class Task(SQLModel, table=True):
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
@@ -397,9 +375,7 @@ class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
-    event_type: MissionEventType = Field(
-        sa_column=Column(FlexibleEnum(MissionEventType))
-    )
+    event_type: MissionEventType = Field(sa_column=Column(FlexibleEnum(MissionEventType)))
     payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
 
     created_at: datetime = Field(
@@ -432,21 +408,15 @@ class GeneratedPrompt(SQLModel, table=True):
 
     # Relationships
     template: PromptTemplate = Relationship(
-        sa_relationship=relationship(
-            "PromptTemplate", back_populates="generated_prompts"
-        )
+        sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
 
 # Helpers
-def log_mission_event(
-    mission: Mission, event_type: MissionEventType, payload: dict, session=None
-):
+def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None):
     # Note: payload_json uses JSONText TypeDecorator which handles json.dumps() internally.
     # Do NOT call json.dumps(payload) here as it would cause double encoding.
-    evt = MissionEvent(
-        mission_id=mission.id, event_type=event_type, payload_json=payload
-    )
+    evt = MissionEvent(mission_id=mission.id, event_type=event_type, payload_json=payload)
     if session:
         session.add(evt)
 

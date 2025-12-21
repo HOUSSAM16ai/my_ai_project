@@ -14,9 +14,7 @@ class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=10000)
     conversation_id: int | None = None
     user_id: int | None = Field(
-        default=None,
-        gt=0,
-        description="Optional: Overridden by authenticated user ID if present",
+        default=None, gt=0, description="Optional: Overridden by authenticated user ID if present"
     )
     stream: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)

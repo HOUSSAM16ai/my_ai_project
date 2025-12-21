@@ -1,9 +1,3 @@
-"""
-Ai Threat Middleware
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/middleware/security/ai_threat_middleware.py
 # ======================================================================================
 # ==                    AI THREAT DETECTION MIDDLEWARE (v∞)                         ==
@@ -109,9 +103,7 @@ class AIThreatMiddleware(BaseMiddleware):
                 "threats_detected": self.threats_detected,
                 "critical_blocks": self.critical_blocks,
                 "threat_detection_rate": (
-                    self.threats_detected / self.analyzed_count
-                    if self.analyzed_count > 0
-                    else 0.0
+                    self.threats_detected / self.analyzed_count if self.analyzed_count > 0 else 0.0
                 ),
             }
         )

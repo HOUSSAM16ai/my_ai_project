@@ -1,9 +1,3 @@
-"""
-Security
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/api/routers/security.py
 """
 Security API endpoints for authentication and user management.
@@ -59,10 +53,7 @@ def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthBoundaryService:
 
 @router.get("/health")
 async def health_check():
-    return {
-        "status": "success",
-        "data": {"status": "healthy", "features": ["jwt", "argon2"]},
-    }
+    return {"status": "success", "data": {"status": "healthy", "features": ["jwt", "argon2"]}}
 
 
 @router.post("/register", summary="Register a New User")

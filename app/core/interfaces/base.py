@@ -7,7 +7,7 @@ These are the sacred contracts - NEVER modify them.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 
 class ILifecycle(ABC):
@@ -46,7 +46,7 @@ class IService(ILifecycle):
         pass
 
     @abstractmethod
-    async def health_check(self) -> dict[str, Any]:
+    async def health_check(self) -> Dict[str, Any]:
         """Check service health"""
         pass
 
@@ -72,6 +72,6 @@ class IPlugin(IService):
         pass
 
     @abstractmethod
-    def configure(self, config: dict[str, Any]) -> None:
+    def configure(self, config: Dict[str, Any]) -> None:
         """Configure the plugin"""
         pass

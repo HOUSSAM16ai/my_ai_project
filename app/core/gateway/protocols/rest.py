@@ -1,9 +1,3 @@
-"""
-Rest
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 import contextlib
 from typing import Any
 

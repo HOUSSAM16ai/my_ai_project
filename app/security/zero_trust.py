@@ -1,9 +1,3 @@
-"""
-Zero Trust
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 # app/security/zero_trust.py
 from fastapi import HTTPException, Request, status
 

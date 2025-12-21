@@ -12,10 +12,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from app.core.math.cognitive_fingerprint import (
-    CognitiveComplexity,
-    assess_cognitive_complexity,
-)
+from app.core.math.cognitive_fingerprint import CognitiveComplexity, assess_cognitive_complexity
 from app.core.math.kalman import KalmanFilter
 
 
@@ -41,9 +38,7 @@ class OmniNodeState:
     kalman_filter: KalmanFilter = field(default_factory=KalmanFilter)
 
     # The Skill Tree: Map[Complexity -> Belief]
-    skills: dict[CognitiveComplexity, ContextualBeliefState] = field(
-        default_factory=dict
-    )
+    skills: dict[CognitiveComplexity, ContextualBeliefState] = field(default_factory=dict)
 
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -122,16 +117,7 @@ class SemanticAffinityEngine:
     def __init__(self):
         # Maps keywords to "specialized" model substrings or IDs
         self.specializations = {
-            "coding": {
-                "python",
-                "code",
-                "function",
-                "bug",
-                "error",
-                "api",
-                "class",
-                "async",
-            },
+            "coding": {"python", "code", "function", "bug", "error", "api", "class", "async"},
             "creative": {"story", "poem", "write", "creative", "character", "plot"},
             "math": {"calculate", "equation", "solve", "math", "number", "formula"},
             "analysis": {"analyze", "summary", "report", "data", "trend", "insight"},
@@ -200,9 +186,7 @@ class OmniCognitiveRouter:
             if model_id not in self.nodes:
                 self.nodes[model_id] = OmniNodeState(model_id=model_id)
 
-    def get_ranked_nodes(
-        self, available_model_ids: list[str], prompt: str
-    ) -> list[str]:
+    def get_ranked_nodes(self, available_model_ids: list[str], prompt: str) -> list[str]:
         """
         Context-Aware Ranking with Neuro-Symbolic Enhancement.
         """

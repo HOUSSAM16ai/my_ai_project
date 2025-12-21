@@ -1,9 +1,3 @@
-"""
-Grpc
-
-هذا الملف جزء من مشروع CogniForge.
-"""
-
 from typing import Any
 
 from fastapi import Request
