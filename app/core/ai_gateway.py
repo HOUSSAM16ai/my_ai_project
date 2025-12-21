@@ -9,19 +9,20 @@ This maintains backward compatibility while enforcing SRP via the new structure.
 import logging
 from typing import Any
 
+from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
+from app.core.gateway.connection import ConnectionManager
+
 # --- Import Atomic Modules ---
 from app.core.gateway.exceptions import (
-    AIError,
-    AIProviderError,
+    AIAllModelsExhaustedError,
     AICircuitOpenError,
     AIConnectionError,
-    AIAllModelsExhaustedError,
+    AIError,
+    AIProviderError,
     AIRateLimitError,
 )
-from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
+from app.core.gateway.mesh import AIClient, NeuralRoutingMesh, get_ai_client
 from app.core.gateway.node import NeuralNode
-from app.core.gateway.connection import ConnectionManager
-from app.core.gateway.mesh import NeuralRoutingMesh, AIClient, get_ai_client
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 # Re-export key components for backward compatibility

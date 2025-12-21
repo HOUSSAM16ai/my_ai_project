@@ -26,16 +26,24 @@ VERSION: 1.0.0
 """
 from __future__ import annotations
 
+from app.boundaries.data.core import (
+    AntiCorruptionLayer,
+    CommandHandler,
+    DataBoundary,
+    QueryHandler,
+    ReadModel,
+    get_data_boundary,
+)
+
 # Re-export from decomposed modules to maintain backward compatibility
 from app.boundaries.data.database import DatabaseBoundary, InMemoryDatabaseBoundary
 from app.boundaries.data.events import (
-    EventStore, InMemoryEventStore, StoredEvent, EventSourcedAggregate
+    EventSourcedAggregate,
+    EventStore,
+    InMemoryEventStore,
+    StoredEvent,
 )
 from app.boundaries.data.saga import SagaOrchestrator, SagaStep, SagaStepStatus
-from app.boundaries.data.core import (
-    CommandHandler, QueryHandler, ReadModel, AntiCorruptionLayer,
-    DataBoundary, get_data_boundary
-)
 
 __all__ = [
     "DatabaseBoundary",

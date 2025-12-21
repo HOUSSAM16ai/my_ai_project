@@ -3,10 +3,13 @@ Drift detection logic extracted from base_planner for reduced complexity.
 Detects structural changes in plan quality over time.
 """
 from __future__ import annotations
+
 import time
 from dataclasses import dataclass
 from typing import Any
+
 from ._configs import DriftDetectionConfig
+
 _LAST_STRUCT: dict[str, dict[str, Any]] = {}
 
 

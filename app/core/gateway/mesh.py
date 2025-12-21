@@ -13,19 +13,19 @@ from typing import Protocol, runtime_checkable
 
 import httpx
 
+# Config imports
+from app.config.ai_models import get_ai_config
+from app.core.cognitive_cache import get_cognitive_engine
+from app.core.gateway.circuit_breaker import CircuitBreaker
+from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
+
 # Import new atomic modules
 from app.core.gateway.exceptions import (
     AIAllModelsExhaustedError,
     AIConnectionError,
     AIRateLimitError,
 )
-from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.node import NeuralNode
-from app.core.gateway.connection import ConnectionManager, BASE_TIMEOUT
-
-# Config imports
-from app.config.ai_models import get_ai_config
-from app.core.cognitive_cache import get_cognitive_engine
 from app.core.math.omni_router import get_omni_router
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 

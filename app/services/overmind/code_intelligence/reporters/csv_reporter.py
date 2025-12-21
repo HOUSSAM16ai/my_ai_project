@@ -1,6 +1,8 @@
 import csv
 from pathlib import Path
+
 from ..models import ProjectAnalysis
+
 
 def save_csv_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Save report as CSV"""

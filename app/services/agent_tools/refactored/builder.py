@@ -6,6 +6,7 @@ AFTER: Simple builder with CC = 2
 """
 from collections.abc import Callable
 from typing import Any
+
 from app.core.patterns.builder import FluentBuilder
 from app.services.agent_tools.refactored.tool import Tool, ToolConfig
 

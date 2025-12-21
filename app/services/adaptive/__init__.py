@@ -11,6 +11,11 @@ This package provides:
 - Facade for backward compatibility
 """
 
+from app.services.adaptive.application import (
+    AIScalingEngine,
+    IntelligentRouter,
+    PredictiveHealthMonitor,
+)
 from app.services.adaptive.domain import (
     ScalingDecision,
     ScalingDirection,
@@ -18,18 +23,13 @@ from app.services.adaptive.domain import (
     ServiceInstance,
     ServiceMetrics,
 )
-from app.services.adaptive.application import (
-    AIScalingEngine,
-    IntelligentRouter,
-    PredictiveHealthMonitor,
-)
-from app.services.adaptive.infrastructure import (
-    InMemoryServiceInstanceRepository,
-    InMemoryMetricsRepository,
-)
 from app.services.adaptive.facade import (
     SelfAdaptiveMicroservices,
     get_adaptive_microservices,
+)
+from app.services.adaptive.infrastructure import (
+    InMemoryMetricsRepository,
+    InMemoryServiceInstanceRepository,
 )
 
 __all__ = [

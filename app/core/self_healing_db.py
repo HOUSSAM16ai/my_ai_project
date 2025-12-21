@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import os
 import re
@@ -7,9 +8,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine
+
 logger = logging.getLogger(__name__)
 _SAFE_IDENTIFIER = re.compile('^[a-zA-Z_][a-zA-Z0-9_]{0,62}$')
 _ALLOWED_TABLES = frozenset({'admin_conversations', 'admin_messages'})

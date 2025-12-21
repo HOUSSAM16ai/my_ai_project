@@ -1,11 +1,25 @@
-import pytest
 from datetime import datetime, timedelta
-from app.services.security_metrics.domain.models import SecurityFinding, Severity, SecurityMetrics, TrendDirection, RiskPrediction
-from app.services.security_metrics.application.metrics_calculator import ComprehensiveMetricsCalculator
-from app.services.security_metrics.application.risk_calculator import AdvancedRiskCalculator
+
+import pytest
+
+from app.services.security_metrics.application.metrics_calculator import (
+    ComprehensiveMetricsCalculator,
+)
 from app.services.security_metrics.application.predictive_analytics import LinearRegressionPredictor
-from app.services.security_metrics.infrastructure.in_memory_repositories import InMemoryFindingsRepository, InMemoryMetricsRepository
+from app.services.security_metrics.application.risk_calculator import AdvancedRiskCalculator
+from app.services.security_metrics.domain.models import (
+    RiskPrediction,
+    SecurityFinding,
+    SecurityMetrics,
+    Severity,
+    TrendDirection,
+)
 from app.services.security_metrics.facade import SecurityMetricsEngine, get_security_metrics_engine
+from app.services.security_metrics.infrastructure.in_memory_repositories import (
+    InMemoryFindingsRepository,
+    InMemoryMetricsRepository,
+)
+
 
 # --- Calculator Tests ---
 @pytest.fixture

@@ -3,6 +3,7 @@ Layer detection logic extracted from deep_indexer using Chain of Responsibility 
 Classifies file paths into architectural layers based on ordered rules.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 

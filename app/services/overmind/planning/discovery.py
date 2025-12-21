@@ -3,14 +3,18 @@ This module contains the PlannerDiscovery class, which is responsible for
 discovering planners from the filesystem and metadata registries.
 """
 from __future__ import annotations
+
 import importlib
 import importlib.util
 import logging
 import pkgutil
 from typing import TYPE_CHECKING, Any
+
 from .config import FactoryConfig
+
 if TYPE_CHECKING:
     from types import ModuleType
+
     from .factory_core import PlannerRecord
 try:
     from .base_planner import BasePlanner

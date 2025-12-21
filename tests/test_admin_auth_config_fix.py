@@ -1,9 +1,12 @@
 
+from unittest.mock import MagicMock, patch
+
 import jwt
 import pytest
-from unittest.mock import MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config.settings import AppSettings
+
 
 @pytest.mark.asyncio
 async def test_admin_auth_uses_centralized_config():

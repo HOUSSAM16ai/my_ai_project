@@ -3,6 +3,7 @@ Tag detection logic extracted from deep_indexer using Strategy pattern.
 Provides extensible, data-driven tag classification for code analysis.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 

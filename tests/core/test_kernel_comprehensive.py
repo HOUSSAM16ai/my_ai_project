@@ -1,9 +1,12 @@
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
-from app.kernel import RealityKernel
+
 from app.config.settings import AppSettings
+from app.kernel import RealityKernel
+
 
 class TestRealityKernel:
 

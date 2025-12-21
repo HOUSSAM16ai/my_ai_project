@@ -21,6 +21,10 @@ import time
 from collections.abc import Callable, Generator
 from typing import Any
 
+# New Modular Helpers
+from app.ai.application.payload_builder import PayloadBuilder
+from app.ai.application.response_normalizer import ResponseNormalizer
+
 # Import centralized AI client factory
 from app.core.ai_client_factory import (
     MockClient,
@@ -29,10 +33,6 @@ from app.core.ai_client_factory import (
 from app.core.ai_client_factory import (
     get_ai_client as _get_centralized_client,
 )
-
-# New Modular Helpers
-from app.ai.application.payload_builder import PayloadBuilder
-from app.ai.application.response_normalizer import ResponseNormalizer
 from app.services.llm.circuit_breaker import CircuitBreaker
 from app.services.llm.cost_manager import CostManager
 from app.services.llm.retry_strategy import RetryStrategy

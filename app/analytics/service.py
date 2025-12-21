@@ -3,53 +3,52 @@
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
+from .ab_test_manager import ABTestManager
+
 # Import components
 from .anomaly_detection import StatisticalAnomalyDetector
 from .behavior_analysis import UserBehaviorAnalyzer
-from .report_generation import UsageReportGenerator
-
-# Real Models
-from .models import (
-    UserEvent,
-    UserSession,
-    EngagementMetrics,
-    ConversionMetrics,
-    RetentionMetrics,
-    NPSMetrics,
-    ABTestResults,
-    CohortAnalysis,
-    RevenueMetrics,
-    UserData,
-)
 from .entities import (
     Anomaly,
     BehaviorProfile,
     UsageMetric,
 )
-
-from .interfaces import AnomalyDetector, MetricsRepository, ReportGenerator
-from .value_objects import MetricType, BehaviorPattern
-from .enums import EventType, ABTestVariant, UserSegment
-
-from .in_memory_repository import InMemoryMetricsRepository
-from .in_memory_stores import (
-    InMemoryABTestStore,
-    InMemoryNPSStore,
-    InMemorySessionStore,
-    InMemoryUserStore,
-    InMemoryActiveUsersStore,
-    InMemoryEventStore,
-    InMemoryCohortStore,
-    InMemoryRevenueStore
-)
+from .enums import ABTestVariant, EventType, UserSegment
 
 # Import Application Logic Managers
 from .event_tracker import EventTracker
-from .session_manager import SessionManager
-from .ab_test_manager import ABTestManager
-from .nps_manager import NPSManager
-from .user_segmentation import UserSegmentation
+from .in_memory_repository import InMemoryMetricsRepository
+from .in_memory_stores import (
+    InMemoryABTestStore,
+    InMemoryActiveUsersStore,
+    InMemoryCohortStore,
+    InMemoryEventStore,
+    InMemoryNPSStore,
+    InMemoryRevenueStore,
+    InMemorySessionStore,
+    InMemoryUserStore,
+)
+from .interfaces import AnomalyDetector, MetricsRepository, ReportGenerator
 from .metrics_calculator import MetricsCalculator
+
+# Real Models
+from .models import (
+    ABTestResults,
+    CohortAnalysis,
+    ConversionMetrics,
+    EngagementMetrics,
+    NPSMetrics,
+    RetentionMetrics,
+    RevenueMetrics,
+    UserData,
+    UserEvent,
+    UserSession,
+)
+from .nps_manager import NPSManager
+from .report_generation import UsageReportGenerator
+from .session_manager import SessionManager
+from .user_segmentation import UserSegmentation
+from .value_objects import BehaviorPattern, MetricType
 
 
 class SystemAnalyticsService:

@@ -216,11 +216,11 @@ def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
     """Apply autofill logic for write operations."""
     if not AUTOFILL:
         return
-    
+
     write_tools = {CANON_WRITE, CANON_WRITE_IF_CHANGED}
     if canonical_name not in write_tools:
         return
-    
+
     if not kwargs.get("path"):
         kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
     if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
@@ -235,7 +235,7 @@ def _execute_tool(
 ) -> ToolResult:
     """Execute tool with validation and error handling."""
     canonical_name = meta_entry["canonical"]
-    
+
     if meta_entry.get("disabled"):
         raise PermissionError("TOOL_DISABLED")
 
@@ -269,7 +269,7 @@ def _enrich_result_metadata(
     stats = _TOOL_STATS[reg_name]
     if result.meta is None:
         result.meta = {}
-    
+
     result.meta.update({
         "tool": reg_name,
         "canonical": canonical_name,
@@ -311,7 +311,7 @@ def tool(
     def decorator(func: Callable[..., Any]):
         with _REGISTRY_LOCK:
             _register_tool_metadata(
-                name, description, parameters, category, 
+                name, description, parameters, category,
                 aliases, allow_disable, capabilities
             )
 
@@ -320,7 +320,7 @@ def tool(
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[name]
                 canonical_name = meta_entry["canonical"]
-                
+
                 try:
                     result = _execute_tool(func, kwargs, meta_entry, trace_id)
                 except Exception as e:

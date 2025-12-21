@@ -3,10 +3,13 @@ Supernatural Failure Planning (Circuit Breaker & Fallback).
 Wraps strategy execution to ensure reliability even if the primary strategy fails.
 """
 from __future__ import annotations
+
 import logging
+
 from .schemas import MissionPlanSchema, PlanningContext
 from .strategies.base_strategy import BasePlanningStrategy
 from .strategies.linear_strategy import LinearStrategy
+
 logger = logging.getLogger(__name__)
 
 

@@ -2,8 +2,8 @@
 """Infrastructure layer for adaptive microservices"""
 
 from app.services.adaptive.infrastructure.in_memory_repository import (
-    InMemoryServiceInstanceRepository,
     InMemoryMetricsRepository,
+    InMemoryServiceInstanceRepository,
 )
 
 __all__ = [

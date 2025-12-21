@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+
 def test_health(client: TestClient):
     """
     GIVEN a running FastAPI application with a test client

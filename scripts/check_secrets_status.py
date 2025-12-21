@@ -6,6 +6,7 @@ This runs in GitHub Actions environment.
 import os
 import sys
 
+
 def check_secret(name):
     """Check if a secret is configured (non-empty)."""
     value = os.environ.get(name, "")
@@ -23,7 +24,7 @@ print()
 secrets = {
     "SYNC_GITHUB_TOKEN": "GitHub Personal Access Token",
     "SYNC_GITHUB_ID": "GitHub Repository ID",
-    "SYNC_GITLAB_TOKEN": "GitLab Personal Access Token", 
+    "SYNC_GITLAB_TOKEN": "GitLab Personal Access Token",
     "SYNC_GITLAB_ID": "GitLab Project ID",
 }
 

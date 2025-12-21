@@ -1,6 +1,8 @@
 
 import asyncio
+
 from app.main import create_app
+
 
 async def main():
     app = create_app()

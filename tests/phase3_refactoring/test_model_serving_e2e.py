@@ -8,6 +8,7 @@ works correctly from an end-user perspective.
 """
 
 import pytest
+
 from app.services.serving import (
     InferenceRouter,
     InMemoryModelRepository,
@@ -17,6 +18,7 @@ from app.services.serving import (
     ModelType,
     ModelVersion,
 )
+
 
 @pytest.fixture
 def e2e_stack():

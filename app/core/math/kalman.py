@@ -11,6 +11,7 @@ When the Flux Capacitor predicts a singularity, this filter automatically
 hardens its covariance matrix, rejecting the "Chaos of the Void".
 """
 from dataclasses import dataclass, field
+
 from app.core.math.hyper_flux import HyperFluxCapacitor
 
 

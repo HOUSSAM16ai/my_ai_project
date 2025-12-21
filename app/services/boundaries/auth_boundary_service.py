@@ -12,11 +12,11 @@ from typing import Any
 
 import jwt
 from fastapi import HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
 from app.security.chrono_shield import chrono_shield
 from app.services.security.auth_persistence import AuthPersistence
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 

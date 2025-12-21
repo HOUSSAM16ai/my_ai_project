@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Set
+from typing import Any, Dict, Set
+
 
 class GitAnalyzer:
     """Git History Analyzer"""

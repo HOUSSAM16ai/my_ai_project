@@ -38,26 +38,26 @@ except ImportError:
 from app.services.event_driven import (
     # Domain models
     Command,
+    # Application services (for advanced usage)
+    CQRSManager,
+    # Main facade (most common usage)
+    CQRSService,
     Event,
+    EventDrivenService,
+    EventManager,
     EventPriority,
     EventProcessingResult,
     EventStatus,
     EventStream,
     EventSubscription,
-    MessageBrokerType,
-    Query,
-    # Domain ports
-    MessageBroker,
-    # Application services (for advanced usage)
-    CQRSManager,
-    EventManager,
     # Infrastructure implementations
     InMemoryBroker,
     KafkaBroker,
+    # Domain ports
+    MessageBroker,
+    MessageBrokerType,
+    Query,
     RabbitMQBroker,
-    # Main facade (most common usage)
-    CQRSService,
-    EventDrivenService,
     get_cqrs_service,
     get_event_driven_service,
 )

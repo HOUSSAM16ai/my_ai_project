@@ -1,6 +1,8 @@
 from collections import defaultdict
 from pathlib import Path
+
 from ..models import ProjectAnalysis
+
 
 def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Generate Markdown report"""

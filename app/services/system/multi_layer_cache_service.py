@@ -21,11 +21,11 @@ from __future__ import annotations
 
 # Import from new modular structure
 from .multi_layer_cache import (
-    CDNEdgeCache,
     CacheEntry,
     CacheLayer,
     CacheStats,
     CacheStrategy,
+    CDNEdgeCache,
     EvictionPolicy,
     InMemoryCache,
     MultiLayerCacheOrchestrator,

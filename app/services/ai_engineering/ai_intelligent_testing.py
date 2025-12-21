@@ -5,16 +5,16 @@
 # SHIM FILE FOR BACKWARD COMPATIBILITY
 # This service has been refactored into a modular structure at app/services/ai_testing/
 
+from app.services.ai_testing.application.manager import IntelligentTestingSystem
 from app.services.ai_testing.domain.models import (
-    TestType,
+    CodeAnalysis,
     CoverageType,
     TestCase,
-    CodeAnalysis,
+    TestType,
 )
 from app.services.ai_testing.generators.test_generator import AITestGenerator
-from app.services.ai_testing.selectors.smart_selector import SmartTestSelector
 from app.services.ai_testing.optimizers.coverage_optimizer import CoverageOptimizer
-from app.services.ai_testing.application.manager import IntelligentTestingSystem
+from app.services.ai_testing.selectors.smart_selector import SmartTestSelector
 
 # Re-export all public members
 __all__ = [

@@ -3,6 +3,7 @@ import logging
 import os
 
 from app.services.overmind.planning.schemas import PlannedTask
+
 from . import config, utils
 
 _LOG = logging.getLogger("ultra_hyper_planner.scan")

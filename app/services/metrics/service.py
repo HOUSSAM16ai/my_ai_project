@@ -3,8 +3,16 @@ import threading
 from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
 from app.services.metrics.calculators.drift import DriftCalculatorContext
-from app.services.metrics.types import CostMetrics, DriftStatus, LatencyMetrics, ModelDriftMetrics, ModelPerformanceSnapshot, ModelType
+from app.services.metrics.types import (
+    CostMetrics,
+    DriftStatus,
+    LatencyMetrics,
+    ModelDriftMetrics,
+    ModelPerformanceSnapshot,
+    ModelType,
+)
 
 
 class AIModelMetricsService:

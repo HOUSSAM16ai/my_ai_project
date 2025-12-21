@@ -6,6 +6,8 @@ SUPERHUMAN IMPORT MANAGEMENT SYSTEM
 This module centralizes common imports to eliminate import duplication across the project.
 Import from here instead of repeating imports in every file.
 """
+# ruff: noqa: F401
+
 import logging
 import os
 import sys
@@ -17,6 +19,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
+
 try:
     from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
     from sqlalchemy.orm import Session, relationship
@@ -93,7 +96,7 @@ class ImportHelper:
             return fallback
 
     @classmethod
-    def has_module(cls, module_name: str) ->bool:
+    def has_module(cls, module_name: str) -> bool:
         """Check if module is available."""
         return cls.get_module(module_name) is not None
 

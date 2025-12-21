@@ -1,14 +1,14 @@
 # tests/conftest.py
+import asyncio
 import os
 import shutil
 import tempfile
 from pathlib import Path
-import asyncio
 
 import bcrypt
 import pytest
-from fastapi.testclient import TestClient
 import sqlalchemy as sa
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
@@ -44,6 +44,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-
 
 from app.core.database import get_db
 from app.core.engine_factory import create_unified_async_engine
+
 
 # --- Event Loop Fixture for Session Scope ---
 @pytest.fixture(scope="session")

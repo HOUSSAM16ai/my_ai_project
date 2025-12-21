@@ -21,15 +21,15 @@ import warnings
 
 # Import from refactored module
 from app.services.ai_security import (
-    # Facade
-    SuperhumanSecuritySystem,
-    get_superhuman_security_system,
     # Domain Models
     SecurityEvent,
+    # Facade
+    SuperhumanSecuritySystem,
     ThreatDetection,
     ThreatLevel,
     ThreatType,
     UserBehaviorProfile,
+    get_superhuman_security_system,
 )
 
 # Emit deprecation warning
@@ -63,7 +63,11 @@ __all__ = [
 try:
     from app.services.ai_security.infrastructure import (
         DeepLearningThreatDetector,
+    )
+    from app.services.ai_security.infrastructure import (
         SimpleBehavioralAnalyzer as BehavioralAnalyzer,
+    )
+    from app.services.ai_security.infrastructure import (
         SimpleResponseSystem as AutomatedResponseSystem,
     )
 except ImportError:
