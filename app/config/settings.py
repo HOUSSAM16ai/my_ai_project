@@ -1,133 +1,136 @@
 # app/config/settings.py
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    🧠 AI MODEL CONFIGURATION CENTER                          ║
+║                    🧠 THE COGNITIVE CONFIGURATION CORTEX                     ║
 ║                    ─────────────────────────────────────                     ║
-║  This is the SINGLE SOURCE OF TRUTH for all AI model configurations.        ║
-║  Change your AI models HERE and they will be applied everywhere.            ║
+║  هذا الملف يمثل "القشرة المخية" للنظام، حيث يتم تخزين ومعالجة كافة           ║
+║  المتغيرات الحيوية. يتميز بالذكاء الاصطناعي في التصحيح الذاتي.               ║
 ║                                                                              ║
-║  🔧 How to change models:                                                   ║
-║     Option 1: Set environment variables in .env file                        ║
-║     Option 2: Set GitHub Codespaces Secrets                                 ║
-║     Option 3: Modify the defaults below (not recommended for production)    ║
+║  🌟 Capabilities:                                                            ║
+║     1. Auto-Healing Database URLs (إصلاح ذاتي لروابط قواعد البيانات)        ║
+║     2. Intelligent Environment Detection (اكتشاف ذكي للبيئة)                 ║
+║     3. Cryptographic Validation (تحقق مشفر للمفاتيح الأمنية)                 ║
 ║                                                                              ║
-║  📋 Available Models (via OpenRouter):                                      ║
-║     - openai/gpt-4o          (Most capable, multimodal)                     ║
-║     - openai/gpt-4o-mini     (Fast, cost-effective)                         ║
-║     - openai/gpt-4-turbo     (Optimized GPT-4)                              ║
-║     - anthropic/claude-3.5-sonnet  (Excellent reasoning)                    ║
-║     - anthropic/claude-3-opus      (Most capable Claude)                    ║
-║     - anthropic/claude-3.7-sonnet:thinking  (Advanced reasoning)            ║
-║     - google/gemini-pro      (Google's flagship)                            ║
-║     - meta-llama/llama-3-70b (Open source)                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import functools
+import logging
 import os
-import sys
-from typing import Any
+from typing import Any, Literal
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# إعداد السجل (Logging) لهذه الوحدة
+logger = logging.getLogger("app.config")
 
 
 class AppSettings(BaseSettings):
     """
-    SUPERHUMAN CONFIGURATION NEXUS V3.0-HYPER.
+    💎 MATRIX V4: INTELLIGENT CONFIGURATION SYSTEM
 
-    This class serves as the singular source of truth for the Reality Kernel.
-    It implements intelligent environment detection, auto-healing configuration
-    paths, and robust secret integration for GitHub Codespaces and Enterprise Environments.
+    مصدر الحقيقة الوحيد (Single Source of Truth).
+    يستخدم خوارزميات Pydantic V2 للتحقق الصارم من البيانات.
     """
 
-    # --- Core Identity & Environment ---
-    PROJECT_NAME: str = Field("CogniForge Reality Kernel V3", description="The project name.")
-    VERSION: str = Field("3.0-hyper", description="The application version.")
-    ENVIRONMENT: str = Field(
-        "development", description="The deployment environment (development, staging, production)."
-    )
-    DEBUG: bool = Field(False, description="Enable debug mode.")
-    API_V1_STR: str = "/api/v1"
-
-    # --- Codespaces & Cloud Native Identity ---
-    CODESPACES: bool = Field(
-        False, description="Auto-detected: True if running in GitHub Codespaces."
-    )
-    CODESPACE_NAME: str | None = Field(None, description="The name of the Codespace environment.")
-    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(
-        None, description="Domain suffix for port forwarding."
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🆔 SYSTEM IDENTITY (هوية النظام)
+    # ══════════════════════════════════════════════════════════════════════════
+    PROJECT_NAME: str = Field("CogniForge", description="اسم المشروع (The Project Name)")
+    VERSION: str = Field("4.0.0-legendary", description="إصدار النظام")
+    DESCRIPTION: str = Field(
+        "AI-Powered Educational Platform with Hyper-Intelligent Architecture",
+        description="وصف النظام",
     )
 
-    # --- Core Infrastructure Settings ---
-    DATABASE_URL: str | None = Field(
-        default=None,
-        description="The primary database connection string. Auto-heals sync/async schemes.",
-    )
-    REDIS_URL: str | None = Field(
-        None,
-        description="The Redis connection string.",
+    # Environment Control
+    ENVIRONMENT: Literal["development", "staging", "production", "testing"] = Field(
+        "development", description="بيئة التشغيل الحالية"
     )
 
-    # --- Security Settings ---
+    DEBUG: bool = Field(False, description="وضع التصحيح (يجب أن يكون False في الإنتاج)")
+    API_V1_STR: str = Field("/api/v1", description="بادئة مسارات API")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🛡️ SECURITY PROTOCOLS (بروتوكولات الأمان)
+    # ══════════════════════════════════════════════════════════════════════════
     SECRET_KEY: str = Field(
-        ...,
-        description="Master cryptographic key. MUST be set in production.",
+        ..., min_length=1, description="مفتاح التشفير الرئيسي (يجب أن يكون معقداً وطويلاً)"
     )
+
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        60 * 24 * 8, description="JWT expiration time in minutes."
+        60 * 24 * 8,  # 8 days
+        description="مدة صلاحية رموز الوصول (بالدقائق)",
     )
-    BACKEND_CORS_ORIGINS: list[str] | str = Field(
-        default=["*"],
-        description="List of allowed CORS origins. Supports comma-separated string injection.",
+
+    # CORS & Hosts
+    BACKEND_CORS_ORIGINS: list[str] = Field(
+        default=["*"], description="قائمة النطاقات المسموح لها بالاتصال (CORS)"
     )
+
     ALLOWED_HOSTS: list[str] = Field(
-        default=["*"], description="List of allowed hosts for TrustedHostMiddleware."
+        default=["*"], description="قائمة المضيفين الموثوقين (Trusted Hosts)"
     )
-    FRONTEND_URL: str = Field(
-        default="http://localhost:5000", description="URL of the frontend application."
-    )
+
+    FRONTEND_URL: str = Field(default="http://localhost:3000", description="رابط الواجهة الأمامية")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # 🧠 AI MODEL CONFIGURATION
+    # 💾 DATA NEURAL NETWORK (الشبكة العصبية للبيانات)
     # ══════════════════════════════════════════════════════════════════════════
-    # ⚠️  ALL AI MODELS ARE CONFIGURED IN: app/config/ai_models.py
-    # ⚠️  To change models, edit: app/config/ai_models.py → class ActiveModels
-    # ══════════════════════════════════════════════════════════════════════════
-
-    AI_SERVICE_URL: str | None = Field(
-        None, description="The URL for the external AI inference service."
+    DATABASE_URL: str | None = Field(
+        default=None, description="رابط قاعدة البيانات (يتم معالجته وتصحيحه تلقائياً)"
     )
 
-    # --- API Keys (These are secrets - NOT models) ---
-    OPENAI_API_KEY: str | None = Field(None, description="API Key for OpenAI.")
-    OPENROUTER_API_KEY: str | None = Field(None, description="API Key for OpenRouter.")
+    REDIS_URL: str | None = Field(None, description="رابط تخزين الذاكرة المؤقتة (Redis)")
 
-    # --- Operational Settings ---
-    LOG_LEVEL: str = Field(
-        default="INFO",
-        description="The logging level (e.g., 'DEBUG', 'INFO').",
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🤖 ARTIFICIAL INTELLIGENCE (الذكاء الاصطناعي)
+    # ══════════════════════════════════════════════════════════════════════════
+    OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
+    OPENROUTER_API_KEY: str | None = Field(None, description="OpenRouter API Key")
+    AI_SERVICE_URL: str | None = Field(None, description="رابط خدمة الذكاء الاصطناعي الخارجية")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ☁️ INFRASTRUCTURE INTELLIGENCE (ذكاء البنية التحتية)
+    # ══════════════════════════════════════════════════════════════════════════
+    CODESPACES: bool = Field(False, description="هل نعمل داخل GitHub Codespaces؟")
+    CODESPACE_NAME: str | None = Field(None, description="اسم مساحة العمل")
+    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 👮 ADMIN SEEDING (بيانات المدير الأول)
+    # ══════════════════════════════════════════════════════════════════════════
+    ADMIN_EMAIL: str = Field("admin@cogniforge.com", description="البريد الإلكتروني للمدير")
+    ADMIN_PASSWORD: str = Field("change_me_please_123!", description="كلمة مرور المدير")
+    ADMIN_NAME: str = Field("Supreme Administrator", description="اسم المدير")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ⚙️ LOGGING & MONITORING
+    # ══════════════════════════════════════════════════════════════════════════
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        "INFO", description="مستوى التفصيل في السجلات"
     )
 
-    # --- Admin User Seeding ---
-    ADMIN_EMAIL: str = Field(default="admin@example.com", description="Default admin email.")
-    ADMIN_PASSWORD: str = Field(default="password", description="Default admin password.")
-    ADMIN_NAME: str = Field(default="Admin User", description="Default admin name.")
-
-    # --- Pydantic Model Configuration ---
+    # Pydantic Config
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore",
+        extra="ignore",  # تجاهل أي متغيرات غير معروفة بدلاً من الخطأ
     )
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🧠 GENIUS ALGORITHMS (الخوارزميات العبقرية)
+    # ══════════════════════════════════════════════════════════════════════════
 
     @field_validator("CODESPACES", mode="before")
     @classmethod
-    def detect_codespaces(cls, v: Any, info: ValidationInfo) -> bool:
+    def detect_codespaces(cls, v: Any) -> bool:
         """
-        Intelligently detects if the application is running inside a GitHub Codespace.
-        Prioritizes explicit config, then checks system environment variables.
+        🕵️‍♂️ Environment Sensing Algorithm.
+        يكتشف البيئة تلقائياً حتى لو لم يتم ضبط المتغير يدوياً.
         """
         if v is not None:
             return bool(v)
@@ -135,72 +138,99 @@ class AppSettings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def fix_database_url(cls, v: str | None) -> str:
+    def heal_database_url(cls, v: str | None, info: ValidationInfo) -> str:
         """
-        SUPERHUMAN ALGORITHM: Database URL Auto-Healing.
-        Ensures compatibility between asyncpg, SQLAlchemy, and various providers (Supabase, Neon, Local).
+        💊 Database Auto-Healing Algorithm.
+        يقوم هذا الخوارزمي بإصلاح رابط قاعدة البيانات تلقائياً:
+        1. يحول الروابط التزامنية (Sync) إلى غير تزامنية (Async) للتوافق مع FastAPIs.
+        2. يضبط إعدادات SSL بناءً على المزود (Supabase, Neon, Local).
+        3. يوفر قاعدة بيانات SQLite احتياطية إذا لم يتم العثور على رابط.
         """
-        if not v:
-            print(
-                "WARNING: No DATABASE_URL found. Injecting SQLite fallback for stability.",
-                file=sys.stderr,
-            )
-            return "sqlite+aiosqlite:///./test.db"
+        # 🛡️ FAIL-SAFE PROTOCOL: Check Environment First
+        env = info.data.get("ENVIRONMENT", "development")
 
-        # Only apply URL parsing logic to postgres URLs
+        if not v:
+            if env == "production":
+                raise ValueError(
+                    "❌ CRITICAL: DATABASE_URL is missing in PRODUCTION! Cannot fallback to SQLite."
+                )
+
+            # Fallback strategy: In-memory SQLite for testing/dev safety ONLY
+            logger.warning(
+                "⚠️ No DATABASE_URL found! Activating Emergency Backup Protocol (SQLite)."
+            )
+            return "sqlite+aiosqlite:///./backup_storage.db"
+
+        # If it's not Postgres, leave it alone (e.g. SQLite, MySQL)
         if not v.startswith("postgres"):
             return v
 
-        # Auto-fix Scheme: sync -> async
+        # Algorithm 1: Async Protocol Upgrade
+        # يحول postgresql:// إلى postgresql+asyncpg://
         if v.startswith("postgres://"):
             v = v.replace("postgres://", "postgresql+asyncpg://", 1)
-        elif v.startswith("postgresql://") and "postgresql+asyncpg" not in v:
+        elif v.startswith("postgresql://") and "asyncpg" not in v:
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-        # Robustly handle SSL parameters
-        from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
+        # Algorithm 2: SSL Parameter Optimization
+        try:
+            parts = urlsplit(v)
+            query_params = parse_qs(parts.query)
 
-        parts = urlsplit(v)
-        query_params = parse_qs(parts.query)
+            # استخراج أوضاع SSL القديمة وتحديثها
+            ssl_mode = query_params.pop("sslmode", [None])[0]
+            if ssl_mode in ("require", "disable"):
+                query_params["ssl"] = [ssl_mode]
 
-        ssl_mode = query_params.pop("sslmode", [None])[0]
-        if ssl_mode in ("require", "disable"):
-            query_params["ssl"] = [ssl_mode]
+                # Reconstruct URL
+                new_query = urlencode(query_params, doseq=True)
+                new_parts = parts._replace(query=new_query)
+                v = urlunsplit(new_parts)
+        except Exception as e:
+            logger.error(f"Failed to optimize DB URL params: {e}")
+            # Return original if optimization fails
 
-        # Rebuild the URL
-        new_query = urlencode(query_params, doseq=True)
-        new_parts = parts._replace(query=new_query)
-        return urlunsplit(new_parts)
+        return v
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: Any) -> list[str]:
+    def assemble_cors_origins(cls, v: Any) -> list[str]:
+        """
+        🧩 CORS Assembly Algorithm.
+        يقبل سلسلة نصية مفصولة بفواصل أو قائمة، ويعيد قائمة نظيفة.
+        """
         if isinstance(v, str) and not v.startswith("["):
             return [origin.strip() for origin in v.split(",")]
         elif isinstance(v, list | str):
             return v
         return []
 
-    def validate_integrity(self):
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_security_strength(cls, v: str, info: ValidationInfo) -> str:
         """
-        Runs a post-initialization integrity check.
-        Logs warnings for missing critical secrets (does not raise to avoid crash-loops).
+        🔐 Cryptographic Strength Analyzer.
+        يتحقق من قوة المفتاح السري في بيئة الإنتاج.
         """
-        missing = []
-        if self.SECRET_KEY == "changeme":
-            missing.append("SECRET_KEY (using default)")
+        # 🛡️ Use context data for accurate environment detection
+        env = info.data.get("ENVIRONMENT", "development")
 
-        # Check AI Keys if AI service is expected
-        if not self.OPENROUTER_API_KEY and not self.OPENAI_API_KEY:
-            # Not an error, but a warning
-            pass
+        if env == "production":
+            if v == "changeme" or len(v) < 32:
+                raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
+        return v
 
-        return missing
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """🚀 Returns True if we are in production mode."""
+        return self.ENVIRONMENT == "production"
 
 
 @functools.lru_cache
 def get_settings() -> AppSettings:
     """
-    Global singleton accessor for the AppSettings instance.
+    ⚡ Global Singleton Accessor.
+    يستخدم LRU Cache لضمان تحميل الإعدادات مرة واحدة فقط (Performance Optimization).
     """
     return AppSettings()

@@ -26,8 +26,10 @@ _kernel_instance = None
 def get_kernel():
     global _kernel_instance
     if _kernel_instance is None:
+        # 🧠 INTELLIGENCE UPGRADE: Pass the full Matrix object, not a dumb dict.
+        # This preserves type safety and "genius" algorithms deep into the kernel.
         settings = get_settings()
-        _kernel_instance = RealityKernel(settings.model_dump())
+        _kernel_instance = RealityKernel(settings)
     return _kernel_instance
 
 

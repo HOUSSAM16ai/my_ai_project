@@ -39,7 +39,8 @@ bcrypt.hashpw = _quantum_hashpw
 
 # Set environment variables for testing
 os.environ["ENVIRONMENT"] = "testing"
-os.environ["SECRET_KEY"] = "test-secret-key"
+# 🔐 SECURE KEY: Must be >= 32 chars for the new Genius Configuration Matrix
+os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
 
 from app.core.database import get_db
 from app.core.engine_factory import create_unified_async_engine
