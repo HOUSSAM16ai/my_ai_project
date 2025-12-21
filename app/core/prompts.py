@@ -120,19 +120,16 @@ def _get_system_health() -> str:
 # =============================================================================
 
 
-def get_system_prompt(include_health=True, include_dynamic=True) -> str:
+def get_system_prompt(include_health=True, include_dynamic=False) -> str:
     parts = [
         "You are OVERMIND CLI MINDGATE.",
         OVERMIND_IDENTITY.strip(),
     ]
 
     if include_dynamic:
-        try:
-            from app.services.project_context_service import get_project_context_for_ai
-
-            parts.append(f"\n# 🏗️ CONTEXT\n{get_project_context_for_ai()}")
-        except Exception:
-            parts.append(_get_static_structure())
+        # TODO: Refactor this to support async context retrieval if needed.
+        # Currently disabled to prevent RuntimeWarning about unawaited coroutine.
+        parts.append(_get_static_structure())
 
         parts.append(_get_deep_index_summary())
         parts.append(_get_agent_tools_status())
@@ -145,4 +142,4 @@ def get_system_prompt(include_health=True, include_dynamic=True) -> str:
     return "\n".join(parts)
 
 
-OVERMIND_SYSTEM_PROMPT = get_system_prompt()
+OVERMIND_SYSTEM_PROMPT = get_system_prompt(include_dynamic=False)

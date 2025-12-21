@@ -56,7 +56,7 @@ class TestHistoryServiceFix:
 
     def test_get_recent_conversations_is_async(self):
         """Verify that get_recent_conversations is now async."""
-        from app.services.history_service import get_recent_conversations
+        from app.services.users.history_service import get_recent_conversations
 
         assert inspect.iscoroutinefunction(get_recent_conversations), (
             "get_recent_conversations should be an async function after the fix"
@@ -64,7 +64,7 @@ class TestHistoryServiceFix:
 
     def test_rate_message_in_db_is_async(self):
         """Verify that rate_message_in_db is now async."""
-        from app.services.history_service import rate_message_in_db
+        from app.services.users.history_service import rate_message_in_db
 
         assert inspect.iscoroutinefunction(rate_message_in_db), (
             "rate_message_in_db should be an async function after the fix"
@@ -75,7 +75,7 @@ class TestHistoryServiceFix:
         """Verify that get_recent_conversations returns empty list on error."""
         from unittest.mock import AsyncMock, patch
 
-        from app.services.history_service import get_recent_conversations
+        from app.services.users.history_service import get_recent_conversations
 
         # Mock async_session_factory to raise an error
         with patch("app.services.history_service.async_session_factory") as mock_factory:
@@ -91,7 +91,7 @@ class TestHistoryServiceFix:
     @pytest.mark.asyncio
     async def test_rate_message_validates_rating(self):
         """Verify that rate_message_in_db validates rating values."""
-        from app.services.history_service import rate_message_in_db
+        from app.services.users.history_service import rate_message_in_db
 
         # Invalid rating should return error without hitting database
         result = await rate_message_in_db(message_id=1, rating="invalid", user_id=1)
@@ -107,7 +107,7 @@ class TestUserServiceFix:
         """Verify UserService can be instantiated with a session (for DI)."""
         from unittest.mock import MagicMock
 
-        from app.services.user_service import UserService
+        from app.services.users.user_service import UserService
 
         mock_session = MagicMock()
         service = UserService(session=mock_session)
@@ -116,7 +116,7 @@ class TestUserServiceFix:
 
     def test_user_service_works_without_session(self):
         """Verify UserService can be instantiated without a session (standalone)."""
-        from app.services.user_service import UserService
+        from app.services.users.user_service import UserService
 
         service = UserService()
 
@@ -124,7 +124,7 @@ class TestUserServiceFix:
 
     def test_get_user_service_returns_singleton(self):
         """Verify get_user_service returns a UserService instance."""
-        from app.services.user_service import get_user_service
+        from app.services.users.user_service import get_user_service
 
         service = get_user_service()
 
@@ -135,7 +135,7 @@ class TestUserServiceFix:
 
     def test_async_methods_are_coroutines(self):
         """Verify all main methods are async."""
-        from app.services.user_service import UserService
+        from app.services.users.user_service import UserService
 
         service = UserService()
 

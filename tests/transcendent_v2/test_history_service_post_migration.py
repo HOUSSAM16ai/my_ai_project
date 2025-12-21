@@ -15,7 +15,7 @@ async def test_rate_message_success(mock_session_factory):
     """
     Tests the successful rating of a message.
     """
-    from app.services.history_service import rate_message_in_db
+    from app.services.users.history_service import rate_message_in_db
 
     # Arrange
     message_id = 123
@@ -53,7 +53,7 @@ async def test_rate_message_permission_denied(mock_session_factory):
     """
     Tests that a user cannot rate a message they don't own.
     """
-    from app.services.history_service import rate_message_in_db
+    from app.services.users.history_service import rate_message_in_db
 
     # Arrange
     message_id = 456
@@ -88,7 +88,7 @@ async def test_get_recent_conversations_success(mock_session_factory):
     """
     Tests that get_recent_conversations correctly retrieves conversations.
     """
-    from app.services.history_service import get_recent_conversations
+    from app.services.users.history_service import get_recent_conversations
 
     # Arrange
     user_id = 1
@@ -122,7 +122,7 @@ async def test_get_recent_conversations_returns_empty_on_error(mock_session_fact
     """
     Tests that get_recent_conversations returns empty list on database error.
     """
-    from app.services.history_service import get_recent_conversations
+    from app.services.users.history_service import get_recent_conversations
 
     # Arrange
     user_id = 1

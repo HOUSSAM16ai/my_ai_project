@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import AppSettings
 from app.core.database import get_db
 from app.core.di import get_logger, get_settings
-from app.services.database_service import DatabaseService
+from app.services.system.database_service import DatabaseService
 
 if TYPE_CHECKING:
     pass

@@ -8,7 +8,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from app.models import AdminConversation
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from tests.utils.unified_test_template import UnifiedTestTemplate
 
 

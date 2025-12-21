@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from app.core.di import get_settings
 from app.core.static_handler import setup_static_files
 from app.kernel import RealityKernel
-from app.services.system_service import system_service
+from app.services.system.system_service import system_service
 
 # Load .env file before anything else
 load_dotenv()

@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.services.distributed_resilience_service import (
+from app.services.system.distributed_resilience_service import (
     AdaptiveTimeout,
     Bulkhead,
     BulkheadConfig,

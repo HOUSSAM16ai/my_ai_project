@@ -5,7 +5,7 @@ API Security Service Adapter
 Adapter for the Superhuman Security System.
 """
 
-from app.services.ai_advanced_security import SuperhumanSecuritySystem
+from app.services.ai_engineering.ai_advanced_security import SuperhumanSecuritySystem
 
 # Global singleton instance
 security_service = SuperhumanSecuritySystem()

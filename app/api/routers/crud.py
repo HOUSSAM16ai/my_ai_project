@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from app.services.crud_boundary_service import CrudBoundaryService
+from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 
 router = APIRouter(tags=["CRUD"])
 

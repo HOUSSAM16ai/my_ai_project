@@ -11,7 +11,7 @@ from app.api.v2.schemas import ChatRequest
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import AsyncSession, async_session_factory, get_db
 from app.core.di import get_logger
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 logger = get_logger(__name__)
 

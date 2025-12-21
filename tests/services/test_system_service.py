@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from sqlalchemy.exc import OperationalError
 
-from app.services.system_service import system_service
+from app.services.system.system_service import system_service
 
 
 @pytest.mark.asyncio

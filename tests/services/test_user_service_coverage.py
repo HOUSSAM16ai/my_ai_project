@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from app.models import User
-from app.services.user_service import UserService
+from app.services.users.user_service import UserService
 
 
 @pytest.mark.asyncio

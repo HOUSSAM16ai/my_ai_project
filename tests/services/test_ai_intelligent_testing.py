@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.ai_intelligent_testing import (
+from app.services.ai_engineering.ai_intelligent_testing import (
     AITestGenerator,
     CodeAnalysis,
     CoverageOptimizer,

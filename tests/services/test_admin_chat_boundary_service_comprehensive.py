@@ -6,7 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.models import AdminConversation, AdminMessage, MessageRole, User
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 
 # Mock settings
