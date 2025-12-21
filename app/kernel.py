@@ -19,6 +19,32 @@ try:
     from app.api.routers import system
 except ImportError:
     system = None
+
+try:
+    from app.api.routers import admin
+except ImportError:
+    admin = None
+
+try:
+    from app.api.routers import security
+except ImportError:
+    security = None
+
+try:
+    from app.api.routers import data_mesh
+except ImportError:
+    data_mesh = None
+
+try:
+    from app.api.routers import observability
+except ImportError:
+    observability = None
+
+try:
+    from app.api.routers import crud
+except ImportError:
+    crud = None
+
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -173,16 +199,21 @@ class RealityKernel:
             logger.info("✅ System routes connected")
 
         # Admin Routes
-        self.app.include_router(admin.router)
+        if admin:
+            self.app.include_router(admin.router)
 
         # Security Routes (prefixed with /api/security usually, checking original blueprint)
-        self.app.include_router(security.router, prefix="/api/security")
+        if security:
+            self.app.include_router(security.router, prefix="/api/security")
 
         # Data Mesh
-        self.app.include_router(data_mesh.router, prefix="/data-mesh")
+        if data_mesh:
+            self.app.include_router(data_mesh.router, prefix="/data-mesh")
 
         # Observability
-        self.app.include_router(observability.router, prefix="/observability")
+        if observability:
+            self.app.include_router(observability.router, prefix="/observability")
 
         # CRUD / API v1
-        self.app.include_router(crud.router, prefix="/api/v1")
+        if crud:
+            self.app.include_router(crud.router, prefix="/api/v1")
