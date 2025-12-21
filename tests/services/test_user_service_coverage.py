@@ -10,9 +10,9 @@ from app.services.users.user_service import UserService
 @pytest.mark.asyncio
 async def test_get_all_users(db_session):
     # Setup
-    logger = MagicMock()
     settings = MagicMock()
-    service = UserService(db_session, settings, logger)
+    # Refactored: UserService now strictly requires session, no logger injection needed
+    service = UserService(db_session, settings)
 
     # Create users
     user1 = User(email="test1@example.com", full_name="Test 1")
@@ -32,9 +32,8 @@ async def test_get_all_users(db_session):
 
 @pytest.mark.asyncio
 async def test_create_new_user_success(db_session):
-    logger = MagicMock()
     settings = MagicMock()
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     result = await service.create_new_user("New User", "new@example.com", "password")
 
@@ -52,9 +51,8 @@ async def test_create_new_user_success(db_session):
 
 @pytest.mark.asyncio
 async def test_create_new_user_duplicate_email(db_session):
-    logger = MagicMock()
     settings = MagicMock()
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     # Create first user
     await service.create_new_user("User 1", "duplicate@example.com", "pass")
@@ -68,11 +66,10 @@ async def test_create_new_user_duplicate_email(db_session):
 
 @pytest.mark.asyncio
 async def test_create_new_user_exception(db_session):
-    logger = MagicMock()
     settings = MagicMock()
     # Mock session to raise exception on commit
     db_session.commit = MagicMock(side_effect=Exception("Database error"))
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     result = await service.create_new_user("User", "error@example.com", "pass")
 
@@ -82,13 +79,12 @@ async def test_create_new_user_exception(db_session):
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_create_new(db_session):
-    logger = MagicMock()
     settings = MagicMock()
     settings.ADMIN_EMAIL = "admin@example.com"
     settings.ADMIN_PASSWORD = "adminpass"
     settings.ADMIN_NAME = "Admin"
 
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     result = await service.ensure_admin_user_exists()
 
@@ -105,13 +101,12 @@ async def test_ensure_admin_user_exists_create_new(db_session):
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_already_admin(db_session):
-    logger = MagicMock()
     settings = MagicMock()
     settings.ADMIN_EMAIL = "admin@example.com"
     settings.ADMIN_PASSWORD = "adminpass"
     settings.ADMIN_NAME = "Admin"
 
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     # Pre-create admin
     admin = User(email="admin@example.com", full_name="Admin", is_admin=True)
@@ -127,13 +122,12 @@ async def test_ensure_admin_user_exists_already_admin(db_session):
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_promote_user(db_session):
-    logger = MagicMock()
     settings = MagicMock()
     settings.ADMIN_EMAIL = "user@example.com"
     settings.ADMIN_PASSWORD = "adminpass"
     settings.ADMIN_NAME = "Admin"
 
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     # Pre-create normal user
     user = User(email="user@example.com", full_name="User", is_admin=False)
@@ -153,11 +147,10 @@ async def test_ensure_admin_user_exists_promote_user(db_session):
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_missing_env(db_session):
-    logger = MagicMock()
     settings = MagicMock()
     settings.ADMIN_EMAIL = None
 
-    service = UserService(db_session, settings, logger)
+    service = UserService(db_session, settings)
 
     result = await service.ensure_admin_user_exists()
 
