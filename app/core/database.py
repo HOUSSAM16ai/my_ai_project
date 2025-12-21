@@ -206,10 +206,17 @@ def _get_sync_engine():
     """Lazily create sync engine only when needed."""
     global _sync_engine
     if _sync_engine is None:
-        import os
+        from app.config.settings import get_settings
 
-        db_url = os.getenv("DATABASE_URL")
+        # 🧠 INTELLIGENT ROUTING: Use the central configuration cortex
+        # We fetch the URL from the settings, which has already been healed/sanitized for async.
+        # Now we reverse-engineer it for sync context.
+        settings = get_settings()
+        db_url = settings.DATABASE_URL
+
+        # Note: We still use the Sanitizer for the specific sync conversions
         db_url = DatabaseURLSanitizer.sanitize(db_url, for_async=False)
+
         # Convert async URL to sync if needed
         if "postgresql+asyncpg" in db_url:
             db_url = db_url.replace("postgresql+asyncpg", "postgresql")

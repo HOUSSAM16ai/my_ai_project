@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
+from app.config.settings import AppSettings
 # Import Routers explicitly
 from app.api.routers import admin, crud, data_mesh, observability, security, system
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -32,11 +33,22 @@ class RealityKernel:
     4. **حائك المسارات (Route Weaver)**: يربط المسارات (Routers) بشكل مباشر.
     """
 
-    def __init__(self, settings: dict[str, Any]):
+    def __init__(self, settings: AppSettings | dict[str, Any]):
         """
         تهيئة نواة الواقع (The Constructor).
+
+        Args:
+            settings: The Intelligent Configuration Matrix (AppSettings) or a legacy dict.
         """
-        self.settings = settings
+        # 🧠 Intelligence Adaptation: Convert dict to AppSettings if needed, or use as is
+        if isinstance(settings, dict):
+            # For backward compatibility during migration
+            self.settings_obj = None
+            self.settings_dict = settings
+        else:
+            self.settings_obj = settings
+            self.settings_dict = settings.model_dump()
+
         self.app: FastAPI = self._create_pristine_app()
         self._weave_routes()
 
@@ -57,10 +69,10 @@ class RealityKernel:
 
         # تهيئة FastAPI (تجهيز الإطار العام)
         app = FastAPI(
-            title=self.settings.get("PROJECT_NAME", "CogniForge"),
-            version="v4.1-simplified",
-            docs_url="/docs" if self.settings.get("ENVIRONMENT") == "development" else None,
-            redoc_url="/redoc" if self.settings.get("ENVIRONMENT") == "development" else None,
+            title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),
+            version=self.settings_dict.get("VERSION", "v4.1-simplified"),
+            docs_url="/docs" if self.settings_dict.get("ENVIRONMENT") == "development" else None,
+            redoc_url="/redoc" if self.settings_dict.get("ENVIRONMENT") == "development" else None,
             lifespan=lifespan,
         )
 
@@ -75,7 +87,7 @@ class RealityKernel:
         logger.info("🚀 CogniForge starting up... (النظام يبدأ العمل)")
 
         # التحقق من صحة هيكل قاعدة البيانات (يتم تخطيه في الاختبارات للسرعة)
-        if self.settings.get("ENVIRONMENT") != "testing":
+        if self.settings_dict.get("ENVIRONMENT") != "testing":
             try:
                 # استيراد الوظيفة هنا لتجنب المشاكل الدائرية (Circular Imports)
                 from app.core.database import validate_schema_on_startup
@@ -96,7 +108,7 @@ class RealityKernel:
         # 1. المضيف الموثوق (Trusted Host): لمنع الهجمات من نطاقات غير معروفة.
         app.add_middleware(
             TrustedHostMiddleware,
-            allowed_hosts=self.settings.get("ALLOWED_HOSTS", [])
+            allowed_hosts=self.settings_dict.get("ALLOWED_HOSTS", [])
         )
 
         # 2. مشاركة المصادر (CORS): للسماح للمتصفح بالاتصال من نطاقات محددة.
@@ -106,7 +118,7 @@ class RealityKernel:
         app.add_middleware(SecurityHeadersMiddleware)
 
         # 4. تحديد معدل الطلبات (Rate Limiting): لمنع الإغراق (DDOS) - معطل أثناء الاختبار.
-        if self.settings.get("ENVIRONMENT") != "testing":
+        if self.settings_dict.get("ENVIRONMENT") != "testing":
             app.add_middleware(RateLimitMiddleware)
 
         # 5. تنظيف الترويسات (Remove Blocking Headers): لضمان التوافق مع بيئات التطوير.
@@ -117,15 +129,15 @@ class RealityKernel:
 
     def _configure_cors(self, app: FastAPI):
         """إعدادات CORS بناءً على البيئة (تطوير أو إنتاج)."""
-        raw_origins = self.settings.get("BACKEND_CORS_ORIGINS", [])
+        raw_origins = self.settings_dict.get("BACKEND_CORS_ORIGINS", [])
         allow_origins = raw_origins if isinstance(raw_origins, list) else []
 
         # إذا لم يتم تحديد مصادر، نستخدم القيم الافتراضية الذكية
         if not allow_origins:
-            if self.settings.get("ENVIRONMENT") == "development":
+            if self.settings_dict.get("ENVIRONMENT") == "development":
                 allow_origins = ["*"]  # السماح للكل في التطوير
             else:
-                allow_origins = [self.settings.get("FRONTEND_URL")]
+                allow_origins = [self.settings_dict.get("FRONTEND_URL")]
 
         app.add_middleware(
             CORSMiddleware,
