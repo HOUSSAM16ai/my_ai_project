@@ -3,8 +3,9 @@ Connection Manager Module.
 Part of the Atomic Modularization Protocol.
 """
 
-import httpx
 import logging
+
+import httpx
 
 logger = logging.getLogger(__name__)
 

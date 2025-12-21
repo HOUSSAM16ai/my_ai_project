@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 import os
@@ -6,7 +7,9 @@ import threading
 import time
 from collections.abc import Iterable
 from typing import Any, ClassVar
+
 from .schemas import MissionPlanSchema, PlanningContext
+
 try:
     from .schemas import PlanMeta
 except Exception:
@@ -14,7 +17,13 @@ except Exception:
 from ._drift_detection import detect_structural_drift
 from ._self_test_runner import run_self_test as _run_self_test_impl
 from ._structural_scoring import compute_final_selection_score, compute_structural_enrichment
-from .exceptions import ExternalServiceError, PlannerAdmissionError, PlannerError, PlannerTimeoutError, PlanValidationError
+from .exceptions import (
+    ExternalServiceError,
+    PlannerAdmissionError,
+    PlannerError,
+    PlannerTimeoutError,
+    PlanValidationError,
+)
 from .execution import run_with_timeout_async, run_with_timeout_sync
 from .governance import DECAY_HALF_LIFE as _DECAY_HALF_LIFE
 from .governance import DRIFT_CONFIG as _DRIFT_CONFIG
@@ -26,6 +35,7 @@ from .governance import STRUCT_CONFIG as _STRUCT_CONFIG
 from .governance import STRUCT_ENABLE as _STRUCT_ENABLE
 from .governance import is_planner_allowed
 from .reliability import ReliabilityState
+
 logger = logging.getLogger('overmind.planning.base_planner')
 if not logger.handlers:
     logging.basicConfig(level=os.getenv('AGENT_TOOLS_LOG_LEVEL', 'INFO'),

@@ -1,8 +1,11 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import jwt
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException
+
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
+
 
 class TestAdminChatBoundaryService:
     @pytest.fixture

@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from ..models import ProjectAnalysis
+
 
 def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Generate HTML heatmap"""

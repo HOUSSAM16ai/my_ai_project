@@ -5,8 +5,10 @@ cryptographic operations. All functions in this module are designed
 to be pure and framework-agnostic.
 """
 from datetime import UTC, datetime, timedelta
+
 import bcrypt
 import jwt
+
 if not hasattr(bcrypt, '__about__'):
     import contextlib
     with contextlib.suppress(Exception):
@@ -14,6 +16,7 @@ if not hasattr(bcrypt, '__about__'):
             __version__})
 from app.config.settings import get_settings
 from app.models import pwd_context
+
 settings = get_settings()
 
 

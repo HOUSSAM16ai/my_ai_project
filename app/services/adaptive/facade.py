@@ -13,6 +13,9 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
+from app.services.adaptive.application.health_monitor import PredictiveHealthMonitor
+from app.services.adaptive.application.intelligent_router import IntelligentRouter
+from app.services.adaptive.application.scaling_engine import AIScalingEngine
 from app.services.adaptive.domain.models import (
     ScalingDecision,
     ScalingDirection,
@@ -20,9 +23,6 @@ from app.services.adaptive.domain.models import (
     ServiceInstance,
     ServiceMetrics,
 )
-from app.services.adaptive.application.scaling_engine import AIScalingEngine
-from app.services.adaptive.application.intelligent_router import IntelligentRouter
-from app.services.adaptive.application.health_monitor import PredictiveHealthMonitor
 
 
 class SelfAdaptiveMicroservices:

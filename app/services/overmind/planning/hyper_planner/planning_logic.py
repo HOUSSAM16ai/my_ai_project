@@ -7,11 +7,14 @@ This module contains pure planning logic functions that operate without
 controller/orchestrator concerns, making them easier to test and reuse.
 """
 from __future__ import annotations
+
 import logging
 import math
 import os
+
 from ..schemas import PlannedTask
 from . import config, utils
+
 _LOG = logging.getLogger('ultra_hyper_planner.planning_logic')
 
 

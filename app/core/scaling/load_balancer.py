@@ -6,7 +6,9 @@ import logging
 import random
 from abc import ABC, abstractmethod
 from typing import TypeVar
+
 from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
+
 logger = logging.getLogger(__name__)
 T = TypeVar('T')
 

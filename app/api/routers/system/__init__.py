@@ -1,41 +1,48 @@
 # app/api/routers/system/__init__.py
 """
-System Router - Refactored for Clean Architecture
-Presentation layer that depends only on Application layer (not Infrastructure).
-Follows Dependency Inversion Principle.
+نظام التوجيه المركزي - (System Router Refactored)
+طبقة العرض (Presentation Layer) التي تعتمد فقط على طبقة التطبيق (Application Layer).
+يتبع مبدأ عكس التبعية (Dependency Inversion Principle) بدقة متناهية.
 """
+from typing import Any
+
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.application.interfaces import HealthCheckService, SystemService
 from app.core.di import get_health_check_service, get_system_service
 
-# Create router instance
+# إنشاء كائن الموجه (Router Instance)
 router = APIRouter(prefix="/system", tags=["System"])
 
 
 @router.get(
     "/health",
-    summary="Application Health Check",
-    response_description="Returns the operational status of the application and its dependencies.",
+    summary="فحص صحة النظام (Application Health Check)",
+    response_description="يعيد الحالة التشغيلية للتطبيق وتبعية قاعدة البيانات.",
 )
 async def health_check(
     health_service: HealthCheckService = Depends(get_health_check_service),
-):
+) -> JSONResponse:
     """
-    Health check endpoint.
-    Depends on HealthCheckService interface (DIP), not concrete implementation.
+    نقطة نهاية فحص الصحة (Health Check Endpoint).
+    يعتمد على واجهة الخدمة (HealthCheckService Interface) وليس التنفيذ الملموس.
+
+    العمليات:
+    1. استدعاء خدمة فحص الصحة.
+    2. تحديد حالة الاستجابة (200 OK أو 503 Unavailable).
+    3. إرجاع تقرير JSON مفصل.
     """
     health_data = await health_service.check_system_health()
-    status_code = (
-        status.HTTP_200_OK
-        if health_data["status"] == "healthy"
-        else status.HTTP_503_SERVICE_UNAVAILABLE
-    )
+
+    # التحقق من الحالة العامة
+    is_healthy = health_data.get("status") == "healthy"
+    status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
+
     return JSONResponse(
         content={
             "application": "ok",
-            "database": health_data["database"]["status"],
+            "database": health_data.get("database", {}).get("status", "unknown"),
             "version": "v4.0-clean",
         },
         status_code=status_code,
@@ -44,18 +51,22 @@ async def health_check(
 
 @router.get(
     "/healthz",
-    summary="Kubernetes Liveness Probe",
+    summary="فحص الحيوية (Kubernetes Liveness Probe)",
 )
 async def healthz(
     health_service: HealthCheckService = Depends(get_health_check_service),
-):
+) -> JSONResponse:
     """
-    Simple health check for Kubernetes liveness probes.
-    Depends on HealthCheckService interface (DIP).
+    فحص بسيط لحيوية النظام (Liveness Probe) لبيئة Kubernetes.
+    يتحقق فقط من القدرة على الاتصال بقاعدة البيانات.
     """
     health_data = await health_service.check_database_health()
-    if health_data["connected"]:
+
+    # إذا كان الاتصال بقاعدة البيانات ناجحاً
+    if health_data.get("connected"):
         return JSONResponse({"status": "ok"})
+
+    # في حالة الفشل
     return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"status": "error", "detail": "Database connection failed"},
@@ -64,14 +75,13 @@ async def healthz(
 
 @router.get(
     "/info",
-    summary="System Information",
+    summary="معلومات النظام (System Information)",
 )
 async def system_info(
     system_service: SystemService = Depends(get_system_service),
-):
+) -> JSONResponse:
     """
-    Get system information.
-    Depends on SystemService interface (DIP).
+    جلب معلومات النظام الأساسية via SystemService.
     """
-    info = await system_service.get_system_info()
+    info: dict[str, Any] = await system_service.get_system_info()
     return JSONResponse(content=info)

@@ -4,8 +4,8 @@ Intent detection service.
 
 import re
 from dataclasses import dataclass
-from typing import Any
 from enum import Enum
+from typing import Any
 
 
 class ChatIntent(str, Enum):

@@ -1,8 +1,15 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from app.services.saga_orchestrator import (
-    SagaOrchestrator, SagaStatus, StepStatus, SagaType, get_saga_orchestrator
+    SagaOrchestrator,
+    SagaStatus,
+    SagaType,
+    StepStatus,
+    get_saga_orchestrator,
 )
+
 
 @pytest.fixture
 def orchestrator():

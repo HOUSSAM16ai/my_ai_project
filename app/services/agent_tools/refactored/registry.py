@@ -4,7 +4,9 @@ Tool registry with thread-safe operations.
 import logging
 import threading
 from typing import Any
+
 from app.services.agent_tools.refactored.tool import Tool
+
 logger = logging.getLogger(__name__)
 
 

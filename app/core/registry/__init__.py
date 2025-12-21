@@ -6,9 +6,9 @@ Plugin Registry - سجل الإضافات
 Automatic Plugin Discovery and Registration System
 """
 
-from app.core.registry.plugin_registry import PluginRegistry
-from app.core.registry.plugin_loader import PluginLoader
 from app.core.registry.plugin_discovery import discover_plugins
+from app.core.registry.plugin_loader import PluginLoader
+from app.core.registry.plugin_registry import PluginRegistry
 
 __all__ = [
     "PluginRegistry",

@@ -25,21 +25,21 @@ from __future__ import annotations
 
 # Re-export everything from the refactored hexagonal architecture
 from app.services.adaptive import (
-    # Domain models
-    ServiceHealth,
-    ScalingDirection,
-    ServiceMetrics,
-    ScalingDecision,
-    ServiceInstance,
     # Application services
     AIScalingEngine,
-    IntelligentRouter,
-    PredictiveHealthMonitor,
+    InMemoryMetricsRepository,
     # Infrastructure
     InMemoryServiceInstanceRepository,
-    InMemoryMetricsRepository,
+    IntelligentRouter,
+    PredictiveHealthMonitor,
+    ScalingDecision,
+    ScalingDirection,
     # Main facade (most common usage)
     SelfAdaptiveMicroservices,
+    # Domain models
+    ServiceHealth,
+    ServiceInstance,
+    ServiceMetrics,
     get_adaptive_microservices,
 )
 

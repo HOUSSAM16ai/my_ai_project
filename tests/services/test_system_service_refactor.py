@@ -1,7 +1,10 @@
 # tests/services/test_system_service_refactor.py
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+
 from app.services.system.system_service import SystemService
+
 
 @pytest.mark.asyncio
 async def test_verify_system_integrity_healthy():

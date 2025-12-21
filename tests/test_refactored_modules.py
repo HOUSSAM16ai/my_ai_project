@@ -176,9 +176,10 @@ class TestApplicationServices:
     @pytest.mark.asyncio
     async def test_health_check_service(self):
         """HealthCheckService follows DIP."""
+        from unittest.mock import AsyncMock, MagicMock
+
         from app.application.services import DefaultHealthCheckService
         from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
-        from unittest.mock import AsyncMock, MagicMock
 
         # Mock repository
         mock_repo = MagicMock(spec=SQLAlchemyDatabaseRepository)
@@ -193,9 +194,10 @@ class TestApplicationServices:
     @pytest.mark.asyncio
     async def test_system_service(self):
         """SystemService follows DIP."""
+        from unittest.mock import AsyncMock, MagicMock
+
         from app.application.services import DefaultSystemService
         from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
-        from unittest.mock import AsyncMock, MagicMock
 
         # Mock repository
         mock_repo = MagicMock(spec=SQLAlchemyDatabaseRepository)

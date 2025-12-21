@@ -1,9 +1,19 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
+
 from app.services.system.service_catalog_service import (
-    ServiceCatalogService, ServiceMetadata, ServiceType, ServiceLifecycle,
-    APISpec, ServiceTemplate, ServiceHealth, HealthStatus, get_service_catalog
+    APISpec,
+    HealthStatus,
+    ServiceCatalogService,
+    ServiceHealth,
+    ServiceLifecycle,
+    ServiceMetadata,
+    ServiceTemplate,
+    ServiceType,
+    get_service_catalog,
 )
+
 
 @pytest.fixture
 def catalog():

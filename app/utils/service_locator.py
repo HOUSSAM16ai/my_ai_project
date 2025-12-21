@@ -55,7 +55,9 @@ class ServiceLocator:
             elif service_name == "api_security_service":
                 from app.services.api.api_security_service import security_service as service_module
             elif service_name == "api_governance_service":
-                from app.services.api.api_governance_service import governance_service as service_module
+                from app.services.api.api_governance_service import (
+                    governance_service as service_module,
+                )
             elif service_name == "api_config_secrets_service":
                 from app.services.api.api_config_secrets_service import (
                     config_secrets_service as service_module,

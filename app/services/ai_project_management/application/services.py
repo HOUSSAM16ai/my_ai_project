@@ -5,6 +5,7 @@ Contains business logic for scheduling, risk assessment, and predictions.
 import statistics
 from collections import defaultdict
 from typing import Any
+
 from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
 
 

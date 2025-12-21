@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 from app.services.ai_testing.domain.models import TestCase, TestType
 
 

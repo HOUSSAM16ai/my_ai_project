@@ -29,10 +29,10 @@ from app.services.project_context import (
     CodeStatistics,
     FileAnalysis,
     KeyComponent,
-    ProjectHealth,
-    ProjectStructure,
     # Application service
     ProjectContextService,
+    ProjectHealth,
+    ProjectStructure,
     # Facade functions (most common usage)
     get_project_context_for_ai,
     get_project_context_service,

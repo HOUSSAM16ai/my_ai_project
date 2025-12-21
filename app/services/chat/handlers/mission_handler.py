@@ -60,12 +60,12 @@ def _format_task_info(tasks: dict) -> str:
     """Format task progress information."""
     if not tasks:
         return ""
-    
+
     total = tasks.get("total", 0)
     success = tasks.get("success", 0)
     running = tasks.get("running", 0)
     failed = tasks.get("failed", 0)
-    
+
     info = f" | المهام: {success}/{total} ✅"
     if running:
         info += f" {running} 🔄"

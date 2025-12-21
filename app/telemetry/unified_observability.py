@@ -9,14 +9,22 @@ from typing import Any
 
 from fastapi import Request
 
+from app.telemetry.metrics import MetricsManager
+
 # Import from new modules
 from app.telemetry.models import (
-    TraceContext, UnifiedSpan, UnifiedTrace, MetricSample, CorrelatedLog,
-    AnomalyAlert, SamplingDecision, AlertSeverity
+    AlertSeverity,
+    AnomalyAlert,
+    CorrelatedLog,
+    MetricSample,
+    SamplingDecision,
+    TraceContext,
+    UnifiedSpan,
+    UnifiedTrace,
 )
-from app.telemetry.tracing import TracingManager
-from app.telemetry.metrics import MetricsManager
 from app.telemetry.structured_logging import LoggingManager
+from app.telemetry.tracing import TracingManager
+
 
 class UnifiedObservabilityService:
     def __init__(self, service_name: str = 'cogniforge', sample_rate: float = 1.0, sla_target_ms: float = 100.0):

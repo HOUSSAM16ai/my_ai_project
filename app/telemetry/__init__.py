@@ -19,13 +19,16 @@ from typing import Any, Dict, Optional
 
 # Import from existing files
 from app.telemetry.events import EventTracker
+from app.telemetry.metrics import MetricsManager
 from app.telemetry.performance import PerformanceMonitor
 
 # Import from my new refactored modules
 from app.telemetry.structured_logging import LoggingManager
-from app.telemetry.metrics import MetricsManager
 from app.telemetry.tracing import TracingManager
-from app.telemetry.unified_observability import UnifiedObservabilityService, get_unified_observability
+from app.telemetry.unified_observability import (
+    UnifiedObservabilityService,
+    get_unified_observability,
+)
 
 # Configure standard logger to ensure stdout output
 _std_logger = logging.getLogger("app.telemetry")

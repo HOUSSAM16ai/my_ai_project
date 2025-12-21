@@ -3,10 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from .models import FileMetrics, ProjectAnalysis
+from .analyzers.complexity import ComplexityAnalyzer
 from .analyzers.git import GitAnalyzer
 from .analyzers.smells import StructuralSmellDetector
-from .analyzers.complexity import ComplexityAnalyzer
+from .models import FileMetrics, ProjectAnalysis
 
 
 class StructuralCodeIntelligence:

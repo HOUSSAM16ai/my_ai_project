@@ -4,46 +4,30 @@ Consolidated from app/analytics, app/services/analytics, and app/services/api_ad
 """
 
 # 1. Enums & Value Objects
-from .enums import (
-    EventType,
-    UserSegment,
-    ABTestVariant,
-)
-from .value_objects import (
-    MetricType,
-    BehaviorPattern,
-    TimeGranularity,
-)
-
-# 2. Domain Models & Entities
-from .models import (
-    UserEvent,
-    UserSession,
-    EngagementMetrics,
-    ConversionMetrics,
-    RetentionMetrics,
-    NPSMetrics,
-    ABTestResults,
-    CohortAnalysis,
-    RevenueMetrics,
-    UserData,
-)
 from .entities import (
-    UsageMetric,
-    UserJourney,
+    AnalyticsReport,
     Anomaly,
     BehaviorProfile,
-    AnalyticsReport,
+    UsageMetric,
+    UserJourney,
 )
+from .enums import (
+    ABTestVariant,
+    EventType,
+    UserSegment,
+)
+from .in_memory_repository import InMemoryMetricsRepository
 
-# 3. Ports (Interfaces)
-from .ports import (
-    EventStorePort,
-    SessionStorePort,
-    UserStorePort,
-    ActiveUsersStorePort,
-    ABTestStorePort,
-    NPSStorePort,
+# 4. Stores (Implementations)
+from .in_memory_stores import (
+    InMemoryABTestStore,
+    InMemoryActiveUsersStore,
+    InMemoryCohortStore,
+    InMemoryEventStore,
+    InMemoryNPSStore,
+    InMemoryRevenueStore,
+    InMemorySessionStore,
+    InMemoryUserStore,
 )
 from .interfaces import (
     AnomalyDetector,
@@ -51,28 +35,44 @@ from .interfaces import (
     ReportGenerator,
 )
 
-# 4. Stores (Implementations)
-from .in_memory_stores import (
-    InMemoryABTestStore,
-    InMemoryNPSStore,
-    InMemorySessionStore,
-    InMemoryUserStore,
-    InMemoryActiveUsersStore,
-    InMemoryEventStore,
-    InMemoryCohortStore,
-    InMemoryRevenueStore
+# 2. Domain Models & Entities
+from .models import (
+    ABTestResults,
+    CohortAnalysis,
+    ConversionMetrics,
+    EngagementMetrics,
+    NPSMetrics,
+    RetentionMetrics,
+    RevenueMetrics,
+    UserData,
+    UserEvent,
+    UserSession,
 )
-from .in_memory_repository import InMemoryMetricsRepository
+
+# 3. Ports (Interfaces)
+from .ports import (
+    ABTestStorePort,
+    ActiveUsersStorePort,
+    EventStorePort,
+    NPSStorePort,
+    SessionStorePort,
+    UserStorePort,
+)
 
 # 5. Services & Facades
 from .service import (
-    UserAnalyticsMetricsService,
+    AnalyticsFacade,
     SystemAnalyticsService,
+    UserAnalyticsMetricsService,
+    get_analytics_facade,
+    get_analytics_service,
     get_user_analytics_service,
     reset_analytics_service,
-    AnalyticsFacade,
-    get_analytics_facade,
-    get_analytics_service
+)
+from .value_objects import (
+    BehaviorPattern,
+    MetricType,
+    TimeGranularity,
 )
 
 # Export all symbols

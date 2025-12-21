@@ -1,9 +1,12 @@
 # tests/core/test_static_handler_refactor.py
 import os
+
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from app.core.static_handler import setup_static_files
+
 
 # Disable auto-use fixtures from conftest for this module to avoid DB overhead/errors
 # We do this by overriding them with empty fixtures

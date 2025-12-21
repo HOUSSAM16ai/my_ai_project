@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
+
 from ..models import FileMetrics
+
 
 class StructuralSmellDetector:
     """Structural Smell Detector"""

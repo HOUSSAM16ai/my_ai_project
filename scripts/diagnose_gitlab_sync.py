@@ -5,8 +5,8 @@ This script diagnoses why GitLab sync might have stopped working
 """
 
 import os
-import sys
 import subprocess
+import sys
 from datetime import datetime
 
 # Colors
@@ -74,7 +74,7 @@ try:
         print_success("GitHub remote configured")
     else:
         print_warning("GitHub remote not found")
-    
+
     # Check current branch
     result = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, check=True)
     branch = result.stdout.strip()
@@ -82,7 +82,7 @@ try:
         print_success(f"Current branch: {branch}")
     else:
         print_info("Detached HEAD (normal in CI)")
-        
+
 except Exception as e:
     print_error(f"Git check failed: {e}")
     all_ok = False
@@ -92,7 +92,7 @@ print_header("Test 4: Workflow Configuration")
 try:
     with open(".github/workflows/universal_sync.yml", "r") as f:
         workflow_content = f.read()
-    
+
     checks = {
         "on:": "Workflow triggers defined",
         "push:": "Triggers on push events",
@@ -100,14 +100,14 @@ try:
         "SYNC_GITLAB_ID": "Uses GitLab ID secret",
         "universal_repo_sync.py": "Calls sync script",
     }
-    
+
     for check, description in checks.items():
         if check in workflow_content:
             print_success(description)
         else:
             print_error(f"Missing: {description}")
             all_ok = False
-            
+
 except Exception as e:
     print_error(f"Failed to read workflow: {e}")
     all_ok = False
@@ -128,19 +128,19 @@ try:
     is_github = os.environ.get("GITHUB_ACTIONS") == "true"
     gitlab_token = os.environ.get("SYNC_GITLAB_TOKEN")
     gitlab_id = os.environ.get("SYNC_GITLAB_ID")
-    
+
     if is_github:
         print_success("GitHub Actions environment detected correctly")
     else:
         print_error("Failed to detect GitHub Actions")
         all_ok = False
-    
+
     if gitlab_token and gitlab_id:
         print_success("GitLab credentials available")
     else:
         print_error("GitLab credentials not found")
         all_ok = False
-        
+
 finally:
     # Restore original env
     os.environ.clear()

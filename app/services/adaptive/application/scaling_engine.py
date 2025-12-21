@@ -5,9 +5,11 @@ AI Scaling Engine
 يستخدم ML للتنبؤ بالحمل واتخاذ قرارات التوسع.
 """
 from __future__ import annotations
+
 import statistics
 from collections import defaultdict
 from datetime import datetime
+
 from app.services.adaptive.domain.models import ScalingDecision, ScalingDirection, ServiceMetrics
 
 
