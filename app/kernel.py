@@ -172,10 +172,10 @@ class RealityKernel:
         self.app.include_router(security.router, prefix="/api/security")
 
         # Data Mesh
-        self.app.include_router(data_mesh.router, prefix="/data-mesh")
+        self.app.include_router(data_mesh.router, prefix="/api/v1/data-mesh")
 
         # Observability
-        self.app.include_router(observability.router, prefix="/observability")
+        self.app.include_router(observability.router, prefix="/api/observability")
 
         # CRUD / API v1
         self.app.include_router(crud.router, prefix="/api/v1")

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from math import ceil
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -109,3 +110,60 @@ class CrudBoundaryService:
         """
         tasks = await self.persistence.get_tasks(mission_id=mission_id)
         return [TaskResponse.model_validate(t) for t in tasks]
+
+    async def list_items(
+        self,
+        resource_type: str,
+        page: int = 1,
+        per_page: int = 20,
+        sort_by: str | None = None,
+        order: str = "asc",
+        filters: dict[str, Any] | None = None
+    ) -> Any:
+        """
+        Generic list items method to support generic CRUD router.
+        Maps resource_type to specific method call.
+        """
+        if resource_type == "users":
+            # Map filters['search'] to email search if possible or ignore
+            email_filter = None
+            if filters and "search" in filters:
+                # Naive assumption: search string is email
+                email_filter = filters["search"]
+
+            return await self.get_users(
+                page=page,
+                per_page=per_page,
+                email=email_filter,
+                sort_by=sort_by,
+                sort_order=order
+            )
+        else:
+             # Fallback or error for unknown resources
+             # For now return empty paginated response structure or raise error
+             raise ValueError(f"Unknown resource type: {resource_type}")
+
+    async def get_item(self, resource_type: str, item_id: str) -> Any:
+        """
+        Generic get item method.
+        """
+        if resource_type == "users":
+            try:
+                uid = int(item_id)
+                return await self.get_user_by_id(uid)
+            except ValueError:
+                return None
+        return None
+
+    async def create_item(self, resource_type: str, payload: dict[str, Any]) -> Any:
+        """Generic create item stub."""
+        # Implement actual creation logic mapping
+        return {"status": "created", "resource": resource_type}
+
+    async def update_item(self, resource_type: str, item_id: str, payload: dict[str, Any]) -> Any:
+        """Generic update item stub."""
+        return {"status": "updated", "resource": resource_type}
+
+    async def delete_item(self, resource_type: str, item_id: str) -> Any:
+        """Generic delete item stub."""
+        return {"status": "deleted", "resource": resource_type}

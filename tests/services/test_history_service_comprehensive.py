@@ -77,7 +77,7 @@ class TestHistoryServiceComprehensive:
         # We should patch it to return our session.
 
         # But wait, tests/conftest.py overrides get_db, but async_session_factory is imported from app.core.database
-        # Let's see if we can patch app.services.history_service.async_session_factory
+        # Let's see if we can patch app.services.users.history_service.async_session_factory
 
         # Creating a mock context manager for the session
         AsyncMock()
@@ -95,7 +95,7 @@ class TestHistoryServiceComprehensive:
         # if the function creates a new session every time.
         # But we can make it return a TestingSessionLocal instance which is configured to use the test engine.
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             # Configure mock_factory to return a context manager that yields a session
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
@@ -115,7 +115,7 @@ class TestHistoryServiceComprehensive:
 
         from tests.conftest import TestingSessionLocal
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None
@@ -128,7 +128,7 @@ class TestHistoryServiceComprehensive:
 
     @pytest.mark.asyncio
     async def test_get_recent_conversations_error(self):
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             mock_factory.side_effect = Exception("DB Connection Failed")
 
             conversations = await get_recent_conversations(1)
@@ -141,14 +141,14 @@ class TestHistoryServiceComprehensive:
 
         from tests.conftest import TestingSessionLocal
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None
 
             # Since AdminMessage doesn't actually have a rating field in models.py (based on logs),
             # we need to skip the DB update check or add the field if possible.
-            # "WARNING  app.services.history_service:history_service.py:97 Message model has no rating field. Skipping update."
+            # "WARNING  app.services.users.history_service:history_service.py:97 Message model has no rating field. Skipping update."
             # The service handles this gracefully.
 
             # However, if we want to test that it returns success, we should do that.
@@ -181,7 +181,7 @@ class TestHistoryServiceComprehensive:
 
         from tests.conftest import TestingSessionLocal
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None
@@ -206,7 +206,7 @@ class TestHistoryServiceComprehensive:
 
         from tests.conftest import TestingSessionLocal
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None
@@ -229,7 +229,7 @@ class TestHistoryServiceComprehensive:
         # We need to make it believe 'rating' exists so it calls commit(),
         # OR we mock the execute to fail.
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None
@@ -264,7 +264,7 @@ class TestHistoryServiceComprehensive:
 
         from tests.conftest import TestingSessionLocal
 
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             session = TestingSessionLocal()
             mock_factory.return_value.__aenter__.return_value = session
             mock_factory.return_value.__aexit__.return_value = None

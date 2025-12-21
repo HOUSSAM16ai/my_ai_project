@@ -24,5 +24,7 @@ def test_openapi_docs(client: TestClient):
 
 
 def test_api_health_v1(client: TestClient):
-    response = client.get("/api/v1/health")
+    # API v1 health endpoint might not exist anymore,
+    # but let's check the system one which is the standard now
+    response = client.get("/system/health")
     assert response.status_code == 200

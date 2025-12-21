@@ -4,18 +4,20 @@ CRUD Router - Generic Data Operations
 Provides standardized CRUD endpoints for resources.
 Handles pagination, filtering, and sorting.
 """
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 
 router = APIRouter(tags=["CRUD"])
 
 
-def get_crud_service() -> CrudBoundaryService:
+def get_crud_service(db: AsyncSession = Depends(get_db)) -> CrudBoundaryService:
     """Dependency to get the CRUD Boundary Service."""
-    return CrudBoundaryService()
+    return CrudBoundaryService(db)
 
 
 @router.get("/resources/{resource_type}", summary="List Resources")
@@ -23,9 +25,9 @@ async def list_resources(
     resource_type: str,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-    sort_by: Optional[str] = Query(None, description="Field to sort by"),
-    order: Optional[str] = Query("asc", description="Sort order (asc/desc)"),
-    search: Optional[str] = Query(None, description="Search query"),
+    sort_by: str | None = Query(None, description="Field to sort by"),
+    order: str | None = Query("asc", description="Sort order (asc/desc)"),
+    search: str | None = Query(None, description="Search query"),
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """

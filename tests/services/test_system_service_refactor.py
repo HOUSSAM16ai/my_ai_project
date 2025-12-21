@@ -25,7 +25,7 @@ async def test_verify_system_integrity_healthy():
     mock_factory.__aenter__.return_value = mock_session
     mock_factory.__aexit__.return_value = None
 
-    with patch("app.services.system_service.async_session_factory", return_value=mock_factory):
+    with patch("app.services.system.system_service.async_session_factory", return_value=mock_factory):
         result = await service.verify_system_integrity()
 
     assert result["status"] == "ok"
@@ -40,7 +40,7 @@ async def test_verify_system_integrity_db_down():
     mock_factory = MagicMock()
     mock_factory.__aenter__.side_effect = Exception("DB Down")
 
-    with patch("app.services.system_service.async_session_factory", return_value=mock_factory):
+    with patch("app.services.system.system_service.async_session_factory", return_value=mock_factory):
         result = await service.verify_system_integrity()
 
     assert result["db"] == "unreachable"
