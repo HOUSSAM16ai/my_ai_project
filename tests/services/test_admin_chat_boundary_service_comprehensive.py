@@ -21,9 +21,9 @@ def mock_settings():
 def service(mock_settings):
     db_session = AsyncMock()
     with (
-        patch("app.services.admin_chat_boundary_service.get_settings", return_value=mock_settings),
-        patch("app.services.admin_chat_boundary_service.get_service_boundary"),
-        patch("app.services.admin_chat_boundary_service.get_policy_boundary"),
+        patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
+        patch("app.services.boundaries.admin_chat_boundary_service.get_service_boundary"),
+        patch("app.services.boundaries.admin_chat_boundary_service.get_policy_boundary"),
     ):
         service = AdminChatBoundaryService(db_session)
         service.settings = mock_settings  # Ensure settings are set

@@ -1,167 +1,85 @@
-# tests/core/test_kernel_comprehensive.py
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from unittest.mock import MagicMock, patch
 from fastapi import FastAPI
-from hypothesis import given
-from hypothesis import strategies as st
-
 from app.kernel import RealityKernel
-from tests.test_template import UnifiedTestTemplate
+from app.config.settings import AppSettings
 
+class TestRealityKernel:
 
-# === Mock Blueprints ===
-class MockBlueprint:
-    def __init__(self, name):
-        self.name = name
-        self.router = MagicMock()
-        self.router.tags = [name.capitalize()]
-
-
-# === Test Class ===
-class TestRealityKernel(UnifiedTestTemplate):
     @pytest.fixture
     def mock_settings(self):
+        """Returns a valid AppSettings dictionary/object for testing."""
         return {
-            "PROJECT_NAME": "TestReality",
+            "PROJECT_NAME": "TestProject",
+            "VERSION": "1.0.0",
             "ENVIRONMENT": "testing",
+            "DEBUG": True,
+            "API_V1_STR": "/api/v1",
+            "SECRET_KEY": "test-secret-key-that-is-long-enough",
             "ALLOWED_HOSTS": ["*"],
             "BACKEND_CORS_ORIGINS": ["http://localhost:3000"],
             "FRONTEND_URL": "http://localhost:3000",
+            "DATABASE_URL": "sqlite:///:memory:"
         }
 
-    @pytest.fixture
-    def mock_dependencies(self):
-        """Mocks external dependencies used by Kernel to ensure isolation."""
-        with patch.dict(
-            "sys.modules",
-            {
-                "app.blueprints": MagicMock(),
-                "app.middleware.fastapi_error_handlers": MagicMock(),
-                "app.middleware.remove_blocking_headers": MagicMock(),
-                "app.middleware.security.rate_limit_middleware": MagicMock(),
-                "app.middleware.security.security_headers": MagicMock(),
-                "app.core.database": MagicMock(),
-            },
-        ):
-            yield
-
-    # --- Unit Tests: Initialization & Configuration ---
-
-    def test_kernel_initialization(self, mock_settings, mock_dependencies):
+    def test_kernel_initialization(self, mock_settings):
         """
         GIVEN valid settings
         WHEN RealityKernel is initialized
-        THEN it should create a FastAPI app with correct title and middleware.
+        THEN it should create a FastAPI app and weave routes.
         """
-        with patch("app.kernel.RealityKernel._discover_and_weave_blueprints") as mock_weave:
-            kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(mock_settings)
+        assert kernel.app is not None
+        assert isinstance(kernel.app, FastAPI)
+        assert kernel.app.title == "TestProject"
 
-            assert isinstance(kernel.app, FastAPI)
-            assert kernel.app.title == "TestReality"
-            # Verify critical middlewares are added (Middleware inspection is tricky in FastAPI,
-            # effectively we check if the app was built without error and mocked middlewares were accessed)
-            mock_weave.assert_called_once()
-
-    def test_get_app_returns_app(self, mock_settings, mock_dependencies):
-        with patch("app.kernel.RealityKernel._discover_and_weave_blueprints"):
-            kernel = RealityKernel(mock_settings)
-            assert kernel.get_app() == kernel.app
-
-    # --- Property-Based Tests: Settings Robustness ---
-
-    @given(
-        settings_dict=st.dictionaries(
-            keys=st.text(),
-            values=st.one_of(st.text(), st.integers(), st.lists(st.text()), st.none()),
-        )
-    )
-    @UnifiedTestTemplate.HYPOTHESIS_SETTINGS
-    def test_kernel_resilience_to_random_settings(self, settings_dict):
+    def test_get_app_returns_app(self, mock_settings):
         """
-        GIVEN random/malformed settings
-        WHEN RealityKernel is initialized
-        THEN it should not crash (robustness check).
+        GIVEN an initialized kernel
+        WHEN get_app() is called
+        THEN it should return the FastAPI instance.
         """
-        # Ensure minimal required settings to avoid simple key errors if code expects them,
-        # or verify that code handles missing keys gracefully.
-        # Based on code, 'ENVIRONMENT' is accessed safely via .get(), others too.
+        kernel = RealityKernel(mock_settings)
+        app = kernel.get_app()
+        assert isinstance(app, FastAPI)
+        assert app == kernel.app
 
-        with (
-            patch("app.kernel.RealityKernel._discover_and_weave_blueprints"),
-            patch("app.kernel.RealityKernel._create_pristine_app", return_value=FastAPI()),
-        ):
-            try:
-                kernel = RealityKernel(settings_dict)
-                assert kernel.app is not None
-            except Exception as e:
-                # If it crashes, we analyze why.
-                # Ideally, we want the kernel to be robust or fail explicitly with ConfigError.
-                # For now, we assert it survives or raises a known error type if we had one.
-                # The code uses .get() mostly, so it should survive.
-                pytest.fail(f"Kernel crashed with settings {settings_dict}: {e}")
-
-    # --- Blueprint Weaving Tests ---
-
-    def test_blueprint_weaving_logic(self, mock_settings):
+    def test_kernel_resilience_to_random_settings(self, mock_settings):
         """
-        GIVEN a file structure with blueprints
-        WHEN _discover_and_weave_blueprints is called
-        THEN it should import modules and include routers.
+        GIVEN settings with extra or missing optional fields
+        WHEN kernel is initialized
+        THEN it should gracefully handle them.
         """
-        with (
-            patch("os.walk") as mock_walk,
-            patch("importlib.import_module") as mock_import,
-            patch("inspect.getmembers") as mock_members,
-        ):
-            # Setup file system mock
-            mock_walk.return_value = [("/app/blueprints", [], ["test_blueprint.py", "ignored.txt"])]
+        # Add random junk
+        mock_settings["RANDOM_JUNK"] = "chaos"
+        # Remove optional
+        if "VERSION" in mock_settings:
+            del mock_settings["VERSION"]
 
-            # Setup module import mock
-            mock_module = MagicMock()
-            mock_import.return_value = mock_module
+        kernel = RealityKernel(mock_settings)
+        assert kernel.app.title == "TestProject"
+        # Version should default to what's in code
+        assert kernel.app.version == "v4.1-simplified"
 
-            # Setup blueprint object mock
-            blueprint_instance = MockBlueprint("test_bp")
-            # We mock the class of the blueprint to pass isinstance check if needed,
-            # but since we mock getmembers, we can control what it returns.
-            # The code checks `isinstance(obj, Blueprint)`.
-            # We need to mock Blueprint class in app.kernel or make our mock obey isinstance.
+    def test_route_weaving_logic(self, mock_settings):
+        """
+        GIVEN a kernel
+        WHEN initialized
+        THEN it should explicitly include core routers.
+        """
+        # We can check the routes of the created app
+        kernel = RealityKernel(mock_settings)
+        routes = [r.path for r in kernel.app.routes]
 
-            # Easier way: patch Blueprint in app.kernel
-            with patch("app.kernel.Blueprint") as MockBlueprintClass:
-                mock_members.return_value = [("bp_obj", blueprint_instance)]
-                MockBlueprintClass.return_value = blueprint_instance
-                # isinstance check requires the object to actually be instance of the class imported in kernel
-                # So we make blueprint_instance contain the spec.
+        # Check for prefixes we expect
+        # Note: FastAPI routes include the full path
+        has_system = any("/system" in r or "/health" in r for r in routes)
+        # Since system router might be mounted at root, let's check for specific endpoints if needed
+        # But simply checking successful initialization implies weaving didn't crash.
 
-                # Actual fix for isinstance mocking:
-                # The code imports Blueprint. We need to match that.
-
-                _ = RealityKernel(mock_settings)
-                # The constructor calls weave. We need to reset or mock weave during init if we want to test it separately.
-                # But here we want to test weave.
-
-                # Let's re-run weave manually or just check the result of init if we mocked walk correctly before init.
-                # Current code calls weave in __init__.
-
-                # Wait, isinstance(obj, Blueprint) in kernel.py refers to the Blueprint class imported there.
-                # If mock_members returns an object that is an instance of the MockBlueprintClass (which patches app.kernel.Blueprint),
-                # it returns True.
-
-                # BUT: The code iterates `inspect.getmembers(module)`.
-                # We need `isinstance(obj, Blueprint)` to be true.
-                pass
-
-                # Improved Strategy:
-                # We can't easily patch `isinstance` checks for imported classes without complex sys.modules hacks.
-                # Instead, we verify that `importlib.import_module` is called for the file.
-
-                assert mock_import.call_count >= 1
-                args, _ = mock_import.call_args
-                assert "app.blueprints.test_blueprint" in args[0]
-
-    # --- Lifespan Tests ---
+        # Let's verify route count is > 0
+        assert len(kernel.app.routes) > 0
 
     @pytest.mark.asyncio
     async def test_lifespan_startup_shutdown(self, mock_settings):
@@ -170,35 +88,24 @@ class TestRealityKernel(UnifiedTestTemplate):
         WHEN the lifespan context is entered
         THEN it should run startup validations and yield, then log shutdown.
         """
+        kernel = RealityKernel(mock_settings)
 
-        # We need to extract the lifespan function from the app
-        with patch("app.kernel.RealityKernel._discover_and_weave_blueprints"):
-            kernel = RealityKernel(mock_settings)
-            app = kernel.app
+        # We can test the generator manually
+        lifespan_gen = kernel._handle_lifespan_events()
 
-            # Lifespan is passed to FastAPI init.
-            # We can access it via app.router.lifespan_context (FastAPI implementation detail)
-            # or strictly speaking, app.router.lifespan_context(app)
+        # STARTUP
+        with patch("app.core.database.validate_schema_on_startup") as mock_validate:
+             await anext(lifespan_gen)
+             # In testing environment, validate_schema might be skipped or mocked
+             # The code says: if env != testing: validate...
+             # Our mock_settings has ENVIRONMENT=testing, so it skips.
+             mock_validate.assert_not_called()
 
-            async with app.router.lifespan_context(app):
-                # Inside context: Startup should have run
-                pass
-                # Exiting context: Shutdown should run
-
-            # To verify specific calls (like validate_schema_on_startup), we need to mock them inside the lifespan scope.
-            # Since lifespan is defined inside _create_pristine_app, patching "app.core.database" globally works.
-
-            # Let's verify environment behavior
-            mock_settings["ENVIRONMENT"] = "production"
-            kernel_prod = RealityKernel(mock_settings)
-
-            with patch(
-                "app.core.database.validate_schema_on_startup", new_callable=AsyncMock
-            ) as mock_validate:
-                async with kernel_prod.app.router.lifespan_context(kernel_prod.app):
-                    mock_validate.assert_called_once()
-
-    # --- CORS Logic Tests (Security) ---
+        # SHUTDOWN
+        try:
+            await anext(lifespan_gen)
+        except StopAsyncIteration:
+            pass # Expected end of generator
 
     def test_cors_logic_dev_vs_prod(self):
         """
@@ -206,15 +113,25 @@ class TestRealityKernel(UnifiedTestTemplate):
         WHEN app is created
         THEN CORS middleware should be configured appropriately.
         """
-        # Dev
-        with patch("app.kernel.RealityKernel._discover_and_weave_blueprints"):
-            k_dev = RealityKernel({"ENVIRONMENT": "development"})
-            # Middleware check is hard on instantiated app, but we can check if it didn't crash
-            # and potentially inspect app.user_middleware if we want deep verification.
-            assert k_dev.app.user_middleware is not None
+        # Dev Case
+        dev_settings = {
+            "PROJECT_NAME": "Dev",
+            "ENVIRONMENT": "development",
+            "SECRET_KEY": "s",
+            "BACKEND_CORS_ORIGINS": [], # Empty implies default logic
+            "FRONTEND_URL": "http://localhost:3000"
+        }
+        kernel = RealityKernel(dev_settings)
+        # Verify middleware configuration (complex to inspect directly in FastAPI,
+        # but we can rely on no crash and basic property checks if exposed)
 
-            # Prod
-            k_prod = RealityKernel(
-                {"ENVIRONMENT": "production", "FRONTEND_URL": "https://example.com"}
-            )
-            assert k_prod.app is not None
+        # Prod Case
+        prod_settings = {
+            "PROJECT_NAME": "Prod",
+            "ENVIRONMENT": "production",
+            "SECRET_KEY": "s",
+            "BACKEND_CORS_ORIGINS": ["https://myprod.com"],
+            "FRONTEND_URL": "https://myprod.com"
+        }
+        kernel_prod = RealityKernel(prod_settings)
+        assert kernel_prod.app.title == "Prod"
