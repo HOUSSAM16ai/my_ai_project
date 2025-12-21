@@ -14,16 +14,16 @@ from app.services.data_mesh.facade import (
 )
 
 __all__ = [
-    "DataMeshService",
-    "get_data_mesh_service",
-    "DataDomainType",
-    "DataProductStatus",
-    "SchemaCompatibility",
-    "GovernanceLevel",
-    "DataContract",
-    "DataProduct",
     "BoundedContext",
-    "GovernancePolicy",
+    "DataContract",
+    "DataDomainType",
+    "DataMeshService",
+    "DataProduct",
+    "DataProductStatus",
     "DataQualityMetrics",
+    "GovernanceLevel",
+    "GovernancePolicy",
+    "SchemaCompatibility",
     "SchemaEvolution",
+    "get_data_mesh_service",
 ]

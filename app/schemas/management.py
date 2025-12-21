@@ -5,7 +5,7 @@ Ensures strict typing and governance for data exchange.
 """
 
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
@@ -22,7 +22,7 @@ class PaginationMeta(BaseModel):
     has_prev: bool
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     """
     Generic wrapper for paginated data.
     Standardizes response format across the API.

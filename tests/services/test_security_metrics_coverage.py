@@ -8,7 +8,6 @@ from app.services.security_metrics.application.metrics_calculator import (
 from app.services.security_metrics.application.predictive_analytics import LinearRegressionPredictor
 from app.services.security_metrics.application.risk_calculator import AdvancedRiskCalculator
 from app.services.security_metrics.domain.models import (
-    RiskPrediction,
     SecurityFinding,
     SecurityMetrics,
     Severity,

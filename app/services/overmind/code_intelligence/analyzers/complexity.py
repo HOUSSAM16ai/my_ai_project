@@ -1,5 +1,5 @@
 import ast
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ComplexityAnalyzer(ast.NodeVisitor):
@@ -7,10 +7,10 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
     def __init__(self):
         self.file_complexity = 0
-        self.functions: List[Dict[str, Any]] = []
-        self.classes: List[Dict[str, Any]] = []
-        self.current_class: Optional[str] = None
-        self.imports: List[str] = []
+        self.functions: list[dict[str, Any]] = []
+        self.classes: list[dict[str, Any]] = []
+        self.current_class: str | None = None
+        self.imports: list[str] = []
         self.max_nesting = 0
 
     def visit_ClassDef(self, node: ast.ClassDef):
@@ -70,11 +70,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
         for child in ast.walk(node):
             # Decision points
-            if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor)):
-                complexity += 1
-            elif isinstance(child, ast.ExceptHandler):
-                complexity += 1
-            elif isinstance(child, (ast.With, ast.AsyncWith)):
+            if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.ExceptHandler, ast.With, ast.AsyncWith)):
                 complexity += 1
             # Boolean operators
             elif isinstance(child, ast.BoolOp):

@@ -7,14 +7,14 @@ Ensures strict typing and governance for the Observability Domain.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
 
-class LegacyResponse(BaseModel, Generic[T]):
+class LegacyResponse[T](BaseModel):
     """
     Standard Response Wrapper to maintain backward compatibility.
     Includes 'status', 'timestamp', and optional 'message' fields.

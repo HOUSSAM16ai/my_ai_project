@@ -2,7 +2,7 @@
 Core Protocols & Interfaces
 Defines abstract base classes and protocols for the application.
 """
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 # We define the interface here directly or import from a valid location
 # To fix the "ModuleNotFoundError: No module named 'app.core.interfaces'", we remove the bad import.

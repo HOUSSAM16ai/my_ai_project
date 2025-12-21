@@ -8,7 +8,7 @@ Load plugins with dependency resolution
 مبدأ البساطة: Simple dependency resolution
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from app.core.interfaces import IPlugin
 from app.core.registry.plugin_registry import registry
@@ -25,7 +25,7 @@ class PluginLoader:
     def __init__(self):
         self._loaded: set[str] = set()
 
-    async def load(self, plugin: IPlugin, config: Optional[Dict[str, Any]]=None
+    async def load(self, plugin: IPlugin, config: dict[str, Any] | None=None
         ) ->bool:
         """
         تحميل إضافة

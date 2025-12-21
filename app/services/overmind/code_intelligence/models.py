@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -46,7 +46,7 @@ class FileMetrics:
     num_external_dependencies: int = 0
 
     # Function Details
-    function_details: List[Dict[str, Any]] = field(default_factory=list)
+    function_details: list[dict[str, Any]] = field(default_factory=list)
 
     # Hotspot Scores
     complexity_rank: float = 0.0
@@ -70,7 +70,7 @@ class ProjectAnalysis:
     max_file_complexity: int
 
     # Hotspots
-    critical_hotspots: List[str] = field(default_factory=list)  # Top 20
-    high_hotspots: List[str] = field(default_factory=list)  # Next 20
+    critical_hotspots: list[str] = field(default_factory=list)  # Top 20
+    high_hotspots: list[str] = field(default_factory=list)  # Next 20
 
-    files: List[FileMetrics] = field(default_factory=list)
+    files: list[FileMetrics] = field(default_factory=list)

@@ -54,7 +54,7 @@ class StatisticalAnomalyDetector(AnomalyDetector):
         anomalies = []
         hourly_counts = self._group_by_hour(metrics)
 
-        for hour in hourly_counts.keys():
+        for hour in hourly_counts:
             hour_metrics = [m for m in metrics if self._get_hour_key(m.timestamp) == hour and m.name == "api_request"]
 
             if not hour_metrics:

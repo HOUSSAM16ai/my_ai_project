@@ -7,6 +7,6 @@ from app.services.adaptive.infrastructure.in_memory_repository import (
 )
 
 __all__ = [
-    "InMemoryServiceInstanceRepository",
     "InMemoryMetricsRepository",
+    "InMemoryServiceInstanceRepository",
 ]

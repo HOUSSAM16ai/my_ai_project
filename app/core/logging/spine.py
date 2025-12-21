@@ -1,6 +1,5 @@
 import logging
 import sys
-from typing import Optional
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -13,7 +12,7 @@ def setup_logging(level: str = "INFO") -> None:
         handlers=[logging.StreamHandler(sys.stdout)]
     )
 
-def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str, level: str | None = None) -> logging.Logger:
     """
     Get a logger instance with the specified name.
     """

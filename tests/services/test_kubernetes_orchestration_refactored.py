@@ -1,15 +1,11 @@
 
-import asyncio
-from typing import List, Optional
 
 import pytest
 
 from app.services.orchestration.application.pod_scheduler import (
-    NodeRepository,
-    PodRepository,
     PodScheduler,
 )
-from app.services.orchestration.domain import Node, NodeState, Pod, PodPhase
+from app.services.orchestration.domain import Node, NodeState, Pod
 
 
 class MockPodRepository:
@@ -19,14 +15,14 @@ class MockPodRepository:
     def save(self, pod: Pod) -> None:
         self.pods[pod.pod_id] = pod
 
-    def get(self, pod_id: str) -> Optional[Pod]:
+    def get(self, pod_id: str) -> Pod | None:
         return self.pods.get(pod_id)
 
 class MockNodeRepository:
-    def __init__(self, nodes: List[Node]):
+    def __init__(self, nodes: list[Node]):
         self.nodes = {n.node_id: n for n in nodes}
 
-    def get_all(self) -> List[Node]:
+    def get_all(self) -> list[Node]:
         return list(self.nodes.values())
 
     def update(self, node: Node) -> None:
@@ -61,4 +57,4 @@ async def test_kubernetes_orchestration_imports():
     )
     assert pod_id is not None
     assert len(pod_repo.pods) == 1
-    assert list(pod_repo.pods.values())[0].pod_id == pod_id
+    assert next(iter(pod_repo.pods.values())).pod_id == pod_id

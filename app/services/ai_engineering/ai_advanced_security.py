@@ -43,19 +43,19 @@ warnings.warn(
 
 # Re-export everything for backward compatibility
 __all__ = [
-    # Main service
-    "SuperhumanSecuritySystem",
-    "get_superhuman_security_system",
+    "AutomatedResponseSystem",
+    "BehavioralAnalyzer",
+    # Legacy aliases
+    "DeepLearningThreatDetector",
     # Domain models
     "SecurityEvent",
+    # Main service
+    "SuperhumanSecuritySystem",
     "ThreatDetection",
     "ThreatLevel",
     "ThreatType",
     "UserBehaviorProfile",
-    # Legacy aliases
-    "DeepLearningThreatDetector",
-    "BehavioralAnalyzer",
-    "AutomatedResponseSystem",
+    "get_superhuman_security_system",
 ]
 
 # Legacy class aliases for backward compatibility

@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Set
+from typing import Any
 
 
 class GitAnalyzer:
@@ -9,7 +9,7 @@ class GitAnalyzer:
     def __init__(self, repo_path: Path):
         self.repo_path = repo_path
 
-    def analyze_file_history(self, file_path: str) -> Dict[str, Any]:
+    def analyze_file_history(self, file_path: str) -> dict[str, Any]:
         """Analyze file modification history"""
         try:
             # Total commits
@@ -82,7 +82,7 @@ class GitAnalyzer:
                 text=True,
                 timeout=10,
             )
-            branches: Set[str] = set()
+            branches: set[str] = set()
             if result_branches.stdout.strip():
                 for line in result_branches.stdout.strip().split("\n"):
                     if line:

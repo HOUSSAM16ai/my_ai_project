@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional
 
 from ..models import FileMetrics
 
@@ -18,7 +17,7 @@ class StructuralSmellDetector:
         "domain": ["domain", "models", "entities"],
     }
 
-    def detect_smells(self, file_path: str, metrics: FileMetrics, imports: List[str]) -> Dict[str, bool]:
+    def detect_smells(self, file_path: str, metrics: FileMetrics, imports: list[str]) -> dict[str, bool]:
         """Detect structural smells"""
         smells = {
             "is_god_class": False,
@@ -28,9 +27,7 @@ class StructuralSmellDetector:
 
         # God class detection
         if metrics.num_classes > 0:
-            if metrics.code_lines > self.GOD_CLASS_LOC_THRESHOLD:
-                smells["is_god_class"] = True
-            elif metrics.num_functions > self.GOD_CLASS_METHODS_THRESHOLD:
+            if metrics.code_lines > self.GOD_CLASS_LOC_THRESHOLD or metrics.num_functions > self.GOD_CLASS_METHODS_THRESHOLD:
                 smells["is_god_class"] = True
 
         # Detect current file layer
@@ -54,7 +51,7 @@ class StructuralSmellDetector:
 
         return smells
 
-    def _detect_layer(self, path: str) -> Optional[str]:
+    def _detect_layer(self, path: str) -> str | None:
         """Detect architectural layer from path"""
         path_lower = path.lower()
         for layer, patterns in self.LAYER_PATTERNS.items():

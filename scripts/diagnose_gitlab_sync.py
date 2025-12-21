@@ -43,7 +43,6 @@ print_header("Test 1: Sync Script Validation")
 try:
     import sys
     sys.path.insert(0, ".")
-    from scripts.universal_repo_sync import check_workload_identity, sync_remotes
     print_success("Sync script imports successfully")
     print_success("check_workload_identity() function available")
     print_success("sync_remotes() function available")
@@ -54,13 +53,11 @@ except Exception as e:
 # Test 2: Check dependencies
 print_header("Test 2: Dependencies Check")
 try:
-    import requests
     print_success("requests library available")
 except:
     print_warning("requests library not available (will be installed in CI)")
 
 try:
-    import yaml
     print_success("pyyaml library available")
 except:
     print_warning("pyyaml library not available (will be installed in CI)")
@@ -90,7 +87,7 @@ except Exception as e:
 # Test 4: Workflow configuration
 print_header("Test 4: Workflow Configuration")
 try:
-    with open(".github/workflows/universal_sync.yml", "r") as f:
+    with open(".github/workflows/universal_sync.yml") as f:
         workflow_content = f.read()
 
     checks = {

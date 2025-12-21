@@ -6,20 +6,20 @@ Data Interfaces - واجهات البيانات
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import TypeVar
 
 T = TypeVar('T')
 ID = TypeVar('ID')
 
 
-class IRepository(ABC, Generic[T, ID]):
+class IRepository[T, ID](ABC):
     """
     واجهة المستودع
     Repository Interface - Generic pattern
     """
 
     @abstractmethod
-    async def get(self, id: ID) -> Optional[T]:
+    async def get(self, id: ID) -> T | None:
         """Get entity by ID"""
         pass
 
@@ -34,7 +34,7 @@ class IRepository(ABC, Generic[T, ID]):
         pass
 
 
-class IQuery(ABC, Generic[T]):
+class IQuery[T](ABC):
     """
     واجهة الاستعلام - Query Interface
     CQRS Pattern - Read side
@@ -46,7 +46,7 @@ class IQuery(ABC, Generic[T]):
         pass
 
 
-class ICommand(ABC, Generic[T]):
+class ICommand[T](ABC):
     """
     واجهة الأمر - Command Interface
     CQRS Pattern - Write side

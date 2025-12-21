@@ -1,7 +1,10 @@
 # app/api/routers/admin.py
 """
-Admin-facing API endpoints for the CogniForge platform.
-Refactored to use 'AdminChatBoundaryService' for Separation of Concerns.
+واجهة برمجة تطبيقات المسؤول (Admin API).
+---------------------------------------------------------
+توفر هذه الوحدة نقاط النهاية (Endpoints) الخاصة بالمسؤولين،
+وتعتمد بشكل كامل على خدمة `AdminChatBoundaryService` لفصل المسؤوليات.
+تتبع نمط "Presentation Layer" فقط، ولا تحتوي على أي منطق عمل.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request

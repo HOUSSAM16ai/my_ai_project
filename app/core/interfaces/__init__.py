@@ -19,19 +19,19 @@ from .service_interface import ServiceInterface
 from .strategy_interface import StrategyInterface
 
 __all__ = [
+    "ICommand",
+    "IHandler",
+    # New simplified interfaces
+    "ILifecycle",
+    "IPlugin",
+    "IProcessor",
+    "IQuery",
+    "IRepository",
+    "IService",
+    "IValidator",
     # Legacy (backward compatibility)
     "PlannerInterface",
     "RepositoryInterface",
     "ServiceInterface",
     "StrategyInterface",
-    # New simplified interfaces
-    "ILifecycle",
-    "IPlugin",
-    "IService",
-    "ICommand",
-    "IQuery",
-    "IRepository",
-    "IHandler",
-    "IProcessor",
-    "IValidator",
 ]

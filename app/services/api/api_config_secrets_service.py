@@ -25,11 +25,22 @@ from app.services.api_config_secrets.infrastructure.vault_adapters import (
     SecretEncryption,
 )
 
-__all__ = ['Environment', 'SecretType', 'RotationPolicy', 'Secret',
-    'ConfigEntry', 'SecretAccessLog', 'EnvironmentConfig',
-    'SecretEncryption', 'VaultBackend', 'LocalVaultBackend',
-    'HashiCorpVaultBackend', 'AWSSecretsManagerBackend',
-    'ConfigSecretsService', 'get_config_secrets_service']
+__all__ = [
+    'AWSSecretsManagerBackend',
+    'ConfigEntry',
+    'ConfigSecretsService',
+    'Environment',
+    'EnvironmentConfig',
+    'HashiCorpVaultBackend',
+    'LocalVaultBackend',
+    'RotationPolicy',
+    'Secret',
+    'SecretAccessLog',
+    'SecretEncryption',
+    'SecretType',
+    'VaultBackend',
+    'get_config_secrets_service',
+]
 
 
 class ConfigSecretsService:

@@ -63,33 +63,33 @@ from app.services.event_driven import (
 )
 
 __all__ = [
-    # Enums
-    "EventPriority",
-    "EventStatus",
-    "MessageBrokerType",
+    # Advanced features (if available)
+    "ADVANCED_FEATURES_AVAILABLE",
+    "CQRSManager",
+    "CQRSService",
+    "Command",
+    "DomainEvent",
+    "DomainEventRegistry",
     # Models
     "Event",
-    "EventProcessingResult",
-    "EventSubscription",
-    "EventStream",
-    "Command",
-    "Query",
-    # Ports/Interfaces
-    "MessageBroker",
+    # Service facades
+    "EventDrivenService",
     # Application services
     "EventManager",
-    "CQRSManager",
+    # Enums
+    "EventPriority",
+    "EventProcessingResult",
+    "EventStatus",
+    "EventStream",
+    "EventSubscription",
     # Infrastructure
     "InMemoryBroker",
     "KafkaBroker",
+    # Ports/Interfaces
+    "MessageBroker",
+    "MessageBrokerType",
+    "Query",
     "RabbitMQBroker",
-    # Service facades
-    "EventDrivenService",
-    "CQRSService",
-    "get_event_driven_service",
     "get_cqrs_service",
-    # Advanced features (if available)
-    "ADVANCED_FEATURES_AVAILABLE",
-    "DomainEvent",
-    "DomainEventRegistry",
+    "get_event_driven_service",
 ]

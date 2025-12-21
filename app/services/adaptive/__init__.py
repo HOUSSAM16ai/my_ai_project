@@ -33,20 +33,20 @@ from app.services.adaptive.infrastructure import (
 )
 
 __all__ = [
-    # Domain
-    "ServiceHealth",
-    "ScalingDirection",
-    "ServiceMetrics",
-    "ScalingDecision",
-    "ServiceInstance",
     # Application
     "AIScalingEngine",
-    "IntelligentRouter",
-    "PredictiveHealthMonitor",
+    "InMemoryMetricsRepository",
     # Infrastructure
     "InMemoryServiceInstanceRepository",
-    "InMemoryMetricsRepository",
+    "IntelligentRouter",
+    "PredictiveHealthMonitor",
+    "ScalingDecision",
+    "ScalingDirection",
     # Facade
     "SelfAdaptiveMicroservices",
+    # Domain
+    "ServiceHealth",
+    "ServiceInstance",
+    "ServiceMetrics",
     "get_adaptive_microservices",
 ]

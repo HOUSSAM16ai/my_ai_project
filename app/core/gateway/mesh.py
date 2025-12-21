@@ -261,7 +261,7 @@ class NeuralRoutingMesh:
                 # Connection errors or "Empty response" errors
                 node.circuit_breaker.record_failure()
                 self._record_metrics(node, prompt, 0, False)
-                errors.append(f"{node.model_id}: {str(e)}")
+                errors.append(f"{node.model_id}: {e!s}")
                 logger.warning(f"Node {node.model_id} failed: {e}")
                 continue
 

@@ -134,8 +134,8 @@ class LLMRequestExecutor:
         content = getattr(completion.choices[0].message, 'content', '')
         tool_calls = getattr(completion.choices[0].message, 'tool_calls', None)
         usage = self._extract_usage(completion)
-        if (content is None or isinstance(content, str) and content.strip() ==
-            '') and not tool_calls:
+        if (content is None or (isinstance(content, str) and content.strip() ==
+            '')) and not tool_calls:
             _LOG.warning(
                 f'Empty response from {payload.model} at attempt {attempts}')
             raise RuntimeError(

@@ -6,4 +6,4 @@ from .core import build_index
 from .models import IndexResult
 from .summary import summarize_for_prompt
 
-__all__ = ["build_index", "summarize_for_prompt", "IndexResult"]
+__all__ = ["IndexResult", "build_index", "summarize_for_prompt"]

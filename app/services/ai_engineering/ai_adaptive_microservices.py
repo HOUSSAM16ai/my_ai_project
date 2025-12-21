@@ -44,21 +44,21 @@ from app.services.adaptive import (
 )
 
 __all__ = [
-    # Enums
-    "ServiceHealth",
-    "ScalingDirection",
-    # Models
-    "ServiceMetrics",
-    "ScalingDecision",
-    "ServiceInstance",
     # Application services
     "AIScalingEngine",
-    "IntelligentRouter",
-    "PredictiveHealthMonitor",
+    "InMemoryMetricsRepository",
     # Infrastructure
     "InMemoryServiceInstanceRepository",
-    "InMemoryMetricsRepository",
+    "IntelligentRouter",
+    "PredictiveHealthMonitor",
+    "ScalingDecision",
+    "ScalingDirection",
     # Service facade
     "SelfAdaptiveMicroservices",
+    # Enums
+    "ServiceHealth",
+    "ServiceInstance",
+    # Models
+    "ServiceMetrics",
     "get_adaptive_microservices",
 ]

@@ -1,5 +1,4 @@
 # tests/core/test_static_handler_refactor.py
-import os
 
 import pytest
 from fastapi import FastAPI

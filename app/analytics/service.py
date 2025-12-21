@@ -1,7 +1,7 @@
 """Analytics Facade - Unified interface following Facade Pattern."""
 
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .ab_test_manager import ABTestManager
 
@@ -13,7 +13,7 @@ from .entities import (
     BehaviorProfile,
     UsageMetric,
 )
-from .enums import ABTestVariant, EventType, UserSegment
+from .enums import EventType, UserSegment
 
 # Import Application Logic Managers
 from .event_tracker import EventTracker
@@ -21,10 +21,8 @@ from .in_memory_repository import InMemoryMetricsRepository
 from .in_memory_stores import (
     InMemoryABTestStore,
     InMemoryActiveUsersStore,
-    InMemoryCohortStore,
     InMemoryEventStore,
     InMemoryNPSStore,
-    InMemoryRevenueStore,
     InMemorySessionStore,
     InMemoryUserStore,
 )
@@ -34,21 +32,16 @@ from .metrics_calculator import MetricsCalculator
 # Real Models
 from .models import (
     ABTestResults,
-    CohortAnalysis,
     ConversionMetrics,
     EngagementMetrics,
     NPSMetrics,
     RetentionMetrics,
-    RevenueMetrics,
-    UserData,
-    UserEvent,
-    UserSession,
 )
 from .nps_manager import NPSManager
 from .report_generation import UsageReportGenerator
 from .session_manager import SessionManager
 from .user_segmentation import UserSegmentation
-from .value_objects import BehaviorPattern, MetricType
+from .value_objects import MetricType
 
 
 class SystemAnalyticsService:
@@ -126,14 +119,14 @@ class UserAnalyticsMetricsService:
 
     def __init__(
         self,
-        event_tracker: Optional[EventTracker] = None,
-        session_manager: Optional[SessionManager] = None,
-        ab_test_manager: Optional[ABTestManager] = None,
-        nps_manager: Optional[NPSManager] = None,
-        segmentation_service: Optional[UserSegmentation] = None,
-        metrics_calculator: Optional[MetricsCalculator] = None,
-        system_analytics: Optional[SystemAnalyticsService] = None,
-        behavior_analyzer: Optional[UserBehaviorAnalyzer] = None,
+        event_tracker: EventTracker | None = None,
+        session_manager: SessionManager | None = None,
+        ab_test_manager: ABTestManager | None = None,
+        nps_manager: NPSManager | None = None,
+        segmentation_service: UserSegmentation | None = None,
+        metrics_calculator: MetricsCalculator | None = None,
+        system_analytics: SystemAnalyticsService | None = None,
+        behavior_analyzer: UserBehaviorAnalyzer | None = None,
     ):
         # Initialize defaults if not provided (Backward Compatibility)
         if event_tracker is None:
@@ -202,7 +195,7 @@ class UserAnalyticsMetricsService:
         self.session_manager.end_session(session_id)
 
     # --- A/B Testing ---
-    def create_ab_test(self, test_name: str, variants: List[str], traffic_allocations: List[float] | None = None) -> str:
+    def create_ab_test(self, test_name: str, variants: list[str], traffic_allocations: list[float] | None = None) -> str:
         """Create A/B test."""
         return self.ab_test_manager.create_ab_test(test_name, variants, traffic_allocations)
 
@@ -248,7 +241,7 @@ class UserAnalyticsMetricsService:
         """Get retention metrics."""
         return self.metrics_calculator.get_retention_metrics(cohort_date)
 
-    def export_metrics_summary(self) -> Dict[str, Any]:
+    def export_metrics_summary(self) -> dict[str, Any]:
         """Export comprehensive metrics summary."""
         engagement = self.get_engagement_metrics()
         conversion = self.get_conversion_metrics()
@@ -284,7 +277,7 @@ class UserAnalyticsMetricsService:
         """Analyze user behavior."""
         return self.behavior_analyzer.analyze(str(user_id))
 
-    def segment_users(self) -> Dict[UserSegment, list[int]]:
+    def segment_users(self) -> dict[UserSegment, list[int]]:
         """Segment all users."""
         return self.segmentation_service.segment_users()
 
@@ -320,7 +313,8 @@ def get_analytics_facade() -> UserAnalyticsMetricsService:
 # Aliases
 AnalyticsFacade = UserAnalyticsMetricsService
 get_analytics_service = get_user_analytics_service
-reset_analytics_service = lambda: None
+def reset_analytics_service():
+    return None
 
 def get_instance() -> UserAnalyticsMetricsService:
     global _analytics_service_instance

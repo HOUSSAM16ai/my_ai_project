@@ -1,10 +1,9 @@
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
 
-from app.config.settings import AppSettings
 from app.kernel import RealityKernel
 
 
@@ -77,7 +76,7 @@ class TestRealityKernel:
 
         # Check for prefixes we expect
         # Note: FastAPI routes include the full path
-        has_system = any("/system" in r or "/health" in r for r in routes)
+        any("/system" in r or "/health" in r for r in routes)
         # Since system router might be mounted at root, let's check for specific endpoints if needed
         # But simply checking successful initialization implies weaving didn't crash.
 
@@ -124,7 +123,7 @@ class TestRealityKernel:
             "BACKEND_CORS_ORIGINS": [], # Empty implies default logic
             "FRONTEND_URL": "http://localhost:3000"
         }
-        kernel = RealityKernel(dev_settings)
+        RealityKernel(dev_settings)
         # Verify middleware configuration (complex to inspect directly in FastAPI,
         # but we can rely on no crash and basic property checks if exposed)
 
