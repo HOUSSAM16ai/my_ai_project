@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from typing import Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
 from app.models import AdminConversation, MessageRole
@@ -16,11 +18,24 @@ logger = logging.getLogger(__name__)
 
 class AdminChatStreamer:
     """
-    Encapsulates the Streaming Logic (SSE).
-    Part of "Evolutionary Logic Distillation" - separating network IO from business rules.
+    بث محادثات المسؤول (Admin Chat Streamer).
+    ---------------------------------------------------------
+    مسؤول عن إدارة تدفق البيانات الحية (SSE) بين النواة المركزية (Overmind)
+    وواجهة المسؤول، مع ضمان الحفاظ على الحالة (Persistence) بشكل غير متزامن.
+
+    المبادئ المعمارية:
+    - **فصل الاهتمامات (Separation of Concerns)**: منطق البث مفصول تماماً عن منطق التخزين.
+    - **المرونة (Resilience)**: استخدام `asyncio.shield` لضمان حفظ البيانات حتى عند انقطاع الاتصال.
+    - **الاستجابة الفورية (Low Latency)**: إرسال الأجزاء (Chunks) فور وصولها.
     """
 
-    def __init__(self, persistence: AdminChatPersistence):
+    def __init__(self, persistence: AdminChatPersistence) -> None:
+        """
+        تهيئة باث المحادثة.
+
+        Args:
+            persistence: خدمة التخزين الدائم للمحادثات.
+        """
         self.persistence = persistence
 
     async def stream_response(
@@ -30,27 +45,43 @@ class AdminChatStreamer:
         question: str,
         history: list[dict[str, Any]],
         ai_client: AIClient,
-        session_factory_func,
+        session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
-        # 0. Inject Context (Overmind) if missing
+        """
+        تنفيذ عملية البث الحي للاستجابة.
+
+        يقوم بالخطوات التالية:
+        1. حقن سياق النظام (System Context) إذا لزم الأمر.
+        2. تحديث التاريخ المحلي للجلسة.
+        3. إرسال حدث بدء المحادثة.
+        4. استدعاء المنسق (Orchestrator) لمعالجة الطلب.
+        5. بث النتائج جزئياً (Streaming).
+        6. حفظ النتيجة النهائية في قاعدة البيانات (بشكل آمن).
+
+        Yields:
+            str: أحداث SSE بتنسيق `event: type\ndata: json\n\n`.
+        """
+        # 0. حقن سياق العقل المدبر (Overmind Context) إذا كان مفقوداً
         has_system = any(msg.get("role") == "system" for msg in history)
         if not has_system:
             try:
+                # استيراد متأخر لتجنب الدورات (Circular Imports)
                 from app.services.chat.context_service import get_context_service
 
                 ctx_service = get_context_service()
                 system_prompt = ctx_service.get_context_system_prompt()
                 history.insert(0, {"role": "system", "content": system_prompt})
             except Exception as e:
-                logger.error(f"Failed to inject Overmind context: {e}")
+                logger.error(f"⚠️ Failed to inject Overmind context: {e}")
 
-        # 1. Update In-Memory History
+        # 1. تحديث التاريخ في الذاكرة (للسياق الحالي فقط)
         if not history or history[-1]["content"] != question:
             history.append({"role": "user", "content": question})
 
         orchestrator = get_chat_orchestrator()
 
-        # 2. Yield Init Event
+        # 2. إرسال حدث التهيئة (Init Event)
+        # يساعد الواجهة الأمامية على ربط المحادثة الحالية بالمعرف الصحيح
         init_payload = {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -59,24 +90,25 @@ class AdminChatStreamer:
 
         full_response: list[str] = []
 
-        # 3. Persistence Helper
-        async def safe_persist():
+        # 3. دالة مساعدة للحفظ الآمن (Persistence Helper)
+        async def safe_persist() -> None:
+            """حفظ رد المساعد في قاعدة البيانات باستخدام جلسة منفصلة."""
             assistant_content = "".join(full_response)
             if not assistant_content:
+                # في حال لم يتم توليد أي رد، نسجل خطأ
                 assistant_content = "Error: No response received from AI service."
 
             try:
-                # Use fresh session for background persistence
+                # استخدام جلسة جديدة لضمان عدم تأثر الحفظ بحالة الجلسة الأصلية
                 async with session_factory_func() as session:
-                    # We need a new persistence instance bound to this session
                     p = AdminChatPersistence(session)
                     await p.save_message(conversation.id, MessageRole.ASSISTANT, assistant_content)
             except Exception as e:
-                logger.error(f"Failed to save assistant message: {e}")
+                logger.error(f"❌ Failed to save assistant message: {e}")
 
-        # 4. Streaming Execution
+        # 4. تنفيذ البث (Streaming Execution)
         try:
-            # We use a try/finally block to ensure persistence happens even if stream is broken
+            # استخدام try/finally لضمان الحفظ دائماً
             try:
                 async for content_part in orchestrator.process(
                     question=question,
@@ -87,14 +119,19 @@ class AdminChatStreamer:
                 ):
                     if content_part:
                         full_response.append(content_part)
-                        # Wrap content in the structure expected by frontend (Delta)
+                        # تغليف المحتوى في الهيكل المتوقع (OpenAI Style Delta)
                         chunk_data = {"choices": [{"delta": {"content": content_part}}]}
                         yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
 
             finally:
-                # Always persist the result
+                # حماية عملية الحفظ من الإلغاء (Cancellation)
                 await asyncio.shield(safe_persist())
 
+            # 5. إشارة الانتهاء (Completion Signal)
+            # ضرورية للواجهات الأمامية لإنهاء حالة التحميل وتحديث العرض
+            yield "event: done\ndata: [DONE]\n\n"
+
         except Exception as e:
-            logger.error(f"Streaming error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'payload': {'details': str(e)}})}\n\n"
+            logger.error(f"🔥 Streaming error: {e}")
+            error_payload = {"type": "error", "payload": {"details": str(e)}}
+            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"

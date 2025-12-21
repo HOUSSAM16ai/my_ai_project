@@ -1,54 +1,45 @@
-# app/middleware/remove_blocking_headers.py
+from __future__ import annotations
+
 import logging
-import os
+from typing import Final
 
-from starlette.datastructures import MutableHeaders
-from starlette.types import ASGIApp, Receive, Scope, Send
+from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.requests import Request
+from starlette.responses import Response
 
-logger = logging.getLogger("remove_blocking_headers")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+
+# قائمة الترويسات المحظورة التي قد تكشف معلومات حساسة أو تعيق الأداء
+# Blocked headers that might leak sensitive info or hinder performance
+BLOCKED_HEADERS: Final[set[str]] = {
+    "server",
+    "x-powered-by",
+    "x-aspnet-version",
+    "x-runtime",
+    "keep-alive",  # قد يتعارض مع إدارة الاتصالات الحديثة
+}
 
 
-def running_in_dev_or_codespace() -> bool:
-    # Detect Codespaces or explicit development
-    if os.getenv("CODESPACES") == "true" or os.getenv("CODESPACE_NAME"):
-        return True
-    return os.getenv("ENVIRONMENT", "").lower() == "development"
+class RemoveBlockingHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    برمجية وسيطة لإزالة الترويسات غير المرغوب فيها (Sanitization Middleware).
 
+    الأهداف:
+    1. **إخفاء البصمة (Obscurity)**: إزالة ترويسات الخادم (`Server`, `X-Powered-By`) لتقليل سطح الهجوم.
+    2. **تحسين الأداء (Performance)**: إزالة ترويسات قديمة قد تربك البروكسيات الحديثة.
 
-class RemoveBlockingHeadersMiddleware:
-    def __init__(self, app: ASGIApp):
-        self.app = app
-        self.enabled = running_in_dev_or_codespace()
-        logger.info(f"RemoveBlockingHeadersMiddleware enabled={self.enabled}")
+    المعايير:
+    - يعمل على كافة الردود الصادرة.
+    - لا يؤثر على الترويسات الضرورية لـ SSE مثل `Cache-Control`.
+    """
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or not self.enabled:
-            await self.app(scope, receive, send)
-            return
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
 
-        async def send_wrapper(message):
-            if message["type"] == "http.response.start":
-                headers = MutableHeaders(scope=message)
-                # Remove X-Frame-Options entirely
-                if "x-frame-options" in headers:
-                    try:
-                        del headers["x-frame-options"]
-                    except Exception:
-                        headers.pop("x-frame-options", None)
-                # Adjust CSP: remove frame-ancestors directive only
-                csp = headers.get("content-security-policy")
-                if csp:
-                    parts = [p.strip() for p in csp.split(";") if p.strip()]
-                    parts = [p for p in parts if not p.lower().startswith("frame-ancestors")]
-                    if parts:
-                        headers["content-security-policy"] = "; ".join(parts)
-                    else:
-                        # remove CSP entirely if only frame-ancestors existed
-                        try:
-                            del headers["content-security-policy"]
-                        except Exception:
-                            headers.pop("content-security-policy", None)
-            await send(message)
+        # إزالة الترويسات المحظورة
+        for header in BLOCKED_HEADERS:
+            if header in response.headers:
+                del response.headers[header]
 
-        await self.app(scope, receive, send_wrapper)
+        return response

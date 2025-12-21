@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, Callable
 
 import jwt
 from fastapi import HTTPException
@@ -27,25 +27,35 @@ ALGORITHM = "HS256"
 
 class AdminChatBoundaryService:
     """
-    Superhuman Service implementing Separation of Concerns via 'Evolutionary Logic Distillation'.
+    خدمة حدود محادثة المسؤول (Admin Chat Boundary Service).
+    ---------------------------------------------------------
+    تمثل هذه الخدمة "الواجهة الموحدة" (Facade) لجميع عمليات المحادثة الخاصة بالمسؤول.
+    تطبق مبدأ فصل المسؤوليات (Separation of Concerns) عبر تفويض المهام
+    إلى مكونات متخصصة (Persistence, Streamer, Policy).
 
-    Now acts as a FACADE to specialized components:
-    - AdminChatPersistence: Data Access
-    - AdminChatStreamer: Streaming/SSE Logic
-    - PolicyBoundary: Auth
+    المسؤوليات:
+    1. **التنسيق (Orchestration)**: إدارة تدفق العملية من الطلب إلى الرد.
+    2. **الأمان (Security)**: التحقق من الهوية والصلاحيات عبر `PolicyBoundary`.
+    3. **المرونة (Resilience)**: تطبيق قواطع الدائرة (Circuit Breakers) لحماية النظام من فشل الخدمات الخارجية.
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
+        """
+        تهيئة الخدمة وحقن التبعيات.
+
+        Args:
+            db: جلسة قاعدة البيانات غير المتزامنة.
+        """
         self.db = db
         self.settings = get_settings()
         self.service_boundary = get_service_boundary()
         self.policy_boundary = get_policy_boundary()
 
-        # Delegates
+        # التفويض للمكونات المتخصصة (Delegation)
         self.persistence = AdminChatPersistence(db)
         self.streamer = AdminChatStreamer(self.persistence)
 
-        # Configure Circuit Breaker for AI Service
+        # تكوين قاطع الدائرة لخدمة الذكاء الاصطناعي (Circuit Breaker Configuration)
         self.service_boundary.get_or_create_circuit_breaker(
             "ai_orchestration",
             CircuitBreakerConfig(
@@ -55,7 +65,16 @@ class AdminChatBoundaryService:
 
     def validate_auth_header(self, auth_header: str | None) -> int:
         """
-        Validates Authorization header.
+        التحقق من ترويسة المصادقة واستخراج معرف المستخدم.
+
+        Args:
+            auth_header: قيمة ترويسة Authorization.
+
+        Returns:
+            int: معرف المستخدم (User ID).
+
+        Raises:
+            HTTPException: في حال فشل المصادقة (401).
         """
         if not auth_header:
             raise HTTPException(status_code=401, detail="Authorization header missing")
@@ -80,10 +99,12 @@ class AdminChatBoundaryService:
     async def verify_conversation_access(
         self, user_id: int, conversation_id: int
     ) -> AdminConversation:
+        """
+        التحقق من صلاحية وصول المستخدم للمحادثة.
+        """
         try:
             return await self.persistence.verify_access(user_id, conversation_id)
         except ValueError as e:
-            # Map ValueError to HTTP Exceptions to maintain API contract
             msg = str(e)
             if "User not found" in msg:
                 raise HTTPException(status_code=401, detail="User not found") from e
@@ -92,19 +113,32 @@ class AdminChatBoundaryService:
             raise HTTPException(status_code=404, detail="Conversation not found") from e
 
     async def get_or_create_conversation(
-        self, user_id: int, question: str, conversation_id: str | None = None
+        self, user_id: int, question: str, conversation_id: str | int | None = None
     ) -> AdminConversation:
+        """
+        استرجاع محادثة موجودة أو إنشاء واحدة جديدة.
+        """
+        # تحويل conversation_id إلى int إذا كان str
+        conv_id_int: int | None = None
+        if conversation_id is not None:
+            try:
+                conv_id_int = int(conversation_id)
+            except (ValueError, TypeError) as e:
+                raise HTTPException(status_code=400, detail="Invalid conversation ID format") from e
+
         try:
             return await self.persistence.get_or_create_conversation(
-                user_id, question, conversation_id
+                user_id, question, conv_id_int
             )
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
 
     async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> Any:
+        """حفظ رسالة في قاعدة البيانات."""
         return await self.persistence.save_message(conversation_id, role, content)
 
     async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, Any]]:
+        """استرجاع سجل المحادثة."""
         return await self.persistence.get_chat_history(conversation_id, limit)
 
     async def stream_chat_response(
@@ -114,10 +148,10 @@ class AdminChatBoundaryService:
         question: str,
         history: list[dict[str, Any]],
         ai_client: AIClient,
-        session_factory_func,
+        session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
         """
-        Delegates to the dedicated Streamer component.
+        تفويض عملية البث إلى Streamer.
         """
         async for chunk in self.streamer.stream_response(
             user_id, conversation, question, history, ai_client, session_factory_func
@@ -131,11 +165,11 @@ class AdminChatBoundaryService:
         question: str,
         history: list[dict[str, Any]],
         ai_client: AIClient,
-        session_factory_func,
+        session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
         """
-        Wraps the streaming process in a safety net to ensure exceptions are caught
-        and returned as JSON error events instead of crashing the connection.
+        تغليف عملية البث بشبكة أمان (Safety Net).
+        تضمن التقاط الاستثناءات وإرجاعها كأحداث JSON بدلاً من قطع الاتصال.
         """
         try:
             async for chunk in self.stream_chat_response(
@@ -154,19 +188,19 @@ class AdminChatBoundaryService:
         self,
         user_id: int,
         question: str,
-        conversation_id_str: str | None,
+        conversation_id: str | int | None,
         ai_client: AIClient,
-        session_factory_func,
+        session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
         """
-        Orchestrates the entire chat flow:
-        1. Get or Create Conversation (Data Boundary)
-        2. Save User Message (Data Boundary)
-        3. Prepare Context (Data Boundary)
-        4. Stream Response (Service Boundary) with Safety Net
+        تنسيق تدفق المحادثة الكامل (The Grand Orchestration):
+        1. الحصول على المحادثة (Data Boundary).
+        2. حفظ رسالة المستخدم (Data Boundary).
+        3. تجهيز السياق (Context Prep).
+        4. بث الرد (Service Boundary) مع الأمان.
         """
         # 1. Get or Create Conversation
-        conversation = await self.get_or_create_conversation(user_id, question, conversation_id_str)
+        conversation = await self.get_or_create_conversation(user_id, question, conversation_id)
 
         # 2. Save User Message
         await self.save_message(conversation.id, MessageRole.USER, question)
@@ -180,11 +214,11 @@ class AdminChatBoundaryService:
         ):
             yield chunk
 
-    # --- New Methods for Router Refactoring ---
+    # --- طرق استرجاع البيانات (Data Retrieval Methods) ---
 
     async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
         """
-        Retrieves the latest conversation and its messages for the dashboard.
+        استرجاع تفاصيل آخر محادثة للوحة التحكم.
         """
         conversation = await self.persistence.get_latest_conversation(user_id)
         if not conversation:
@@ -206,7 +240,7 @@ class AdminChatBoundaryService:
 
     async def list_user_conversations(self, user_id: int) -> list[dict[str, Any]]:
         """
-        Lists conversations for the history sidebar.
+        سرد المحادثات للشريط الجانبي (Sidebar History).
         """
         conversations = await self.persistence.list_conversations(user_id)
         results = []
@@ -222,7 +256,7 @@ class AdminChatBoundaryService:
 
     async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
         """
-        Retrieves full details for a specific conversation.
+        استرجاع التفاصيل الكاملة لمحادثة محددة.
         """
         conversation = await self.verify_conversation_access(user_id, conversation_id)
         messages = await self.persistence.get_conversation_messages(conversation.id)
