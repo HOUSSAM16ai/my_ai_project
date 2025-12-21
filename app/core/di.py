@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import AppSettings
 from app.config.settings import get_settings as _get_settings_config
 from app.core.database import async_session_factory
-from app.core.kernel_v2.logging_spine import get_logger as _get_logger
+from app.core.logging import get_logger as _get_logger
 _settings_singleton = _get_settings_config()
 _session_factory_singleton = async_session_factory
 

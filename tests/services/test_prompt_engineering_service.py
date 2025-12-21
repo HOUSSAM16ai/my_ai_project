@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import GeneratedPrompt, PromptTemplate, User
-from app.services.prompt_engineering_service import prompt_engineering_service
+from app.services.ai_engineering.prompt_engineering_service import prompt_engineering_service
 
 
 @pytest.fixture

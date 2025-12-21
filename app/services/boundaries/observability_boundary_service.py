@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.services.aiops.service import AIOpsService, get_aiops_service
+from app.services.ai_engineering.aiops.service import AIOpsService, get_aiops_service
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,
     get_unified_observability,

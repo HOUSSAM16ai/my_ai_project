@@ -1,4 +1,4 @@
-from app.services.duplication_buster import DuplicationBuster
+from app.services.system.duplication_buster import DuplicationBuster
 
 
 class TestDuplicationBuster:

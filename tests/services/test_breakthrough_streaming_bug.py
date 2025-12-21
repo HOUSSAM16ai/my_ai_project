@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from app.services.breakthrough_streaming import BreakthroughStreamingService
+from app.services.streaming.breakthrough_streaming import BreakthroughStreamingService
 
 
 @pytest.mark.asyncio

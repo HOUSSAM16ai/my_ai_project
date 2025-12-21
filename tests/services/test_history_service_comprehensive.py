@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import AdminConversation, AdminMessage
-from app.services.history_service import get_recent_conversations, rate_message_in_db
+from app.services.users.history_service import get_recent_conversations, rate_message_in_db
 
 
 class TestHistoryServiceComprehensive:

@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.config.settings import AppSettings
-from app.services.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 
 @pytest.mark.asyncio

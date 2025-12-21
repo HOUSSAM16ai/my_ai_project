@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from app.services.breakthrough_streaming import AdaptiveCache
+from app.services.streaming.breakthrough_streaming import AdaptiveCache
 
 
 @pytest.mark.asyncio

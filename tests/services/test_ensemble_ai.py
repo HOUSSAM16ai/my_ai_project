@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.services.ensemble_ai import (
+from app.services.ai_engineering.ensemble_ai import (
     CostOptimizer,
     IntelligentRouter,
     ModelTier,

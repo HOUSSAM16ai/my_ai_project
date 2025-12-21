@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from app.services.ai_advanced_security import (
+from app.services.ai_engineering.ai_advanced_security import (
     AutomatedResponseSystem,
     BehavioralAnalyzer,
     DeepLearningThreatDetector,

@@ -1,7 +1,7 @@
 # tests/services/test_api_security_service.py
 import pytest
 
-from app.services.api_security_service import (
+from app.services.api.api_security_service import (
     SuperhumanSecuritySystem,
     get_security_service,
     security_service,

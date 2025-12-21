@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.admin_chat_streaming_service import (
+from app.services.streaming.admin_chat_streaming_service import (
     AdminChatStreamingService,
     SmartTokenChunker,
     SpeculativeDecoder,

@@ -6,7 +6,7 @@ Follows Clean Architecture by using Boundary Services.
 """
 from fastapi import APIRouter, Depends
 
-from app.services.observability_boundary_service import ObservabilityBoundaryService
+from app.services.boundaries.observability_boundary_service import ObservabilityBoundaryService
 
 router = APIRouter(tags=["Observability"])
 

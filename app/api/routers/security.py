@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, field_validator
 
 from app.core.database import AsyncSession, get_db
-from app.services.auth_boundary_service import AuthBoundaryService
+from app.services.boundaries.auth_boundary_service import AuthBoundaryService
 
 router = APIRouter(tags=["Security"])
 logger = logging.getLogger(__name__)

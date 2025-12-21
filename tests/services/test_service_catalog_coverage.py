@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, UTC
-from app.services.service_catalog_service import (
+from app.services.system.service_catalog_service import (
     ServiceCatalogService, ServiceMetadata, ServiceType, ServiceLifecycle,
     APISpec, ServiceTemplate, ServiceHealth, HealthStatus, get_service_catalog
 )

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.core.factories import get_db_service
 from app.main import app
-from app.services.database_service import DatabaseService
+from app.services.system.database_service import DatabaseService
 
 
 def test_system_health_endpoint_healthy_integration(client: TestClient):

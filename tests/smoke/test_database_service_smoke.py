@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.services.database_service import DatabaseService
+from app.services.system.database_service import DatabaseService
 
 # tests/smoke/test_database_service_smoke.py
 
