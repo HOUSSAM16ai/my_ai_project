@@ -33,7 +33,7 @@ class UsageReportGenerator(ReportGenerator):
             return {"total_requests": 0, "unique_users": 0, "avg_response_time": 0}
 
         total_requests = len([m for m in metrics if m.name == "api_request"])
-        unique_users = len(set(m.user_id for m in metrics if m.user_id))
+        unique_users = len({m.user_id for m in metrics if m.user_id})
         errors = len([m for m in metrics if m.status_code and m.status_code >= 400])
         error_rate = (errors / total_requests * 100) if total_requests > 0 else 0
 

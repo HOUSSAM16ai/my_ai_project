@@ -15,9 +15,7 @@ class PathValidator:
         if ".." in path:
             return False
         # Prevent absolute paths (optional, depending on requirements)
-        if path.startswith("/"):
-            return False
-        return True
+        return not path.startswith("/")
 
 
 class ErrorSanitizer:

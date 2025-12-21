@@ -16,4 +16,4 @@ def get_governance_service() -> CosmicGovernanceService:
     return governance_service
 
 
-__all__ = ["governance_service", "get_governance_service", "CosmicGovernanceService"]
+__all__ = ["CosmicGovernanceService", "get_governance_service", "governance_service"]

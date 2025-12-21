@@ -16,12 +16,12 @@ from .services import (
 )
 
 __all__ = [
-    # Interfaces (Protocols)
-    "HealthCheckService",
-    "SystemService",
-    "UserService",
     # Implementations
     "DefaultHealthCheckService",
     "DefaultSystemService",
     "DefaultUserService",
+    # Interfaces (Protocols)
+    "HealthCheckService",
+    "SystemService",
+    "UserService",
 ]

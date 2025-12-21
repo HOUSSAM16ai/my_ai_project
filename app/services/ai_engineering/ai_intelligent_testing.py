@@ -18,14 +18,14 @@ from app.services.ai_testing.selectors.smart_selector import SmartTestSelector
 
 # Re-export all public members
 __all__ = [
-    "TestType",
-    "CoverageType",
-    "TestCase",
-    "CodeAnalysis",
     "AITestGenerator",
-    "SmartTestSelector",
+    "CodeAnalysis",
     "CoverageOptimizer",
+    "CoverageType",
     "IntelligentTestingSystem",  # New unified manager
+    "SmartTestSelector",
+    "TestCase",
+    "TestType",
 ]
 
 # Note: The original file had a main block for example usage.

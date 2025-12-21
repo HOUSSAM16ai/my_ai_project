@@ -36,16 +36,16 @@ from .horizontal_scaling import (
 
 # Re-export for backward compatibility
 __all__ = [
-    "LoadBalancingAlgorithm",
-    "ServerState",
-    "ScalingEvent",
-    "RegionZone",
-    "Server",
-    "LoadBalancer",
-    "ScalingMetrics",
+    "ChaosMonkey",
     "ConsistentHashNode",
     "HorizontalScalingOrchestrator",
-    "ChaosMonkey",
+    "LoadBalancer",
+    "LoadBalancingAlgorithm",
+    "RegionZone",
+    "ScalingEvent",
+    "ScalingMetrics",
+    "Server",
+    "ServerState",
     "get_scaling_orchestrator",
 ]
 

@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 
 import pytest
 
@@ -6,7 +5,6 @@ from app.services.system.service_catalog_service import (
     APISpec,
     HealthStatus,
     ServiceCatalogService,
-    ServiceHealth,
     ServiceLifecycle,
     ServiceMetadata,
     ServiceTemplate,

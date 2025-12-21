@@ -111,7 +111,7 @@ class HyperLogLog:
 
         merged = HyperLogLog(self.precision)
         merged.registers = [
-            max(a, b) for a, b in zip(self.registers, other.registers)
+            max(a, b) for a, b in zip(self.registers, other.registers, strict=False)
         ]
         return merged
 
@@ -234,8 +234,8 @@ class CountMinSketch:
             epsilon: Error bound (smaller = more accurate)
             delta: Confidence (smaller = higher confidence)
         """
-        self.width = int(math.ceil(math.e / epsilon))
-        self.depth = int(math.ceil(math.log(1 / delta)))
+        self.width = math.ceil(math.e / epsilon)
+        self.depth = math.ceil(math.log(1 / delta))
         self.table = [[0] * self.width for _ in range(self.depth)]
         self.hash_seeds = [i * 0x9e3779b9 for i in range(self.depth)]
 
@@ -281,8 +281,8 @@ class CountMinSketch:
         merged.depth = self.depth
         merged.hash_seeds = self.hash_seeds
         merged.table = [
-            [a + b for a, b in zip(row_a, row_b)]
-            for row_a, row_b in zip(self.table, other.table)
+            [a + b for a, b in zip(row_a, row_b, strict=False)]
+            for row_a, row_b in zip(self.table, other.table, strict=False)
         ]
         return merged
 
@@ -367,7 +367,7 @@ class TDigest:
                     return mean
 
                 # Interpolate between centroids
-                prev_mean, prev_weight = sorted_centroids[i - 1]
+                prev_mean, _prev_weight = sorted_centroids[i - 1]
                 prev_cumulative = cumulative - weight
 
                 fraction = (target - prev_cumulative) / weight
@@ -414,8 +414,8 @@ class TDigest:
 
 
 __all__ = [
+    'CountMinSketch',
     'HyperLogLog',
     'HyperLogLogPlusPlus',
-    'CountMinSketch',
     'TDigest',
 ]

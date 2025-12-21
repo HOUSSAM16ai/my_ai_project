@@ -1,5 +1,3 @@
-import time
-from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,22 +10,17 @@ from app.services.serving.application.model_invoker import ModelInvoker
 from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.application.shadow_deployment import ShadowDeploymentManager
 from app.services.serving.domain.models import (
-    ABTestConfig,
-    EnsembleConfig,
     ModelMetrics,
-    ModelRequest,
     ModelResponse,
     ModelStatus,
     ModelType,
     ModelVersion,
-    ShadowDeployment,
 )
 from app.services.serving.infrastructure.in_memory_repository import (
     InMemoryMetricsRepository,
     InMemoryModelRepository,
 )
 from app.services.serving.infrastructure.metrics_collector import MetricsCollector
-from app.services.serving.infrastructure.mock_model_invoker import MockModelInvoker
 
 # --- Fixtures ---
 

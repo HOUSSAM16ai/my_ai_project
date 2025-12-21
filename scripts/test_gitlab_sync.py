@@ -7,7 +7,6 @@ This script verifies that the sync would work correctly if secrets are configure
 import os
 import subprocess
 import sys
-from typing import Dict, List, Tuple
 
 # ANSI colors for output
 GREEN = "\033[92m"
@@ -47,12 +46,10 @@ def print_info(text: str):
 def check_secret_configured(secret_name: str) -> bool:
     """Check if a secret/environment variable is configured."""
     value = os.environ.get(secret_name)
-    if value and len(value) > 0:
-        return True
-    return False
+    return bool(value and len(value) > 0)
 
 
-def check_git_config() -> Tuple[bool, List[str]]:
+def check_git_config() -> tuple[bool, list[str]]:
     """Check git configuration."""
     issues = []
 
@@ -105,7 +102,7 @@ def check_git_config() -> Tuple[bool, List[str]]:
     return len(issues) == 0, issues
 
 
-def check_sync_script() -> Tuple[bool, List[str]]:
+def check_sync_script() -> tuple[bool, list[str]]:
     """Check if the sync script exists and is valid."""
     issues = []
 
@@ -134,7 +131,7 @@ def check_sync_script() -> Tuple[bool, List[str]]:
     return len(issues) == 0, issues
 
 
-def check_secrets_configuration() -> Tuple[bool, Dict[str, bool]]:
+def check_secrets_configuration() -> tuple[bool, dict[str, bool]]:
     """Check if all required secrets are configured."""
     secrets = {
         "SYNC_GITHUB_TOKEN": check_secret_configured("SYNC_GITHUB_TOKEN"),
@@ -147,7 +144,7 @@ def check_secrets_configuration() -> Tuple[bool, Dict[str, bool]]:
 
     # In CI environment, don't fail if secrets are missing (they're injected at runtime)
     # In local environment, warn but don't fail the test
-    in_ci = os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITLAB_CI")
+    os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITLAB_CI")
 
     print_info("Secrets Configuration Status:")
     for secret, configured in secrets.items():
@@ -159,7 +156,7 @@ def check_secrets_configuration() -> Tuple[bool, Dict[str, bool]]:
     return all_configured, secrets
 
 
-def check_workflows() -> Tuple[bool, List[str]]:
+def check_workflows() -> tuple[bool, list[str]]:
     """Check GitHub Actions workflows."""
     issues = []
 
@@ -181,7 +178,7 @@ def check_workflows() -> Tuple[bool, List[str]]:
     return len(issues) == 0, issues
 
 
-def test_sync_dry_run() -> Tuple[bool, List[str]]:
+def test_sync_dry_run() -> tuple[bool, list[str]]:
     """Test the sync in dry-run mode (check what would be synced)."""
     issues = []
 
@@ -251,7 +248,7 @@ def main():
 
     # Test 3: Secrets Configuration
     print_header("Test 3: Secrets Configuration")
-    all_configured, secrets = check_secrets_configuration()
+    all_configured, _secrets = check_secrets_configuration()
 
     # Determine if we're in CI environment
     in_ci = os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITLAB_CI")

@@ -50,7 +50,7 @@ class StructuredLogger(LoggingManager):
         self.log("INFO", message, context=kwargs)
         _std_logger.info(message, extra=kwargs)
 
-    def error(self, message: str, exception: Optional[Exception] = None, **kwargs):
+    def error(self, message: str, exception: Exception | None = None, **kwargs):
         self.log("ERROR", message, context=kwargs, exception=exception)
         _std_logger.error(message, exc_info=exception, extra=kwargs)
 
@@ -70,13 +70,13 @@ class MetricsCollector(MetricsManager):
     """
     Adapter for MetricsCollector.
     """
-    def increment(self, name: str, amount: float = 1.0, tags: Optional[Dict[str, str]] = None):
+    def increment(self, name: str, amount: float = 1.0, tags: dict[str, str] | None = None):
         self.increment_counter(name, amount, labels=tags)
 
-    def gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
+    def gauge(self, name: str, value: float, tags: dict[str, str] | None = None):
         self.set_gauge(name, value, labels=tags)
 
-    def histogram(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
+    def histogram(self, name: str, value: float, tags: dict[str, str] | None = None):
         self.record_metric(name, value, labels=tags)
 
 class DistributedTracer(TracingManager):
@@ -96,12 +96,12 @@ class DistributedTracer(TracingManager):
 __all__ = [
     "DistributedTracer",
     "EventTracker",
+    "LoggingManager",
     "MetricsCollector",
+    "MetricsManager",
     "PerformanceMonitor",
     "StructuredLogger",
-    "UnifiedObservabilityService",
-    "get_unified_observability",
     "TracingManager",
-    "MetricsManager",
-    "LoggingManager"
+    "UnifiedObservabilityService",
+    "get_unified_observability"
 ]

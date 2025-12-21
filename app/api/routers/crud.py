@@ -1,8 +1,9 @@
 # app/api/routers/crud.py
 """
-CRUD Router - Generic Data Operations
-Provides standardized CRUD endpoints for resources.
-Handles pagination, filtering, and sorting.
+CRUD Router - عمليات البيانات العامة
+--------------------------------------
+يوفر هذا الموجه (Router) نقاط نهاية موحدة للعمليات الأساسية (CRUD) للموارد.
+يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
 from typing import Any
 
@@ -31,7 +32,7 @@ async def list_resources(
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
-    List all resources of a specific type with pagination and filtering.
+    عرض قائمة الموارد لنوع محدد مع دعم التصفح (Pagination) والترشيح (Filtering).
     """
     filters = {}
     if search:
@@ -54,7 +55,7 @@ async def create_resource(
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
-    Create a new resource.
+    إنشاء مورد جديد من نوع محدد.
     """
     return await service.create_item(resource_type, payload)
 
@@ -66,7 +67,7 @@ async def get_resource(
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
-    Get a specific resource by ID.
+    جلب مورد محدد بواسطة المعرف.
     """
     return await service.get_item(resource_type, item_id)
 
@@ -79,7 +80,7 @@ async def update_resource(
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
-    Update an existing resource.
+    تحديث مورد موجود.
     """
     return await service.update_item(resource_type, item_id, payload)
 
@@ -91,6 +92,6 @@ async def delete_resource(
     service: CrudBoundaryService = Depends(get_crud_service),
 ):
     """
-    Delete a resource.
+    حذف مورد محدد.
     """
     return await service.delete_item(resource_type, item_id)

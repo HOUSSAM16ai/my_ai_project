@@ -8,7 +8,7 @@ Central registration and management of all plugins
 مبدأ البساطة: Singleton Pattern بسيط وواضح
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from app.core.interfaces import IPlugin
 
@@ -31,14 +31,14 @@ class PluginRegistry:
 
     def __init__(self):
         if not self._initialized:
-            self._plugins: Dict[str, IPlugin] = {}
-            self._metadata: Dict[str, Dict[str, Any]] = {}
+            self._plugins: dict[str, IPlugin] = {}
+            self._metadata: dict[str, dict[str, Any]] = {}
             self._initialized = True
 
     def register(
         self,
         plugin: IPlugin,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> None:
         """
         تسجيل إضافة جديدة
@@ -52,11 +52,11 @@ class PluginRegistry:
         self._plugins[name] = plugin
         self._metadata[name] = metadata or {}
 
-    def get(self, name: str) -> Optional[IPlugin]:
+    def get(self, name: str) -> IPlugin | None:
         """Get plugin by name"""
         return self._plugins.get(name)
 
-    def get_all(self) -> Dict[str, IPlugin]:
+    def get_all(self) -> dict[str, IPlugin]:
         """Get all registered plugins"""
         return self._plugins.copy()
 
@@ -80,7 +80,7 @@ class PluginRegistry:
         self._plugins.clear()
         self._metadata.clear()
 
-    def get_metadata(self, name: str) -> Dict[str, Any]:
+    def get_metadata(self, name: str) -> dict[str, Any]:
         """Get plugin metadata"""
         return self._metadata.get(name, {})
 

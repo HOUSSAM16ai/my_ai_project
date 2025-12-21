@@ -16,4 +16,4 @@ def get_security_service() -> SuperhumanSecuritySystem:
     return security_service
 
 
-__all__ = ["security_service", "get_security_service", "SuperhumanSecuritySystem"]
+__all__ = ["SuperhumanSecuritySystem", "get_security_service", "security_service"]

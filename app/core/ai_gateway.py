@@ -27,18 +27,18 @@ from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 # Re-export key components for backward compatibility
 __all__ = [
+    "AIAllModelsExhaustedError",
+    "AICircuitOpenError",
+    "AIClient",
+    "AIConnectionError",
     "AIError",
     "AIProviderError",
-    "AICircuitOpenError",
-    "AIConnectionError",
-    "AIAllModelsExhaustedError",
     "AIRateLimitError",
     "CircuitBreaker",
     "CircuitState",
-    "NeuralNode",
     "ConnectionManager",
+    "NeuralNode",
     "NeuralRoutingMesh",
-    "AIClient",
     "get_ai_client",
     "get_performance_report",
     "get_recommended_model",

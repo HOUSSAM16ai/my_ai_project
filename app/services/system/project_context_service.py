@@ -39,15 +39,15 @@ from app.services.project_context import (
 )
 
 __all__ = [
-    # Models
-    "ProjectHealth",
     "CodeStatistics",
-    "ProjectStructure",
     "FileAnalysis",
     "KeyComponent",
     # Service
     "ProjectContextService",
+    # Models
+    "ProjectHealth",
+    "ProjectStructure",
+    "get_project_context_for_ai",
     # Convenience functions
     "get_project_context_service",
-    "get_project_context_for_ai",
 ]

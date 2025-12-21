@@ -7,7 +7,6 @@ Validates that the layered architecture works correctly.
 Phase 3 Wave 1 - Verification Tests
 """
 
-import time
 
 import pytest
 

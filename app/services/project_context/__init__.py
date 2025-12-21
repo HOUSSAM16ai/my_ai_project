@@ -42,7 +42,7 @@ __all__ = [
     # Domain models
     "ProjectHealth",
     "ProjectStructure",
+    "get_project_context_for_ai",
     # Helper functions
     "get_project_context_service",
-    "get_project_context_for_ai",
 ]

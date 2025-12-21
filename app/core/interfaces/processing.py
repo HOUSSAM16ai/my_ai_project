@@ -6,13 +6,13 @@ Processing Interfaces - واجهات المعالجة
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 TInput = TypeVar('TInput')
 TOutput = TypeVar('TOutput')
 
 
-class IProcessor(ABC, Generic[TInput, TOutput]):
+class IProcessor[TInput, TOutput](ABC):
     """
     واجهة المعالج
     Processor Interface - Generic pattern
@@ -24,7 +24,7 @@ class IProcessor(ABC, Generic[TInput, TOutput]):
         pass
 
 
-class IHandler(ABC, Generic[TInput, TOutput]):
+class IHandler[TInput, TOutput](ABC):
     """
     واجهة المعالج مع Chain of Responsibility
     Handler Interface - Can be chained
@@ -41,7 +41,7 @@ class IHandler(ABC, Generic[TInput, TOutput]):
         pass
 
 
-class IValidator(ABC, Generic[TInput]):
+class IValidator[TInput](ABC):
     """
     واجهة المدقق
     Validator Interface

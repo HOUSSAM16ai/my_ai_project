@@ -17,7 +17,6 @@ from app.telemetry.models import (
     AnomalyAlert,
     CorrelatedLog,
     MetricSample,
-    SamplingDecision,
     TraceContext,
     UnifiedSpan,
     UnifiedTrace,

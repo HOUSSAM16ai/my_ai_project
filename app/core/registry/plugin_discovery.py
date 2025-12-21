@@ -11,7 +11,6 @@ import importlib
 import logging
 import pkgutil
 from pathlib import Path
-from typing import List
 
 from app.core.interfaces import IPlugin
 from app.core.registry.plugin_registry import registry
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def discover_plugins(plugin_dir: str='app.plugins', auto_register: bool=True
-    ) ->List[IPlugin]:
+    ) ->list[IPlugin]:
     """
     اكتشاف جميع الإضافات
     Discover all plugins in directory
@@ -33,7 +32,7 @@ def discover_plugins(plugin_dir: str='app.plugins', auto_register: bool=True
             from .service import ChatPlugin
             plugin = ChatPlugin()
     """
-    discovered: List[IPlugin] = []
+    discovered: list[IPlugin] = []
     try:
         package = importlib.import_module(plugin_dir)
         package_path = Path(package.__file__).parent

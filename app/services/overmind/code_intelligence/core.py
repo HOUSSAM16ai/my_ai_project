@@ -1,7 +1,6 @@
 import ast
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 from .analyzers.complexity import ComplexityAnalyzer
 from .analyzers.git import GitAnalyzer
@@ -12,7 +11,7 @@ from .models import FileMetrics, ProjectAnalysis
 class StructuralCodeIntelligence:
     """Main Structural Intelligence Analyzer"""
 
-    def __init__(self, repo_path: Path, target_paths: List[str]):
+    def __init__(self, repo_path: Path, target_paths: list[str]):
         self.repo_path = repo_path
         self.target_paths = target_paths
         self.git_analyzer = GitAnalyzer(repo_path)
@@ -43,17 +42,13 @@ class StructuralCodeIntelligence:
                 return False
 
         # Must be Python file
-        if not file_path.suffix == ".py":
+        if file_path.suffix != ".py":
             return False
 
         # Must be in target paths
-        for target in self.target_paths:
-            if target in path_str:
-                return True
+        return any(target in path_str for target in self.target_paths)
 
-        return False
-
-    def analyze_file(self, file_path: Path) -> Optional[FileMetrics]:
+    def analyze_file(self, file_path: Path) -> FileMetrics | None:
         """Comprehensive single file analysis"""
         try:
             # Read file
@@ -147,7 +142,7 @@ class StructuralCodeIntelligence:
             # print(f"Error analyzing {file_path}: {e}", file=sys.stderr)
             return None
 
-    def calculate_hotspot_scores(self, all_metrics: List[FileMetrics]) -> None:
+    def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """Calculate hotspot scores with normalization"""
         if not all_metrics:
             return
@@ -161,7 +156,7 @@ class StructuralCodeIntelligence:
         ]
 
         # Normalize to 0-1 range
-        def normalize(values: List[float]) -> List[float]:
+        def normalize(values: list[float]) -> list[float]:
             if not values or max(values) == 0:
                 return [0.0] * len(values)
             max_val = max(values)

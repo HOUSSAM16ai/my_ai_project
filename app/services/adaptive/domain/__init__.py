@@ -14,14 +14,14 @@ from app.services.adaptive.domain.ports import (
 )
 
 __all__ = [
+    "MetricsRepository",
+    "ScalingDecision",
+    "ScalingDirection",
     # Enums
     "ServiceHealth",
-    "ScalingDirection",
-    # Models
-    "ServiceMetrics",
-    "ScalingDecision",
     "ServiceInstance",
     # Ports
     "ServiceInstanceRepository",
-    "MetricsRepository",
+    # Models
+    "ServiceMetrics",
 ]

@@ -80,7 +80,7 @@ class TestModelServingE2E:
         Verifies that requesting a non-existent model returns a failure
         rather than crashing.
         """
-        repo, registry, router = e2e_stack
+        _repo, _registry, router = e2e_stack
 
         response = router.serve_request(
             model_name="non-existent-model",

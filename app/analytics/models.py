@@ -347,5 +347,12 @@ class EventStream:
             window_end]
 
 
-__all__ = ['EventType', 'EventPriority', 'EventId', 'EventMetadata',
-    'Event', 'EventBatch', 'EventStream']
+__all__ = [
+    'Event',
+    'EventBatch',
+    'EventId',
+    'EventMetadata',
+    'EventPriority',
+    'EventStream',
+    'EventType',
+]

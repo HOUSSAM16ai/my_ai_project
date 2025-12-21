@@ -36,22 +36,22 @@ from app.analytics.service import (
 
 # Re-export everything for backward compatibility
 __all__ = [
+    "ABTestResults",
+    "ABTestVariant",
+    "CohortAnalysis",
+    "ConversionMetrics",
+    "EngagementMetrics",
     # Enums
     "EventType",
-    "UserSegment",
-    "ABTestVariant",
-    # Models
-    "UserEvent",
-    "UserSession",
-    "EngagementMetrics",
-    "ConversionMetrics",
-    "RetentionMetrics",
     "NPSMetrics",
-    "ABTestResults",
-    "CohortAnalysis",
+    "RetentionMetrics",
     "RevenueMetrics",
     # Service
     "UserAnalyticsMetricsService",
+    # Models
+    "UserEvent",
+    "UserSegment",
+    "UserSession",
     "get_user_analytics_service",
     "reset_analytics_service",
 ]

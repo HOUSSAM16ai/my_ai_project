@@ -13,13 +13,13 @@ from .domain.models import (
 from .facade import SecurityMetricsEngine, get_security_metrics_engine
 
 __all__ = [
-    # Facade
-    "SecurityMetricsEngine",
-    "get_security_metrics_engine",
+    "RiskPrediction",
     # Domain Models
     "SecurityFinding",
     "SecurityMetrics",
-    "RiskPrediction",
+    # Facade
+    "SecurityMetricsEngine",
     "Severity",
     "TrendDirection",
+    "get_security_metrics_engine",
 ]
