@@ -20,7 +20,7 @@ import os
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
-from pydantic import Field, ValidationInfo, computed_field, field_validator
+from pydantic import Field, ValidationInfo, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # إعداد السجل (Logging) لهذه الوحدة
@@ -125,6 +125,26 @@ class AppSettings(BaseSettings):
     # 🧠 GENIUS ALGORITHMS (الخوارزميات العبقرية)
     # ══════════════════════════════════════════════════════════════════════════
 
+    @model_validator(mode='after')
+    def validate_production_security(self) -> 'AppSettings':
+        """
+        🔐 Global Security Auditor.
+        يتحقق من تكامل الإعدادات الأمنية في بيئة الإنتاج.
+        """
+        if self.ENVIRONMENT == "production":
+            if self.DEBUG:
+                raise ValueError("❌ CRITICAL SECURITY VIOLATION: DEBUG must be False in production.")
+
+            # Check for weak or default secret key
+            if self.SECRET_KEY == "changeme" or len(self.SECRET_KEY) < 32:
+                 raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
+
+            # Check for overly permissive hosts
+            if self.ALLOWED_HOSTS == ["*"]:
+                 raise ValueError("❌ SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+
+        return self
+
     @field_validator("CODESPACES", mode="before")
     @classmethod
     def detect_codespaces(cls, v: Any) -> bool:
@@ -204,21 +224,6 @@ class AppSettings(BaseSettings):
         elif isinstance(v, list | str):
             return v
         return []
-
-    @field_validator("SECRET_KEY")
-    @classmethod
-    def validate_security_strength(cls, v: str, info: ValidationInfo) -> str:
-        """
-        🔐 Cryptographic Strength Analyzer.
-        يتحقق من قوة المفتاح السري في بيئة الإنتاج.
-        """
-        # 🛡️ Use context data for accurate environment detection
-        env = info.data.get("ENVIRONMENT", "development")
-
-        if env == "production":
-            if v == "changeme" or len(v) < 32:
-                raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
-        return v
 
     @computed_field
     @property

@@ -29,9 +29,10 @@
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from functools import lru_cache
+
+from app.config.settings import get_settings
 
 
 class AvailableModels:
@@ -113,27 +114,45 @@ class AIConfig:
     tier_genius: str = ActiveModels.TIER_GENIUS
 
     @property
-    def openrouter_api_key(self) ->(str | None):
-        return os.getenv('OPENROUTER_API_KEY')
+    def openrouter_api_key(self) -> str | None:
+        """
+        🔑 Access API Key securely from the Central Nervous System (Settings).
+        يسترجع مفتاح API بأمان من النظام المركزي (Settings).
+        """
+        return get_settings().OPENROUTER_API_KEY
 
-    def get_fallback_models(self) ->list[str]:
+    def get_fallback_models(self) -> list[str]:
         """Get list of fallback models."""
-        return [self.gateway_fallback_1, self.gateway_fallback_2, self.
-            gateway_fallback_3, self.gateway_fallback_4, self.
-            gateway_fallback_5]
+        return [
+            self.gateway_fallback_1,
+            self.gateway_fallback_2,
+            self.gateway_fallback_3,
+            self.gateway_fallback_4,
+            self.gateway_fallback_5
+        ]
 
-    def to_dict(self) ->dict:
+    def to_dict(self) -> dict:
         """Export configuration as dictionary."""
-        return {'primary_model': self.primary_model, 'low_cost_model': self
-            .low_cost_model, 'gateway': {'primary': self.gateway_primary,
-            'fallback_1': self.gateway_fallback_1, 'fallback_2': self.
-            gateway_fallback_2, 'fallback_3': self.gateway_fallback_3,
-            'fallback_4': self.gateway_fallback_4, 'fallback_5': self.
-            gateway_fallback_5}, 'tiers': {'nano': self.tier_nano, 'fast':
-            self.tier_fast, 'smart': self.tier_smart, 'genius': self.
-            tier_genius}}
+        return {
+            'primary_model': self.primary_model,
+            'low_cost_model': self.low_cost_model,
+            'gateway': {
+                'primary': self.gateway_primary,
+                'fallback_1': self.gateway_fallback_1,
+                'fallback_2': self.gateway_fallback_2,
+                'fallback_3': self.gateway_fallback_3,
+                'fallback_4': self.gateway_fallback_4,
+                'fallback_5': self.gateway_fallback_5
+            },
+            'tiers': {
+                'nano': self.tier_nano,
+                'fast': self.tier_fast,
+                'smart': self.tier_smart,
+                'genius': self.tier_genius
+            }
+        }
 
-    def print_config(self) ->None:
+    def print_config(self) -> None:
         """Print current configuration."""
         print(
             """
@@ -165,14 +184,14 @@ class AIConfig:
 
 
 @lru_cache(maxsize=1)
-def get_ai_config() ->AIConfig:
+def get_ai_config() -> AIConfig:
     """Get the AI configuration singleton."""
     return AIConfig()
 
 
 ai_config = get_ai_config()
-__all__ = ['AIConfig', 'ActiveModels', 'AvailableModels', 'ai_config',
-    'get_ai_config']
+__all__ = ['AIConfig', 'ActiveModels', 'AvailableModels', 'ai_config', 'get_ai_config']
+
 if __name__ == '__main__':
     print('\n📋 Available Models for Reference:')
     print('─' * 60)
