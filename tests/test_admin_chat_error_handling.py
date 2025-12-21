@@ -19,7 +19,7 @@ async def test_chat_error_handling_with_auth_but_service_error(async_client, adm
     """Test that chat with auth but internal service error returns 200 with error details."""
 
     with patch(
-        "app.services.admin_chat_boundary_service.AdminChatBoundaryService.stream_chat_response"
+        "app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService.stream_chat_response"
     ) as mock_stream:
         # To test the safe_stream_generator, we need to mock stream_chat_response
         # such that it's an async generator that raises an exception *during iteration*.

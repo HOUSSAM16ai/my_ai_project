@@ -10,23 +10,32 @@ Thread-Safety: This service is stateless and therefore thread-safe. New
 instances can be created per request or shared across threads without issue.
 """
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config.settings import AppSettings, get_settings
 from app.core.database import async_session_factory
 from app.models import User
+
 if TYPE_CHECKING:
     pass
+
 logger = logging.getLogger(__name__)
 
 
 class UserService:
     """A service for user-related operations using async database sessions."""
 
-    def __init__(self, session: (AsyncSession | None)=None, settings: (
-        AppSettings | None)=None, _logger: (logging.Logger | None)=None):
+    def __init__(
+        self,
+        session: AsyncSession | None = None,
+        settings: AppSettings | None = None,
+        _logger: logging.Logger | None = None,
+    ):
         """
         Initialize UserService.
 
@@ -39,62 +48,70 @@ class UserService:
         self._injected_session = session
         self.settings = settings or get_settings()
 
-    async def _get_session(self):
-        """Returns the session to use - either injected or create new one."""
-        if self._injected_session is not None:
-            return self._injected_session
-        return None
-
-    async def get_all_users(self) ->list[User]:
+    async def get_all_users(self) -> list[User]:
         """Retrieves all users from the database."""
         if self._injected_session is not None:
-            result = await self._injected_session.execute(select(User).
-                order_by(User.id))
-            return list(result.scalars().all())
-        async with async_session_factory() as session:
-            result = await session.execute(select(User).order_by(User.id))
-            return list(result.scalars().all())
+            return await self._get_all_users_with_session(self._injected_session)
 
-    async def create_new_user(self, full_name: str, email: str, password:
-        str, is_admin: bool=False) ->dict[str, str]:
+        async with async_session_factory() as session:
+            return await self._get_all_users_with_session(session)
+
+    async def _get_all_users_with_session(self, session: AsyncSession) -> list[User]:
+        """Internal method to get all users with a specific session."""
+        result = await session.execute(select(User).order_by(User.id))
+        return list(result.scalars().all())
+
+    async def create_new_user(
+        self, full_name: str, email: str, password: str, is_admin: bool = False
+    ) -> dict[str, str]:
         """Creates a new user. Returns a dict with status and message."""
         if self._injected_session is not None:
-            return await self._create_new_user_with_session(self.
-                _injected_session, full_name, email, password, is_admin)
-        async with async_session_factory() as session:
-            return await self._create_new_user_with_session(session,
-                full_name, email, password, is_admin)
+            return await self._create_new_user_with_session(
+                self._injected_session, full_name, email, password, is_admin
+            )
 
-    async def _create_new_user_with_session(self, session: AsyncSession,
-        full_name: str, email: str, password: str, is_admin: bool) ->dict[
-        str, str]:
+        async with async_session_factory() as session:
+            return await self._create_new_user_with_session(
+                session, full_name, email, password, is_admin
+            )
+
+    async def _create_new_user_with_session(
+        self,
+        session: AsyncSession,
+        full_name: str,
+        email: str,
+        password: str,
+        is_admin: bool,
+    ) -> dict[str, str]:
         """Internal method to create user with a specific session."""
+        # 🛡️ Guard Clause: Check if user already exists
         result = await session.execute(select(User).filter_by(email=email))
         if result.scalar():
-            logger.warning(
-                f'Attempted to create user with existing email: {email}')
-            return {'status': 'error', 'message':
-                f"User with email '{email}' already exists."}
+            logger.warning(f"Attempted to create user with existing email: {email}")
+            return {
+                "status": "error",
+                "message": f"User with email '{email}' already exists.",
+            }
+
         try:
-            new_user = User(full_name=full_name, email=email, is_admin=is_admin
-                )
+            new_user = User(full_name=full_name, email=email, is_admin=is_admin)
             new_user.set_password(password)
             session.add(new_user)
             await session.commit()
             await session.refresh(new_user)
-            admin_status = ' (Admin)' if is_admin else ''
-            logger.info(
-                f"User '{full_name}' created with ID {new_user.id}{admin_status}."
-                )
-            return {'status': 'success', 'message':
-                f"User '{full_name}' created with ID {new_user.id}{admin_status}."
-                }
-        except Exception as e:
-            await session.rollback()
-            logger.error(f'Error creating new user: {e}', exc_info=True)
-            return {'status': 'error', 'message': str(e)}
 
-    async def ensure_admin_user_exists(self) ->dict[str, str]:
+            admin_status = " (Admin)" if is_admin else ""
+            success_message = f"User '{full_name}' created with ID {new_user.id}{admin_status}."
+            logger.info(success_message)
+
+            return {"status": "success", "message": success_message}
+
+        except Exception as operation_error:
+            await session.rollback()
+            logger.error(f"Error creating new user: {operation_error}", exc_info=True)
+            return {"status": "error", "message": str(operation_error)}
+
+    async def ensure_admin_user_exists(self) -> dict[str, str]:
         """
         Ensures the admin user from settings exists and is an admin.
         Returns a dict with status and message.
@@ -102,53 +119,69 @@ class UserService:
         admin_email = self.settings.ADMIN_EMAIL
         admin_password = self.settings.ADMIN_PASSWORD
         admin_name = self.settings.ADMIN_NAME
-        if not all([admin_email, admin_password, admin_name]):
-            logger.error('Admin environment variables not set.')
-            return {'status': 'error', 'message':
-                'Admin environment variables not set.'}
-        if self._injected_session is not None:
-            return await self._ensure_admin_with_session(self.
-                _injected_session, admin_email, admin_password, admin_name)
-        async with async_session_factory() as session:
-            return await self._ensure_admin_with_session(session,
-                admin_email, admin_password, admin_name)
 
-    async def _ensure_admin_with_session(self, session: AsyncSession,
-        admin_email: str, admin_password: str, admin_name: str) ->dict[str, str
-        ]:
+        # 🛡️ Guard Clause: Ensure environment variables are set
+        if not all([admin_email, admin_password, admin_name]):
+            logger.error("Admin environment variables not set.")
+            return {"status": "error", "message": "Admin environment variables not set."}
+
+        if self._injected_session is not None:
+            return await self._ensure_admin_with_session(
+                self._injected_session, admin_email, admin_password, admin_name
+            )
+
+        async with async_session_factory() as session:
+            return await self._ensure_admin_with_session(
+                session, admin_email, admin_password, admin_name
+            )
+
+    async def _ensure_admin_with_session(
+        self, session: AsyncSession, admin_email: str, admin_password: str, admin_name: str
+    ) -> dict[str, str]:
         """Internal method to ensure admin exists with a specific session."""
         try:
-            result = await session.execute(select(User).filter_by(email=
-                admin_email))
-            user = result.scalar()
-            if user:
-                if user.is_admin:
-                    return {'status': 'success', 'message':
-                        f"Admin user '{admin_email}' already configured."}
-                user.is_admin = True
+            result = await session.execute(select(User).filter_by(email=admin_email))
+            existing_user = result.scalar()
+
+            if existing_user:
+                if existing_user.is_admin:
+                    return {
+                        "status": "success",
+                        "message": f"Admin user '{admin_email}' already configured.",
+                    }
+
+                # Upgrade existing user to admin
+                existing_user.is_admin = True
                 await session.commit()
                 logger.info(f"User '{admin_email}' promoted to admin.")
-                return {'status': 'success', 'message':
-                    f"User '{admin_email}' promoted to admin."}
-            new_admin = User(full_name=admin_name, email=admin_email,
-                is_admin=True)
+                return {
+                    "status": "success",
+                    "message": f"User '{admin_email}' promoted to admin.",
+                }
+
+            # Create new admin user
+            new_admin = User(full_name=admin_name, email=admin_email, is_admin=True)
             new_admin.set_password(admin_password)
             session.add(new_admin)
             await session.commit()
             logger.info(f"Admin user '{admin_email}' created.")
-            return {'status': 'success', 'message':
-                f"Admin user '{admin_email}' created."}
-        except Exception as e:
+            return {
+                "status": "success",
+                "message": f"Admin user '{admin_email}' created.",
+            }
+
+        except Exception as operation_error:
             await session.rollback()
-            logger.error(f'Error ensuring admin user exists: {e}', exc_info
-                =True)
-            return {'status': 'error', 'message': str(e)}
+            logger.error(
+                f"Error ensuring admin user exists: {operation_error}", exc_info=True
+            )
+            return {"status": "error", "message": str(operation_error)}
 
 
 _user_service_singleton: UserService | None = None
 
 
-def get_user_service() ->UserService:
+def get_user_service() -> UserService:
     """
     Factory function to get the singleton instance of the UserService.
 
@@ -162,13 +195,15 @@ def get_user_service() ->UserService:
     return _user_service_singleton
 
 
-async def get_all_users_async() ->list[User]:
+async def get_all_users_async() -> list[User]:
     """Async function to get all users."""
     return await get_user_service().get_all_users()
 
 
-async def create_new_user_async(full_name: str, email: str, password: str,
-    is_admin: bool=False) ->dict[str, str]:
+async def create_new_user_async(
+    full_name: str, email: str, password: str, is_admin: bool = False
+) -> dict[str, str]:
     """Async function to create a new user."""
-    return await get_user_service().create_new_user(full_name, email,
-        password, is_admin)
+    return await get_user_service().create_new_user(
+        full_name, email, password, is_admin
+    )

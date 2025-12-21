@@ -78,7 +78,7 @@ class TestHistoryServiceFix:
         from app.services.users.history_service import get_recent_conversations
 
         # Mock async_session_factory to raise an error
-        with patch("app.services.history_service.async_session_factory") as mock_factory:
+        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
             mock_session = AsyncMock()
             mock_session.execute.side_effect = Exception("Database error")
             mock_factory.return_value.__aenter__.return_value = mock_session

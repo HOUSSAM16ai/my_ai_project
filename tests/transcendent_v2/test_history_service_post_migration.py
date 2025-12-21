@@ -10,7 +10,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-@patch("app.services.history_service.async_session_factory")
+@patch("app.services.users.history_service.async_session_factory")
 async def test_rate_message_success(mock_session_factory):
     """
     Tests the successful rating of a message.
@@ -48,7 +48,7 @@ async def test_rate_message_success(mock_session_factory):
 
 
 @pytest.mark.asyncio
-@patch("app.services.history_service.async_session_factory")
+@patch("app.services.users.history_service.async_session_factory")
 async def test_rate_message_permission_denied(mock_session_factory):
     """
     Tests that a user cannot rate a message they don't own.
@@ -83,7 +83,7 @@ async def test_rate_message_permission_denied(mock_session_factory):
 
 
 @pytest.mark.asyncio
-@patch("app.services.history_service.async_session_factory")
+@patch("app.services.users.history_service.async_session_factory")
 async def test_get_recent_conversations_success(mock_session_factory):
     """
     Tests that get_recent_conversations correctly retrieves conversations.
@@ -117,7 +117,7 @@ async def test_get_recent_conversations_success(mock_session_factory):
 
 
 @pytest.mark.asyncio
-@patch("app.services.history_service.async_session_factory")
+@patch("app.services.users.history_service.async_session_factory")
 async def test_get_recent_conversations_returns_empty_on_error(mock_session_factory):
     """
     Tests that get_recent_conversations returns empty list on database error.
