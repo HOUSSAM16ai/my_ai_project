@@ -1,8 +1,10 @@
 """
-Refactored chat orchestrator with reduced complexity.
+منسق المحادثات (Chat Orchestrator) - النسخة المحسنة.
+---------------------------------------------------------
+تمت إعادة الهيكلة لتقليل التعقيد وتحسين القابلية للصيانة.
+يعتمد نمط الاستراتيجية (Strategy Pattern) لاختيار المعالج المناسب بناءً على نية المستخدم.
 
-BEFORE: Cyclomatic Complexity = 24
-AFTER: Cyclomatic Complexity = 3
+التعقيد السيكلوماتيكي (Cyclomatic Complexity): 3 (تم تخفيضه من 24).
 """
 
 import logging
@@ -29,21 +31,21 @@ logger = logging.getLogger(__name__)
 
 class ChatOrchestrator:
     """
-    Refactored orchestrator using Strategy pattern.
+    المنسق المركزي للمحادثات (Central Chat Orchestrator).
 
-    Complexity reduced from 24 to 3 by:
-    1. Extracting intent handlers to separate classes
-    2. Using Strategy pattern for handler selection
-    3. Removing nested conditionals
+    المسؤوليات:
+    1. الكشف عن نية المستخدم (Intent Detection).
+    2. بناء سياق المحادثة (Context Building).
+    3. اختيار وتنفيذ المعالج المناسب (Strategy Execution).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._intent_detector = IntentDetector()
         self._handlers = StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
         self._initialize_handlers()
 
     def _initialize_handlers(self) -> None:
-        """Register all intent handlers."""
+        """تسجيل جميع معالجات النوايا المتاحة."""
         handlers = [
             FileReadHandler(),
             FileWriteHandler(),
@@ -52,7 +54,7 @@ class ChatOrchestrator:
             DeepAnalysisHandler(),
             MissionComplexHandler(),
             HelpHandler(),
-            DefaultChatHandler(),  # Fallback
+            DefaultChatHandler(),  # المعالج الافتراضي
         ]
 
         for handler in handlers:
@@ -67,13 +69,21 @@ class ChatOrchestrator:
         history_messages: list[dict[str, str]],
     ) -> AsyncGenerator[str, None]:
         """
-        Process chat request.
+        معالجة طلب المحادثة.
 
-        Complexity: 3 (down from 24)
+        Args:
+            question: سؤال المستخدم.
+            user_id: معرف المستخدم.
+            conversation_id: معرف المحادثة.
+            ai_client: عميل الذكاء الاصطناعي.
+            history_messages: سجل الرسائل السابق.
+
+        Yields:
+            str: أجزاء الرد (Chunks) بشكل تدفقي.
         """
         start_time = time.time()
 
-        # Detect intent
+        # 1. الكشف عن النية (Detect Intent)
         intent_result = await self._intent_detector.detect(question)
 
         logger.info(
@@ -81,7 +91,7 @@ class ChatOrchestrator:
             extra={"user_id": user_id, "conversation_id": conversation_id},
         )
 
-        # Build context
+        # 2. بناء السياق (Build Context)
         context = ChatContext(
             question=question,
             user_id=user_id,
@@ -93,7 +103,7 @@ class ChatOrchestrator:
             params=intent_result.params,
         )
 
-        # Execute handler
+        # 3. تنفيذ الاستراتيجية (Execute Strategy)
         result = await self._handlers.execute(context)
         if result:
             async for chunk in result:
