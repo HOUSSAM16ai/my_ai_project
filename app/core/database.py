@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.config.settings import get_settings
 from app.core.engine_factory import (
     DatabaseURLSanitizer,
     create_unified_async_engine,
@@ -63,7 +64,9 @@ REQUIRED_SCHEMA = {
 }
 
 
-async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
+async def validate_and_fix_schema(  # noqa: PLR0912, PLR0915
+    auto_fix: bool = True,
+) -> dict[str, str | list[str]]:
     """
     🔍 التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
 
@@ -73,7 +76,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
     Returns:
         dict: نتائج الفحص والإصلاح
     """
-    results = {
+    results: dict[str, str | list[str]] = {
         "status": "ok",
         "checked_tables": [],
         "missing_columns": [],
@@ -89,7 +92,9 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                     logger.warning(f"⚠️ Skipping unknown table: {table_name}")
                     continue
 
-                results["checked_tables"].append(table_name)
+                # Pycharm/mypy might complain about types here, so we cast explicitely
+                if isinstance(results["checked_tables"], list):
+                     results["checked_tables"].append(table_name)
 
                 # الحصول على الأعمدة الموجودة باستخدام parameterized query
                 try:
@@ -116,7 +121,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                         )
                         existing_columns = {row[0] for row in result.fetchall()}
                 except Exception as e:
-                    results["errors"].append(f"Error checking table {table_name}: {e}")
+                    if isinstance(results["errors"], list):
+                        results["errors"].append(f"Error checking table {table_name}: {e}")
                     continue
 
                 # التحقق من الأعمدة المطلوبة
@@ -124,7 +130,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                 missing = required_columns - existing_columns
 
                 if missing:
-                    results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
+                    if isinstance(results["missing_columns"], list):
+                        results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
 
                     if auto_fix:
                         # محاولة إصلاح الأعمدة المفقودة (SQL مُعرّف مسبقاً)
@@ -137,7 +144,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                                     # SQL is predefined, not from user input
                                     await conn.execute(text(auto_fix_queries[col]))
                                     logger.info(f"✅ Added missing column: {table_name}.{col}")
-                                    results["fixed_columns"].append(f"{table_name}.{col}")
+                                    if isinstance(results["fixed_columns"], list):
+                                        results["fixed_columns"].append(f"{table_name}.{col}")
 
                                     # إضافة الفهرس إذا كان موجوداً
                                     if col in index_queries:
@@ -147,7 +155,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                                 except Exception as e:
                                     error_msg = f"Failed to fix {table_name}.{col}: {e}"
                                     logger.error(f"❌ {error_msg}")
-                                    results["errors"].append(error_msg)
+                                    if isinstance(results["errors"], list):
+                                        results["errors"].append(error_msg)
 
             # Commit التغييرات
             if results["fixed_columns"]:
@@ -155,7 +164,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
 
     except Exception as e:
         results["status"] = "error"
-        results["errors"].append(f"Schema validation failed: {e}")
+        if isinstance(results["errors"], list):
+            results["errors"].append(f"Schema validation failed: {e}")
         logger.error(f"❌ Schema validation error: {e}")
 
     # تحديد الحالة النهائية
@@ -183,13 +193,20 @@ async def validate_schema_on_startup() -> None:
     elif results["fixed_columns"]:
         logger.warning(f"⚠️ Schema had issues but was auto-fixed: {results['fixed_columns']}")
     elif results["missing_columns"]:
-        missing = ", ".join(results["missing_columns"])
+        # Type check to satisfy strict typing
+        missing_list = results["missing_columns"]
+        if isinstance(missing_list, list):
+             missing = ", ".join(missing_list) if isinstance(missing_list, list) else str(missing_list)
+        else:
+             missing = str(missing_list)
         logger.error(f"❌ CRITICAL: Missing columns could not be fixed: {missing}")
         logger.error("   Run: alembic upgrade head")
 
     if results["errors"]:
-        for error in results["errors"]:
-            logger.error(f"   Error: {error}")
+        errors_list = results["errors"]
+        if isinstance(errors_list, list):
+            for error in errors_list:
+                logger.error(f"   Error: {error}")
 
 
 # =============================================================================
@@ -204,10 +221,8 @@ _sync_session_factory = None
 
 def _get_sync_engine():
     """Lazily create sync engine only when needed."""
-    global _sync_engine
+    global _sync_engine  # noqa: PLW0603
     if _sync_engine is None:
-        from app.config.settings import get_settings
-
         # 🧠 INTELLIGENT ROUTING: Use the central configuration cortex
         # We fetch the URL from the settings, which has already been healed/sanitized for async.
         # Now we reverse-engineer it for sync context.
@@ -236,7 +251,7 @@ def _get_sync_engine():
 
 def _get_sync_session_factory():
     """Lazily create sync session factory only when needed."""
-    global _sync_session_factory
+    global _sync_session_factory  # noqa: PLW0603
     if _sync_session_factory is None:
         _sync_session_factory = sessionmaker(
             bind=_get_sync_engine(),
@@ -272,7 +287,7 @@ class SessionLocal:
 
 
 @contextmanager
-def get_sync_session():
+def get_sync_session() -> AsyncGenerator[Session, None]:
     """Context manager for sync sessions."""
     session = SessionLocal()
     try:

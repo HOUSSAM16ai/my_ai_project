@@ -1,28 +1,27 @@
 """
 نواة الواقع الإدراكي (Cognitive Reality Kernel).
 
-هذه الوحدة تمثل نقطة الدخول المركزية لتطبيق FastAPI.
-تتبع معايير CS50 2025 في التصميم والتوثيق والنوعية.
+هذه الوحدة تمثل نقطة الدخول المركزية لتطبيق FastAPI، مصممة وفقاً لأعلى معايير هندسة البرمجيات
+(CS50 2025 Standards). توفر هذه النواة البنية التحتية اللازمة لربط كافة مكونات النظام ببعضها البعض.
 
-المسؤوليات:
-1. بناء التطبيق (Factory Pattern).
-2. إدارة التبعيات (Dependency Injection via Settings).
+المسؤوليات الأساسية:
+1. بناء التطبيق (Application Factory Pattern).
+2. إدارة التبعيات وحقن الإعدادات (Dependency Injection).
 3. تكوين البرمجيات الوسيطة (Middleware Configuration).
-4. توجيه المسارات (Routing Strategy).
+4. استراتيجية توجيه المسارات (Routing Strategy).
 """
 
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final
+from typing import Final
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-# استيراد الموجهات بشكل صريح لضمان الفشل السريع عند فقدان أي تبعية
-# Explicit Import of Routers to ensure Fast Failure if dependencies are missing
+# استيراد الموجهات بشكل صريح لضمان الفشل السريع (Fail-Fast)
 from app.api.routers import admin, crud, data_mesh, observability, security, system
 from app.config.settings import AppSettings
 from app.core.database import validate_schema_on_startup
@@ -40,33 +39,28 @@ class RealityKernel:
     """
     نواة الواقع الإدراكي - الإصدار الخامس (Cognitive Reality Weaver V5).
 
-    تم تحديث المعمارية لتوافق مبادئ CS50 2025:
-    - صرامة عالية في الأنواع (Strict Typing).
-    - وضوح تام في المسؤوليات (Explicit Responsibilities).
-    - توثيق عربي احترافي (Professional Arabic Documentation).
+    تمثل هذه الفئة القلب النابض للنظام، حيث تقوم بتجميع كافة الأجزاء المتناثرة
+    لخلق واقع برمجي متماسك وآمن.
+
+    المبادئ التصميمية (Design Principles):
+    - الصرامة في الأنواع (Strict Typing): استخدام أحدث ميزات Python 3.12+.
+    - الوضوح (Explicitness): لا سحر خفي، كل شيء معرف بوضوح.
+    - التوثيق الشامل (Comprehensive Documentation): شرح "لماذا" وليس فقط "كيف".
 
     Attributes:
-        settings (AppSettings): إعدادات النظام التي تم التحقق منها.
-        app (FastAPI): كائن التطبيق الرئيسي.
+        settings (AppSettings): إعدادات النظام التي تم التحقق منها بدقة.
+        app (FastAPI): كائن التطبيق الرئيسي الجاهز للعمل.
     """
 
-    def __init__(self, settings: AppSettings | dict[str, Any]) -> None:
+    def __init__(self, settings: AppSettings) -> None:
         """
         تهيئة نواة الواقع وبناء التكوين الأساسي.
 
-        يقوم المُشيد (Constructor) بتحويل القاموس إلى كائن إعدادات صارم إذا لزم الأمر،
-        ثم يبدأ عملية بناء التطبيق.
-
         Args:
-            settings: إعدادات التطبيق. يفضل استخدام `AppSettings` مباشرة.
-                      دعم `dict` موجود للتوافق مع الأنظمة القديمة ولكن سيتم إزالته مستقبلاً.
+            settings: كائن الإعدادات الموثوق (AppSettings). لا نقبل القواميس العشوائية هنا
+                      لضمان سلامة النوع (Type Safety) منذ اللحظة الأولى.
         """
-        # التحقق الذكي من التكوين وتحويله إذا لزم الأمر
-        if isinstance(settings, dict):
-            # Legacy Support Warning could be added here
-            self.settings: AppSettings = AppSettings(**settings)
-        else:
-            self.settings = settings
+        self.settings: Final[AppSettings] = settings
 
         # إنشاء التطبيق النقي (The Pristine App)
         self.app: Final[FastAPI] = self._create_pristine_app()
@@ -87,7 +81,7 @@ class RealityKernel:
         """
         إنشاء الهيكل الأساسي للتطبيق مع إعدادات دورة الحياة والوثائق.
 
-        يستخدم نمط `lifespan` لإدارة الموارد بدلاً من `on_event` القديمة.
+        يستخدم نمط `lifespan` لإدارة الموارد، وهو البديل الحديث والآمن لـ `on_event`.
 
         Returns:
             FastAPI: الكائن الأساسي للتطبيق قبل ربط المسارات.
@@ -95,7 +89,10 @@ class RealityKernel:
 
         @asynccontextmanager
         async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-            """مدير دورة الحياة: ينظم عمليات بدء التشغيل والإيقاف."""
+            """
+            مدير دورة الحياة (Lifespan Manager).
+            ينظم عمليات بدء التشغيل والإيقاف بشكل متزامن وآمن.
+            """
             # === [STARTUP] مرحلة الإطلاق ===
             logger.info("🚀 CogniForge System Initializing... (بدء تشغيل النظام)")
 
@@ -106,7 +103,7 @@ class RealityKernel:
                     await validate_schema_on_startup()
                     logger.info("✅ Database Schema Validated (تم التحقق من مخطط قاعدة البيانات)")
                 except Exception as e:
-                    # نسجل التحذير ولكن لا نوقف النظام للسماح بالتشغيل الجزئي في حالات الطوارئ
+                    # نسجل التحذير ولكن لا نوقف النظام للسماح بالتشغيل الجزئي في حالات الطوارئ القصوى
                     logger.warning(f"⚠️ Schema validation warning: {e}")
 
             logger.info("✅ System Ready (النظام جاهز)")
@@ -116,10 +113,10 @@ class RealityKernel:
             # === [SHUTDOWN] مرحلة الإغلاق ===
             logger.info("👋 CogniForge System Shutting Down... (إيقاف النظام)")
 
-        # تحديد بيئة التطوير لتفعيل الوثائق
+        # تحديد بيئة التطوير لتفعيل الوثائق التفاعلية
         is_dev: bool = self.settings.ENVIRONMENT == "development"
 
-        # تهيئة FastAPI مع البيانات الوصفية
+        # تهيئة FastAPI مع البيانات الوصفية الكاملة
         app = FastAPI(
             title=self.settings.PROJECT_NAME,
             version=self.settings.VERSION,
@@ -139,10 +136,12 @@ class RealityKernel:
         """
         تكوين حزمة البرمجيات الوسيطة (Middleware Stack) وفقاً لأفضل الممارسات الأمنية.
 
+        الترتيب هنا مهم جداً لمعالجة الطلبات بشكل صحيح.
+
         Args:
             app: تطبيق FastAPI المراد حمايته وتحسينه.
         """
-        # 1. المضيف الموثوق (Trusted Host): الحماية من هجمات Host Header Injection
+        # 1. المضيف الموثوق (Trusted Host): خط الدفاع الأول ضد هجمات Host Header Injection
         app.add_middleware(
             TrustedHostMiddleware,
             allowed_hosts=self.settings.ALLOWED_HOSTS
@@ -154,31 +153,32 @@ class RealityKernel:
         # 3. ترويسات الأمان (Security Headers): إضافة طبقة حماية إضافية (HSTS, X-Frame-Options, etc.)
         app.add_middleware(SecurityHeadersMiddleware)
 
-        # 4. تحديد المعدل (Rate Limiting): حماية النظام من الاستخدام المفرط (معطل في الاختبارات)
+        # 4. تحديد المعدل (Rate Limiting): حماية النظام من الاستخدام المفرط (DDOS Protection)
+        # يتم تعطيله في بيئة الاختبار لتجنب الإيجابيات الكاذبة أثناء الاختبارات المكثفة
         if self.settings.ENVIRONMENT != "testing":
             app.add_middleware(RateLimitMiddleware)
 
-        # 5. تنظيف الترويسات (Clean Headers): إزالة الترويسات التي قد تكشف معلومات حساسة أو تعيق الأداء
+        # 5. تنظيف الترويسات (Clean Headers): إزالة الترويسات التي قد تعيق تقنيات مثل SSE
         app.add_middleware(RemoveBlockingHeadersMiddleware)
 
-        # 6. ضغط البيانات (GZip Compression): تحسين الأداء عبر ضغط الردود الكبيرة
+        # 6. ضغط البيانات (GZip Compression): تحسين الأداء عبر ضغط الردود النصية الكبيرة
         app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     def _configure_cors(self, app: FastAPI) -> None:
         """
-        إعداد سياسات CORS بدقة بناءً على البيئة التشغيلية.
+        إعداد سياسات CORS (Cross-Origin Resource Sharing) بدقة.
+
+        يتم التعامل مع CORS بحذر شديد لأنه ثغرة أمنية شائعة إذا تم تكوينه بشكل خاطئ.
 
         Args:
             app: التطبيق المراد تكوينه.
         """
-        raw_origins = self.settings.BACKEND_CORS_ORIGINS
-        # Pydantic already ensures this is a list[str], but extra safety fits the strictness theme
-        allow_origins: list[str] = raw_origins
+        allow_origins: list[str] = self.settings.BACKEND_CORS_ORIGINS
 
-        # استخدام إعدادات افتراضية ذكية في حال عدم التحديد
+        # استخدام منطق ذكي لتحديد الأصول المسموحة في حالة عدم التحديد الصريح
         if not allow_origins:
             if self.settings.ENVIRONMENT == "development":
-                allow_origins = ["*"]  # سماح كامل في بيئة التطوير
+                allow_origins = ["*"]  # سماح كامل في بيئة التطوير للتسهيل
             else:
                 frontend_url = self.settings.FRONTEND_URL
                 allow_origins = [frontend_url] if frontend_url else []
@@ -187,7 +187,9 @@ class RealityKernel:
             CORSMiddleware,
             allow_origins=allow_origins,
             allow_credentials=True,
+            # نسمح بجميع الطرق القياسية
             allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+            # نسمح بالترويسات الضرورية للمصادقة والأمان
             allow_headers=[
                 "Authorization",
                 "Content-Type",
@@ -196,6 +198,7 @@ class RealityKernel:
                 "X-Requested-With",
                 "X-CSRF-Token",
             ],
+            # نكشف ترويسات معينة قد يحتاجها العميل
             expose_headers=["Content-Length", "Content-Range"],
         )
 
@@ -203,24 +206,26 @@ class RealityKernel:
         """
         ربط الموجهات (Routers) بالتطبيق المركزي.
 
-        يتم الربط بشكل صريح (Explicit) لضمان وضوح تدفق البيانات وسهولة التتبع.
+        يتم الربط بشكل صريح (Explicit) لضمان وضوح تدفق البيانات.
+        كل مجموعة من المسارات لها بادئة (Prefix) خاصة بها لسهولة التمييز.
         """
         logger.info("Reality Kernel: Weaving explicit routes... (جاري ربط المسارات)")
 
         # 1. مسارات النظام (System Routes): الصحة، المعلومات
+        # التوافر العالي (High Availability) يعتمد على هذه المسارات
         self.app.include_router(system.router)
 
-        # 2. مسارات الإدارة (Admin Routes): لوحة التحكم والعمليات الإدارية
+        # 2. مسارات الإدارة (Admin Routes): لوحة التحكم والعمليات الإدارية الحساسة
         self.app.include_router(admin.router)
 
-        # 3. مسارات الأمان (Security Routes): المصادقة والتفويض
+        # 3. مسارات الأمان (Security Routes): بوابة الدخول والمصادقة
         self.app.include_router(security.router, prefix="/api/security")
 
-        # 4. شبكة البيانات (Data Mesh): العمليات المتقدمة على البيانات
+        # 4. شبكة البيانات (Data Mesh): العمليات المتقدمة والتحليلات
         self.app.include_router(data_mesh.router, prefix="/api/v1/data-mesh")
 
-        # 5. قابلية المراقبة (Observability): التتبع والمقاييس
+        # 5. قابلية المراقبة (Observability): عيون النظام (Metrics & Tracing)
         self.app.include_router(observability.router, prefix="/api/observability")
 
-        # 6. العمليات الأساسية (CRUD / API v1): الواجهة البرمجية العامة
+        # 6. العمليات الأساسية (General CRUD): الواجهة البرمجية العامة للموارد
         self.app.include_router(crud.router, prefix="/api/v1")
