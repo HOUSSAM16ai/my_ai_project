@@ -2,10 +2,11 @@
 Tests for the new SOLID Agent Architecture.
 """
 import pytest
+
 from app.services.agent_tools.domain.tool import StandardTool
-from app.services.agent_tools.infrastructure.registry import InMemoryToolRegistry
+from app.services.agent_tools.infrastructure.registry import InMemoryToolRegistry, get_registry
 from app.services.agent_tools.new_core import tool
-from app.services.agent_tools.infrastructure.registry import get_registry
+
 
 @pytest.mark.asyncio
 async def test_tool_domain_execution():

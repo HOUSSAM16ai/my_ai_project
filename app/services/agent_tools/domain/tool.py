@@ -2,10 +2,10 @@
 Standard Agent Tool Implementation (Domain Layer).
 Adheres to AgentTool Protocol.
 """
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any
-from collections.abc import Callable, Awaitable
-from app.core.protocols import AgentTool
+
 
 @dataclass
 class StandardTool:

@@ -1,11 +1,12 @@
-# app/services/overmind/core.py
+# app/services/overmind/orchestrator.py
 # =================================================================================================
-# OVERMIND ORCHESTRATOR – COGNITIVE CORE
-# Version: 11.0.0-hyper-async
+# OVERMIND ORCHESTRATOR – COGNITIVE CORE (العقل المدبر)
+# Version: 12.0.0-super-intelligence
 # =================================================================================================
 
 import asyncio
 import logging
+from typing import Any
 
 from app.models import Mission, MissionEventType, MissionStatus, TaskStatus
 from app.services.overmind.executor import TaskExecutor
@@ -17,116 +18,129 @@ logger = logging.getLogger(__name__)
 
 class OvermindOrchestrator:
     """
-    Overmind Orchestrator (The Cognitive Brain).
+    العقل المدبر (Overmind Orchestrator).
 
-    This class serves as the central command center for the AI's autonomous operations.
-    It manages the entire lifecycle of a "Mission" (a high-level user request) by coordinating
-    between specialized sub-systems: Planning and Execution.
+    هذا الكلاس هو "الدماغ" الحقيقي للنظام. إنه المسؤول عن تحويل طلبات المستخدم المجردة
+    إلى واقع ملموس عن طريق التخطيط الذكي والتنفيذ الدقيق.
 
-    Key Responsibilities (The Role):
-    1.  **Mission Lifecycle Management**: Transitions missions through states (PENDING -> PLANNING -> PLANNED -> RUNNING -> SUCCESS/FAILED).
-    2.  **Strategic Planning**: Selects and invokes the appropriate AI Planner to break down complex objectives into executable tasks.
-    3.  **Execution Coordination**: Monitors the state of tasks, resolving dependencies (Topological Sort), and scheduling them for execution.
-    4.  **Resilience**: Handles failures, ensuring the system can recover or gracefully terminate catastrophic errors.
+    المبدأ الفلسفي: "فكر مرتين، نفذ مرة واحدة".
 
-    Why this class exists:
-    To implement the "Plan-Execute" cognitive architecture, allowing the AI to solve complex,
-    multi-step problems autonomously without constant human intervention.
+    كيف يعمل هذا العقل الجبار؟
+    1.  **استيعاب المهمة (Understanding)**: يستلم المهمة من المستخدم ويفهم حالتها.
+    2.  **التخطيط الاستراتيجي (Planning)**: يختار أفضل "مخطط" (Planner) لتقسيم المهمة المعقدة إلى خطوات صغيرة.
+    3.  **التنفيذ الذكي (Execution)**: يدير تنفيذ الخطوات، ويراقب التبعيات (لا يبني السقف قبل الأعمدة!).
+    4.  **المرونة (Resilience)**: يتعامل مع الأخطاء بذكاء، ويقرر متى يعيد المحاولة ومتى يعلن الفشل.
+
+    Why this class is simple yet powerful:
+    It uses a robust State Machine loop (`_run_lifecycle_loop`) to decouple "Thinking" from "Acting",
+    allowing the agent to pause, reflect, and resume at any time.
     """
 
     def __init__(self, state_manager: MissionStateManager, executor: TaskExecutor):
         """
-        Initialize the Orchestrator with its dependencies.
+        تهيئة العقل المدبر.
 
         Args:
-            state_manager (MissionStateManager): Handles persistence and state transitions of missions/tasks.
-            executor (TaskExecutor): The "Hands" of the system, responsible for actually running the tasks (e.g., generating code, running tests).
+            state_manager: مدير الذاكرة (يحفظ حالة المهمة والخطوات).
+            executor: الذراع المنفذة (تقوم بتنفيذ الأوامر فعلياً).
         """
         self.state = state_manager
         self.executor = executor
 
-    async def run_mission(self, mission_id: int):
+    async def run_mission(self, mission_id: int) -> None:
         """
-        Main entry point for the Async Mission Lifecycle.
+        نقطة الانطلاق الرئيسية للمهمة.
+        Main entry point.
         """
         try:
             mission = await self.state.get_mission(mission_id)
             if not mission:
-                logger.error(f"Mission {mission_id} not found.")
+                logger.error(f"Mission {mission_id} not found in memory.")
                 return
 
+            # تشغيل حلقة الحياة (The Lifecycle Loop)
             await self._run_lifecycle_loop(mission_id)
+
         except Exception as e:
-            logger.exception(f"Catastrophic failure in Mission {mission_id}")
-            await self.state.update_mission_status(
-                mission_id, MissionStatus.FAILED, note=f"Fatal Error: {e}"
-            )
-            await self.state.log_event(
-                mission_id,
-                MissionEventType.MISSION_FAILED,
-                {"error": str(e), "reason": "catastrophic_crash"},
-            )
+            logger.exception(f"Fatal error in Mission {mission_id}")
+            await self._handle_catastrophic_failure(mission_id, e)
 
-    async def _run_lifecycle_loop(self, mission_id: int):
-        # Configuration
-        MAX_TICKS = 1500
-        POLL_INTERVAL = 0.5
+    async def _run_lifecycle_loop(self, mission_id: int) -> None:
+        """
+        حلقة الذكاء والتنفيذ.
+        The Brain Loop: Observe -> Orient -> Decide -> Act.
+        """
+        # إعدادات الحلقة (يمكن جعلها ديناميكية لاحقاً)
+        MAX_CYCLES = 2000  # أقصى عدد دورات لتجنب الحلقات اللانهائية
+        CYCLE_DELAY = 0.5  # استراحة قصيرة للتنفس (seconds)
 
-        for _ in range(MAX_TICKS):
-            # 1. Refresh State
+        logger.info(f"Overmind: Starting cognitive loop for Mission {mission_id}")
+
+        for cycle in range(MAX_CYCLES):
+            # 1. الملاحظة (Observe): جلب أحدث حالة للمهمة
             mission = await self.state.get_mission(mission_id)
             if not mission:
+                logger.warning("Mission disappeared from memory.")
                 break
 
             status = mission.status
+            logger.debug(f"Cycle {cycle}: Mission Status = {status}")
 
-            # 2. State Machine
+            # 2. القرار (Decide & Act): اتخاذ إجراء بناءً على الحالة
             if status == MissionStatus.PENDING:
+                # المهمة جديدة، يجب البدء بالتخطيط
                 await self._phase_planning(mission)
 
             elif status == MissionStatus.PLANNING:
-                # Wait for planning (if we offload it, but here we do it inline usually)
-                await asyncio.sleep(POLL_INTERVAL)
+                # ننتظر انتهاء التخطيط (في حال كان غير متزامن)
+                await asyncio.sleep(CYCLE_DELAY)
 
             elif status == MissionStatus.PLANNED:
+                # الخطة جاهزة، لنبدأ التنفيذ
                 await self._phase_prepare_execution(mission)
 
             elif status == MissionStatus.RUNNING:
-                all_done = await self._phase_execution_step(mission)
-                if all_done:
-                    break
-                await asyncio.sleep(POLL_INTERVAL)
+                # التنفيذ جارٍ، تحقق من التقدم
+                is_finished = await self._phase_execution_monitor(mission)
+                if is_finished:
+                    break  # انتهينا!
+                await asyncio.sleep(CYCLE_DELAY)
 
             elif status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
-                logger.info(f"Mission {mission_id} reached terminal state: {status}")
+                # حالات النهاية
+                logger.info(f"Mission {mission_id} finished with state: {status}")
                 break
 
             else:
-                await asyncio.sleep(POLL_INTERVAL)
+                # حالة غير معروفة، ننتظر قليلاً
+                await asyncio.sleep(CYCLE_DELAY)
 
-    async def _phase_planning(self, mission: Mission):
+    async def _phase_planning(self, mission: Mission) -> None:
+        """
+        مرحلة التخطيط: تحويل الهدف إلى خطة عمل.
+        """
+        logger.info(f"Overmind: Planning for Mission {mission.id}...")
         await self.state.update_mission_status(
-            mission.id, MissionStatus.PLANNING, "Starting Planning Phase"
+            mission.id, MissionStatus.PLANNING, "Thinking... (Generating Plan)"
         )
 
-        # Select Planner
+        # البحث عن مخططين أذكياء
         planners = get_all_planners()
         if not planners:
             await self.state.update_mission_status(
-                mission.id, MissionStatus.FAILED, "No planners available"
+                mission.id, MissionStatus.FAILED, "Error: No brain (planner) found!"
             )
             return
 
-        # Simple logic: Pick the first available one or highest score (Mock logic for now)
-        # In a real Hyper-Advanced system, we'd run them in parallel.
+        # اختيار المخطط الأول (يمكن تطويره ليختار الأذكى بناءً على نوع المهمة)
         planner = planners[0]
 
         try:
-            # Use Async generation if available
+            # تنفيذ التخطيط (قد يستغرق وقتاً)
+            # ندعم التخطيط المتزامن وغير المتزامن بمرونة فائقة
             if hasattr(planner, "a_instrumented_generate"):
                 result = await planner.a_instrumented_generate(mission.objective)
             else:
-                # Fallback to sync in thread
                 loop = asyncio.get_running_loop()
                 result = await loop.run_in_executor(
                     None, planner.instrumented_generate, mission.objective
@@ -135,19 +149,19 @@ class OvermindOrchestrator:
             plan_schema = result["plan"]
             meta = result["meta"]
 
-            # Persist
+            # حفظ الخطة في الذاكرة
             await self.state.persist_plan(
                 mission.id,
-                planner_name=getattr(planner, "name", "unknown"),
+                planner_name=getattr(planner, "name", "Unknown Planner"),
                 plan_schema=plan_schema,
                 score=meta.get("selection_score", 1.0),
-                rationale="Selected via Orchestrator V2",
+                rationale="Selected by Overmind Intelligence",
             )
 
+            # الانتقال للمرحلة التالية
             await self.state.update_mission_status(
-                mission.id, MissionStatus.PLANNED, "Plan generated successfully"
+                mission.id, MissionStatus.PLANNED, "Plan Ready. Engaging engines."
             )
-
             await self.state.log_event(
                 mission.id,
                 MissionEventType.PLAN_SELECTED,
@@ -157,81 +171,116 @@ class OvermindOrchestrator:
         except Exception as e:
             logger.error(f"Planning failed: {e}")
             await self.state.update_mission_status(
-                mission.id, MissionStatus.FAILED, f"Planning Exception: {e}"
+                mission.id, MissionStatus.FAILED, f"Planning Brain Failure: {e}"
             )
 
-    async def _phase_prepare_execution(self, mission: Mission):
+    async def _phase_prepare_execution(self, mission: Mission) -> None:
+        """
+        التحضير للإطلاق.
+        """
+        logger.info(f"Overmind: Engaging execution engines for Mission {mission.id}")
         await self.state.update_mission_status(
             mission.id, MissionStatus.RUNNING, "Execution Started"
         )
         await self.state.log_event(mission.id, MissionEventType.EXECUTION_STARTED, {})
 
-    async def _phase_execution_step(self, mission: Mission) -> bool:
+    async def _phase_execution_monitor(self, mission: Mission) -> bool:
         """
-        Executes ready tasks. Returns True if mission is finished.
+        مراقب التنفيذ: يراقب المهام، يحدد ما هو جاهز للتنفيذ، ويعالج النتائج.
+        Returns:
+            True if mission is complete (Success or Fail).
+            False if mission is still running.
         """
         tasks = await self.state.get_tasks(mission.id)
 
-        # Check Terminal Conditions
-        pending = [t for t in tasks if t.status == TaskStatus.PENDING]
-        running = [t for t in tasks if t.status == TaskStatus.RUNNING]
-        failed = [t for t in tasks if t.status == TaskStatus.FAILED]
+        # تصنيف المهام حسب حالتها
+        pending_tasks = [t for t in tasks if t.status == TaskStatus.PENDING]
+        running_tasks = [t for t in tasks if t.status == TaskStatus.RUNNING]
+        failed_tasks = [t for t in tasks if t.status == TaskStatus.FAILED]
 
-        if not pending and not running:
-            if failed:
+        # 1. التحقق من شروط النهاية (Terminal Conditions)
+        if not pending_tasks and not running_tasks:
+            if failed_tasks:
+                # انتهت كل المهام وهناك فشل
                 await self.state.update_mission_status(
-                    mission.id, MissionStatus.FAILED, f"{len(failed)} tasks failed."
-                )
-                await self.state.log_event(
-                    mission.id, MissionEventType.MISSION_FAILED, {"failed_count": len(failed)}
+                    mission.id, MissionStatus.FAILED, f"Mission Failed: {len(failed_tasks)} tasks failed."
                 )
             else:
+                # انتهت كل المهام بنجاح!
                 await self.state.update_mission_status(
-                    mission.id, MissionStatus.SUCCESS, "All tasks completed."
+                    mission.id, MissionStatus.SUCCESS, "Mission Accomplished successfully."
                 )
                 await self.state.log_event(mission.id, MissionEventType.MISSION_COMPLETED, {})
             return True
 
-        # Identify Ready Tasks (Topological)
-        # A task is ready if PENDING and all deps are SUCCESS
+        # 2. تحديد المهام الجاهزة للتنفيذ (Topological Sort Logic)
+        # المهمة جاهزة فقط إذا انتهت كل المهام التي تعتمد عليها بنجاح
         task_map = {t.task_key: t for t in tasks}
+        ready_to_run = []
 
-        ready_tasks = []
-        for t in pending:
-            deps = t.depends_on_json or []
-            deps_met = True
-            for d in deps:
-                parent = task_map.get(d)
-                if not parent or parent.status != TaskStatus.SUCCESS:
-                    deps_met = False
+        for task in pending_tasks:
+            dependencies = task.depends_on_json or []
+            can_run = True
+            for dep_key in dependencies:
+                parent_task = task_map.get(dep_key)
+                # إذا لم نجد المهمة الأب أو لم تنته بنجاح، لا يمكننا البدء
+                if not parent_task or parent_task.status != TaskStatus.SUCCESS:
+                    can_run = False
                     break
 
-            if deps_met:
-                ready_tasks.append(t)
+            if can_run:
+                ready_to_run.append(task)
 
-        # Execute Batch (Async Parallel)
-        MAX_PARALLEL = 5
-        batch = ready_tasks[:MAX_PARALLEL]
+        # 3. تشغيل المهام الجاهزة (Execution Batch)
+        # نحدد حداً أقصى للتوازي لتجنب استهلاك كل الموارد
+        MAX_PARALLEL_EXECUTION = 5
+        batch = ready_to_run[:MAX_PARALLEL_EXECUTION]
 
-        if not batch and not running:
-            # Stall detection?
-            pass
-
-        tasks_coroutines = []
-        for t in batch:
-            tasks_coroutines.append(self._execute_single_task(t))
-
-        if tasks_coroutines:
-            await asyncio.gather(*tasks_coroutines)
+        if batch:
+            logger.info(f"Overmind: Launching {len(batch)} tasks in parallel.")
+            # إطلاق المهام بشكل متزامن (Asynchronous Fire-and-Forget / Gather)
+            coroutines = [self._execute_single_task(t) for t in batch]
+            # نستخدم gather لانتظار هذه الدفعة (أو يمكن إطلاقها في الخلفية في أنظمة أعقد)
+            # هنا ننتظرها لتبسيط المنطق في هذه النسخة
+            await asyncio.gather(*coroutines)
 
         return False
 
-    async def _execute_single_task(self, task):
-        await self.state.mark_task_running(task.id)
+    async def _execute_single_task(self, task: Any) -> None:
+        """
+        تنفيذ مهمة واحدة وتحديث حالتها.
+        """
+        try:
+            # تحديث الحالة إلى "جار التنفيذ"
+            await self.state.mark_task_running(task.id)
 
-        res = await self.executor.execute_task(task)
+            # استدعاء المنفذ (Executor)
+            result = await self.executor.execute_task(task)
 
-        if res["status"] == "success":
-            await self.state.mark_task_complete(task.id, res["result_text"], res.get("meta", {}))
-        else:
-            await self.state.mark_task_failed(task.id, res.get("error", "Unknown error"))
+            # معالجة النتيجة
+            if result["status"] == "success":
+                await self.state.mark_task_complete(
+                    task.id,
+                    result_text=result["result_text"],
+                    meta=result.get("meta", {})
+                )
+            else:
+                error_msg = result.get("error", "Unknown Error")
+                await self.state.mark_task_failed(task.id, error_msg)
+
+        except Exception as e:
+            logger.error(f"Task Execution Crashed: {e}")
+            await self.state.mark_task_failed(task.id, f"Crash: {str(e)}")
+
+    async def _handle_catastrophic_failure(self, mission_id: int, error: Exception) -> None:
+        """
+        معالجة الانهيارات الكلية للمهمة.
+        """
+        await self.state.update_mission_status(
+            mission_id, MissionStatus.FAILED, f"System Crash: {error}"
+        )
+        await self.state.log_event(
+            mission_id,
+            MissionEventType.MISSION_FAILED,
+            {"error": str(error), "reason": "catastrophic_crash"},
+        )

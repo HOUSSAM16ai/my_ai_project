@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Final
 
-from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response

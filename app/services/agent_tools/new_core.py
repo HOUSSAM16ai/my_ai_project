@@ -1,11 +1,13 @@
 """
 Tool Decorator for easy registration (Application Layer).
 """
-from typing import Any
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from functools import wraps
+from typing import Any
+
 from app.services.agent_tools.domain.tool import StandardTool
 from app.services.agent_tools.infrastructure.registry import get_registry
+
 
 def tool(
     name: str,
