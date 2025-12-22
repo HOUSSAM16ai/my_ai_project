@@ -3,10 +3,9 @@ FastAPI dependencies for dependency injection.
 """
 from typing import Any as AIClient
 
-from app.services.agent_tools.infrastructure.registry import get_registry
-from app.services.agent_tools.new_core import tool
-from app.services.chat.orchestrator import ChatOrchestrator
 from app.core.protocols import ToolRegistryProtocol
+from app.services.agent_tools.infrastructure.registry import get_registry
+from app.services.chat.orchestrator import ChatOrchestrator
 
 
 def get_ai_client():

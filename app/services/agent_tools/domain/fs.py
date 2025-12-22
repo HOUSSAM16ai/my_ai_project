@@ -1,30 +1,35 @@
-"""
-File System Tools Implementation.
-"""
-import os
-import glob
-from pathlib import Path
-from typing import Any
-from app.services.agent_tools.new_core import tool
-import asyncio
+# app/services/agent_tools/domain/fs.py
+# =================================================================================================
+# FILE SYSTEM TOOLS – THE HANDS OF THE AGENT (أدوات نظام الملفات)
+# Version: 5.0.0-secure-optimized
+# =================================================================================================
 
-# Safety Configuration
+import asyncio
+import os
+
+from app.services.agent_tools.new_core import tool
+
+# Safety Configuration: حدود المشروع الآمنة
+# نمنع الوكيل من العبث بملفات النظام الحساسة
 PROJECT_ROOT = os.path.abspath(os.getenv("AGENT_TOOLS_PROJECT_ROOT", "/app"))
 
 def _safe_path(path: str) -> str:
     """
-    Sanitize and validate path to prevent directory traversal.
+    التحقق الأمني من المسار (Security Check).
+    يمنع هجمات Directory Traversal (مثل ../../../etc/passwd).
     """
-    # Normalize path
+    # تسوية المسار وحذف النقاط الزائدة
     target = os.path.abspath(os.path.join(PROJECT_ROOT, path))
 
-    # Check if target is within root
+    # التأكد أن المسار لا يزال داخل حدود المشروع
     if not target.startswith(PROJECT_ROOT):
-        raise PermissionError(f"Access denied: Path '{path}' is outside project root.")
+        raise PermissionError(f"Access denied: Path '{path}' is outside project root. Stay safe!")
 
     return target
 
-# Async Context Manager Wrapper
+# --- Async File Helper (مساعد الملفات غير المتزامن) ---
+# لتجنب تجميد النظام أثناء قراءة الملفات الكبيرة
+
 class AsyncFileContext:
     def __init__(self, path, mode):
         self.path = path
@@ -50,13 +55,13 @@ class AsyncFileContext:
         return await loop.run_in_executor(None, self.file.write, data)
 
 def asyncio_open(path: str, mode: str):
-    """Factory to return the async context manager."""
     return AsyncFileContext(path, mode)
 
+# --- The Tools (الأدوات) ---
 
 @tool(
     name="read_file",
-    description="Reads the content of a file.",
+    description="Reads the content of a file (قراءة محتوى ملف).",
     parameters={
         "type": "object",
         "properties": {
@@ -66,7 +71,9 @@ def asyncio_open(path: str, mode: str):
     }
 )
 async def read_file(path: str) -> str:
-    """Reads a file safely."""
+    """
+    قراءة ملف بأمان وسرعة.
+    """
     safe_target = _safe_path(path)
     if not os.path.exists(safe_target):
         raise FileNotFoundError(f"File not found: {path}")
@@ -77,7 +84,7 @@ async def read_file(path: str) -> str:
 
 @tool(
     name="write_file",
-    description="Writes content to a file (overwrites).",
+    description="Writes content to a file (كتابة أو إنشاء ملف).",
     parameters={
         "type": "object",
         "properties": {
@@ -88,10 +95,12 @@ async def read_file(path: str) -> str:
     }
 )
 async def write_file(path: str, content: str) -> str:
-    """Writes to a file safely."""
+    """
+    كتابة ملف بأمان (ينشئ المجلدات تلقائياً).
+    """
     safe_target = _safe_path(path)
 
-    # Ensure directory exists
+    # إنشاء المجلدات إذا لم تكن موجودة
     os.makedirs(os.path.dirname(safe_target), exist_ok=True)
 
     async with asyncio_open(safe_target, "w") as f:
@@ -101,7 +110,7 @@ async def write_file(path: str, content: str) -> str:
 
 @tool(
     name="list_files",
-    description="Lists files in a directory.",
+    description="Lists files in a directory (عرض الملفات).",
     parameters={
         "type": "object",
         "properties": {
@@ -110,28 +119,32 @@ async def write_file(path: str, content: str) -> str:
     }
 )
 async def list_files(path: str = ".") -> list[str]:
-    """Lists files safely."""
+    """
+    عرض قائمة الملفات بشكل متكرر (Recursive).
+    """
     safe_target = _safe_path(path)
 
     if not os.path.isdir(safe_target):
         raise NotADirectoryError(f"Not a directory: {path}")
 
-    # Use glob for simple listing or os.listdir
-    # Return relative paths for cleaner output
-    files = []
     loop = asyncio.get_running_loop()
 
     def _walk():
         result = []
+        # نستخدم os.walk للتجول داخل المجلدات الفرعية
         for root, _, filenames in os.walk(safe_target):
+            # نتجاهل مجلدات git و cache لتسريع العملية
+            if ".git" in root or "__pycache__" in root:
+                continue
+
             for filename in filenames:
                 full_path = os.path.join(root, filename)
                 rel_path = os.path.relpath(full_path, safe_target)
                 result.append(rel_path)
-                if len(result) > 1000:
-                    break
-            if len(result) > 1000:
-                break
+
+                # حماية من الانفجار في حالة المجلدات العملاقة
+                if len(result) > 2000:
+                    return result
         return result
 
     files = await loop.run_in_executor(None, _walk)

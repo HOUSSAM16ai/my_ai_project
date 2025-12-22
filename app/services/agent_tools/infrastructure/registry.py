@@ -2,9 +2,8 @@
 InMemory Tool Registry Implementation (Infrastructure Layer).
 """
 import logging
-from typing import Any
-from app.core.protocols import ToolRegistryProtocol, AgentTool
-from app.services.agent_tools.domain.tool import StandardTool
+
+from app.core.protocols import AgentTool, ToolRegistryProtocol
 
 logger = logging.getLogger(__name__)
 
