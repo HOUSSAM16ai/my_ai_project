@@ -4,18 +4,39 @@ target-version = "py312"
 exclude = ["legacy/flask", "migrations"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF"]
-# E501: Line too long
-# E402: Module level import not at top of file (scripts need sys.path.append first)
-# RUF001/2/3: Unicode characters (Arabic)
+# Selection of rules for "Supernatural Strictness" (CS50 2025 Standard)
+# E: pycodestyle errors
+# F: Pyflakes
+# I: isort
+# W: pycodestyle warnings
+# UP: pyupgrade (modern python syntax)
+# B: flake8-bugbear (common bugs)
+# C4: flake8-comprehensions
+# SIM: flake8-simplify
+# RUF: Ruff-specific rules
+# PL: Pylint (Strict code analysis)
+# N: pep8-naming (Strict naming conventions)
+# TID: flake8-tidy-imports
+# ARG: flake8-unused-arguments
+# PTH: flake8-use-pathlib
+# RET: flake8-return (Smart returns)
+select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF", "PL", "N", "TID", "ARG", "PTH", "RET"]
+
+# E501: Line too long (Managed by formatter, strict enforcement can reduce readability in docs)
+# E402: Module level import not at top (Needed for scripts)
+# RUF001/2/3: Unicode characters (Arabic docs trigger this)
+# PLR0913: Too many arguments (Allowed for dependency injection in FastAPI)
+# PLR2004: Magic value comparison (Common in checks)
 # B008: Do not perform function call `Depends` in argument defaults (FastAPI pattern)
-# B027: Empty method in abstract base class (Hooks pattern)
-# SIM117: Use a single `with` statement with multiple contexts (Avoid httpx bug)
-ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117"]
+# ARG001: Unused function argument (Common in overrides or strict signatures)
+ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "PLR0913", "PLR2004", "B008", "ARG001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.pylint]
+max-args = 10  # Allow more arguments for dependency injection
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

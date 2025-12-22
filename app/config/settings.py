@@ -221,7 +221,7 @@ class AppSettings(BaseSettings):
         """
         if isinstance(v, str) and not v.startswith("["):
             return [origin.strip() for origin in v.split(",")]
-        elif isinstance(v, list | str):
+        if isinstance(v, list | str):
             return v
         return []
 

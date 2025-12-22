@@ -1,3 +1,16 @@
+"""
+نواة الواقع الإدراكي (Cognitive Reality Kernel).
+
+هذه الوحدة تمثل نقطة الدخول المركزية لتطبيق FastAPI.
+تتبع معايير CS50 2025 في التصميم والتوثيق والنوعية.
+
+المسؤوليات:
+1. بناء التطبيق (Factory Pattern).
+2. إدارة التبعيات (Dependency Injection via Settings).
+3. تكوين البرمجيات الوسيطة (Middleware Configuration).
+4. توجيه المسارات (Routing Strategy).
+"""
+
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -18,44 +31,42 @@ from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddlewa
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 
+__all__ = ["RealityKernel"]
+
 logger = logging.getLogger(__name__)
 
 
 class RealityKernel:
     """
-    نواة الواقع الإدراكي - الإصدار الرابع (Cognitive Reality Weaver V4).
+    نواة الواقع الإدراكي - الإصدار الخامس (Cognitive Reality Weaver V5).
 
-    المعمارية (Architecture):
-    تم تصميم هذه النواة لتعمل بمثابة "المحرك المركزي" (Core Engine) الذي ينسق تدفق البيانات
-    والتحكم في النظام بأكمله. تم التخلي عن الطبقات الضمنية (Implicit Layers) لصالح التصميم الصريح (Explicit Design)
-    لضمان الاستقرار القوي (Robust Stability) وسهولة الصيانة (Maintainability).
+    تم تحديث المعمارية لتوافق مبادئ CS50 2025:
+    - صرامة عالية في الأنواع (Strict Typing).
+    - وضوح تام في المسؤوليات (Explicit Responsibilities).
+    - توثيق عربي احترافي (Professional Arabic Documentation).
 
-    المسؤوليات الجوهرية (Core Responsibilities):
-    1. **مصنع التطبيق (Application Factory)**: إنشاء وتكوين كائن `FastAPI` وفق معايير صارمة.
-    2. **حياكة البرمجيات الوسيطة (Middleware Weaving)**: دمج طبقات الحماية والأداء بترتيب دقيق لضمان أقصى درجات الأمان والكفاءة.
-    3. **إدارة دورة الحياة (Lifespan Management)**: التحكم المطلق في تهيئة الموارد عند التشغيل وتنظيفها عند الإيقاف.
-    4. **توجيه المسارات (Route Orchestration)**: ربط المكونات الوظيفية (Routers) بالنظام المركزي بشكل مباشر ومحكم.
-
-    المعايير (Standards):
-    - **الصرامة في النوع (Type Strictness)**: الاعتماد الكامل على `Type Hints`.
-    - **التوثيق الشامل (Comprehensive Documentation)**: توثيق دقيق لكل وظيفة.
-    - **الأمان أولاً (Security First)**: تفعيل الترويسات الأمنية وتقييد الوصول افتراضياً.
+    Attributes:
+        settings (AppSettings): إعدادات النظام التي تم التحقق منها.
+        app (FastAPI): كائن التطبيق الرئيسي.
     """
 
     def __init__(self, settings: AppSettings | dict[str, Any]) -> None:
         """
         تهيئة نواة الواقع وبناء التكوين الأساسي.
 
+        يقوم المُشيد (Constructor) بتحويل القاموس إلى كائن إعدادات صارم إذا لزم الأمر،
+        ثم يبدأ عملية بناء التطبيق.
+
         Args:
-            settings: مصفوفة التكوين الذكية (AppSettings) أو قاموس إعدادات (للتوافق القديم).
+            settings: إعدادات التطبيق. يفضل استخدام `AppSettings` مباشرة.
+                      دعم `dict` موجود للتوافق مع الأنظمة القديمة ولكن سيتم إزالته مستقبلاً.
         """
         # التحقق الذكي من التكوين وتحويله إذا لزم الأمر
         if isinstance(settings, dict):
-            self.settings_obj: AppSettings | None = None
-            self.settings_dict: dict[str, Any] = settings
+            # Legacy Support Warning could be added here
+            self.settings: AppSettings = AppSettings(**settings)
         else:
-            self.settings_obj = settings
-            self.settings_dict = settings.model_dump()
+            self.settings = settings
 
         # إنشاء التطبيق النقي (The Pristine App)
         self.app: Final[FastAPI] = self._create_pristine_app()
@@ -76,23 +87,43 @@ class RealityKernel:
         """
         إنشاء الهيكل الأساسي للتطبيق مع إعدادات دورة الحياة والوثائق.
 
+        يستخدم نمط `lifespan` لإدارة الموارد بدلاً من `on_event` القديمة.
+
         Returns:
             FastAPI: الكائن الأساسي للتطبيق قبل ربط المسارات.
         """
 
         @asynccontextmanager
-        async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
             """مدير دورة الحياة: ينظم عمليات بدء التشغيل والإيقاف."""
-            async for _ in self._handle_lifespan_events():
-                yield
+            # === [STARTUP] مرحلة الإطلاق ===
+            logger.info("🚀 CogniForge System Initializing... (بدء تشغيل النظام)")
+
+            # التحقق من قاعدة البيانات (يتم تخطيه في الاختبارات لتسريع التنفيذ)
+            if self.settings.ENVIRONMENT != "testing":
+                try:
+                    # التحقق الصارم من مخطط قاعدة البيانات
+                    await validate_schema_on_startup()
+                    logger.info("✅ Database Schema Validated (تم التحقق من مخطط قاعدة البيانات)")
+                except Exception as e:
+                    # نسجل التحذير ولكن لا نوقف النظام للسماح بالتشغيل الجزئي في حالات الطوارئ
+                    logger.warning(f"⚠️ Schema validation warning: {e}")
+
+            logger.info("✅ System Ready (النظام جاهز)")
+
+            yield  # نقطة تشغيل التطبيق (Serving Requests)
+
+            # === [SHUTDOWN] مرحلة الإغلاق ===
+            logger.info("👋 CogniForge System Shutting Down... (إيقاف النظام)")
 
         # تحديد بيئة التطوير لتفعيل الوثائق
-        is_dev: bool = self.settings_dict.get("ENVIRONMENT") == "development"
+        is_dev: bool = self.settings.ENVIRONMENT == "development"
 
         # تهيئة FastAPI مع البيانات الوصفية
         app = FastAPI(
-            title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),
-            version=self.settings_dict.get("VERSION", "v4.1-simplified"),
+            title=self.settings.PROJECT_NAME,
+            version=self.settings.VERSION,
+            description=self.settings.DESCRIPTION,
             docs_url="/docs" if is_dev else None,
             redoc_url="/redoc" if is_dev else None,
             lifespan=lifespan,
@@ -104,32 +135,6 @@ class RealityKernel:
 
         return app
 
-    async def _handle_lifespan_events(self) -> AsyncGenerator[None, None]:
-        """
-        معالجة أحداث النظام الحيوية (Startup & Shutdown).
-
-        ينفذ عمليات التحقق من صحة المخطط (Schema Validation) والاتصال بقاعدة البيانات.
-        """
-        # === [STARTUP] مرحلة الإطلاق ===
-        logger.info("🚀 CogniForge System Initializing... (بدء تشغيل النظام)")
-
-        # التحقق من قاعدة البيانات (يتم تخطيه في الاختبارات لتسريع التنفيذ)
-        if self.settings_dict.get("ENVIRONMENT") != "testing":
-            try:
-                # التحقق الصارم من مخطط قاعدة البيانات
-                await validate_schema_on_startup()
-                logger.info("✅ Database Schema Validated (تم التحقق من مخطط قاعدة البيانات)")
-            except Exception as e:
-                # نسجل التحذير ولكن لا نوقف النظام للسماح بالتشغيل الجزئي في حالات الطوارئ
-                logger.warning(f"⚠️ Schema validation warning: {e}")
-
-        logger.info("✅ System Ready (النظام جاهز)")
-
-        yield  # نقطة تشغيل التطبيق (Serving Requests)
-
-        # === [SHUTDOWN] مرحلة الإغلاق ===
-        logger.info("👋 CogniForge System Shutting Down... (إيقاف النظام)")
-
     def _configure_middleware(self, app: FastAPI) -> None:
         """
         تكوين حزمة البرمجيات الوسيطة (Middleware Stack) وفقاً لأفضل الممارسات الأمنية.
@@ -140,7 +145,7 @@ class RealityKernel:
         # 1. المضيف الموثوق (Trusted Host): الحماية من هجمات Host Header Injection
         app.add_middleware(
             TrustedHostMiddleware,
-            allowed_hosts=self.settings_dict.get("ALLOWED_HOSTS", [])
+            allowed_hosts=self.settings.ALLOWED_HOSTS
         )
 
         # 2. مشاركة المصادر عبر المنشأ (CORS): ضبط سياسات الوصول من المتصفح
@@ -150,7 +155,7 @@ class RealityKernel:
         app.add_middleware(SecurityHeadersMiddleware)
 
         # 4. تحديد المعدل (Rate Limiting): حماية النظام من الاستخدام المفرط (معطل في الاختبارات)
-        if self.settings_dict.get("ENVIRONMENT") != "testing":
+        if self.settings.ENVIRONMENT != "testing":
             app.add_middleware(RateLimitMiddleware)
 
         # 5. تنظيف الترويسات (Clean Headers): إزالة الترويسات التي قد تكشف معلومات حساسة أو تعيق الأداء
@@ -166,15 +171,16 @@ class RealityKernel:
         Args:
             app: التطبيق المراد تكوينه.
         """
-        raw_origins = self.settings_dict.get("BACKEND_CORS_ORIGINS", [])
-        allow_origins: list[str] = raw_origins if isinstance(raw_origins, list) else []
+        raw_origins = self.settings.BACKEND_CORS_ORIGINS
+        # Pydantic already ensures this is a list[str], but extra safety fits the strictness theme
+        allow_origins: list[str] = raw_origins
 
         # استخدام إعدادات افتراضية ذكية في حال عدم التحديد
         if not allow_origins:
-            if self.settings_dict.get("ENVIRONMENT") == "development":
+            if self.settings.ENVIRONMENT == "development":
                 allow_origins = ["*"]  # سماح كامل في بيئة التطوير
             else:
-                frontend_url = self.settings_dict.get("FRONTEND_URL")
+                frontend_url = self.settings.FRONTEND_URL
                 allow_origins = [frontend_url] if frontend_url else []
 
         app.add_middleware(
