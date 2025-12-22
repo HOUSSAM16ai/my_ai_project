@@ -19,6 +19,18 @@ exclude: |
 
 repos:
   # =============================================================================
+  # CRITICAL ASSETS PROTECTION - Infra Security
+  # =============================================================================
+  - repo: local
+    hooks:
+      - id: check-critical-assets
+        name: 🛡️ Check critical assets integrity
+        entry: python3 scripts/check_critical_assets.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # =============================================================================
   # BUILT-IN HOOKS - Basic File Hygiene
   # =============================================================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
