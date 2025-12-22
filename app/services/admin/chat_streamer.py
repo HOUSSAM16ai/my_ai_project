@@ -122,7 +122,7 @@ class AdminChatStreamer:
                         full_response.append(content_part)
                         # تغليف المحتوى في الهيكل المتوقع (OpenAI Style Delta)
                         chunk_data = {"choices": [{"delta": {"content": content_part}}]}
-                        yield f"event: delta\ndata: {json.dumps(chunk_data)}\n\n"
+                        yield f"data: {json.dumps(chunk_data)}\n\n"
 
             finally:
                 # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
@@ -131,7 +131,7 @@ class AdminChatStreamer:
 
             # 5. إشارة الانتهاء (Completion Signal)
             # تصل للعميل فوراً بفضل فصل عملية الحفظ
-            yield "event: done\ndata: [DONE]\n\n"
+            yield "data: [DONE]\n\n"
 
         except Exception as e:
             logger.error(f"🔥 Streaming error: {e}")
