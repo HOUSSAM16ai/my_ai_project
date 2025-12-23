@@ -7,7 +7,15 @@ Maintains 100% backward compatibility with the legacy monolith.
 Ultra Structural-Aware Sovereign Edition ++
 ===========================================
 """
+import asyncio
+import logging
+from typing import Any
 
+from app.services.agent_tools.domain.metrics import FileCountTool, ProjectMetricsTool
+from app.services.agent_tools.domain.context import ContextAwarenessTool
+from app.services.agent_tools.refactored.registry import get_tool_registry
+
+# Legacy Imports
 from .cognitive_tools import (
     generic_think,
     refine_text,
@@ -63,15 +71,62 @@ from .structural_tools import (
     reload_deep_struct_map,
 )
 
+logger = logging.getLogger(__name__)
 
 def get_registry():
     """
     Returns the tool registry.
     Added to support dependency injection in Overmind Factory.
     """
-    # For now, we return a dict or object that represents the registry
-    # In the future, this should return a ToolRegistryProtocol implementation
     return _TOOL_REGISTRY
+
+
+# ======================================================================================
+# New Tool Integration (Bridge)
+# ======================================================================================
+
+def _register_oo_tool_as_legacy(tool_instance):
+    """
+    Registers an OO Tool instance into the legacy functional registry.
+    Wraps the execute method.
+    """
+    async def wrapper(**kwargs):
+        # Tools execute method takes a dict context, but legacy calls with kwargs
+        # We need to adapt.
+        # Check if the tool expects 'context' or generic kwargs
+        return await tool_instance.execute(**kwargs)
+
+    # Register main name
+    _TOOL_REGISTRY[tool_instance.name] = wrapper
+
+    # Register aliases
+    for alias in tool_instance.config.aliases:
+        _TOOL_REGISTRY[alias] = wrapper
+        _ALIAS_INDEX[alias] = tool_instance.name
+
+    # Register in OO Registry as well
+    get_tool_registry().register(tool_instance)
+    logger.info(f"Bridged Tool Registered: {tool_instance.name}")
+
+
+# Initialize and Register New Tools
+_metrics_tool = ProjectMetricsTool()
+_file_count_tool = FileCountTool()
+_context_tool = ContextAwarenessTool()
+
+_register_oo_tool_as_legacy(_metrics_tool)
+_register_oo_tool_as_legacy(_file_count_tool)
+_register_oo_tool_as_legacy(_context_tool)
+
+# Explicitly expose functions for direct import if needed (though _TOOL_REGISTRY handles it)
+async def get_project_metrics_tool(**kwargs):
+    return await _metrics_tool.execute(**kwargs)
+
+async def count_files_tool(**kwargs):
+    return await _file_count_tool.execute(**kwargs)
+
+async def get_active_context_tool(**kwargs):
+    return await _context_tool.execute(**kwargs)
 
 
 # ======================================================================================
@@ -189,6 +244,7 @@ __all__ = [
     "code_search_lexical_tool",
     "code_search_semantic",
     "code_search_semantic_tool",
+    "count_files_tool", # New
     "delete_file",
     "delete_file_tool",
     "dispatch_tool",
@@ -202,6 +258,8 @@ __all__ = [
     "generic_think",
     # Legacy alias wrappers
     "generic_think_tool",
+    "get_active_context_tool", # New
+    "get_project_metrics_tool", # New
     "get_tool",
     "get_registry",
     "get_tools_schema",
