@@ -1,10 +1,22 @@
-"""Database - Database connection and session management."""
+"""
+محرك قاعدة البيانات (Database Engine).
+
+يقوم هذا الوحدة بإدارة الاتصال بقاعدة البيانات، وإنشاء الجلسات (Sessions)، والتحقق من المخطط (Schema Validation).
+تم تصميمه ليكون قوياً (Robust) وآمناً (Secure) مع دعم البيئات غير المتزامنة (Async) بشكل أساسي.
+
+المعايير المطبقة (Standards Applied):
+- CS50 2025: صرامة النوع والتوثيق (Type Strictness & Documentation).
+- Singleton Pattern: ضمان وجود محرك واحد.
+- Fail-Fast: التحقق من المخطط عند البدء.
+"""
+
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
+from typing import Any, Final
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.engine_factory import (
@@ -14,36 +26,44 @@ from app.core.engine_factory import (
 
 logger = logging.getLogger(__name__)
 
-# --- SINGLETON ENGINE CREATION ---
-# We strictly use the factory. No raw create_async_engine calls allowed.
-engine = create_unified_async_engine()
+__all__ = [
+    "AsyncSessionLocal",
+    "SessionLocal",
+    "async_session_factory",
+    "engine",
+    "get_db",
+    "get_sync_session",
+    "validate_schema_on_startup",
+]
 
-# --- SESSION FACTORY (ASYNC) ---
-# The core session factory used throughout the application for async DB access.
-async_session_factory = async_sessionmaker(
+
+# --- SINGLETON ENGINE CREATION (إنشاء المحرك المنفرد) ---
+# نستخدم المصنع بشكل صارم. لا يُسمح باستدعاء create_async_engine الخام.
+engine: Final[AsyncEngine] = create_unified_async_engine()
+
+# --- SESSION FACTORY (ASYNC) (مصنع الجلسات غير المتزامن) ---
+# المصنع الأساسي للجلسات المستخدم في جميع أنحاء التطبيق للوصول غير المتزامن لقاعدة البيانات.
+async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,  # Prevent attributes from being expired after commit, reducing DB roundtrips
-    autocommit=False,       # Explicit transaction management is safer
-    autoflush=False,        # Changes are not flushed to DB until flush() or commit() is called
+    expire_on_commit=False,  # منع انتهاء صلاحية السمات بعد الالتزام لتقليل الرحلات لقاعدة البيانات
+    autocommit=False,        # إدارة المعاملات الصريحة أكثر أماناً
+    autoflush=False,         # لا يتم إرسال التغييرات للقاعدة حتى يتم استدعاء flush() أو commit()
 )
 
-# Alias for backward compatibility with older parts of the codebase
+# اسم مستعار للتوافق مع الأجزاء القديمة من قاعدة الكود (Alias for backward compatibility)
 AsyncSessionLocal = async_session_factory
 
 
 # =============================================================================
 # 🛡️ SCHEMA VALIDATOR — فاحص تطابق Schema التلقائي
 # =============================================================================
-# يتحقق من تطابق schema الكود مع قاعدة البيانات
-# يكتشف الأعمدة المفقودة ويحاول إصلاحها تلقائياً
-# =============================================================================
 
 # قائمة الجداول المسموح بها (whitelist للأمان)
-_ALLOWED_TABLES = frozenset({"admin_conversations"})
+_ALLOWED_TABLES: Final[frozenset[str]] = frozenset({"admin_conversations"})
 
 # قائمة الأعمدة المطلوبة لكل جدول
-REQUIRED_SCHEMA = {
+REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
     "admin_conversations": {
         "columns": [
             "id",
@@ -63,17 +83,20 @@ REQUIRED_SCHEMA = {
 }
 
 
-async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
+async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:  # noqa: PLR0912
     """
-    🔍 التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
+    التحقق من تطابق Schema وإصلاح المشاكل تلقائياً (Schema Validation & Fix).
+
+    يقوم هذا التابع بفحص الجداول المحددة للتأكد من وجود كافة الأعمدة المطلوبة.
+    إذا تم تفعيل `auto_fix`، سيحاول تنفيذ استعلامات SQL محددة مسبقاً لإصلاح النقص.
 
     Args:
-        auto_fix: إذا كان True، يحاول إصلاح الأعمدة المفقودة تلقائياً
+        auto_fix (bool): تفعيل محاولة الإصلاح التلقائي للأعمدة المفقودة.
 
     Returns:
-        dict: نتائج الفحص والإصلاح
+        dict[str, Any]: تقرير بنتائج الفحص والإصلاح (الحالة، الأخطاء، الأعمدة المضافة).
     """
-    results = {
+    results: dict[str, Any] = {
         "status": "ok",
         "checked_tables": [],
         "missing_columns": [],
@@ -84,29 +107,29 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
     try:
         async with engine.connect() as conn:
             for table_name, schema_info in REQUIRED_SCHEMA.items():
-                # Security: validate table name against whitelist
+                # أمان: التحقق من اسم الجدول ضد القائمة البيضاء
                 if table_name not in _ALLOWED_TABLES:
                     logger.warning(f"⚠️ Skipping unknown table: {table_name}")
                     continue
 
                 results["checked_tables"].append(table_name)
 
-                # الحصول على الأعمدة الموجودة باستخدام parameterized query
+                # الحصول على الأعمدة الموجودة باستخدام استعلام آمن
                 try:
-                    # Check dialect to support both PostgreSQL and SQLite
                     dialect_name = conn.dialect.name
+                    existing_columns: set[str] = set()
+
                     if dialect_name == "sqlite":
-                        # SQLite PRAGMA doesn't support parameterized queries directly
-                        # Use text() with bound parameter for safer execution
-                        # Note: table_name is already validated against _ALLOWED_TABLES whitelist
+                        # SQLite PRAGMA لا يدعم المعاملات المقيدة (Parameterized) مباشرة
+                        # لكن table_name تم التحقق منه مسبقاً ضد القائمة البيضاء
                         result = await conn.execute(
                             text("SELECT * FROM pragma_table_info(:table_name)"),
                             {"table_name": table_name},
                         )
-                        # Row format: (cid, name, type, notnull, dflt_value, pk)
+                        # التنسيق: (cid, name, type, notnull, dflt_value, pk)
                         existing_columns = {row[1] for row in result.fetchall()}
                     else:
-                        # Default to PostgreSQL standard information_schema
+                        # الافتراضي: معيار PostgreSQL information_schema
                         result = await conn.execute(
                             text(
                                 "SELECT column_name FROM information_schema.columns "
@@ -134,7 +157,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                         for col in missing:
                             if col in auto_fix_queries:
                                 try:
-                                    # SQL is predefined, not from user input
+                                    # SQL آمن ومحدد مسبقاً
                                     await conn.execute(text(auto_fix_queries[col]))
                                     logger.info(f"✅ Added missing column: {table_name}.{col}")
                                     results["fixed_columns"].append(f"{table_name}.{col}")
@@ -149,7 +172,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
                                     logger.error(f"❌ {error_msg}")
                                     results["errors"].append(error_msg)
 
-            # Commit التغييرات
+            # تثبيت التغييرات (Commit) إذا تم إصلاح شيء
             if results["fixed_columns"]:
                 await conn.commit()
 
@@ -169,17 +192,16 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict:
 
 async def validate_schema_on_startup() -> None:
     """
-    🚀 فحص Schema عند بدء التطبيق.
+    فحص Schema عند بدء التطبيق (Startup Schema Check).
 
-    يُنفذ تلقائياً عند بدء التطبيق للتأكد من تطابق Schema.
-    يحاول إصلاح المشاكل البسيطة تلقائياً.
+    يُنفذ تلقائياً عند بدء تشغيل النواة للتأكد من سلامة هيكل قاعدة البيانات.
     """
-    logger.info("🔍 Validating database schema...")
+    logger.info("🔍 Validating database schema... (جاري فحص مخطط قاعدة البيانات)")
 
     results = await validate_and_fix_schema(auto_fix=True)
 
     if results["status"] == "ok":
-        logger.info("✅ Schema validation passed - all columns present")
+        logger.info("✅ Schema validation passed - all columns present (المخطط سليم)")
     elif results["fixed_columns"]:
         logger.warning(f"⚠️ Schema had issues but was auto-fixed: {results['fixed_columns']}")
     elif results["missing_columns"]:
@@ -195,35 +217,32 @@ async def validate_schema_on_startup() -> None:
 # =============================================================================
 # 🔧 SYNC SESSION SUPPORT (For Legacy/Background Services)
 # =============================================================================
-# Some services like master_agent_service.py use synchronous sessions
-# for background thread operations. This provides backward compatibility.
+# توفر هذه الطبقة توافقية مع الخدمات التي تعمل في الخلفية أو تستخدم خيوطاً متزامنة.
 
 _sync_engine = None
 _sync_session_factory = None
 
 
-def _get_sync_engine():
-    """Lazily create sync engine only when needed."""
-    global _sync_engine
+def _get_sync_engine() -> Any:
+    """إنشاء المحرك المتزامن بكسل (Lazily) عند الحاجة فقط."""
+    global _sync_engine  # noqa: PLW0603
     if _sync_engine is None:
-        from app.config.settings import get_settings
+        from app.config.settings import get_settings  # noqa: PLC0415
 
-        # 🧠 INTELLIGENT ROUTING: Use the central configuration cortex
-        # We fetch the URL from the settings, which has already been healed/sanitized for async.
-        # Now we reverse-engineer it for sync context.
+        # التوجيه الذكي: استخدام التكوين المركزي
         settings = get_settings()
-        db_url = settings.DATABASE_URL
+        db_url = str(settings.DATABASE_URL)
 
-        # Note: We still use the Sanitizer for the specific sync conversions
+        # استخدام المعقم للتحويل إلى الوضع المتزامن
         db_url = DatabaseURLSanitizer.sanitize(db_url, for_async=False)
 
-        # Convert async URL to sync if needed
+        # تحويل عناوين Async إلى Sync يدوياً إذا لزم الأمر
         if "postgresql+asyncpg" in db_url:
             db_url = db_url.replace("postgresql+asyncpg", "postgresql")
         elif "sqlite+aiosqlite" in db_url:
             db_url = db_url.replace("sqlite+aiosqlite", "sqlite")
 
-        # Reverse SSL params for psycopg2
+        # عكس إعدادات SSL لـ psycopg2
         db_url = DatabaseURLSanitizer.reverse_ssl_for_sync(db_url)
 
         connect_args = {}
@@ -234,9 +253,9 @@ def _get_sync_engine():
     return _sync_engine
 
 
-def _get_sync_session_factory():
-    """Lazily create sync session factory only when needed."""
-    global _sync_session_factory
+def _get_sync_session_factory() -> sessionmaker[Session]:
+    """إنشاء مصنع الجلسات المتزامن بكسل (Lazily)."""
+    global _sync_session_factory  # noqa: PLW0603
     if _sync_session_factory is None:
         _sync_session_factory = sessionmaker(
             bind=_get_sync_engine(),
@@ -249,14 +268,10 @@ def _get_sync_session_factory():
 
 class SessionLocal:
     """
-    🔧 COMPATIBILITY LAYER FOR SYNC SESSIONS
+    طبقة التوافق للجلسات المتزامنة (Sync Compatibility Layer).
 
-    This class provides a sync session factory interface that mimics
-    legacy synchronous patterns. It's used by:
-    - master_agent_service.py (background threads)
-    - Other legacy sync code
-
-    Usage:
+    توفر واجهة لإنشاء جلسات متزامنة تحاكي الأنماط القديمة.
+    الاستخدام:
         session = SessionLocal()
         try:
             # do work
@@ -266,14 +281,19 @@ class SessionLocal:
     """
 
     def __new__(cls) -> Session:
-        """Create and return a new sync session."""
+        """إنشاء وإرجاع جلسة متزامنة جديدة."""
         factory = _get_sync_session_factory()
         return factory()
 
 
 @contextmanager
-def get_sync_session():
-    """Context manager for sync sessions."""
+def get_sync_session() -> Any:
+    """
+    مدير سياق للجلسات المتزامنة (Context Manager).
+
+    يضمن فتح الجلسة، والالتزام بالتغييرات (Commit)، أو التراجع عند الخطأ (Rollback)،
+    ثم الإغلاق الآمن.
+    """
     session = SessionLocal()
     try:
         yield session
@@ -287,16 +307,16 @@ def get_sync_session():
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependency Injection provider for Database Sessions.
+    حاقن التبعية لجلسات قاعدة البيانات (Dependency Injection Provider).
 
-    This function is designed to be used with `Depends()` in FastAPI routes.
-    It guarantees:
-    1. A fresh session is created for each request.
-    2. The session is properly closed (returned to pool) even if errors occur.
-    3. Transactions are rolled back automatically on exceptions.
+    مصمم للاستخدام مع `Depends()` في مسارات FastAPI.
+    يضمن:
+    1. إنشاء جلسة جديدة لكل طلب.
+    2. إغلاق الجلسة بأمان حتى في حالة حدوث أخطاء.
+    3. التراجع التلقائي عن المعاملات (Rollback) عند الاستثناءات.
 
     Yields:
-        AsyncSession: An active SQLAlchemy async session.
+        AsyncSession: جلسة نشطة جاهزة للاستخدام.
     """
     async with async_session_factory() as session:
         try:

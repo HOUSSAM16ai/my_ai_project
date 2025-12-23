@@ -4,14 +4,15 @@ target-version = "py312"
 exclude = ["legacy/flask", "migrations"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF"]
-# E501: Line too long
+select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF", "PL", "N", "TID", "RET", "ARG"]
+# E501: Line too long (Often unavoidable with Arabic docs or URLs)
 # E402: Module level import not at top of file (scripts need sys.path.append first)
-# RUF001/2/3: Unicode characters (Arabic)
-# B008: Do not perform function call `Depends` in argument defaults (FastAPI pattern)
-# B027: Empty method in abstract base class (Hooks pattern)
-# SIM117: Use a single `with` statement with multiple contexts (Avoid httpx bug)
-ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117"]
+# RUF001/2/3: Unicode characters (Arabic text triggers this, so we ignore it to allow Arabic)
+# B008: Do not perform function call `Depends` in argument defaults (Standard FastAPI pattern)
+# B027: Empty method in abstract base class (Standard Hooks pattern)
+# SIM117: Use a single `with` statement with multiple contexts (Avoids httpx context issues)
+# PLR0913: Too many arguments (Factory patterns often require this)
+ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117", "PLR0913"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -22,6 +23,10 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --cov=app --cov-report=term-missing --cov-report=xml:reports/omega/coverage.xml"
+filterwarnings = [
+    "ignore:.*datetime.utcnow.*:DeprecationWarning",
+    "ignore:.*The 'app' shortcut.*:DeprecationWarning"
+]
 env = [
     "DATABASE_URL=sqlite+aiosqlite:///:memory:",
     "SECRET_KEY=test_secret_key_super_secure",
