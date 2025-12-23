@@ -1,0 +1,159 @@
+"""
+مدقق مخطط قاعدة البيانات (Database Schema Validator).
+
+هذا الملف مسؤول عن التحقق من صحة جداول قاعدة البيانات وإصلاحها تلقائياً عند بدء التشغيل.
+تم فصله عن `database.py` تطبيقاً لمبدأ المسؤولية الواحدة (SRP).
+
+المعايير (Standards):
+- CS50 2025: توثيق عربي شامل.
+- Fail-Fast: كشف الأخطاء مبكراً.
+"""
+
+import logging
+from typing import Any, Final
+
+from sqlalchemy import text
+
+from app.core.database import engine
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["validate_schema_on_startup"]
+
+# =============================================================================
+# 🛡️ إعدادات المخطط (Schema Configuration)
+# =============================================================================
+
+# قائمة الجداول المسموح بها (whitelist للأمان)
+_ALLOWED_TABLES: Final[frozenset[str]] = frozenset({"admin_conversations"})
+
+# قائمة الأعمدة المطلوبة لكل جدول
+REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
+    "admin_conversations": {
+        "columns": [
+            "id",
+            "title",
+            "user_id",
+            "conversation_type",
+            "linked_mission_id",
+            "created_at",
+        ],
+        "auto_fix": {
+            "linked_mission_id": 'ALTER TABLE "admin_conversations" ADD COLUMN IF NOT EXISTS "linked_mission_id" INTEGER'
+        },
+        "indexes": {
+            "linked_mission_id": 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
+        },
+    }
+}
+
+
+async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:  # noqa: PLR0912
+    """
+    التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
+
+    Args:
+        auto_fix (bool): تفعيل محاولة الإصلاح التلقائي.
+
+    Returns:
+        dict[str, Any]: تقرير بالنتيجة.
+    """
+    results: dict[str, Any] = {
+        "status": "ok",
+        "checked_tables": [],
+        "missing_columns": [],
+        "fixed_columns": [],
+        "errors": [],
+    }
+
+    try:
+        async with engine.connect() as conn:
+            for table_name, schema_info in REQUIRED_SCHEMA.items():
+                if table_name not in _ALLOWED_TABLES:
+                    continue
+
+                results["checked_tables"].append(table_name)
+
+                try:
+                    dialect_name = conn.dialect.name
+                    existing_columns: set[str] = set()
+
+                    if dialect_name == "sqlite":
+                        result = await conn.execute(
+                            text("SELECT * FROM pragma_table_info(:table_name)"),
+                            {"table_name": table_name},
+                        )
+                        existing_columns = {row[1] for row in result.fetchall()}
+                    else:
+                        result = await conn.execute(
+                            text(
+                                "SELECT column_name FROM information_schema.columns "
+                                "WHERE table_name = :table_name"
+                            ),
+                            {"table_name": table_name},
+                        )
+                        existing_columns = {row[0] for row in result.fetchall()}
+                except Exception as e:
+                    results["errors"].append(f"Error checking table {table_name}: {e}")
+                    continue
+
+                required_columns = set(schema_info.get("columns", []))
+                missing = required_columns - existing_columns
+
+                if missing:
+                    results["missing_columns"].extend([f"{table_name}.{col}" for col in missing])
+
+                    if auto_fix:
+                        auto_fix_queries = schema_info.get("auto_fix", {})
+                        index_queries = schema_info.get("indexes", {})
+
+                        for col in missing:
+                            if col in auto_fix_queries:
+                                try:
+                                    await conn.execute(text(auto_fix_queries[col]))
+                                    logger.info(f"✅ Added missing column: {table_name}.{col}")
+                                    results["fixed_columns"].append(f"{table_name}.{col}")
+
+                                    if col in index_queries:
+                                        await conn.execute(text(index_queries[col]))
+                                        logger.info(f"✅ Created index for: {table_name}.{col}")
+
+                                except Exception as e:
+                                    error_msg = f"Failed to fix {table_name}.{col}: {e}"
+                                    logger.error(f"❌ {error_msg}")
+                                    results["errors"].append(error_msg)
+
+            if results["fixed_columns"]:
+                await conn.commit()
+
+    except Exception as e:
+        results["status"] = "error"
+        results["errors"].append(f"Schema validation failed: {e}")
+        logger.error(f"❌ Schema validation error: {e}")
+
+    if results["errors"]:
+        results["status"] = "error"
+    elif results["missing_columns"] and not results["fixed_columns"]:
+        results["status"] = "warning"
+
+    return results
+
+
+async def validate_schema_on_startup() -> None:
+    """
+    فحص Schema عند بدء التطبيق.
+    """
+    logger.info("🔍 Validating database schema... (جاري فحص مخطط قاعدة البيانات)")
+
+    results = await validate_and_fix_schema(auto_fix=True)
+
+    if results["status"] == "ok":
+        logger.info("✅ Schema validation passed (المخطط سليم)")
+    elif results["fixed_columns"]:
+        logger.warning(f"⚠️ Schema auto-fixed: {results['fixed_columns']}")
+    elif results["missing_columns"]:
+        logger.error(f"❌ CRITICAL: Missing columns: {results['missing_columns']}")
+
+    if results["errors"]:
+        for error in results["errors"]:
+            logger.error(f"   Error: {error}")
