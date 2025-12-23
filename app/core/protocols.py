@@ -3,6 +3,7 @@ Core Protocols & Interfaces
 Defines abstract base classes and protocols for the application.
 """
 from typing import Any, Protocol, runtime_checkable
+from collections.abc import Awaitable
 
 
 @runtime_checkable
@@ -76,15 +77,54 @@ class AgentMemory(Protocol):
 @runtime_checkable
 class AgentPlanner(Protocol):
     """
+    بروتوكول المخطط الاستراتيجي.
     Protocol for high-level planning.
     """
-    async def create_plan(self, objective: str) -> dict[str, Any]:
+    @property
+    def name(self) -> str:
+        ...
+
+    async def create_plan(self, objective: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        """
+        Creates a comprehensive execution plan based on the objective.
+        """
         ...
 
 @runtime_checkable
 class AgentExecutor(Protocol):
     """
-    Protocol for executing plans.
+    بروتوكول المنفذ التشغيلي.
+    Protocol for executing plans and tasks.
     """
-    async def execute_plan(self, plan: dict[str, Any]) -> Any:
+    @property
+    def name(self) -> str:
+        ...
+
+    async def execute_task(self, task: Any) -> dict[str, Any]:
+        """
+        Executes a specific task using available tools.
+        """
+        ...
+
+@runtime_checkable
+class AgentReflector(Protocol):
+    """
+    بروتوكول الناقد والمدقق (The Critic/Auditor).
+    Responsible for reviewing plans and execution results for accuracy and safety.
+    """
+    @property
+    def name(self) -> str:
+        ...
+
+    async def critique_plan(self, plan: dict[str, Any], objective: str) -> dict[str, Any]:
+        """
+        Reviews a plan for potential flaws or optimizations.
+        Returns a critique result (valid: bool, feedback: str).
+        """
+        ...
+
+    async def verify_execution(self, task: Any, result: dict[str, Any]) -> dict[str, Any]:
+        """
+        Verifies if the execution result matches the task expectations.
+        """
         ...
