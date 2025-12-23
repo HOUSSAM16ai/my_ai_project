@@ -24,7 +24,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 # Explicit Import of Routers to ensure Fast Failure if dependencies are missing
 from app.api.routers import admin, crud, data_mesh, observability, security, system
 from app.config.settings import AppSettings
-from app.core.database import validate_schema_on_startup
+from app.core.db_schema import validate_schema_on_startup
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware

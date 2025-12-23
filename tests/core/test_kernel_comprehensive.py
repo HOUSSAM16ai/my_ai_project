@@ -96,7 +96,7 @@ class TestRealityKernel:
         lifespan_gen = kernel._handle_lifespan_events()
 
         # STARTUP
-        with patch("app.core.database.validate_schema_on_startup") as mock_validate:
+        with patch("app.core.db_schema.validate_schema_on_startup") as mock_validate:
              await anext(lifespan_gen)
              # In testing environment, validate_schema might be skipped or mocked
              # The code says: if env != testing: validate...
