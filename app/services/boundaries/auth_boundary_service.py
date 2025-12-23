@@ -1,7 +1,13 @@
 """
-Authentication Boundary Service
-Acts as a facade for authentication operations, orchestrating business logic.
-Follows the Boundary Service pattern from the Admin Router refactoring.
+خدمة حدود المصادقة (Auth Boundary Service).
+
+تمثل هذه الخدمة الواجهة الموحدة (Facade) لعمليات المصادقة، حيث تقوم بتنسيق منطق الأعمال
+بين طبقة العرض (Router) وطبقة البيانات (Persistence).
+
+المعايير المطبقة (Standards Applied):
+- CS50 2025: توثيق عربي احترافي، صرامة في الأنواع.
+- SOLID: فصل المسؤوليات (Separation of Concerns).
+- Security First: تكامل مع درع الدفاع الزمني (Chrono-Kinetic Defense Shield).
 """
 
 from __future__ import annotations
@@ -20,14 +26,26 @@ from app.services.security.auth_persistence import AuthPersistence
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["AuthBoundaryService"]
+
 
 class AuthBoundaryService:
     """
-    Boundary Service for Authentication operations.
-    Orchestrates authentication logic and delegates data access to AuthPersistence.
+    خدمة حدود المصادقة (Auth Boundary Service).
+
+    المسؤوليات:
+    - تنسيق عمليات تسجيل الدخول والتسجيل.
+    - إدارة الرموز المميزة (JWT Management).
+    - حماية النظام باستخدام درع كرونو (Chrono Shield Integration).
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
+        """
+        تهيئة خدمة المصادقة.
+
+        Args:
+            db (AsyncSession): جلسة قاعدة البيانات غير المتزامنة.
+        """
         self.db = db
         self.persistence = AuthPersistence(db)
         self.settings = get_settings()
@@ -36,14 +54,29 @@ class AuthBoundaryService:
         self, full_name: str, email: str, password: str
     ) -> dict[str, Any]:
         """
-        Register a new user.
-        Returns formatted response for API.
+        تسجيل مستخدم جديد في النظام.
+
+        الخطوات:
+        1. التحقق من عدم وجود البريد الإلكتروني مسبقاً.
+        2. إنشاء المستخدم عبر طبقة البيانات.
+        3. إرجاع استجابة نجاح مهيئة.
+
+        Args:
+            full_name (str): الاسم الكامل.
+            email (str): البريد الإلكتروني.
+            password (str): كلمة المرور (سيتم تجزئتها).
+
+        Returns:
+            dict[str, Any]: تفاصيل العملية والمستخدم المسجل.
+
+        Raises:
+            HTTPException: في حال وجود البريد الإلكتروني مسبقاً (400).
         """
-        # Check if user already exists
+        # التحقق من وجود المستخدم
         if await self.persistence.user_exists(email):
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        # Create new user
+        # إنشاء مستخدم جديد (الافتراضي: ليس مسؤولاً)
         new_user = await self.persistence.create_user(
             full_name=full_name,
             email=email,
@@ -61,17 +94,28 @@ class AuthBoundaryService:
         self, email: str, password: str, request: Request
     ) -> dict[str, Any]:
         """
-        Authenticate a user via email/password and return a JWT token.
-        Protected by Chrono-Kinetic Defense Shield.
+        المصادقة على المستخدم وإصدار رمز الدخول (JWT).
+
+        هذه العملية محمية بواسطة درع الدفاع الزمني (Chrono-Kinetic Shield) لمنع هجمات التخمين.
+
+        Args:
+            email (str): البريد الإلكتروني.
+            password (str): كلمة المرور.
+            request (Request): كائن الطلب الحالي (لأغراض التتبع الأمني).
+
+        Returns:
+            dict[str, Any]: رمز الدخول (Access Token) وتفاصيل المستخدم.
+
+        Raises:
+            HTTPException: عند فشل المصادقة (401).
         """
-        # 0. Engage Chrono-Kinetic Defense Shield (Pre-Check)
+        # 0. تفعيل درع الدفاع الزمني (فحص السماحية)
         await chrono_shield.check_allowance(request, email)
 
-        # 1. Fetch User
+        # 1. جلب بيانات المستخدم
         user = await self.persistence.get_user_by_email(email)
 
-        # 2. Verify Password
-        # We perform verification even if user is None to mitigate Timing Attacks
+        # 2. التحقق من كلمة المرور (مع الحماية من هجمات التوقيت)
         is_valid = False
         if user:
             try:
@@ -80,20 +124,20 @@ class AuthBoundaryService:
                 logger.error(f"Password verification error for user {user.id}: {e}")
                 is_valid = False
         else:
-            # Phantom Verification: Burn CPU cycles to mask that the user wasn't found
+            # التحقق الشبحي: استهلاك موارد المعالج لإخفاء حقيقة عدم وجود المستخدم
             chrono_shield.phantom_verify(password)
             is_valid = False
 
         if not is_valid:
-            # Record the kinetic impact (Failure)
+            # تسجيل الأثر الحركي للفشل (Kinetic Impact)
             chrono_shield.record_failure(request, email)
             logger.warning(f"Failed login attempt for {email}")
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        # Success: Reset threat level for this target
+        # نجاح: إعادة تعيين مستوى التهديد لهذا الهدف
         chrono_shield.reset_target(email)
 
-        # 3. Generate JWT
+        # 3. توليد رمز JWT
         role = "admin" if user.is_admin else "user"
         payload = {
             "sub": str(user.id),
@@ -119,7 +163,16 @@ class AuthBoundaryService:
 
     async def get_current_user(self, token: str) -> dict[str, Any]:
         """
-        Get the current authenticated user's details from JWT token.
+        جلب بيانات المستخدم الحالي من رمز JWT.
+
+        Args:
+            token (str): رمز JWT الخام.
+
+        Returns:
+            dict[str, Any]: تفاصيل المستخدم.
+
+        Raises:
+            HTTPException: إذا كان الرمز غير صالح أو المستخدم غير موجود.
         """
         try:
             payload = jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
@@ -145,7 +198,16 @@ class AuthBoundaryService:
     @staticmethod
     def extract_token_from_request(request: Request) -> str:
         """
-        Extract JWT token from Authorization header.
+        استخراج رمز JWT من ترويسة التفويض (Authorization Header).
+
+        Args:
+            request (Request): طلب HTTP الوارد.
+
+        Returns:
+            str: الرمز المستخرج.
+
+        Raises:
+            HTTPException: إذا كانت الترويسة مفقودة أو التنسيق غير صحيح.
         """
         auth_header = request.headers.get("Authorization")
         if not auth_header:
