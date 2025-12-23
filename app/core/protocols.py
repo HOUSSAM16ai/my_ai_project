@@ -2,10 +2,8 @@
 Core Protocols & Interfaces
 Defines abstract base classes and protocols for the application.
 """
-from typing import Protocol, runtime_checkable
-
-# We define the interface here directly or import from a valid location
-# To fix the "ModuleNotFoundError: No module named 'app.core.interfaces'", we remove the bad import.
+from typing import Protocol, runtime_checkable, Any, Awaitable
+from collections.abc import Callable
 
 @runtime_checkable
 class BaseService(Protocol):
@@ -16,3 +14,42 @@ class BaseService(Protocol):
 class RepositoryProtocol(Protocol):
     """Base protocol for repositories."""
     pass
+
+@runtime_checkable
+class AgentPlanner(Protocol):
+    """Protocol for the Strategist Agent (Planning)."""
+    async def create_plan(self, objective: str, context: dict[str, Any]) -> dict[str, Any]:
+        """Creates a strategic plan based on the objective."""
+        ...
+
+@runtime_checkable
+class AgentArchitect(Protocol):
+    """Protocol for the Architect Agent (Design)."""
+    async def design_solution(self, plan: dict[str, Any]) -> dict[str, Any]:
+        """Creates a technical design/spec based on the plan."""
+        ...
+
+@runtime_checkable
+class AgentExecutor(Protocol):
+    """Protocol for the Operator Agent (Execution)."""
+    async def execute_tasks(self, design: dict[str, Any]) -> dict[str, Any]:
+        """Executes the tasks defined in the design."""
+        ...
+
+@runtime_checkable
+class AgentReflector(Protocol):
+    """Protocol for the Auditor Agent (Review/Critique)."""
+    async def review_work(self, result: dict[str, Any], original_objective: str) -> dict[str, Any]:
+        """Reviews the execution result against the objective."""
+        ...
+
+@runtime_checkable
+class CollaborationContext(Protocol):
+    """Protocol for shared state between agents."""
+    shared_memory: dict[str, Any]
+
+    def update(self, key: str, value: Any) -> None:
+        ...
+
+    def get(self, key: str) -> Any | None:
+        ...

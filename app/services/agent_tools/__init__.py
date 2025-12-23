@@ -64,6 +64,16 @@ from .structural_tools import (
 )
 
 
+def get_registry():
+    """
+    Returns the tool registry.
+    Added to support dependency injection in Overmind Factory.
+    """
+    # For now, we return a dict or object that represents the registry
+    # In the future, this should return a ToolRegistryProtocol implementation
+    return _TOOL_REGISTRY
+
+
 # ======================================================================================
 # Backwards Compatibility Function Aliases
 # ======================================================================================
@@ -193,6 +203,7 @@ __all__ = [
     # Legacy alias wrappers
     "generic_think_tool",
     "get_tool",
+    "get_registry",
     "get_tools_schema",
     "has_tool",
     # Core Tools
