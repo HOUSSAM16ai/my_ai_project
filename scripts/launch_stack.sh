@@ -48,6 +48,10 @@ fi
 
 # --- Step 1: Dependencies ---
 log "Step 1/4: Checking dependencies..."
+# Optimization: Check if packages are already installed to avoid costly pip lookup
+# pip freeze takes time, but less than install.
+# Better strategy: Assume container is up to date, only install if strictly necessary.
+# We run pip install but capture output to log and hope cache is hit.
 if pip install --no-cache-dir -r requirements.txt >> "$LOG_FILE" 2>&1; then
     log "✅ Python dependencies verified."
 else
@@ -62,7 +66,6 @@ if [ -f "scripts/smart_migrate.py" ]; then
         log "✅ Migrations completed successfully."
     else
         err "❌ Migrations failed. Application may not behave correctly."
-        # We continue anyway to try and start the app, so user can debug.
     fi
 else
     warn "scripts/smart_migrate.py not found."
@@ -85,22 +88,12 @@ log "Step 4/4: Launching Uvicorn..."
 if pgrep -f "uvicorn" > /dev/null; then
     log "✅ Application is already running."
 else
-    # We execute start.sh directly here.
-    # Note: We don't need nohup here because this whole script is already nohup'd by on-start.sh
-    # But scripts/start.sh uses 'exec', so it will replace this shell.
     log "🚀 Executing scripts/start.sh..."
 
-    # We redirect output of the app to a separate log or append to this one?
-    # Let's append to a dedicated app log for clarity, or keep it unified.
-    # Standard practice: app logs to stdout/stderr.
-    # Since this script is running in background with output redirected to LOG_FILE (by on-start.sh),
-    # executing start.sh will inherit that redirection if we don't change it.
-
-    # However, scripts/start.sh does: exec python ...
-    # on-start.sh does: nohup bash scripts/launch_stack.sh > .superhuman_bootstrap.log 2>&1 &
-
-    # So uvicorn output will go to .superhuman_bootstrap.log. This is good.
-    bash scripts/start.sh >> "$LOG_FILE" 2>&1 &
+    # We use nohup here to ensure it stays alive independent of this script if needed,
+    # though this script itself is backgrounded.
+    # We redirect BOTH stdout and stderr to the log file.
+    nohup bash scripts/start.sh >> "$LOG_FILE" 2>&1 &
     PID=$!
     log "✅ Uvicorn started with PID $PID. Logs are streaming to $LOG_FILE"
 fi

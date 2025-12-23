@@ -27,7 +27,9 @@
   "postStartCommand": "bash .devcontainer/on-start.sh",
 
   // 4. Post Attach: Orchestrate setup
-  "postAttachCommand": "/bin/bash scripts/setup_dev.sh",
+  // REMOVED: Blocking setup script caused catastrophic freezing.
+  // The environment is already bootstrapped by postStartCommand (on-start.sh).
+  // "postAttachCommand": "/bin/bash scripts/setup_dev.sh",
 
   // STRICT PORT CONFIGURATION
   // "forwardPorts" makes them available locally.

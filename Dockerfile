@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.12-slim as builder
+FROM python:3.12-slim-bookworm as builder
 
 WORKDIR /app
 
@@ -17,10 +17,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+# Install dependencies into a user-local directory to easily copy later
+# or install strictly to site-packages.
+# Using --user or target prefix might be cleaner, but standard install to system python in builder is fine
+# as we copy site-packages.
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Final Runtime
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
@@ -30,6 +34,7 @@ ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # Install runtime system dependencies
 # libpq-dev is needed for asyncpg/psycopg2
+# git/curl/procps are needed for VS Code extensions & health checks
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
@@ -41,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create app user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
+# Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
@@ -49,7 +55,9 @@ COPY . .
 # Grant permissions
 RUN chown -R appuser:appuser /app
 
-# Set default user (can be overridden by devcontainer)
+# Set default user (can be overridden by devcontainer.json remoteUser: root)
+# In production, this runs as appuser.
+# In Codespaces, devcontainer.json overrides this to root (usually).
 USER appuser
 
 # Standard port
