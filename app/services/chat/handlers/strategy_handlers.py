@@ -3,10 +3,13 @@ Intent handlers using Strategy pattern.
 """
 
 import logging
+import asyncio
 from collections.abc import AsyncGenerator
 
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
+from app.services.overmind.factory import create_overmind
+from app.models import Mission, MissionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -150,15 +153,58 @@ class DeepAnalysisHandler(IntentHandler):
 
 
 class MissionComplexHandler(IntentHandler):
-    """Handle complex mission requests."""
+    """Handle complex mission requests using Overmind."""
 
     def __init__(self):
         super().__init__("MISSION_COMPLEX", priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
-        """Execute complex mission."""
-        yield "🎯 مهمة معقدة قيد التنفيذ...\n\n"
-        yield "سيتم تنفيذ المهمة عبر Overmind\n"
+        """
+        Execute complex mission.
+        Creates a Mission DB entry and triggers the Overmind.
+        """
+        yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
+
+        if not context.session_factory:
+            yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
+            return
+
+        # 1. Create independent DB session
+        async with context.session_factory() as session:
+            # 2. Initialize Overmind
+            overmind = create_overmind(session)
+
+            # 3. Create Mission Record
+            mission = Mission(
+                objective=context.question,
+                status=MissionStatus.PENDING
+            )
+            session.add(mission)
+            await session.commit()
+            await session.refresh(mission)
+
+            yield f"🆔 رقم المهمة: `{mission.id}`\n"
+            yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+
+            # 4. Run Mission (Background Task in real app, but here we await for demo stream)
+            # To ensure 100% autonomy, we trust the run_mission loop.
+
+            # We wrap this in a task to avoid blocking if it takes long,
+            # but for the generator to yield updates, we might need a shared event stream.
+            # For simplicity in this step, we'll await it and report result.
+
+            try:
+                await overmind.run_mission(mission.id)
+                await session.refresh(mission)
+
+                if mission.status == MissionStatus.SUCCESS:
+                    yield "✅ **تمت المهمة بنجاح!**\n\n"
+                    # Retrieve result log if needed
+                else:
+                    yield f"⚠️ انتهت المهمة بحالة: {mission.status}\n"
+
+            except Exception as e:
+                yield f"❌ حدث خطأ قاتل أثناء التنفيذ: {e}\n"
 
 
 class HelpHandler(IntentHandler):
@@ -175,6 +221,7 @@ class HelpHandler(IntentHandler):
         yield "- كتابة ملف: `اكتب ملف path/to/file`\n"
         yield "- البحث: `ابحث عن query`\n"
         yield "- فهرسة: `فهرس المشروع`\n"
+        yield "- مهمة معقدة: (أي سؤال معقد سيتم تحويله للوكيل الخارق)\n"
 
 
 class DefaultChatHandler(IntentHandler):
