@@ -38,10 +38,17 @@ bcrypt.hashpw = _quantum_hashpw
 
 
 # Set environment variables for testing
+# IMPORTANT: These must be set BEFORE importing app modules to prevent
+# side-effects like connecting to a production DB during test collection.
 os.environ["ENVIRONMENT"] = "testing"
 # 🔐 SECURE KEY: Must be >= 32 chars for the new Genius Configuration Matrix
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
+# 🗄️ DATABASE URL: Use in-memory SQLite for tests to avoid external dependencies
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
+
+# Now it is safe to import app modules
 from app.core.database import get_db
 from app.core.engine_factory import create_unified_async_engine
 
@@ -96,7 +103,8 @@ def client(test_app):
 
 # --- Database Fixtures ---
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# We reuse the same URL logic
+TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_unified_async_engine(
     TEST_DATABASE_URL,
