@@ -117,6 +117,7 @@ class AdminChatStreamer:
                     conversation_id=conversation.id,
                     ai_client=ai_client,
                     history_messages=history,
+                    session_factory=session_factory_func,
                 ):
                     if content_part:
                         full_response.append(content_part)
