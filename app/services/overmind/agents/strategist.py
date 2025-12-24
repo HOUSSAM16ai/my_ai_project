@@ -16,7 +16,7 @@ from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
-from app.core.protocols import AgentPlanner
+from app.core.protocols import AgentPlanner, CollaborationContext
 
 logger = get_logger(__name__)
 
@@ -34,7 +34,7 @@ class StrategistAgent(AgentPlanner):
     def __init__(self, ai_client: AIClient) -> None:
         self.ai = ai_client
 
-    async def create_plan(self, objective: str, context: dict[str, Any]) -> dict[str, Any]:
+    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, Any]:
         """
         إنشاء خطة استراتيجية محكمة.
 
@@ -68,11 +68,12 @@ class StrategistAgent(AgentPlanner):
         }
         """
 
-        user_content = f"Objective: {objective}\nContext: {json.dumps(context, default=str)}"
+        # استخدام الذاكرة المشتركة لإثراء السياق
+        shared_data = context.shared_memory
+        user_content = f"Objective: {objective}\nContext: {json.dumps(shared_data, default=str)}"
 
         try:
             # استدعاء الذكاء الاصطناعي (محاكاة أو حقيقي حسب الـ AIClient)
-            # نفترض هنا أن AIClient يعيد JSON string نظيف
             response_text = await self.ai.send_message(
                 system_prompt=system_prompt,
                 user_message=user_content,
@@ -87,6 +88,8 @@ class StrategistAgent(AgentPlanner):
             if "steps" not in plan_data:
                 raise ValueError("Missing 'steps' in AI plan")
 
+            # تحديث الذاكرة المشتركة بالخطة
+            context.update("last_plan", plan_data)
             return plan_data
 
         except Exception as e:

@@ -18,6 +18,7 @@ from typing import Any, Protocol
 from pydantic import BaseModel, Field
 
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
+from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.models import Mission
 
 
@@ -86,6 +87,9 @@ class SuperBrain:
         """
         state = CognitiveState(mission_id=mission.id, objective=mission.objective)
 
+        # تحويل القاموس الأولي إلى كائن سياق تعاوني
+        collab_context = InMemoryCollaborationContext(context)
+
         async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
             if log_event:
                 await log_event(evt_type, data)
@@ -99,39 +103,37 @@ class SuperBrain:
                 await safe_log("phase_start", {"phase": "PLANNING", "agent": "Strategist"})
 
                 # الاستراتيجي يضع الخطة
-                state.plan = await self.strategist.create_plan(state.objective, context or {})
+                state.plan = await self.strategist.create_plan(state.objective, collab_context)
                 await safe_log("plan_created", {"plan_summary": "تم إنشاء الخطة بنجاح"})
 
                 # المدقق يراجع الخطة
                 await safe_log("phase_start", {"phase": "REVIEW_PLAN", "agent": "Auditor"})
-                critique = await self.auditor.review_work(state.plan, f"Plan for: {state.objective}")
+                critique = await self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context)
 
                 if not critique.get("approved"):
                     await safe_log("plan_rejected", {"critique": critique})
                     # حلقة التصحيح الذاتي (Self-Correction Loop)
                     state.current_phase = "RE-PLANNING"
                     # دمج الملاحظات في السياق للمحاولة التالية
-                    if context is None:
-                        context = {}
-                    context["feedback_from_previous_attempt"] = critique.get("feedback")
+                    collab_context.update("feedback_from_previous_attempt", critique.get("feedback"))
                     continue
 
                 await safe_log("plan_approved", {"critique": critique})
 
             # --- المرحلة 2: التصميم (Architect) ---
             await safe_log("phase_start", {"phase": "DESIGN", "agent": "Architect"})
-            state.design = await self.architect.design_solution(state.plan)
+            state.design = await self.architect.design_solution(state.plan, collab_context)
             await safe_log("design_created", {"design_summary": "تم وضع التصميم التقني"})
 
             # --- المرحلة 3: التنفيذ (Operator) ---
             await safe_log("phase_start", {"phase": "EXECUTION", "agent": "Operator"})
             # المنفذ يقوم بالعمل
-            state.execution_result = await self.operator.execute_tasks(state.design)
+            state.execution_result = await self.operator.execute_tasks(state.design, collab_context)
             await safe_log("execution_completed", {"status": "done"})
 
             # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
             await safe_log("phase_start", {"phase": "REFLECTION", "agent": "Auditor"})
-            state.critique = await self.auditor.review_work(state.execution_result, state.objective)
+            state.critique = await self.auditor.review_work(state.execution_result, state.objective, collab_context)
 
             if state.critique.get("approved"):
                 await safe_log("mission_success", {"result": state.execution_result})
@@ -141,9 +143,7 @@ class SuperBrain:
 
             # إعادة المحاولة بناءً على التغذية الراجعة
             state.current_phase = "RE-PLANNING"
-            if context is None:
-                context = {}
-            context["feedback_from_execution"] = state.critique.get("feedback")
+            collab_context.update("feedback_from_execution", state.critique.get("feedback"))
 
         # إذا وصلنا هنا، فقد فشلت المهمة بعد كل المحاولات
         error_msg = f"فشلت المهمة بعد {state.max_iterations} دورات من مجلس الحكمة."
