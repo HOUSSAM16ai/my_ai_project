@@ -22,7 +22,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 # استيراد الموجهات بشكل صريح لضمان الفشل السريع عند فقدان أي تبعية
 # Explicit Import of Routers to ensure Fast Failure if dependencies are missing
-from app.api.routers import admin, crud, data_mesh, observability, security, system
+from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -256,3 +256,6 @@ class RealityKernel:
 
         # 6. العمليات الأساسية (CRUD / API v1): الواجهة البرمجية العامة
         self.app.include_router(crud.router, prefix="/api/v1")
+
+        # 7. العقل المدبر (Overmind - Super Agent): واجهة الذكاء الخارق
+        self.app.include_router(overmind.router)
