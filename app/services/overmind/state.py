@@ -67,16 +67,18 @@ class MissionStateManager:
         result = await self.session.execute(stmt)
         mission = result.scalar_one_or_none()
         if mission:
+            old_status = str(mission.status)
             mission.status = status
             mission.updated_at = utc_now()
-            # If the model supports 'note', set it. Otherwise log it.
-            # Assuming logging via events is preferred if note field missing.
+
+            # Log the status change event (which now commits)
             await self.log_event(
                 mission_id,
                 MissionEventType.STATUS_CHANGE,
-                {"old_status": str(mission.status), "new_status": str(status), "note": note},
+                {"old_status": old_status, "new_status": str(status), "note": note},
             )
-            await self.session.flush()
+            # Explicit commit to ensure status update is visible
+            await self.session.commit()
 
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
@@ -88,7 +90,8 @@ class MissionStateManager:
             created_at=utc_now(),
         )
         self.session.add(event)
-        await self.session.flush()
+        # Commit immediately so the poller sees the event
+        await self.session.commit()
 
     async def persist_plan(
         self,
@@ -150,7 +153,7 @@ class MissionStateManager:
             )
             self.session.add(task_row)
 
-        await self.session.flush()
+        await self.session.commit()
         return mp
 
     async def get_tasks(self, mission_id: int) -> list[Task]:
