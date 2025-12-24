@@ -1,27 +1,28 @@
 """
 نواة الواقع الإدراكي (Reality Kernel).
 
-هذا الملف يمثل القلب النابض للنظام (The Beating Heart)، حيث يتم تجميع كافة المكونات
-الأساسية وبناء تطبيق FastAPI وفق معايير صارمة للأداء والأمان.
+هذا الملف يمثل القلب النابض للنظام (The Beating Heart) ومُنفذ (Evaluator) التطبيق.
+يعتمد منهجية SICP (جامعة بيركلي) في التركيب الوظيفي (Functional Composition) وفصل التجريد.
 
 المعايير المطبقة (Standards Applied):
+- SICP: حواجز التجريد (Abstraction Barriers)، البيانات ككود (Code as Data).
 - CS50 2025: صرامة النوع والتوثيق (Type Strictness & Documentation).
 - SOLID: مبادئ التصميم القوي (Robust Design).
-- Explicit is better than Implicit: الوضوح في التبعيات.
 """
 
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final
+from typing import Any, Final, TypeAlias
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
-# استيراد الموجهات بشكل صريح لضمان الفشل السريع عند فقدان أي تبعية
-# Explicit Import of Routers to ensure Fast Failure if dependencies are missing
+# استيراد الموجهات بشكل صريح
 from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
@@ -34,228 +35,219 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["RealityKernel"]
 
+# ==============================================================================
+# SICP: Data Abstraction (تجريد البيانات)
+# ==============================================================================
+
+# تعريف نوع MiddlewareSpec: (الفئة، المعاملات)
+MiddlewareSpec: TypeAlias = tuple[type[BaseHTTPMiddleware] | type[ASGIApp] | Any, dict[str, Any]]
+
+# تعريف نوع RouterSpec: (الموجه، البادئة)
+RouterSpec: TypeAlias = tuple[APIRouter, str]
+
+
+# ==============================================================================
+# SICP: Functional Core (الجوهر الوظيفي)
+# ==============================================================================
+
+def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
+    """
+    تكوين قائمة البرمجيات الوسيطة كبيانات وصفية (Declarative Data).
+
+    بدلاً من استدعاء الدوال بشكل إجرائي، نُعرف "ماذا نريد" كقائمة بيانات.
+
+    Args:
+        settings: إعدادات التطبيق.
+
+    Returns:
+        list[MiddlewareSpec]: قائمة المواصفات.
+    """
+    # تجهيز إعدادات CORS
+    raw_origins = settings.BACKEND_CORS_ORIGINS
+    allow_origins = raw_origins if raw_origins else ["*"]  # Fallback
+
+    # تجهيز المكدس (الترتيب مهم: من الخارج إلى الداخل)
+    stack: list[MiddlewareSpec] = [
+        # 1. المضيف الموثوق (Trusted Host)
+        (TrustedHostMiddleware, {"allowed_hosts": settings.ALLOWED_HOSTS}),
+
+        # 2. CORS
+        (CORSMiddleware, {
+            "allow_origins": allow_origins,
+            "allow_credentials": True,
+            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+            "allow_headers": ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"],
+            "expose_headers": ["Content-Length", "Content-Range"],
+        }),
+
+        # 3. ترويسات الأمان (Security Headers)
+        (SecurityHeadersMiddleware, {}),
+
+        # 4. تنظيف الترويسات (Clean Headers)
+        (RemoveBlockingHeadersMiddleware, {}),
+
+        # 5. ضغط البيانات (GZip)
+        (GZipMiddleware, {"minimum_size": 1000}),
+    ]
+
+    # إضافة تحديد المعدل فقط في غير بيئة الاختبار
+    if settings.ENVIRONMENT != "testing":
+        # ملاحظة: RateLimitMiddleware يجب أن يُضاف بعناية حسب تصميمه (إذا كان BaseHTTPMiddleware)
+        stack.insert(3, (RateLimitMiddleware, {}))
+
+    return stack
+
+
+def _get_router_registry() -> list[RouterSpec]:
+    """
+    سجل الموجهات (Router Registry) كبيانات.
+
+    Returns:
+        list[RouterSpec]: قائمة (الموجه، البادئة).
+    """
+    return [
+        (system.router, ""),
+        (admin.router, ""),
+        (security.router, "/api/security"),
+        (data_mesh.router, "/api/v1/data-mesh"),
+        (observability.router, "/api/observability"),
+        (crud.router, "/api/v1"),
+        (overmind.router, ""),
+    ]
+
+
+def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
+    """
+    Combinator: تطبيق قائمة الميدل وير على التطبيق.
+
+    هذا هو المعادل الوظيفي لحلقة تكرارية تقوم بـ 'add_middleware'.
+
+    Args:
+        app: تطبيق FastAPI.
+        stack: قائمة مواصفات الميدل وير.
+
+    Returns:
+        FastAPI: التطبيق بعد التعديل.
+    """
+    for mw_cls, mw_options in reversed(stack): # FastAPI applies in reverse order of addition
+        app.add_middleware(mw_cls, **mw_options)
+    return app
+
+
+def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
+    """
+    Combinator: ربط الموجهات بالتطبيق.
+
+    Args:
+        app: تطبيق FastAPI.
+        registry: سجل الموجهات.
+
+    Returns:
+        FastAPI: التطبيق بعد الربط.
+    """
+    for router, prefix in registry:
+        app.include_router(router, prefix=prefix)
+    return app
+
+
+# ==============================================================================
+# The Evaluator (مُنفذ النظام)
+# ==============================================================================
 
 class RealityKernel:
     """
-    نواة الواقع الإدراكي - الإصدار الرابع (Cognitive Reality Weaver V4).
+    نواة الواقع الإدراكي (Cognitive Reality Weaver).
 
-    المعمارية (Architecture):
-    تم تصميم هذه النواة لتعمل بمثابة "المحرك المركزي" (Core Engine) الذي ينسق تدفق البيانات
-    والتحكم في النظام بأكمله. تم التخلي عن الطبقات الضمنية (Implicit Layers) لصالح التصميم الصريح (Explicit Design)
-    لضمان الاستقرار القوي (Robust Stability) وسهولة الصيانة (Maintainability).
-
-    المسؤوليات الجوهرية (Core Responsibilities):
-    1. **مصنع التطبيق (Application Factory)**: إنشاء وتكوين كائن `FastAPI` وفق معايير صارمة.
-    2. **حياكة البرمجيات الوسيطة (Middleware Weaving)**: دمج طبقات الحماية والأداء بترتيب دقيق لضمان أقصى درجات الأمان والكفاءة.
-    3. **إدارة دورة الحياة (Lifespan Management)**: التحكم المطلق في تهيئة الموارد عند التشغيل وتنظيفها عند الإيقاف.
-    4. **توجيه المسارات (Route Orchestration)**: ربط المكونات الوظيفية (Routers) بالنظام المركزي بشكل مباشر ومحكم.
-
-    المعايير (Standards):
-    - **الصرامة في النوع (Type Strictness)**: الاعتماد الكامل على `Type Hints` الحديثة (Python 3.12+).
-    - **التوثيق الشامل (Comprehensive Documentation)**: توثيق دقيق لكل وظيفة باللغة العربية المهنية.
-    - **الأمان أولاً (Security First)**: تفعيل الترويسات الأمنية وتقييد الوصول افتراضياً.
+    تعمل هذه الفئة الآن كـ "مُنسق" (Orchestrator) يقوم بتجميع التطبيق من خلال
+    تطبيق دوال نقية على حالة النظام، بدلاً من احتوائها على منطق إجرائي معقد.
     """
 
     def __init__(self, settings: AppSettings | dict[str, Any]) -> None:
         """
-        تهيئة نواة الواقع وبناء التكوين الأساسي.
-
-        يقوم هذا المُنشئ (Constructor) بتحويل الإعدادات الخام إلى كائن تكوين ذكي (Smart Config Object)
-        ومن ثم إطلاق عملية بناء التطبيق النقي (Pristine App) وربط المسارات.
+        تهيئة النواة.
 
         Args:
-            settings (AppSettings | dict[str, Any]): مصفوفة التكوين الذكية أو قاموس إعدادات.
+            settings (AppSettings | dict[str, Any]): الإعدادات.
         """
-        # التحقق الذكي من التكوين وتحويله إذا لزم الأمر
         if isinstance(settings, dict):
-            self.settings_obj: AppSettings | None = None
-            self.settings_dict: dict[str, Any] = settings
+            # Fail Fast: يجب أن يفشل التحقق فوراً إذا كانت الإعدادات غير صالحة
+            self.settings_obj = AppSettings(**settings)
+            self.settings_dict = self.settings_obj.model_dump()
         else:
             self.settings_obj = settings
             self.settings_dict = settings.model_dump()
 
-        # إنشاء التطبيق النقي (The Pristine App)
-        self.app: Final[FastAPI] = self._create_pristine_app()
+        # The Functional Pipeline:
+        # 1. Create Base App
+        # 2. Get Specs (Data)
+        # 3. Apply Transformations (Functions)
 
-        # حياكة المسارات (Weaving Routes)
-        self._weave_routes()
+        self.app: Final[FastAPI] = self._construct_app()
+
 
     def get_app(self) -> FastAPI:
-        """
-        استرجاع كائن التطبيق الجاهز للعمل.
-
-        يُستخدم هذا التابع من قبل خادم `uvicorn` أو أدوات الاختبار للوصول إلى التطبيق المكتمل.
-
-        Returns:
-            FastAPI: التطبيق بعد اكتمال تهيئته وربط كافة مكوناته.
-        """
+        """Returns the constructed application."""
         return self.app
 
-    def _create_pristine_app(self) -> FastAPI:
+
+    def _construct_app(self) -> FastAPI:
         """
-        إنشاء الهيكل الأساسي للتطبيق مع إعدادات دورة الحياة والوثائق.
-
-        يتم هنا تعريف مدير دورة الحياة (Lifespan Manager) الذي يتحكم في بدء وإيقاف الخدمات المساندة
-        مثل قواعد البيانات.
-
-        Returns:
-            FastAPI: الكائن الأساسي للتطبيق قبل ربط المسارات.
+        بناء التطبيق باستخدام منهجية Pipeline.
         """
+        # 1. Base State
+        app = self._create_base_app_instance()
 
+        # 2. Data Acquisition (Pure)
+        if self.settings_obj:
+            middleware_stack = _get_middleware_stack(self.settings_obj)
+        else:
+            # Should not happen given logic above, but for type safety
+            middleware_stack = []
+
+        router_registry = _get_router_registry()
+
+        # 3. Transformations (Side-effects confined here)
+        app = _apply_middleware(app, middleware_stack)
+        add_error_handlers(app) # Legacy helper, treated as a transformer
+        app = _mount_routers(app, router_registry)
+
+        return app
+
+
+    def _create_base_app_instance(self) -> FastAPI:
+        """
+        إنشاء مثيل FastAPI الخام مع مدير دورة الحياة.
+        """
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
-            """
-            مدير دورة الحياة: ينظم عمليات بدء التشغيل والإيقاف.
-
-            Args:
-                app (FastAPI): كائن التطبيق (يتم حقنه تلقائياً).
-
-            Yields:
-                None: يتم تسليم التحكم للتطبيق لمعالجة الطلبات.
-            """
+            """Lifecycle Manager Closure."""
             async for _ in self._handle_lifespan_events():
                 yield
 
-        # تحديد بيئة التطوير لتفعيل الوثائق
         is_dev: bool = self.settings_dict.get("ENVIRONMENT") == "development"
 
-        # تهيئة FastAPI مع البيانات الوصفية
-        app = FastAPI(
+        return FastAPI(
             title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),
-            version=self.settings_dict.get("VERSION", "v4.1-simplified"),
+            version=self.settings_dict.get("VERSION", "v4.1-SICP-Edition"),
             docs_url="/docs" if is_dev else None,
             redoc_url="/redoc" if is_dev else None,
             lifespan=lifespan,
         )
 
-        # تكوين البرمجيات الوسيطة ومعالجات الأخطاء
-        self._configure_middleware(app)
-        add_error_handlers(app)
-
-        return app
 
     async def _handle_lifespan_events(self) -> AsyncGenerator[None, None]:
         """
-        معالجة أحداث النظام الحيوية (Startup & Shutdown).
-
-        ينفذ عمليات التحقق من صحة المخطط (Schema Validation) والاتصال بقاعدة البيانات.
-        يضمن أن النظام لا يبدأ إلا إذا كانت الأساسيات سليمة (في بيئة الإنتاج).
-
-        Yields:
-            None: إشارة إلى أن النظام جاهز للعمل.
+        معالجة أحداث النظام الحيوية.
         """
-        # === [STARTUP] مرحلة الإطلاق ===
-        logger.info("🚀 CogniForge System Initializing... (بدء تشغيل النظام)")
+        logger.info("🚀 CogniForge System Initializing... (SICP Boot Sequence)")
 
-        # التحقق من قاعدة البيانات (يتم تخطيه في الاختبارات لتسريع التنفيذ)
         if self.settings_dict.get("ENVIRONMENT") != "testing":
             try:
-                # التحقق الصارم من مخطط قاعدة البيانات
                 await validate_schema_on_startup()
-                logger.info("✅ Database Schema Validated (تم التحقق من مخطط قاعدة البيانات)")
+                logger.info("✅ Database Schema Validated")
             except Exception as e:
-                # نسجل التحذير ولكن لا نوقف النظام للسماح بالتشغيل الجزئي في حالات الطوارئ
                 logger.warning(f"⚠️ Schema validation warning: {e}")
 
-        logger.info("✅ System Ready (النظام جاهز)")
-
-        yield  # نقطة تشغيل التطبيق (Serving Requests)
-
-        # === [SHUTDOWN] مرحلة الإغلاق ===
-        logger.info("👋 CogniForge System Shutting Down... (إيقاف النظام)")
-
-    def _configure_middleware(self, app: FastAPI) -> None:
-        """
-        تكوين حزمة البرمجيات الوسيطة (Middleware Stack) وفقاً لأفضل الممارسات الأمنية.
-
-        يتم ترتيب الطبقات بعناية: الأمان أولاً، ثم الأداء، ثم المعالجة.
-
-        Args:
-            app (FastAPI): تطبيق FastAPI المراد حمايته وتحسينه.
-        """
-        # 1. المضيف الموثوق (Trusted Host): الحماية من هجمات Host Header Injection
-        app.add_middleware(
-            TrustedHostMiddleware,
-            allowed_hosts=self.settings_dict.get("ALLOWED_HOSTS", [])
-        )
-
-        # 2. مشاركة المصادر عبر المنشأ (CORS): ضبط سياسات الوصول من المتصفح
-        self._configure_cors(app)
-
-        # 3. ترويسات الأمان (Security Headers): إضافة طبقة حماية إضافية (HSTS, X-Frame-Options, etc.)
-        app.add_middleware(SecurityHeadersMiddleware)
-
-        # 4. تحديد المعدل (Rate Limiting): حماية النظام من الاستخدام المفرط (معطل في الاختبارات)
-        if self.settings_dict.get("ENVIRONMENT") != "testing":
-            app.add_middleware(RateLimitMiddleware)
-
-        # 5. تنظيف الترويسات (Clean Headers): إزالة الترويسات التي قد تكشف معلومات حساسة
-        app.add_middleware(RemoveBlockingHeadersMiddleware)
-
-        # 6. ضغط البيانات (GZip Compression): تحسين الأداء عبر ضغط الردود الكبيرة
-        app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-    def _configure_cors(self, app: FastAPI) -> None:
-        """
-        إعداد سياسات CORS بدقة بناءً على البيئة التشغيلية.
-
-        يمنع الوصول غير المصرح به من نطاقات خارجية في بيئة الإنتاج.
-
-        Args:
-            app (FastAPI): التطبيق المراد تكوينه.
-        """
-        raw_origins = self.settings_dict.get("BACKEND_CORS_ORIGINS", [])
-        allow_origins: list[str] = raw_origins if isinstance(raw_origins, list) else []
-
-        # استخدام إعدادات افتراضية ذكية في حال عدم التحديد
-        if not allow_origins:
-            if self.settings_dict.get("ENVIRONMENT") == "development":
-                allow_origins = ["*"]  # سماح كامل في بيئة التطوير
-            else:
-                frontend_url = self.settings_dict.get("FRONTEND_URL")
-                allow_origins = [str(frontend_url)] if frontend_url else []
-
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=allow_origins,
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-            allow_headers=[
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "Origin",
-                "X-Requested-With",
-                "X-CSRF-Token",
-            ],
-            expose_headers=["Content-Length", "Content-Range"],
-        )
-
-    def _weave_routes(self) -> None:
-        """
-        ربط الموجهات (Routers) بالتطبيق المركزي.
-
-        يتم الربط بشكل صريح (Explicit) لضمان وضوح تدفق البيانات وسهولة التتبع.
-        """
-        logger.info("Reality Kernel: Weaving explicit routes... (جاري ربط المسارات)")
-
-        # 1. مسارات النظام (System Routes): الصحة، المعلومات
-        self.app.include_router(system.router)
-
-        # 2. مسارات الإدارة (Admin Routes): لوحة التحكم والعمليات الإدارية
-        self.app.include_router(admin.router)
-
-        # 3. مسارات الأمان (Security Routes): المصادقة والتفويض
-        self.app.include_router(security.router, prefix="/api/security")
-
-        # 4. شبكة البيانات (Data Mesh): العمليات المتقدمة على البيانات
-        self.app.include_router(data_mesh.router, prefix="/api/v1/data-mesh")
-
-        # 5. قابلية المراقبة (Observability): التتبع والمقاييس
-        self.app.include_router(observability.router, prefix="/api/observability")
-
-        # 6. العمليات الأساسية (CRUD / API v1): الواجهة البرمجية العامة
-        self.app.include_router(crud.router, prefix="/api/v1")
-
-        # 7. العقل المدبر (Overmind - Super Agent): واجهة الذكاء الخارق
-        self.app.include_router(overmind.router)
+        logger.info("✅ System Ready")
+        yield
+        logger.info("👋 CogniForge System Shutting Down...")
