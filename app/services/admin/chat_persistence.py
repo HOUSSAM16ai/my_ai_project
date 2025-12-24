@@ -82,7 +82,7 @@ class AdminChatPersistence:
         history_messages = list(result.scalars().all())
         history_messages.reverse()
 
-        messages = [{"role": "system", "content": get_system_prompt()}]
+        messages = [{"role": "system", "content": await get_system_prompt()}]
         for msg in history_messages:
             messages.append({"role": msg.role.value, "content": msg.content})
 

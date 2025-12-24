@@ -7,6 +7,9 @@ import logging
 import os
 from datetime import datetime
 
+# Import for type checking mostly, or inside function to avoid heavy load
+# from app.services.agent_tools.domain.metrics import get_project_metrics_handler
+
 logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -50,34 +53,29 @@ def _get_static_structure() -> str:
 # =============================================================================
 
 
-def _get_deep_index_summary() -> str:
-    """Retrieves deep structural analysis summary safely."""
+async def _get_dynamic_metrics() -> str:
+    """Retrieves project metrics asynchronously."""
     try:
-        from app.services.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+        from app.services.agent_tools.domain.metrics import get_project_metrics_handler
 
-        index = build_index(".")
-        if not index:
-            return ""
+        metrics = await get_project_metrics_handler()
 
-        summary = summarize_for_prompt(index, max_len=2500)
-        metrics = index.get("global_metrics", {})
-        hotspots = index.get("complexity_hotspots_top50", [])[:5]
+        live_stats = metrics.get("live_stats", {})
+        py_files = live_stats.get("python_files", "N/A")
+        total_files = live_stats.get("total_files", "N/A")
 
-        hotspot_text = "\n".join(
-            f"- `{h.get('file')}::{h.get('name')}` (CC: {h.get('complexity')})" for h in hotspots
-        )
+        # Parse logic or summary from content if needed, but for now just show stats
+        # The content of PROJECT_METRICS.md might be large, we might want to truncate or summarize
+        # For this prompt, let's keep it concise.
 
         return f"""
-## 🔬 DEEP STRUCTURAL ANALYSIS
-{summary}
-### 📊 Metrics:
-- Files: {index.get("files_scanned")}
-- Avg Complexity: {metrics.get("avg_complexity")}
-### ⚠️ Top Hotspots:
-{hotspot_text}
+## 🔬 PROJECT METRICS
+- **Python Files**: {py_files}
+- **Total Files**: {total_files}
+- **Source**: {metrics.get("source")}
 """
     except Exception as e:
-        logger.debug(f"Deep Index unavailable: {e}")
+        logger.debug(f"Metrics unavailable: {e}")
         return ""
 
 
@@ -119,19 +117,38 @@ def _get_system_health() -> str:
 # MAIN PROMPT GENERATOR
 # =============================================================================
 
+def get_static_system_prompt(include_health=True) -> str:
+    """
+    Returns the static version of the system prompt (synchronous).
+    Suitable for global constants and initialization where async is not possible.
+    Includes Identity, Health (optional), and Time.
+    Does NOT include dynamic metrics or tools status.
+    """
+    parts = [
+        "You are OVERMIND CLI MINDGATE.",
+        OVERMIND_IDENTITY.strip(),
+    ]
 
-def get_system_prompt(include_health=True, include_dynamic=False) -> str:
+    if include_health:
+        parts.append(_get_system_health())
+
+    parts.append(f"\n## ⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+    return "\n".join(parts)
+
+
+async def get_system_prompt(include_health=True, include_dynamic=False) -> str:
+    """
+    Returns the system prompt, optionally resolving dynamic async context.
+    """
     parts = [
         "You are OVERMIND CLI MINDGATE.",
         OVERMIND_IDENTITY.strip(),
     ]
 
     if include_dynamic:
-        # TODO: Refactor this to support async context retrieval if needed.
-        # Currently disabled to prevent RuntimeWarning about unawaited coroutine.
         parts.append(_get_static_structure())
-
-        parts.append(_get_deep_index_summary())
+        parts.append(await _get_dynamic_metrics())
         parts.append(_get_agent_tools_status())
 
     if include_health:
@@ -142,4 +159,5 @@ def get_system_prompt(include_health=True, include_dynamic=False) -> str:
     return "\n".join(parts)
 
 
-OVERMIND_SYSTEM_PROMPT = get_system_prompt(include_dynamic=False)
+# Global constant using the static version
+OVERMIND_SYSTEM_PROMPT = get_static_system_prompt(include_health=True)

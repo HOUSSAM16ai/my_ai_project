@@ -175,8 +175,9 @@ async def test_get_chat_history(service):
     service.db.execute = AsyncMock(return_value=mock_result)
 
     with patch(
-        "app.services.admin.chat_persistence.get_system_prompt", return_value="System Prompt"
-    ):
+        "app.services.admin.chat_persistence.get_system_prompt", new_callable=AsyncMock
+    ) as mock_prompt:
+        mock_prompt.return_value = "System Prompt"
         history = await service.get_chat_history(conversation_id=1)
 
     assert len(history) == 3
