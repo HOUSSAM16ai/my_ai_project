@@ -9,8 +9,10 @@
 
 import logging
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from typing import Any as AIClient  # Placeholder for AI client type
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.patterns.strategy import StrategyRegistry
 from app.services.chat.context import ChatContext
@@ -67,6 +69,7 @@ class ChatOrchestrator:
         conversation_id: int,
         ai_client: AIClient,
         history_messages: list[dict[str, str]],
+        session_factory: Callable[[], AsyncSession] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         معالجة طلب المحادثة.
@@ -77,6 +80,7 @@ class ChatOrchestrator:
             conversation_id: معرف المحادثة.
             ai_client: عميل الذكاء الاصطناعي.
             history_messages: سجل الرسائل السابق.
+            session_factory: مصنع الجلسات للعمليات الخلفية.
 
         Yields:
             str: أجزاء الرد (Chunks) بشكل تدفقي.
@@ -101,6 +105,7 @@ class ChatOrchestrator:
             intent=intent_result.intent,
             confidence=intent_result.confidence,
             params=intent_result.params,
+            session_factory=session_factory,
         )
 
         # 3. تنفيذ الاستراتيجية (Execute Strategy)
