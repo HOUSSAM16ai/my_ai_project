@@ -2,14 +2,16 @@
 Intent handlers using Strategy pattern.
 """
 
-import logging
 import asyncio
+import logging
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import select
+
 from app.core.patterns.strategy import Strategy
+from app.models import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.services.chat.context import ChatContext
 from app.services.overmind.factory import create_overmind
-from app.models import Mission, MissionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +155,10 @@ class DeepAnalysisHandler(IntentHandler):
 
 
 class MissionComplexHandler(IntentHandler):
-    """Handle complex mission requests using Overmind."""
+    """
+    Handle complex mission requests using Overmind.
+    Implements 'API First' streaming response pattern.
+    """
 
     def __init__(self):
         super().__init__("MISSION_COMPLEX", priority=10)
@@ -161,7 +166,8 @@ class MissionComplexHandler(IntentHandler):
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """
         Execute complex mission.
-        Creates a Mission DB entry and triggers the Overmind.
+        Creates a Mission DB entry and triggers the Overmind in background.
+        Streams updates to the user.
         """
         yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
 
@@ -169,43 +175,95 @@ class MissionComplexHandler(IntentHandler):
             yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
             return
 
-        # 1. Create independent DB session
+        # 1. Initialize Mission in DB
+        mission_id = 0
         async with context.session_factory() as session:
-            # 2. Initialize Overmind
-            overmind = create_overmind(session)
-
-            # 3. Create Mission Record
             mission = Mission(
                 objective=context.question,
-                status=MissionStatus.PENDING
+                status=MissionStatus.PENDING,
+                initiator_id=context.user_id or 1 # Fallback if user_id missing
             )
             session.add(mission)
             await session.commit()
             await session.refresh(mission)
-
+            mission_id = mission.id
             yield f"🆔 رقم المهمة: `{mission.id}`\n"
             yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
 
-            # 4. Run Mission (Background Task in real app, but here we await for demo stream)
-            # To ensure 100% autonomy, we trust the run_mission loop.
+        # 2. Spawn Background Task (Non-Blocking)
+        # We pass the factory so the background task can manage its own session
+        task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
 
-            # We wrap this in a task to avoid blocking if it takes long,
-            # but for the generator to yield updates, we might need a shared event stream.
-            # For simplicity in this step, we'll await it and report result.
+        # 3. Poll for Updates
+        last_event_id = 0
+        running = True
 
-            try:
-                await overmind.run_mission(mission.id)
-                await session.refresh(mission)
+        while running:
+            await asyncio.sleep(1.0) # Poll interval
 
-                if mission.status == MissionStatus.SUCCESS:
-                    yield "✅ **تمت المهمة بنجاح!**\n\n"
-                    # Retrieve result log if needed
-                else:
-                    yield f"⚠️ انتهت المهمة بحالة: {mission.status}\n"
+            # Check if background task crashed or finished
+            if task.done():
+                running = False
+                try:
+                    await task # Check for exceptions
+                except Exception as e:
+                    yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
+                    logger.error(f"Background mission task failed: {e}")
+                    return
 
-            except Exception as e:
-                yield f"❌ حدث خطأ قاتل أثناء التنفيذ: {e}\n"
+            # Poll events
+            async with context.session_factory() as session:
+                # Fetch new events
+                stmt = (
+                    select(MissionEvent)
+                    .where(MissionEvent.mission_id == mission_id)
+                    .where(MissionEvent.id > last_event_id)
+                    .order_by(MissionEvent.id)
+                )
+                result = await session.execute(stmt)
+                events = result.scalars().all()
 
+                for event in events:
+                    last_event_id = event.id
+                    yield self._format_event(event)
+
+                # Check mission status if task is done or we suspect completion
+                mission_check = await session.get(Mission, mission_id)
+                if mission_check.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+                     if running: # If we haven't detected task end yet
+                         running = False
+                         yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+
+        yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+
+
+    async def _run_mission_bg(self, mission_id: int, session_factory):
+        """
+        Runs the Overmind mission in a background task with its own session.
+        """
+        async with session_factory() as session:
+            overmind = create_overmind(session)
+            await overmind.run_mission(mission_id)
+
+    def _format_event(self, event: MissionEvent) -> str:
+        """Format mission event for user display."""
+        try:
+            payload = event.payload_json or {}
+            if event.event_type == MissionEventType.STATUS_CHANGE:
+                brain_evt = payload.get("brain_event")
+                if brain_evt:
+                    return f"🔹 *{brain_evt}*: {payload.get('data', '')}\n"
+                return f"🔄 **تحديث حالة:** {payload.get('old_status')} -> {payload.get('new_status')}\n"
+
+            if event.event_type == MissionEventType.MISSION_COMPLETED:
+                return "🎉 **المهمة اكتملت بنجاح!**\n"
+
+            if event.event_type == MissionEventType.MISSION_FAILED:
+                return f"💀 **فشل المهمة:** {payload.get('error')}\n"
+
+            return f"ℹ️ {event.event_type.value}: {payload}\n"
+        except Exception:
+            return "ℹ️ حدث جديد...\n"
 
 class HelpHandler(IntentHandler):
     """Handle help requests."""

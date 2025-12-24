@@ -4,13 +4,12 @@
 # Version: 12.0.0-super-agent
 # =================================================================================================
 
-import asyncio
 import logging
 
 from app.models import Mission, MissionEventType, MissionStatus
+from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.state import MissionStateManager
-from app.services.overmind.domain.cognitive import SuperBrain
 
 logger = logging.getLogger(__name__)
 
@@ -90,11 +89,26 @@ class OvermindOrchestrator:
             mission.id, MissionStatus.RUNNING, "Council of Wisdom Convening"
         )
 
+        async def _log_bridge(evt_type: str, payload: dict):
+            """Bridge callback from SuperBrain to MissionStateManager."""
+            # Map generic brain events to specific MissionEventType if needed, or use generic STATUS_CHANGE
+            # For now, we wrap them in STATUS_CHANGE or a new event type if available.
+            # Using STATUS_CHANGE for simplicity or generic logging.
+            await self.state.log_event(
+                mission.id,
+                MissionEventType.STATUS_CHANGE,
+                {"brain_event": evt_type, "data": payload}
+            )
+
         try:
             # The Brain handles the entire Plan -> Design -> Review -> Execute loop
             # This is 100% autonomous and self-correcting.
+            result = {}
             if self.brain:
-                result = await self.brain.process_mission(mission)
+                result = await self.brain.process_mission(
+                    mission,
+                    log_event=_log_bridge
+                )
 
             await self.state.update_mission_status(
                 mission.id, MissionStatus.SUCCESS, "Mission Accomplished by Super Agent"

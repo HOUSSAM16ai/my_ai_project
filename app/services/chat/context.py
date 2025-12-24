@@ -3,8 +3,11 @@ Chat context for intent handlers.
 """
 from dataclasses import dataclass, field
 from typing import Any
-from typing import Any as AIClient
+from collections.abc import Callable, Awaitable
+from sqlalchemy.ext.asyncio import AsyncSession
 
+# Placeholder for AIClient type
+type AIClient = Any
 
 @dataclass
 class ChatContext:
@@ -19,6 +22,9 @@ class ChatContext:
     params: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_param(self, key: str, default: Any=None) ->Any:
+    # Factory to create new DB sessions for background tasks
+    session_factory: Callable[[], AsyncSession] | None = None
+
+    def get_param(self, key: str, default: Any=None) -> Any:
         """Get parameter with default."""
         return self.params.get(key, default)
