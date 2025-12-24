@@ -12,7 +12,7 @@ Usage:
 
 import json
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -367,7 +367,7 @@ def main():
 
     # Collect all metrics
     metrics = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "code": get_code_metrics(),
         "test": get_test_metrics(),
         "security": get_security_metrics(),
