@@ -1,9 +1,0 @@
-relative_path,code_lines,num_classes,num_functions,file_complexity,avg_function_complexity,max_function_complexity,commits_last_12months,bugfix_commits,is_god_class,has_layer_mixing,has_cross_layer_imports,hotspot_score,priority_tier
-app/api/routers/admin.py,176,1,8,23,2.88,6,1,0,False,True,True,1.0,CRITICAL
-app/api/routers/security.py,153,4,9,21,2.33,4,1,0,False,False,True,0.8652,CRITICAL
-app/api/routers/crud.py,72,0,5,12,2.4,4,1,0,False,False,True,0.7087,CRITICAL
-app/api/routers/intelligent_platform.py,131,2,6,7,1.17,2,1,0,False,False,True,0.6217,HIGH
-app/api/routers/ai_service.py,60,1,4,9,2.25,3,1,0,False,False,False,0.5565,HIGH
-app/api/routers/chat.py,36,0,1,6,6.0,6,1,0,False,False,False,0.5043,HIGH
-app/api/routers/observability.py,17,0,5,5,1.0,1,1,0,False,False,False,0.487,MEDIUM
-app/api/routers/gateway.py,14,0,4,4,1.0,1,1,0,False,False,False,0.4696,MEDIUM
