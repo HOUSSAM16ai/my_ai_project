@@ -116,7 +116,7 @@ async def test_overmind_factory_assembly(mock_db_session):
          patch("app.services.overmind.factory.SuperBrain") as mock_brain_cls:
 
         mock_db = AsyncMock()
-        orchestrator = create_overmind(mock_db)
+        orchestrator = await create_overmind(mock_db)
 
         assert isinstance(orchestrator, OvermindOrchestrator)
         mock_brain_cls.assert_called_once()
