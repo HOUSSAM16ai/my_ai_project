@@ -48,7 +48,53 @@ REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
 }
 
 
-async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:  # noqa: PLR0912
+async def _get_existing_columns(conn: Any, table_name: str) -> set[str]:
+    """استخراج أسماء الأعمدة الموجودة في الجدول."""
+    dialect_name = conn.dialect.name
+    
+    if dialect_name == "sqlite":
+        result = await conn.execute(
+            text("SELECT * FROM pragma_table_info(:table_name)"),
+            {"table_name": table_name},
+        )
+        return {row[1] for row in result.fetchall()}
+    
+    result = await conn.execute(
+        text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = :table_name"
+        ),
+        {"table_name": table_name},
+    )
+    return {row[0] for row in result.fetchall()}
+
+
+async def _fix_missing_column(
+    conn: Any, 
+    table_name: str, 
+    col: str, 
+    auto_fix_queries: dict[str, str],
+    index_queries: dict[str, str]
+) -> bool:
+    """إصلاح عمود مفقود وإنشاء الفهرس إن وجد."""
+    if col not in auto_fix_queries:
+        return False
+    
+    try:
+        await conn.execute(text(auto_fix_queries[col]))
+        logger.info(f"✅ Added missing column: {table_name}.{col}")
+        
+        if col in index_queries:
+            await conn.execute(text(index_queries[col]))
+            logger.info(f"✅ Created index for: {table_name}.{col}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to fix {table_name}.{col}: {e}")
+        return False
+
+
+async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:
     """
     التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
 
@@ -75,24 +121,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:  # n
                 results["checked_tables"].append(table_name)
 
                 try:
-                    dialect_name = conn.dialect.name
-                    existing_columns: set[str] = set()
-
-                    if dialect_name == "sqlite":
-                        result = await conn.execute(
-                            text("SELECT * FROM pragma_table_info(:table_name)"),
-                            {"table_name": table_name},
-                        )
-                        existing_columns = {row[1] for row in result.fetchall()}
-                    else:
-                        result = await conn.execute(
-                            text(
-                                "SELECT column_name FROM information_schema.columns "
-                                "WHERE table_name = :table_name"
-                            ),
-                            {"table_name": table_name},
-                        )
-                        existing_columns = {row[0] for row in result.fetchall()}
+                    existing_columns = await _get_existing_columns(conn, table_name)
                 except Exception as e:
                     results["errors"].append(f"Error checking table {table_name}: {e}")
                     continue
@@ -108,20 +137,8 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:  # n
                         index_queries = schema_info.get("indexes", {})
 
                         for col in missing:
-                            if col in auto_fix_queries:
-                                try:
-                                    await conn.execute(text(auto_fix_queries[col]))
-                                    logger.info(f"✅ Added missing column: {table_name}.{col}")
-                                    results["fixed_columns"].append(f"{table_name}.{col}")
-
-                                    if col in index_queries:
-                                        await conn.execute(text(index_queries[col]))
-                                        logger.info(f"✅ Created index for: {table_name}.{col}")
-
-                                except Exception as e:
-                                    error_msg = f"Failed to fix {table_name}.{col}: {e}"
-                                    logger.error(f"❌ {error_msg}")
-                                    results["errors"].append(error_msg)
+                            if await _fix_missing_column(conn, table_name, col, auto_fix_queries, index_queries):
+                                results["fixed_columns"].append(f"{table_name}.{col}")
 
             if results["fixed_columns"]:
                 await conn.commit()
