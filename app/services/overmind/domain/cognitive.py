@@ -10,12 +10,13 @@
 - CS50 2025 Strict Mode.
 - توثيق "Legendary" باللغة العربية.
 - استخدام بروتوكولات صارمة.
+- MIT 6.0001: التجريد والخوارزميات (Abstraction & Algorithms).
 """
 
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -25,6 +26,8 @@ from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 logger = logging.getLogger(__name__)
 
+# تعريف نوع عام للنتيجة
+T = TypeVar("T")
 
 # بروتوكول استدعاء تسجيل الأحداث
 class EventLogger(Protocol):
@@ -63,7 +66,7 @@ class SuperBrain:
         architect: AgentArchitect,
         operator: AgentExecutor,
         auditor: AgentReflector,
-    ):
+    ) -> None:
         self.strategist = strategist
         self.architect = architect
         self.operator = operator
@@ -90,10 +93,9 @@ class SuperBrain:
             RuntimeError: في حال فشل المهمة بعد استنفاد المحاولات.
         """
         state = CognitiveState(mission_id=mission.id, objective=mission.objective)
-
-        # تحويل القاموس الأولي إلى كائن سياق تعاوني
         collab_context = InMemoryCollaborationContext(context)
 
+        # دالة مساعدة للتسجيل الآمن
         async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
             if log_event:
                 await log_event(evt_type, data)
@@ -102,101 +104,121 @@ class SuperBrain:
             state.iteration_count += 1
             await safe_log("loop_start", {"iteration": state.iteration_count})
 
-            # --- المرحلة 1: التخطيط (Strategist) ---
-            if not state.plan or state.current_phase == "RE-PLANNING":
-                await safe_log("phase_start", {"phase": "PLANNING", "agent": "Strategist"})
-
-                # الاستراتيجي يضع الخطة (مع timeout)
-                try:
-                    state.plan = await asyncio.wait_for(
-                        self.strategist.create_plan(state.objective, collab_context),
-                        timeout=120.0  # 2 دقيقة كحد أقصى للتخطيط
+            try:
+                # --- المرحلة 1: التخطيط (Strategist) ---
+                if not state.plan or state.current_phase == "RE-PLANNING":
+                    state.plan = await self._execute_phase(
+                        phase_name="PLANNING",
+                        agent_name="Strategist",
+                        action=lambda: self.strategist.create_plan(state.objective, collab_context),
+                        timeout=120.0,
+                        log_func=safe_log
                     )
-                    await safe_log("plan_created", {"plan_summary": "تم إنشاء الخطة بنجاح"})
-                except TimeoutError:
-                    logger.error("Strategist timeout during planning")
-                    await safe_log("plan_timeout", {"error": "Planning exceeded 120 seconds"})
-                    raise RuntimeError("Planning phase timed out")
 
-                # المدقق يراجع الخطة (مع timeout)
-                await safe_log("phase_start", {"phase": "REVIEW_PLAN", "agent": "Auditor"})
-                try:
-                    critique = await asyncio.wait_for(
-                        self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
-                        timeout=60.0  # دقيقة واحدة للمراجعة
+                    # مراجعة الخطة (Auditor)
+                    critique = await self._execute_phase(
+                        phase_name="REVIEW_PLAN",
+                        agent_name="Auditor",
+                        action=lambda: self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
+                        timeout=60.0,
+                        log_func=safe_log
                     )
-                except TimeoutError:
-                    logger.error("Auditor timeout during plan review")
-                    await safe_log("review_timeout", {"error": "Plan review exceeded 60 seconds"})
-                    raise RuntimeError("Plan review phase timed out")
 
-                if not critique.get("approved"):
-                    await safe_log("plan_rejected", {"critique": critique})
+                    if not critique.get("approved"):
+                        await safe_log("plan_rejected", {"critique": critique})
+                        # التحقق من أخطاء التكوين
+                        feedback = critique.get("feedback", "")
+                        if "OPENROUTER_API_KEY" in feedback:
+                            raise RuntimeError("AI service unavailable. Please configure OPENROUTER_API_KEY.")
 
-                    # التحقق من أخطاء التكوين (Configuration Errors)
-                    feedback = critique.get("feedback", "")
-                    if "OPENROUTER_API_KEY" in feedback or "AI Service Unavailable" in str(state.plan.get("strategy_name", "")):
-                        logger.error("Cannot proceed: AI service configuration error")
-                        raise RuntimeError("AI service unavailable. Please configure OPENROUTER_API_KEY.")
+                        state.current_phase = "RE-PLANNING"
+                        collab_context.update("feedback_from_previous_attempt", feedback)
+                        continue # إعادة المحاولة
 
-                    # حلقة التصحيح الذاتي (Self-Correction Loop)
-                    state.current_phase = "RE-PLANNING"
-                    # دمج الملاحظات في السياق للمحاولة التالية
-                    collab_context.update("feedback_from_previous_attempt", critique.get("feedback"))
-                    continue
+                    await safe_log("plan_approved", {"critique": critique})
 
-                await safe_log("plan_approved", {"critique": critique})
-
-            # --- المرحلة 2: التصميم (Architect) ---
-            await safe_log("phase_start", {"phase": "DESIGN", "agent": "Architect"})
-            try:
-                state.design = await asyncio.wait_for(
-                    self.architect.design_solution(state.plan, collab_context),
-                    timeout=120.0  # 2 دقيقة للتصميم
+                # --- المرحلة 2: التصميم (Architect) ---
+                state.design = await self._execute_phase(
+                    phase_name="DESIGN",
+                    agent_name="Architect",
+                    action=lambda: self.architect.design_solution(state.plan, collab_context),
+                    timeout=120.0,
+                    log_func=safe_log
                 )
-                await safe_log("design_created", {"design_summary": "تم وضع التصميم التقني"})
-            except TimeoutError:
-                logger.error("Architect timeout during design")
-                await safe_log("design_timeout", {"error": "Design exceeded 120 seconds"})
-                raise RuntimeError("Design phase timed out")
 
-            # --- المرحلة 3: التنفيذ (Operator) ---
-            await safe_log("phase_start", {"phase": "EXECUTION", "agent": "Operator"})
-            try:
-                # المنفذ يقوم بالعمل (مع timeout أطول للتنفيذ)
-                state.execution_result = await asyncio.wait_for(
-                    self.operator.execute_tasks(state.design, collab_context),
-                    timeout=300.0  # 5 دقائق للتنفيذ
+                # --- المرحلة 3: التنفيذ (Operator) ---
+                state.execution_result = await self._execute_phase(
+                    phase_name="EXECUTION",
+                    agent_name="Operator",
+                    action=lambda: self.operator.execute_tasks(state.design, collab_context),
+                    timeout=300.0,
+                    log_func=safe_log
                 )
-                await safe_log("execution_completed", {"status": "done"})
-            except TimeoutError:
-                logger.error("Operator timeout during execution")
-                await safe_log("execution_timeout", {"error": "Execution exceeded 300 seconds"})
-                raise RuntimeError("Execution phase timed out")
 
-            # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
-            await safe_log("phase_start", {"phase": "REFLECTION", "agent": "Auditor"})
-            try:
-                state.critique = await asyncio.wait_for(
-                    self.auditor.review_work(state.execution_result, state.objective, collab_context),
-                    timeout=60.0  # دقيقة واحدة للمراجعة النهائية
+                # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
+                state.critique = await self._execute_phase(
+                    phase_name="REFLECTION",
+                    agent_name="Auditor",
+                    action=lambda: self.auditor.review_work(state.execution_result, state.objective, collab_context),
+                    timeout=60.0,
+                    log_func=safe_log
                 )
-            except TimeoutError:
-                logger.error("Auditor timeout during final review")
-                await safe_log("reflection_timeout", {"error": "Final review exceeded 60 seconds"})
-                raise RuntimeError("Final review phase timed out")
 
-            if state.critique.get("approved"):
-                await safe_log("mission_success", {"result": state.execution_result})
-                return state.execution_result
+                if state.critique.get("approved"):
+                    await safe_log("mission_success", {"result": state.execution_result})
+                    return state.execution_result or {}
 
-            await safe_log("mission_critique_failed", {"critique": state.critique})
+                await safe_log("mission_critique_failed", {"critique": state.critique})
+                state.current_phase = "RE-PLANNING"
+                collab_context.update("feedback_from_execution", state.critique.get("feedback"))
 
-            # إعادة المحاولة بناءً على التغذية الراجعة
-            state.current_phase = "RE-PLANNING"
-            collab_context.update("feedback_from_execution", state.critique.get("feedback"))
+            except Exception as e:
+                logger.error(f"Error in phase {state.current_phase}: {e}")
+                await safe_log("phase_error", {"phase": state.current_phase, "error": str(e)})
+                if isinstance(e, RuntimeError) and "timeout" in str(e).lower():
+                    # Timeouts are critical, force retry or fail
+                    pass
+                # continue the loop to retry
 
-        # إذا وصلنا هنا، فقد فشلت المهمة بعد كل المحاولات
-        error_msg = f"فشلت المهمة بعد {state.max_iterations} دورات من مجلس الحكمة."
-        await safe_log("mission_failed", {"reason": "max_iterations_exceeded"})
-        raise RuntimeError(error_msg)
+        # فشل نهائي
+        raise RuntimeError(f"Mission failed after {state.max_iterations} iterations.")
+
+    async def _execute_phase(
+        self,
+        phase_name: str,
+        agent_name: str,
+        action: Callable[[], Awaitable[T]],
+        timeout: float,
+        log_func: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> T:
+        """
+        منفذ المرحلة المعرفي العام (Generic Cognitive Phase Executor).
+
+        يطبق مبدأ التجريد (Abstraction) لفصل منطق التنفيذ والمهلة الزمنية عن منطق العمل.
+
+        Args:
+            phase_name: اسم المرحلة.
+            agent_name: اسم الوكيل المسؤول.
+            action: الدالة المراد تنفيذها (Closure).
+            timeout: المهلة الزمنية بالثواني.
+            log_func: دالة التسجيل.
+
+        Returns:
+            T: نتيجة التنفيذ.
+
+        Raises:
+            RuntimeError: في حال انتهاء المهلة أو حدوث خطأ.
+        """
+        await log_func("phase_start", {"phase": phase_name, "agent": agent_name})
+        try:
+            result = await asyncio.wait_for(action(), timeout=timeout)
+            await log_func(f"{phase_name.lower()}_completed", {"summary": "Phase completed successfully"})
+            return result
+        except TimeoutError:
+            error_msg = f"{agent_name} timeout during {phase_name} (exceeded {timeout}s)"
+            logger.error(error_msg)
+            await log_func(f"{phase_name.lower()}_timeout", {"error": error_msg})
+            raise RuntimeError(error_msg)
+        except Exception as e:
+            # إعادة رمي الاستثناء ليتم التعامل معه في الحلقة الرئيسية
+            raise e
