@@ -1,4 +1,19 @@
-# app/models.py
+"""
+نماذج قاعدة البيانات (Database Models).
+
+يحتوي على جميع نماذج SQLModel/SQLAlchemy المستخدمة في التطبيق.
+يطبق مبادئ Domain-Driven Design مع فصل واضح بين النماذج والمنطق.
+
+المبادئ (Principles):
+- Harvard CS50 2025: توثيق عربي، صرامة الأنواع
+- Berkeley SICP: Data Abstraction (النماذج كتجريد للبيانات)
+- SOLID: Single Responsibility (كل نموذج يمثل كيان واحد)
+
+الأمان (Security):
+- استخدام Argon2 لتشفير كلمات المرور (أقوى من bcrypt)
+- Case-insensitive enums لتجنب مشاكل حالة الأحرف
+- UTC timestamps لتجنب مشاكل المناطق الزمنية
+"""
 from __future__ import annotations
 
 import enum
@@ -14,7 +29,7 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     pass
 
-# Setup password hashing
+# إعداد تشفير كلمات المرور باستخدام Argon2 (الأقوى حالياً)
 pwd_context = CryptContext(
     schemes=["argon2", "bcrypt", "pbkdf2_sha256", "sha256_crypt"],
     deprecated="auto",
@@ -22,23 +37,41 @@ pwd_context = CryptContext(
 
 
 def utc_now() -> datetime:
+    """
+    الحصول على الوقت الحالي بتوقيت UTC.
+    
+    يستخدم UTC لتجنب مشاكل المناطق الزمنية والتوقيت الصيفي.
+    
+    Returns:
+        datetime: الوقت الحالي بتوقيت UTC
+    """
     return datetime.now(UTC)
 
 
 class CaseInsensitiveEnum(str, enum.Enum):
     """
-    Base enum class that handles case-insensitive lookups.
-    This allows the enum to accept both 'user' and 'USER' from the database.
+    فئة Enum غير حساسة لحالة الأحرف (Case-Insensitive Enum).
+    
+    تسمح بقبول 'user' و 'USER' من قاعدة البيانات دون أخطاء.
+    يحل مشكلة شائعة في التعامل مع البيانات من مصادر مختلفة.
+    
+    المبدأ (Principle):
+        Robustness - التعامل مع الاختلافات في حالة الأحرف بشكل تلقائي
     """
 
     @classmethod
     def _missing_(cls, value):
+        """
+        معالجة القيم المفقودة بطريقة ذكية.
+        
+        يحاول إيجاد القيمة بغض النظر عن حالة الأحرف.
+        """
         if isinstance(value, str):
-            # Try uppercase lookup (e.g., 'user' -> 'USER')
+            # محاولة البحث بالأحرف الكبيرة (e.g., 'user' -> 'USER')
             upper_value = value.upper()
             if upper_value in cls.__members__:
                 return cls[upper_value]
-            # Try matching by value (e.g., 'user' matches USER.value)
+            # محاولة المطابقة بالقيمة (e.g., 'user' matches USER.value)
             for member in cls:
                 if member.value == value.lower():
                     return member
@@ -47,38 +80,55 @@ class CaseInsensitiveEnum(str, enum.Enum):
 
 class FlexibleEnum(TypeDecorator):
     """
-    TypeDecorator that ensures case-insensitive lookup using the Enum's _missing_ method.
-    Stored as TEXT in database.
+    محول نوع مرن للـ Enum (Flexible Enum Type Decorator).
+    
+    يضمن البحث غير الحساس لحالة الأحرف باستخدام _missing_ من Enum.
+    يُخزن كـ TEXT في قاعدة البيانات للمرونة.
+    
+    المبدأ (Principle):
+        Adapter Pattern - تحويل بين تمثيل Python وقاعدة البيانات
     """
 
     impl = Text
     cache_ok = True
 
     def __init__(self, enum_type: type[enum.Enum], *args, **kwargs):
+        """
+        تهيئة المحول.
+        
+        Args:
+            enum_type: نوع Enum المراد استخدامه
+        """
         super().__init__(*args, **kwargs)
         self._enum_type = enum_type
 
     def process_bind_param(self, value, dialect):
+        """
+        معالجة القيمة قبل الحفظ في قاعدة البيانات.
+        
+        يحول Enum إلى string ويطبع القيمة.
+        """
         if value is None:
             return None
         if isinstance(value, self._enum_type):
             return value.value
-        # If it's a string, try to resolve it to the enum first to ensure validity, then return value
-        # Or just return it if we want to allow flexibility (but safer to normalize)
         if isinstance(value, str):
-            # Leverage _missing_ logic if possible by converting to enum then accessing value
+            # استخدام منطق _missing_ للتحقق من الصحة
             try:
                 return self._enum_type(value).value
             except ValueError:
-                # Fallback: store as is (lowercase) if not found, or let it fail?
-                # Given this is 'Flexible', maybe store as lower?
+                # Fallback: تخزين بأحرف صغيرة
                 return value.lower()
         return value
 
     def process_result_value(self, value, dialect):
+        """
+        معالجة القيمة بعد القراءة من قاعدة البيانات.
+        
+        يحول string إلى Enum باستخدام _missing_.
+        """
         if value is None:
             return None
-        # This leverages CaseInsensitiveEnum._missing_
         try:
             return self._enum_type(value)
         except ValueError:
@@ -86,18 +136,28 @@ class FlexibleEnum(TypeDecorator):
 
 
 class MessageRole(CaseInsensitiveEnum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    TOOL = "tool"
-    SYSTEM = "system"
+    """
+    أدوار الرسائل في المحادثة (Message Roles).
+    
+    يحدد من أرسل الرسالة في سياق المحادثة مع الذكاء الاصطناعي.
+    """
+    USER = "user"           # المستخدم البشري
+    ASSISTANT = "assistant" # المساعد الذكي
+    TOOL = "tool"           # أداة خارجية
+    SYSTEM = "system"       # رسالة النظام
 
 
 class MissionStatus(CaseInsensitiveEnum):
-    PENDING = "pending"
-    PLANNING = "planning"
-    PLANNED = "planned"
-    RUNNING = "running"
-    ADAPTING = "adapting"
+    """
+    حالات المهمة (Mission Status).
+    
+    يتتبع دورة حياة المهمة من البداية حتى الاكتمال.
+    """
+    PENDING = "pending"     # في الانتظار
+    PLANNING = "planning"   # جاري التخطيط
+    PLANNED = "planned"     # تم التخطيط
+    RUNNING = "running"     # قيد التنفيذ
+    ADAPTING = "adapting"   # جاري التكيف
     SUCCESS = "success"
     FAILED = "failed"
     CANCELED = "canceled"
