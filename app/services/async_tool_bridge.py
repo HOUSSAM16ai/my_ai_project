@@ -243,7 +243,7 @@ class AsyncAgentTools:
 
 class AsyncOvermindBridge:
     """
-    Async bridge for master_agent_service.OvermindService.
+    Async bridge for OvermindService.
     Handles sync-to-async conversion for mission operations.
 
     CRITICAL: Pass user_id (int), NOT User object across thread boundary!
@@ -258,9 +258,9 @@ class AsyncOvermindBridge:
         if self._loaded:
             return
         try:
-            from app.services.master_agent_service import _overmind_service_singleton
+            from app.core.di import get_overmind
 
-            self._service = _overmind_service_singleton
+            self._service = get_overmind()
         except ImportError as e:
             logger.warning(f"OvermindService not available: {e}")
             self._service = None
