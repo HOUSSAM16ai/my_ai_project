@@ -302,6 +302,7 @@ class SecurityThreatDetected(DomainEvent):
     def __init__(
         self, threat_type: str, severity: str, source_ip: str, details: dict[str, Any], **kwargs
     ):
+        kwargs.setdefault("category", EventCategory.SYSTEM)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.SECURITY_COMPLIANCE
         self.payload = {
@@ -319,6 +320,7 @@ class AccessDenied(DomainEvent):
     category: EventCategory = EventCategory.SYSTEM
 
     def __init__(self, user_id: str, resource: str, reason: str, **kwargs):
+        kwargs.setdefault("category", EventCategory.SYSTEM)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.SECURITY_COMPLIANCE
         self.payload = {
@@ -340,6 +342,7 @@ class ApiRequestReceived(DomainEvent):
     def __init__(
         self, request_id: str, method: str, endpoint: str, client_id: str | None = None, **kwargs
     ):
+        kwargs.setdefault("category", EventCategory.SYSTEM)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
         self.payload = {
@@ -357,6 +360,7 @@ class ApiResponseSent(DomainEvent):
     category: EventCategory = EventCategory.SYSTEM
 
     def __init__(self, request_id: str, status_code: int, duration_ms: float, **kwargs):
+        kwargs.setdefault("category", EventCategory.SYSTEM)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
         self.payload = {
@@ -373,6 +377,7 @@ class RateLimitExceeded(DomainEvent):
     category: EventCategory = EventCategory.SYSTEM
 
     def __init__(self, client_id: str, endpoint: str, limit: int, **kwargs):
+        kwargs.setdefault("category", EventCategory.SYSTEM)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.API_GATEWAY
         self.payload = {
@@ -505,6 +510,7 @@ class NotificationRequested(DomainEvent):
         channel: str = "email",
         **kwargs,
     ):
+        kwargs.setdefault("category", EventCategory.INTEGRATION)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.NOTIFICATION_DELIVERY
         self.payload = {
@@ -530,6 +536,7 @@ class DataExportRequested(DomainEvent):
         format: str = "json",
         **kwargs,
     ):
+        kwargs.setdefault("category", EventCategory.INTEGRATION)
         super().__init__(**kwargs)
         self.bounded_context = BoundedContext.ANALYTICS_REPORTING
         self.payload = {
