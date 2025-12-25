@@ -8,8 +8,8 @@
 - **Pylint Score**: 0.0/10.0
 
 ## 📏 Codebase Size (حجم الكود)
-- **Total Python Files**: 615
-- **Lines of Code**: 63562
+- **Total Python Files**: 613
+- **Lines of Code**: 63300
 
 ## ℹ️ Verification
 - **Method**: Automated via `scripts/quality_metrics.py`
