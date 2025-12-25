@@ -5,22 +5,24 @@
 المعايير:
 - CS50 2025: توثيق عربي، صرامة في النوع.
 - Dependency Injection: يعتمد على السجل (Registry) ومدير الحالة (State).
+- SICP: Abstraction Barriers (لا يعرف تفاصيل التسجيل، فقط يستقبله).
 """
 
 import asyncio
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from app.models import Task
-
-# استيراد بروتوكول السجل إذا كان موجوداً، أو استخدام Any مؤقتاً
-# سنستخدم Any للسجل حالياً لتجنب التعقيد، مع الافتراض أنه قاموس
 from app.services.overmind.state import MissionStateManager
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["TaskExecutor"]
+
+# تعريف نوع السجل: قاموس يربط الاسم بدالة (متزامنة أو غير متزامنة)
+type ToolRegistry = dict[str, Callable[..., Awaitable[Any] | Any]]
 
 
 class TaskExecutor:
@@ -29,24 +31,23 @@ class TaskExecutor:
     مسؤول عن استدعاء الأدوات وتشغيلها في بيئة آمنة.
     """
 
-    def __init__(self, state_manager: MissionStateManager) -> None:
+    def __init__(
+        self,
+        state_manager: MissionStateManager,
+        registry: ToolRegistry
+    ) -> None:
         """
         تهيئة المنفذ.
 
         Args:
             state_manager (MissionStateManager): مدير الحالة (لتسجيل النتائج الجزئية إذا لزم الأمر).
+            registry (ToolRegistry): سجل الأدوات المحقون (Dependency Injection).
         """
         self.state_manager = state_manager
+        self.registry = registry
 
-        # محاولة الوصول إلى سجل الأدوات.
-        # في التصميم المثالي، يجب حقن السجل هنا.
-        # للتوافق السريع، سنحاول استيراده.
-        try:
-            from app.services import agent_tools
-            self.registry = getattr(agent_tools, "_TOOL_REGISTRY", {})
-        except ImportError:
-            logger.warning("Agent tools registry not available.")
-            self.registry = {}
+        if not self.registry:
+            logger.warning("TaskExecutor initialized with empty registry.")
 
     async def execute_task(self, task: Task) -> dict[str, Any]:
         """
@@ -59,18 +60,11 @@ class TaskExecutor:
             dict[str, Any]: نتيجة التنفيذ (status, result_text, meta, error).
         """
         tool_name = task.tool_name
-        # التعامل الآمن مع JSON
-        if isinstance(task.tool_args_json, str):
-            try:
-                tool_args = json.loads(task.tool_args_json)
-            except json.JSONDecodeError:
-                tool_args = {}
-        else:
-            tool_args = task.tool_args_json or {}
+        tool_args = self._parse_args(task.tool_args_json)
 
         # 1. التحقق من وجود السجل
         if not self.registry:
-            return {"status": "failed", "error": "Agent tools registry not available."}
+            return {"status": "failed", "error": "Agent tools registry is empty."}
 
         try:
             # 2. البحث عن الأداة
@@ -97,3 +91,23 @@ class TaskExecutor:
         except Exception as e:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)
             return {"status": "failed", "error": str(e)}
+
+    def _parse_args(self, args_json: str | dict | None) -> dict[str, Any]:
+        """
+        تحليل وسائط الأداة بشكل آمن.
+
+        Args:
+            args_json: سلسلة نصية JSON أو قاموس أو None.
+
+        Returns:
+            dict: قاموس الوسائط.
+        """
+        if args_json is None:
+            return {}
+        if isinstance(args_json, dict):
+            return args_json
+        try:
+            return json.loads(args_json)
+        except json.JSONDecodeError:
+            logger.warning("Failed to decode tool arguments JSON.")
+            return {}
