@@ -1,31 +1,113 @@
+# app/services/overmind/agents/operator.py
 """
-Operator Agent (Executor) - The Doer.
+الوكيل المنفذ (Operator Agent) - الذراع الضارب.
+---------------------------------------------------------
+يقوم هذا الوكيل باستلام التصميم التقني وتنفيذ المهام الواحدة تلو الأخرى
+باستخدام محرك التنفيذ (TaskExecutor).
 
-Executes technical tasks using available tools.
+المعايير:
+- CS50 2025 Strict Mode.
+- توثيق "Legendary" باللغة العربية.
+- استخدام واجهات صارمة.
 """
-import asyncio
-from typing import Any, Dict
-from app.core.protocols import AgentExecutor
+
+import json
+from typing import Any
+
+from app.core.di import get_logger
+from app.core.protocols import AgentExecutor, CollaborationContext
+from app.models import Task, TaskStatus
 from app.services.overmind.executor import TaskExecutor
 
+logger = get_logger(__name__)
+
+
 class OperatorAgent(AgentExecutor):
-    def __init__(self, task_executor: TaskExecutor):
+    """
+    المنفذ الميداني (The Executioner).
+
+    المسؤوليات:
+    1. استلام قائمة المهام (Tasks) من التصميم.
+    2. المرور على المهام وتنفيذها بالتسلسل.
+    3. تسجيل نتائج التنفيذ وتمريرها للمدقق.
+    """
+
+    def __init__(self, task_executor: TaskExecutor) -> None:
+        """
+        تهيئة المنفذ.
+
+        Args:
+            task_executor: محرك تنفيذ المهام الفعلي.
+        """
         self.executor = task_executor
 
-    async def execute_tasks(self, design: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_tasks(self, design: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
         """
-        Executes the tasks.
+        تنفيذ المهام الواردة في التصميم.
+
+        Args:
+            design (dict): التصميم التقني المحتوي على قائمة المهام.
+            context (CollaborationContext): السياق المشترك.
+
+        Returns:
+            dict: تقرير التنفيذ الشامل.
         """
-        tasks = design.get("tasks", [])
+        logger.info("Operator is starting execution...")
+        tasks_data = design.get("tasks", [])
         results = []
+        overall_status = "success"
 
-        # Simulation delay to make the user feel the "Deep Work"
-        # and to ensure the UI has time to render the Execution phase.
-        await asyncio.sleep(2.0)
+        for i, task_def in enumerate(tasks_data):
+            task_name = task_def.get("name", f"Task-{i}")
+            tool_name = task_def.get("tool_name")
+            tool_args = task_def.get("tool_args", {})
 
-        for task in tasks:
-            # In a real scenario, this would map task dicts to Task objects
-            # For now we simulate success
-            results.append({"task_id": task["id"], "status": "success"})
+            if not tool_name:
+                logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
+                results.append({"name": task_name, "status": "skipped", "reason": "no_tool_name"})
+                continue
 
-        return {"status": "success", "results": results}
+            logger.info(f"Executing Task [{i+1}/{len(tasks_data)}]: {task_name} using {tool_name}")
+
+            # إنشاء كائن مهمة مؤقت (Ephemeral Task Object)
+            # لأن TaskExecutor يتوقع كائن Task.
+            # في المستقبل قد نحدث TaskExecutor لقبول dict مباشرة.
+            # ملاحظة: Task يحتاج mission_id، هنا نستخدم 0 كقيمة مؤقتة لأننا لا نملك ID المهمة مباشرة هنا
+            # إلا إذا أخذناه من context.
+            mission_id = context.shared_memory.get("mission_id", 0) if hasattr(context, "shared_memory") else 0
+
+            # تحويل args إلى JSON string لأن النموذج يتوقع ذلك
+            args_json = json.dumps(tool_args) if isinstance(tool_args, dict) else str(tool_args)
+
+            temp_task = Task(
+                mission_id=mission_id,
+                name=task_name,
+                tool_name=tool_name,
+                tool_args_json=args_json,
+                status=TaskStatus.PENDING
+            )
+
+            # تنفيذ المهمة
+            exec_result = await self.executor.execute_task(temp_task)
+
+            # تسجيل النتيجة
+            results.append({
+                "name": task_name,
+                "tool": tool_name,
+                "result": exec_result
+            })
+
+            if exec_result.get("status") == "failed":
+                overall_status = "partial_failure"
+                # يمكننا هنا اتخاذ قرار بالتوقف أو الاستمرار (Fail Fast vs Continue)
+                # سنستمر حالياً ولكن نسجل الفشل.
+
+        report = {
+            "status": overall_status,
+            "tasks_executed": len(results),
+            "results": results
+        }
+
+        # تخزين النتائج في السياق
+        context.update("last_execution_report", report)
+        return report
