@@ -9,7 +9,7 @@ import bcrypt
 import pytest
 import sqlalchemy as sa
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
@@ -50,8 +50,6 @@ if "DATABASE_URL" not in os.environ:
 
 # Now it is safe to import app modules
 from app.core.database import get_db
-from app.core.engine_factory import create_unified_async_engine
-
 
 # --- Event Loop Fixture for Session Scope ---
 @pytest.fixture(scope="session")
@@ -73,10 +71,10 @@ def test_app():
     """
     Creates a FastAPI application instance for the test session.
     """
-    import app.main
     from app.main import create_app
 
     # Force reset of the kernel singleton to ensure we use test settings
+    import app.main
     app.main._kernel_instance = None
 
     # Create a temporary directory for static files
@@ -106,10 +104,13 @@ def client(test_app):
 # We reuse the same URL logic
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
-engine = create_unified_async_engine(
+# Explicitly create the test engine using standard SQLAlchemy logic
+# instead of relying on the now-deleted app.core.engine_factory
+engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False,
     connect_args={"check_same_thread": False},
+    pool_pre_ping=True
 )
 
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
