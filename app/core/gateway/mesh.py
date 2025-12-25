@@ -47,6 +47,13 @@ _performance_optimizer = get_performance_optimizer()
 @runtime_checkable
 class AIClient(Protocol):
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    
+    async def send_message(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: float = 0.7
+    ) -> str: ...
 
     async def __aiter__(self):
         return self
@@ -345,6 +352,42 @@ class NeuralRoutingMesh:
                      raise AIConnectionError("Max retries exceeded") from e
 
                 await asyncio.sleep(0.5 * attempt) # Simple backoff for retries
+
+    async def send_message(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: float = 0.7
+    ) -> str:
+        """
+        دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).
+        
+        تستخدم stream_chat داخلياً وتجمع كل الأجزاء في نص واحد.
+        
+        Args:
+            system_prompt: رسالة النظام (السياق).
+            user_message: رسالة المستخدم.
+            temperature: درجة الإبداع (0.0 = دقيق، 1.0 = إبداعي).
+            
+        Returns:
+            str: الرد الكامل من النموذج.
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+        
+        full_response = []
+        try:
+            async for chunk in self.stream_chat(messages):
+                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                if content:
+                    full_response.append(content)
+        except Exception as e:
+            logger.error(f"Error in send_message: {e}")
+            raise
+        
+        return "".join(full_response)
 
 
 def get_ai_client() -> AIClient:

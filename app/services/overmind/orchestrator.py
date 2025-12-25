@@ -125,6 +125,11 @@ class OvermindOrchestrator:
             # This is 100% autonomous and self-correcting.
             result = {}
             if self.brain:
+                await self.state.log_event(
+                    mission.id,
+                    MissionEventType.STATUS_CHANGE,
+                    {"phase": "brain_processing_started"}
+                )
                 result = await self.brain.process_mission(
                     mission,
                     log_event=_log_bridge
@@ -140,7 +145,12 @@ class OvermindOrchestrator:
             )
 
         except Exception as e:
-            logger.error(f"SuperBrain failure: {e}")
+            logger.exception(f"SuperBrain failure in mission {mission.id}: {e}")
             await self.state.update_mission_status(
                 mission.id, MissionStatus.FAILED, f"Cognitive Error: {e}"
+            )
+            await self.state.log_event(
+                mission.id,
+                MissionEventType.MISSION_FAILED,
+                {"error": str(e), "error_type": type(e).__name__}
             )

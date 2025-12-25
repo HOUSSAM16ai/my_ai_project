@@ -53,7 +53,29 @@ class OperatorAgent(AgentExecutor):
             dict: تقرير التنفيذ الشامل.
         """
         logger.info("Operator is starting execution...")
+        
+        # التحقق من وجود أخطاء في التصميم
+        if "error" in design:
+            logger.error(f"Operator received failed design: {design.get('error')}")
+            return {
+                "status": "failed",
+                "tasks_executed": 0,
+                "results": [],
+                "error": f"Design failed: {design.get('error')}"
+            }
+        
         tasks_data = design.get("tasks", [])
+        
+        if not tasks_data:
+            logger.warning("Operator received design with no tasks")
+            return {
+                "status": "success",
+                "tasks_executed": 0,
+                "results": [],
+                "note": "No tasks to execute"
+            }
+        
+        logger.info(f"Operator: Executing {len(tasks_data)} tasks")
         results = []
         overall_status = "success"
 
@@ -88,7 +110,15 @@ class OperatorAgent(AgentExecutor):
             )
 
             # تنفيذ المهمة
-            exec_result = await self.executor.execute_task(temp_task)
+            try:
+                exec_result = await self.executor.execute_task(temp_task)
+                logger.info(f"Task '{task_name}' completed with status: {exec_result.get('status', 'unknown')}")
+            except Exception as e:
+                logger.exception(f"Task '{task_name}' raised exception: {e}")
+                exec_result = {
+                    "status": "failed",
+                    "error": f"{type(e).__name__}: {str(e)}"
+                }
 
             # تسجيل النتيجة
             results.append({
@@ -99,6 +129,7 @@ class OperatorAgent(AgentExecutor):
 
             if exec_result.get("status") == "failed":
                 overall_status = "partial_failure"
+                logger.warning(f"Task '{task_name}' failed: {exec_result.get('error', 'unknown error')}")
                 # يمكننا هنا اتخاذ قرار بالتوقف أو الاستمرار (Fail Fast vs Continue)
                 # سنستمر حالياً ولكن نسجل الفشل.
 

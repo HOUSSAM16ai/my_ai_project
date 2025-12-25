@@ -14,7 +14,7 @@ from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
-from app.core.protocols import AgentReflector
+from app.core.protocols import AgentReflector, CollaborationContext
 
 logger = get_logger(__name__)
 
@@ -32,7 +32,12 @@ class AuditorAgent(AgentReflector):
     def __init__(self, ai_client: AIClient) -> None:
         self.ai = ai_client
 
-    async def review_work(self, result: dict[str, Any], original_objective: str) -> dict[str, Any]:
+    async def review_work(
+        self,
+        result: dict[str, Any],
+        original_objective: str,
+        context: CollaborationContext
+    ) -> dict[str, Any]:
         """
         مراجعة نتائج العمل ومقارنتها بالهدف الأصلي.
         """
@@ -48,8 +53,18 @@ class AuditorAgent(AgentReflector):
                 "confidence": 0.0
             }
 
+        # التحقق من وجود محتوى فعلي
+        if not result or (isinstance(result, dict) and len(result) == 0):
+            logger.warning("Auditor detected empty result.")
+            return {
+                "approved": False,
+                "feedback": "النتيجة فارغة. يجب أن يكون هناك مخرجات فعلية.",
+                "confidence": 0.0
+            }
+
         # مراجعة أعمق (Deep Logic Check) - يمكن توسيعها لتشمل استدعاء LLM
         # حالياً سنكتفي بالمراجعة الأساسية لضمان السرعة (KISS Principle)
+        logger.info("Auditor: Work approved after basic checks")
 
         return {
             "approved": True,

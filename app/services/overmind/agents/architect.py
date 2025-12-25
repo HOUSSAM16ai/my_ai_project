@@ -85,11 +85,13 @@ class ArchitectAgent(AgentArchitect):
         user_content = f"Plan: {plan_str}\nConvert this into executable tasks."
 
         try:
+            logger.info("Architect: Calling AI for design generation...")
             response_text = await self.ai.send_message(
                 system_prompt=system_prompt,
                 user_message=user_content,
                 temperature=0.1  # دقة قصوى
             )
+            logger.info(f"Architect: Received AI response ({len(response_text)} chars)")
 
             cleaned_response = self._clean_json_block(response_text)
             design_data = json.loads(cleaned_response)
@@ -97,16 +99,25 @@ class ArchitectAgent(AgentArchitect):
             if "tasks" not in design_data:
                 raise ValueError("Design missing 'tasks' field")
 
+            logger.info(f"Architect: Design created with {len(design_data.get('tasks', []))} tasks")
             # تخزين التصميم في الذاكرة المشتركة
             context.update("last_design", design_data)
             return design_data
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Architect JSON parsing error: {e}")
+            logger.error(f"Raw response: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
+            return {
+                "design_name": "Failed Design - JSON Error",
+                "error": f"JSON parsing failed: {e}",
+                "tasks": []
+            }
         except Exception as e:
-            logger.error(f"Architect failed to design: {e}")
+            logger.exception(f"Architect failed to design: {e}")
             # في حال الفشل، نعيد تصميم فارغ أو خطأ
             return {
                 "design_name": "Failed Design",
-                "error": str(e),
+                "error": f"{type(e).__name__}: {str(e)}",
                 "tasks": []
             }
 
