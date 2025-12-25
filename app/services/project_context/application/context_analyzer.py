@@ -283,7 +283,7 @@ class ProjectContextService:
             ("app/core/database.py", "Database Engine", "Async database connections"),
             ("app/core/ai_gateway.py", "AI Gateway", "Neural routing mesh for AI"),
             ("app/core/prompts.py", "System Prompts", "OVERMIND identity and context"),
-            ("app/services/master_agent_service.py", "Master Agent", "Mission orchestration"),
+            ("app/services/overmind/orchestrator.py", "Overmind Orchestrator", "Mission orchestration"),
             ("app/services/agent_tools.py", "Agent Tools", "File ops, search, reasoning"),
             ("app/api/routers/admin.py", "Admin API", "Chat and admin endpoints"),
             ("app/overmind/planning/deep_indexer.py", "Deep Indexer", "Code structure analysis"),

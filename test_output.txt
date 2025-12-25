@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0 -- /home/jules/.pyenv/versions/3.12.12/bin/python3
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: Faker-39.0.0, anyio-4.12.0, asyncio-1.3.0, env-1.2.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_success PASSED [ 25%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_not_found PASSED [ 50%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_failure PASSED [ 75%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_factory_assembly PASSED [100%]
+
+============================= slowest 10 durations =============================
+0.32s setup    tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_success
+0.04s call     tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_success
+0.01s teardown tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_success
+0.01s teardown tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_factory_assembly
+0.01s teardown tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_failure
+0.01s teardown tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_not_found
+
+(4 durations < 0.005s hidden.  Use -vv to show these durations.)
+============================== 4 passed in 0.57s ===============================
