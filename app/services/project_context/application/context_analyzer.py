@@ -1,9 +1,22 @@
-# app/services/project_context/application/context_analyzer.py
 """
-🧠 PROJECT CONTEXT ANALYZER - OVERMIND INTELLIGENCE LAYER
+محلل سياق المشروع (Project Context Analyzer) - طبقة ذكاء Overmind.
 
-Application layer service for deep, real-time project understanding.
-Provides project analysis for the Overmind AI system.
+خدمة طبقة التطبيق للفهم العميق والفوري للمشروع.
+يوفر تحليل المشروع لنظام Overmind AI.
+
+المبادئ (Principles):
+- Harvard CS50 2025: توثيق عربي، وضوح الكود
+- Berkeley SICP: Functional Core (دوال تحليل نقية)
+- SOLID: Single Responsibility (كل دالة تحلل جانب واحد)
+
+الوظائف (Features):
+- تحليل بنية المشروع (Project Structure)
+- إحصائيات الكود (Code Statistics)
+- تحديد المكونات الرئيسية (Key Components)
+- Cache ذكي لتحسين الأداء (5 دقائق TTL)
+
+ملاحظة (Note):
+    هذا الملف كبير (636 سطر) ويحتاج للتقسيم في المستقبل
 """
 
 from __future__ import annotations
@@ -25,20 +38,37 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
 
 class ProjectContextService:
     """
-    🧠 OVERMIND INTELLIGENCE LAYER
+    خدمة سياق المشروع (Project Context Service) - طبقة ذكاء Overmind.
 
-    Provides deep project understanding for AI-powered responses.
-    This makes the Overmind actually understand the project!
+    توفر فهماً عميقاً للمشروع للاستجابات المدعومة بالذكاء الاصطناعي.
+    تجعل Overmind يفهم المشروع فعلياً!
+    
+    الميزات (Features):
+        - تحليل بنية المشروع
+        - إحصائيات الكود
+        - تحديد المكونات الرئيسية
+        - Cache ذكي (5 دقائق)
     """
 
     def __init__(self, project_root: Path | None = None):
+        """
+        تهيئة خدمة سياق المشروع.
+        
+        Args:
+            project_root: مسار جذر المشروع (اختياري، يُحدد تلقائياً)
+        """
         self.project_root = project_root or PROJECT_ROOT
         self._cache_timestamp: datetime | None = None
         self._cached_context: str | None = None
-        self._cache_ttl_seconds = 300  # 5 minutes cache
+        self._cache_ttl_seconds = 300  # 5 دقائق cache
 
     def get_project_structure(self) -> ProjectStructure:
-        """Get the actual project directory structure."""
+        """
+        الحصول على بنية دليل المشروع الفعلية.
+        
+        Returns:
+            ProjectStructure: كائن يحتوي على الأدلة والملفات الرئيسية
+        """
         directories = []
         key_files = []
         app_modules = []

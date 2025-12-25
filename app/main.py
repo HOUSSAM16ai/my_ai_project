@@ -1,7 +1,20 @@
-# app/main.py
 """
-Entry point for the CogniForge Reality Kernel V3.
-Handles application initialization, middleware weaving, and static file serving.
+نقطة الدخول الرئيسية لتطبيق CogniForge (Main Entry Point).
+
+يتعامل مع تهيئة التطبيق، نسج البرمجيات الوسيطة، وخدمة الملفات الثابتة.
+
+المبادئ (Principles):
+- Harvard CS50 2025: توثيق عربي احترافي، وضوح الكود
+- Berkeley SICP: Application Factory Pattern (دالة مصنع للتطبيق)
+- SOLID: Single Responsibility (كل دالة لها مسؤولية واحدة)
+
+البنية (Architecture):
+    1. تحميل الإعدادات من .env
+    2. إنشاء Kernel (النواة المركزية)
+    3. نسج Middleware Stack
+    4. ربط Routers
+    5. إعداد Static Files
+    6. تفعيل Health Monitoring
 """
 import logging
 
@@ -24,10 +37,18 @@ _kernel_instance = None
 
 
 def get_kernel():
+    """
+    الحصول على مثيل النواة (Kernel Singleton).
+    
+    يضمن إنشاء النواة مرة واحدة فقط (Singleton Pattern) للحفاظ على الحالة
+    وتجنب إعادة التهيئة المكلفة.
+    
+    Returns:
+        RealityKernel: مثيل النواة المركزية
+    """
     global _kernel_instance
     if _kernel_instance is None:
-        # 🧠 INTELLIGENCE UPGRADE: Pass the full Matrix object, not a dumb dict.
-        # This preserves type safety and "genius" algorithms deep into the kernel.
+        # تمرير كائن الإعدادات الكامل للحفاظ على أمان الأنواع
         settings = get_settings()
         _kernel_instance = RealityKernel(settings)
     return _kernel_instance
@@ -35,41 +56,54 @@ def get_kernel():
 
 async def _health_check():
     """
-    Enhanced health check for Phase 6 verification.
-    Delegates to SystemService for integrity checks.
+    فحص صحة النظام (Health Check).
+    
+    يفوض العملية إلى SystemService للتحقق من سلامة النظام بالكامل.
+    
+    Returns:
+        تقرير حالة النظام
     """
     return await system_service.verify_system_integrity()
 
 
 def _setup_monitoring(app: FastAPI):
-    """Sets up monitoring endpoints (health check)"""
+    """
+    إعداد نقاط نهاية المراقبة (Monitoring Endpoints).
+    
+    يضيف endpoint للفحص الصحي للنظام.
+    
+    Args:
+        app: تطبيق FastAPI
+    """
     app.add_api_route("/health", _health_check, methods=["GET"])
 
 
 def create_app(static_dir: str | None = None) -> FastAPI:
     """
-    Application factory function (The "Big Bang" of the application).
+    دالة مصنع التطبيق (Application Factory) - الانفجار الكبير للتطبيق.
 
-    This function is responsible for bootstrapping the entire application lifecycle:
-    1. Instantiates the Reality Kernel (the central engine).
-    2. Weaves together middleware (Security, CORS, Logging, etc.).
-    3. Mounts routers and API endpoints.
-    4. Configures static file serving for the frontend.
-    5. Sets up system health monitoring.
+    هذه الدالة مسؤولة عن تهيئة دورة حياة التطبيق بالكامل:
+    1. إنشاء مثيل النواة (Reality Kernel) - المحرك المركزي
+    2. نسج البرمجيات الوسيطة (Security, CORS, Logging, etc.)
+    3. ربط الموجهات ونقاط نهاية API
+    4. إعداد خدمة الملفات الثابتة للواجهة الأمامية
+    5. تفعيل مراقبة صحة النظام
 
     Args:
-        static_dir (str | None): Optional override for the static files directory path.
-                                 Useful for testing environments.
+        static_dir: مسار اختياري لمجلد الملفات الثابتة (مفيد للاختبارات)
 
     Returns:
-        FastAPI: A fully configured and "woven" FastAPI application instance ready to serve traffic.
+        FastAPI: مثيل تطبيق FastAPI مُهيأ بالكامل وجاهز لخدمة الطلبات
+        
+    المبدأ (Principle):
+        Factory Pattern من SICP - إنشاء كائنات معقدة بطريقة منظمة
     """
     kernel = get_kernel()
     app = kernel.get_app()
     app.kernel = kernel  # type: ignore
 
     _setup_monitoring(app)
-    # Delegate static file setup to the core handler
+    # تفويض إعداد الملفات الثابتة إلى المعالج الأساسي
     setup_static_files(app, static_dir)
 
     return app

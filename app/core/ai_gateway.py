@@ -1,9 +1,17 @@
-# app/core/ai_gateway.py
 """
-The ENERGY-ENGINE (V7.2 - SUPERHUMAN EDITION - ULTRA-OPTIMIZED).
+بوابة الذكاء الاصطناعي (AI Gateway).
 
-This file now serves as a FACADE for the atomic modules located in `app/core/gateway/`.
-This maintains backward compatibility while enforcing SRP via the new structure.
+يعمل هذا الملف كواجهة (Facade) للوحدات الذرية الموجودة في `app/core/gateway/`.
+يحافظ على التوافق مع الإصدارات السابقة مع تطبيق SRP عبر البنية الجديدة.
+
+المبادئ (Principles):
+- Harvard CS50 2025: توثيق عربي، صرامة الأنواع
+- Berkeley SICP: Abstraction Barriers (الواجهة تخفي التعقيد)
+- SOLID: Facade Pattern (واجهة مبسطة لنظام معقد)
+
+الاستخدام (Usage):
+    client = get_ai_client()
+    response = await client.generate("prompt")
 """
 
 import logging
@@ -50,15 +58,27 @@ _performance_optimizer = get_performance_optimizer()
 
 def get_performance_report() -> dict[str, "Any"]:
     """
-    Get comprehensive performance report from the optimizer.
-    Delegates to the optimizer service.
+    الحصول على تقرير أداء شامل من محسن الأداء.
+    
+    يفوض العملية إلى خدمة المحسن (Optimizer Service).
+    
+    Returns:
+        تقرير مفصل عن أداء النماذج المختلفة
     """
     return _performance_optimizer.get_detailed_report()
 
 
 def get_recommended_model(available_models: list[str], context: str = "") -> str:
     """
-    Get AI-recommended model based on historical performance.
-    Delegates to the optimizer service.
+    الحصول على النموذج الموصى به بناءً على الأداء التاريخي.
+    
+    يستخدم الذكاء الاصطناعي لاختيار أفضل نموذج بناءً على السياق والأداء السابق.
+    
+    Args:
+        available_models: قائمة النماذج المتاحة
+        context: السياق الحالي (اختياري)
+        
+    Returns:
+        اسم النموذج الموصى به
     """
     return _performance_optimizer.get_recommended_model(available_models, context)

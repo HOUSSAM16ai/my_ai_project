@@ -1,11 +1,18 @@
-# app/core/error_handling.py
 """
-SUPERHUMAN ERROR HANDLING FRAMEWORK
-====================================
-إطار عمل خارق لمعالجة الأخطاء وتقليل try-except المفرط
+إطار معالجة الأخطاء (Error Handling Framework).
 
-This module provides centralized error handling to eliminate excessive try-except blocks.
-Uses decorators and context managers for clean, DRY error handling.
+يوفر معالجة مركزية للأخطاء لتقليل استخدام try-except المفرط في الكود.
+يستخدم decorators و context managers للحصول على كود نظيف ومتوافق مع DRY.
+
+المبادئ (Principles):
+- Harvard CS50 2025: توثيق عربي احترافي، صرامة الأنواع
+- Berkeley SICP: Functional Core (decorators كدوال عليا)
+- SOLID: Single Responsibility (كل decorator له مسؤولية واحدة)
+
+الاستخدام (Usage):
+    @safe_execute(default_return={})
+    def risky_operation():
+        return dangerous_call()
 """
 
 import functools
