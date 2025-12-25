@@ -1,4 +1,4 @@
-from app.services.streaming.admin_chat_streaming_service import SmartTokenChunker
+from app.services.admin.streaming.service import SmartTokenChunker
 
 
 def test_chunk_text_preserves_newlines():
