@@ -15,13 +15,8 @@ async def test_email_case_insensitivity(client):
     # 2. Try to register with lowercase email (should fail as duplicate)
     payload_lower = {"full_name": "Test User 2", "email": lowercase_email, "password": password}
     response = client.post("/api/security/register", json=payload_lower)
-    # The bug is that it currently SUCCEEDS (200) because they are treated as different users
-    # We expect 400 after the fix.
-    # For verification of the BUG, we assert that it FAILS to detect duplicate (i.e. returns 200).
-    # Wait, if I want to "prove the bug is resolved", I should write the test expecting the CORRECT behavior,
-    # and it should FAIL now.
 
-    # So I expect 400. It will fail now (return 200).
+    # Expect 400 Bad Request because the email exists
     assert response.status_code == 400, "Should detect duplicate email regardless of case"
 
     # 3. Login with lowercase email
