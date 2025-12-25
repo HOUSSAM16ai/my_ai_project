@@ -9,7 +9,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 
 from app.models import (
     Mission,
@@ -52,13 +52,15 @@ class MissionStateManager:
         stmt = (
             select(Mission)
             .options(
-                selectinload(Mission.mission_plans),
-                selectinload(Mission.tasks),
+                joinedload(Mission.mission_plans),
+                joinedload(Mission.tasks),
             )
             .where(Mission.id == mission_id)
         )
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        # Using unique() is essential when using joinedload with one-to-many relationships
+        # to prevent duplicate Mission objects due to the Cartesian product.
+        return result.unique().scalar_one_or_none()
 
     async def update_mission_status(
         self, mission_id: int, status: MissionStatus, note: str | None = None
