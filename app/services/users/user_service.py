@@ -78,6 +78,9 @@ class UserService:
         Returns:
             dict[str, Any]: نتيجة العملية (status, message).
         """
+        # تسوية البريد الإلكتروني (Normalization)
+        email = email.lower().strip()
+
         # 🛡️ Guard Clause: التحقق من وجود البريد الإلكتروني مسبقاً
         stmt = select(User).filter_by(email=email)
         result = await self.session.execute(stmt)
