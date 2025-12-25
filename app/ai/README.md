@@ -491,7 +491,7 @@ for rec in recommendations:
 
 **Before**:
 ```python
-from app.services.llm_client_service import invoke_chat
+from app.services.llm_client import invoke_chat
 
 response = invoke_chat(
     model="gpt-4",

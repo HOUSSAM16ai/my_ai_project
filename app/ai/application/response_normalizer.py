@@ -8,7 +8,7 @@ import os
 import re
 from typing import Any
 
-from app.services.llm.cost_manager import CostManager
+from app.services.llm_client.application.cost import CostManager
 
 _LOG = logging.getLogger(__name__)
 
