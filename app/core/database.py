@@ -6,7 +6,7 @@
 
 المبادئ (Principles):
 - SRP: مسؤول فقط عن الاتصال وإنشاء الجلسات.
-- KISS: تم نقل التعقيدات (التحقق من المخطط، التوافق القديم) إلى ملفات منفصلة.
+- KISS: استخدام مباشر للمكتبات القياسية بدون تعقيدات زائدة.
 - Async First: النظام مصمم ليعمل بشكل غير متزامن للحصول على أعلى أداء.
 """
 
@@ -14,9 +14,14 @@ import logging
 from collections.abc import AsyncGenerator
 from typing import Final
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from app.core.engine_factory import create_unified_async_engine
+from app.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +32,49 @@ __all__ = [
 ]
 
 
+def _create_engine() -> AsyncEngine:
+    """
+    إنشاء محرك قاعدة البيانات.
+
+    يستخدم إعدادات التطبيق لإنشاء اتصال آمن وفعال.
+    """
+    settings = get_settings()
+
+    # تحضير الرابط
+    db_url = str(settings.DATABASE_URL)
+
+    # إعدادات المحرك
+    engine_args = {
+        "echo": settings.DEBUG,  # طباعة استعلامات SQL في وضع التطوير
+        "pool_pre_ping": True,   # التحقق من صحة الاتصال قبل استخدامه
+    }
+
+    # تخصيص إعدادات SQLite
+    if "sqlite" in db_url:
+        # SQLite يحتاج إعدادات خاصة للمسارات
+        engine_args["connect_args"] = {"check_same_thread": False}
+    else:
+        # إعدادات خاصة بـ Postgres (Pool Size)
+        # نستخدم قيماً محافظة للبدء
+        engine_args["pool_size"] = 10
+        engine_args["max_overflow"] = 20
+
+    logger.info(f"🔌 Connecting to database: {settings.ENVIRONMENT} mode")
+
+    return create_async_engine(db_url, **engine_args)
+
+
 # 1. إنشاء المحرك (The Engine)
-# المحرك هو المسؤول عن الاتصال الفعلي بقاعدة البيانات.
-# نستخدم دالة مصنع (Factory Function) لضمان توحيد الإعدادات.
-engine: Final[AsyncEngine] = create_unified_async_engine()
+engine: Final[AsyncEngine] = _create_engine()
 
 
 # 2. مصنع الجلسات (Session Factory)
-# هذا المصنع يقوم بإنشاء "جلسات" (Sessions) للتفاعل مع قاعدة البيانات.
-# كل طلب (Request) يحصل على جلسة خاصة به.
 async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,  # الحفاظ على البيانات بعد الحفظ لتقليل الاستعلامات
-    autocommit=False,        # نحن نتحكم متى يتم الحفظ (Commit) يدوياً للأمان
-    autoflush=False,         # تأجيل إرسال البيانات للقاعدة حتى اللحظة الأخيرة
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
 )
 
 
@@ -51,24 +84,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     مزود جلسات قاعدة البيانات (Database Session Provider).
 
     يستخدم هذا التابع في موجهات FastAPI (Routers) للحصول على اتصال آمن بقاعدة البيانات.
-    يضمن هذا التابع:
-    1. فتح الجلسة عند بدء الطلب.
-    2. إغلاق الجلسة تلقائياً عند انتهاء الطلب (حتى لو حدث خطأ).
-    3. التراجع عن التغييرات (Rollback) في حال حدوث خطأ.
-
-    مثال للاستخدام:
-        @router.get("/")
-        async def read_users(db: AsyncSession = Depends(get_db)):
-            ...
     """
     async with async_session_factory() as session:
         try:
             yield session
         except Exception as e:
-            # تسجيل الخطأ والتراجع عن التغييرات لحماية البيانات
             logger.error(f"❌ Database session error: {e!s}")
             await session.rollback()
             raise
         finally:
-            # ضمان إغلاق الجلسة دائماً لتحرير الموارد
             await session.close()

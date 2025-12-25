@@ -15,11 +15,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config.settings import get_settings
-from app.core.engine_factory import DatabaseURLSanitizer
 
 # تخزين مؤقت للمحرك والمصنع (Lazy Loading)
 _sync_engine = None
 _sync_session_factory = None
+
+
+def _sanitize_db_url_for_sync(url: str) -> str:
+    """تحويل رابط قاعدة البيانات ليدعم الاتصال المتزامن."""
+    if "postgresql+asyncpg" in url:
+        return url.replace("postgresql+asyncpg", "postgresql")
+    if "sqlite+aiosqlite" in url:
+        return url.replace("sqlite+aiosqlite", "sqlite")
+    return url
 
 
 def _get_sync_engine() -> Any:
@@ -27,23 +35,18 @@ def _get_sync_engine() -> Any:
     global _sync_engine  # noqa: PLW0603
     if _sync_engine is None:
         settings = get_settings()
-        db_url = str(settings.DATABASE_URL)
-
-        # تحويل الرابط ليدعم Sync
-        db_url = DatabaseURLSanitizer.sanitize(db_url, for_async=False)
-
-        if "postgresql+asyncpg" in db_url:
-            db_url = db_url.replace("postgresql+asyncpg", "postgresql")
-        elif "sqlite+aiosqlite" in db_url:
-            db_url = db_url.replace("sqlite+aiosqlite", "sqlite")
-
-        db_url = DatabaseURLSanitizer.reverse_ssl_for_sync(db_url)
+        db_url = _sanitize_db_url_for_sync(str(settings.DATABASE_URL))
 
         connect_args = {}
         if "sqlite" in db_url:
             connect_args["check_same_thread"] = False
 
-        _sync_engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
+        _sync_engine = create_engine(
+            db_url,
+            connect_args=connect_args,
+            pool_pre_ping=True,
+            echo=settings.DEBUG
+        )
     return _sync_engine
 
 
