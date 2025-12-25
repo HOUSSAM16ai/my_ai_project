@@ -1,0 +1,2341 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-7.4.4, pluggy-1.6.0 -- /home/jules/.pyenv/versions/3.12.12/bin/python3
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /app
+configfile: pytest.ini
+testpaths: tests
+plugins: asyncio-0.21.1, env-1.1.3, hypothesis-6.148.7, Faker-38.2.0, cov-4.1.0, anyio-4.12.0, factoryboy-2.8.1
+asyncio: mode=Mode.AUTO
+collecting ... collected 964 items
+
+tests/test_adaptive_cache_eviction.py::test_adaptive_cache_eviction_fix PASSED [  0%]
+tests/test_admin_auth_config_fix.py::test_admin_auth_uses_centralized_config PASSED [  0%]
+tests/test_admin_chat_error_handling.py::test_chat_error_handling_no_auth PASSED [  0%]
+tests/test_admin_chat_error_handling.py::test_chat_error_handling_with_auth_but_service_error PASSED [  0%]
+tests/test_admin_chat_error_handling.py::test_analyze_project_error_handling PASSED [  0%]
+tests/test_admin_chat_history.py::test_admin_chat_history_streaming PASSED [  0%]
+tests/test_admin_chat_init_event.py::test_admin_chat_returns_conversation_init_event PASSED [  0%]
+tests/test_analysis_module.py::TestAnomalyDataclasses::test_anomaly_type_values PASSED [  0%]
+tests/test_analysis_module.py::TestAnomalyDataclasses::test_anomaly_severity_values PASSED [  0%]
+tests/test_analysis_module.py::TestAnomalyDataclasses::test_anomaly_to_dict PASSED [  1%]
+tests/test_analysis_module.py::TestAnomalyDetectorInit::test_default_initialization PASSED [  1%]
+tests/test_analysis_module.py::TestAnomalyDetectorInit::test_custom_initialization PASSED [  1%]
+tests/test_analysis_module.py::TestZScoreDetection::test_zscore_needs_minimum_data PASSED [  1%]
+tests/test_analysis_module.py::TestZScoreDetection::test_zscore_detects_anomaly PASSED [  1%]
+tests/test_analysis_module.py::TestZScoreDetection::test_zscore_zero_stdev_handling PASSED [  1%]
+tests/test_analysis_module.py::TestIQRDetection::test_iqr_needs_minimum_data PASSED [  1%]
+tests/test_analysis_module.py::TestIQRDetection::test_iqr_detects_outlier PASSED [  1%]
+tests/test_analysis_module.py::TestIQRDetection::test_iqr_zero_iqr_handling PASSED [  1%]
+tests/test_analysis_module.py::TestMovingAverageDetection::test_moving_average_needs_minimum_data PASSED [  1%]
+tests/test_analysis_module.py::TestMovingAverageDetection::test_moving_average_detects_deviation PASSED [  2%]
+tests/test_analysis_module.py::TestMLDetection::test_ml_needs_minimum_data PASSED [  2%]
+tests/test_analysis_module.py::TestMLDetection::test_ml_detects_isolated_value PASSED [  2%]
+tests/test_analysis_module.py::TestCheckValue::test_check_value_needs_minimum_history PASSED [  2%]
+tests/test_analysis_module.py::TestCheckValue::test_check_value_detects_anomaly PASSED [  2%]
+tests/test_analysis_module.py::TestCheckValue::test_check_value_with_context PASSED [  2%]
+tests/test_analysis_module.py::TestDetermineAnomalySeverity::test_severity_critical PASSED [  2%]
+tests/test_analysis_module.py::TestDetermineAnomalySeverity::test_severity_high PASSED [  2%]
+tests/test_analysis_module.py::TestDetermineAnomalySeverity::test_severity_medium PASSED [  2%]
+tests/test_analysis_module.py::TestDetermineAnomalySeverity::test_severity_low PASSED [  3%]
+tests/test_analysis_module.py::TestRecommendedAction::test_critical_action PASSED [  3%]
+tests/test_analysis_module.py::TestRecommendedAction::test_high_action PASSED [  3%]
+tests/test_analysis_module.py::TestRecommendedAction::test_medium_action PASSED [  3%]
+tests/test_analysis_module.py::TestRecommendedAction::test_low_action PASSED [  3%]
+tests/test_analysis_module.py::TestCollectiveAnomalyDetection::test_collective_needs_minimum_data PASSED [  3%]
+tests/test_analysis_module.py::TestCollectiveAnomalyDetection::test_collective_detects_pattern PASSED [  3%]
+tests/test_analysis_module.py::TestStatisticsAndRetrieval::test_get_statistics PASSED [  3%]
+tests/test_analysis_module.py::TestStatisticsAndRetrieval::test_get_recent_anomalies PASSED [  3%]
+tests/test_analysis_module.py::TestStatisticsAndRetrieval::test_get_recent_anomalies_with_severity_filter PASSED [  3%]
+tests/test_analysis_module.py::TestPatternDataclasses::test_pattern_type_values PASSED [  4%]
+tests/test_analysis_module.py::TestPatternDataclasses::test_pattern_to_dict PASSED [  4%]
+tests/test_analysis_module.py::TestPatternRecognizerInit::test_default_initialization PASSED [  4%]
+tests/test_analysis_module.py::TestPatternRecognizerInit::test_custom_sensitivity PASSED [  4%]
+tests/test_analysis_module.py::TestTrafficPatternAnalysis::test_analyze_needs_minimum_data PASSED [  4%]
+tests/test_analysis_module.py::TestTrafficPatternAnalysis::test_analyze_detects_spike PASSED [  4%]
+tests/test_analysis_module.py::TestTrafficPatternAnalysis::test_analyze_detects_drop PASSED [  4%]
+tests/test_analysis_module.py::TestSpikeDetection::test_spike_detection_threshold PASSED [  4%]
+tests/test_analysis_module.py::TestDropDetection::test_drop_detection_threshold PASSED [  4%]
+tests/test_analysis_module.py::TestPeriodicPatternDetection::test_periodic_needs_minimum_data PASSED [  4%]
+tests/test_analysis_module.py::TestPeriodicPatternDetection::test_periodic_detects_repeating_pattern PASSED [  5%]
+tests/test_analysis_module.py::TestErrorPatternDetection::test_error_clustering_detection PASSED [  5%]
+tests/test_analysis_module.py::TestErrorPatternDetection::test_no_error_clustering_below_threshold PASSED [  5%]
+tests/test_analysis_module.py::TestSecurityPatternDetection::test_brute_force_detection PASSED [  5%]
+tests/test_analysis_module.py::TestSecurityPatternDetection::test_no_brute_force_below_threshold PASSED [  5%]
+tests/test_analysis_module.py::TestPatternRecognizerStatistics::test_get_statistics PASSED [  5%]
+tests/test_analysis_module.py::TestPatternRecognizerStatistics::test_get_recent_patterns PASSED [  5%]
+tests/test_analysis_module.py::TestPatternRecognizerStatistics::test_get_recent_patterns_with_type_filter PASSED [  5%]
+tests/test_analysis_module.py::TestAnalysisIntegration::test_detector_and_recognizer_together PASSED [  5%]
+tests/test_analysis_module.py::TestAnalysisIntegration::test_module_imports PASSED [  6%]
+tests/test_api_crud.py::TestHealthEndpoints::test_database_health PASSED [  6%]
+tests/test_api_crud.py::TestHealthEndpoints::test_database_stats PASSED  [  6%]
+tests/test_api_crud.py::TestHealthEndpoints::test_database_tables PASSED [  6%]
+tests/test_api_crud.py::TestCRUDOperations::test_create_user PASSED      [  6%]
+tests/test_api_crud.py::TestCRUDOperations::test_read_users PASSED       [  6%]
+tests/test_api_crud.py::TestCRUDOperations::test_read_single_user PASSED [  6%]
+tests/test_api_crud.py::TestCRUDOperations::test_update_user PASSED      [  6%]
+tests/test_api_crud.py::TestCRUDOperations::test_delete_user PASSED      [  6%]
+tests/test_api_crud.py::TestValidation::test_create_user_invalid_email PASSED [  6%]
+tests/test_api_crud.py::TestValidation::test_create_user_missing_required_field PASSED [  7%]
+tests/test_api_crud.py::TestPaginationAndFiltering::test_pagination PASSED [  7%]
+tests/test_api_crud.py::TestPaginationAndFiltering::test_search PASSED   [  7%]
+tests/test_api_crud.py::TestPaginationAndFiltering::test_ordering PASSED [  7%]
+tests/test_api_crud.py::TestErrorHandling::test_not_found_table PASSED   [  7%]
+tests/test_api_crud.py::TestErrorHandling::test_not_found_record PASSED  [  7%]
+tests/test_api_crud.py::TestErrorHandling::test_unauthorized_access PASSED [  7%]
+tests/test_api_first_platform.py::TestAPIFirstPlatform::test_health_check_schema_compliance PASSED [  7%]
+tests/test_api_first_platform.py::TestAPIFirstPlatform::test_openapi_schema_availability PASSED [  7%]
+tests/test_app.py::test_app_fixture_loads_correctly PASSED               [  7%]
+tests/test_bug_repro_sqlalchemy_foreign_keys.py::test_sqlalchemy_mapper_configuration PASSED [  8%]
+tests/test_chat_session_factory.py::test_chat_orchestrator_passes_session_factory PASSED [  8%]
+tests/test_circular_dependency.py::test_circular_dependency_drop PASSED  [  8%]
+tests/test_cli_smoke.py::test_seed_dry_run_returns_zero_runner PASSED    [  8%]
+tests/test_dependency_layer_smoke.py::test_get_logger_smoke PASSED       [  8%]
+tests/test_dependency_layer_smoke.py::test_get_settings_smoke PASSED     [  8%]
+tests/test_dependency_layer_smoke.py::test_get_session_smoke PASSED      [  8%]
+tests/test_email_case_insensitivity.py::test_email_case_insensitivity PASSED [  8%]
+tests/test_engine_factory_comprehensive.py::TestQuantumStatementNameGenerator::test_generate_returns_string PASSED [  8%]
+tests/test_engine_factory_comprehensive.py::TestQuantumStatementNameGenerator::test_generate_has_correct_prefix PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestQuantumStatementNameGenerator::test_generate_unique_names PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestQuantumStatementNameGenerator::test_generate_thread_safety PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestQuantumStatementNameGenerator::test_get_generator_func PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_none_for_empty_url PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_supabase_pooler_by_hostname PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_supabase_pooler_by_port PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_pgbouncer_by_port PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_pgbouncer_by_name PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_neon_pooler PASSED [  9%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_none_for_direct_connection PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_detect_pgbouncer_from_env PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestAdaptivePoolerDetector::test_requires_prepared_statement_protection PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_normalizes_postgres_protocol PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_translates_ssl_mode_for_async PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_preserves_ssl_mode_for_sync PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_raises_for_missing_url_in_production PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_returns_sqlite_fallback_in_test PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_validates_url_structure PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_sanitize_accepts_sqlite_without_host PASSED [ 10%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_reverse_ssl_for_sync PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizer::test_reverse_ssl_ignores_asyncpg PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizerEdgeCases::test_all_ssl_modes PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizerEdgeCases::test_url_with_special_characters_in_password PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseURLSanitizerEdgeCases::test_url_with_query_params_preserved PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseTypeDetection::test_detect_postgresql PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseTypeDetection::test_detect_sqlite PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestDatabaseTypeDetection::test_detect_unknown PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestPostgresEngineConfiguration::test_auto_upgrade_to_asyncpg PASSED [ 11%]
+tests/test_engine_factory_comprehensive.py::TestPostgresEngineConfiguration::test_statement_cache_disabled PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestPostgresEngineConfiguration::test_quantum_naming_enabled PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestPostgresEngineConfiguration::test_command_timeout_default PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestPostgresEngineConfiguration::test_pool_settings_default PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSqliteEngineConfiguration::test_auto_upgrade_to_aiosqlite PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSqliteEngineConfiguration::test_pool_settings_removed PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSqliteEngineConfiguration::test_check_same_thread_disabled PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSecurityValidation::test_validation_passes_with_correct_config PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSecurityValidation::test_validation_fails_with_nonzero_statement_cache PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSecurityValidation::test_validation_fails_with_nonzero_prepared_cache PASSED [ 12%]
+tests/test_engine_factory_comprehensive.py::TestSecurityValidation::test_validation_fails_without_name_func PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestSecurityValidation::test_validation_fails_with_non_unique_name_func PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestEngineDiagnostics::test_verify_pgbouncer_compatibility_all_set PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestEngineDiagnostics::test_verify_pgbouncer_compatibility_missing_settings PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestCreateUnifiedAsyncEngine::test_create_engine_with_sqlite PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestCreateUnifiedAsyncEngine::test_create_engine_from_env PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestCreateUnifiedAsyncEngine::test_create_engine_with_custom_pool_settings PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestPoolerSignature::test_pooler_signature_immutable PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestPoolerSignature::test_pooler_signatures_list_populated PASSED [ 13%]
+tests/test_engine_factory_comprehensive.py::TestFatalEngineError::test_fatal_error_is_exception PASSED [ 14%]
+tests/test_engine_factory_comprehensive.py::TestFatalEngineError::test_fatal_error_message PASSED [ 14%]
+tests/test_fastapi_health.py::test_health PASSED                         [ 14%]
+tests/test_flexible_enum_crash.py::test_flexible_enum_resilience PASSED  [ 14%]
+tests/test_frontend_smoke.py::test_frontend_smoke_flow PASSED            [ 14%]
+tests/test_head_request_bug.py::test_head_root_endpoint PASSED           [ 14%]
+tests/test_head_request_bug.py::test_head_spa_fallback PASSED            [ 14%]
+tests/test_head_request_bug.py::test_static_file_head PASSED             [ 14%]
+tests/test_head_request_bug.py::test_js_file_head PASSED                 [ 14%]
+tests/test_health_checker_task_reference.py::test_health_checker_task_not_garbage_collected PASSED [ 14%]
+tests/test_health_checker_task_reference.py::test_health_checker_maintains_background_tasks_set PASSED [ 15%]
+tests/test_health_checker_task_reference.py::test_health_checker_task_cleanup_on_completion PASSED [ 15%]
+tests/test_health_checker_task_reference.py::test_health_checker_multiple_start_calls PASSED [ 15%]
+tests/test_health_checker_task_reference.py::test_health_checker_task_survives_gc_cycles PASSED [ 15%]
+tests/test_health_checker_task_reference.py::test_health_checker_done_callback_registered PASSED [ 15%]
+tests/test_health_endpoint.py::test_health_endpoint PASSED               [ 15%]
+tests/test_json_field_persistence.py::test_task_json_field_persistence PASSED [ 15%]
+tests/test_json_field_primitive_bug.py::test_json_text_primitive_persistence_bug PASSED [ 15%]
+tests/test_list_conversations_order_bug.py::test_list_conversations_deterministic_order PASSED [ 15%]
+tests/test_login_bug_repro.py::test_login_bug_reproduction PASSED        [ 15%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_default_initialization PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_success_factory PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_success_factory_custom_message PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_failure_factory PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_forbidden_factory PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_forbidden_custom_message PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_unauthorized_factory PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_rate_limited_factory PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_rate_limited_custom_retry PASSED [ 16%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_bad_request_factory PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultCreation::test_internal_error_factory PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultChaining::test_with_metadata PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultChaining::test_with_metadata_chaining PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultChaining::test_with_details PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultChaining::test_with_details_merges PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultSerialization::test_to_dict_success PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultSerialization::test_to_dict_failure_with_error_code PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultSerialization::test_to_dict_with_details PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultSerialization::test_to_dict_with_response_data PASSED [ 17%]
+tests/test_middleware_core.py::TestMiddlewareResultSerialization::test_to_dict_omits_empty_fields PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksRegistration::test_register_callback PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksRegistration::test_register_multiple_callbacks PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksRegistration::test_register_callbacks_different_events PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksUnregistration::test_unregister_callback PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksUnregistration::test_unregister_nonexistent_callback PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksUnregistration::test_unregister_from_nonexistent_event PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksTrigger::test_trigger_executes_callbacks PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksTrigger::test_trigger_passes_arguments PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksTrigger::test_trigger_handles_callback_errors PASSED [ 18%]
+tests/test_middleware_core.py::TestLifecycleHooksTrigger::test_trigger_empty_event PASSED [ 19%]
+tests/test_middleware_core.py::TestLifecycleHooksClear::test_clear_specific_event PASSED [ 19%]
+tests/test_middleware_core.py::TestLifecycleHooksClear::test_clear_all_events PASSED [ 19%]
+tests/test_middleware_core.py::TestGlobalHooksAndDecorators::test_get_global_hooks PASSED [ 19%]
+tests/test_middleware_core.py::TestGlobalHooksAndDecorators::test_on_before_execution_decorator PASSED [ 19%]
+tests/test_middleware_core.py::TestGlobalHooksAndDecorators::test_on_after_success_decorator PASSED [ 19%]
+tests/test_middleware_core.py::TestGlobalHooksAndDecorators::test_on_after_failure_decorator PASSED [ 19%]
+tests/test_middleware_core.py::TestGlobalHooksAndDecorators::test_on_after_execution_decorator PASSED [ 19%]
+tests/test_middleware_core.py::TestSmartPipelineInit::test_default_initialization PASSED [ 19%]
+tests/test_middleware_core.py::TestSmartPipelineInit::test_initialization_with_middlewares PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineAddRemove::test_add_middleware PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineAddRemove::test_add_middleware_sorted_by_order PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineAddRemove::test_remove_middleware PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineAddRemove::test_remove_nonexistent_middleware PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineExecution::test_run_executes_middlewares PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineExecution::test_run_calls_lifecycle_hooks PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineExecution::test_run_short_circuits_on_failure PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineExecution::test_run_handles_middleware_exception PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineExecution::test_run_skips_disabled_middleware PASSED [ 20%]
+tests/test_middleware_core.py::TestSmartPipelineAsyncExecution::test_run_async_executes_middlewares PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineAsyncExecution::test_run_async_handles_exception PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineStatistics::test_get_statistics PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineStatistics::test_statistics_track_requests PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineStatistics::test_statistics_track_failures PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineStatistics::test_statistics_per_middleware PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineStatistics::test_reset_statistics PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineHelpers::test_get_middleware_list PASSED [ 21%]
+tests/test_middleware_core.py::TestSmartPipelineHelpers::test_repr PASSED [ 21%]
+tests/test_middleware_core.py::TestRequestContext::test_default_initialization PASSED [ 21%]
+tests/test_middleware_core.py::TestRequestContext::test_custom_initialization PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_set_trace_context PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_set_user_context PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_add_and_get_metadata PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_get_header_case_insensitive PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_get_header_default PASSED [ 22%]
+tests/test_middleware_core.py::TestRequestContext::test_to_dict PASSED   [ 22%]
+tests/test_middleware_frame.py::test_dev_frame_middleware_development FAILED [ 22%]
+tests/test_middleware_frame.py::test_dev_frame_middleware_production PASSED [ 22%]
+tests/test_missing_api_methods.py::test_missing_api_endpoint_returns_404_not_405 PASSED [ 23%]
+tests/test_models.py::test_user_set_password ERROR                       [ 23%]
+tests/test_models.py::test_user_repr ERROR                               [ 23%]
+tests/test_models_comprehensive.py::TestUtcNow::test_returns_datetime PASSED [ 23%]
+tests/test_models_comprehensive.py::TestUtcNow::test_returns_utc_timezone PASSED [ 23%]
+tests/test_models_comprehensive.py::TestUtcNow::test_returns_current_time PASSED [ 23%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_lookup_by_uppercase_name PASSED [ 23%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_lookup_by_lowercase_value PASSED [ 23%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_lookup_by_uppercase_value PASSED [ 23%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_lookup_by_mixed_case PASSED [ 23%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_invalid_lookup_returns_none PASSED [ 24%]
+tests/test_models_comprehensive.py::TestCaseInsensitiveEnum::test_non_string_lookup_returns_none PASSED [ 24%]
+tests/test_models_comprehensive.py::TestMessageRoleEnum::test_all_values PASSED [ 24%]
+tests/test_models_comprehensive.py::TestMissionStatusEnum::test_all_values PASSED [ 24%]
+tests/test_models_comprehensive.py::TestPlanStatusEnum::test_all_values PASSED [ 24%]
+tests/test_models_comprehensive.py::TestTaskStatusEnum::test_all_values PASSED [ 24%]
+tests/test_models_comprehensive.py::TestMissionEventTypeEnum::test_key_values PASSED [ 24%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_bind_param_with_enum PASSED [ 24%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_bind_param_with_string PASSED [ 24%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_bind_param_with_none PASSED [ 25%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_result_value_returns_enum PASSED [ 25%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_result_value_case_insensitive PASSED [ 25%]
+tests/test_models_comprehensive.py::TestFlexibleEnum::test_process_result_value_with_none PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_bind_param_with_dict PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_bind_param_with_list PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_bind_param_with_none PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_bind_param_with_primitive PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_result_value_with_dict PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_result_value_with_list PASSED [ 25%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_result_value_with_none PASSED [ 26%]
+tests/test_models_comprehensive.py::TestJSONText::test_process_result_value_with_invalid_json PASSED [ 26%]
+tests/test_models_comprehensive.py::TestJSONText::test_roundtrip_complex_data PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_user_creation PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_set_password PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_check_password_correct PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_check_password_incorrect PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_check_password_no_hash PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_verify_password_alias PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_user_repr PASSED [ 26%]
+tests/test_models_comprehensive.py::TestUserModel::test_password_hashing_uses_argon2 PASSED [ 27%]
+tests/test_models_comprehensive.py::TestAdminConversationModel::test_conversation_creation PASSED [ 27%]
+tests/test_models_comprehensive.py::TestAdminConversationModel::test_conversation_custom_type PASSED [ 27%]
+tests/test_models_comprehensive.py::TestAdminMessageModel::test_message_creation PASSED [ 27%]
+tests/test_models_comprehensive.py::TestAdminMessageModel::test_message_with_all_roles PASSED [ 27%]
+tests/test_models_comprehensive.py::TestMissionModel::test_mission_creation PASSED [ 27%]
+tests/test_models_comprehensive.py::TestMissionModel::test_mission_default_status PASSED [ 27%]
+tests/test_models_comprehensive.py::TestMissionPlanModel::test_plan_creation PASSED [ 27%]
+tests/test_models_comprehensive.py::TestMissionPlanModel::test_plan_json_fields PASSED [ 27%]
+tests/test_models_comprehensive.py::TestTaskModel::test_task_creation PASSED [ 28%]
+tests/test_models_comprehensive.py::TestTaskModel::test_task_json_fields PASSED [ 28%]
+tests/test_models_comprehensive.py::TestMissionEventModel::test_event_creation PASSED [ 28%]
+tests/test_models_comprehensive.py::TestPromptTemplateModel::test_template_creation PASSED [ 28%]
+tests/test_models_comprehensive.py::TestGeneratedPromptModel::test_prompt_creation PASSED [ 28%]
+tests/test_models_comprehensive.py::TestLogMissionEvent::test_creates_event_without_session PASSED [ 28%]
+tests/test_models_comprehensive.py::TestUpdateMissionStatus::test_updates_status PASSED [ 28%]
+tests/test_models_comprehensive.py::TestPasswordHashingEdgeCases::test_empty_password PASSED [ 28%]
+tests/test_models_comprehensive.py::TestPasswordHashingEdgeCases::test_unicode_password PASSED [ 28%]
+tests/test_models_comprehensive.py::TestPasswordHashingEdgeCases::test_very_long_password PASSED [ 28%]
+tests/test_models_comprehensive.py::TestPasswordHashingEdgeCases::test_special_characters_password PASSED [ 29%]
+tests/test_models_comprehensive.py::TestJSONTextEdgeCases::test_empty_dict PASSED [ 29%]
+tests/test_models_comprehensive.py::TestJSONTextEdgeCases::test_empty_list PASSED [ 29%]
+tests/test_models_comprehensive.py::TestJSONTextEdgeCases::test_unicode_in_json PASSED [ 29%]
+tests/test_models_comprehensive.py::TestJSONTextEdgeCases::test_nested_null_values PASSED [ 29%]
+tests/test_models_comprehensive.py::TestJSONTextEdgeCases::test_large_json PASSED [ 29%]
+tests/test_overmind_fault_tolerance.py::test_circuit_breaker_activates PASSED [ 29%]
+tests/test_overmind_planning.py::test_base_planner_instantiation PASSED  [ 29%]
+tests/test_overmind_planning.py::test_base_planner_generate_plan_raises_not_implemented PASSED [ 29%]
+tests/test_overmind_planning.py::test_base_planner_a_generate_plan_raises_not_implemented PASSED [ 29%]
+tests/test_overmind_planning.py::test_planner_registration PASSED        [ 30%]
+tests/test_overmind_planning.py::test_planner_registration_with_allow_list PASSED [ 30%]
+tests/test_overmind_planning.py::test_planner_registration_with_block_list PASSED [ 30%]
+tests/test_overmind_planning_config.py::test_default_config_values PASSED [ 30%]
+tests/test_overmind_planning_config.py::test_parse_csv PASSED            [ 30%]
+tests/test_overmind_planning_config.py::test_parse_bool PASSED           [ 30%]
+tests/test_overmind_planning_config.py::test_parse_float PASSED          [ 30%]
+tests/test_overmind_planning_config.py::test_parse_int PASSED            [ 30%]
+tests/test_preview_headers.py::test_middleware_enabled_in_dev FAILED     [ 30%]
+tests/test_preview_headers.py::test_middleware_enabled_in_codespaces FAILED [ 31%]
+tests/test_preview_headers.py::test_middleware_disabled_in_production FAILED [ 31%]
+tests/test_preview_headers.py::test_headers_removed_in_dev_client FAILED [ 31%]
+tests/test_preview_headers.py::test_headers_preserved_in_prod_client PASSED [ 31%]
+tests/test_prompt_engineering.py::test_generate_prompt_success PASSED    [ 31%]
+tests/test_refactored_architecture.py::TestRoutingStrategies::test_round_robin_strategy PASSED [ 31%]
+tests/test_refactored_architecture.py::TestRoutingStrategies::test_latency_based_strategy PASSED [ 31%]
+tests/test_refactored_architecture.py::TestRoutingStrategies::test_strategy_factory PASSED [ 31%]
+tests/test_refactored_architecture.py::TestCircuitBreaker::test_circuit_breaker_closed_state PASSED [ 31%]
+tests/test_refactored_architecture.py::TestCircuitBreaker::test_circuit_breaker_opens_on_failures PASSED [ 31%]
+tests/test_refactored_architecture.py::TestCircuitBreaker::test_circuit_breaker_half_open_recovery PASSED [ 32%]
+tests/test_refactored_architecture.py::TestEventBus::test_event_subscription_and_publishing PASSED [ 32%]
+tests/test_refactored_architecture.py::TestEventBus::test_event_history PASSED [ 32%]
+tests/test_refactored_architecture.py::TestDependencyInjection::test_register_and_resolve PASSED [ 32%]
+tests/test_refactored_architecture.py::TestDependencyInjection::test_singleton_registration PASSED [ 32%]
+tests/test_refactored_architecture.py::TestChainOfResponsibility::test_authentication_handler PASSED [ 32%]
+tests/test_refactored_architecture.py::TestChainOfResponsibility::test_failed_authentication PASSED [ 32%]
+tests/test_refactored_architecture.py::TestRefactoredPlanner::test_plan_generation PASSED [ 32%]
+tests/test_refactored_architecture.py::TestRefactoredPlanner::test_plan_validation PASSED [ 32%]
+tests/test_refactored_architecture.py::TestRefactoredPlanner::test_plan_optimization PASSED [ 32%]
+tests/test_refactored_architecture.py::TestRefactoredPlanner::test_context_analyzer PASSED [ 33%]
+tests/test_refactored_architecture.py::TestRefactoredPlanner::test_task_generator PASSED [ 33%]
+tests/test_refactored_architecture.py::TestIntegration::test_full_planning_flow PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolBuilder::test_builder_creates_tool PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolBuilder::test_builder_with_aliases PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolBuilder::test_builder_validation PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolRegistry::test_registry_registers_tool PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolRegistry::test_registry_prevents_duplicate_registration PASSED [ 33%]
+tests/test_refactored_modules.py::TestToolRegistry::test_registry_handles_aliases PASSED [ 33%]
+tests/test_refactored_modules.py::TestAnalysisPipeline::test_pipeline_executes_steps PASSED [ 34%]
+tests/test_refactored_modules.py::TestAnalysisPipeline::test_pipeline_handles_errors PASSED [ 34%]
+tests/test_refactored_modules.py::TestApplicationServices::test_health_check_service PASSED [ 34%]
+tests/test_refactored_modules.py::TestApplicationServices::test_system_service PASSED [ 34%]
+tests/test_refactored_modules.py::TestComplexityReduction::test_refactored_code_has_low_complexity PASSED [ 34%]
+tests/test_refactored_modules.py::TestSOLIDPrinciples::test_single_responsibility_principle PASSED [ 34%]
+tests/test_refactored_modules.py::TestSOLIDPrinciples::test_dependency_inversion_principle PASSED [ 34%]
+tests/test_refactored_modules.py::TestSOLIDPrinciples::test_interface_segregation_principle PASSED [ 34%]
+tests/test_repro_bug_order.py::test_get_latest_chat_deterministic_order PASSED [ 34%]
+tests/test_security_enterprise.py::TestSecureAuthentication::test_password_hashing PASSED [ 34%]
+tests/test_separation_of_concerns.py::TestServiceBoundaries::test_event_bus_publish_subscribe PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestServiceBoundaries::test_circuit_breaker_opens_on_failures PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestServiceBoundaries::test_bulkhead_limits_concurrent_requests PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestServiceBoundaries::test_api_gateway_response_aggregation PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestDataBoundaries::test_database_boundary_access_control PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestDataBoundaries::test_saga_successful_execution PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestDataBoundaries::test_saga_compensation_on_failure PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestDataBoundaries::test_event_sourcing_rebuild_state PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestPolicyBoundaries::test_policy_engine_allow_rule PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestPolicyBoundaries::test_policy_engine_deny_rule PASSED [ 35%]
+tests/test_separation_of_concerns.py::TestPolicyBoundaries::test_security_pipeline_all_layers PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestPolicyBoundaries::test_data_governance_classification PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestPolicyBoundaries::test_compliance_engine_validation PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestIntegration::test_end_to_end_create_order_scenario PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestIntegration::test_global_instances_singleton PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestPerformance::test_event_bus_throughput PASSED [ 36%]
+tests/test_separation_of_concerns.py::TestPerformance::test_policy_engine_evaluation_speed PASSED [ 36%]
+tests/test_settings_smoke.py::test_settings_validation_error_on_missing_required_fields PASSED [ 36%]
+tests/test_spa_fallback_fix.py::test_spa_fallback_nested_api_fix PASSED  [ 36%]
+tests/test_static_api_path_bug.py::test_static_file_with_api_in_path_should_be_served PASSED [ 37%]
+tests/test_static_routing_fix.py::test_serve_root PASSED                 [ 37%]
+tests/test_static_routing_fix.py::test_serve_css PASSED                  [ 37%]
+tests/test_static_routing_fix.py::test_spa_fallback PASSED               [ 37%]
+tests/test_static_routing_fix.py::test_api_404 PASSED                    [ 37%]
+tests/test_static_routing_fix.py::test_serve_specific_html PASSED        [ 37%]
+tests/test_static_routing_fix.py::test_directory_traversal_prevention PASSED [ 37%]
+tests/test_streaming_event_type_bug.py::test_chat_stream_has_delta_event_type FAILED [ 37%]
+tests/test_stub_bug_fix.py::test_chat_stream_is_real_implementation PASSED [ 37%]
+tests/test_superhuman_system.py::test_basic_request PASSED               [ 37%]
+tests/test_system_healthz_bug.py::test_healthz_endpoint_failure FAILED   [ 38%]
+tests/test_unified_observability.py::TestTraceContext::test_trace_context_creation PASSED [ 38%]
+tests/test_unified_observability.py::TestTraceContext::test_trace_context_from_headers PASSED [ 38%]
+tests/test_unified_observability.py::TestTraceContext::test_trace_context_to_headers PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_anomaly_detection PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_baggage_propagation PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_child_spans PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_counter_and_gauge PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_error_tracking PASSED [ 38%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_golden_signals PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_percentile_calculation PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_prometheus_export PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_record_metrics PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_service_dependencies PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_span_events PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_start_and_end_trace PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_statistics PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_structured_logging_with_correlation PASSED [ 39%]
+tests/test_unified_observability.py::TestUnifiedObservabilityService::test_trace_search PASSED [ 39%]
+tests/test_unified_observability.py::TestObservabilitySingleton::test_singleton_instance PASSED [ 40%]
+tests/test_unified_observability.py::TestSamplingStrategies::test_always_sample_errors PASSED [ 40%]
+tests/test_unified_observability.py::TestSamplingStrategies::test_head_based_sampling PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_starts_closed PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_successful_calls_keep_circuit_closed PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_opens_after_threshold_failures PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_rejects_calls_when_open PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_transitions_to_half_open PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_closes_after_successful_half_open PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_circuit_reopens_on_half_open_failure PASSED [ 40%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_manual_reset PASSED [ 41%]
+tests/ai/test_circuit_breaker.py::TestCircuitBreaker::test_async_circuit_breaker PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_default_pricing_initialization PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_register_model_pricing PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_calculate_cost PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_track_usage_basic PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_track_usage_unknown_model PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_metrics_update PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_budget_hard_limit PASSED [ 41%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_budget_soft_limit_alert PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_scoped_budgets PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_budget_reset PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_get_period_seconds PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_get_budget_status_label PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_get_cost_breakdown PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_predict_monthly_cost PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_optimization_recommendations PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_reset_metrics PASSED [ 42%]
+tests/ai/application/test_cost_manager.py::TestCostManager::test_get_global_instance PASSED [ 42%]
+tests/api/test_admin_router_refactored.py::test_get_latest_chat_integration PASSED [ 43%]
+tests/api/test_admin_router_refactored.py::test_list_conversations_integration PASSED [ 43%]
+tests/api/test_admin_router_refactored.py::test_get_conversation_details_integration PASSED [ 43%]
+tests/api/test_overmind_router.py::test_create_mission_endpoint FAILED   [ 43%]
+tests/api/test_overmind_router.py::test_stream_endpoint_structure FAILED [ 43%]
+tests/config/test_ai_models.py::TestAIModelsConfiguration::test_opus_4_5_is_available PASSED [ 43%]
+tests/config/test_ai_models.py::TestAIModelsConfiguration::test_primary_model_is_opus_4_5 PASSED [ 43%]
+tests/config/test_ai_models.py::TestAIModelsConfiguration::test_gateway_primary_model_is_opus_4_5 PASSED [ 43%]
+tests/config/test_ai_models.py::TestAIModelsConfiguration::test_ai_config_singleton_reflects_changes PASSED [ 43%]
+tests/config/test_settings.py::test_database_url_fixer_handles_duplicates_gracefully PASSED [ 43%]
+tests/config/test_settings.py::test_database_url_fixer_handles_simple_sslmode PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_codespaces_detection PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_database_url_auto_healing PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_secret_absorption PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_sqlite_fallback PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_cors_injection PASSED [ 44%]
+tests/config/test_superhuman_config.py::TestSuperhumanConfiguration::test_production_strict_validation PASSED [ 44%]
+tests/contract/test_api_contract.py::TestAPIContracts::test_contract_placeholder PASSED [ 44%]
+tests/contract/test_api_contract.py::TestAPIContracts::test_consumer_contract PASSED [ 44%]
+tests/contract/test_api_contract.py::TestAPIContracts::test_provider_contract PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[What is the capital of France?-CognitiveComplexity.REFLEX] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Hello, how are you?-CognitiveComplexity.REFLEX] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Translate 'book' to Spanish.-CognitiveComplexity.REFLEX] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Summarize the main points of the article about climate change.-CognitiveComplexity.THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Explain the difference between supervised and unsupervised machine learning.-CognitiveComplexity.THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[What are the implications of quantum computing on modern cryptography?-CognitiveComplexity.THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[def factorial(n):-CognitiveComplexity.DEEP_THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Write a Python function to find all prime numbers up to n.-CognitiveComplexity.DEEP_THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[```javascript\nconst x = 10;\n```-CognitiveComplexity.DEEP_THOUGHT] PASSED [ 45%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Write a short story about a robot who discovers music.-CognitiveComplexity.CREATIVE] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Imagine you are a dragon. Describe your hoard.-CognitiveComplexity.CREATIVE] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Create a dialogue between Plato and a modern-day influencer.-CognitiveComplexity.CREATIVE] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Solve the following equation for x: 2x + 5 = 15-CognitiveComplexity.LOGICAL_REASONING] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[Calculate the derivative of x^3.-CognitiveComplexity.LOGICAL_REASONING] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint.py::test_assess_cognitive_complexity[If a train leaves station A at 60 mph and another leaves station B at 70 mph, when will they meet?-CognitiveComplexity.LOGICAL_REASONING] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint_bug_fix.py::test_cognitive_complexity_precedence[Write a python function to solve a quadratic equation-CognitiveComplexity.DEEP_THOUGHT] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint_bug_fix.py::test_cognitive_complexity_precedence[Write a Python function to calculate the factorial-CognitiveComplexity.DEEP_THOUGHT] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint_bug_fix.py::test_cognitive_complexity_precedence[Write a poem about a function-CognitiveComplexity.CREATIVE] PASSED [ 46%]
+tests/core/test_cognitive_fingerprint_bug_fix.py::test_cognitive_complexity_precedence[Solve the following equation for x-CognitiveComplexity.LOGICAL_REASONING] PASSED [ 46%]
+tests/core/test_duplication_elimination.py::TestCommonImports::test_import_helper_get_existing_module PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestCommonImports::test_import_helper_get_nonexistent_module PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestCommonImports::test_import_helper_has_module PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestCommonImports::test_import_helper_caching PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestCommonImports::test_feature_flags PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_safe_execute_success PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_safe_execute_with_error PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_safe_execute_with_none_default PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_retry_on_failure_success_first_try PASSED [ 47%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_retry_on_failure_success_after_retries PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_retry_on_failure_exhausted PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_suppress_errors_success PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_suppress_errors_suppresses_specified PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_suppress_errors_doesnt_suppress_others PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_safe_context_success PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_safe_context_with_error PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_capture_errors_captures PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_capture_errors_without_list PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_error_handler_handle PASSED [ 48%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_error_handler_wrap_function_success PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_error_handler_wrap_function_error PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_format_exception_without_traceback PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestErrorHandling::test_format_exception_with_traceback PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_ring_buffer_append PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_ring_buffer_overflow PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_ring_buffer_clear PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_profiler_init PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_profiler_enable_disable PASSED [ 49%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_profiler_clear PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_metrics_collector_record PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_metrics_collector_record_disabled PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_metrics_collector_reset PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_base_metrics_collector_statistics PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_time_profiler_record_duration PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_time_profiler_statistics PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_time_profiler_statistics_empty PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_count_profiler_increment PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestBaseProfiler::test_count_profiler_statistics PASSED [ 50%]
+tests/core/test_duplication_elimination.py::TestIntegrationScenarios::test_error_handler_with_retry PASSED [ 51%]
+tests/core/test_duplication_elimination.py::TestIntegrationScenarios::test_profiler_with_error_handling PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_create_unified_async_engine_postgres_hardening PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_create_unified_async_engine_sqlite PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_sanitize_database_url PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_create_unified_async_engine_protocol_upgrade PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_pgbouncer_compatibility_settings PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_adaptive_pooler_detection PASSED [ 51%]
+tests/core/test_engine_factory_hardened.py::test_quantum_statement_name_generator PASSED [ 51%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_kernel_initialization PASSED [ 51%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_get_app_returns_app PASSED [ 52%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_kernel_resilience_to_random_settings FAILED [ 52%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_route_weaving_logic PASSED [ 52%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_lifespan_startup_shutdown PASSED [ 52%]
+tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_cors_logic_dev_vs_prod FAILED [ 52%]
+tests/core/test_middleware_duplication.py::test_middleware_chaos_interference PASSED [ 52%]
+tests/core/test_schema_validation_bug.py::test_validate_and_fix_schema_bug_on_sqlite FAILED [ 52%]
+tests/core/test_self_healing_core.py::TestSelfHealingSecurity::test_validate_table_name_security PASSED [ 52%]
+tests/core/test_self_healing_core.py::TestSelfHealingSecurity::test_validate_column_name_security PASSED [ 52%]
+tests/core/test_self_healing_core.py::TestSQLGenerator::test_add_column_sql PASSED [ 53%]
+tests/core/test_self_healing_core.py::TestSQLGenerator::test_create_index_sql PASSED [ 53%]
+tests/core/test_self_healing_core.py::TestSelfHealingEngineLogic::test_heal_async_detects_missing_column PASSED [ 53%]
+tests/core/test_self_healing_core.py::TestSelfHealingEngineLogic::test_heal_api_error PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_serve_index_at_root PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_serve_static_asset PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_spa_fallback_for_routes PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_api_404_no_fallback PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_nested_api_404_no_fallback PASSED [ 53%]
+tests/core/test_static_handler_refactor.py::test_directory_traversal_protection PASSED [ 53%]
+tests/core/test_superhuman_ai_gateway.py::TestSuperhumanAIGateway::test_complexity_routing PASSED [ 54%]
+tests/core/test_superhuman_ai_gateway.py::TestSuperhumanAIGateway::test_circuit_breaker_integration PASSED [ 54%]
+tests/core/test_superhuman_ai_gateway.py::TestSuperhumanAIGateway::test_fallback_chain PASSED [ 54%]
+tests/core/math/test_omni_router_semantic.py::TestSemanticAffinityEngine::test_coding_affinity PASSED [ 54%]
+tests/core/math/test_omni_router_semantic.py::TestSemanticAffinityEngine::test_creative_affinity PASSED [ 54%]
+tests/core/math/test_omni_router_semantic.py::TestSemanticAffinityEngine::test_neutral_prompt PASSED [ 54%]
+tests/core/math/test_omni_router_semantic.py::TestOmniCognitiveRouterSemantic::test_ranking_with_semantics PASSED [ 54%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_int_env_default PASSED [ 54%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_int_env_from_env PASSED [ 54%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_int_env_invalid PASSED [ 54%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_default_false PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_default_true PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[1] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[true] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[TRUE] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[yes] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[YES] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[on] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_truthy[ON] PASSED [ 55%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[0] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[false] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[FALSE] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[no] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[NO] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[off] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_bool_env_falsy[OFF] PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_str_env_default PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_str_env_from_env PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_float_env_default PASSED [ 56%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_float_env_from_env PASSED [ 57%]
+tests/infrastructure/test_env_reader.py::TestEnvReader::test_read_float_env_invalid PASSED [ 57%]
+tests/infrastructure/test_env_reader.py::TestDuplicationElimination::test_single_implementation PASSED [ 57%]
+tests/infrastructure/test_env_reader.py::TestDuplicationElimination::test_backward_compatibility PASSED [ 57%]
+tests/integration/test_admin_chat_api.py::TestAdminChatAPI::test_health_check PASSED [ 57%]
+tests/integration/test_admin_chat_api.py::TestAdminChatAPI::test_admin_chat_unauthorized PASSED [ 57%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_ClientInitialization::test_client_defaults_to_mock_without_api_key PASSED [ 57%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_ClientInitialization::test_force_mock_overrides_api_key PASSED [ 57%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_ClientInitialization::test_singleton_behavior PASSED [ 57%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_InvokeChat::test_invoke_chat_with_mock_client PASSED [ 57%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_InvokeChat::test_invoke_chat_respects_temperature PASSED [ 58%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_InvokeChat::test_invoke_chat_with_tools PASSED [ 58%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_LLMHealth::test_llm_health_structure PASSED [ 58%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_PayloadPreparation::test_payload_respects_llm_force_model PASSED [ 58%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_ErrorHandling::test_empty_response_triggers_retry PASSED [ 58%]
+tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_Snapshots::test_create_baseline_snapshot PASSED [ 58%]
+tests/phase3_refactoring/test_model_serving_e2e.py::TestModelServingE2E::test_full_inference_lifecycle PASSED [ 58%]
+tests/phase3_refactoring/test_model_serving_e2e.py::TestModelServingE2E::test_routing_to_missing_model_fails_gracefully PASSED [ 58%]
+tests/phase3_refactoring/test_model_serving_e2e.py::TestModelServingE2E::test_fallback_to_older_version_if_latest_not_ready PASSED [ 58%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestDomainLayer::test_model_version_creation PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestDomainLayer::test_model_status_enum PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestInfrastructureLayer::test_in_memory_repository_save_and_get PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestInfrastructureLayer::test_in_memory_repository_list_by_name PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestInfrastructureLayer::test_mock_invoker_generates_response PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestApplicationLayer::test_model_registry_registers_model PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestApplicationLayer::test_model_registry_gets_latest_ready PASSED [ 59%]
+tests/phase3_refactoring/test_model_serving_refactored.py::TestApplicationLayer::test_inference_router_serves_request PASSED [ 59%]
+tests/security/test_admin_security_upgrades.py::test_access_control_isolation FAILED [ 59%]
+tests/security/test_admin_security_upgrades.py::test_admin_can_access_any_conversation FAILED [ 59%]
+tests/security/test_admin_security_upgrades.py::test_cors_strictness_mock PASSED [ 60%]
+tests/security/test_bcrypt_compat.py::test_bcrypt_hashing_and_verification PASSED [ 60%]
+tests/security/test_bcrypt_compat.py::test_bcrypt_backend_attributes PASSED [ 60%]
+tests/security/test_encryption.py::test_encryption_decryption PASSED     [ 60%]
+tests/security/test_encryption.py::test_decryption_with_invalid_key_id PASSED [ 60%]
+tests/security/test_encryption.py::test_key_rotation PASSED              [ 60%]
+tests/security/test_encryption.py::test_get_statistics PASSED            [ 60%]
+tests/security/test_hyper_defense.py::test_chrono_shield_allowance_under_limit PASSED [ 60%]
+tests/security/test_hyper_defense.py::test_chrono_shield_exponential_backoff PASSED [ 60%]
+tests/security/test_hyper_defense.py::test_chrono_shield_hard_lockout PASSED [ 60%]
+tests/security/test_hyper_defense.py::test_chrono_shield_reset PASSED    [ 61%]
+tests/security/test_hyper_defense.py::test_chrono_shield_ip_persistence PASSED [ 61%]
+tests/security/test_password_compat.py::test_legacy_hash_support PASSED  [ 61%]
+tests/security/test_security_final.py::TestSecuritySuperhuman::test_sqli_resilience_static[' OR 1=1 --] PASSED [ 61%]
+tests/security/test_security_final.py::TestSecuritySuperhuman::test_sqli_resilience_static['; DROP TABLE users; --] PASSED [ 61%]
+tests/security/test_security_final.py::TestSecuritySuperhuman::test_generic_fuzzing_resilience PASSED [ 61%]
+tests/security/test_user_me_endpoint.py::test_user_me_endpoint PASSED    [ 61%]
+tests/security/test_user_me_endpoint.py::test_user_me_endpoint_invalid_token PASSED [ 61%]
+tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_unsafe_yaml_load_vulnerability_repro PASSED [ 61%]
+tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_safe_load_utility_success PASSED [ 62%]
+tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_safe_load_utility_file PASSED [ 62%]
+tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_prevention_of_rce_payload PASSED [ 62%]
+tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_codebase_scan_for_unsafe_load PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_valid PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_missing PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_invalid_format PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_not_bearer PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_invalid_token PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_missing_sub PASSED [ 62%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_validate_auth_header_invalid_user_id_type PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_or_create_conversation_create_new PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_or_create_conversation_existing PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_or_create_conversation_not_found PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_or_create_conversation_invalid_id FAILED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_save_message PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_chat_history PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_stream_chat_response_flow PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_comprehensive.py::test_stream_chat_response_error_handling PASSED [ 63%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_validate_auth_header_valid PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_validate_auth_header_missing PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_validate_auth_header_malformed_fuzz PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_validate_auth_header_invalid_token PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_verify_conversation_access_success PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_verify_conversation_access_failures PASSED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_get_or_create_conversation_delegation FAILED [ 64%]
+tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_stream_chat_response_delegation PASSED [ 64%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_smart_token_chunker_chunk_text PASSED [ 64%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_smart_token_chunker_smart_chunk PASSED [ 64%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_speculative_decoder_patterns PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_streaming_metrics PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_streaming_metrics_empty PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_service_initialization PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_service_stream_response PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_service_async_stream_response PASSED [ 65%]
+tests/services/test_admin_chat_streaming_service_coverage.py::test_singleton PASSED [ 65%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_predict_load_insufficient_data PASSED [ 65%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_predict_load_with_history PASSED [ 65%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_calculate_optimal_instances_scale_up PASSED [ 65%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_calculate_optimal_instances_scale_down PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_calculate_optimal_instances_stable PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestAIScalingEngine::test_calculate_optimal_instances_latency_trigger PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestIntelligentRouter::test_select_instance_none_available PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestIntelligentRouter::test_select_instance_prefers_healthy PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestIntelligentRouter::test_select_instance_fallback_degraded PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestIntelligentRouter::test_calculate_instance_score PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestIntelligentRouter::test_update_instance_score PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestPredictiveHealthMonitor::test_analyze_health_healthy PASSED [ 66%]
+tests/services/test_ai_adaptive_microservices.py::TestPredictiveHealthMonitor::test_analyze_health_critical PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestPredictiveHealthMonitor::test_analyze_health_degraded PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestPredictiveHealthMonitor::test_detect_anomalies PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestPredictiveHealthMonitor::test_predict_failure PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_register_service PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_update_metrics_and_health PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_auto_scale_up PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_auto_scale_down PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_route_request PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_get_service_status PASSED [ 67%]
+tests/services/test_ai_adaptive_microservices.py::TestSelfAdaptiveMicroservices::test_aggregate_metrics PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestDeepLearningThreatDetector::test_detect_sql_injection_payload PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestDeepLearningThreatDetector::test_detect_sql_injection_url PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestDeepLearningThreatDetector::test_detect_xss PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestDeepLearningThreatDetector::test_detect_malformed_request_code PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestDeepLearningThreatDetector::test_detect_malformed_request_payload_size PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestBehavioralAnalyzer::test_get_or_create_profile PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestBehavioralAnalyzer::test_detect_unusual_endpoint PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestBehavioralAnalyzer::test_update_profile PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestAutomatedResponseSystem::test_block_ip PASSED [ 68%]
+tests/services/test_ai_advanced_security.py::TestAutomatedResponseSystem::test_block_user PASSED [ 69%]
+tests/services/test_ai_advanced_security.py::TestAutomatedResponseSystem::test_rate_limit PASSED [ 69%]
+tests/services/test_ai_advanced_security.py::TestAutomatedResponseSystem::test_respond_to_critical_threat PASSED [ 69%]
+tests/services/test_ai_advanced_security.py::TestSuperhumanSecuritySystem::test_process_legitimate_request PASSED [ 69%]
+tests/services/test_ai_advanced_security.py::TestSuperhumanSecuritySystem::test_process_malicious_request PASSED [ 69%]
+tests/services/test_ai_advanced_security.py::TestSuperhumanSecuritySystem::test_security_dashboard PASSED [ 69%]
+tests/services/test_ai_intelligent_testing.py::test_analyze_code PASSED  [ 69%]
+tests/services/test_ai_intelligent_testing.py::test_analyze_code_syntax_error PASSED [ 69%]
+tests/services/test_ai_intelligent_testing.py::test_generate_tests_for_function PASSED [ 69%]
+tests/services/test_ai_intelligent_testing.py::test_smart_selector PASSED [ 70%]
+tests/services/test_ai_intelligent_testing.py::test_coverage_optimizer PASSED [ 70%]
+tests/services/test_api_security_service.py::test_api_security_service_instantiation PASSED [ 70%]
+tests/services/test_api_security_service.py::test_security_service_methods PASSED [ 70%]
+tests/services/test_api_security_service.py::test_api_security_service_integration PASSED [ 70%]
+tests/services/test_config_secrets_hexagonal.py::test_config_crud PASSED [ 70%]
+tests/services/test_config_secrets_hexagonal.py::test_secret_lifecycle PASSED [ 70%]
+tests/services/test_config_secrets_hexagonal.py::test_audit_logs PASSED  [ 70%]
+tests/services/test_config_secrets_hexagonal.py::test_singleton PASSED   [ 70%]
+tests/services/test_data_mesh_refactor.py::test_data_mesh_refactor_verification PASSED [ 70%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_base_event_initialization PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_event_post_init_sets_type PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_user_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_mission_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_task_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_security_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_api_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_chat_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_integration_events PASSED [ 71%]
+tests/services/test_domain_events_coverage.py::TestDomainEvents::test_registry PASSED [ 71%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_init PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_analyze_file_parses_functions PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_analyze_file_detects_duplicates PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_analyze_file_ignores_non_duplicates PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_scan_traverses_directories PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_generate_report_format PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_analyze_file_handles_exceptions PASSED [ 72%]
+tests/services/test_duplication_buster.py::TestDuplicationBuster::test_async_functions PASSED [ 72%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_calculate_complexity_simple PASSED [ 72%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_calculate_complexity_complex PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_count_technical_terms PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_is_multi_step PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_measure_ambiguity PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_assess_creativity_need PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_is_urgent PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_detect_domain PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_estimate_response_length PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_needs_reasoning PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestQueryClassifier::test_analyze_integration PASSED [ 73%]
+tests/services/test_ensemble_ai.py::TestCostOptimizer::test_can_afford PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestCostOptimizer::test_suggest_cheaper_alternative PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestCostOptimizer::test_record_cost PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_route_simple_urgent PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_route_simple_not_urgent PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_route_medium PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_route_complex PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_route_cost_downgrade PASSED [ 74%]
+tests/services/test_ensemble_ai.py::TestIntelligentRouter::test_get_next_tier PASSED [ 74%]
+tests/services/test_ensemble_ai.py::test_get_router_singleton PASSED     [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_get_recent_conversations_success ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_get_recent_conversations_limit ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_get_recent_conversations_error PASSED [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_success ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_invalid_rating PASSED [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_not_found ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_security_violation ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_db_error ERROR [ 75%]
+tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_unexpected_error ERROR [ 75%]
+tests/services/test_kubernetes_orchestration_refactored.py::test_kubernetes_orchestration_imports PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestLLMInitialization::test_get_llm_client_defaults_to_mock PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestLLMInitialization::test_force_mock_mode PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestLLMInitialization::test_openai_client_initialization PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestLLMInitialization::test_openrouter_http_fallback PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestLLMInitialization::test_real_client_init_failure_falls_back_to_mock PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestMockClient::test_mock_client_chat_completion PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestHttpFallbackClient::test_http_fallback_chat_completion_success PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_invoke_chat_success_mock PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_invoke_chat_hooks PASSED [ 76%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_invoke_chat_retry_logic PASSED [ 77%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_circuit_breaker PASSED [ 77%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_invoke_chat_stream PASSED [ 77%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_cost_estimation PASSED [ 77%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_sanitization PASSED [ 77%]
+tests/services/test_llm_client_service.py::TestInvocationLogic::test_llm_health PASSED [ 77%]
+tests/services/test_overmind_super_agent.py::test_council_of_wisdom_flow PASSED [ 77%]
+tests/services/test_overmind_super_agent.py::test_self_correction_loop PASSED [ 77%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_project_structure PASSED [ 77%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_code_statistics PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_models_info PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_services_info PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_api_routes_info PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_recent_issues_no_issues PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_strengths PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_deep_file_analysis PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_architecture_layers PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_key_components PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_generate_context_for_ai PASSED [ 78%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_invalidate_cache PASSED [ 79%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_deep_search_issues PASSED [ 79%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_intelligent_code_search PASSED [ 79%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_detect_code_smells PASSED [ 79%]
+tests/services/test_project_context_service.py::TestProjectContextService::test_get_comprehensive_analysis PASSED [ 79%]
+tests/services/test_prompt_engineering_service.py::test_generate_prompt_existing_template PASSED [ 79%]
+tests/services/test_prompt_engineering_service.py::test_generate_prompt_missing_template PASSED [ 79%]
+tests/services/test_prompt_engineering_service.py::test_generate_prompt_formatting_error PASSED [ 79%]
+tests/services/test_saga_coverage.py::test_saga_creation PASSED          [ 79%]
+tests/services/test_saga_coverage.py::test_successful_saga PASSED        [ 79%]
+tests/services/test_saga_coverage.py::test_failed_saga_compensation PASSED [ 80%]
+tests/services/test_saga_coverage.py::test_retry_logic PASSED            [ 80%]
+tests/services/test_saga_coverage.py::test_max_retries_exceeded PASSED   [ 80%]
+tests/services/test_saga_coverage.py::test_concurrent_execution_prevention PASSED [ 80%]
+tests/services/test_saga_coverage.py::test_not_found PASSED              [ 80%]
+tests/services/test_saga_coverage.py::test_metrics_and_events PASSED     [ 80%]
+tests/services/test_saga_coverage.py::test_singleton PASSED              [ 80%]
+tests/services/test_security_metrics_coverage.py::test_metrics_calculator_empty PASSED [ 80%]
+tests/services/test_security_metrics_coverage.py::test_metrics_calculator_basic_counts PASSED [ 80%]
+tests/services/test_security_metrics_coverage.py::test_velocity_metrics PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_quality_metrics PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_team_metrics PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_risk_calculator_empty PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_risk_calculator_basic PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_risk_calculator_exposure_logic PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_predictor_not_enough_data PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_predictor_linear_trend PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_predictor_decreasing_trend PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_in_memory_findings_repo PASSED [ 81%]
+tests/services/test_security_metrics_coverage.py::test_in_memory_metrics_repo PASSED [ 82%]
+tests/services/test_security_metrics_coverage.py::test_facade PASSED     [ 82%]
+tests/services/test_security_metrics_coverage.py::test_singleton PASSED  [ 82%]
+tests/services/test_service_catalog_coverage.py::test_initialization PASSED [ 82%]
+tests/services/test_service_catalog_coverage.py::test_register_get_service PASSED [ 82%]
+tests/services/test_service_catalog_coverage.py::test_api_spec PASSED    [ 82%]
+tests/services/test_service_catalog_coverage.py::test_templates PASSED   [ 82%]
+tests/services/test_service_catalog_coverage.py::test_health_update PASSED [ 82%]
+tests/services/test_service_catalog_coverage.py::test_dependency_graph PASSED [ 82%]
+tests/services/test_service_catalog_coverage.py::test_metrics_summary PASSED [ 82%]
+tests/services/test_service_catalog_coverage.py::test_singleton PASSED   [ 83%]
+tests/services/test_serving_coverage.py::test_ab_test_engine PASSED      [ 83%]
+tests/services/test_serving_coverage.py::test_ensemble_router PASSED     [ 83%]
+tests/services/test_serving_coverage.py::test_model_invoker PASSED       [ 83%]
+tests/services/test_serving_coverage.py::test_shadow_deployment_manager PASSED [ 83%]
+tests/services/test_serving_coverage.py::test_metrics_collector PASSED   [ 83%]
+tests/services/test_serving_coverage.py::test_model_registry PASSED      [ 83%]
+tests/services/test_serving_coverage.py::test_inference_router PASSED    [ 83%]
+tests/services/test_serving_coverage.py::test_in_memory_repos PASSED     [ 83%]
+tests/services/test_serving_coverage.py::test_experiment_manager PASSED  [ 84%]
+tests/services/test_smart_chunker_whitespace.py::test_chunk_text_preserves_newlines PASSED [ 84%]
+tests/services/test_smart_chunker_whitespace.py::test_chunk_text_preserves_indentation PASSED [ 84%]
+tests/services/test_system_service.py::test_check_database_status_healthy PASSED [ 84%]
+tests/services/test_system_service.py::test_check_database_status_unhealthy PASSED [ 84%]
+tests/services/test_system_service.py::test_is_database_connected_true PASSED [ 84%]
+tests/services/test_system_service.py::test_is_database_connected_false PASSED [ 84%]
+tests/services/test_system_service_refactor.py::test_verify_system_integrity_healthy PASSED [ 84%]
+tests/services/test_system_service_refactor.py::test_verify_system_integrity_db_down PASSED [ 84%]
+tests/services/test_user_service_coverage.py::test_get_all_users PASSED  [ 84%]
+tests/services/test_user_service_coverage.py::test_create_new_user_success PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_create_new_user_duplicate_email PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_create_new_user_exception PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_ensure_admin_user_exists_create_new PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_ensure_admin_user_exists_already_admin PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_ensure_admin_user_exists_promote_user PASSED [ 85%]
+tests/services/test_user_service_coverage.py::test_ensure_admin_user_missing_env PASSED [ 85%]
+tests/services/admin/test_admin_chat_refactor.py::test_admin_chat_refactor_structure PASSED [ 85%]
+tests/services/admin/test_admin_chat_refactor.py::test_admin_chat_persistence_delegation PASSED [ 85%]
+tests/services/agent_tools/test_domain_tools.py::test_count_files_handler_git PASSED [ 85%]
+tests/services/agent_tools/test_domain_tools.py::test_count_files_handler_fallback PASSED [ 86%]
+tests/services/agent_tools/test_domain_tools.py::test_get_project_metrics_handler PASSED [ 86%]
+tests/services/agent_tools/test_domain_tools.py::test_context_awareness_handler PASSED [ 86%]
+tests/services/agent_tools/test_domain_tools.py::test_tool_classes PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureDirectory::test_ensure_new_directory PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureDirectory::test_ensure_existing_directory PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureDirectory::test_ensure_directory_fails_if_file_exists PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureDirectory::test_ensure_directory_must_be_new PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFile::test_write_file_simple PASSED [ 86%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFile::test_write_file_not_string PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFile::test_write_file_json_compression PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFile::test_write_file_too_large PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFile::test_write_file_create_parents PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFileIfChanged::test_write_new_file PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFileIfChanged::test_skip_unchanged_file PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestWriteFileIfChanged::test_overwrite_changed_file PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestAppendFile::test_append_existing_file PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestAppendFile::test_append_new_file PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestAppendFile::test_append_not_string PASSED [ 87%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestAppendFile::test_append_total_limit PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_simple_file PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_missing_file_ignore PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_missing_file_error PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_directory_error PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_gzip_file PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadFile::test_read_truncated PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestDeleteFile::test_delete_file_success PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestDeleteFile::test_delete_no_confirm PASSED [ 88%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestDeleteFile::test_delete_missing_file PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestDeleteFile::test_delete_directory PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureFile::test_ensure_file_exists_returns_content PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureFile::test_ensure_file_creates_if_missing PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureFile::test_ensure_file_enforce_ext PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestEnsureFile::test_ensure_file_not_allow_create PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadBulkFiles::test_read_bulk_json_mode PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadBulkFiles::test_read_bulk_concat_mode PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadBulkFiles::test_read_bulk_ignore_missing PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestReadBulkFiles::test_read_bulk_error_missing PASSED [ 89%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestMetaTools::test_file_exists PASSED [ 90%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestMetaTools::test_list_dir PASSED [ 90%]
+tests/services/agent_tools/test_fs_tools_comprehensive.py::TestMetaTools::test_list_dir_not_dir PASSED [ 90%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_success PASSED [ 90%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_not_found PASSED [ 90%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_orchestrator_run_mission_failure PASSED [ 90%]
+tests/services/overmind/test_overmind_coverage_gap.py::test_overmind_factory_assembly PASSED [ 90%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDottedNameStrategy::test_write_suffix PASSED [ 90%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDottedNameStrategy::test_read_suffix PASSED [ 90%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDottedNameStrategy::test_unknown_suffix PASSED [ 90%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDottedNameStrategy::test_disabled_dotted PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestAliasStrategy::test_write_alias PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestAliasStrategy::test_read_alias PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestAliasStrategy::test_custom_aliases PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestAliasStrategy::test_case_insensitive PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDirectMatchStrategy::test_ensure_file PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDirectMatchStrategy::test_append_file PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDirectMatchStrategy::test_non_canonical PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestKeywordStrategy::test_write_keyword PASSED [ 91%]
+tests/services/overmind/test_tool_canonicalizer.py::TestKeywordStrategy::test_read_keyword PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestKeywordStrategy::test_multiple_keywords PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDescriptionIntentStrategy::test_write_intent_from_description PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDescriptionIntentStrategy::test_read_intent_from_description PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDescriptionIntentStrategy::test_no_intent_without_description PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestDescriptionIntentStrategy::test_disabled_intent_check PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestToolCanonicalizer::test_strategy_chain_priority PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestToolCanonicalizer::test_fallback_to_original PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestToolCanonicalizer::test_add_custom_strategy PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestToolCanonicalizer::test_remove_strategy PASSED [ 92%]
+tests/services/overmind/test_tool_canonicalizer.py::TestToolCanonicalizer::test_empty_strategies PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestBackwardCompatibility::test_canonicalize_tool_name_function PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestBackwardCompatibility::test_returns_tuple PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestComplexityReduction::test_each_strategy_simple PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestComplexityReduction::test_main_canonicalizer_simple PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[str_replace_editor--write_file] PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[file.read--read_file] PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[create_new_document--write_file] PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[load_config_file--read_file] PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[ensure_file--ensure_file] PASSED [ 93%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[append_file--append_file] PASSED [ 94%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[file-creates a new file-write_file] PASSED [ 94%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[unknown-reads the contents-read_file] PASSED [ 94%]
+tests/services/overmind/test_tool_canonicalizer.py::TestRealWorldScenarios::test_real_world_cases[completely_random_tool--completely_random_tool] PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_initialization PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_discover_basic PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_discover_with_force PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_register_planner_instance PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_get_planner_cached PASSED [ 94%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_get_planner_not_found PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_get_planner_dynamic_instantiation PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_list_planners PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_select_best_planner_no_active PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_select_best_planner_success PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_self_heal PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_planner_stats PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_describe_planner PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_describe_planner_empty PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_health_check PASSED [ 95%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_reload_planners PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestPlannerFactory::test_select_strategy PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_get_all_planners PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_diagnostics PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_export_diagnostics PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_list_quarantined PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_async_wrappers PASSED [ 96%]
+tests/services/overmind/planning/test_factory_coverage.py::TestGlobalFunctions::test_telemetry_wrappers PASSED [ 96%]
+tests/smoke/test_api_smoke.py::test_health_check PASSED                  [ 96%]
+tests/smoke/test_database_service_smoke.py::test_database_health_check PASSED [ 96%]
+tests/smoke/test_service_integration.py::test_system_health_endpoint_healthy_integration PASSED [ 97%]
+tests/smoke/test_startup.py::test_health_check PASSED                    [ 97%]
+tests/smoke/test_startup.py::test_root PASSED                            [ 97%]
+tests/smoke/test_startup.py::test_openapi_docs PASSED                    [ 97%]
+tests/smoke/test_startup.py::test_api_health_v1 PASSED                   [ 97%]
+tests/transcendent_v2/test_history_service_post_migration.py::test_rate_message_success PASSED [ 97%]
+tests/transcendent_v2/test_history_service_post_migration.py::test_rate_message_permission_denied PASSED [ 97%]
+tests/transcendent_v2/test_history_service_post_migration.py::test_get_recent_conversations_success PASSED [ 97%]
+tests/transcendent_v2/test_history_service_post_migration.py::test_get_recent_conversations_returns_empty_on_error PASSED [ 97%]
+tests/unit/test_enum_case_sensitivity.py::TestMessageRoleEnum::test_lowercase_lookup PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestMessageRoleEnum::test_uppercase_lookup PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestMessageRoleEnum::test_mixed_case_lookup PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestMessageRoleEnum::test_all_roles PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestMissionStatusEnum::test_all_statuses PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestTaskStatusEnum::test_all_statuses PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestDatabaseIntegration::test_create_and_read_admin_message PASSED [ 98%]
+tests/unit/test_enum_case_sensitivity.py::TestDatabaseIntegration::test_simulate_supabase_uppercase PASSED [ 98%]
+tests/unit/test_log_mission_event_double_encoding_bug.py::test_log_mission_event_payload_not_double_encoded PASSED [ 98%]
+tests/unit/test_log_mission_event_double_encoding_bug.py::test_mission_event_payload_json_round_trip PASSED [ 98%]
+tests/unit/test_orchestrator_unit.py::test_process_passes_session_factory PASSED [ 99%]
+tests/unit/test_prompts_async.py::test_get_system_prompt_static PASSED   [ 99%]
+tests/unit/test_prompts_async.py::test_get_system_prompt_async_default PASSED [ 99%]
+tests/unit/test_prompts_async.py::test_get_system_prompt_async_dynamic PASSED [ 99%]
+tests/unit/test_prompts_async.py::test_global_constant PASSED            [ 99%]
+tests/unit/test_strategy_pattern_fix.py::test_strategy_registry_async_generator PASSED [ 99%]
+tests/unit/test_strategy_pattern_fix.py::test_strategy_registry_coroutine PASSED [ 99%]
+tests/unit/services/test_database_service.py::test_create_and_get_record PASSED [ 99%]
+tests/unit/services/overmind/test_super_brain.py::test_super_brain_loop_success PASSED [ 99%]
+tests/unit/services/overmind/test_super_brain.py::test_super_brain_self_correction PASSED [100%]
+
+==================================== ERRORS ====================================
+___________________ ERROR at setup of test_user_set_password ___________________
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ed17cd550>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_______________________ ERROR at setup of test_user_repr _______________________
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ed172d070>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_get_recent_conversations_success _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec773b890>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_get_recent_conversations_limit _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec772c050>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_rate_message_success __
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec7752960>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_rate_message_not_found _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec772d3d0>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_rate_message_security_violation _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec7750fe0>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_rate_message_db_error _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec7751a60>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+_ ERROR at setup of TestHistoryServiceComprehensive.test_rate_message_unexpected_error _
+
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ec7737ce0>
+
+    @pytest.fixture
+    def user_factory(db_session: AsyncSession):
+>       class AsyncUserFactory(UserFactory):
+
+tests/conftest.py:225:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:80: in __new__
+    meta.contribute_to_class(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:208: in contribute_to_class
+    self._fill_from_meta(meta=meta, base_meta=base_meta)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <FactoryOptions for AsyncUserFactory>
+meta = <class 'conftest.user_factory.<locals>.AsyncUserFactory.Meta'>
+base_meta = <FactoryOptions for UserFactory>
+
+    def _fill_from_meta(self, meta, base_meta):
+        # Exclude private/protected fields from the meta
+        if meta is None:
+            meta_attrs = {}
+        else:
+            meta_attrs = {
+                k: v
+                for (k, v) in vars(meta).items()
+                if not k.startswith('_')
+            }
+
+        for option in self._build_default_options():
+            assert not hasattr(self, option.name), "Can't override field %s." % option.name
+            value = option.apply(meta, base_meta)
+            meta_attrs.pop(option.name, None)
+            setattr(self, option.name, value)
+
+        if meta_attrs:
+            # Some attributes in the Meta aren't allowed here
+>           raise TypeError(
+                "'class Meta' for %r got unknown attribute(s) %s"
+                % (self.factory, ','.join(sorted(meta_attrs.keys()))))
+E           TypeError: 'class Meta' for <class 'conftest.user_factory.<locals>.AsyncUserFactory'> got unknown attribute(s) sqlalchemy_session,sqlalchemy_session_persistence
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/factory/base.py:199: TypeError
+=================================== FAILURES ===================================
+____________________ test_dev_frame_middleware_development _____________________
+
+    def test_dev_frame_middleware_development():
+        """Verify that in development mode, security headers are relaxed to allow framing."""
+        with mock.patch.dict(os.environ, {"ENVIRONMENT": "development"}, clear=True):
+            app = Starlette(middleware=[Middleware(RemoveBlockingHeadersMiddleware)])
+
+            @app.route("/")
+            async def homepage(request):
+                return Response(
+                    "ok",
+                    headers={
+                        "X-Frame-Options": "DENY",
+                        "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+                    },
+                )
+
+            client = TestClient(app)
+            response = client.get("/")
+
+            # Assertions
+>           assert "x-frame-options" not in response.headers
+E           assert 'x-frame-options' not in Headers({'x-frame-options': 'DENY', 'content-security-policy': "default-src 'self'; frame-ancestors 'none'", 'content-length': '2'})
+E            +  where Headers({'x-frame-options': 'DENY', 'content-security-policy': "default-src 'self'; frame-ancestors 'none'", 'content-length': '2'}) = <Response [200 OK]>.headers
+
+tests/test_middleware_frame.py:31: AssertionError
+________________________ test_middleware_enabled_in_dev ________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2ed0d981a0>
+
+    def test_middleware_enabled_in_dev(monkeypatch):
+        """Verify middleware identifies development environment correctly."""
+        monkeypatch.setenv("ENVIRONMENT", "development")
+        middleware = RemoveBlockingHeadersMiddleware(None)
+>       assert middleware.enabled is True
+E       AttributeError: 'RemoveBlockingHeadersMiddleware' object has no attribute 'enabled'
+
+tests/test_preview_headers.py:11: AttributeError
+____________________ test_middleware_enabled_in_codespaces _____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2ed0d2d910>
+
+    def test_middleware_enabled_in_codespaces(monkeypatch):
+        """Verify middleware identifies Codespaces environment correctly."""
+        monkeypatch.setenv("CODESPACE_NAME", "my-codespace")
+        middleware = RemoveBlockingHeadersMiddleware(None)
+>       assert middleware.enabled is True
+E       AttributeError: 'RemoveBlockingHeadersMiddleware' object has no attribute 'enabled'
+
+tests/test_preview_headers.py:18: AttributeError
+____________________ test_middleware_disabled_in_production ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2ed0d2d1f0>
+
+    def test_middleware_disabled_in_production(monkeypatch):
+        """Verify middleware is disabled in production."""
+        monkeypatch.setenv("ENVIRONMENT", "production")
+        monkeypatch.delenv("CODESPACE_NAME", raising=False)
+        monkeypatch.delenv("CODESPACES", raising=False)
+        middleware = RemoveBlockingHeadersMiddleware(None)
+>       assert middleware.enabled is False
+E       AttributeError: 'RemoveBlockingHeadersMiddleware' object has no attribute 'enabled'
+
+tests/test_preview_headers.py:27: AttributeError
+______________________ test_headers_removed_in_dev_client ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2ed0d2df10>
+
+    def test_headers_removed_in_dev_client(monkeypatch):
+        """
+        Integration-like test using TestClient.
+        """
+        monkeypatch.setenv("ENVIRONMENT", "development")
+
+        async def simple_app(scope, receive, send):
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [
+                        (b"content-type", b"text/plain"),
+                        (b"x-frame-options", b"DENY"),
+                        (b"content-security-policy", b"default-src 'self'; frame-ancestors 'none';"),
+                    ],
+                }
+            )
+            await send({"type": "http.response.body", "body": b"ok"})
+
+        middleware = RemoveBlockingHeadersMiddleware(simple_app)
+
+        client = TestClient(middleware)
+        response = client.get("/")
+
+        assert response.status_code == 200
+        # X-Frame-Options should be gone
+>       assert "x-frame-options" not in response.headers
+E       assert 'x-frame-options' not in Headers({'content-type': 'text/plain', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'self'; frame-ancestors 'none';"})
+E        +  where Headers({'content-type': 'text/plain', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'self'; frame-ancestors 'none';"}) = <Response [200 OK]>.headers
+
+tests/test_preview_headers.py:57: AssertionError
+____________________ test_chat_stream_has_delta_event_type _____________________
+
+client = <starlette.testclient.TestClient object at 0x7f2ed03f9610>
+test_app = <fastapi.applications.FastAPI object at 0x7f2ed38e9370>
+
+    @pytest.mark.asyncio
+    async def test_chat_stream_has_delta_event_type(client, test_app):
+        """
+        Verifies that the chat_stream endpoint correctly yields 'event: delta' events
+        for content chunks, ensuring proper SSE streaming compatibility with the frontend.
+        """
+
+        # 1. Define Mocks
+        mock_ai_client = MagicMock()
+        mock_db_session = AsyncMock()
+        # FIX: Explicitly set synchronous methods as MagicMock to prevent RuntimeWarnings
+        # "coroutine 'AsyncMockMixin._execute_mock_call' was never awaited"
+        mock_db_session.add = MagicMock()
+        mock_db_session.refresh = (
+            AsyncMock()
+        )  # refresh is awaited in admin.py: await db.refresh(conversation)
+
+        # Let's verify admin.py again.
+        # line 128: db.add(conversation) -> sync
+        # line 130: await db.refresh(conversation) -> async
+
+        # Mock database execution results
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_result.scalar_one_or_none.return_value = None  # No existing conversation
+        mock_db_session.execute.return_value = mock_result
+
+        # Mock AI response generator
+        async def mock_stream_chat(messages):
+            # We simulate the structure returned by many AI providers
+            yield {"choices": [{"delta": {"content": "Hello"}}]}
+            yield {"choices": [{"delta": {"content": " World"}}]}
+
+        mock_ai_client.stream_chat.side_effect = mock_stream_chat
+
+        # 2. Define Overrides
+        def override_get_ai_client():
+            return mock_ai_client
+
+        async def override_get_db():
+            yield mock_db_session
+
+        def override_get_current_user_id():
+            # Bypass auth validation entirely
+            return 1
+
+        def override_get_session_factory():
+            # The endpoint uses session_factory() context manager
+            # We need to return a factory that produces our mock_db_session
+            mock_factory = MagicMock()
+            mock_factory.return_value.__aenter__.return_value = mock_db_session
+            mock_factory.return_value.__aexit__.return_value = None
+            return mock_factory
+
+        # 3. Apply Overrides Safely
+        # Use patch.dict to modify the dependency_overrides dictionary in place,
+        # and automatically restore it to its previous state (containing conftest.py overrides) upon exit.
+        overrides = {
+            get_ai_client: override_get_ai_client,
+            get_db: override_get_db,
+            get_current_user_id: override_get_current_user_id,
+            get_session_factory: override_get_session_factory,
+        }
+
+        with patch.dict(test_app.dependency_overrides, overrides):
+            # 4. Make Request
+            response = client.post(
+                "/admin/api/chat/stream",
+                json={"question": "Test question"},
+                headers={"Authorization": "Bearer test-token"},
+            )
+
+            # 5. Assertions
+            assert response.status_code == 200, f"Response failed with: {response.text}"
+
+            # Analyze stream content
+            content = response.content.decode("utf-8")
+            lines = content.split("\n\n")
+
+            has_delta_event = False
+
+            for line in lines:
+                if not line.strip():
+                    continue
+
+                # Check if this block has "event: delta" with content
+                if "data: " in line and "Hello" in line and "event: delta" in line:
+                    has_delta_event = True
+
+            # After the fix, we expect 'event: delta' events for content chunks
+>           assert has_delta_event, "Expected 'event: delta' for content chunks (fix verified)"
+E           AssertionError: Expected 'event: delta' for content chunks (fix verified)
+E           assert False
+
+tests/test_streaming_event_type_bug.py:103: AssertionError
+________________________ test_healthz_endpoint_failure _________________________
+
+async_client = <httpx.AsyncClient object at 0x7f2ed0264410>
+
+    @pytest.mark.asyncio
+    async def test_healthz_endpoint_failure(async_client: AsyncClient):
+        """
+        Test that the /system/healthz endpoint fails due to the missing method in SystemService.
+        This test reproduces the bug where 'SystemService' object has no attribute 'is_database_connected'.
+        """
+        try:
+            response = await async_client.get("/system/healthz")
+            # If the bug is present, this might return 500 or raise an exception depending on middleware
+            assert response.status_code == 200
+>           assert response.json() == {"status": "ok"}
+E           AssertionError: assert {'detail': No...status': 'ok'} == {'status': 'ok'}
+E             Omitting 1 identical items, use -vv to show
+E             Left contains 1 more item:
+E             {'detail': None}
+E             Full diff:
+E             - {'status': 'ok'}
+E             + {'detail': None, 'status': 'ok'}
+
+tests/test_system_healthz_bug.py:15: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+async_client = <httpx.AsyncClient object at 0x7f2ed0264410>
+
+    @pytest.mark.asyncio
+    async def test_healthz_endpoint_failure(async_client: AsyncClient):
+        """
+        Test that the /system/healthz endpoint fails due to the missing method in SystemService.
+        This test reproduces the bug where 'SystemService' object has no attribute 'is_database_connected'.
+        """
+        try:
+            response = await async_client.get("/system/healthz")
+            # If the bug is present, this might return 500 or raise an exception depending on middleware
+            assert response.status_code == 200
+            assert response.json() == {"status": "ok"}
+        except Exception as e:
+            # If the client raises the exception directly (e.g. if not caught by middleware)
+            # we can catch it here. However, TestClient usually swallows exceptions and returns 500
+            # unless raise_server_exceptions=True is set (which is default for TestClient but we are using AsyncClient).
+            # We will inspect the response code.
+>           pytest.fail(f"Request failed with exception: {e}")
+E           Failed: Request failed with exception: assert {'detail': No...status': 'ok'} == {'status': 'ok'}
+E             Omitting 1 identical items, use -vv to show
+E             Left contains 1 more item:
+E             {'detail': None}
+E             Full diff:
+E             - {'status': 'ok'}
+E             + {'detail': None, 'status': 'ok'}
+
+tests/test_system_healthz_bug.py:21: Failed
+_________________________ test_create_mission_endpoint _________________________
+
+client = <starlette.testclient.TestClient object at 0x7f2ed0242930>
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ed0229e20>
+
+    @pytest.mark.asyncio
+    async def test_create_mission_endpoint(client: AsyncClient, db_session):
+        """
+        Test creating a mission via the API.
+        """
+        # Override dependency logic handled by framework or manual patch if needed
+        # Here we assume the client + app setup works.
+
+        # Mocking orchestrator creation if complex, but better to test integration if possible
+        # We will rely on the real stack but mock the LLM part usually.
+        # For now, let's verify the endpoint structure.
+
+        payload = {
+            "objective": "Build a Dyson Sphere",
+            "context": {"radius": "1AU"},
+            "priority": 1
+        }
+
+        # We need to authenticate usually (admin only?), but let's check open endpoint
+        # or ensure we have admin headers if required.
+        # Assuming open or mocked auth for this specific test scope.
+
+        # Note: If security middleware is active, we might need headers.
+>       response = await client.post("/api/v1/overmind/missions", json=payload)
+E       TypeError: object Response can't be used in 'await' expression
+
+tests/api/test_overmind_router.py:32: TypeError
+------------------------------ Captured log call -------------------------------
+WARNING  app.core.gateway.mesh:mesh.py:399 OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.
+ERROR    app.api.routers.overmind:overmind.py:92 Failed to create mission: MissionStateManager.create_mission() got an unexpected keyword argument 'context'
+________________________ test_stream_endpoint_structure ________________________
+
+self = <sqlalchemy.engine.base.Connection object at 0x7f2ed0228470>
+dialect = <sqlalchemy.dialects.sqlite.aiosqlite.SQLiteDialect_aiosqlite object at 0x7f2ed599e750>
+context = <sqlalchemy.dialects.sqlite.aiosqlite.SQLiteExecutionContext_aiosqlite object at 0x7f2ed022ba40>
+statement = <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f2ed022b710>
+parameters = [(1,)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+
+        effective_parameters: Optional[_AnyExecuteParams]
+
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+
+        if self._echo:
+            self._log_info(str_statement)
+
+            stats = context._get_cache_stats()
+
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1969:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:146: in execute
+    self._adapt_connection._handle_exception(error)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:298: in _handle_exception
+    raise error
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:128: in execute
+    self.await_(_cursor.execute(operation, parameters))
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/cursor.py:37: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/cursor.py:31: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/core.py:129: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-64, started daemon 139839057954496)>
+
+    def run(self) -> None:
+        """
+        Execute function calls on a separate thread.
+
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+            try:
+                future, function = self._tx.get(timeout=0.1)
+            except Empty:
+                if self._running:
+                    continue
+                break
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+E               sqlite3.OperationalError: no such table: missions
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/core.py:102: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x7f2ed03e5c70>
+
+    @pytest.mark.asyncio
+    async def test_stream_endpoint_structure(client: AsyncClient):
+        """
+        Test that the streaming endpoint exists.
+        """
+>       response = await client.get("/api/v1/overmind/missions/1/stream")
+
+tests/api/test_overmind_router.py:51:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/testclient.py:502: in get
+    return super().get(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:1055: in get
+    return self.request(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/testclient.py:468: in request
+    return super().request(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:828: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:915: in send
+    response = self._send_handling_auth(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:943: in _send_handling_auth
+    response = self._send_handling_redirects(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:980: in _send_handling_redirects
+    response = self._send_single_request(request)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/httpx/_client.py:1016: in _send_single_request
+    response = transport.handle_request(request)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/testclient.py:344: in handle_request
+    raise exc
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/testclient.py:341: in handle_request
+    portal.call(self.app, scope, receive, send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/anyio/from_thread.py:326: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/anyio/from_thread.py:257: in _call_func
+    retval = await retval_or_awaitable
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/fastapi/applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/applications.py:123: in __call__
+    await self.middleware_stack(scope, receive, send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/trustedhost.py:34: in __call__
+    await self.app(scope, receive, send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/cors.py:83: in __call__
+    await self.app(scope, receive, send)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/base.py:189: in __call__
+    with collapse_excgroups():
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/_utils.py:91: in collapse_excgroups
+    raise exc
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/base.py:191: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/middleware/core/base_middleware.py:151: in dispatch
+    raise e
+app/middleware/core/base_middleware.py:130: in dispatch
+    response = await call_next(request)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/base.py:165: in call_next
+    raise app_exc
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/base.py:151: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/middleware/base.py:189: in __call__
+    with collapse_excgroups():
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/_utils.py:91: in collapse_excgroups
+    raise exc
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/responses.py:257: in wrap
+    await func()
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/responses.py:246: in stream_response
+    async for chunk in self.body_iterator:
+app/api/routers/overmind.py:139: in event_generator
+    result = await session.execute(select(Mission).where(Mission.id == mission_id))
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:455: in execute
+    result = await greenlet_spawn(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:200: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2308: in execute
+    return self._execute_internal(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2190: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/orm/context.py:293: in orm_execute_statement
+    result = conn.execute(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1416: in execute
+    return meth(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:517: in _execute_on_connection
+    return connection._execute_clauseelement(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1639: in _execute_clauseelement
+    ret = self._execute_context(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2344: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:146: in execute
+    self._adapt_connection._handle_exception(error)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:298: in _handle_exception
+    raise error
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py:128: in execute
+    self.await_(_cursor.execute(operation, parameters))
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/cursor.py:37: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/cursor.py:31: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/core.py:129: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-64, started daemon 139839057954496)>
+
+    def run(self) -> None:
+        """
+        Execute function calls on a separate thread.
+
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+            try:
+                future, function = self._tx.get(timeout=0.1)
+            except Empty:
+                if self._running:
+                    continue
+                break
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+E               sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: missions
+E               [SQL: SELECT missions.id, missions.objective, missions.status, missions.initiator_id, missions.active_plan_id, missions.created_at, missions.updated_at
+E               FROM missions
+E               WHERE missions.id = ?]
+E               [parameters: (1,)]
+E               (Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/aiosqlite/core.py:102: OperationalError
+_________ TestRealityKernel.test_kernel_resilience_to_random_settings __________
+
+self = <test_kernel_comprehensive.TestRealityKernel object at 0x7f2ed3ae9970>
+mock_settings = {'ALLOWED_HOSTS': ['*'], 'API_V1_STR': '/api/v1', 'BACKEND_CORS_ORIGINS': ['http://localhost:3000'], 'DATABASE_URL': 'sqlite:///:memory:', ...}
+
+    def test_kernel_resilience_to_random_settings(self, mock_settings):
+        """
+        GIVEN settings with extra or missing optional fields
+        WHEN kernel is initialized
+        THEN it should gracefully handle them.
+        """
+        # Add random junk
+        mock_settings["RANDOM_JUNK"] = "chaos"
+        # Remove optional
+        if "VERSION" in mock_settings:
+            del mock_settings["VERSION"]
+
+        kernel = RealityKernel(mock_settings)
+        assert kernel.app.title == "TestProject"
+        # Version should default to what's in code
+>       assert kernel.app.version == "v4.1-simplified"
+E       AssertionError: assert '4.0.0-legendary' == 'v4.1-simplified'
+E         - v4.1-simplified
+E         + 4.0.0-legendary
+
+tests/core/test_kernel_comprehensive.py:65: AssertionError
+________________ TestRealityKernel.test_cors_logic_dev_vs_prod _________________
+
+self = <test_kernel_comprehensive.TestRealityKernel object at 0x7f2ed3ae9e50>
+
+    def test_cors_logic_dev_vs_prod(self):
+        """
+        GIVEN different environments
+        WHEN app is created
+        THEN CORS middleware should be configured appropriately.
+        """
+        # Dev Case
+        dev_settings = {
+            "PROJECT_NAME": "Dev",
+            "ENVIRONMENT": "development",
+            "SECRET_KEY": "s",
+            "BACKEND_CORS_ORIGINS": [], # Empty implies default logic
+            "FRONTEND_URL": "http://localhost:3000"
+        }
+        RealityKernel(dev_settings)
+        # Verify middleware configuration (complex to inspect directly in FastAPI,
+        # but we can rely on no crash and basic property checks if exposed)
+
+        # Prod Case
+        prod_settings = {
+            "PROJECT_NAME": "Prod",
+            "ENVIRONMENT": "production",
+            "SECRET_KEY": "s",
+            "BACKEND_CORS_ORIGINS": ["https://myprod.com"],
+            "FRONTEND_URL": "https://myprod.com"
+        }
+>       kernel_prod = RealityKernel(prod_settings)
+
+tests/core/test_kernel_comprehensive.py:138:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app/kernel.py:174: in __init__
+    self.settings_obj = AppSettings(**settings)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+__pydantic_self__ = AppSettings(PROJECT_NAME='Prod', VERSION='4.0.0-legendary', DESCRIPTION='AI-Powered Educational Platform with Hyper-In...om', ADMIN_PASSWORD='change_me_please_123!', ADMIN_NAME='Supreme Administrator', LOG_LEVEL='DEBUG', is_production=True)
+_case_sensitive = None, _env_prefix = None, _env_file = PosixPath('.')
+_env_file_encoding = None, _env_nested_delimiter = None, _secrets_dir = None
+values = {'BACKEND_CORS_ORIGINS': ['https://myprod.com'], 'ENVIRONMENT': 'production', 'FRONTEND_URL': 'https://myprod.com', 'PROJECT_NAME': 'Prod', ...}
+
+    def __init__(
+        __pydantic_self__,
+        _case_sensitive: bool | None = None,
+        _env_prefix: str | None = None,
+        _env_file: DotenvType | None = ENV_FILE_SENTINEL,
+        _env_file_encoding: str | None = None,
+        _env_nested_delimiter: str | None = None,
+        _secrets_dir: str | Path | None = None,
+        **values: Any,
+    ) -> None:
+        # Uses something other than `self` the first arg to allow "self" as a settable attribute
+>       super().__init__(
+            **__pydantic_self__._settings_build_values(
+                values,
+                _case_sensitive=_case_sensitive,
+                _env_prefix=_env_prefix,
+                _env_file=_env_file,
+                _env_file_encoding=_env_file_encoding,
+                _env_nested_delimiter=_env_nested_delimiter,
+                _secrets_dir=_secrets_dir,
+            )
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for AppSettings
+E         Value error, ❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak! [type=value_error, input_value={'PROJECT_NAME': 'Prod', ...': 'https://myprod.com'}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.5/v/value_error
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/pydantic_settings/main.py:71: ValidationError
+__________________ test_validate_and_fix_schema_bug_on_sqlite __________________
+
+init_db = None
+
+    @pytest.mark.asyncio
+    async def test_validate_and_fix_schema_bug_on_sqlite(init_db):
+        """
+        Verifies that validate_and_fix_schema passes on SQLite
+        after the fix.
+        Uses the test_engine (which has tables initialized) to mock the app's db engine.
+        """
+        # Patch the engine in app.core.db_schema with the test_engine
+        # Note: validation_and_fix_schema imports engine from app.core.database, but we need to patch where it's used.
+        # Actually, it imports 'engine' globally.
+        with patch("app.core.db_schema.engine", test_engine):
+            results = await validate_and_fix_schema(auto_fix=True)
+
+            # Should be OK now
+>           assert results["status"] == "ok", (
+                f"Expected ok, got {results.get('status')} with errors: {results.get('errors')}"
+            )
+E           AssertionError: Expected ok, got warning with errors: []
+E           assert 'warning' == 'ok'
+E             - ok
+E             + warning
+
+tests/core/test_schema_validation_bug.py:23: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    app.core.db_schema:db_schema.py:93 ❌ Failed to fix admin_conversations.linked_mission_id: (sqlite3.OperationalError) no such table: admin_conversations
+[SQL: ALTER TABLE "admin_conversations" ADD COLUMN IF NOT EXISTS "linked_mission_id" INTEGER]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+________________________ test_access_control_isolation _________________________
+
+async_client = <httpx.AsyncClient object at 0x7f2ecc141400>
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ecc141b20>
+
+    @pytest.mark.asyncio
+    async def test_access_control_isolation(
+        async_client: AsyncClient,
+        db_session,
+    ):
+        # 1. Setup Users Manually
+        user_a = User(email="user_a@test.com", full_name="User A", is_admin=False)
+        user_b = User(email="user_b@test.com", full_name="User B", is_admin=False)
+        db_session.add(user_a)
+        db_session.add(user_b)
+        await db_session.commit()
+        await db_session.refresh(user_a)
+        await db_session.refresh(user_b)
+
+        token_a = generate_service_token(str(user_a.id))
+        token_b = generate_service_token(str(user_b.id))
+
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+        headers_b = {"Authorization": f"Bearer {token_b}"}
+
+        # 2. User A creates a conversation
+        resp = await async_client.post(
+            "/admin/api/chat/stream", json={"question": "Hello form User A"}, headers=headers_a
+        )
+        # Stream response, we just want to ensure it started
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/security/test_admin_security_upgrades.py:34: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  app.core.gateway.mesh:mesh.py:399 OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.
+____________________ test_admin_can_access_any_conversation ____________________
+
+async_client = <httpx.AsyncClient object at 0x7f2ecc1434a0>
+db_session = <sqlalchemy.orm.session.AsyncSession object at 0x7f2ecc143740>
+admin_user = <User id=1 email=admin@test.com>
+admin_auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY2MzIyNTMsImlhdCI6MTc2NjYzMTk1Mywic3ViIjoiMSJ9.jrT3_mT2JfRXO35O9bhzTIks6JskQYSnM5u0V1liSWA'}
+
+    @pytest.mark.asyncio
+    async def test_admin_can_access_any_conversation(
+        async_client: AsyncClient, db_session, admin_user, admin_auth_headers
+    ):
+        """
+        Verifies that an Admin user can access a regular user's conversation.
+        Currently, this fails (returns 404) because the query restricts by user_id.
+        """
+        # 1. User A creates a conversation
+        user_a = User(email="user_a_secret@test.com", full_name="User A Secret", is_admin=False)
+        db_session.add(user_a)
+        await db_session.commit()
+        await db_session.refresh(user_a)
+
+        token_a = generate_service_token(str(user_a.id))
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        await async_client.post(
+            "/admin/api/chat/stream", json={"question": "User A secret plan"}, headers=headers_a
+        )
+
+        result = await db_session.execute(
+            select(AdminConversation).where(AdminConversation.user_id == user_a.id)
+        )
+        conv = result.scalars().first()
+>       assert conv is not None
+E       assert None is not None
+
+tests/security/test_admin_security_upgrades.py:77: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  app.core.gateway.mesh:mesh.py:399 OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.
+__________________ test_get_or_create_conversation_invalid_id __________________
+
+service = <app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService object at 0x7f2ec7751e50>
+
+    @pytest.mark.asyncio
+    async def test_get_or_create_conversation_invalid_id(service):
+        with pytest.raises(HTTPException) as exc:
+            await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="invalid")
+
+>       assert exc.value.status_code == 404
+E       AssertionError: assert 400 == 404
+E        +  where 400 = HTTPException(status_code=400, detail='Invalid conversation ID format').status_code
+E        +    where HTTPException(status_code=400, detail='Invalid conversation ID format') = <ExceptionInfo HTTPException(status_code=400, detail='Invalid conversation ID format') tblen=2>.value
+
+tests/services/test_admin_chat_boundary_service_comprehensive.py:148: AssertionError
+___ TestAdminChatBoundaryService.test_get_or_create_conversation_delegation ____
+
+self = <test_admin_chat_boundary_service_final.TestAdminChatBoundaryService object at 0x7f2ed3a6a4e0>
+service = <app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService object at 0x7f2ec7737890>
+
+    @pytest.mark.asyncio
+    async def test_get_or_create_conversation_delegation(self, service):
+        service.persistence.get_or_create_conversation = AsyncMock(return_value="conv")
+        result = await service.get_or_create_conversation(1, "Q", "123")
+        assert result == "conv"
+>       service.persistence.get_or_create_conversation.assert_called_with(1, "Q", "123")
+
+tests/services/test_admin_chat_boundary_service_final.py:85:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AsyncMock name='AdminChatPersistence().get_or_create_conversation' id='139838891474864'>
+args = (1, 'Q', '123'), kwargs = {}, expected = call(1, 'Q', '123')
+actual = call(1, 'Q', 123)
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_message at 0x7f2ed0da9da0>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: get_or_create_conversation(1, 'Q', '123')
+E             Actual: get_or_create_conversation(1, 'Q', 123)
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py:949: AssertionError
+=============================== warnings summary ===============================
+tests/test_api_crud.py::TestHealthEndpoints::test_database_stats
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:898: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-3, started daemon 139839003428544)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    def start_soon(
+
+tests/test_api_crud.py::TestHealthEndpoints::test_database_tables
+  sys:1: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-6, started daemon 139839089411776)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+
+tests/test_api_first_platform.py::TestAPIFirstPlatform::test_health_check_schema_compliance
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/tasks.py:641: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-8, started daemon 139839078926016)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    @types.coroutine
+
+tests/test_flexible_enum_crash.py::test_flexible_enum_resilience
+  /app/tests/test_flexible_enum_crash.py:35: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-25, started daemon 139839024400064)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    session.commit()
+
+tests/test_unified_observability.py::TestTraceContext::test_trace_context_to_headers
+  /app/tests/conftest.py:137: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-43, started daemon 139839068440256)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    await conn.execute(table.delete())
+
+tests/integration/test_admin_chat_api.py::TestAdminChatAPI::test_admin_chat_unauthorized
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:864: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-64, started daemon 139839057954496)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    parent_id = id(self.cancel_scope._host_task)
+
+tests/smoke/test_service_integration.py::test_system_health_endpoint_healthy_integration
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/typing.py:392: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-85, started daemon 139838686758592)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    @functools.wraps(func)
+
+tests/smoke/test_service_integration.py::test_system_health_endpoint_healthy_integration
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/starlette/testclient.py:316: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-87, started daemon 139838676272832)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    (key.decode(), value.decode())
+
+tests/transcendent_v2/test_history_service_post_migration.py::test_get_recent_conversations_returns_empty_on_error
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py:472: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <Connection(Thread-89, started daemon 139838665787072)>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    __dict__['method_calls'] = _CallList()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================= slowest 10 durations =============================
+20.17s call     tests/test_admin_chat_init_event.py::test_admin_chat_returns_conversation_init_event
+6.00s call     tests/services/test_saga_coverage.py::test_retry_logic
+4.40s call     tests/security/test_security_final.py::TestSecuritySuperhuman::test_generic_fuzzing_resilience
+2.23s call     tests/security/test_yaml_rce.py::TestYamlRCEProtection::test_codebase_scan_for_unsafe_load
+2.00s call     tests/services/test_saga_coverage.py::test_max_retries_exceeded
+1.36s call     tests/phase3_refactoring/test_llm_client_golden_master.py::TestGoldenMaster_ErrorHandling::test_empty_response_triggers_retry
+1.10s call     tests/test_unified_observability.py::TestUnifiedObservabilityService::test_trace_search
+1.06s call     tests/security/test_password_compat.py::test_legacy_hash_support
+1.00s call     tests/services/test_serving_coverage.py::test_model_invoker
+0.91s call     tests/test_unified_observability.py::TestUnifiedObservabilityService::test_anomaly_detection
+=========================== short test summary info ============================
+FAILED tests/test_middleware_frame.py::test_dev_frame_middleware_development
+FAILED tests/test_preview_headers.py::test_middleware_enabled_in_dev - Attrib...
+FAILED tests/test_preview_headers.py::test_middleware_enabled_in_codespaces
+FAILED tests/test_preview_headers.py::test_middleware_disabled_in_production
+FAILED tests/test_preview_headers.py::test_headers_removed_in_dev_client - as...
+FAILED tests/test_streaming_event_type_bug.py::test_chat_stream_has_delta_event_type
+FAILED tests/test_system_healthz_bug.py::test_healthz_endpoint_failure - Fail...
+FAILED tests/api/test_overmind_router.py::test_create_mission_endpoint - Type...
+FAILED tests/api/test_overmind_router.py::test_stream_endpoint_structure - sq...
+FAILED tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_kernel_resilience_to_random_settings
+FAILED tests/core/test_kernel_comprehensive.py::TestRealityKernel::test_cors_logic_dev_vs_prod
+FAILED tests/core/test_schema_validation_bug.py::test_validate_and_fix_schema_bug_on_sqlite
+FAILED tests/security/test_admin_security_upgrades.py::test_access_control_isolation
+FAILED tests/security/test_admin_security_upgrades.py::test_admin_can_access_any_conversation
+FAILED tests/services/test_admin_chat_boundary_service_comprehensive.py::test_get_or_create_conversation_invalid_id
+FAILED tests/services/test_admin_chat_boundary_service_final.py::TestAdminChatBoundaryService::test_get_or_create_conversation_delegation
+ERROR tests/test_models.py::test_user_set_password - TypeError: 'class Meta' ...
+ERROR tests/test_models.py::test_user_repr - TypeError: 'class Meta' for <cla...
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_get_recent_conversations_success
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_get_recent_conversations_limit
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_success
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_not_found
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_security_violation
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_db_error
+ERROR tests/services/test_history_service_comprehensive.py::TestHistoryServiceComprehensive::test_rate_message_unexpected_error
+======= 16 failed, 939 passed, 9 warnings, 9 errors in 70.94s (0:01:10) ========

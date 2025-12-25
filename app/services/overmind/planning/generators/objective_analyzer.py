@@ -107,12 +107,11 @@ class ObjectiveAnalyzer:
 
         if word_count > 50 or has_complex_keywords:
             return ComplexityLevel.VERY_HIGH
-        elif word_count > 30:
+        if word_count > 30:
             return ComplexityLevel.HIGH
-        elif word_count > 15:
+        if word_count > 15:
             return ComplexityLevel.MEDIUM
-        else:
-            return ComplexityLevel.LOW
+        return ComplexityLevel.LOW
 
     def _extract_keywords(self, objective: str) -> list[str]:
         """

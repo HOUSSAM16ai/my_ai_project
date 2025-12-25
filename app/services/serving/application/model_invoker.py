@@ -97,5 +97,4 @@ class ModelInvoker:
             return {'text':
                 f"Generated response for: {input_data.get('prompt', '')}",
                 'model': model.model_name, 'version': model.version_number}
-        else:
-            return {'result': 'processed', 'model': model.model_name}
+        return {'result': 'processed', 'model': model.model_name}

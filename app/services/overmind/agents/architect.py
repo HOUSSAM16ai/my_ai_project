@@ -117,7 +117,7 @@ class ArchitectAgent(AgentArchitect):
             # في حال الفشل، نعيد تصميم فارغ أو خطأ
             return {
                 "design_name": "Failed Design",
-                "error": f"{type(e).__name__}: {str(e)}",
+                "error": f"{type(e).__name__}: {e!s}",
                 "tasks": []
             }
 

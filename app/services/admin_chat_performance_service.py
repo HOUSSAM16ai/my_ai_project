@@ -49,12 +49,11 @@ class PerformanceMetric:
         """Get performance category based on latency"""
         if self.latency_ms < 500:
             return PerformanceCategory.EXCELLENT
-        elif self.latency_ms < 1000:
+        if self.latency_ms < 1000:
             return PerformanceCategory.GOOD
-        elif self.latency_ms < 3000:
+        if self.latency_ms < 3000:
             return PerformanceCategory.ACCEPTABLE
-        else:
-            return PerformanceCategory.SLOW
+        return PerformanceCategory.SLOW
 
 
 class ABTestVariant(Enum):

@@ -10,8 +10,10 @@
 - توثيق "Legendary" باللغة العربية.
 """
 
-from typing import Any, Dict
+from typing import Any
+
 from app.core.protocols import CollaborationContext
+
 
 class InMemoryCollaborationContext(CollaborationContext):
     """
@@ -20,8 +22,8 @@ class InMemoryCollaborationContext(CollaborationContext):
     يستخدم لتمرير المعلومات والحالة بين الوكلاء خلال دورة حياة المهمة الواحدة.
     """
 
-    def __init__(self, initial_data: Dict[str, Any] | None = None) -> None:
-        self.shared_memory: Dict[str, Any] = initial_data or {}
+    def __init__(self, initial_data: dict[str, Any] | None = None) -> None:
+        self.shared_memory: dict[str, Any] = initial_data or {}
 
     def update(self, key: str, value: Any) -> None:
         """

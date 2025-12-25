@@ -114,10 +114,10 @@ class ChaosMonkey:
         """Get parameters for fault type"""
         if fault_type == FaultType.LATENCY:
             return {'delay_ms': random.randint(100, 5000)}
-        elif fault_type == FaultType.ERROR:
+        if fault_type == FaultType.ERROR:
             return {'error_message': 'Chaos Monkey induced error',
                 'error_code': random.choice([500, 503, 504])}
-        elif fault_type == FaultType.TIMEOUT:
+        if fault_type == FaultType.TIMEOUT:
             return {'timeout_ms': random.randint(30000, 60000)}
         return {}
 

@@ -98,7 +98,7 @@ class StrategistAgent(AgentPlanner):
         except json.JSONDecodeError as e:
             logger.error(f"Strategist JSON parsing error: {e}")
             logger.error(f"Raw response: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
-            
+
             # التحقق من رسالة Safety Net
             if 'response_text' in locals() and 'Unable to reach external intelligence' in response_text:
                 logger.error("AI service unavailable - Safety Net activated")
@@ -113,7 +113,7 @@ class StrategistAgent(AgentPlanner):
                         }
                     ]
                 }
-            
+
             # خطة طوارئ (Fallback Plan)
             return {
                 "strategy_name": "Emergency Fallback - JSON Error",

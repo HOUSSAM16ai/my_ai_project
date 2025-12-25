@@ -2,8 +2,8 @@
 Core Protocols & Interfaces
 Defines abstract base classes and protocols for the application.
 """
-from typing import Protocol, runtime_checkable, Any, Awaitable
-from collections.abc import Callable
+from typing import Any, Protocol, runtime_checkable
+
 
 @runtime_checkable
 class BaseService(Protocol):

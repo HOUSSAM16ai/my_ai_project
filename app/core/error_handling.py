@@ -110,9 +110,8 @@ def retry_on_failure(
                             )
                         time.sleep(current_delay)
                         current_delay *= backoff
-                    else:
-                        if log_retry:
-                            logger.error(f"Failed after {max_retries} retries: {func.__name__}")
+                    elif log_retry:
+                        logger.error(f"Failed after {max_retries} retries: {func.__name__}")
 
             # All retries exhausted
             if last_exception:

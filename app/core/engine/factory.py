@@ -143,7 +143,7 @@ def _detect_database_type(url: str) -> DatabaseType:
     url_lower = url.lower()
     if "postgresql" in url_lower or "postgres" in url_lower:
         return DatabaseType.POSTGRESQL
-    elif "sqlite" in url_lower:
+    if "sqlite" in url_lower:
         return DatabaseType.SQLITE
     return DatabaseType.UNKNOWN
 

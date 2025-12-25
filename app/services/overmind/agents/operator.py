@@ -53,7 +53,7 @@ class OperatorAgent(AgentExecutor):
             dict: تقرير التنفيذ الشامل.
         """
         logger.info("Operator is starting execution...")
-        
+
         # التحقق من وجود أخطاء في التصميم
         if "error" in design:
             logger.error(f"Operator received failed design: {design.get('error')}")
@@ -63,9 +63,9 @@ class OperatorAgent(AgentExecutor):
                 "results": [],
                 "error": f"Design failed: {design.get('error')}"
             }
-        
+
         tasks_data = design.get("tasks", [])
-        
+
         if not tasks_data:
             logger.warning("Operator received design with no tasks")
             return {
@@ -74,7 +74,7 @@ class OperatorAgent(AgentExecutor):
                 "results": [],
                 "note": "No tasks to execute"
             }
-        
+
         logger.info(f"Operator: Executing {len(tasks_data)} tasks")
         results = []
         overall_status = "success"
@@ -117,7 +117,7 @@ class OperatorAgent(AgentExecutor):
                 logger.exception(f"Task '{task_name}' raised exception: {e}")
                 exec_result = {
                     "status": "failed",
-                    "error": f"{type(e).__name__}: {str(e)}"
+                    "error": f"{type(e).__name__}: {e!s}"
                 }
 
             # تسجيل النتيجة

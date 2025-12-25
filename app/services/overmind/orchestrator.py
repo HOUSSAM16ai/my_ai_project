@@ -23,7 +23,6 @@
 """
 
 import logging
-from collections.abc import Callable
 
 from app.models import Mission, MissionEventType, MissionStatus
 from app.services.overmind.domain.cognitive import SuperBrain

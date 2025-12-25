@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any, Callable
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 import jwt
 from fastapi import HTTPException

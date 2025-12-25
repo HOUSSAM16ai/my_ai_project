@@ -209,14 +209,14 @@ class AIOpsService:
                 "parameters": {"scale_factor": 1.5, "max_instances": 10},
             }
 
-        elif anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE:
+        if anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE:
             return {
                 "action": HealingAction.ENABLE_CIRCUIT_BREAKER,
                 "reason": "High error rate, enabling circuit breaker",
                 "parameters": {"threshold": 0.5, "timeout_seconds": 30},
             }
 
-        elif (
+        if (
             anomaly.anomaly_type == AnomalyType.TRAFFIC_ANOMALY
             and anomaly.metric_value > anomaly.expected_value
         ):

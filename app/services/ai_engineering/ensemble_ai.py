@@ -126,10 +126,9 @@ class QueryClassifier:
         word_count = len(query.split())
         if word_count < 5:
             return 0.8
-        elif word_count < 15:
+        if word_count < 15:
             return 0.5
-        else:
-            return 0.2
+        return 0.2
 
     def assess_creativity_need(self, query: str) -> float:
         """Assess creativity requirement (0.0-1.0)"""
@@ -176,12 +175,11 @@ class QueryClassifier:
 
         if any(kw in query_lower for kw in ["brief", "short", "quick", "مختصر", "قصير"]):
             return "short"
-        elif any(
+        if any(
             kw in query_lower for kw in ["detailed", "explain", "comprehensive", "مفصل", "اشرح"]
         ):
             return "long"
-        else:
-            return "medium"
+        return "medium"
 
     def needs_reasoning(self, query: str) -> bool:
         """Check if query needs logical reasoning"""
@@ -298,14 +296,13 @@ class IntelligentRouter:
         if urgency and complexity < 0.3:
             return ModelTier.NANO  # Simple and urgent
 
-        elif complexity < 0.4 and not creativity and not reasoning:
+        if complexity < 0.4 and not creativity and not reasoning:
             return ModelTier.FAST  # Simple queries
 
-        elif complexity < 0.7 or (not reasoning and creativity < 0.5):
+        if complexity < 0.7 or (not reasoning and creativity < 0.5):
             return ModelTier.SMART  # Medium complexity
 
-        else:
-            return ModelTier.GENIUS  # Complex/creative/reasoning
+        return ModelTier.GENIUS  # Complex/creative/reasoning
 
     def _estimate_tokens(self, query: str, analysis: dict) -> int:
         """Estimate token count for query"""

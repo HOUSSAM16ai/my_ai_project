@@ -47,7 +47,7 @@ _performance_optimizer = get_performance_optimizer()
 @runtime_checkable
 class AIClient(Protocol):
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
-    
+
     async def send_message(
         self,
         system_prompt: str,
@@ -376,7 +376,7 @@ class NeuralRoutingMesh:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
-        
+
         full_response = []
         try:
             async for chunk in self.stream_chat(messages):
@@ -386,7 +386,7 @@ class NeuralRoutingMesh:
         except Exception as e:
             logger.error(f"Error in send_message: {e}")
             raise
-        
+
         return "".join(full_response)
 
 

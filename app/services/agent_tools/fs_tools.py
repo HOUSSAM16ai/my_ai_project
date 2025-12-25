@@ -411,11 +411,10 @@ def ensure_file(
         if enforce_ext:
             if not lowered.endswith(enforce_ext.lower()):
                 return ToolResult(ok=False, error="EXTENSION_MISMATCH")
-        else:
-            if AUTO_CREATE_ALLOWED_EXTS and not any(
-                lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS
-            ):
-                return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
+        elif AUTO_CREATE_ALLOWED_EXTS and not any(
+            lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS
+        ):
+            return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
         abs_path = _safe_path(path)
         path_exists = os.path.exists(abs_path)
         if path_exists and not force_create:
@@ -508,8 +507,7 @@ def read_bulk_files(
                 if ignore_missing:
                     out.append({"path": abs_path, "exists": False, "content": ""})
                     continue
-                else:
-                    return ToolResult(ok=False, error=f"FILE_NOT_FOUND:{p}")
+                return ToolResult(ok=False, error=f"FILE_NOT_FOUND:{p}")
             if os.path.isdir(abs_path):
                 out.append({"path": abs_path, "exists": False, "error": "IS_DIRECTORY"})
                 continue
