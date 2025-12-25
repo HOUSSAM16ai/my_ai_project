@@ -167,9 +167,8 @@ def code_search_lexical(
                     if regex:
                         if pattern.search(line):
                             hit = True
-                    else:
-                        if q.lower() in line.lower():
-                            hit = True
+                    elif q.lower() in line.lower():
+                        hit = True
                     if hit:
                         start = max(0, idx - context_radius)
                         end = min(len(lines), idx + context_radius + 1)

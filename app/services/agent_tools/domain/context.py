@@ -2,8 +2,9 @@
 Domain tools for context awareness (active file, line number).
 """
 from typing import Any
+
 from app.services.agent_tools.refactored.tool import Tool, ToolConfig
-from app.services.agent_tools.refactored.registry import get_tool_registry
+
 
 async def context_awareness_handler(metadata: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
     """

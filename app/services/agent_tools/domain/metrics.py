@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services.agent_tools.refactored.tool import Tool, ToolConfig
-from app.services.agent_tools.refactored.registry import get_tool_registry
+
 
 def get_project_root() -> Path:
     """Get the project root directory."""

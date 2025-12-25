@@ -51,14 +51,14 @@ REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
 async def _get_existing_columns(conn: Any, table_name: str) -> set[str]:
     """استخراج أسماء الأعمدة الموجودة في الجدول."""
     dialect_name = conn.dialect.name
-    
+
     if dialect_name == "sqlite":
         result = await conn.execute(
             text("SELECT * FROM pragma_table_info(:table_name)"),
             {"table_name": table_name},
         )
         return {row[1] for row in result.fetchall()}
-    
+
     result = await conn.execute(
         text(
             "SELECT column_name FROM information_schema.columns "
@@ -70,24 +70,24 @@ async def _get_existing_columns(conn: Any, table_name: str) -> set[str]:
 
 
 async def _fix_missing_column(
-    conn: Any, 
-    table_name: str, 
-    col: str, 
+    conn: Any,
+    table_name: str,
+    col: str,
     auto_fix_queries: dict[str, str],
     index_queries: dict[str, str]
 ) -> bool:
     """إصلاح عمود مفقود وإنشاء الفهرس إن وجد."""
     if col not in auto_fix_queries:
         return False
-    
+
     try:
         await conn.execute(text(auto_fix_queries[col]))
         logger.info(f"✅ Added missing column: {table_name}.{col}")
-        
+
         if col in index_queries:
             await conn.execute(text(index_queries[col]))
             logger.info(f"✅ Created index for: {table_name}.{col}")
-        
+
         return True
     except Exception as e:
         logger.error(f"❌ Failed to fix {table_name}.{col}: {e}")

@@ -131,13 +131,13 @@ class MockModelInvoker:
                 "finish_reason": "stop",
                 "model": model.model_name,
             }
-        elif model.model_type == ModelType.EMBEDDING_MODEL:
+        if model.model_type == ModelType.EMBEDDING_MODEL:
             # Simulate embedding response
             return {
                 "embedding": [random.random() for _ in range(384)],
                 "model": model.model_name,
             }
-        elif model.model_type == ModelType.VISION_MODEL:
+        if model.model_type == ModelType.VISION_MODEL:
             # Simulate vision model response
             return {
                 "labels": [
@@ -147,12 +147,11 @@ class MockModelInvoker:
                 ],
                 "model": model.model_name,
             }
-        else:
-            # Generic response
-            return {
-                "result": f"Processed by {model.model_name}",
-                "request_id": request.request_id,
-            }
+        # Generic response
+        return {
+            "result": f"Processed by {model.model_name}",
+            "request_id": request.request_id,
+        }
 
     def _estimate_cost(self, model: ModelVersion, tokens: int) -> float:
         """Estimate cost based on token usage"""

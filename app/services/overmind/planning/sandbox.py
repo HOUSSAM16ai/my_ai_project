@@ -118,7 +118,7 @@ def _validate_import_in_subprocess(module_name: str, timeout_s: float):
         # Run in subprocess with timeout
         result = subprocess.run(
             [sys.executable, "-c", test_code],
-            capture_output=True,
+            check=False, capture_output=True,
             timeout=timeout_s,
             text=True,
         )

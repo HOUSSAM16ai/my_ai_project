@@ -15,7 +15,7 @@ class GitAnalyzer:
             # Total commits
             result = subprocess.run(
                 ["git", "log", "--follow", "--oneline", "--", file_path],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -25,7 +25,7 @@ class GitAnalyzer:
             # Commits in last 6 months
             result_6m = subprocess.run(
                 ["git", "log", "--follow", "--since=6 months ago", "--oneline", "--", file_path],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -35,7 +35,7 @@ class GitAnalyzer:
             # Commits in last 12 months
             result_12m = subprocess.run(
                 ["git", "log", "--follow", "--since=12 months ago", "--oneline", "--", file_path],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -45,7 +45,7 @@ class GitAnalyzer:
             # Authors
             result_authors = subprocess.run(
                 ["git", "log", "--follow", "--format=%an", "--", file_path],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -67,7 +67,7 @@ class GitAnalyzer:
                     "--",
                     file_path,
                 ],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -77,7 +77,7 @@ class GitAnalyzer:
             # Branches (approximate - get unique branch names)
             result_branches = subprocess.run(
                 ["git", "log", "--follow", "--all", "--format=%D", "--", file_path],
-                cwd=self.repo_path,
+                check=False, cwd=self.repo_path,
                 capture_output=True,
                 text=True,
                 timeout=10,

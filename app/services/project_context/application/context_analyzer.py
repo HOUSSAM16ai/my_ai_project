@@ -600,8 +600,7 @@ class ProjectContextService:
                 for line in lines:
                     if line.strip():
                         indent = len(line) - len(line.lstrip())
-                        if indent > max_indent:
-                            max_indent = indent
+                        max_indent = max(max_indent, indent)
 
                 if max_indent > 16:  # 4 levels * 4 spaces
                     smells["deep_nesting"].append(

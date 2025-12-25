@@ -199,14 +199,13 @@ class ConfigSecretsManager:
         """Calculate next rotation date based on policy"""
         if policy == RotationPolicy.DAILY:
             return from_date + timedelta(days=1)
-        elif policy == RotationPolicy.WEEKLY:
+        if policy == RotationPolicy.WEEKLY:
             return from_date + timedelta(weeks=1)
-        elif policy == RotationPolicy.MONTHLY:
+        if policy == RotationPolicy.MONTHLY:
             return from_date + timedelta(days=30)
-        elif policy == RotationPolicy.QUARTERLY:
+        if policy == RotationPolicy.QUARTERLY:
             return from_date + timedelta(days=90)
-        else:
-            return from_date + timedelta(days=365)  # Default to yearly
+        return from_date + timedelta(days=365)  # Default to yearly
 
     def _log_access(
         self,

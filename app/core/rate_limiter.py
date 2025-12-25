@@ -97,8 +97,7 @@ class ToolRateLimiter:
                 if now < cooldown_end:
                     remaining = int(cooldown_end - now)
                     return False, f"Rate limited. Try again in {remaining}s"
-                else:
-                    del self._cooldowns[key]
+                del self._cooldowns[key]
 
             # Cleanup and check limit
             self._cleanup_old_calls(key, now)

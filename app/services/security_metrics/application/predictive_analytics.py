@@ -66,7 +66,6 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
         """Determine trend direction from slope"""
         if slope > 0.5:
             return TrendDirection.DEGRADING
-        elif slope < -0.5:
+        if slope < -0.5:
             return TrendDirection.IMPROVING
-        else:
-            return TrendDirection.STABLE
+        return TrendDirection.STABLE

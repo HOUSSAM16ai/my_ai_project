@@ -78,11 +78,10 @@ def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[st
     for field, meta in properties.items():
         if field in args:
             value = args[field]
+        elif "default" in meta:
+            value = meta["default"]
         else:
-            if "default" in meta:
-                value = meta["default"]
-            else:
-                continue
+            continue
         et = meta.get("type")
         if et in SUPPORTED_TYPES:
             _validate_type(field, value, et)

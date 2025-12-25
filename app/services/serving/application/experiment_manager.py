@@ -211,12 +211,11 @@ class ExperimentManager:
         """Determine winner based on success metric"""
         if metric == "latency":
             return "A" if metrics_a["avg_latency"] < metrics_b["avg_latency"] else "B"
-        elif metric == "cost":
+        if metric == "cost":
             return "A" if metrics_a["total_cost"] < metrics_b["total_cost"] else "B"
-        elif metric == "accuracy":
+        if metric == "accuracy":
             return "A" if metrics_a["success_rate"] > metrics_b["success_rate"] else "B"
-        else:
-            return "A"  # Default
+        return "A"  # Default
 
     def _auto_end_test(self, test_id: str, duration_hours: int) -> None:
         """Automatically end test after duration"""

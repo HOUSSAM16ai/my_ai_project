@@ -47,8 +47,7 @@ class TaskExecutor:
             if hasattr(task, "execute"):
                 result = task.execute()
                 return ExecutionResult(success=True, data=result)
-            else:
-                return ExecutionResult(success=True, message=f"Executed {task}")
+            return ExecutionResult(success=True, message=f"Executed {task}")
         except Exception as e:
             return ExecutionResult(success=False, message=str(e))
 

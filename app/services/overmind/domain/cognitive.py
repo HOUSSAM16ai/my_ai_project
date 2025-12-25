@@ -20,8 +20,8 @@ from typing import Any, Protocol
 from pydantic import BaseModel, Field
 
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
-from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.models import Mission
+from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class SuperBrain:
                         timeout=120.0  # 2 دقيقة كحد أقصى للتخطيط
                     )
                     await safe_log("plan_created", {"plan_summary": "تم إنشاء الخطة بنجاح"})
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.error("Strategist timeout during planning")
                     await safe_log("plan_timeout", {"error": "Planning exceeded 120 seconds"})
                     raise RuntimeError("Planning phase timed out")
@@ -125,20 +125,20 @@ class SuperBrain:
                         self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
                         timeout=60.0  # دقيقة واحدة للمراجعة
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.error("Auditor timeout during plan review")
                     await safe_log("review_timeout", {"error": "Plan review exceeded 60 seconds"})
                     raise RuntimeError("Plan review phase timed out")
 
                 if not critique.get("approved"):
                     await safe_log("plan_rejected", {"critique": critique})
-                    
+
                     # التحقق من أخطاء التكوين (Configuration Errors)
                     feedback = critique.get("feedback", "")
                     if "OPENROUTER_API_KEY" in feedback or "AI Service Unavailable" in str(state.plan.get("strategy_name", "")):
                         logger.error("Cannot proceed: AI service configuration error")
                         raise RuntimeError("AI service unavailable. Please configure OPENROUTER_API_KEY.")
-                    
+
                     # حلقة التصحيح الذاتي (Self-Correction Loop)
                     state.current_phase = "RE-PLANNING"
                     # دمج الملاحظات في السياق للمحاولة التالية
@@ -155,7 +155,7 @@ class SuperBrain:
                     timeout=120.0  # 2 دقيقة للتصميم
                 )
                 await safe_log("design_created", {"design_summary": "تم وضع التصميم التقني"})
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Architect timeout during design")
                 await safe_log("design_timeout", {"error": "Design exceeded 120 seconds"})
                 raise RuntimeError("Design phase timed out")
@@ -169,7 +169,7 @@ class SuperBrain:
                     timeout=300.0  # 5 دقائق للتنفيذ
                 )
                 await safe_log("execution_completed", {"status": "done"})
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Operator timeout during execution")
                 await safe_log("execution_timeout", {"error": "Execution exceeded 300 seconds"})
                 raise RuntimeError("Execution phase timed out")
@@ -181,7 +181,7 @@ class SuperBrain:
                     self.auditor.review_work(state.execution_result, state.objective, collab_context),
                     timeout=60.0  # دقيقة واحدة للمراجعة النهائية
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Auditor timeout during final review")
                 await safe_log("reflection_timeout", {"error": "Final review exceeded 60 seconds"})
                 raise RuntimeError("Final review phase timed out")

@@ -138,10 +138,9 @@ class CrudBoundaryService:
                 sort_by=sort_by,
                 sort_order=order
             )
-        else:
-             # Fallback or error for unknown resources
-             # For now return empty paginated response structure or raise error
-             raise ValueError(f"Unknown resource type: {resource_type}")
+        # Fallback or error for unknown resources
+        # For now return empty paginated response structure or raise error
+        raise ValueError(f"Unknown resource type: {resource_type}")
 
     async def get_item(self, resource_type: str, item_id: str) -> Any:
         """

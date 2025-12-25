@@ -1,0 +1,4566 @@
+warning: Invalid `# noqa` directive on app/services/adaptive/application/health_monitor.py:112: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/llm/cost_manager.py:92: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/project_context/application/context_analyzer.py:400: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/project_context/application/context_analyzer.py:400: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/ai_engineering/prompt_engineering_service.py:19: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/ai_project_management/application/services.py:127: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/overmind/planning/factory_core.py:261: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/overmind/planning/ranking.py:34: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/system/resilience/service.py:115: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/system/database_service.py:55: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on app/services/users/admin_ai_service.py:70: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:37:54
+   |
+36 |         # Keep only recent history
+37 |         if len(self.health_patterns[service_name]) > 1000:
+   |                                                      ^^^^
+38 |             self.health_patterns[service_name] = self.health_patterns[service_name][-1000:]
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `95` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:41:40
+   |
+40 |         # Critical checks
+41 |         if current_metrics.cpu_usage > 95:
+   |                                        ^^
+42 |             warnings.append(f"CRITICAL: CPU usage at {current_metrics.cpu_usage:.1f}%")
+43 |         if current_metrics.memory_usage > 95:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `95` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:43:43
+   |
+41 |         if current_metrics.cpu_usage > 95:
+42 |             warnings.append(f"CRITICAL: CPU usage at {current_metrics.cpu_usage:.1f}%")
+43 |         if current_metrics.memory_usage > 95:
+   |                                           ^^
+44 |             warnings.append(f"CRITICAL: Memory usage at {current_metrics.memory_usage:.1f}%")
+45 |         if current_metrics.error_rate > 50:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:45:41
+   |
+43 |         if current_metrics.memory_usage > 95:
+44 |             warnings.append(f"CRITICAL: Memory usage at {current_metrics.memory_usage:.1f}%")
+45 |         if current_metrics.error_rate > 50:
+   |                                         ^^
+46 |             warnings.append(f"CRITICAL: Error rate at {current_metrics.error_rate:.1f}%")
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `85` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:52:40
+   |
+51 |         # Degraded checks
+52 |         if current_metrics.cpu_usage > 85:
+   |                                        ^^
+53 |             warnings.append(f"WARNING: High CPU usage {current_metrics.cpu_usage:.1f}%")
+54 |         if current_metrics.memory_usage > 85:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `85` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:54:43
+   |
+52 |         if current_metrics.cpu_usage > 85:
+53 |             warnings.append(f"WARNING: High CPU usage {current_metrics.cpu_usage:.1f}%")
+54 |         if current_metrics.memory_usage > 85:
+   |                                           ^^
+55 |             warnings.append(f"WARNING: High memory usage {current_metrics.memory_usage:.1f}%")
+56 |         if current_metrics.error_rate > 10:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:56:41
+   |
+54 |         if current_metrics.memory_usage > 85:
+55 |             warnings.append(f"WARNING: High memory usage {current_metrics.memory_usage:.1f}%")
+56 |         if current_metrics.error_rate > 10:
+   |                                         ^^
+57 |             warnings.append(f"WARNING: Elevated error rate {current_metrics.error_rate:.1f}%")
+58 |         if current_metrics.latency_p99 > 2000:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2000` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:58:42
+   |
+56 |         if current_metrics.error_rate > 10:
+57 |             warnings.append(f"WARNING: Elevated error rate {current_metrics.error_rate:.1f}%")
+58 |         if current_metrics.latency_p99 > 2000:
+   |                                          ^^^^
+59 |             warnings.append(f"WARNING: High latency P99={current_metrics.latency_p99:.0f}ms")
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `30` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:78:27
+   |
+76 |         history = self.health_patterns[service_name]
+77 |
+78 |         if len(history) < 30:  # Need sufficient history
+   |                           ^^
+79 |             return []
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+  --> app/services/adaptive/application/health_monitor.py:92:30
+   |
+91 |         for metric_name, values in metrics_to_check.items():
+92 |             if len(values) < 2:
+   |                              ^
+93 |                 continue
+   |
+
+ARG002 Unused method argument: `lookahead_minutes`
+   --> app/services/adaptive/application/health_monitor.py:112:34
+    |
+111 |     def predict_failure(
+112 |         self, service_name: str, lookahead_minutes: int = 15  # noqa: unused variable
+    |                                  ^^^^^^^^^^^^^^^^^
+113 |     ) -> tuple[float, list[str]]:
+114 |         """
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:120:27
+    |
+118 |         history = self.health_patterns[service_name]
+119 |
+120 |         if len(history) < 10:
+    |                           ^^
+121 |             return 0.0, []
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:132:31
+    |
+131 |         # CPU trend
+132 |         if len(recent_cpu) >= 2:
+    |                               ^
+133 |             cpu_trend = (recent_cpu[-1] - recent_cpu[0]) / len(recent_cpu)
+134 |             if cpu_trend > 5:  # Increasing rapidly
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:134:28
+    |
+132 |         if len(recent_cpu) >= 2:
+133 |             cpu_trend = (recent_cpu[-1] - recent_cpu[0]) / len(recent_cpu)
+134 |             if cpu_trend > 5:  # Increasing rapidly
+    |                            ^
+135 |                 risk_score += 0.3
+136 |                 risk_factors.append(f"CPU trending up: +{cpu_trend:.1f}% per interval")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:139:31
+    |
+138 |         # Memory trend
+139 |         if len(recent_mem) >= 2:
+    |                               ^
+140 |             mem_trend = (recent_mem[-1] - recent_mem[0]) / len(recent_mem)
+141 |             if mem_trend > 5:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:141:28
+    |
+139 |         if len(recent_mem) >= 2:
+140 |             mem_trend = (recent_mem[-1] - recent_mem[0]) / len(recent_mem)
+141 |             if mem_trend > 5:
+    |                            ^
+142 |                 risk_score += 0.3
+143 |                 risk_factors.append(f"Memory trending up: +{mem_trend:.1f}% per interval")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> app/services/adaptive/application/health_monitor.py:146:34
+    |
+145 |         # Error rate trend
+146 |         if len(recent_errors) >= 2:
+    |                                  ^
+147 |             error_trend = (recent_errors[-1] - recent_errors[0]) / len(recent_errors)
+148 |             if error_trend > 1:
+    |
+
+ARG002 Unused method argument: `request_metadata`
+  --> app/services/adaptive/application/intelligent_router.py:71:42
+   |
+70 |     def _calculate_instance_score(
+71 |         self, instance: ServiceInstance, request_metadata: dict | None = None
+   |                                          ^^^^^^^^^^^^^^^^
+72 |     ) -> float:
+73 |         """
+   |
+
+RET504 Unnecessary assignment to `total_score` before `return` statement
+   --> app/services/adaptive/application/intelligent_router.py:107:16
+    |
+105 |         )
+106 |
+107 |         return total_score
+    |                ^^^^^^^^^^^
+108 |
+109 |     def update_instance_score(self, instance_id: str, success: bool, response_time: float):
+    |
+help: Remove unnecessary assignment
+
+PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+   --> app/services/adaptive/application/intelligent_router.py:116:40
+    |
+115 |         # Calculate new score based on result
+116 |         if success and response_time < 200:  # Fast success
+    |                                        ^^^
+117 |             adjustment = 0.05
+118 |         elif success:  # Slow success
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:34:27
+   |
+32 |         """
+33 |         history = self.historical_patterns[service_name]
+34 |         if len(history) < 10:
+   |                           ^^
+35 |             return current_metrics.request_rate, 0.3
+36 |         recent_loads = [h.request_rate for h in history[-20:]]
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:38:33
+   |
+36 |         recent_loads = [h.request_rate for h in history[-20:]]
+37 |         avg_load = statistics.mean(recent_loads)
+38 |         if len(recent_loads) >= 2:
+   |                                 ^
+39 |             trend = (recent_loads[-1] - recent_loads[0]) / len(recent_loads)
+40 |         else:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `80` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:60:23
+   |
+58 |         avg_util = (cpu_util + mem_util) / 2
+59 |         target_util = 65.0
+60 |         if avg_util > 80:
+   |                       ^^
+61 |             scaling_factor = avg_util / target_util
+62 |             direction = ScalingDirection.UP
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `30` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:64:25
+   |
+62 |             direction = ScalingDirection.UP
+63 |             reason = f'High utilization: {avg_util:.1f}% (threshold: 80%)'
+64 |         elif avg_util < 30 and current_instances > 1:
+   |                         ^^
+65 |             scaling_factor = avg_util / target_util
+66 |             direction = ScalingDirection.DOWN
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:72:42
+   |
+70 |             direction = ScalingDirection.STABLE
+71 |             reason = f'Optimal utilization: {avg_util:.1f}%'
+72 |         if current_metrics.latency_p99 > 1000:
+   |                                          ^^^^
+73 |             scaling_factor = max(scaling_factor, 1.5)
+74 |             direction = ScalingDirection.UP
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+  --> app/services/adaptive/application/scaling_engine.py:77:41
+   |
+75 |             reason += (
+76 |                 f' + High latency: P99={current_metrics.latency_p99:.0f}ms')
+77 |         if current_metrics.error_rate > 5:
+   |                                         ^
+78 |             scaling_factor = max(scaling_factor, 1.3)
+79 |             direction = ScalingDirection.UP
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `0.7` with a constant variable
+   --> app/services/adaptive/facade.py:215:81
+    |
+213 |                 "total_instances": len(instances),
+214 |                 "healthy_instances": healthy_count,
+215 |                 "overall_health": "healthy" if healthy_count / len(instances) > 0.7 else "degraded",
+    |                                                                                 ^^^
+216 |                 "failure_probability": failure_prob,
+217 |                 "risk_factors": risk_factors,
+    |
+
+PLW0603 Using the global statement to update `_instance` is discouraged
+   --> app/services/adaptive/facade.py:236:12
+    |
+234 | def get_adaptive_microservices() -> SelfAdaptiveMicroservices:
+235 |     """Get or create singleton instance"""
+236 |     global _instance
+    |            ^^^^^^^^^
+237 |     if _instance is None:
+238 |         with _lock:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/adaptive/infrastructure/in_memory_repository.py:64:55
+   |
+62 |         self._metrics[metrics.service_name].append(metrics)
+63 |         # Keep only recent metrics (last 1000)
+64 |         if len(self._metrics[metrics.service_name]) > 1000:
+   |                                                       ^^^^
+65 |             self._metrics[metrics.service_name] = self._metrics[metrics.service_name][-1000:]
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/admin/chat_streamer.py:69:17
+   |
+67 |             try:
+68 |                 # استيراد متأخر لتجنب الدورات (Circular Imports)
+69 |                 from app.services.chat.context_service import get_context_service
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 |
+71 |                 ctx_service = get_context_service()
+   |
+
+RUF006 Store a reference to the return value of `asyncio.create_task`
+   --> app/services/admin/chat_streamer.py:131:17
+    |
+129 |                 # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
+130 |                 # هذا يضمن وصول إشارة [DONE] إلى العميل فوراً دون انتظار قاعدة البيانات
+131 |                 asyncio.create_task(safe_persist())
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+132 |
+133 |             # 5. إشارة الانتهاء (Completion Signal)
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+  --> app/services/admin_chat_performance_service.py:50:30
+   |
+48 |     def get_category(self) ->PerformanceCategory:
+49 |         """Get performance category based on latency"""
+50 |         if self.latency_ms < 500:
+   |                              ^^^
+51 |             return PerformanceCategory.EXCELLENT
+52 |         if self.latency_ms < 1000:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/admin_chat_performance_service.py:52:30
+   |
+50 |         if self.latency_ms < 500:
+51 |             return PerformanceCategory.EXCELLENT
+52 |         if self.latency_ms < 1000:
+   |                              ^^^^
+53 |             return PerformanceCategory.GOOD
+54 |         if self.latency_ms < 3000:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `3000` with a constant variable
+  --> app/services/admin_chat_performance_service.py:54:30
+   |
+52 |         if self.latency_ms < 1000:
+53 |             return PerformanceCategory.GOOD
+54 |         if self.latency_ms < 3000:
+   |                              ^^^^
+55 |             return PerformanceCategory.ACCEPTABLE
+56 |         return PerformanceCategory.SLOW
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2000` with a constant variable
+   --> app/services/admin_chat_performance_service.py:178:38
+    |
+176 |                 'Not enough data to provide suggestions. Keep using the system!'
+177 |                 ]
+178 |         if stats['avg_latency_ms'] > 2000:
+    |                                      ^^^^
+179 |             suggestions.append(
+180 |                 """⚠️ Average latency is high (>2s). Consider:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `5000` with a constant variable
+   --> app/services/admin_chat_performance_service.py:185:38
+    |
+183 |   - Reducing context size"""
+184 |                 )
+185 |         if stats['p95_latency_ms'] > 5000:
+    |                                      ^^^^
+186 |             suggestions.append(
+187 |                 """⚠️ P95 latency is very high (>5s). 5% of requests are slow. Consider:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+   --> app/services/admin_chat_performance_service.py:194:23
+    |
+192 |         perf_dist = stats['performance_distribution']
+193 |         slow_pct = perf_dist.get('slow', 0) / stats['total_requests'] * 100
+194 |         if slow_pct > 10:
+    |                       ^^
+195 |             suggestions.append(
+196 |                 f"""⚠️ {slow_pct:.1f}% of requests are slow (>3s). Consider:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/admin_chat_performance_service.py:203:28
+    |
+201 |         streaming_pct = stats['category_breakdown'].get('streaming', 0
+202 |             ) / stats['total_requests'] * 100
+203 |         if streaming_pct < 50:
+    |                            ^^
+204 |             suggestions.append(
+205 |                 f"""💡 Only {streaming_pct:.1f}% of requests use streaming. Consider:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `80` with a constant variable
+   --> app/services/admin_chat_performance_service.py:211:28
+    |
+209 |         excellent_pct = perf_dist.get('excellent', 0) / stats['total_requests'
+210 |             ] * 100
+211 |         if excellent_pct > 80:
+    |                            ^^
+212 |             suggestions.append(
+213 |                 f"""✅ Excellent performance! {excellent_pct:.1f}% of requests are <500ms.
+    |
+
+PLW0603 Using the global statement to update `_performance_service` is discouraged
+   --> app/services/admin_chat_performance_service.py:246:12
+    |
+244 | def get_performance_service() ->AdminChatPerformanceService:
+245 |     """Get or create performance service singleton"""
+246 |     global _performance_service
+    |            ^^^^^^^^^^^^^^^^^^^^
+247 |     if _performance_service is None:
+248 |         _performance_service = AdminChatPerformanceService()
+    |
+
+F401 `asyncio` imported but unused
+  --> app/services/agent_tools/__init__.py:10:8
+   |
+ 8 | ===========================================
+ 9 | """
+10 | import asyncio
+   |        ^^^^^^^
+11 | import logging
+12 | from typing import Any
+   |
+help: Remove unused import: `asyncio`
+
+F401 `typing.Any` imported but unused
+  --> app/services/agent_tools/__init__.py:12:20
+   |
+10 | import asyncio
+11 | import logging
+12 | from typing import Any
+   |                    ^^^
+13 |
+14 | from app.services.agent_tools.domain.context import ContextAwarenessTool
+   |
+help: Remove unused import: `typing.Any`
+
+RUF022 `__all__` is not sorted
+   --> app/services/agent_tools/__init__.py:226:11
+    |
+224 |   # __all__
+225 |   # ======================================================================================
+226 |   __all__ = [
+    |  ___________^
+227 | |     "PROJECT_ROOT",
+228 | |     "_ALIAS_INDEX",
+229 | |     "_CAPABILITIES",
+230 | |     "_LAYER_STATS",
+231 | |     # Registries / Stats
+232 | |     "_TOOL_REGISTRY",
+233 | |     "_TOOL_STATS",
+234 | |     "ToolResult",
+235 | |     "__version__",
+236 | |     "analyze_path_semantics",
+237 | |     "analyze_path_semantics_tool",
+238 | |     "append_file",
+239 | |     "append_file_tool",
+240 | |     "canonicalize_tool_name",
+241 | |     "code_index_project",
+242 | |     "code_index_project_tool",
+243 | |     "code_search_lexical",
+244 | |     "code_search_lexical_tool",
+245 | |     "code_search_semantic",
+246 | |     "code_search_semantic_tool",
+247 | |     "count_files_tool", # New
+248 | |     "delete_file",
+249 | |     "delete_file_tool",
+250 | |     "dispatch_tool",
+251 | |     "dispatch_tool_tool",
+252 | |     "ensure_directory",
+253 | |     "ensure_directory_tool",
+254 | |     "ensure_file",
+255 | |     "ensure_file_tool",
+256 | |     "file_exists",
+257 | |     "file_exists_tool",
+258 | |     "generic_think",
+259 | |     # Legacy alias wrappers
+260 | |     "generic_think_tool",
+261 | |     "get_active_context_tool", # New
+262 | |     "get_project_metrics_tool", # New
+263 | |     "get_tool",
+264 | |     "get_registry",
+265 | |     "get_tools_schema",
+266 | |     "has_tool",
+267 | |     # Core Tools
+268 | |     "introspect_tools",
+269 | |     "introspect_tools_tool",
+270 | |     "list_dir",
+271 | |     "list_dir_tool",
+272 | |     "list_tools",
+273 | |     "memory_get",
+274 | |     "memory_get_tool",
+275 | |     "memory_put",
+276 | |     "memory_put_tool",
+277 | |     "read_bulk_files",
+278 | |     "read_bulk_files_tool",
+279 | |     "read_file",
+280 | |     "read_file_tool",
+281 | |     "refine_text",
+282 | |     "refine_text_tool",
+283 | |     "reload_deep_struct_map",
+284 | |     "reload_deep_struct_map_tool",
+285 | |     "resolve_tool_name",
+286 | |     "summarize_text",
+287 | |     "summarize_text_tool",
+288 | |     "write_file",
+289 | |     "write_file_if_changed",
+290 | |     "write_file_if_changed_tool",
+291 | |     "write_file_tool",
+292 | | ]
+    | |_^
+    |
+help: Apply an isort-style sorting to `__all__`
+
+PLR0912 Too many branches (13 > 12)
+  --> app/services/agent_tools/cognitive_tools.py:44:5
+   |
+42 |     },
+43 | )
+44 | def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
+   |     ^^^^^^^^^^^^^
+45 |     clean = (prompt or "").strip()
+46 |     if not clean:
+   |
+
+ARG001 Unused function argument: `tool_name`
+  --> app/services/agent_tools/core.py:54:24
+   |
+52 | # Policy Hooks (stubs)
+53 | # ======================================================================================
+54 | def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
+   |                        ^^^^^^^^^
+55 |     return True
+   |
+
+ARG001 Unused function argument: `args`
+  --> app/services/agent_tools/core.py:54:40
+   |
+52 | # Policy Hooks (stubs)
+53 | # ======================================================================================
+54 | def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
+   |                                        ^^^^
+55 |     return True
+   |
+
+ARG001 Unused function argument: `tool_name`
+  --> app/services/agent_tools/core.py:58:25
+   |
+58 | def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+   |                         ^^^^^^^^^
+59 |     return args
+   |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/agent_tools/core.py:116:5
+    |
+114 |     Complexity reduced from CC:22 to CC:3.
+115 |     """
+116 |     from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+117 |
+118 |     # Use the new canonicalizer
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `400_000` with a constant variable
+  --> app/services/agent_tools/fs_tools.py:88:89
+   |
+86 |             return ToolResult(ok=False, error="CONTENT_NOT_STRING")
+87 |         # COMPRESS_JSON
+88 |         if compress_json_if_large and path.lower().endswith(".json") and len(content) > 400_000:
+   |                                                                                         ^^^^^^^
+89 |             gz_path = path + ".gz" if not path.lower().endswith(".gz") else path
+90 |             path = gz_path
+   |
+
+PLR0911 Too many return statements (7 > 6)
+   --> app/services/agent_tools/fs_tools.py:226:5
+    |
+224 |     },
+225 | )
+226 | def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
+    |     ^^^^^^^^^
+227 |     try:
+228 |         max_eff = int(min(max_bytes, MAX_READ_BYTES))
+    |
+
+PLR0911 Too many return statements (9 > 6)
+   --> app/services/agent_tools/fs_tools.py:400:5
+    |
+398 |     },
+399 | )
+400 | def ensure_file(
+    |     ^^^^^^^^^^^
+401 |     path: str,
+402 |     max_bytes: int = 40000,
+    |
+
+PLR0912 Too many branches (14 > 12)
+   --> app/services/agent_tools/fs_tools.py:400:5
+    |
+398 |     },
+399 | )
+400 | def ensure_file(
+    |     ^^^^^^^^^^^
+401 |     path: str,
+402 |     max_bytes: int = 40000,
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `1_500_000` with a constant variable
+   --> app/services/agent_tools/fs_tools.py:527:30
+    |
+525 |                 {"path": abs_path, "exists": True, "truncated": truncated, "content": content}
+526 |             )
+527 |             if total_chars > 1_500_000:  # Hard safety limit
+    |                              ^^^^^^^^^
+528 |                 break
+529 |         except Exception as e:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `120` with a constant variable
+  --> app/services/agent_tools/memory_tools.py:29:19
+   |
+27 | )
+28 | def memory_put(key: str, value: str) -> ToolResult:
+29 |     if len(key) > 120:
+   |                   ^^^
+30 |         return ToolResult(ok=False, error="KEY_TOO_LONG")
+31 |     if len(value) > 50_000:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `50_000` with a constant variable
+  --> app/services/agent_tools/memory_tools.py:31:21
+   |
+29 |     if len(key) > 120:
+30 |         return ToolResult(ok=False, error="KEY_TOO_LONG")
+31 |     if len(value) > 50_000:
+   |                     ^^^^^^
+32 |         return ToolResult(ok=False, error="VALUE_TOO_LONG")
+33 |     if _MEMORY_ALLOWLIST and key not in _MEMORY_ALLOWLIST:
+   |
+
+PLR0912 Too many branches (16 > 12)
+   --> app/services/agent_tools/search_tools.py:128:5
+    |
+126 |     },
+127 | )
+128 | def code_search_lexical(
+    |     ^^^^^^^^^^^^^^^^^^^
+129 |     query: str,
+130 |     root: str = ".",
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+  --> app/services/agent_tools/utils.py:51:47
+   |
+49 |     if isinstance(obj, ToolResult):
+50 |         return obj
+51 |     if isinstance(obj, tuple) and len(obj) == 2 and isinstance(obj[0], bool):
+   |                                               ^
+52 |         ok, payload = obj
+53 |         return ToolResult(ok=ok, data=payload if ok else None, error=None if ok else str(payload))
+   |
+
+PLR0912 Too many branches (13 > 12)
+   --> app/services/agent_tools/utils.py:100:5
+    |
+ 98 | # Path Safety
+ 99 | # ======================================================================================
+100 | def _safe_path(
+    |     ^^^^^^^^^^
+101 |     path: str,
+102 |     *,
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `420` with a constant variable
+   --> app/services/agent_tools/utils.py:109:20
+    |
+107 |     if not isinstance(path, str) or not path.strip():
+108 |         raise ValueError("Empty path.")
+109 |     if len(path) > 420:
+    |                    ^^^
+110 |         raise ValueError("Path too long.")
+111 |     norm = path.replace("\\", "/")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+  --> app/services/ai_engineering/aiops/service.py:85:27
+   |
+83 |         key = f"{data.service_name}:{data.metric_type.value}"
+84 |
+85 |         if len(values) >= 10:
+   |                           ^^
+86 |             self.baseline_metrics[key] = {
+87 |                 "mean": statistics.mean(values),
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:150:61
+    |
+149 |         if zscore > threshold:
+150 |             severity = AnomalySeverity.CRITICAL if zscore > 5 else AnomalySeverity.HIGH
+    |                                                             ^
+151 |
+152 |             return AnomalyDetection(
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:261:31
+    |
+259 |         data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
+260 |
+261 |         if len(data_points) < 100:
+    |                               ^^^
+262 |             return None
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:292:16
+    |
+290 |         """Calculate trend using simple linear regression"""
+291 |         n = len(values)
+292 |         if n < 2:
+    |                ^
+293 |             return 0.0
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `80` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:350:68
+    |
+348 |         service_metrics = self._get_service_metrics(anomaly.service_name, minutes=30)
+349 |
+350 |         if any(m.metric_type == MetricType.CPU_USAGE and m.value > 80 for m in service_metrics):
+    |                                                                    ^^
+351 |             root_causes.append("High CPU usage detected")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `90` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:353:71
+    |
+351 |             root_causes.append("High CPU usage detected")
+352 |
+353 |         if any(m.metric_type == MetricType.MEMORY_USAGE and m.value > 90 for m in service_metrics):
+    |                                                                       ^^
+354 |             root_causes.append("Memory exhaustion detected")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.1` with a constant variable
+   --> app/services/ai_engineering/aiops/service.py:358:60
+    |
+356 |         if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
+357 |             error_metrics = [m for m in service_metrics if m.metric_type == MetricType.ERROR_RATE]
+358 |             if error_metrics and error_metrics[-1].value > 0.1:
+    |                                                            ^^^
+359 |                 root_causes.append("Correlated with increased error rate")
+    |
+
+PLW0603 Using the global statement to update `_aiops_instance` is discouraged
+   --> app/services/ai_engineering/aiops/service.py:448:12
+    |
+447 | def get_aiops_service() -> AIOpsService:
+448 |     global _aiops_instance
+    |            ^^^^^^^^^^^^^^^
+449 |     if _aiops_instance is None:
+450 |         with _aiops_lock:
+    |
+
+ARG002 Unused method argument: `context`
+  --> app/services/ai_engineering/ensemble_ai.py:74:41
+   |
+72 |         self.urgent_keywords = ["quick", "urgent", "now", "fast", "سريع", "عاجل", "الآن", "فوراً"]
+73 |
+74 |     async def analyze(self, query: str, context: dict) -> dict[str, Any]:
+   |                                         ^^^^^^^
+75 |         """Analyze query complexity and requirements"""
+76 |         return {
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:127:25
+    |
+125 |         # Simple heuristic: shorter queries tend to be more ambiguous
+126 |         word_count = len(query.split())
+127 |         if word_count < 5:
+    |                         ^
+128 |             return 0.8
+129 |         if word_count < 15:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `15` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:129:25
+    |
+127 |         if word_count < 5:
+128 |             return 0.8
+129 |         if word_count < 15:
+    |                         ^^
+130 |             return 0.5
+131 |         return 0.2
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/ai_engineering/ensemble_ai.py:241:9
+    |
+239 |         # Model mapping - READ FROM CENTRAL CONFIG (app/config/ai_models.py)
+240 |         # To change models, edit: app/config/ai_models.py → class ActiveModels
+241 |         from app.config.ai_models import get_ai_config
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+242 |
+243 |         _ai_config = get_ai_config()
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.3` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:296:37
+    |
+295 |         # Decision tree
+296 |         if urgency and complexity < 0.3:
+    |                                     ^^^
+297 |             return ModelTier.NANO  # Simple and urgent
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.4` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:299:25
+    |
+297 |             return ModelTier.NANO  # Simple and urgent
+298 |
+299 |         if complexity < 0.4 and not creativity and not reasoning:
+    |                         ^^^
+300 |             return ModelTier.FAST  # Simple queries
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.7` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:302:25
+    |
+300 |             return ModelTier.FAST  # Simple queries
+301 |
+302 |         if complexity < 0.7 or (not reasoning and creativity < 0.5):
+    |                         ^^^
+303 |             return ModelTier.SMART  # Medium complexity
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+   --> app/services/ai_engineering/ensemble_ai.py:302:64
+    |
+300 |             return ModelTier.FAST  # Simple queries
+301 |
+302 |         if complexity < 0.7 or (not reasoning and creativity < 0.5):
+    |                                                                ^^^
+303 |             return ModelTier.SMART  # Medium complexity
+    |
+
+PLW0603 Using the global statement to update `_router_instance` is discouraged
+   --> app/services/ai_engineering/ensemble_ai.py:335:12
+    |
+333 | def get_router() -> IntelligentRouter:
+334 |     """Get singleton router instance"""
+335 |     global _router_instance
+    |            ^^^^^^^^^^^^^^^^
+336 |     if _router_instance is None:
+337 |         _router_instance = IntelligentRouter()
+    |
+
+ARG002 Unused method argument: `user`
+  --> app/services/ai_engineering/prompt_engineering_service.py:16:9
+   |
+14 |         self,
+15 |         db: AsyncSession,
+16 |         user: User,
+   |         ^^^^
+17 |         template_name: str,
+18 |         variables: dict,
+   |
+
+ARG002 Unused method argument: `user_description`
+  --> app/services/ai_engineering/prompt_engineering_service.py:19:9
+   |
+17 |         template_name: str,
+18 |         variables: dict,
+19 |         user_description: str | None = None,  # noqa: unused variable
+   |         ^^^^^^^^^^^^^^^^
+20 |     ) -> str:
+21 |         result = await db.execute(
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_project_management/application/services.py:9:1
+  |
+7 | from typing import Any
+8 |
+9 | from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_project_management/application/services.py:9:1
+  |
+7 | from typing import Any
+8 |
+9 | from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_project_management/application/services.py:9:1
+  |
+7 | from typing import Any
+8 |
+9 | from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_project_management/application/services.py:9:1
+  |
+7 | from typing import Any
+8 |
+9 | from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_project_management/application/services.py:9:1
+  |
+7 | from typing import Any
+8 |
+9 | from ..domain.models import Risk, RiskLevel, Task, TaskStatus, TeamMember
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `3` with a constant variable
+  --> app/services/ai_project_management/application/services.py:76:41
+   |
+74 |         bottlenecks = []
+75 |         for task in tasks:
+76 |             if len(task.dependencies) > 3:
+   |                                         ^
+77 |                 bottlenecks.append({'task_id': task.task_id, 'type':
+78 |                     'dependency_overload', 'severity': 'high',
+   |
+
+ARG002 Unused method argument: `current_tasks`
+   --> app/services/ai_project_management/application/services.py:127:9
+    |
+126 |     def _calculate_assignment_score(self, task: Task, member: TeamMember,
+127 |         current_tasks: list[Task]) ->float:  # noqa: unused variable
+    |         ^^^^^^^^^^^^^
+128 |         """حساب درجة ملاءمة العضو للمهمة"""
+129 |         score = 0.0
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.3` with a constant variable
+   --> app/services/ai_project_management/application/services.py:207:30
+    |
+205 |         """توليد توصيات ذكية"""
+206 |         recommendations = []
+207 |         if completion_rate < 0.3:
+    |                              ^^^
+208 |             recommendations.append(
+209 |                 '🚀 Project is in early stages. Focus on establishing clear goals and priorities.'
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:11:1
+   |
+ 9 | from typing import Optional
+10 |
+11 | from ..domain.models import SecurityEvent, ThreatDetection
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..domain.ports import (
+13 |     BehavioralAnalyzerPort,
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:11:1
+   |
+ 9 | from typing import Optional
+10 |
+11 | from ..domain.models import SecurityEvent, ThreatDetection
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..domain.ports import (
+13 |     BehavioralAnalyzerPort,
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:12:1
+   |
+11 |   from ..domain.models import SecurityEvent, ThreatDetection
+12 | / from ..domain.ports import (
+13 | |     BehavioralAnalyzerPort,
+14 | |     ProfileRepositoryPort,
+15 | |     ResponseSystemPort,
+16 | |     ThreatDetectorPort,
+17 | |     ThreatLoggerPort,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:12:1
+   |
+11 |   from ..domain.models import SecurityEvent, ThreatDetection
+12 | / from ..domain.ports import (
+13 | |     BehavioralAnalyzerPort,
+14 | |     ProfileRepositoryPort,
+15 | |     ResponseSystemPort,
+16 | |     ThreatDetectorPort,
+17 | |     ThreatLoggerPort,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:12:1
+   |
+11 |   from ..domain.models import SecurityEvent, ThreatDetection
+12 | / from ..domain.ports import (
+13 | |     BehavioralAnalyzerPort,
+14 | |     ProfileRepositoryPort,
+15 | |     ResponseSystemPort,
+16 | |     ThreatDetectorPort,
+17 | |     ThreatLoggerPort,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:12:1
+   |
+11 |   from ..domain.models import SecurityEvent, ThreatDetection
+12 | / from ..domain.ports import (
+13 | |     BehavioralAnalyzerPort,
+14 | |     ProfileRepositoryPort,
+15 | |     ResponseSystemPort,
+16 | |     ThreatDetectorPort,
+17 | |     ThreatLoggerPort,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/application/security_manager.py:12:1
+   |
+11 |   from ..domain.models import SecurityEvent, ThreatDetection
+12 | / from ..domain.ports import (
+13 | |     BehavioralAnalyzerPort,
+14 | |     ProfileRepositoryPort,
+15 | |     ResponseSystemPort,
+16 | |     ThreatDetectorPort,
+17 | |     ThreatLoggerPort,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLW0603 Using the global statement to update `_security_system_instance` is discouraged
+  --> app/services/ai_security/facade.py:91:12
+   |
+89 |         SuperhumanSecuritySystem instance
+90 |     """
+91 |     global _security_system_instance
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+92 |     if _security_system_instance is None:
+93 |         _security_system_instance = SuperhumanSecuritySystem()
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py:12:1
+   |
+10 |   from datetime import datetime
+11 |
+12 | / from ...domain.models import (
+13 | |     SecurityEvent,
+14 | |     ThreatDetection,
+15 | |     ThreatLevel,
+16 | |     ThreatType,
+17 | |     UserBehaviorProfile,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py:12:1
+   |
+10 |   from datetime import datetime
+11 |
+12 | / from ...domain.models import (
+13 | |     SecurityEvent,
+14 | |     ThreatDetection,
+15 | |     ThreatLevel,
+16 | |     ThreatType,
+17 | |     UserBehaviorProfile,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py:12:1
+   |
+10 |   from datetime import datetime
+11 |
+12 | / from ...domain.models import (
+13 | |     SecurityEvent,
+14 | |     ThreatDetection,
+15 | |     ThreatLevel,
+16 | |     ThreatType,
+17 | |     UserBehaviorProfile,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py:12:1
+   |
+10 |   from datetime import datetime
+11 |
+12 | / from ...domain.models import (
+13 | |     SecurityEvent,
+14 | |     ThreatDetection,
+15 | |     ThreatLevel,
+16 | |     ThreatType,
+17 | |     UserBehaviorProfile,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py:12:1
+   |
+10 |   from datetime import datetime
+11 |
+12 | / from ...domain.models import (
+13 | |     SecurityEvent,
+14 | |     ThreatDetection,
+15 | |     ThreatLevel,
+16 | |     ThreatType,
+17 | |     UserBehaviorProfile,
+18 | | )
+   | |_^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/ml_threat_detector.py:13:1
+   |
+11 | from datetime import datetime
+12 |
+13 | from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/ml_threat_detector.py:13:1
+   |
+11 | from datetime import datetime
+12 |
+13 | from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/ml_threat_detector.py:13:1
+   |
+11 | from datetime import datetime
+12 |
+13 | from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/detectors/ml_threat_detector.py:13:1
+   |
+11 | from datetime import datetime
+12 |
+13 | from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/repositories/in_memory_repos.py:11:1
+   |
+ 9 | from collections import deque
+10 |
+11 | from ...domain.models import ThreatDetection, UserBehaviorProfile
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/ai_security/infrastructure/repositories/in_memory_repos.py:11:1
+   |
+ 9 | from collections import deque
+10 |
+11 | from ...domain.models import ThreatDetection, UserBehaviorProfile
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_security/infrastructure/responders/auto_responder.py:9:1
+  |
+7 | """
+8 |
+9 | from ...domain.models import ThreatDetection, ThreatLevel
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/ai_security/infrastructure/responders/auto_responder.py:9:1
+  |
+7 | """
+8 |
+9 | from ...domain.models import ThreatDetection, ThreatLevel
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `0.90` with a constant variable
+  --> app/services/ai_security/infrastructure/responders/auto_responder.py:58:91
+   |
+56 |         """
+57 |         # Auto-block critical threats with high confidence
+58 |         return detection.threat_level == ThreatLevel.CRITICAL and detection.confidence >= 0.90
+   |                                                                                           ^^^^
+59 |
+60 |     def is_blocked(self, ip_address: str) -> bool:
+   |
+
+ARG002 Unused method argument: `file_path`
+   --> app/services/ai_testing/generators/test_generator.py:217:42
+    |
+216 |     def _generate_happy_path_test(
+217 |         self, func_info: dict[str, Any], file_path: str
+    |                                          ^^^^^^^^^
+218 |     ) -> TestCase | None:
+219 |         """توليد اختبار الحالة السعيدة"""
+    |
+
+ARG002 Unused method argument: `file_path`
+   --> app/services/ai_testing/generators/test_generator.py:260:42
+    |
+259 |     def _generate_edge_case_tests(
+260 |         self, func_info: dict[str, Any], file_path: str
+    |                                          ^^^^^^^^^
+261 |     ) -> list[TestCase]:
+262 |         """توليد اختبارات الحالات الحدية"""
+    |
+
+ARG002 Unused method argument: `file_path`
+   --> app/services/ai_testing/generators/test_generator.py:320:42
+    |
+319 |     def _generate_error_case_tests(
+320 |         self, func_info: dict[str, Any], file_path: str
+    |                                          ^^^^^^^^^
+321 |     ) -> list[TestCase]:
+322 |         """توليد اختبارات حالات الخطأ"""
+    |
+
+ARG002 Unused method argument: `func_info`
+   --> app/services/ai_testing/generators/test_generator.py:358:40
+    |
+356 |         return tests[:3]  # Limit error tests
+357 |
+358 |     def _generate_boundary_tests(self, func_info: dict[str, Any], file_path: str) -> list[TestCase]:
+    |                                        ^^^^^^^^^
+359 |         """توليد اختبارات الحدود"""
+360 |         tests: list[TestCase] = []
+    |
+
+ARG002 Unused method argument: `file_path`
+   --> app/services/ai_testing/generators/test_generator.py:358:67
+    |
+356 |         return tests[:3]  # Limit error tests
+357 |
+358 |     def _generate_boundary_tests(self, func_info: dict[str, Any], file_path: str) -> list[TestCase]:
+    |                                                                   ^^^^^^^^^
+359 |         """توليد اختبارات الحدود"""
+360 |         tests: list[TestCase] = []
+    |
+
+PLW0603 Using the global statement to update `_config_secrets_instance` is discouraged
+   --> app/services/api/api_config_secrets_service.py:138:12
+    |
+136 | def get_config_secrets_service() ->ConfigSecretsService:
+137 |     """Get singleton config & secrets service instance"""
+138 |     global _config_secrets_instance
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+139 |     if _config_secrets_instance is None:
+140 |         with _config_lock:
+    |
+
+ARG002 Unused method argument: `metadata`
+  --> app/services/api_config_secrets/infrastructure/vault_adapters.py:52:56
+   |
+50 |             return None
+51 |
+52 |     def write_secret(self, secret_id: str, value: str, metadata: dict | None = None) -> bool:
+   |                                                        ^^^^^^^^
+53 |         with self.lock:
+54 |             encrypted = self.encryption.encrypt(value)
+   |
+
+ARG002 Unused method argument: `secret_id`
+  --> app/services/api_config_secrets/infrastructure/vault_adapters.py:71:29
+   |
+69 |             return list(self.secrets.keys())
+70 |
+71 |     def rotate_secret(self, secret_id: str) -> bool:
+   |                             ^^^^^^^^^
+72 |         # For local backend, rotation just marks the secret for update
+73 |         return True
+   |
+
+RET504 Unnecessary assignment to `result` before `return` statement
+  --> app/services/async_tool_bridge.py:80:16
+   |
+78 |             loop.run_in_executor(_TOOL_EXECUTOR, partial_func), timeout=timeout
+79 |         )
+80 |         return result
+   |                ^^^^^^
+81 |     except TimeoutError:
+82 |         logger.error(f"Tool execution timeout: {func.__name__} (>{timeout}s)")
+   |
+help: Remove unnecessary assignment
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:104:13
+    |
+102 |             return
+103 |         try:
+104 |             from app.services import agent_tools
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+105 |
+106 |             self._tools = agent_tools
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:261:13
+    |
+259 |             return
+260 |         try:
+261 |             from app.services.master_agent_service import _overmind_service_singleton
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+262 |
+263 |             self._service = _overmind_service_singleton
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:297:13
+    |
+295 |         def _create_mission():
+296 |             """Sync function to run in executor."""
+297 |             from app.core.database import SessionLocal
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+298 |             from app.models import User
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:298:13
+    |
+296 |             """Sync function to run in executor."""
+297 |             from app.core.database import SessionLocal
+298 |             from app.models import User
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+299 |
+300 |             session = SessionLocal()
+    |
+
+RET504 Unnecessary assignment to `result` before `return` statement
+   --> app/services/async_tool_bridge.py:320:20
+    |
+318 |         try:
+319 |             result = await run_sync_tool(_create_mission, timeout=timeout)
+320 |             return result
+    |                    ^^^^^^
+321 |         except TimeoutError:
+322 |             return {"ok": False, "error": "Timeout starting mission"}
+    |
+help: Remove unnecessary assignment
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:335:13
+    |
+334 |         def _get_status():
+335 |             from app.core.database import SessionLocal
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+336 |             from app.models import Mission, Task, TaskStatus
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/async_tool_bridge.py:336:13
+    |
+334 |         def _get_status():
+335 |             from app.core.database import SessionLocal
+336 |             from app.models import Mission, Task, TaskStatus
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+337 |
+338 |             session = SessionLocal()
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+  --> app/services/boundaries/admin_chat_boundary_service.py:83:26
+   |
+82 |         parts = auth_header.split(" ")
+83 |         if len(parts) != 2 or parts[0].lower() != "bearer":
+   |                          ^
+84 |             raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> app/services/boundaries/auth_boundary_service.py:217:26
+    |
+216 |         parts = auth_header.split(" ")
+217 |         if len(parts) != 2 or parts[0].lower() != "bearer":
+    |                          ^
+218 |             raise HTTPException(
+219 |                 status_code=401, detail="Invalid Authorization header format"
+    |
+
+ARG002 Unused method argument: `payload`
+   --> app/services/boundaries/crud_boundary_service.py:157:53
+    |
+155 |         return None
+156 |
+157 |     async def create_item(self, resource_type: str, payload: dict[str, Any]) -> Any:
+    |                                                     ^^^^^^^
+158 |         """Generic create item stub."""
+159 |         # Implement actual creation logic mapping
+    |
+
+ARG002 Unused method argument: `item_id`
+   --> app/services/boundaries/crud_boundary_service.py:162:53
+    |
+160 |         return {"status": "created", "resource": resource_type}
+161 |
+162 |     async def update_item(self, resource_type: str, item_id: str, payload: dict[str, Any]) -> Any:
+    |                                                     ^^^^^^^
+163 |         """Generic update item stub."""
+164 |         return {"status": "updated", "resource": resource_type}
+    |
+
+ARG002 Unused method argument: `payload`
+   --> app/services/boundaries/crud_boundary_service.py:162:67
+    |
+160 |         return {"status": "created", "resource": resource_type}
+161 |
+162 |     async def update_item(self, resource_type: str, item_id: str, payload: dict[str, Any]) -> Any:
+    |                                                                   ^^^^^^^
+163 |         """Generic update item stub."""
+164 |         return {"status": "updated", "resource": resource_type}
+    |
+
+ARG002 Unused method argument: `item_id`
+   --> app/services/boundaries/crud_boundary_service.py:166:53
+    |
+164 |         return {"status": "updated", "resource": resource_type}
+165 |
+166 |     async def delete_item(self, resource_type: str, item_id: str) -> Any:
+    |                                                     ^^^^^^^
+167 |         """Generic delete item stub."""
+168 |         return {"status": "deleted", "resource": resource_type}
+    |
+
+PLW0603 Using the global statement to update `_service_instance` is discouraged
+  --> app/services/chat/context_service.py:55:12
+   |
+53 | def get_context_service() -> ChatContextService:
+54 |     """Singleton accessor for ChatContextService."""
+55 |     global _service_instance
+   |            ^^^^^^^^^^^^^^^^^
+56 |     if _service_instance is None:
+57 |         _service_instance = ChatContextService()
+   |
+
+ARG001 Unused function argument: `context`
+   --> app/services/chat/handlers/mission_handler.py:133:5
+    |
+132 | async def handle_deep_analysis(
+133 |     context: ChatContext,
+    |     ^^^^^^^
+134 |     question: str,
+135 |     user_id: int,
+    |
+
+ARG001 Unused function argument: `user_id`
+   --> app/services/chat/handlers/mission_handler.py:135:5
+    |
+133 |     context: ChatContext,
+134 |     question: str,
+135 |     user_id: int,
+    |     ^^^^^^^
+136 |     ai_client: AIClient,
+137 | ) -> AsyncGenerator[str, None]:
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/chat/handlers/mission_handler.py:150:9
+    |
+149 |     try:
+150 |         from app.services.overmind.planning.deep_indexer import build_index, summarize_for_prompt
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+151 |
+152 |         async def _build_index_async():
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `150` with a constant variable
+   --> app/services/chat/handlers/mission_handler.py:228:68
+    |
+227 |     yield "🚀 **إنشاء مهمة Overmind**\n\n"
+228 |     yield f"**الهدف:** {objective[:150]}{'...' if len(objective) > 150 else ''}\n\n"
+    |                                                                    ^^^
+229 |
+230 |     if not context.async_overmind or not context.async_overmind.available:
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/chat/handlers/mission_handler.py:270:9
+    |
+268 |     try:
+269 |         # Lazy imports to prevent circular dependencies - this is intentional
+270 |         from app.core.database import SessionLocal
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+271 |         from app.models import AdminConversation
+272 |         from app.services.async_tool_bridge import run_sync_tool
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/chat/handlers/mission_handler.py:271:9
+    |
+269 |         # Lazy imports to prevent circular dependencies - this is intentional
+270 |         from app.core.database import SessionLocal
+271 |         from app.models import AdminConversation
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+272 |         from app.services.async_tool_bridge import run_sync_tool
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/chat/handlers/mission_handler.py:272:9
+    |
+270 |         from app.core.database import SessionLocal
+271 |         from app.models import AdminConversation
+272 |         from app.services.async_tool_bridge import run_sync_tool
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+273 |
+274 |         def _update():
+    |
+
+PLR0911 Too many return statements (7 > 6)
+  --> app/services/chat/handlers/search_handler.py:15:11
+   |
+15 | async def handle_code_search(
+   |           ^^^^^^^^^^^^^^^^^^
+16 |     context: ChatContext,
+17 |     query: str,
+   |
+
+PLR0912 Too many branches (13 > 12)
+  --> app/services/chat/handlers/search_handler.py:15:11
+   |
+15 | async def handle_code_search(
+   |           ^^^^^^^^^^^^^^^^^^
+16 |     context: ChatContext,
+17 |     query: str,
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+  --> app/services/chat/handlers/search_handler.py:23:21
+   |
+21 |     start_time = time.time()
+22 |
+23 |     if len(query) < 2:
+   |                     ^
+24 |         yield "⚠️ استعلام البحث قصير جداً.\n"
+25 |         return
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+  --> app/services/chat/handlers/search_handler.py:27:21
+   |
+25 |         return
+26 |
+27 |     if len(query) > 200:
+   |                     ^^^
+28 |         yield "⚠️ استعلام البحث طويل جداً.\n"
+29 |         return
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+  --> app/services/chat/handlers/search_handler.py:77:31
+   |
+75 |                 yield f"**{i}. `{file_path}:{line}`**\n```\n{excerpt}\n```\n\n"
+76 |
+77 |             if len(results) > 5:
+   |                               ^
+78 |                 yield f"... و {len(results) - 5} نتيجة أخرى.\n"
+79 |     else:
+   |
+
+ARG002 Unused method argument: `question`
+   --> app/services/chat/handlers/strategy_handlers.py:152:30
+    |
+150 |         yield f"{analysis}\n"
+151 |
+152 |     async def _analyze(self, question: str, ai_client) -> str:
+    |                              ^^^^^^^^
+153 |         """Perform deep analysis."""
+154 |         return "تحليل عميق (قيد التطوير)"
+    |
+
+ARG002 Unused method argument: `ai_client`
+   --> app/services/chat/handlers/strategy_handlers.py:152:45
+    |
+150 |         yield f"{analysis}\n"
+151 |
+152 |     async def _analyze(self, question: str, ai_client) -> str:
+    |                                             ^^^^^^^^^
+153 |         """Perform deep analysis."""
+154 |         return "تحليل عميق (قيد التطوير)"
+    |
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> app/services/chat/handlers/strategy_handlers.py:232:17
+    |
+230 |                   # Check mission status if task is done or we suspect completion
+231 |                   mission_check = await session.get(Mission, mission_id)
+232 | /                 if mission_check.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
+233 | |                      if running: # If we haven't detected task end yet
+    | |________________________________^
+234 |                            running = False
+235 |                            yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+    |
+help: Combine `if` statements using `and`
+
+ARG002 Unused method argument: `context`
+   --> app/services/chat/handlers/strategy_handlers.py:274:29
+    |
+272 |         super().__init__("HELP", priority=10)
+273 |
+274 |     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
+    |                             ^^^^^^^
+275 |         """Show help."""
+276 |         yield "📚 **المساعدة**\n\n"
+    |
+
+ARG002 Unused method argument: `context`
+   --> app/services/chat/handlers/strategy_handlers.py:291:32
+    |
+289 |         super().__init__("DEFAULT", priority=-1)
+290 |
+291 |     async def can_handle(self, context: ChatContext) -> bool:
+    |                                ^^^^^^^
+292 |         """Always can handle (fallback)."""
+293 |         return True
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `15` with a constant variable
+  --> app/services/chat/handlers/system_handler.py:74:33
+   |
+72 |             for item in structure[:15]:
+73 |                 yield f"{item}\n"
+74 |             if len(structure) > 15:
+   |                                 ^^
+75 |                 yield f"... و {len(structure) - 15} عنصر آخر\n"
+76 |             yield "```\n"
+   |
+
+ARG005 Unused lambda argument: `m`
+  --> app/services/chat/intent_detector.py:40:84
+   |
+38 |             (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
+39 |             (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+40 |             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, lambda m: {}),
+   |                                                                                    ^
+41 |             (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, lambda m: {}),
+42 |             (r"(مساعدة|help)", ChatIntent.HELP, lambda m: {}),
+   |
+
+ARG005 Unused lambda argument: `m`
+  --> app/services/chat/intent_detector.py:41:80
+   |
+39 |             (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+40 |             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, lambda m: {}),
+41 |             (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, lambda m: {}),
+   |                                                                                ^
+42 |             (r"(مساعدة|help)", ChatIntent.HELP, lambda m: {}),
+43 |         ]
+   |
+
+ARG005 Unused lambda argument: `m`
+  --> app/services/chat/intent_detector.py:42:56
+   |
+40 |             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, lambda m: {}),
+41 |             (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, lambda m: {}),
+42 |             (r"(مساعدة|help)", ChatIntent.HELP, lambda m: {}),
+   |                                                        ^
+43 |         ]
+   |
+
+RET504 Unnecessary assignment to `msg` before `return` statement
+  --> app/services/chat/security.py:30:16
+   |
+28 |         # Remove potential secrets or paths
+29 |         msg = re.sub(r"/.+/", "...", msg)
+30 |         return msg
+   |                ^^^
+   |
+help: Remove unnecessary assignment
+
+ARG002 Unused method argument: `callback`
+   --> app/services/data_mesh/application/mesh_manager.py:307:32
+    |
+306 |     def subscribe_to_events(
+307 |         self, event_type: str, callback: Callable[[dict[str, Any]], None]
+    |                                ^^^^^^^^
+308 |     ) -> str:
+309 |         subscription_id = str(uuid.uuid4())
+    |
+
+PLW0603 Using the global statement to update `_data_mesh_instance` is discouraged
+   --> app/services/data_mesh/facade.py:150:12
+    |
+148 | def get_data_mesh_service() -> DataMeshService:
+149 |     """Get singleton data mesh service instance"""
+150 |     global _data_mesh_instance
+    |            ^^^^^^^^^^^^^^^^^^^
+151 |
+152 |     if _data_mesh_instance is None:
+    |
+
+F811 Redefinition of unused `generation_service` from line 33
+  --> app/services/legacy/fastapi_generation_service.py:57:1
+   |
+56 | # Backward compatibility: expose module-level singleton
+57 | generation_service = get_generation_service()
+   | ^^^^^^^^^^^^^^^^^^ `generation_service` redefined here
+58 |
+59 | if __name__ == "__main__":
+   |
+  ::: app/services/legacy/fastapi_generation_service.py:33:5
+   |
+31 |     generate_comprehensive_response,
+32 |     generate_json,
+33 |     generation_service,
+   |     ------------------ previous definition of `generation_service` here
+34 |     get_generation_service,
+35 |     register_post_finalize_hook,
+   |
+help: Remove definition: `generation_service`
+
+ARG002 Unused method argument: `new_cost`
+  --> app/services/llm/cost_manager.py:92:31
+   |
+90 |             self._enforce_budget(cost)
+91 |
+92 |     def _enforce_budget(self, new_cost: float) -> None:  # noqa: unused variable
+   |                               ^^^^^^^^
+93 |         budget_session = float(os.getenv("LLM_COST_BUDGET_SESSION", "0") or 0.0)
+94 |         hard_fail = os.getenv("LLM_COST_BUDGET_HARD_FAIL", "0") == "1"
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/llm/invocation_handler.py:73:13
+   |
+71 |                 sanitized = sanitized.replace(marker, f'[REDACTED:{marker}]')
+72 |         try:
+73 |             import json
+   |             ^^^^^^^^^^^
+74 |             regexes = json.loads(os.getenv('LLM_SANITIZE_REGEXES_JSON', '[]'))
+75 |         except Exception:
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/llm/invocation_handler.py:77:9
+   |
+75 |         except Exception:
+76 |             regexes = []
+77 |         import re
+   |         ^^^^^^^^^
+78 |         for pattern in regexes:
+79 |             with contextlib.suppress(Exception):
+   |
+
+ARG002 Unused method argument: `model`
+   --> app/services/llm/invocation_handler.py:167:45
+    |
+165 |             'total_tokens': usage_dict.get('total_tokens', 0)}
+166 |
+167 |     def _handle_error(self, exc: Exception, model: str, attempts: int,
+    |                                             ^^^^^
+168 |         backoff: float):
+169 |         kind = RetryStrategy.classify_error(exc)
+    |
+
+ARG002 Unused method argument: `backoff`
+   --> app/services/llm/invocation_handler.py:168:9
+    |
+167 |     def _handle_error(self, exc: Exception, model: str, attempts: int,
+168 |         backoff: float):
+    |         ^^^^^^^
+169 |         kind = RetryStrategy.classify_error(exc)
+170 |         self.breaker.note_error()
+    |
+
+PLR0911 Too many return statements (9 > 6)
+  --> app/services/llm/retry_strategy.py:78:9
+   |
+77 |     @staticmethod
+78 |     def classify_error(exc: Exception) -> str:
+   |         ^^^^^^^^^^^^^^
+79 |         """
+80 |         Classify errors for intelligent retry and reporting.
+   |
+
+PLW0603 Using the global statement to update `_CLIENT_SINGLETON` is discouraged
+  --> app/services/llm_client_service.py:86:12
+   |
+84 |     Maintains backward compatibility with legacy code.
+85 |     """
+86 |     global _CLIENT_SINGLETON
+   |            ^^^^^^^^^^^^^^^^^
+87 |     disable_cache = _bool_env("LLM_DISABLE_CACHE")
+88 |     forced_mock = _should_force_mock()
+   |
+
+PLW0603 Using the global statement to update `_CLIENT_SINGLETON` is discouraged
+  --> app/services/llm_client_service.py:86:12
+   |
+84 |     Maintains backward compatibility with legacy code.
+85 |     """
+86 |     global _CLIENT_SINGLETON
+   |            ^^^^^^^^^^^^^^^^^
+87 |     disable_cache = _bool_env("LLM_DISABLE_CACHE")
+88 |     forced_mock = _should_force_mock()
+   |
+
+PLW0603 Using the global statement to update `_CLIENT_SINGLETON` is discouraged
+   --> app/services/llm_client_service.py:116:12
+    |
+114 |     Reset the LLM client singleton.
+115 |     """
+116 |     global _CLIENT_SINGLETON
+    |            ^^^^^^^^^^^^^^^^^
+117 |     with _CLIENT_LOCK:
+118 |         _CLIENT_SINGLETON = None
+    |
+
+PLR0915 Too many statements (65 > 50)
+   --> app/services/llm_client_service.py:160:5
+    |
+160 | def invoke_chat(
+    |     ^^^^^^^^^^^
+161 |     model: str,
+162 |     messages: list[dict[str, str]],
+    |
+
+N806 Variable `_LLM_EXTREME_MODE` in function should be lowercase
+   --> app/services/llm_client_service.py:176:5
+    |
+175 |     # Configuration extraction
+176 |     _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+    |     ^^^^^^^^^^^^^^^^^
+177 |     _LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+    |
+
+N806 Variable `_LLM_ULTIMATE_MODE` in function should be lowercase
+   --> app/services/llm_client_service.py:177:5
+    |
+175 |     # Configuration extraction
+176 |     _LLM_EXTREME_MODE = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+177 |     _LLM_ULTIMATE_MODE = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+    |     ^^^^^^^^^^^^^^^^^^
+178 |
+179 |     default_retries = "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
+    |
+
+N806 Variable `_LLM_MAX_RETRIES` in function should be lowercase
+   --> app/services/llm_client_service.py:180:5
+    |
+179 |     default_retries = "20" if _LLM_ULTIMATE_MODE else ("8" if _LLM_EXTREME_MODE else "2")
+180 |     _LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", default_retries))
+    |     ^^^^^^^^^^^^^^^^
+181 |
+182 |     default_backoff = "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3")
+    |
+
+N806 Variable `_LLM_RETRY_BACKOFF_BASE` in function should be lowercase
+   --> app/services/llm_client_service.py:183:5
+    |
+182 |     default_backoff = "1.8" if _LLM_ULTIMATE_MODE else ("1.5" if _LLM_EXTREME_MODE else "1.3")
+183 |     _LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", default_backoff))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+184 |
+185 |     _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+    |
+
+N806 Variable `_LLM_RETRY_JITTER` in function should be lowercase
+   --> app/services/llm_client_service.py:185:5
+    |
+183 |     _LLM_RETRY_BACKOFF_BASE = float(os.getenv("LLM_RETRY_BACKOFF_BASE", default_backoff))
+184 |
+185 |     _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+    |     ^^^^^^^^^^^^^^^^^
+186 |     _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+187 |     _LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
+    |
+
+N806 Variable `_LLM_ENABLE_STREAM` in function should be lowercase
+   --> app/services/llm_client_service.py:186:5
+    |
+185 |     _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+186 |     _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+    |     ^^^^^^^^^^^^^^^^^^
+187 |     _LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
+    |
+
+N806 Variable `_LOG_ATTEMPTS` in function should be lowercase
+   --> app/services/llm_client_service.py:187:5
+    |
+185 |     _LLM_RETRY_JITTER = os.getenv("LLM_RETRY_JITTER", "1") == "1"
+186 |     _LLM_ENABLE_STREAM = os.getenv("LLM_ENABLE_STREAM", "0") == "1"
+187 |     _LOG_ATTEMPTS = os.getenv("LLM_LOG_ATTEMPTS", "1") == "1"
+    |     ^^^^^^^^^^^^^
+188 |
+189 |     client = get_llm_client()
+    |
+
+RET504 Unnecessary assignment to `drift` before `return` statement
+  --> app/services/metrics/calculators/drift.py:37:16
+   |
+35 |         drift = min(1.0, (mean_shift + std_shift) / 4.0)
+36 |
+37 |         return drift
+   |                ^^^^^
+   |
+help: Remove unnecessary assignment
+
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/metrics/service.py:67:40
+   |
+65 |                 p95_ms=sorted_latencies[int(n * 0.95)], p99_ms=
+66 |                 sorted_latencies[int(n * 0.99)], p999_ms=sorted_latencies[
+67 |                 int(n * 0.999)] if n > 1000 else sorted_latencies[-1],
+   |                                        ^^^^
+68 |                 mean_ms=statistics.mean(latencies), median_ms=statistics.
+69 |                 median(latencies), min_ms=min(latencies), max_ms=max(
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/metrics/service.py:111:32
+    |
+109 |             baseline = self.baseline_predictions[model_key]
+110 |             current = self.current_predictions.get(model_key, [])
+111 |             if len(baseline) < 100 or len(current) < 100:
+    |                                ^^^
+112 |                 return None
+113 |             drift_score = self.drift_calculator.calculate_drift(baseline,
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/metrics/service.py:111:54
+    |
+109 |             baseline = self.baseline_predictions[model_key]
+110 |             current = self.current_predictions.get(model_key, [])
+111 |             if len(baseline) < 100 or len(current) < 100:
+    |                                                      ^^^
+112 |                 return None
+113 |             drift_score = self.drift_calculator.calculate_drift(baseline,
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/metrics/service.py:201:29
+    |
+199 |         """Calculate overall model health score (0-100)"""
+200 |         score = 100.0
+201 |         if latency.p95_ms > 100:
+    |                             ^^^
+202 |             score -= min(30, (latency.p95_ms - 100) / 10)
+203 |         if cost.cost_per_request > 0.01:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.01` with a constant variable
+   --> app/services/metrics/service.py:203:36
+    |
+201 |         if latency.p95_ms > 100:
+202 |             score -= min(30, (latency.p95_ms - 100) / 10)
+203 |         if cost.cost_per_request > 0.01:
+    |                                    ^^^^
+204 |             score -= min(20, cost.cost_per_request * 100)
+205 |         if drift:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/metrics/service.py:218:29
+    |
+216 |         """Generate recommendations based on metrics"""
+217 |         recommendations = []
+218 |         if latency.p95_ms > 100:
+    |                             ^^^
+219 |             recommendations.append(
+220 |                 '⚠️ High latency detected. Consider model optimization or scaling.'
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.01` with a constant variable
+   --> app/services/metrics/service.py:225:36
+    |
+223 |             recommendations.append(
+224 |                 '⚠️ High tail latency variance. Investigate outlier requests.')
+225 |         if cost.cost_per_request > 0.01:
+    |                                    ^^^^
+226 |             recommendations.append(
+227 |                 '💰 High cost per request. Consider model distillation or caching.'
+    |
+
+PLW0603 Using the global statement to update `_ai_model_service` is discouraged
+   --> app/services/metrics/service.py:272:12
+    |
+270 | def get_ai_model_service() ->AIModelMetricsService:
+271 |     """Get singleton AI model metrics service instance"""
+272 |     global _ai_model_service
+    |            ^^^^^^^^^^^^^^^^^
+273 |     if _ai_model_service is None:
+274 |         with _service_lock:
+    |
+
+PLW0603 Using the global statement to update `_micro_frontends_instance` is discouraged
+   --> app/services/micro_frontends_service.py:166:12
+    |
+164 | def get_micro_frontends_service() ->MicroFrontendsService:
+165 |     """Get singleton micro frontends service instance"""
+166 |     global _micro_frontends_instance
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+167 |     if _micro_frontends_instance is None:
+168 |         with _mf_lock:
+    |
+
+ARG002 Unused method argument: `deployment_name`
+  --> app/services/orchestration/application/auto_scaler.py:95:47
+   |
+93 |         return elapsed >= config.cooldown_seconds
+94 |
+95 |     def _calculate_deployment_cpu_usage(self, deployment_name: str) -> float:
+   |                                               ^^^^^^^^^^^^^^^
+96 |         """Calculate average CPU usage for deployment"""
+97 |         # Simplified: in production, query actual metrics
+   |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/orchestration/application/auto_scaler.py:99:9
+    |
+ 97 |         # Simplified: in production, query actual metrics
+ 98 |         # For now, simulate with random value
+ 99 |         import random
+    |         ^^^^^^^^^^^^^
+100 |         return random.uniform(20, 90)
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.3` with a constant variable
+   --> app/services/orchestration/application/raft_consensus.py:119:63
+    |
+117 |         # Simulate receiving votes from other nodes
+118 |         for node_id in self._cluster_nodes:
+119 |             if node_id != self._node_id and random.random() > 0.3:
+    |                                                               ^^^
+120 |                 self._state.votes_received.add(node_id)
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.01` with a constant variable
+   --> app/services/orchestration/application/self_healer.py:98:34
+    |
+ 97 |         # Random failures for testing
+ 98 |         return random.random() < 0.01  # 1% failure rate
+    |                                  ^^^^
+ 99 |
+100 |     def _is_node_unhealthy(self, node: Node) -> bool:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `60` with a constant variable
+   --> app/services/orchestration/application/self_healer.py:105:35
+    |
+103 |         time_since_heartbeat = (datetime.utcnow() - node.last_heartbeat).total_seconds()
+104 |
+105 |         if time_since_heartbeat > 60:  # 60 seconds timeout
+    |                                   ^^
+106 |             return True
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `95` with a constant variable
+   --> app/services/orchestration/application/self_healer.py:109:44
+    |
+108 |         # Check resource pressure
+109 |         return bool(node.cpu_utilization > 95 or node.memory_utilization > 95)
+    |                                            ^^
+110 |
+111 |     def _heal_pod(self, pod: Pod) -> bool:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `95` with a constant variable
+   --> app/services/orchestration/application/self_healer.py:109:76
+    |
+108 |         # Check resource pressure
+109 |         return bool(node.cpu_utilization > 95 or node.memory_utilization > 95)
+    |                                                                            ^^
+110 |
+111 |     def _heal_pod(self, pod: Pod) -> bool:
+    |
+
+ARG002 Unused method argument: `original_objective`
+  --> app/services/overmind/agents/auditor.py:38:9
+   |
+36 |         self,
+37 |         result: dict[str, Any],
+38 |         original_objective: str,
+   |         ^^^^^^^^^^^^^^^^^^
+39 |         context: CollaborationContext
+40 |     ) -> dict[str, Any]:
+   |
+
+ARG002 Unused method argument: `context`
+  --> app/services/overmind/agents/auditor.py:39:9
+   |
+37 |         result: dict[str, Any],
+38 |         original_objective: str,
+39 |         context: CollaborationContext
+   |         ^^^^^^^
+40 |     ) -> dict[str, Any]:
+41 |         """
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/overmind/code_intelligence/analyzers/smells.py:2:1
+  |
+2 | from ..models import FileMetrics
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+RUF012 Mutable class attributes should be annotated with `typing.ClassVar`
+  --> app/services/overmind/code_intelligence/analyzers/smells.py:13:22
+   |
+12 |       # Layer mixing patterns
+13 |       LAYER_PATTERNS = {
+   |  ______________________^
+14 | |         "api": ["api", "routers", "endpoints", "controllers"],
+15 | |         "service": ["services", "use_cases", "application"],
+16 | |         "infrastructure": ["infrastructure", "repositories", "adapters"],
+17 | |         "domain": ["domain", "models", "entities"],
+18 | |     }
+   | |_____^
+19 |
+20 |       def detect_smells(self, file_path: str, metrics: FileMetrics, imports: list[str]) -> dict[str, bool]:
+   |
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+  --> app/services/overmind/code_intelligence/analyzers/smells.py:29:9
+   |
+28 |           # God class detection
+29 | /         if metrics.num_classes > 0:
+30 | |             if metrics.code_lines > self.GOD_CLASS_LOC_THRESHOLD or metrics.num_functions > self.GOD_CLASS_METHODS_THRESHOLD:
+   | |_____________________________________________________________________________________________________________________________^
+31 |                   smells["is_god_class"] = True
+   |
+help: Combine `if` statements using `and`
+
+PLR2004 Magic value used in comparison, consider replacing `0.7` with a constant variable
+   --> app/services/overmind/code_intelligence/core.py:182:25
+    |
+181 |             # Assign priority tier
+182 |             if score >= 0.7:
+    |                         ^^^
+183 |                 metrics.priority_tier = "CRITICAL"
+184 |             elif score >= 0.5:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+   --> app/services/overmind/code_intelligence/core.py:184:27
+    |
+182 |             if score >= 0.7:
+183 |                 metrics.priority_tier = "CRITICAL"
+184 |             elif score >= 0.5:
+    |                           ^^^
+185 |                 metrics.priority_tier = "HIGH"
+186 |             elif score >= 0.3:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.3` with a constant variable
+   --> app/services/overmind/code_intelligence/core.py:186:27
+    |
+184 |             elif score >= 0.5:
+185 |                 metrics.priority_tier = "HIGH"
+186 |             elif score >= 0.3:
+    |                           ^^^
+187 |                 metrics.priority_tier = "MEDIUM"
+188 |             else:
+    |
+
+RET504 Unnecessary assignment to `analysis` before `return` statement
+   --> app/services/overmind/code_intelligence/core.py:253:16
+    |
+251 |         )
+252 |
+253 |         return analysis
+    |                ^^^^^^^^
+    |
+help: Remove unnecessary assignment
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/overmind/code_intelligence/reporters/csv_reporter.py:4:1
+  |
+2 | from pathlib import Path
+3 |
+4 | from ..models import ProjectAnalysis
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/overmind/code_intelligence/reporters/html_reporter.py:3:1
+  |
+1 | from pathlib import Path
+2 |
+3 | from ..models import ProjectAnalysis
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/overmind/code_intelligence/reporters/json_reporter.py:5:1
+  |
+3 | from pathlib import Path
+4 |
+5 | from ..models import ProjectAnalysis
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/overmind/code_intelligence/reporters/markdown_reporter.py:4:1
+  |
+2 | from pathlib import Path
+3 |
+4 | from ..models import ProjectAnalysis
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR0915 Too many statements (66 > 50)
+  --> app/services/overmind/domain/cognitive.py:72:15
+   |
+70 |         self.auditor = auditor
+71 |
+72 |     async def process_mission(
+   |               ^^^^^^^^^^^^^^^
+73 |         self,
+74 |         mission: Mission,
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> app/services/overmind/domain/cognitive.py:119:21
+    |
+117 |                     logger.error("Strategist timeout during planning")
+118 |                     await safe_log("plan_timeout", {"error": "Planning exceeded 120 seconds"})
+119 |                     raise RuntimeError("Planning phase timed out")
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+120 |
+121 |                 # المدقق يراجع الخطة (مع timeout)
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> app/services/overmind/domain/cognitive.py:131:21
+    |
+129 |                     logger.error("Auditor timeout during plan review")
+130 |                     await safe_log("review_timeout", {"error": "Plan review exceeded 60 seconds"})
+131 |                     raise RuntimeError("Plan review phase timed out")
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+132 |
+133 |                 if not critique.get("approved"):
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> app/services/overmind/domain/cognitive.py:161:17
+    |
+159 |                 logger.error("Architect timeout during design")
+160 |                 await safe_log("design_timeout", {"error": "Design exceeded 120 seconds"})
+161 |                 raise RuntimeError("Design phase timed out")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+162 |
+163 |             # --- المرحلة 3: التنفيذ (Operator) ---
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> app/services/overmind/domain/cognitive.py:175:17
+    |
+173 |                 logger.error("Operator timeout during execution")
+174 |                 await safe_log("execution_timeout", {"error": "Execution exceeded 300 seconds"})
+175 |                 raise RuntimeError("Execution phase timed out")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+176 |
+177 |             # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> app/services/overmind/domain/cognitive.py:187:17
+    |
+185 |                 logger.error("Auditor timeout during final review")
+186 |                 await safe_log("reflection_timeout", {"error": "Final review exceeded 60 seconds"})
+187 |                 raise RuntimeError("Final review phase timed out")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+188 |
+189 |             if state.critique.get("approved"):
+    |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/executor.py:45:13
+   |
+43 |         # للتوافق السريع، سنحاول استيراده.
+44 |         try:
+45 |             from app.services import agent_tools
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+46 |             self.registry = getattr(agent_tools, "_TOOL_REGISTRY", {})
+47 |         except ImportError:
+   |
+
+F841 Local variable `registry` is assigned to but never used
+  --> app/services/overmind/factory.py:43:5
+   |
+42 |     # 2. Execution Layer
+43 |     registry = get_registry()
+   |     ^^^^^^^^
+44 |     # ملاحظة: TaskExecutor يحتاج إلى registry لتنفيذ الأدوات
+45 |     # سنفترض هنا أنه يقبله، أو سيتم تحديثه لاحقاً
+   |
+help: Remove assignment to unused variable `registry`
+
+RET504 Unnecessary assignment to `module` before `return` statement
+  --> app/services/overmind/planning/__init__.py:84:12
+   |
+82 |         return None
+83 |     module = _safe_import(mod_path)
+84 |     return module
+   |            ^^^^^^
+   |
+help: Remove unnecessary assignment
+
+ARG002 Unused method argument: `context`
+   --> app/services/overmind/planning/base_planner.py:118:9
+    |
+117 |     def validate_plan(self, plan: MissionPlanSchema, objective: str,
+118 |         context: (PlanningContext | None)=None) ->None:
+    |         ^^^^^^^
+119 |         if not hasattr(plan, 'objective'):
+120 |             raise PlanValidationError("Plan missing 'objective' attribute.",
+    |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/discovery.py:37:5
+   |
+35 | def _get_planner_record_class():
+36 |     """Lazy import of PlannerRecord to avoid circular import."""
+37 |     from .factory_core import PlannerRecord
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+38 |     return PlannerRecord
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `40` with a constant variable
+  --> app/services/overmind/planning/exceptions.py:53:34
+   |
+51 |                 for k, v in flat.items():
+52 |                     vs = repr(v)
+53 |                     if len(vs) > 40:
+   |                                  ^^
+54 |                         vs = vs[:37] + "..."
+55 |                     preview_items.append(f"{k}={vs}")
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `180` with a constant variable
+  --> app/services/overmind/planning/exceptions.py:57:39
+   |
+55 |                     preview_items.append(f"{k}={vs}")
+56 |                 preview_str = ", ".join(preview_items)
+57 |                 if len(preview_str) > 180:
+   |                                       ^^^
+58 |                     preview_str = preview_str[:177] + "..."
+59 |                 base_msg += f" | extra: {preview_str}"
+   |
+
+N818 Exception name `PlannerNotFound` should be named with an Error suffix
+   --> app/services/overmind/planning/exceptions.py:105:7
+    |
+104 | # Compatibility Classes for Factory/Discovery
+105 | class PlannerNotFound(PlannerError):
+    |       ^^^^^^^^^^^^^^^
+106 |     """Raised when a requested planner is not found in the registry."""
+    |
+
+N818 Exception name `PlannerQuarantined` should be named with an Error suffix
+   --> app/services/overmind/planning/exceptions.py:117:7
+    |
+117 | class PlannerQuarantined(PlannerError):
+    |       ^^^^^^^^^^^^^^^^^^
+118 |     """Raised when attempting to use a quarantined planner."""
+    |
+
+N818 Exception name `SandboxTimeout` should be named with an Error suffix
+   --> app/services/overmind/planning/exceptions.py:129:7
+    |
+129 | class SandboxTimeout(PlannerError):
+    |       ^^^^^^^^^^^^^^
+130 |     """Raised when sandbox import times out."""
+    |
+
+ARG004 Unused static method argument: `kwargs`
+  --> app/services/overmind/planning/factory.py:75:33
+   |
+74 |         @staticmethod
+75 |         def compute_rank_hint(**kwargs):
+   |                                 ^^^^^^
+76 |             return 0.0
+   |
+
+PLW0127 Self-assignment of variable `FACTORY_VERSION`
+  --> app/services/overmind/planning/factory.py:87:1
+   |
+86 | # Legacy exports for backward compatibility
+87 | FACTORY_VERSION = FACTORY_VERSION
+   | ^^^^^^^^^^^^^^^
+88 | CFG = DEFAULT_CONFIG
+89 | _FORCE_REDISCOVER = DEFAULT_CONFIG.force_rediscover
+   |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/factory.py:293:5
+    |
+291 |     _GLOBAL_FACTORY.refresh_metadata()
+292 |
+293 |     from .ranking import rank_planners
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+294 |
+295 |     req_set = {s.lower().strip() for s in (required_capabilities or [])}
+    |
+
+PLR0912 Too many branches (13 > 12)
+   --> app/services/overmind/planning/factory.py:392:5
+    |
+392 | def diagnostics_report(verbose: bool = False) -> str:
+    |     ^^^^^^^^^^^^^^^^^^
+393 |     """Get human-readable diagnostics report."""
+394 |     data = diagnostics_json(verbose=verbose)
+    |
+
+ARG002 Unused method argument: `force`
+   --> app/services/overmind/planning/factory_core.py:233:15
+    |
+232 |     def self_heal(
+233 |         self, force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
+    |               ^^^^^
+234 |     ) -> dict[str, Any]:
+235 |         """Attempt self-healing."""
+    |
+
+ARG002 Unused method argument: `cooldown_seconds`
+   --> app/services/overmind/planning/factory_core.py:233:35
+    |
+232 |     def self_heal(
+233 |         self, force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
+    |                                   ^^^^^^^^^^^^^^^^
+234 |     ) -> dict[str, Any]:
+235 |         """Attempt self-healing."""
+    |
+
+ARG002 Unused method argument: `max_attempts`
+   --> app/services/overmind/planning/factory_core.py:233:66
+    |
+232 |     def self_heal(
+233 |         self, force: bool = True, cooldown_seconds: float = 5.0, max_attempts: int = 3
+    |                                                                  ^^^^^^^^^^^^
+234 |     ) -> dict[str, Any]:
+235 |         """Attempt self-healing."""
+    |
+
+ARG002 Unused method argument: `selection_limit`
+   --> app/services/overmind/planning/factory_core.py:261:15
+    |
+260 |     def get_telemetry_samples(
+261 |         self, selection_limit: int = 25, instantiation_limit: int = 25  # noqa: unused variable  # noqa: unused variable
+    |               ^^^^^^^^^^^^^^^
+262 |     ) -> dict[str, list]:
+263 |         """Get telemetry samples."""
+    |
+
+ARG002 Unused method argument: `instantiation_limit`
+   --> app/services/overmind/planning/factory_core.py:261:42
+    |
+260 |     def get_telemetry_samples(
+261 |         self, selection_limit: int = 25, instantiation_limit: int = 25  # noqa: unused variable  # noqa: unused variable
+    |                                          ^^^^^^^^^^^^^^^^^^^
+262 |     ) -> dict[str, list]:
+263 |         """Get telemetry samples."""
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/overmind/planning/factory_core.py:303:31
+    |
+301 |         if context and context.constraints.get("fast_mode"):
+302 |             return LinearStrategy(planner_name="standard_planner")
+303 |         if complexity_score > 50 or "complex" in objective.lower():
+    |                               ^^
+304 |             return RecursiveStrategy(planner_name="recursive_planner")
+305 |         return LinearStrategy(planner_name="standard_planner")
+    |
+
+ARG001 Unused function argument: `verbose`
+   --> app/services/overmind/planning/factory_core.py:459:22
+    |
+459 | def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
+    |                      ^^^^^^^
+460 |     # Simplified diagnostics wrapper
+461 |     stats = planner_stats()
+    |
+
+ARG001 Unused function argument: `fmt`
+   --> app/services/overmind/planning/factory_core.py:477:23
+    |
+476 | def export_diagnostics(
+477 |     path: str | Path, fmt: str = "json", verbose: bool = False, ensure_dir: bool = True
+    |                       ^^^
+478 | ) -> Path:
+479 |     p = Path(path)
+    |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/generators/dependency_builder.py:42:9
+   |
+41 |         # Check for cycles using topological sort
+42 |         from collections import deque
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+43 |
+44 |         queue = deque([tid for tid, deg in graph.indegree.items() if deg == 0])
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/overmind/planning/generators/objective_analyzer.py:108:25
+    |
+106 |         has_complex_keywords = any(kw in objective for kw in complex_keywords)
+107 |
+108 |         if word_count > 50 or has_complex_keywords:
+    |                         ^^
+109 |             return ComplexityLevel.VERY_HIGH
+110 |         if word_count > 30:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `30` with a constant variable
+   --> app/services/overmind/planning/generators/objective_analyzer.py:110:25
+    |
+108 |         if word_count > 50 or has_complex_keywords:
+109 |             return ComplexityLevel.VERY_HIGH
+110 |         if word_count > 30:
+    |                         ^^
+111 |             return ComplexityLevel.HIGH
+112 |         if word_count > 15:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `15` with a constant variable
+   --> app/services/overmind/planning/generators/objective_analyzer.py:112:25
+    |
+110 |         if word_count > 30:
+111 |             return ComplexityLevel.HIGH
+112 |         if word_count > 15:
+    |                         ^^
+113 |             return ComplexityLevel.MEDIUM
+114 |         return ComplexityLevel.LOW
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `3` with a constant variable
+   --> app/services/overmind/planning/generators/objective_analyzer.py:125:74
+    |
+124 |         stop_words = {"a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for"}
+125 |         keywords = [w for w in words if w not in stop_words and len(w) > 3]
+    |                                                                          ^
+126 |
+127 |         return keywords[:10]
+    |
+
+ARG002 Unused method argument: `graph`
+  --> app/services/overmind/planning/generators/plan_optimizer.py:10:42
+   |
+ 8 |     """Optimizes plan structure. CC ≤ 3"""
+ 9 |
+10 |     def optimize(self, tasks: list[Any], graph: Any) -> list[Any]:
+   |                                          ^^^^^
+11 |         """Optimize task order and priorities. CC=3"""
+12 |         if not tasks:
+   |
+
+RET504 Unnecessary assignment to `rebalanced` before `return` statement
+  --> app/services/overmind/planning/generators/plan_optimizer.py:21:16
+   |
+19 |         rebalanced = self._rebalance_priorities(sorted_tasks)
+20 |
+21 |         return rebalanced
+   |                ^^^^^^^^^^
+22 |
+23 |     def _rebalance_priorities(self, tasks: list[Any]) -> list[Any]:
+   |
+help: Remove unnecessary assignment
+
+ARG002 Unused method argument: `context`
+  --> app/services/overmind/planning/generators/task_decomposer.py:66:45
+   |
+65 |     def _decompose_complex(
+66 |         self, objective: AnalyzedObjective, context: EnrichedContext
+   |                                             ^^^^^^^
+67 |     ) -> list[Task]:
+68 |         """Decompose complex objective. CC=3"""
+   |
+
+ARG002 Unused method argument: `context`
+   --> app/services/overmind/planning/multi_pass_arch_planner.py:207:53
+    |
+206 |     # ------------------------------------------------------------------ PUBLIC ENTRY
+207 |     def instrumented_generate(self, objective: str, context=None, deep_context=None):
+    |                                                     ^^^^^^^
+208 |         t0 = time.perf_counter()
+209 |         plan = self._build_plan(objective=objective, deep_context=deep_context)
+    |
+
+PLR0912 Too many branches (13 > 12)
+   --> app/services/overmind/planning/multi_pass_arch_planner.py:224:9
+    |
+223 |     # ------------------------------------------------------------------ CORE BUILD
+224 |     def _build_plan(self, objective: str, deep_context: dict[str, Any] | None):
+    |         ^^^^^^^^^^^
+225 |         from app.services.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
+    |
+
+PLR0915 Too many statements (55 > 50)
+   --> app/services/overmind/planning/multi_pass_arch_planner.py:224:9
+    |
+223 |     # ------------------------------------------------------------------ CORE BUILD
+224 |     def _build_plan(self, objective: str, deep_context: dict[str, Any] | None):
+    |         ^^^^^^^^^^^
+225 |         from app.services.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/multi_pass_arch_planner.py:225:9
+    |
+223 |     # ------------------------------------------------------------------ CORE BUILD
+224 |     def _build_plan(self, objective: str, deep_context: dict[str, Any] | None):
+225 |         from app.services.overmind.planning.schemas import MissionPlanSchema, MissionTaskSchema
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+226 |
+227 |         safe_objective = self._escape_braces(objective)
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/multi_pass_arch_planner.py:527:13
+    |
+525 |         candidate = None
+526 |         if allow_obj:
+527 |             import re
+    |             ^^^^^^^^^
+528 |
+529 |             m = re.search(r"FILE\s*:\s*([A-Za-z0-9_\-./]+)", objective, flags=re.IGNORECASE)
+    |
+
+ARG001 Unused function argument: `objective_length`
+  --> app/services/overmind/planning/ranking.py:34:5
+   |
+33 | def compute_rank_hint(
+34 |     objective_length: int,  # noqa: unused variable
+   |     ^^^^^^^^^^^^^^^^
+35 |     capabilities_match_ratio: float,
+36 |     reliability_score: float,
+   |
+
+ARG001 Unused function argument: `required_capabilities`
+  --> app/services/overmind/planning/ranking.py:82:5
+   |
+80 | def compute_deep_boosts(
+81 |     capabilities: set[str],
+82 |     required_capabilities: set[str],
+   |     ^^^^^^^^^^^^^^^^^^^^^
+83 |     deep_context: dict[str, Any] | None,
+84 |     deep_index_cap_boost: float,
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:68:59
+   |
+66 | @dataclass
+67 | class PlanSettings:
+68 |     MAX_TASKS: int = int(os.environ.get("PLAN_MAX_TASKS", 800))
+   |                                                           ^^^
+69 |     MAX_DESCRIPTION_LEN: int = int(os.environ.get("PLAN_MAX_DESCRIPTION_LEN", 600))
+70 |     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:69:79
+   |
+67 | class PlanSettings:
+68 |     MAX_TASKS: int = int(os.environ.get("PLAN_MAX_TASKS", 800))
+69 |     MAX_DESCRIPTION_LEN: int = int(os.environ.get("PLAN_MAX_DESCRIPTION_LEN", 600))
+   |                                                                               ^^^
+70 |     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
+71 |     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:70:75
+   |
+68 |     MAX_TASKS: int = int(os.environ.get("PLAN_MAX_TASKS", 800))
+69 |     MAX_DESCRIPTION_LEN: int = int(os.environ.get("PLAN_MAX_DESCRIPTION_LEN", 600))
+70 |     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
+   |                                                                           ^^
+71 |     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
+72 |     MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:71:77
+   |
+69 |     MAX_DESCRIPTION_LEN: int = int(os.environ.get("PLAN_MAX_DESCRIPTION_LEN", 600))
+70 |     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
+71 |     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
+   |                                                                             ^^
+72 |     MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
+73 |     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:72:90
+   |
+70 |     MAX_METADATA_KEYS: int = int(os.environ.get("PLAN_MAX_METADATA_KEYS", 30))
+71 |     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
+72 |     MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
+   |                                                                                          ^^^^^
+73 |     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
+74 |     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:73:59
+   |
+71 |     MAX_TOOL_ARGS_KEYS: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_KEYS", 40))
+72 |     MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
+73 |     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
+   |                                                           ^^
+74 |     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
+75 |     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:74:69
+   |
+72 |     MAX_SERIALIZED_TOOL_ARGS_BYTES: int = int(os.environ.get("PLAN_MAX_TOOL_ARGS_BYTES", 24000))
+73 |     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
+74 |     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
+   |                                                                     ^^
+75 |     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
+76 |     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:75:65
+   |
+73 |     MAX_DEPTH: int = int(os.environ.get("PLAN_MAX_DEPTH", 60))
+74 |     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
+75 |     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
+   |                                                                 ^
+76 |     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
+77 |     MAX_META_BYTES: int = int(os.environ.get("PLAN_MAX_META_BYTES", 64000))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:76:65
+   |
+74 |     MAX_OUT_DEGREE: int = int(os.environ.get("PLAN_MAX_OUT_DEGREE", 80))
+75 |     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
+76 |     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
+   |                                                                 ^^^^
+77 |     MAX_META_BYTES: int = int(os.environ.get("PLAN_MAX_META_BYTES", 64000))
+   |
+
+PLW1508 Invalid type for environment variable default; expected `str` or `None`
+  --> app/services/overmind/planning/schemas.py:77:69
+   |
+75 |     PRIORITY_MIN: int = int(os.environ.get("PLAN_PRIORITY_MIN", 0))
+76 |     PRIORITY_MAX: int = int(os.environ.get("PLAN_PRIORITY_MAX", 1000))
+77 |     MAX_META_BYTES: int = int(os.environ.get("PLAN_MAX_META_BYTES", 64000))
+   |                                                                     ^^^^^
+   |
+
+ARG002 Unused method argument: `tool_name`
+   --> app/services/overmind/planning/schemas.py:149:19
+    |
+148 | class ToolRegistryInterface:
+149 |     def has(self, tool_name: str) -> bool:  # pragma: no cover
+    |                   ^^^^^^^^^
+150 |         return False
+    |
+
+ARG002 Unused method argument: `tool_name`
+   --> app/services/overmind/planning/schemas.py:152:24
+    |
+150 |         return False
+151 |
+152 |     def validate(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover
+    |                        ^^^^^^^^^
+153 |         return args
+    |
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:239:34
+    |
+238 |     @field_validator("tool_name")
+239 |     def _tool_required_if_needed(cls, v, info):
+    |                                  ^^^
+240 |         ttype = info.data.get("task_type")
+241 |         if ttype in {TaskType.TOOL, TaskType.TRANSFORM, TaskType.AGGREGATE} and not v:
+    |
+help: Rename `cls` to `self`
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:246:29
+    |
+245 |     @field_validator("dependencies")
+246 |     def _no_self_dependency(cls, v, info):
+    |                             ^^^
+247 |         tid = info.data.get("task_id")
+248 |         if tid and tid in v:
+    |
+help: Rename `cls` to `self`
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:253:25
+    |
+252 |     @field_validator("metadata")
+253 |     def _metadata_limit(cls, v):
+    |                         ^^^
+254 |         if len(v) > SETTINGS.MAX_METADATA_KEYS:
+255 |             raise ValueError(f"metadata key count {len(v)} exceeds {SETTINGS.MAX_METADATA_KEYS}.")
+    |
+help: Rename `cls` to `self`
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:259:40
+    |
+258 |     @field_validator("tool_args")
+259 |     def _tool_args_limits_and_registry(cls, v, info):
+    |                                        ^^^
+260 |         if len(v) > SETTINGS.MAX_TOOL_ARGS_KEYS:
+261 |             raise ValueError(f"tool_args key count {len(v)} exceeds {SETTINGS.MAX_TOOL_ARGS_KEYS}.")
+    |
+help: Rename `cls` to `self`
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:278:20
+    |
+277 |     @field_validator("risk_level")
+278 |     def _risk_gate(cls, v, info):
+    |                    ^^^
+279 |         if v == RiskLevel.HIGH and not info.data.get("allow_high_risk"):
+280 |             raise ValueError("HIGH risk task declared without allow_high_risk=True.")
+    |
+help: Rename `cls` to `self`
+
+N805 First argument of a method should be named `self`
+   --> app/services/overmind/planning/schemas.py:284:39
+    |
+283 |     @field_validator("gate_condition")
+284 |     def _gate_condition_only_for_gate(cls, v, info):
+    |                                       ^^^
+285 |         if v and info.data.get("task_type") != TaskType.GATE:
+286 |             raise ValueError("gate_condition only allowed when task_type=GATE.")
+    |
+help: Rename `cls` to `self`
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/schemas.py:339:9
+    |
+337 |         each with CC ≤ 5 for maintainability and testability.
+338 |         """
+339 |         from .validators.orchestrator import ValidationOrchestrator
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+340 |
+341 |         orchestrator = ValidationOrchestrator(SETTINGS)
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.75` with a constant variable
+   --> app/services/overmind/planning/schemas.py:367:39
+    |
+365 |                     rp = risk_score
+366 |                     grade_score = (ld * 0.5) + (1 - abs(hg - 0.25)) * 0.3 + (1 / (1 + rp)) * 0.2
+367 |                     if grade_score >= 0.75:
+    |                                       ^^^^
+368 |                         grade = "A"
+369 |                     elif grade_score >= 0.5:
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+   --> app/services/overmind/planning/schemas.py:369:41
+    |
+367 |                     if grade_score >= 0.75:
+368 |                         grade = "A"
+369 |                     elif grade_score >= 0.5:
+    |                                         ^^^
+370 |                         grade = "B"
+371 |                     else:
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/schemas.py:457:13
+    |
+455 |     def to_networkx(self):
+456 |         try:
+457 |             import networkx as nx
+    |             ^^^^^^^^^^^^^^^^^^^^^
+458 |         except ImportError:  # pragma: no cover
+459 |             return None
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/overmind/planning/schemas.py:496:21
+    |
+494 | def _sample_policy_high_risk_limit(plan: MissionPlanSchema):
+495 |     high_count = plan.stats.get("risk_counts", {}).get("HIGH", 0) if plan.stats else 0
+496 |     if high_count > 100:
+    |                     ^^^
+497 |         raise PlanValidationError(
+498 |             [
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/overmind/planning/schemas.py:505:21
+    |
+503 |             ]
+504 |         )
+505 |     if high_count > 50:
+    |                     ^^
+506 |         plan._add_warning(
+507 |             code="POLICY_HIGH_RISK_DENSE",
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.55` with a constant variable
+   --> app/services/overmind/planning/schemas.py:521:68
+    |
+519 |         return
+520 |     # Hotspot density upper bound
+521 |     if meta.hotspot_density is not None and meta.hotspot_density > 0.55:
+    |                                                                    ^^^^
+522 |         plan._add_warning(
+523 |             code="HOTSPOT_DENSITY_HIGH",
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.15` with a constant variable
+   --> app/services/overmind/planning/schemas.py:528:68
+    |
+526 |         )
+527 |     # Layer diversity low
+528 |     if meta.layer_diversity is not None and meta.layer_diversity < 0.15:
+    |                                                                    ^^^^
+529 |         plan._add_warning(
+530 |             code="LAYER_DIVERSITY_LOW",
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.35` with a constant variable
+   --> app/services/overmind/planning/schemas.py:535:74
+    |
+533 |         )
+534 |     # Structural entropy low
+535 |     if meta.structural_entropy is not None and meta.structural_entropy < 0.35:
+    |                                                                          ^^^^
+536 |         plan._add_warning(
+537 |             code="STRUCTURAL_ENTROPY_LOW",
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/base_strategy.py:11:1
+   |
+ 9 | from typing import Protocol, runtime_checkable
+10 |
+11 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/base_strategy.py:11:1
+   |
+ 9 | from typing import Protocol, runtime_checkable
+10 |
+11 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/linear_strategy.py:11:1
+   |
+ 9 | import logging
+10 |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/linear_strategy.py:11:1
+   |
+ 9 | import logging
+10 |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/linear_strategy.py:12:1
+   |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/linear_strategy.py:12:1
+   |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/recursive_strategy.py:11:1
+   |
+ 9 | import logging
+10 |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/recursive_strategy.py:11:1
+   |
+ 9 | import logging
+10 |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/recursive_strategy.py:12:1
+   |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/strategies/recursive_strategy.py:12:1
+   |
+11 | from ..base_planner import BasePlanner, get_planner_instance
+12 | from ..schemas import MissionPlanSchema, PlanningContext
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/basic_validator.py:25:9
+   |
+23 |         Returns: List of validation issues
+24 |         """
+25 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 |         issues = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/basic_validator.py:25:9
+   |
+23 |         Returns: List of validation issues
+24 |         """
+25 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 |         issues = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/depth_validator.py:24:9
+   |
+22 |         Complexity: CC=3
+23 |         """
+24 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |
+26 |         issues = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/depth_validator.py:24:9
+   |
+22 |         Complexity: CC=3
+23 |         """
+24 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |
+26 |         issues = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/fanout_validator.py:26:9
+   |
+24 |         Complexity: CC=3
+25 |         """
+26 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |
+28 |         issues = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/fanout_validator.py:26:9
+   |
+24 |         Complexity: CC=3
+25 |         """
+26 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |
+28 |         issues = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/graph_builder.py:59:13
+   |
+58 |         if len(self.id_map) != len(self.tasks):
+59 |             from ..schemas import PlanValidationIssue
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+60 |
+61 |             self.issues.append(
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/graph_builder.py:59:13
+   |
+58 |         if len(self.id_map) != len(self.tasks):
+59 |             from ..schemas import PlanValidationIssue
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+60 |
+61 |             self.issues.append(
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/graph_builder.py:80:21
+   |
+78 |                     self.adjacency[dep].append(task.task_id)
+79 |                 else:
+80 |                     from ..schemas import PlanValidationIssue
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+81 |
+82 |                     self.issues.append(
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/graph_builder.py:80:21
+   |
+78 |                     self.adjacency[dep].append(task.task_id)
+79 |                 else:
+80 |                     from ..schemas import PlanValidationIssue
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+81 |
+82 |                     self.issues.append(
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/heuristic_validator.py:39:9
+   |
+37 |         Complexity: CC=3
+38 |         """
+39 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 |
+41 |         warnings = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:39:9
+   |
+37 |         Complexity: CC=3
+38 |         """
+39 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 |
+41 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:39:9
+   |
+37 |         Complexity: CC=3
+38 |         """
+39 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 |
+41 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+  --> app/services/overmind/planning/validators/heuristic_validator.py:46:25
+   |
+44 |         task_count = graph_data.task_count
+45 |
+46 |         if task_count > 10 and len(roots) / task_count > 0.5:
+   |                         ^^
+47 |             warnings.append(
+48 |                 PlanWarning(
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+  --> app/services/overmind/planning/validators/heuristic_validator.py:46:58
+   |
+44 |         task_count = graph_data.task_count
+45 |
+46 |         if task_count > 10 and len(roots) / task_count > 0.5:
+   |                                                          ^^^
+47 |             warnings.append(
+48 |                 PlanWarning(
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/heuristic_validator.py:63:9
+   |
+61 |         Complexity: CC=3
+62 |         """
+63 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |
+65 |         warnings = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:63:9
+   |
+61 |         Complexity: CC=3
+62 |         """
+63 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |
+65 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:63:9
+   |
+61 |         Complexity: CC=3
+62 |         """
+63 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |
+65 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/heuristic_validator.py:92:9
+   |
+90 |         Complexity: CC=3
+91 |         """
+92 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 |
+94 |         warnings = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:92:9
+   |
+90 |         Complexity: CC=3
+91 |         """
+92 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 |
+94 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/heuristic_validator.py:92:9
+   |
+90 |         Complexity: CC=3
+91 |         """
+92 |         from ..schemas import PlanWarning, WarningSeverity
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 |
+94 |         warnings = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `5` with a constant variable
+   --> app/services/overmind/planning/validators/heuristic_validator.py:98:30
+    |
+ 96 |         priorities = [t.priority for t in plan.tasks]
+ 97 |
+ 98 |         if len(priorities) > 5 and len(set(priorities)) == 1:
+    |                              ^
+ 99 |             warnings.append(
+100 |                 PlanWarning(
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/validators/heuristic_validator.py:115:9
+    |
+113 |         Complexity: CC=3
+114 |         """
+115 |         from ..schemas import PlanWarning, RiskLevel, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+116 |
+117 |         warnings = []
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:115:9
+    |
+113 |         Complexity: CC=3
+114 |         """
+115 |         from ..schemas import PlanWarning, RiskLevel, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+116 |
+117 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:115:9
+    |
+113 |         Complexity: CC=3
+114 |         """
+115 |         from ..schemas import PlanWarning, RiskLevel, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+116 |
+117 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:115:9
+    |
+113 |         Complexity: CC=3
+114 |         """
+115 |         from ..schemas import PlanWarning, RiskLevel, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+116 |
+117 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `0.3` with a constant variable
+   --> app/services/overmind/planning/validators/heuristic_validator.py:121:61
+    |
+119 |         high_risk = [t for t in plan.tasks if t.risk_level == RiskLevel.HIGH]
+120 |
+121 |         if high_risk and len(high_risk) / len(plan.tasks) > 0.3:
+    |                                                             ^^^
+122 |             warnings.append(
+123 |                 PlanWarning(
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/overmind/planning/validators/heuristic_validator.py:138:9
+    |
+136 |         Complexity: CC=3
+137 |         """
+138 |         from ..schemas import PlanWarning, TaskType, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+139 |
+140 |         warnings = []
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:138:9
+    |
+136 |         Complexity: CC=3
+137 |         """
+138 |         from ..schemas import PlanWarning, TaskType, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+139 |
+140 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:138:9
+    |
+136 |         Complexity: CC=3
+137 |         """
+138 |         from ..schemas import PlanWarning, TaskType, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+139 |
+140 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+   --> app/services/overmind/planning/validators/heuristic_validator.py:138:9
+    |
+136 |         Complexity: CC=3
+137 |         """
+138 |         from ..schemas import PlanWarning, TaskType, WarningSeverity
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+139 |
+140 |         warnings = []
+    |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/orchestrator.py:51:9
+   |
+49 |             dict with issues, warnings, stats, and graph data
+50 |         """
+51 |         from ..schemas import PlanValidationError
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+52 |
+53 |         issues = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/orchestrator.py:51:9
+   |
+49 |             dict with issues, warnings, stats, and graph data
+50 |         """
+51 |         from ..schemas import PlanValidationError
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+52 |
+53 |         issues = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+RET504 Unnecessary assignment to `stats` before `return` statement
+  --> app/services/overmind/planning/validators/stats_computer.py:42:16
+   |
+40 |         }
+41 |
+42 |         return stats
+   |                ^^^^^
+43 |
+44 |     def _compute_risk_counts(self, plan: Any) -> dict[str, int]:
+   |
+help: Remove unnecessary assignment
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/stats_computer.py:50:9
+   |
+48 |         Complexity: CC=4
+49 |         """
+50 |         from ..schemas import RiskLevel
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+51 |
+52 |         risk_counts = {
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/stats_computer.py:50:9
+   |
+48 |         Complexity: CC=4
+49 |         """
+50 |         from ..schemas import RiskLevel
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+51 |
+52 |         risk_counts = {
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/overmind/planning/validators/topology_validator.py:25:9
+   |
+23 |         Returns: (issues, metadata)
+24 |         """
+25 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 |         issues = []
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/overmind/planning/validators/topology_validator.py:25:9
+   |
+23 |         Returns: (issues, metadata)
+24 |         """
+25 |         from ..schemas import PlanValidationIssue
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 |         issues = []
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+ARG002 Unused method argument: `description`
+  --> app/services/overmind/tool_canonicalizer.py:64:37
+   |
+62 |         return 10
+63 |
+64 |     def can_handle(self, name: str, description: str) -> bool:
+   |                                     ^^^^^^^^^^^
+65 |         return self.accept_dotted and "." in name
+   |
+
+ARG002 Unused method argument: `description`
+  --> app/services/overmind/tool_canonicalizer.py:67:39
+   |
+65 |         return self.accept_dotted and "." in name
+66 |
+67 |     def canonicalize(self, name: str, description: str) -> CanonicalResult:
+   |                                       ^^^^^^^^^^^
+68 |         base, suffix = name.split(".", 1)
+69 |         notes = [f"dotted_split:{base}.{suffix}"]
+   |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:109:37
+    |
+107 |         return 20
+108 |
+109 |     def can_handle(self, name: str, description: str) -> bool:
+    |                                     ^^^^^^^^^^^
+110 |         name_lower = name.lower()
+111 |         return name_lower in self.write_aliases or name_lower in self.read_aliases
+    |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:113:39
+    |
+111 |         return name_lower in self.write_aliases or name_lower in self.read_aliases
+112 |
+113 |     def canonicalize(self, name: str, description: str) -> CanonicalResult:
+    |                                       ^^^^^^^^^^^
+114 |         name_lower = name.lower()
+    |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:134:37
+    |
+132 |         return 30
+133 |
+134 |     def can_handle(self, name: str, description: str) -> bool:
+    |                                     ^^^^^^^^^^^
+135 |         return name.lower() in self.canonical_names
+    |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:137:39
+    |
+135 |         return name.lower() in self.canonical_names
+136 |
+137 |     def canonicalize(self, name: str, description: str) -> CanonicalResult:
+    |                                       ^^^^^^^^^^^
+138 |         name_lower = name.lower()
+139 |         return CanonicalResult(name_lower, [f"direct_{name_lower}"], "DirectMatchStrategy")
+    |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:153:37
+    |
+151 |         return 40
+152 |
+153 |     def can_handle(self, name: str, description: str) -> bool:
+    |                                     ^^^^^^^^^^^
+154 |         name_lower = name.lower()
+155 |         return any(kw in name_lower for kw in self.write_keywords | self.read_keywords)
+    |
+
+ARG002 Unused method argument: `description`
+   --> app/services/overmind/tool_canonicalizer.py:157:39
+    |
+155 |         return any(kw in name_lower for kw in self.write_keywords | self.read_keywords)
+156 |
+157 |     def canonicalize(self, name: str, description: str) -> CanonicalResult:
+    |                                       ^^^^^^^^^^^
+158 |         name_lower = name.lower()
+    |
+
+PLW0603 Using the global statement to update `_default_canonicalizer` is discouraged
+   --> app/services/overmind/tool_canonicalizer.py:274:12
+    |
+272 | def get_canonicalizer() -> ToolCanonicalizer:
+273 |     """Get or create default canonicalizer instance."""
+274 |     global _default_canonicalizer
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+275 |     if _default_canonicalizer is None:
+276 |         _default_canonicalizer = ToolCanonicalizer()
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/project_context/application/context_analyzer.py:18:1
+   |
+16 | from typing import Any
+17 |
+18 | from ..domain.models import CodeStatistics, FileAnalysis, KeyComponent, ProjectStructure
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |
+20 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/project_context/application/context_analyzer.py:18:1
+   |
+16 | from typing import Any
+17 |
+18 | from ..domain.models import CodeStatistics, FileAnalysis, KeyComponent, ProjectStructure
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |
+20 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/project_context/application/context_analyzer.py:18:1
+   |
+16 | from typing import Any
+17 |
+18 | from ..domain.models import CodeStatistics, FileAnalysis, KeyComponent, ProjectStructure
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |
+20 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+  --> app/services/project_context/application/context_analyzer.py:18:1
+   |
+16 | from typing import Any
+17 |
+18 | from ..domain.models import CodeStatistics, FileAnalysis, KeyComponent, ProjectStructure
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |
+20 | logger = logging.getLogger(__name__)
+   |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/project_context/application/context_analyzer.py:157:31
+    |
+155 |         stats = self.get_code_statistics()
+156 |
+157 |         if stats.test_files > 50:
+    |                               ^^
+158 |             strengths.append(f"✅ Strong test coverage ({stats.test_files} test files)")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+   --> app/services/project_context/application/context_analyzer.py:160:33
+    |
+158 |             strengths.append(f"✅ Strong test coverage ({stats.test_files} test files)")
+159 |
+160 |         if stats.python_files > 100:
+    |                                 ^^^
+161 |             strengths.append(f"✅ Comprehensive codebase ({stats.python_files} Python files)")
+    |
+
+ARG002 Unused method argument: `search_pattern`
+   --> app/services/project_context/application/context_analyzer.py:400:34
+    |
+398 |     # =========================================================================
+399 |
+400 |     def deep_search_issues(self, search_pattern: str | None = None) -> dict[str, Any]:  # noqa: unused variable
+    |                                  ^^^^^^^^^^^^^^
+401 |         """
+402 |         🔍 SUPERHUMAN ISSUE DETECTION
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/project_context/application/context_analyzer.py:406:9
+    |
+404 |         تستخدم تقنيات متقدمة للعثور على أصغر المشاكل.
+405 |         """
+406 |         import re
+    |         ^^^^^^^^^
+407 |
+408 |         issues = {
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+   --> app/services/project_context/application/context_analyzer.py:520:38
+    |
+518 |                         line_words = set(line_lower.split())
+519 |                         overlap = len(query_words & line_words) / len(query_words)
+520 |                         if overlap > 0.5:
+    |                                      ^^^
+521 |                             results.append(
+522 |                                 {
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `50` with a constant variable
+   --> app/services/project_context/application/context_analyzer.py:577:68
+    |
+575 |                     match = re.match(method_pattern, line)
+576 |                     if match:
+577 |                         if current_method and (i - method_start) > 50:
+    |                                                                    ^^
+578 |                             smells["long_methods"].append(
+579 |                                 {
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `16` with a constant variable
+   --> app/services/project_context/application/context_analyzer.py:605:33
+    |
+603 |                         max_indent = max(max_indent, indent)
+604 |
+605 |                 if max_indent > 16:  # 4 levels * 4 spaces
+    |                                 ^^
+606 |                     smells["deep_nesting"].append(
+607 |                         {"file": rel_path, "max_indent_level": max_indent // 4}
+    |
+
+PLW0603 Using the global statement to update `_saga_orchestrator_instance` is discouraged
+   --> app/services/saga_orchestrator.py:503:12
+    |
+501 | def get_saga_orchestrator() -> SagaOrchestrator:
+502 |     """Get singleton saga orchestrator instance"""
+503 |     global _saga_orchestrator_instance
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+504 |
+505 |     if _saga_orchestrator_instance is None:
+    |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/metrics_calculator.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import MetricsCalculatorPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/metrics_calculator.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import MetricsCalculatorPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/metrics_calculator.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import MetricsCalculatorPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/metrics_calculator.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import MetricsCalculatorPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/metrics_calculator.py:9:1
+  |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
+9 | from ..domain.ports import MetricsCalculatorPort
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/predictive_analytics.py:8:1
+  |
+6 | import statistics
+7 |
+8 | from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import PredictiveAnalyticsPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/predictive_analytics.py:8:1
+  |
+6 | import statistics
+7 |
+8 | from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import PredictiveAnalyticsPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/predictive_analytics.py:8:1
+  |
+6 | import statistics
+7 |
+8 | from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import PredictiveAnalyticsPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/predictive_analytics.py:9:1
+  |
+8 | from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
+9 | from ..domain.ports import PredictiveAnalyticsPort
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+PLR2004 Magic value used in comparison, consider replacing `7` with a constant variable
+  --> app/services/security_metrics/application/predictive_analytics.py:22:38
+   |
+20 |     ) -> RiskPrediction:
+21 |         """Predict future risk using linear regression"""
+22 |         if len(historical_metrics) < 7:
+   |                                      ^
+23 |             return RiskPrediction(
+24 |                 predicted_risk=0.0,
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `0.5` with a constant variable
+  --> app/services/security_metrics/application/predictive_analytics.py:67:20
+   |
+65 |     def _determine_trend(self, slope: float) -> TrendDirection:
+66 |         """Determine trend direction from slope"""
+67 |         if slope > 0.5:
+   |                    ^^^
+68 |             return TrendDirection.DEGRADING
+69 |         if slope < -0.5:
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `-0.5` with a constant variable
+  --> app/services/security_metrics/application/predictive_analytics.py:69:20
+   |
+67 |         if slope > 0.5:
+68 |             return TrendDirection.DEGRADING
+69 |         if slope < -0.5:
+   |                    ^^^^
+70 |             return TrendDirection.IMPROVING
+71 |         return TrendDirection.STABLE
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/risk_calculator.py:8:1
+  |
+6 | from datetime import datetime
+7 |
+8 | from ..domain.models import SecurityFinding
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from ..domain.ports import RiskCalculatorPort
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/application/risk_calculator.py:9:1
+  |
+8 | from ..domain.models import SecurityFinding
+9 | from ..domain.ports import RiskCalculatorPort
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+ARG002 Unused method argument: `public_endpoints`
+  --> app/services/security_metrics/application/risk_calculator.py:68:57
+   |
+66 |         return round(risk_score, 2)
+67 |
+68 |     def calculate_exposure_factor(self, file_path: str, public_endpoints: int) -> float:
+   |                                                         ^^^^^^^^^^^^^^^^
+69 |         """Calculate file exposure factor"""
+70 |         exposure = 1.0
+   |
+
+PLW0603 Using the global statement to update `_engine_instance` is discouraged
+  --> app/services/security_metrics/facade.py:72:12
+   |
+70 | def get_security_metrics_engine() ->SecurityMetricsEngine:
+71 |     """Get singleton instance of SecurityMetricsEngine"""
+72 |     global _engine_instance
+   |            ^^^^^^^^^^^^^^^^
+73 |     if _engine_instance is None:
+74 |         _engine_instance = SecurityMetricsEngine()
+   |
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/infrastructure/in_memory_repositories.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+TID252 Prefer absolute imports over relative imports from parent modules
+ --> app/services/security_metrics/infrastructure/in_memory_repositories.py:8:1
+  |
+6 | from datetime import datetime, timedelta
+7 |
+8 | from ..domain.models import SecurityFinding, SecurityMetrics
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: Replace relative imports from parent modules with absolute imports
+
+RET504 Unnecessary assignment to `most_common` before `return` statement
+  --> app/services/serving/application/ensemble_router.py:58:16
+   |
+56 |         result_counts = Counter(str(r) for r in results)
+57 |         most_common = result_counts.most_common(1)[0][0]
+58 |         return most_common
+   |                ^^^^^^^^^^^
+59 |
+60 |     def _averaging_aggregation(self, responses: list[ModelResponse]) ->dict[
+   |
+help: Remove unnecessary assignment
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/serving/application/experiment_manager.py:178:9
+    |
+177 |           # Get metrics for both models
+178 | /         from app.services.serving.infrastructure.in_memory_repository import (
+179 | |             InMemoryMetricsRepository,
+180 | |         )
+    | |_________^
+181 |           metrics_repo = InMemoryMetricsRepository()
+    |
+
+ARG002 Unused method argument: `parameters`
+  --> app/services/serving/application/model_invoker.py:85:9
+   |
+84 |     def _invoke_model(self, model: ModelVersion, input_data: dict[str, Any],
+85 |         parameters: dict[str, Any]) ->Any:
+   |         ^^^^^^^^^^
+86 |         """
+87 |         استدعاء النموذج الفعلي
+   |
+
+ARG002 Unused method argument: `version_id`
+  --> app/services/serving/infrastructure/metrics_collector.py:38:30
+   |
+36 |             pass
+37 |
+38 |     def update_metrics(self, version_id: str, response: ModelResponse):
+   |                              ^^^^^^^^^^
+39 |         """
+40 |         تحديث مقاييس النموذج
+   |
+
+ARG002 Unused method argument: `response`
+  --> app/services/serving/infrastructure/metrics_collector.py:38:47
+   |
+36 |             pass
+37 |
+38 |     def update_metrics(self, version_id: str, response: ModelResponse):
+   |                                               ^^^^^^^^
+39 |         """
+40 |         تحديث مقاييس النموذج
+   |
+
+ARG002 Unused method argument: `model`
+  --> app/services/serving/infrastructure/metrics_collector.py:49:30
+   |
+47 |             pass
+48 |
+49 |     def calculate_cost(self, model: ModelVersion, output: Any) ->float:
+   |                              ^^^^^
+50 |         """
+51 |         حساب تكلفة الطلب
+   |
+
+ARG002 Unused method argument: `output`
+  --> app/services/serving/infrastructure/metrics_collector.py:49:51
+   |
+47 |             pass
+48 |
+49 |     def calculate_cost(self, model: ModelVersion, output: Any) ->float:
+   |                                                   ^^^^^^
+50 |         """
+51 |         حساب تكلفة الطلب
+   |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/serving/infrastructure/mock_model_invoker.py:124:9
+    |
+122 |     ) -> dict[str, any]:
+123 |         """Generate realistic mock output based on model type"""
+124 |         from app.services.serving.domain.models import ModelType
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+125 |
+126 |         if model.model_type == ModelType.LANGUAGE_MODEL:
+    |
+
+ARG002 Unused method argument: `model`
+   --> app/services/serving/infrastructure/mock_model_invoker.py:156:30
+    |
+154 |         }
+155 |
+156 |     def _estimate_cost(self, model: ModelVersion, tokens: int) -> float:
+    |                              ^^^^^
+157 |         """Estimate cost based on token usage"""
+158 |         # Simplified cost model
+    |
+
+PLW0603 Using the global statement to update `_streaming_service` is discouraged
+   --> app/services/streaming/admin_chat_streaming_service.py:348:12
+    |
+346 | def get_streaming_service() -> AdminChatStreamingService:
+347 |     """Get or create streaming service singleton"""
+348 |     global _streaming_service
+    |            ^^^^^^^^^^^^^^^^^^
+349 |     if _streaming_service is None:
+350 |         _streaming_service = AdminChatStreamingService()
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/streaming/advanced_streaming_service.py:232:9
+    |
+230 |             return
+231 |         metrics.total_messages += 1
+232 |         import json
+    |         ^^^^^^^^^^^
+233 |         message_bytes = len(json.dumps(message.payload).encode())
+234 |         partition_metrics = metrics.partition_metrics.get(message.partition, {}
+    |
+
+PLW0603 Using the global statement to update `_streaming_instance` is discouraged
+   --> app/services/streaming/advanced_streaming_service.py:284:12
+    |
+282 | def get_streaming_service() ->AdvancedStreamingService:
+283 |     """Get singleton streaming service instance"""
+284 |     global _streaming_instance
+    |            ^^^^^^^^^^^^^^^^^^^
+285 |     if _streaming_instance is None:
+286 |         with _streaming_lock:
+    |
+
+ARG002 Unused method argument: `text`
+  --> app/services/streaming/breakthrough_streaming.py:46:41
+   |
+44 |         yield "event: complete\ndata: {}\n\n"
+45 |
+46 |     async def predict_next_tokens(self, text: str) -> list[str]:
+   |                                         ^^^^
+47 |         # Placeholder for speculative decoding
+48 |         return []
+   |
+
+PLW0603 Using the global statement to update `_chaos_engineer_instance` is discouraged
+   --> app/services/system/chaos_engineering.py:208:12
+    |
+206 | def get_chaos_engineer() ->ChaosEngineer:
+207 |     """Get singleton chaos engineer instance"""
+208 |     global _chaos_engineer_instance
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+209 |     if _chaos_engineer_instance is None:
+210 |         with _chaos_lock:
+    |
+
+ARG002 Unused method argument: `table_name`
+  --> app/services/system/database_service.py:50:9
+   |
+48 |     async def get_table_data(
+49 |         self,
+50 |         table_name: str,
+   |         ^^^^^^^^^^
+51 |         page: int = 1,
+52 |         per_page: int = 50,
+   |
+
+ARG002 Unused method argument: `page`
+  --> app/services/system/database_service.py:51:9
+   |
+49 |         self,
+50 |         table_name: str,
+51 |         page: int = 1,
+   |         ^^^^
+52 |         per_page: int = 50,
+53 |         search: str | None = None,
+   |
+
+ARG002 Unused method argument: `per_page`
+  --> app/services/system/database_service.py:52:9
+   |
+50 |         table_name: str,
+51 |         page: int = 1,
+52 |         per_page: int = 50,
+   |         ^^^^^^^^
+53 |         search: str | None = None,
+54 |         order_by: str | None = None,
+   |
+
+ARG002 Unused method argument: `search`
+  --> app/services/system/database_service.py:53:9
+   |
+51 |         page: int = 1,
+52 |         per_page: int = 50,
+53 |         search: str | None = None,
+   |         ^^^^^^
+54 |         order_by: str | None = None,
+55 |         order_dir: str = "asc",  # noqa: unused variable
+   |
+
+ARG002 Unused method argument: `order_by`
+  --> app/services/system/database_service.py:54:9
+   |
+52 |         per_page: int = 50,
+53 |         search: str | None = None,
+54 |         order_by: str | None = None,
+   |         ^^^^^^^^
+55 |         order_dir: str = "asc",  # noqa: unused variable
+56 |     ) -> dict[str, Any]:
+   |
+
+ARG002 Unused method argument: `order_dir`
+  --> app/services/system/database_service.py:55:9
+   |
+53 |         search: str | None = None,
+54 |         order_by: str | None = None,
+55 |         order_dir: str = "asc",  # noqa: unused variable
+   |         ^^^^^^^^^
+56 |     ) -> dict[str, Any]:
+57 |         return {"items": [], "total": 0}
+   |
+
+ARG002 Unused method argument: `table_name`
+  --> app/services/system/database_service.py:59:32
+   |
+57 |         return {"items": [], "total": 0}
+58 |
+59 |     async def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
+   |                                ^^^^^^^^^^
+60 |         return {}
+   |
+
+ARG002 Unused method argument: `record_id`
+  --> app/services/system/database_service.py:59:49
+   |
+57 |         return {"items": [], "total": 0}
+58 |
+59 |     async def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
+   |                                                 ^^^^^^^^^
+60 |         return {}
+   |
+
+ARG002 Unused method argument: `table_name`
+  --> app/services/system/database_service.py:62:35
+   |
+60 |         return {}
+61 |
+62 |     async def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
+   |                                   ^^^^^^^^^^
+63 |         return data
+   |
+
+ARG002 Unused method argument: `table_name`
+  --> app/services/system/database_service.py:66:15
+   |
+65 |     async def update_record(
+66 |         self, table_name: str, record_id: int, data: dict[str, Any]
+   |               ^^^^^^^^^^
+67 |     ) -> dict[str, Any]:
+68 |         return data
+   |
+
+ARG002 Unused method argument: `record_id`
+  --> app/services/system/database_service.py:66:32
+   |
+65 |     async def update_record(
+66 |         self, table_name: str, record_id: int, data: dict[str, Any]
+   |                                ^^^^^^^^^
+67 |     ) -> dict[str, Any]:
+68 |         return data
+   |
+
+ARG002 Unused method argument: `table_name`
+  --> app/services/system/database_service.py:70:35
+   |
+68 |         return data
+69 |
+70 |     async def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]:
+   |                                   ^^^^^^^^^^
+71 |         return {"id": record_id}
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `4` with a constant variable
+   --> app/services/system/distributed_tracing.py:103:30
+    |
+101 |         try:
+102 |             parts = traceparent.split('-')
+103 |             if len(parts) != 4:
+    |                              ^
+104 |                 return None
+105 |             _version, trace_id, span_id, _flags = parts
+    |
+
+PLC0415 `import` should be at the top-level of a file
+   --> app/services/system/distributed_tracing.py:294:13
+    |
+292 |             return False
+293 |         if self.sampling_strategy == SamplingStrategy.PROBABILISTIC:
+294 |             import random
+    |             ^^^^^^^^^^^^^
+295 |             return random.random() < self.sampling_rate
+296 |         return True
+    |
+
+PLW0603 Using the global statement to update `_tracer_instance` is discouraged
+   --> app/services/system/distributed_tracing.py:313:12
+    |
+311 | def get_distributed_tracer() ->DistributedTracer:
+312 |     """Get singleton distributed tracer instance"""
+313 |     global _tracer_instance
+    |            ^^^^^^^^^^^^^^^^
+314 |     if _tracer_instance is None:
+315 |         with _tracer_lock:
+    |
+
+ARG002 Unused method argument: `priority`
+  --> app/services/system/resilience/bulkhead.py:60:31
+   |
+59 |     def execute(
+60 |         self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs
+   |                               ^^^^^^^^
+61 |     ) -> Any:
+62 |         """Execute function with bulkhead protection"""
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+   --> app/services/system/resilience/retry.py:192:24
+    |
+190 |                         raise RetryableError(f"Status {result.status_code} - retrying")
+191 |                     # 4xx errors should NOT be retried
+192 |                     if 400 <= result.status_code < 500:
+    |                        ^^^
+193 |                         return result
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+   --> app/services/system/resilience/retry.py:192:52
+    |
+190 |                         raise RetryableError(f"Status {result.status_code} - retrying")
+191 |                     # 4xx errors should NOT be retried
+192 |                     if 400 <= result.status_code < 500:
+    |                                                    ^^^
+193 |                         return result
+    |
+
+PLW0603 Using the global statement to update `_resilience_service` is discouraged
+   --> app/services/system/resilience/service.py:105:12
+    |
+103 | def get_resilience_service() -> DistributedResilienceService:
+104 |     """Get global resilience service instance"""
+105 |     global _resilience_service
+    |            ^^^^^^^^^^^^^^^^^^^
+106 |     if _resilience_service is None:
+107 |         _resilience_service = DistributedResilienceService()
+    |
+
+ARG001 Unused function argument: `fallback_chain`
+   --> app/services/system/resilience/service.py:115:5
+    |
+113 |     retry_config: RetryConfig | None = None,
+114 |     bulkhead_name: str | None = None,
+115 |     fallback_chain: FallbackChain | None = None,  # noqa: unused variable
+    |     ^^^^^^^^^^^^^^
+116 | ):
+117 |     """
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `100` with a constant variable
+  --> app/services/system/resilience/timeout.py:52:76
+   |
+50 |     def get_timeout_ms(self) -> int:
+51 |         """Get adaptive timeout based on P95"""
+52 |         if not self.config.adaptive_enabled or len(self.metrics.samples) < 100:
+   |                                                                            ^^^
+53 |             return self.config.request_timeout_ms
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `10` with a constant variable
+  --> app/services/system/resilience/timeout.py:61:40
+   |
+59 |     def _update_percentiles(self) -> None:
+60 |         """Update percentile calculations"""
+61 |         if len(self.metrics.samples) < 10:
+   |                                        ^^
+62 |             return
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `1000` with a constant variable
+  --> app/services/system/resilience/timeout.py:70:68
+   |
+68 |         self.metrics.p95 = sorted_samples[int(n * 0.95)]
+69 |         self.metrics.p99 = sorted_samples[int(n * 0.99)]
+70 |         self.metrics.p999 = sorted_samples[int(n * 0.999)] if n >= 1000 else self.metrics.p99
+   |                                                                    ^^^^
+71 |
+72 |     def get_stats(self) -> dict:
+   |
+
+PLW0603 Using the global statement to update `_catalog_instance` is discouraged
+   --> app/services/system/service_catalog_service.py:229:12
+    |
+227 | def get_service_catalog() ->ServiceCatalogService:
+228 |     """Get singleton service catalog instance"""
+229 |     global _catalog_instance
+    |            ^^^^^^^^^^^^^^^^^
+230 |     if _catalog_instance is None:
+231 |         with _catalog_lock:
+    |
+
+RET503 Missing explicit `return` at the end of function able to return non-`None` value
+   --> app/services/users/admin_ai_service.py:65:5
+    |
+ 64 |       # Added answer_question method which was missing and caused AttributeError
+ 65 | /     def answer_question(
+ 66 | |         self,
+ 67 | |         question: str,
+ 68 | |         user: Any,
+ 69 | |         conversation_id: str | None = None,
+ 70 | |         use_deep_context: bool = False,  # noqa: unused variable
+ 71 | |     ):
+ 72 | |         """
+ 73 | |         Answer a question using AI.
+ 74 | |
+ 75 | |         SUPERHUMAN ENHANCEMENTS:
+ 76 | |         - Better empty response handling
+ 77 | |         - Detailed error categorization
+ 78 | |         - Retry logic for transient failures
+ 79 | |         """
+ 80 | |         # The test mocks get_llm_client().chat.completions.create()
+ 81 | |         # So we need to call that.
+ 82 | |         client = self.get_llm_client()
+ 83 | |         max_retries = 2
+ 84 | |
+ 85 | |         for attempt in range(max_retries):
+ 86 | |             try:
+ 87 | |                 response = client.chat.completions.create()
+ 88 | |
+ 89 | |                 # Extract response data with validation
+ 90 | |                 content = getattr(response.choices[0].message, "content", None)
+ 91 | |                 tool_calls = getattr(response.choices[0].message, "tool_calls", None)
+ 92 | |                 usage = getattr(response, "usage", None)
+ 93 | |                 model = getattr(response, "model", "unknown")
+ 94 | |
+ 95 | |                 # Get token usage safely
+ 96 | |                 tokens_used = 0
+ 97 | |                 if usage:
+ 98 | |                     tokens_used = getattr(usage, "total_tokens", 0)
+ 99 | |
+100 | |                 # SUPERHUMAN CHECK: Handle empty responses intelligently
+101 | |                 if content is None or (isinstance(content, str) and content.strip() == ""):
+102 | |                     if tool_calls:
+103 | |                         logger.warning(
+104 | |                             f"Empty content but tool_calls present (attempt {attempt + 1}/{max_retries})"
+105 | |                         )
+106 | |                         return {
+107 | |                             "status": "error",
+108 | |                             "answer": "Tool calls detected but no content. This may indicate a model configuration issue.",
+109 | |                             "tokens_used": tokens_used,
+110 | |                             "model_used": model,
+111 | |                             "error_type": "empty_with_tools",
+112 | |                         }
+113 | |
+114 | |                     # Empty response with no tool calls
+115 | |                     if attempt < max_retries - 1:
+116 | |                         logger.warning(
+117 | |                             f"Empty response (attempt {attempt + 1}/{max_retries}). Retrying..."
+118 | |                         )
+119 | |                         continue
+120 | |
+121 | |                     logger.error(
+122 | |                         f"Empty response after {max_retries} attempts. "
+123 | |                         "This may indicate an API or model issue."
+124 | |                     )
+125 | |                     return {
+126 | |                         "status": "error",
+127 | |                         "answer": "Model did not return any content (لم يُرجع أي محتوى). Please try again or contact support.",
+128 | |                         "tokens_used": tokens_used,
+129 | |                         "model_used": model,
+130 | |                         "error_type": "empty_response",
+131 | |                     }
+132 | |
+133 | |                 # Success!
+134 | |                 logger.info(
+135 | |                     f"Successfully received response (length: {len(content)}, tokens: {tokens_used})"
+136 | |                 )
+137 | |                 return {
+138 | |                     "status": "success",
+139 | |                     "answer": content,
+140 | |                     "tokens_used": tokens_used,
+141 | |                     "model_used": model,
+142 | |                 }
+143 | |
+144 | |             except AttributeError as e:
+145 | |                 # Attribute error suggests response structure issue
+146 | |                 logger.error(f"Response structure error: {e}", exc_info=True)
+147 | |                 return {
+148 | |                     "status": "error",
+149 | |                     "answer": f"Invalid response structure from AI model: {e!s}",
+150 | |                     "error_type": "invalid_structure",
+151 | |                 }
+152 | |
+153 | |             except Exception as e:
+154 | |                 logger.error(
+155 | |                     f"Error in answer_question (attempt {attempt + 1}/{max_retries}): "
+156 | |                     f"{type(e).__name__}: {e}",
+157 | |                     exc_info=True,
+158 | |                 )
+159 | |
+160 | |                 if attempt < max_retries - 1:
+161 | |                     continue
+162 | |
+163 | |                 return {
+164 | |                     "status": "error",
+165 | |                     "answer": f"Failed to get response from AI: {type(e).__name__}: {e!s}",
+166 | |                     "error_type": type(e).__name__,
+167 | |                 }
+    | |_________________^
+    |
+help: Add explicit `return` statement
+
+ARG002 Unused method argument: `question`
+  --> app/services/users/admin_ai_service.py:67:9
+   |
+65 |     def answer_question(
+66 |         self,
+67 |         question: str,
+   |         ^^^^^^^^
+68 |         user: Any,
+69 |         conversation_id: str | None = None,
+   |
+
+ARG002 Unused method argument: `user`
+  --> app/services/users/admin_ai_service.py:68:9
+   |
+66 |         self,
+67 |         question: str,
+68 |         user: Any,
+   |         ^^^^
+69 |         conversation_id: str | None = None,
+70 |         use_deep_context: bool = False,  # noqa: unused variable
+   |
+
+ARG002 Unused method argument: `conversation_id`
+  --> app/services/users/admin_ai_service.py:69:9
+   |
+67 |         question: str,
+68 |         user: Any,
+69 |         conversation_id: str | None = None,
+   |         ^^^^^^^^^^^^^^^
+70 |         use_deep_context: bool = False,  # noqa: unused variable
+71 |     ):
+   |
+
+ARG002 Unused method argument: `use_deep_context`
+  --> app/services/users/admin_ai_service.py:70:9
+   |
+68 |         user: Any,
+69 |         conversation_id: str | None = None,
+70 |         use_deep_context: bool = False,  # noqa: unused variable
+   |         ^^^^^^^^^^^^^^^^
+71 |     ):
+72 |         """
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/users/history_service.py:32:5
+   |
+30 |         List of AdminConversation objects, or empty list on error.
+31 |     """
+32 |     from app.models import AdminConversation as Conversation
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 |
+34 |     try:
+   |
+
+PLC0415 `import` should be at the top-level of a file
+  --> app/services/users/history_service.py:63:5
+   |
+61 |         Dict with 'status' and 'message' keys indicating success or error.
+62 |     """
+63 |     from app.models import AdminMessage as Message
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |
+65 |     if rating not in ["good", "bad", "neutral"]:
+   |
+
+Found 490 errors (85 fixed, 405 remaining).
+No fixes available (86 hidden fixes can be enabled with the `--unsafe-fixes` option).

@@ -175,7 +175,7 @@ class SpeculativeDecoder:
         # Simple pattern matching
         if last_word in ["the", "a", "an"]:
             return ["next", "following", "best"]
-        elif last_word in ["is", "are", "was", "were"]:
+        if last_word in ["is", "are", "was", "were"]:
             return ["a", "the", "not"]
 
         return []

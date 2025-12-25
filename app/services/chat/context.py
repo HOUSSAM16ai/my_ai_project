@@ -1,9 +1,10 @@
 """
 Chat context for intent handlers.
 """
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
-from collections.abc import Callable, Awaitable
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Placeholder for AIClient type

@@ -321,7 +321,7 @@ class SelfHealingEngine:
         if '404' in error_str:
             return {'healed': True, 'action': 'redirect', 'suggestion':
                 'Resource not found. Suggest checking parent ID.'}
-        elif '500' in error_str:
+        if '500' in error_str:
             return {'healed': False, 'action': 'escalate', 'suggestion':
                 'Critical internal error. Escalating to Overmind.'}
         return {'healed': False, 'action': 'log_only', 'suggestion':

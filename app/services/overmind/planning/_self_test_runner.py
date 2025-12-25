@@ -64,12 +64,11 @@ def execute_with_timeout(
             # Support @staticmethod / @classmethod / instance method
             if isinstance(test_method, (classmethod, staticmethod)):
                 test_method()  # type: ignore
+            elif len(sig.parameters) == 0:
+                test_method()
             else:
-                if len(sig.parameters) == 0:
-                    test_method()
-                else:
-                    instance = planner_cls()
-                    test_method(instance)
+                instance = planner_cls()
+                test_method(instance)
             result["ok"] = True
         except Exception as e:
             result["error"] = e

@@ -25,10 +25,9 @@ class TaskDecomposer:
         """Decompose objective into tasks. CC=4"""
         if objective.complexity == ComplexityLevel.LOW:
             return self._decompose_simple(objective)
-        elif objective.complexity == ComplexityLevel.MEDIUM:
+        if objective.complexity == ComplexityLevel.MEDIUM:
             return self._decompose_medium(objective)
-        else:
-            return self._decompose_complex(objective, context)
+        return self._decompose_complex(objective, context)
 
     def _decompose_simple(self, objective: AnalyzedObjective) -> list[Task]:
         """Decompose simple objective. CC=2"""
@@ -88,10 +87,9 @@ class TaskDecomposer:
         """Calculate task dependencies. CC=2"""
         if index == 0:
             return []
-        elif index == 1:
+        if index == 1:
             return ["task_1"]
-        else:
-            return [f"task_{index}"]
+        return [f"task_{index}"]
 
     def _calculate_priority(self, index: int, total: int) -> int:
         """Calculate task priority. CC=2"""

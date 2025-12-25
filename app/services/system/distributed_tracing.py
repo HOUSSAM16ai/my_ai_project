@@ -288,9 +288,9 @@ class DistributedTracer:
         """Determine if trace should be sampled"""
         if self.sampling_strategy == SamplingStrategy.ALWAYS:
             return True
-        elif self.sampling_strategy == SamplingStrategy.NEVER:
+        if self.sampling_strategy == SamplingStrategy.NEVER:
             return False
-        elif self.sampling_strategy == SamplingStrategy.PROBABILISTIC:
+        if self.sampling_strategy == SamplingStrategy.PROBABILISTIC:
             import random
             return random.random() < self.sampling_rate
         return True

@@ -13,7 +13,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final, TypeAlias
+from typing import Any, Final
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,10 +40,10 @@ __all__ = ["RealityKernel"]
 # ==============================================================================
 
 # تعريف نوع MiddlewareSpec: (الفئة، المعاملات)
-MiddlewareSpec: TypeAlias = tuple[type[BaseHTTPMiddleware] | type[ASGIApp] | Any, dict[str, Any]]
+type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type[ASGIApp] | Any, dict[str, Any]]
 
 # تعريف نوع RouterSpec: (الموجه، البادئة)
-RouterSpec: TypeAlias = tuple[APIRouter, str]
+type RouterSpec = tuple[APIRouter, str]
 
 
 # ==============================================================================
@@ -198,20 +198,15 @@ class RealityKernel:
         app = self._create_base_app_instance()
 
         # 2. Data Acquisition (Pure)
-        if self.settings_obj:
-            middleware_stack = _get_middleware_stack(self.settings_obj)
-        else:
-            # Should not happen given logic above, but for type safety
-            middleware_stack = []
-
+        middleware_stack = (
+            _get_middleware_stack(self.settings_obj) if self.settings_obj else []
+        )
         router_registry = _get_router_registry()
 
         # 3. Transformations (Side-effects confined here)
         app = _apply_middleware(app, middleware_stack)
-        add_error_handlers(app) # Legacy helper, treated as a transformer
-        app = _mount_routers(app, router_registry)
-
-        return app
+        add_error_handlers(app)  # Legacy helper, treated as a transformer
+        return _mount_routers(app, router_registry)
 
 
     def _create_base_app_instance(self) -> FastAPI:
