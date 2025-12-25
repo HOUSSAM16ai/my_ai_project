@@ -1,7 +1,7 @@
 # app/services/overmind/orchestrator.py
 # =================================================================================================
 # OVERMIND ORCHESTRATOR – COGNITIVE CORE
-# Version: 12.0.0-super-agent
+# Version: 12.1.0-super-agent (Refactored)
 # =================================================================================================
 
 """
@@ -11,18 +11,14 @@
 تقوم بإدارة دورة حياة "المهمة" (Mission) بالكامل من خلال تنسيق العمل بين الأنظمة الفرعية:
 التخطيط (Planning) والتنفيذ (Execution).
 
-المسؤوليات الرئيسية:
-1. إدارة دورة حياة المهمة: تحويل المهمة عبر الحالات (PENDING -> RUNNING -> SUCCESS).
-2. التخطيط الاستراتيجي: استدعاء العقل الخارق (SuperBrain) لتحليل الأهداف المعقدة.
-3. تنسيق التنفيذ: مراقبة حالة المهام وجدولتها للتنفيذ.
-4. الصمود (Resilience): معالجة الأخطاء وضمان استعادة النظام عافيته.
-
-المعايير (Standards):
-- SICP: فصل المنطق (Brain) عن الحالة (State).
-- CS50 2025: صرامة النوع (Type Strictness) والتوثيق العربي.
+المعايير الرئيسية:
+- Abstraction: تفويض كامل للمنطق المعرفي إلى `SuperBrain`.
+- Strictness: عدم وجود منطق "Legacy" أو مسارات بديلة.
+- Resilience: معالجة شاملة للأخطاء على المستوى الأعلى.
 """
 
 import logging
+from typing import Any
 
 from app.models import Mission, MissionEventType, MissionStatus
 from app.services.overmind.domain.cognitive import SuperBrain
@@ -46,15 +42,15 @@ class OvermindOrchestrator:
         self,
         state_manager: MissionStateManager,
         executor: TaskExecutor,
-        brain: SuperBrain | None = None,
+        brain: SuperBrain,
     ) -> None:
         """
         تهيئة المنسق مع التبعيات اللازمة.
 
         Args:
-            state_manager (MissionStateManager): مدير حالة المهمة (Persistence).
-            executor (TaskExecutor): الذراع التنفيذي للنظام (The Hands).
-            brain (SuperBrain | None): العقل المفكر (Council of Wisdom).
+            state_manager (MissionStateManager): مدير حالة المهمة.
+            executor (TaskExecutor): الذراع التنفيذي.
+            brain (SuperBrain): العقل المفكر (Council of Wisdom).
         """
         self.state = state_manager
         self.executor = executor
@@ -74,19 +70,10 @@ class OvermindOrchestrator:
                 logger.error(f"Mission {mission_id} not found.")
                 return
 
-            if self.brain:
-                # المسار الجديد: الوكيل الخارق
-                await self._run_super_agent_loop(mission)
-            else:
-                # المسار القديم: في حال عدم وجود العقل (للتوافق)
-                logger.warning("SuperBrain not found, using legacy loop.")
-                await self.state.log_event(
-                    mission_id,
-                    MissionEventType.STATUS_CHANGE,
-                    {"warning": "SuperBrain not injected"}
-                )
+            await self._run_super_agent_loop(mission)
 
         except Exception as e:
+            # Catch-all for catastrophic failures preventing the loop from starting
             logger.exception(f"Catastrophic failure in Mission {mission_id}")
             await self.state.update_mission_status(
                 mission_id, MissionStatus.FAILED, note=f"Fatal Error: {e}"
@@ -99,7 +86,7 @@ class OvermindOrchestrator:
 
     async def _run_super_agent_loop(self, mission: Mission) -> None:
         """
-        الحلقة الذاتية المبسطة المدفوعة بمجلس الحكمة (Council of Wisdom).
+        الحلقة الذاتية المدفوعة بمجلس الحكمة (Council of Wisdom).
 
         Args:
             mission (Mission): كائن المهمة.
@@ -108,11 +95,10 @@ class OvermindOrchestrator:
             mission.id, MissionStatus.RUNNING, "Council of Wisdom Convening"
         )
 
-        async def _log_bridge(evt_type: str, payload: dict) -> None:
+        async def _log_bridge(evt_type: str, payload: dict[str, Any]) -> None:
             """
-            جسر للربط بين أحداث العقل ومدير الحالة.
+            جسر (Bridge) للربط بين أحداث العقل ومدير الحالة.
             """
-            # يمكن تخصيص نوع الحدث هنا بناءً على مخرجات العقل
             await self.state.log_event(
                 mission.id,
                 MissionEventType.STATUS_CHANGE,
@@ -120,19 +106,11 @@ class OvermindOrchestrator:
             )
 
         try:
-            # العقل يتولى مسؤولية حلقة: خطط -> صمم -> راجع -> نفذ
-            # This is 100% autonomous and self-correcting.
-            result = {}
-            if self.brain:
-                await self.state.log_event(
-                    mission.id,
-                    MissionEventType.STATUS_CHANGE,
-                    {"phase": "brain_processing_started"}
-                )
-                result = await self.brain.process_mission(
-                    mission,
-                    log_event=_log_bridge
-                )
+            # تفويض كامل للعقل (Abstraction Barrier)
+            result = await self.brain.process_mission(
+                mission,
+                log_event=_log_bridge
+            )
 
             await self.state.update_mission_status(
                 mission.id, MissionStatus.SUCCESS, "Mission Accomplished by Super Agent"
