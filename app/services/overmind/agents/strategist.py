@@ -73,12 +73,14 @@ class StrategistAgent(AgentPlanner):
         user_content = f"Objective: {objective}\nContext: {json.dumps(shared_data, default=str)}"
 
         try:
+            logger.info("Strategist: Calling AI for plan generation...")
             # استدعاء الذكاء الاصطناعي (محاكاة أو حقيقي حسب الـ AIClient)
             response_text = await self.ai.send_message(
                 system_prompt=system_prompt,
                 user_message=user_content,
                 temperature=0.2  # دقة عالية، إبداع منخفض
             )
+            logger.info(f"Strategist: Received AI response ({len(response_text)} chars)")
 
             # تنظيف الرد (في حال وجود Markdown blocks)
             cleaned_response = self._clean_json_block(response_text)
@@ -88,20 +90,52 @@ class StrategistAgent(AgentPlanner):
             if "steps" not in plan_data:
                 raise ValueError("Missing 'steps' in AI plan")
 
+            logger.info(f"Strategist: Plan created with {len(plan_data.get('steps', []))} steps")
             # تحديث الذاكرة المشتركة بالخطة
             context.update("last_plan", plan_data)
             return plan_data
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Strategist JSON parsing error: {e}")
+            logger.error(f"Raw response: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
+            
+            # التحقق من رسالة Safety Net
+            if 'response_text' in locals() and 'Unable to reach external intelligence' in response_text:
+                logger.error("AI service unavailable - Safety Net activated")
+                return {
+                    "strategy_name": "AI Service Unavailable",
+                    "reasoning": "Cannot proceed without AI service. Please configure OPENROUTER_API_KEY.",
+                    "steps": [
+                        {
+                            "name": "Configuration Required",
+                            "description": "OPENROUTER_API_KEY is not configured. Please set it in .env file.",
+                            "tool_hint": "config"
+                        }
+                    ]
+                }
+            
+            # خطة طوارئ (Fallback Plan)
+            return {
+                "strategy_name": "Emergency Fallback - JSON Error",
+                "reasoning": f"Failed to parse AI response: {e}",
+                "steps": [
+                    {
+                        "name": "Report JSON Error",
+                        "description": f"AI response was not valid JSON. Error: {e}",
+                        "tool_hint": "log"
+                    }
+                ]
+            }
         except Exception as e:
-            logger.error(f"Strategist failed to plan: {e}")
+            logger.exception(f"Strategist failed to plan: {e}")
             # خطة طوارئ (Fallback Plan)
             return {
                 "strategy_name": "Emergency Fallback",
-                "reasoning": f"Planning failed due to: {e}",
+                "reasoning": f"Planning failed due to: {type(e).__name__}: {e}",
                 "steps": [
                     {
                         "name": "Analyze Failure",
-                        "description": "Check why planning failed and report.",
+                        "description": f"Check why planning failed: {type(e).__name__}: {str(e)[:200]}",
                         "tool_hint": "unknown"
                     }
                 ]

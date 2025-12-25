@@ -12,6 +12,8 @@
 - استخدام بروتوكولات صارمة.
 """
 
+import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
@@ -20,6 +22,8 @@ from pydantic import BaseModel, Field
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.models import Mission
+
+logger = logging.getLogger(__name__)
 
 
 # بروتوكول استدعاء تسجيل الأحداث
@@ -102,16 +106,39 @@ class SuperBrain:
             if not state.plan or state.current_phase == "RE-PLANNING":
                 await safe_log("phase_start", {"phase": "PLANNING", "agent": "Strategist"})
 
-                # الاستراتيجي يضع الخطة
-                state.plan = await self.strategist.create_plan(state.objective, collab_context)
-                await safe_log("plan_created", {"plan_summary": "تم إنشاء الخطة بنجاح"})
+                # الاستراتيجي يضع الخطة (مع timeout)
+                try:
+                    state.plan = await asyncio.wait_for(
+                        self.strategist.create_plan(state.objective, collab_context),
+                        timeout=120.0  # 2 دقيقة كحد أقصى للتخطيط
+                    )
+                    await safe_log("plan_created", {"plan_summary": "تم إنشاء الخطة بنجاح"})
+                except asyncio.TimeoutError:
+                    logger.error("Strategist timeout during planning")
+                    await safe_log("plan_timeout", {"error": "Planning exceeded 120 seconds"})
+                    raise RuntimeError("Planning phase timed out")
 
-                # المدقق يراجع الخطة
+                # المدقق يراجع الخطة (مع timeout)
                 await safe_log("phase_start", {"phase": "REVIEW_PLAN", "agent": "Auditor"})
-                critique = await self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context)
+                try:
+                    critique = await asyncio.wait_for(
+                        self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
+                        timeout=60.0  # دقيقة واحدة للمراجعة
+                    )
+                except asyncio.TimeoutError:
+                    logger.error("Auditor timeout during plan review")
+                    await safe_log("review_timeout", {"error": "Plan review exceeded 60 seconds"})
+                    raise RuntimeError("Plan review phase timed out")
 
                 if not critique.get("approved"):
                     await safe_log("plan_rejected", {"critique": critique})
+                    
+                    # التحقق من أخطاء التكوين (Configuration Errors)
+                    feedback = critique.get("feedback", "")
+                    if "OPENROUTER_API_KEY" in feedback or "AI Service Unavailable" in str(state.plan.get("strategy_name", "")):
+                        logger.error("Cannot proceed: AI service configuration error")
+                        raise RuntimeError("AI service unavailable. Please configure OPENROUTER_API_KEY.")
+                    
                     # حلقة التصحيح الذاتي (Self-Correction Loop)
                     state.current_phase = "RE-PLANNING"
                     # دمج الملاحظات في السياق للمحاولة التالية
@@ -122,18 +149,42 @@ class SuperBrain:
 
             # --- المرحلة 2: التصميم (Architect) ---
             await safe_log("phase_start", {"phase": "DESIGN", "agent": "Architect"})
-            state.design = await self.architect.design_solution(state.plan, collab_context)
-            await safe_log("design_created", {"design_summary": "تم وضع التصميم التقني"})
+            try:
+                state.design = await asyncio.wait_for(
+                    self.architect.design_solution(state.plan, collab_context),
+                    timeout=120.0  # 2 دقيقة للتصميم
+                )
+                await safe_log("design_created", {"design_summary": "تم وضع التصميم التقني"})
+            except asyncio.TimeoutError:
+                logger.error("Architect timeout during design")
+                await safe_log("design_timeout", {"error": "Design exceeded 120 seconds"})
+                raise RuntimeError("Design phase timed out")
 
             # --- المرحلة 3: التنفيذ (Operator) ---
             await safe_log("phase_start", {"phase": "EXECUTION", "agent": "Operator"})
-            # المنفذ يقوم بالعمل
-            state.execution_result = await self.operator.execute_tasks(state.design, collab_context)
-            await safe_log("execution_completed", {"status": "done"})
+            try:
+                # المنفذ يقوم بالعمل (مع timeout أطول للتنفيذ)
+                state.execution_result = await asyncio.wait_for(
+                    self.operator.execute_tasks(state.design, collab_context),
+                    timeout=300.0  # 5 دقائق للتنفيذ
+                )
+                await safe_log("execution_completed", {"status": "done"})
+            except asyncio.TimeoutError:
+                logger.error("Operator timeout during execution")
+                await safe_log("execution_timeout", {"error": "Execution exceeded 300 seconds"})
+                raise RuntimeError("Execution phase timed out")
 
             # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
             await safe_log("phase_start", {"phase": "REFLECTION", "agent": "Auditor"})
-            state.critique = await self.auditor.review_work(state.execution_result, state.objective, collab_context)
+            try:
+                state.critique = await asyncio.wait_for(
+                    self.auditor.review_work(state.execution_result, state.objective, collab_context),
+                    timeout=60.0  # دقيقة واحدة للمراجعة النهائية
+                )
+            except asyncio.TimeoutError:
+                logger.error("Auditor timeout during final review")
+                await safe_log("reflection_timeout", {"error": "Final review exceeded 60 seconds"})
+                raise RuntimeError("Final review phase timed out")
 
             if state.critique.get("approved"):
                 await safe_log("mission_success", {"result": state.execution_result})
