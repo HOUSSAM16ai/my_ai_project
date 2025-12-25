@@ -41,9 +41,8 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
 
     # 2. Execution Layer
     registry = get_registry()
-    # ملاحظة: TaskExecutor يحتاج إلى registry لتنفيذ الأدوات
-    # سنفترض هنا أنه يقبله، أو سيتم تحديثه لاحقاً
-    executor = TaskExecutor(state_manager)
+    # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
+    executor = TaskExecutor(state_manager=state_manager, registry=registry)
 
     # 3. AI Gateway (Energy Engine)
     ai_client = get_ai_client()
