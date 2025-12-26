@@ -11,6 +11,7 @@
 - فصل كامل للمسؤوليات (Delegation to Orchestrator).
 """
 
+import json
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
@@ -23,11 +24,10 @@ from app.core.di import get_logger
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
     MissionResponse,
-    MissionStatusEnum,
 )
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.factory import create_overmind
-from app.models import Mission  # DB Model fallback for validation if needed
+from app.services.overmind.state import MissionStateManager
 
 logger = get_logger(__name__)
 
@@ -122,45 +122,27 @@ async def stream_mission(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         async with db_factory() as session:
-            # هنا يجب أن نستخدم آلية للاستماع للأحداث.
-            # في التصميم الحالي، سنقوم بالتحقق الدوري (Polling) أو الاشتراك في قناة (PubSub)
-            # إذا كانت مدعومة. للتبسيط حالياً، سنفترض وجود دالة `stream_events` في StateManager
-            # أو سنقوم بتنفيذ Polling ذكي.
+            state_manager = MissionStateManager(session)
 
-            # ملاحظة: هذا مجرد هيكل أولي (Placeholder implementation)
-            # التنفيذ الحقيقي يتطلب MissionEvent table polling
-            from app.models import MissionEvent
-            from sqlalchemy import select
-            import asyncio
-
-            last_event_id = 0
-
-            # تحقق أولي من وجود المهمة
-            result = await session.execute(select(Mission).where(Mission.id == mission_id))
-            if not result.scalar_one_or_none():
+            # 1. التحقق من وجود المهمة
+            mission = await state_manager.get_mission(mission_id)
+            if not mission:
                 yield "event: error\ndata: Mission not found\n\n"
                 return
 
-            while True:
-                # استرجاع الأحداث الجديدة
-                stmt = (
-                    select(MissionEvent)
-                    .where(MissionEvent.mission_id == mission_id)
-                    .where(MissionEvent.id > last_event_id)
-                    .order_by(MissionEvent.id.asc())
-                )
-                result = await session.execute(stmt)
-                events = result.scalars().all()
+            # 2. بدء المراقبة عبر مدير الحالة (Information Expert)
+            async for event in state_manager.monitor_mission_events(mission_id):
+                # Serialization: Ensure payload is a JSON string
+                try:
+                    data_str = json.dumps(event.payload_json)
+                except Exception:
+                    data_str = "{}" # Fallback
 
-                for event in events:
-                    yield f"event: {event.event_type}\ndata: {event.details_json}\n\n"
-                    last_event_id = event.id
+                # إرسال الحدث بتنسيق SSE
+                yield f"event: {event.event_type.value}\ndata: {data_str}\n\n"
 
-                    if event.event_type in ["MISSION_COMPLETED", "MISSION_FAILED"]:
-                        yield "event: close\ndata: [DONE]\n\n"
-                        return
-
-                await asyncio.sleep(1) # Polling delay
+            # 3. إشارة نهاية التدفق
+            yield "event: close\ndata: [DONE]\n\n"
 
     return StreamingResponse(
         event_generator(),
