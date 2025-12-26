@@ -11,7 +11,7 @@
 """
 
 from collections.abc import AsyncGenerator
-from typing import Final, TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

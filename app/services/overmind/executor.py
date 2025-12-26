@@ -14,8 +14,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from app.core.protocols import MissionStateManagerProtocol
 from app.models import Task
-from app.services.overmind.state import MissionStateManager
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +34,14 @@ class TaskExecutor:
     def __init__(
         self,
         *,
-        state_manager: MissionStateManager,
+        state_manager: MissionStateManagerProtocol,
         registry: ToolRegistry
     ) -> None:
         """
         تهيئة المنفذ.
 
         Args:
-            state_manager (MissionStateManager): مدير الحالة (لتسجيل النتائج الجزئية إذا لزم الأمر).
+            state_manager (MissionStateManagerProtocol): مدير الحالة (لتسجيل النتائج الجزئية إذا لزم الأمر).
             registry (ToolRegistry): سجل الأدوات المحقون (Dependency Injection).
         """
         self.state_manager = state_manager

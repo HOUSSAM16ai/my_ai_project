@@ -15,16 +15,18 @@
 - Abstraction: تفويض كامل للمنطق المعرفي إلى `SuperBrain`.
 - Strictness: عدم وجود منطق "Legacy" أو مسارات بديلة.
 - Resilience: معالجة شاملة للأخطاء على المستوى الأعلى.
+- Dependency Inversion: الاعتماد على البروتوكولات.
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
 from app.models import Mission, MissionEventType, MissionStatus
-from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.enums import OvermindMessage
-from app.services.overmind.executor import TaskExecutor
-from app.services.overmind.state import MissionStateManager
+
+if TYPE_CHECKING:
+    from app.services.overmind.domain.cognitive import SuperBrain
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +44,16 @@ class OvermindOrchestrator:
     def __init__(
         self,
         *,
-        state_manager: MissionStateManager,
-        executor: TaskExecutor,
-        brain: SuperBrain,
+        state_manager: MissionStateManagerProtocol,
+        executor: TaskExecutorProtocol,
+        brain: "SuperBrain",
     ) -> None:
         """
         تهيئة المنسق مع التبعيات اللازمة.
 
         Args:
-            state_manager (MissionStateManager): مدير حالة المهمة.
-            executor (TaskExecutor): الذراع التنفيذي.
+            state_manager (MissionStateManagerProtocol): مدير حالة المهمة.
+            executor (TaskExecutorProtocol): الذراع التنفيذي.
             brain (SuperBrain): العقل المفكر (Council of Wisdom).
         """
         self.state = state_manager
