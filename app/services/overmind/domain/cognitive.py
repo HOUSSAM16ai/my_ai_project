@@ -24,6 +24,7 @@ from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, Agen
 from app.models import Mission
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase, OvermindMessage
+from app.services.overmind.domain.exceptions import StalemateError
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ class CognitiveState(BaseModel):
     iteration_count: int = Field(0, description="عدد المحاولات الحالية")
     max_iterations: int = Field(5, description="الحد الأقصى لمحاولات التصحيح الذاتي")
     current_phase: CognitivePhase = CognitivePhase.PLANNING
+
+    # الذاكرة التجميعية (Cumulative Memory) لمنع الحلقات المفرغة
+    history_hashes: list[str] = Field(default_factory=list, description="سجل بصمات الخطط السابقة")
 
 
 class SuperBrain:
@@ -119,6 +123,8 @@ class SuperBrain:
             try:
                 # --- المرحلة 1: التخطيط (Strategist) ---
                 if not state.plan or state.current_phase == CognitivePhase.RE_PLANNING:
+
+                    # طلب خطة جديدة
                     state.plan = await self._execute_phase(
                         phase_name=CognitivePhase.PLANNING,
                         agent_name="Strategist",
@@ -126,6 +132,30 @@ class SuperBrain:
                         timeout=120.0,
                         log_func=safe_log
                     )
+
+                    # [New Feature] الكشف عن الحلقات المفرغة (Loop Detection)
+                    # يستخدم المدقق لفحص ما إذا كانت هذه الخطة تكراراً لخطط فاشلة سابقة
+                    try:
+                        if hasattr(self.auditor, "detect_loop"):
+                            self.auditor.detect_loop(state.history_hashes, state.plan)
+
+                        # إضافة بصمة الخطة الحالية للتاريخ
+                        if hasattr(self.auditor, "_compute_hash"):
+                            state.history_hashes.append(self.auditor._compute_hash(state.plan))
+
+                    except StalemateError as e:
+                        logger.warning(f"Stalemate detected: {e}")
+                        await safe_log("stalemate_detected", {"reason": str(e)})
+
+                        # استراتيجية كسر الجمود (Breakthrough Strategy)
+                        # نضيف توجيهاً صارماً للسياق لتغيير النهج
+                        collab_context.update("system_override", "Warning: You are repeating failed plans. CHANGE STRATEGY IMMEDIATELY. Do not use the same tools or logic.")
+
+                        # نرفع الخطأ لنعيد المحاولة مع التوجيه الجديد في الدورة القادمة
+                        # (أو ننتقل للمعالجة في catch block إذا أردنا)
+                        # هنا سنقوم بإعادة التخطيط فوراً
+                        state.current_phase = CognitivePhase.RE_PLANNING
+                        continue
 
                     # مراجعة الخطة (Auditor)
                     raw_critique = await self._execute_phase(
@@ -135,8 +165,7 @@ class SuperBrain:
                         timeout=60.0,
                         log_func=safe_log
                     )
-                    # تحويل النتيجة الخام إلى نموذج
-                    # نفترض أن الوكيل يعيد قاموساً حالياً، نحوله لضمان النوع
+
                     critique = CognitiveCritique(
                         approved=raw_critique.get("approved", False),
                         feedback=raw_critique.get("feedback", "No feedback provided"),
@@ -195,11 +224,16 @@ class SuperBrain:
                 state.current_phase = CognitivePhase.RE_PLANNING
                 collab_context.update("feedback_from_execution", state.critique.feedback)
 
+            except StalemateError as se:
+                # معالجة خاصة للجمود إذا وصل إلى هنا
+                logger.error(f"Stalemate trapped in main loop: {se}")
+                collab_context.update("system_override", "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT.")
+                state.current_phase = CognitivePhase.RE_PLANNING
+
             except Exception as e:
                 logger.error(f"Error in phase {state.current_phase}: {e}")
                 await safe_log(CognitiveEvent.PHASE_ERROR, {"phase": state.current_phase, "error": str(e)})
                 if isinstance(e, RuntimeError) and "timeout" in str(e).lower():
-                    # Timeouts are critical, force retry or fail
                     pass
                 # continue the loop to retry
 
@@ -236,7 +270,6 @@ class SuperBrain:
         await log_func(CognitiveEvent.PHASE_START, {"phase": phase_name, "agent": agent_name})
         try:
             result = await asyncio.wait_for(action(), timeout=timeout)
-            # Use string interpolation or enum value safely for logging
             phase_str = str(phase_name).lower()
             await log_func(f"{phase_str}_completed", {"summary": "Phase completed successfully"})
             return result
@@ -247,5 +280,4 @@ class SuperBrain:
             await log_func(f"{phase_str}_timeout", {"error": error_msg})
             raise RuntimeError(error_msg)
         except Exception as e:
-            # إعادة رمي الاستثناء ليتم التعامل معه في الحلقة الرئيسية
             raise e
