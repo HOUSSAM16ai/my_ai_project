@@ -9,12 +9,15 @@
 - استخدام `pydantic` للتحقق الصارم من البيانات.
 - توثيق "Legendary" باللغة العربية.
 - عدم الاعتماد على `typing.List` أو `Optional` واستخدام `list` و `| None`.
+- الوراثة من `RobustBaseModel` لضمان المرونة في المدخلات (Postel's Law).
 """
 
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.core.schemas import RobustBaseModel
 
 
 class MissionStatusEnum(str, Enum):
@@ -38,7 +41,7 @@ class StepStatusEnum(str, Enum):
     SKIPPED = "SKIPPED"
 
 
-class MissionStepResponse(BaseModel):
+class MissionStepResponse(RobustBaseModel):
     """
     نموذج استجابة لخطوة واحدة داخل المهمة.
     """
@@ -51,11 +54,8 @@ class MissionStepResponse(BaseModel):
     created_at: datetime = Field(..., description="توقيت إنشاء الخطوة")
     completed_at: datetime | None = Field(None, description="توقيت اكتمال الخطوة")
 
-    class Config:
-        from_attributes = True
 
-
-class MissionCreate(BaseModel):
+class MissionCreate(RobustBaseModel):
     """
     نموذج إنشاء مهمة جديدة.
     يطلب هذا النموذج الهدف الأساسي والسياق الاختياري.
@@ -67,7 +67,7 @@ class MissionCreate(BaseModel):
     priority: int = Field(1, ge=1, le=5, description="أولوية المهمة (1-5)")
 
 
-class MissionResponse(BaseModel):
+class MissionResponse(RobustBaseModel):
     """
     نموذج الاستجابة الكاملة للمهمة.
     """
@@ -81,11 +81,8 @@ class MissionResponse(BaseModel):
     )
     steps: list[MissionStepResponse] = Field(default_factory=list, description="قائمة خطوات التنفيذ")
 
-    class Config:
-        from_attributes = True
 
-
-class MissionEventResponse(BaseModel):
+class MissionEventResponse(RobustBaseModel):
     """
     نموذج لحدث واحد في تدفق البث (SSE).
     """
