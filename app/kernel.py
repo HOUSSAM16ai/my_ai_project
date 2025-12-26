@@ -162,7 +162,7 @@ class RealityKernel:
     تطبيق دوال نقية على حالة النظام، بدلاً من احتوائها على منطق إجرائي معقد.
     """
 
-    def __init__(self, settings: AppSettings | dict[str, Any]) -> None:
+    def __init__(self, *, settings: AppSettings | dict[str, Any]) -> None:
         """
         تهيئة النواة.
 

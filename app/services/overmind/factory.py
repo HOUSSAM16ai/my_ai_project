@@ -42,18 +42,22 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     # 2. Execution Layer
     registry = get_registry()
     # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
+    # Refactoring: Using keyword arguments for Static Connascence
     executor = TaskExecutor(state_manager=state_manager, registry=registry)
 
     # 3. AI Gateway (Energy Engine)
     ai_client = get_ai_client()
 
     # 4. The Council of Wisdom (الوكلاء المتخصصون)
+    # Assuming agents are still positional or simple enough, but best practice:
+    # We will verify their signatures if needed, but for now we focus on the core chain.
     strategist = StrategistAgent(ai_client)
     architect = ArchitectAgent(ai_client)
     operator = OperatorAgent(executor)
     auditor = AuditorAgent(ai_client)
 
     # 5. The SuperBrain (Cognitive Domain)
+    # Refactoring: Using keyword arguments for Static Connascence
     brain = SuperBrain(
         strategist=strategist,
         architect=architect,
@@ -62,6 +66,7 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     )
 
     # 6. The Orchestrator
+    # Refactoring: Using keyword arguments for Static Connascence
     return OvermindOrchestrator(
         state_manager=state_manager,
         executor=executor,

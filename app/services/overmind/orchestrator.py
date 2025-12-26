@@ -22,6 +22,7 @@ from typing import Any
 
 from app.models import Mission, MissionEventType, MissionStatus
 from app.services.overmind.domain.cognitive import SuperBrain
+from app.services.overmind.domain.enums import OvermindMessage
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.state import MissionStateManager
 
@@ -40,6 +41,7 @@ class OvermindOrchestrator:
 
     def __init__(
         self,
+        *,
         state_manager: MissionStateManager,
         executor: TaskExecutor,
         brain: SuperBrain,
@@ -92,7 +94,7 @@ class OvermindOrchestrator:
             mission (Mission): كائن المهمة.
         """
         await self.state.update_mission_status(
-            mission.id, MissionStatus.RUNNING, "Council of Wisdom Convening"
+            mission.id, MissionStatus.RUNNING, OvermindMessage.CONVENING_COUNCIL
         )
 
         async def _log_bridge(evt_type: str, payload: dict[str, Any]) -> None:
@@ -113,7 +115,7 @@ class OvermindOrchestrator:
             )
 
             await self.state.update_mission_status(
-                mission.id, MissionStatus.SUCCESS, "Mission Accomplished by Super Agent"
+                mission.id, MissionStatus.SUCCESS, OvermindMessage.MISSION_ACCOMPLISHED
             )
             await self.state.log_event(
                 mission.id,

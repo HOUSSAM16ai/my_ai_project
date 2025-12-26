@@ -50,7 +50,8 @@ def get_kernel():
     if _kernel_instance is None:
         # تمرير كائن الإعدادات الكامل للحفاظ على أمان الأنواع
         settings = get_settings()
-        _kernel_instance = RealityKernel(settings)
+        # Refactoring: Using keyword arguments for Static Connascence
+        _kernel_instance = RealityKernel(settings=settings)
     return _kernel_instance
 
 
