@@ -4,6 +4,7 @@
 # Version: 11.0.0-hyper-async
 # =================================================================================================
 
+from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -192,3 +193,48 @@ class MissionStateManager:
         task.finished_at = utc_now()
         task.error_text = error_text
         await self.session.flush()
+
+    async def monitor_mission_events(
+        self, mission_id: int, poll_interval: float = 1.0
+    ) -> AsyncGenerator[MissionEvent, None]:
+        """
+        Monitors a mission for new events (Streaming/Polling Pattern).
+        Yields MissionEvent objects.
+
+        Args:
+            mission_id (int): ID of the mission to monitor.
+            poll_interval (float): Time in seconds to wait between polls.
+
+        Yields:
+            MissionEvent: The next event in the stream.
+        """
+        import asyncio
+        last_event_id = 0
+
+        # We assume existence is checked by caller or we return nothing.
+
+        while True:
+            # Query for new events
+            stmt = (
+                select(MissionEvent)
+                .where(MissionEvent.mission_id == mission_id)
+                .where(MissionEvent.id > last_event_id)
+                .order_by(MissionEvent.id.asc())
+            )
+            result = await self.session.execute(stmt)
+            events = result.scalars().all()
+
+            for event in events:
+                yield event
+                last_event_id = event.id
+
+                # Check for terminal states
+                # Using CaseInsensitiveEnum, we can compare directly or by string
+                # MissionEventType values are lower case 'mission_completed' etc.
+                if event.event_type in [
+                    MissionEventType.MISSION_COMPLETED,
+                    MissionEventType.MISSION_FAILED
+                ]:
+                    return
+
+            await asyncio.sleep(poll_interval)
