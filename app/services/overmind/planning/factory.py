@@ -300,7 +300,7 @@ def batch_select_best_planners(
     # Get active records for ranking
     active_records = {
         name: rec
-        for name, rec in _GLOBAL_FACTORY._state.planner_records.items()
+        for name, rec in _GLOBAL_FACTORY.get_all_records().items()
         if name in active
         and not rec.quarantined
         and (rec.reliability_score or _GLOBAL_FACTORY._config.default_reliability)
@@ -362,7 +362,7 @@ def diagnostics_json(verbose: bool = False) -> dict[str, Any]:
     stats = planner_stats()
     active_names = _GLOBAL_FACTORY._active_planner_names()
     records = []
-    for _n, r in _GLOBAL_FACTORY._state.planner_records.items():
+    for _n, r in _GLOBAL_FACTORY.get_all_records().items():
         if not verbose and r.quarantined:
             continue
         records.append(r.to_public_dict())
@@ -410,14 +410,14 @@ def diagnostics_report(verbose: bool = False) -> str:
     if active:
         lines.append("-- Active Planners --")
         for n in active:
-            r = _GLOBAL_FACTORY._state.planner_records.get(n)
+            r = _GLOBAL_FACTORY.get_record(n)
             if r:
                 lines.append(
                     f"  * {n} rel={r.reliability_score} tier={r.tier} prod={r.production_ready} caps={len(r.capabilities)}"
                 )
     else:
         lines.append("!! WARNING: No active planners. Consider self_heal() or env override.")
-    quarantined = [r for r in _GLOBAL_FACTORY._state.planner_records.values() if r.quarantined]
+    quarantined = _GLOBAL_FACTORY.get_quarantined_records()
     if quarantined:
         lines.append("-- Quarantined --")
         for r in quarantined:
@@ -433,7 +433,7 @@ def diagnostics_report(verbose: bool = False) -> str:
         )
     if verbose:
         lines.append("\n-- Detailed Records --")
-        for n, r in sorted(_GLOBAL_FACTORY._state.planner_records.items()):
+        for n, r in sorted(_GLOBAL_FACTORY.get_all_records().items()):
             lines.append(
                 f"[{n}] mod={r.module} caps={sorted(r.capabilities)} "
                 f"rel={r.reliability_score} q={r.quarantined} prod={r.production_ready} inst={r.instantiated} ver={r.version}"
@@ -468,7 +468,7 @@ def list_quarantined() -> list[str]:
     """List quarantined planners."""
     if not _GLOBAL_FACTORY._state.discovered:
         _GLOBAL_FACTORY.discover()
-    return sorted([n for n, r in _GLOBAL_FACTORY._state.planner_records.items() if r.quarantined])
+    return sorted([r.name for r in _GLOBAL_FACTORY.get_quarantined_records()])
 
 
 # ======================================================================================
