@@ -41,7 +41,11 @@ class AuditorAgent(AgentReflector):
         """
         مراجعة نتائج العمل ومقارنتها بالهدف الأصلي.
         """
-        logger.info("Auditor is reviewing the work...")
+        logger.info(f"Auditor is reviewing the work for objective: {original_objective[:50]}...")
+
+        # استخدام السياق (Context) للتحقق من التاريخ إذا لزم الأمر
+        if context.get("last_plan"):
+            logger.debug("Auditor accessed previous plan from context.")
 
         # التحقق السريع من الأخطاء الواضحة
         result_str = str(result).lower()

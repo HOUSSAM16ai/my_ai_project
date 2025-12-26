@@ -236,7 +236,7 @@ class StructuralCodeIntelligence:
         critical_hotspots = [m.relative_path for m in all_metrics[:20]]
         high_hotspots = [m.relative_path for m in all_metrics[20:40]]
 
-        analysis = ProjectAnalysis(
+        return ProjectAnalysis(
             timestamp=datetime.now().isoformat(),
             total_files=len(all_metrics),
             total_lines=total_lines,
@@ -250,4 +250,3 @@ class StructuralCodeIntelligence:
             files=all_metrics,
         )
 
-        return analysis
