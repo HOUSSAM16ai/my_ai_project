@@ -1,7 +1,7 @@
 # app/services/overmind/state.py
 # =================================================================================================
 # OVERMIND STATE MANAGER – NEURAL MEMORY SUBSYSTEM
-# Version: 11.0.0-hyper-async
+# Version: 11.2.0-pacelc-gapless
 # =================================================================================================
 
 from collections.abc import AsyncGenerator
@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.event_bus import event_bus
 from app.models import (
     Mission,
     MissionEvent,
@@ -32,6 +33,8 @@ class MissionStateManager:
     """
     Manages the persistent state of Missions and Tasks within the Reality Kernel.
     Uses Async I/O for maximum throughput and scalability.
+    Implements PACELC optimizations: Using EventBus for Low Latency (L) updates
+    while maintaining Database Consistency (C).
     """
 
     def __init__(self, session: AsyncSession):
@@ -93,8 +96,11 @@ class MissionStateManager:
             created_at=utc_now(),
         )
         self.session.add(event)
-        # Commit immediately so the poller sees the event
+        # Commit immediately for Persistence (Consistency)
         await self.session.commit()
+
+        # Broadcast immediately for Streaming (Latency)
+        await event_bus.publish(f"mission:{mission_id}", event)
 
     async def persist_plan(
         self,
@@ -198,43 +204,69 @@ class MissionStateManager:
         self, mission_id: int, poll_interval: float = 1.0
     ) -> AsyncGenerator[MissionEvent, None]:
         """
-        Monitors a mission for new events (Streaming/Polling Pattern).
-        Yields MissionEvent objects.
+        Monitors a mission for new events using PACELC Optimization.
+        Prioritizes EventBus for Low Latency (L), falling back to DB Polling
+        only for recovery/initial load (Consistency).
+
+        Gap-Free Strategy:
+        1. Subscribe to EventBus (buffer events).
+        2. Query Database (get past events).
+        3. Yield DB events.
+        4. Yield Buffered events (deduplicate).
+        5. Continue Streaming from Bus.
 
         Args:
             mission_id (int): ID of the mission to monitor.
-            poll_interval (float): Time in seconds to wait between polls.
+            poll_interval (float): Unused in EventBus mode.
 
         Yields:
             MissionEvent: The next event in the stream.
         """
-        import asyncio
         last_event_id = 0
+        channel = f"mission:{mission_id}"
 
-        # We assume existence is checked by caller or we return nothing.
+        # 1. Subscribe FIRST to avoid Race Condition (Gap-Free)
+        queue = event_bus.subscribe_queue(channel)
 
-        while True:
-            # Query for new events
+        try:
+            # 2. Catch-up from Database (Consistency)
             stmt = (
                 select(MissionEvent)
                 .where(MissionEvent.mission_id == mission_id)
-                .where(MissionEvent.id > last_event_id)
                 .order_by(MissionEvent.id.asc())
             )
             result = await self.session.execute(stmt)
-            events = result.scalars().all()
+            db_events = result.scalars().all()
 
-            for event in events:
+            # Yield DB events
+            for event in db_events:
                 yield event
-                last_event_id = event.id
-
-                # Check for terminal states
-                # Using CaseInsensitiveEnum, we can compare directly or by string
-                # MissionEventType values are lower case 'mission_completed' etc.
-                if event.event_type in [
-                    MissionEventType.MISSION_COMPLETED,
-                    MissionEventType.MISSION_FAILED
-                ]:
+                if event.id:
+                    last_event_id = max(last_event_id, event.id)
+                if self._is_terminal_event(event):
                     return
 
-            await asyncio.sleep(poll_interval)
+            # 3. Process Buffered Queue & Live Stream (Latency)
+            while True:
+                event = await queue.get()
+
+                # Deduplicate: Skip if we already saw this ID from DB
+                if event.id and event.id <= last_event_id:
+                    continue
+
+                yield event
+                if event.id:
+                    last_event_id = max(last_event_id, event.id)
+
+                if self._is_terminal_event(event):
+                    return
+
+        finally:
+            event_bus.unsubscribe_queue(channel, queue)
+
+    def _is_terminal_event(self, event: MissionEvent) -> bool:
+        """Helper to check if an event concludes the mission."""
+        return event.event_type in [
+            MissionEventType.MISSION_COMPLETED,
+            MissionEventType.MISSION_FAILED,
+        ]
