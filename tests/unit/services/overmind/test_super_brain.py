@@ -5,6 +5,7 @@ from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.models import Mission
 from app.core.protocols import AgentPlanner, AgentArchitect, AgentExecutor, AgentReflector
+from app.services.overmind.domain.enums import CognitivePhase
 
 @pytest.mark.asyncio
 async def test_super_brain_loop_success():
@@ -87,6 +88,11 @@ async def test_super_brain_self_correction():
     # 3. Verify
     # Strategist should be called twice (Initial + Re-planning)
     assert mock_strategist.create_plan.call_count == 2
+
+    # Check if context carried the feedback
+    # With generic call args inspection it might be tricky, but let's verify logic flow
+    # Since we use * args in SuperBrain.__init__, the instantiation above is correct (kwargs used).
+    # But wait, did I use kwargs in test instantiation? Yes: `strategist=mock_strategist...`
 
     # Check if context carried the feedback
     call_args_2 = mock_strategist.create_plan.call_args_list[1]

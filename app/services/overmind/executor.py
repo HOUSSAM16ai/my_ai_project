@@ -33,6 +33,7 @@ class TaskExecutor:
 
     def __init__(
         self,
+        *,
         state_manager: MissionStateManager,
         registry: ToolRegistry
     ) -> None:
