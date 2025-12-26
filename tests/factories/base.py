@@ -6,13 +6,12 @@ class UserFactory(factory.Factory):
     class Meta:
         model = User
 
-    email = factory.Sequence(lambda n: f"user{n}@example.com")
-    full_name = factory.Faker("name")
+    email = factory.Faker('email')
+    full_name = factory.Faker('name')
     is_admin = False
 
 class MissionFactory(factory.Factory):
     class Meta:
         model = Mission
 
-    objective = factory.Faker("sentence")
-    # Mission does not have 'name' or 'goal'. 'objective' is the correct field.
+    objective = factory.Faker('sentence')

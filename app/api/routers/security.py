@@ -5,23 +5,29 @@ Refactored to use 'AuthBoundaryService' for Separation of Concerns.
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, field_validator
+from pydantic import Field, field_validator
 
 from app.core.database import AsyncSession, get_db
+from app.core.schemas import RobustBaseModel
 from app.services.boundaries.auth_boundary_service import AuthBoundaryService
 
 router = APIRouter(tags=["Security"])
 logger = logging.getLogger(__name__)
 
 
-class TokenRequest(BaseModel):
+# ==============================================================================
+# DTOs (Data Transfer Objects) - Request Models
+# ==============================================================================
+
+class TokenRequest(RobustBaseModel):
     user_id: int | None = None
     scopes: list[str] = []
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(RobustBaseModel):
     email: str
     password: str
 
@@ -31,7 +37,7 @@ class LoginRequest(BaseModel):
         return v.lower().strip()
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(RobustBaseModel):
     full_name: str
     email: str
     password: str
@@ -42,21 +48,68 @@ class RegisterRequest(BaseModel):
         return v.lower().strip()
 
 
-class TokenVerifyRequest(BaseModel):
+class TokenVerifyRequest(RobustBaseModel):
     token: str | None = None
 
+
+# ==============================================================================
+# Response Models (Strict Output)
+# ==============================================================================
+
+class UserResponse(RobustBaseModel):
+    id: int
+    name: str = Field(..., alias="full_name")
+    email: str
+    is_admin: bool = False
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def map_full_name(cls, v: Any, info: Any) -> str:
+        return v
+
+
+class AuthResponse(RobustBaseModel):
+    access_token: str
+    token_type: str = "Bearer"
+    user: UserResponse  # Strict: Uses defined UserResponse instead of dict
+    status: str = "success"
+
+
+class RegisterResponse(RobustBaseModel):
+    status: str = "success"
+    message: str
+    user: UserResponse # Strict: Uses defined UserResponse instead of dict
+
+
+class HealthResponse(RobustBaseModel):
+    status: str
+    data: dict[str, Any]
+
+
+class TokenVerifyResponse(RobustBaseModel):
+    status: str
+    data: dict[str, Any] # Flexible data container to avoid validation errors on mixed types
+
+
+# ==============================================================================
+# Dependencies
+# ==============================================================================
 
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthBoundaryService:
     """Dependency to get the Auth Boundary Service."""
     return AuthBoundaryService(db)
 
 
-@router.get("/health")
+# ==============================================================================
+# Endpoints
+# ==============================================================================
+
+@router.get("/health", response_model=HealthResponse)
 async def health_check():
     return {"status": "success", "data": {"status": "healthy", "features": ["jwt", "argon2"]}}
 
 
-@router.post("/register", summary="Register a New User")
+@router.post("/register", summary="Register a New User", response_model=RegisterResponse)
 async def register(
     register_data: RegisterRequest,
     service: AuthBoundaryService = Depends(get_auth_service),
@@ -65,14 +118,17 @@ async def register(
     Register a new user in the system.
     Default role is 'user'.
     """
-    return await service.register_user(
+    result = await service.register_user(
         full_name=register_data.full_name,
         email=register_data.email,
         password=register_data.password,
     )
+    # Ensure mapping handles potential alias mismatch if service returns dict with 'full_name'
+    # The Pydantic model UserResponse handles alias='full_name'
+    return result
 
 
-@router.post("/login", summary="Authenticate User and Get Token")
+@router.post("/login", summary="Authenticate User and Get Token", response_model=AuthResponse)
 async def login(
     login_data: LoginRequest,
     request: Request,
@@ -83,11 +139,12 @@ async def login(
     Supports Admin and Regular User Access.
     Protected by Chrono-Kinetic Defense Shield.
     """
-    return await service.authenticate_user(
+    result = await service.authenticate_user(
         email=login_data.email,
         password=login_data.password,
         request=request,
     )
+    return result
 
 
 @router.post("/token/generate")
@@ -102,7 +159,7 @@ async def generate_token(request: TokenRequest):
     }
 
 
-@router.post("/token/verify")
+@router.post("/token/verify", response_model=TokenVerifyResponse)
 async def verify_token(request: TokenVerifyRequest):
     if not request.token:
         raise HTTPException(status_code=400, detail="token required")
@@ -114,7 +171,7 @@ def get_current_user_token(request: Request) -> str:
     return AuthBoundaryService.extract_token_from_request(request)
 
 
-@router.get("/user/me", summary="Get Current User")
+@router.get("/user/me", summary="Get Current User", response_model=UserResponse)
 async def get_current_user_endpoint(
     request: Request,
     service: AuthBoundaryService = Depends(get_auth_service),
