@@ -4,7 +4,8 @@ Enumerations for the Overmind Domain.
 Addresses Meaning Connascence by centralizing string literals.
 """
 
-from enum import Enum, StrEnum
+from enum import StrEnum
+
 
 class CognitivePhase(StrEnum):
     """Phases of the SuperBrain cognitive loop."""

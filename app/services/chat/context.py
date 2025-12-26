@@ -3,12 +3,12 @@ Chat context for intent handlers.
 """
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Placeholder for AIClient type
-type AIClient = Any
+if TYPE_CHECKING:
+    from app.core.protocols import AIClientProtocol
 
 @dataclass
 class ChatContext:
@@ -16,7 +16,7 @@ class ChatContext:
     question: str
     user_id: int
     conversation_id: int
-    ai_client: AIClient
+    ai_client: "AIClientProtocol"
     history_messages: list[dict[str, str]]
     intent: str
     confidence: float
