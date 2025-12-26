@@ -35,6 +35,15 @@ class EventLogger(Protocol):
     async def __call__(self, event_type: str, payload: dict[str, Any]) -> None: ...
 
 
+class CognitiveCritique(BaseModel):
+    """
+    نموذج نتيجة المراجعة والتدقيق.
+    """
+    approved: bool = Field(..., description="هل تمت الموافقة على العمل؟")
+    feedback: str = Field(..., description="ملاحظات المراجعة أو أسباب الرفض")
+    score: float = Field(0.0, description="درجة الجودة من 0 إلى 1")
+
+
 class CognitiveState(BaseModel):
     """
     يحتفظ بالحالة المعرفية الحالية للمهمة.
@@ -44,7 +53,7 @@ class CognitiveState(BaseModel):
     plan: dict[str, Any] | None = None
     design: dict[str, Any] | None = None
     execution_result: dict[str, Any] | None = None
-    critique: dict[str, Any] | None = None
+    critique: CognitiveCritique | None = None
     iteration_count: int = Field(0, description="عدد المحاولات الحالية")
     max_iterations: int = Field(5, description="الحد الأقصى لمحاولات التصحيح الذاتي")
     current_phase: CognitivePhase = CognitivePhase.PLANNING
@@ -119,26 +128,32 @@ class SuperBrain:
                     )
 
                     # مراجعة الخطة (Auditor)
-                    critique = await self._execute_phase(
+                    raw_critique = await self._execute_phase(
                         phase_name=CognitivePhase.REVIEW_PLAN,
                         agent_name="Auditor",
                         action=lambda: self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
                         timeout=60.0,
                         log_func=safe_log
                     )
+                    # تحويل النتيجة الخام إلى نموذج
+                    # نفترض أن الوكيل يعيد قاموساً حالياً، نحوله لضمان النوع
+                    critique = CognitiveCritique(
+                        approved=raw_critique.get("approved", False),
+                        feedback=raw_critique.get("feedback", "No feedback provided"),
+                        score=raw_critique.get("score", 0.0)
+                    )
 
-                    if not critique.get("approved"):
-                        await safe_log(CognitiveEvent.PLAN_REJECTED, {"critique": critique})
+                    if not critique.approved:
+                        await safe_log(CognitiveEvent.PLAN_REJECTED, {"critique": critique.model_dump()})
                         # التحقق من أخطاء التكوين
-                        feedback = critique.get("feedback", "")
-                        if "OPENROUTER_API_KEY" in feedback:
+                        if "OPENROUTER_API_KEY" in critique.feedback:
                             raise RuntimeError(OvermindMessage.AI_SERVICE_UNAVAILABLE)
 
                         state.current_phase = CognitivePhase.RE_PLANNING
-                        collab_context.update("feedback_from_previous_attempt", feedback)
+                        collab_context.update("feedback_from_previous_attempt", critique.feedback)
                         continue # إعادة المحاولة
 
-                    await safe_log(CognitiveEvent.PLAN_APPROVED, {"critique": critique})
+                    await safe_log(CognitiveEvent.PLAN_APPROVED, {"critique": critique.model_dump()})
 
                 # --- المرحلة 2: التصميم (Architect) ---
                 state.design = await self._execute_phase(
@@ -159,21 +174,26 @@ class SuperBrain:
                 )
 
                 # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
-                state.critique = await self._execute_phase(
+                raw_final_critique = await self._execute_phase(
                     phase_name=CognitivePhase.REFLECTION,
                     agent_name="Auditor",
                     action=lambda: self.auditor.review_work(state.execution_result, state.objective, collab_context),
                     timeout=60.0,
                     log_func=safe_log
                 )
+                state.critique = CognitiveCritique(
+                    approved=raw_final_critique.get("approved", False),
+                    feedback=raw_final_critique.get("feedback", "No feedback provided"),
+                    score=raw_final_critique.get("score", 0.0)
+                )
 
-                if state.critique.get("approved"):
+                if state.critique.approved:
                     await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result})
                     return state.execution_result or {}
 
-                await safe_log(CognitiveEvent.MISSION_CRITIQUE_FAILED, {"critique": state.critique})
+                await safe_log(CognitiveEvent.MISSION_CRITIQUE_FAILED, {"critique": state.critique.model_dump()})
                 state.current_phase = CognitivePhase.RE_PLANNING
-                collab_context.update("feedback_from_execution", state.critique.get("feedback"))
+                collab_context.update("feedback_from_execution", state.critique.feedback)
 
             except Exception as e:
                 logger.error(f"Error in phase {state.current_phase}: {e}")

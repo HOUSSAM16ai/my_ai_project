@@ -144,6 +144,21 @@ class PlannerFactory:
         """Get list of active planner names."""
         return [name for name, rec in self._state.planner_records.items() if not rec.quarantined]
 
+    def get_all_records(self) -> dict[str, PlannerRecord]:
+        """
+        Get all planner records.
+        Returns a copy to prevent external modification of state.
+        """
+        return self._state.planner_records.copy()
+
+    def get_record(self, name: str) -> PlannerRecord | None:
+        """Get a specific planner record by name."""
+        return self._state.planner_records.get(name)
+
+    def get_quarantined_records(self) -> list[PlannerRecord]:
+        """Get list of quarantined planner records."""
+        return [r for r in self._state.planner_records.values() if r.quarantined]
+
     def get_planner(self, name: str, auto_instantiate: bool = True) -> BasePlanner:
         """
         Direct retrieval of a specific planner.
