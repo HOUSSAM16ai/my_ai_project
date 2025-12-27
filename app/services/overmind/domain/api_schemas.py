@@ -15,44 +15,51 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import Field
+from pydantic import Field, AliasChoices
 
 from app.core.schemas import RobustBaseModel
 
 
 class MissionStatusEnum(str, Enum):
     """حالات المهمة الممكنة."""
-    PENDING = "PENDING"
-    PLANNING = "PLANNING"
-    PLANNED = "PLANNED"
-    RUNNING = "RUNNING"
-    PAUSED = "PAUSED"
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
-    CANCELLED = "CANCELLED"
+    # Ensure values match app.models.MissionStatus (lowercase)
+    PENDING = "pending"
+    PLANNING = "planning"
+    PLANNED = "planned"
+    RUNNING = "running"
+    PAUSED = "paused" # Not in DB yet? DB has ADAPTING.
+    ADAPTING = "adapting"
+    SUCCESS = "success"
+    FAILED = "failed"
+    CANCELED = "canceled"
+    # Backwards compatibility if needed, or to handle mixed case
+    # Pydantic 2 Enums are strict by default on value
 
 
 class StepStatusEnum(str, Enum):
     """حالات خطوة التنفيذ."""
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    SKIPPED = "SKIPPED"
+    # Aligned with app.models.TaskStatus
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "success" # DB uses success
+    SUCCESS = "success"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+    RETRY = "retry"
 
 
 class MissionStepResponse(RobustBaseModel):
     """
-    نموذج استجابة لخطوة واحدة داخل المهمة.
+    نموذج استجابة لخطوة واحدة داخل المهمة (Task).
     """
     id: int | None = Field(None, description="معرف الخطوة")
-    name: str = Field(..., description="اسم الخطوة أو الإجراء")
+    name: str = Field(..., validation_alias=AliasChoices("task_key", "name"), description="اسم الخطوة أو الإجراء")
     description: str | None = Field(None, description="وصف تفصيلي للخطوة")
     status: StepStatusEnum = Field(StepStatusEnum.PENDING, description="حالة الخطوة الحالية")
-    result: str | None = Field(None, description="نتيجة تنفيذ الخطوة")
-    tool_used: str | None = Field(None, description="اسم الأداة المستخدمة إن وجد")
+    result: str | None = Field(None, validation_alias=AliasChoices("result_text", "result"), description="نتيجة تنفيذ الخطوة")
+    tool_used: str | None = Field(None, validation_alias=AliasChoices("tool_name", "tool_used"), description="اسم الأداة المستخدمة إن وجد")
     created_at: datetime = Field(..., description="توقيت إنشاء الخطوة")
-    completed_at: datetime | None = Field(None, description="توقيت اكتمال الخطوة")
+    completed_at: datetime | None = Field(None, validation_alias=AliasChoices("finished_at", "completed_at"), description="توقيت اكتمال الخطوة")
 
 
 class MissionCreate(RobustBaseModel):
@@ -79,7 +86,13 @@ class MissionResponse(RobustBaseModel):
     result: dict[str, str | int | float | bool | None] | None = Field(
         None, description="النتيجة النهائية للمهمة"
     )
-    steps: list[MissionStepResponse] = Field(default_factory=list, description="قائمة خطوات التنفيذ")
+    # Using 'tasks' from DB model, mapped to 'steps' in API if we want to keep API consistent,
+    # or just rename to 'tasks'. Let's use validation_alias to accept 'tasks' from DB object.
+    steps: list[MissionStepResponse] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("tasks", "steps"),
+        description="قائمة خطوات التنفيذ"
+    )
 
 
 class MissionEventResponse(RobustBaseModel):
