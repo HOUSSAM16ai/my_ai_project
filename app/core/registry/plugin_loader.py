@@ -10,7 +10,7 @@ Load plugins with dependency resolution
 import logging
 from typing import Any
 
-from app.core.interfaces import IPlugin
+from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry
 
 logger = logging.getLogger(__name__)

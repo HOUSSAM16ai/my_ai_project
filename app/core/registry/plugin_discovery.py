@@ -12,7 +12,7 @@ import logging
 import pkgutil
 from pathlib import Path
 
-from app.core.interfaces import IPlugin
+from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry
 
 logger = logging.getLogger(__name__)

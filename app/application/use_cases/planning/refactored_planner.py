@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from app.core.interfaces.planner_interface import PlannerInterface
+from app.core.protocols import PlannerProtocol as PlannerInterface
 from app.infrastructure.patterns import EventBus, get_event_bus
 
 

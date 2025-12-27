@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
-from app.core.interfaces.strategy_interface import StrategyInterface
+from app.core.protocols import StrategyProtocol as StrategyInterface
 
 
 @dataclass
