@@ -8,7 +8,7 @@ Central registration and management of all plugins
 مبدأ البساطة: Singleton Pattern بسيط وواضح
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from app.core.protocols import PluginProtocol as IPlugin
 
@@ -21,7 +21,7 @@ class PluginRegistry:
     Thread-safe singleton for managing all plugins.
     """
 
-    _instance: Optional['PluginRegistry'] = None
+    _instance: 'PluginRegistry' | None = None
     _initialized: bool = False
 
     def __new__(cls):
