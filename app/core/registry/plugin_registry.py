@@ -10,7 +10,7 @@ Central registration and management of all plugins
 
 from typing import Any, Optional
 
-from app.core.interfaces import IPlugin
+from app.core.protocols import PluginProtocol as IPlugin
 
 
 class PluginRegistry:

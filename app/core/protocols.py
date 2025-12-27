@@ -21,28 +21,141 @@ from app.models import Mission, MissionEvent, MissionEventType, MissionStatus, T
 
 
 @runtime_checkable
-class BaseService(Protocol):
+class LifecycleProtocol(Protocol):
     """
-    بروتوكول أساسي لجميع خدمات التطبيق.
-    
-    يحدد الواجهة الأساسية التي يجب أن تلتزم بها جميع الخدمات.
+    بروتوكول دورة الحياة (Lifecycle Protocol).
     """
-    pass
+    async def initialize(self) -> None:
+        """Initialize the component"""
+        ...
+
+    async def shutdown(self) -> None:
+        """Shutdown the component"""
+        ...
+
 
 @runtime_checkable
-class RepositoryProtocol(Protocol):
+class BaseService(LifecycleProtocol, Protocol):
+    """
+    بروتوكول أساسي لجميع خدمات التطبيق.
+
+    يحدد الواجهة الأساسية التي يجب أن تلتزم بها جميع الخدمات.
+    """
+    @property
+    def name(self) -> str:
+        """Service unique name"""
+        ...
+
+    @property
+    def version(self) -> str:
+        """Service version"""
+        ...
+
+    async def health_check(self) -> dict[str, Any]:
+        """Check service health"""
+        ...
+
+
+@runtime_checkable
+class PluginProtocol(BaseService, Protocol):
+    """
+    بروتوكول الإضافة (Plugin Protocol).
+
+    يحل محل IPlugin القديم.
+    """
+    @property
+    def plugin_type(self) -> str:
+        """Type of plugin (service, processor, etc.)"""
+        ...
+
+    @property
+    def dependencies(self) -> list[str]:
+        """List of required dependencies"""
+        ...
+
+    def configure(self, config: dict[str, Any]) -> None:
+        """Configure the plugin"""
+        ...
+
+
+@runtime_checkable
+class PlannerProtocol(Protocol):
+    """
+    بروتوكول التخطيط (Planner Protocol).
+
+    يحل محل PlannerInterface القديم.
+    """
+    def generate_plan(
+        self,
+        objective: str,
+        context: dict[str, Any] | None = None,
+        max_tasks: int | None = None,
+    ) -> dict[str, Any]:
+        """Generate a plan for the given objective."""
+        ...
+
+    def validate_plan(self, plan: dict[str, Any]) -> bool:
+        """Validate a generated plan."""
+        ...
+
+    def get_capabilities(self) -> set[str]:
+        """Get planner capabilities."""
+        ...
+
+
+@runtime_checkable
+class StrategyProtocol[TInput, TOutput](Protocol):
+    """
+    بروتوكول الاستراتيجية (Strategy Protocol).
+
+    يحل محل StrategyInterface القديم.
+    """
+    def execute(self, input_data: TInput) -> TOutput:
+        """Execute strategy algorithm."""
+        ...
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        ...
+
+    def is_applicable(self, context: dict[str, Any]) -> bool:
+        """Check if strategy is applicable in given context."""
+        ...
+
+
+@runtime_checkable
+class RepositoryProtocol[T](Protocol):
     """
     بروتوكول أساسي للمستودعات (Repositories).
-    
+
     يحدد الواجهة الأساسية لعمليات الوصول للبيانات (Data Access Layer).
+    يحل محل RepositoryInterface القديم.
     """
-    pass
+    def save(self, entity: T) -> T:
+        """Save an entity."""
+        ...
+
+    def find_by_id(self, entity_id: str) -> T | None:
+        """Find entity by ID."""
+        ...
+
+    def find_all(self, filters: dict[str, Any] | None = None) -> list[T]:
+        """Find all entities matching filters."""
+        ...
+
+    def delete(self, entity_id: str) -> bool:
+        """Delete entity by ID."""
+        ...
+
+    def update(self, entity_id: str, updates: dict[str, Any]) -> T | None:
+        """Update entity fields."""
+        ...
 
 @runtime_checkable
 class CollaborationContext(Protocol):
     """
     بروتوكول سياق التعاون بين الوكلاء (Collaboration Context).
-    
+
     يوفر آلية آمنة للخيوط (thread-safe) لتخزين واسترجاع السياق المشترك
     بين الوكلاء المختلفين في النظام.
     """
@@ -113,7 +226,7 @@ class MissionStateManagerProtocol(Protocol):
     ) -> None:
         """تسجيل حدث للمهمة."""
         ...
-        
+
     async def mark_task_running(self, task_id: int) -> None:
         """تحديث حالة المهمة إلى قيد التشغيل."""
         ...
