@@ -7,8 +7,11 @@ Safe, structural-aware file manipulation.
 import gzip
 import os
 
-from .core import CANON_READ, CANON_WRITE, CANON_WRITE_IF_CHANGED, tool
+from .core import tool
 from .definitions import (
+    CANON_READ,
+    CANON_WRITE,
+    CANON_WRITE_IF_CHANGED,
     AUTO_CREATE_ALLOWED_EXTS,
     AUTO_CREATE_DEFAULT_CONTENT,
     AUTO_CREATE_ENABLED,
@@ -534,7 +537,7 @@ def read_bulk_files(
         merged = "\n\n".join(
             f"# {os.path.basename(o['path'])}\n{o.get('content', '')}"
             for o in out
-            if o.get("content")
+            if o.get('content')
         )
         return ToolResult(
             ok=True,

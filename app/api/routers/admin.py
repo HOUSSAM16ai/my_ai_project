@@ -12,7 +12,7 @@
 - اعتماد كامل على حقن التبعيات (Dependency Injection).
 """
 
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request

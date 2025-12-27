@@ -3,19 +3,18 @@
 Core LLM Client Service (Engine).
 """
 
-import time
-import random
 import os
-from typing import Any, Generator, Callable
+import random
+import time
+from collections.abc import Callable, Generator
+from typing import Any
 
 from app.core.logging import get_logger
-from app.services.llm_client.domain.models import (
-    LLMPayload, LLMResponseEnvelope, LLMMeta
-)
-from app.services.llm_client.infrastructure.client_factory import get_llm_client
+from app.services.llm_client.application.circuit_breaker import CircuitBreaker
 from app.services.llm_client.application.cost import CostManager
 from app.services.llm_client.application.retry import RetryStrategy
-from app.services.llm_client.application.circuit_breaker import CircuitBreaker
+from app.services.llm_client.domain.models import LLMMeta, LLMPayload, LLMResponseEnvelope
+from app.services.llm_client.infrastructure.client_factory import get_llm_client
 
 _LOG = get_logger(__name__)
 

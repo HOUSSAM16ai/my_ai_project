@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.v2.dependencies import get_current_user_id, get_tool_registry_dependency
 from app.api.v2.schemas import ToolExecutionRequest, ToolExecutionResponse
-from app.services.agent_tools.refactored.registry import ToolRegistry
+from app.services.agent_tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,13 @@
 
-import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.overmind.domain.cognitive import SuperBrain, CognitiveState, CognitivePhase
-from app.services.overmind.agents.auditor import AuditorAgent
-from app.services.overmind.domain.exceptions import StalemateError
+
+import pytest
+
 from app.models import Mission
-from app.services.overmind.domain.context import InMemoryCollaborationContext
+from app.services.overmind.agents.auditor import AuditorAgent
+from app.services.overmind.domain.cognitive import CognitiveState, SuperBrain
+from app.services.overmind.domain.exceptions import StalemateError
+
 
 @pytest.mark.asyncio
 async def test_detect_loop_raises_stalemate():

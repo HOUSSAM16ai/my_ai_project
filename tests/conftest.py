@@ -51,6 +51,7 @@ if "DATABASE_URL" not in os.environ:
 # Now it is safe to import app modules
 from app.core.database import get_db
 
+
 # --- Event Loop Fixture for Session Scope ---
 @pytest.fixture(scope="session")
 def event_loop():
@@ -71,10 +72,9 @@ def test_app():
     """
     Creates a FastAPI application instance for the test session.
     """
-    from app.main import create_app
-
     # Force reset of the kernel singleton to ensure we use test settings
     import app.main
+    from app.main import create_app
     app.main._kernel_instance = None
 
     # Create a temporary directory for static files
@@ -171,9 +171,8 @@ def mock_ai_client(test_app):
     yield mock_gateway
     if original_override:
         test_app.dependency_overrides[get_ai_client] = original_override
-    else:
-        if get_ai_client in test_app.dependency_overrides:
-            del test_app.dependency_overrides[get_ai_client]
+    elif get_ai_client in test_app.dependency_overrides:
+        del test_app.dependency_overrides[get_ai_client]
 
 
 @pytest.fixture

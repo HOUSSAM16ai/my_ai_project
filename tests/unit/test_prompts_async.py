@@ -1,7 +1,8 @@
 
-import asyncio
 import pytest
-from app.core.prompts import get_system_prompt, get_static_system_prompt, OVERMIND_SYSTEM_PROMPT
+
+from app.core.prompts import OVERMIND_SYSTEM_PROMPT, get_static_system_prompt, get_system_prompt
+
 
 @pytest.mark.asyncio
 async def test_get_system_prompt_static():

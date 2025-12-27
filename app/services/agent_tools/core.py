@@ -12,7 +12,6 @@ from typing import Any
 from .definitions import (
     AUTOFILL,
     AUTOFILL_EXT,
-    CANON_READ,
     CANON_WRITE,
     CANON_WRITE_IF_CHANGED,
     DISABLED,

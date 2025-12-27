@@ -299,10 +299,9 @@ def main():
         else:
             print_warning("⚠️  Add secrets to enable automatic sync")
         return 0
-    else:
-        print_error("❌ Some tests failed")
-        print_info("Please review the errors above and fix them")
-        return 1
+    print_error("❌ Some tests failed")
+    print_info("Please review the errors above and fix them")
+    return 1
 
 
 if __name__ == "__main__":

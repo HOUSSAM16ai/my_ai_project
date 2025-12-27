@@ -1,11 +1,13 @@
 # tests/services/overmind/test_super_brain.py
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
+from app.models import Mission
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
-from app.models import Mission
-from app.core.protocols import AgentPlanner, AgentArchitect, AgentExecutor, AgentReflector
-from app.services.overmind.domain.enums import CognitivePhase
+
 
 @pytest.mark.asyncio
 async def test_super_brain_loop_success():

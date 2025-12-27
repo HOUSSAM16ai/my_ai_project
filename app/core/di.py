@@ -27,13 +27,13 @@ if TYPE_CHECKING:
 _SETTINGS_SINGLETON: Final[AppSettings] = _get_settings_config()
 
 __all__ = [
-    "get_di_settings",
-    "get_settings",
-    "get_di_db",
-    "get_session",
     "get_db",
-    "get_logger",
+    "get_di_db",
+    "get_di_settings",
     "get_health_check_service",
+    "get_logger",
+    "get_session",
+    "get_settings",
     "get_system_service",
 ]
 

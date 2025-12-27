@@ -69,11 +69,10 @@ class RiskScoreCalculator(RiskCalculator):
         """Determine risk level - Complexity < 10."""
         if score >= 80:
             return RiskLevel.CRITICAL
-        elif score >= 60:
+        if score >= 60:
             return RiskLevel.HIGH
-        elif score >= 40:
+        if score >= 40:
             return RiskLevel.MEDIUM
-        elif score >= 20:
+        if score >= 20:
             return RiskLevel.LOW
-        else:
-            return RiskLevel.MINIMAL
+        return RiskLevel.MINIMAL

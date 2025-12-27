@@ -103,11 +103,10 @@ class WorkflowValidator:
         if has_self_skip:
             self.print_success(f"{workflow_file.name}: Has self-monitoring prevention")
             return True
-        else:
-            self.print_warning(
-                f"{workflow_file.name}: No explicit self-monitoring prevention found"
-            )
-            return True  # Not critical for non-monitor workflows
+        self.print_warning(
+            f"{workflow_file.name}: No explicit self-monitoring prevention found"
+        )
+        return True  # Not critical for non-monitor workflows
 
     def check_status_verification(self, workflow_file: Path, workflow_data: dict) -> bool:
         """Check if jobs with if: always() verify dependent job status"""
@@ -195,14 +194,12 @@ class WorkflowValidator:
                     f"{workflow_file.name}: {steps_with_exit}/{critical_steps_checked} critical steps have explicit exit codes ({percentage:.0f}%)"
                 )
                 return True
-            else:
-                self.print_warning(
-                    f"{workflow_file.name}: Only {steps_with_exit}/{critical_steps_checked} critical steps have explicit exit codes ({percentage:.0f}%)"
-                )
-                return False
-        else:
-            self.print_success(f"{workflow_file.name}: No critical steps requiring exit codes")
-            return True
+            self.print_warning(
+                f"{workflow_file.name}: Only {steps_with_exit}/{critical_steps_checked} critical steps have explicit exit codes ({percentage:.0f}%)"
+            )
+            return False
+        self.print_success(f"{workflow_file.name}: No critical steps requiring exit codes")
+        return True
 
     def validate_workflow(self, workflow_file: Path) -> bool:
         """Validate a single workflow file"""
@@ -276,16 +273,15 @@ class WorkflowValidator:
                 f"{Colors.OKGREEN}Workflows are ready to eliminate 'Action Required' issues!{Colors.ENDC}\n"
             )
             return 0
-        elif self.warnings and not self.issues:
+        if self.warnings and not self.issues:
             print(f"{Colors.WARNING}{Colors.BOLD}⚠️  VALIDATION PASSED WITH WARNINGS{Colors.ENDC}")
             print(
                 f"{Colors.WARNING}Workflows should work, but improvements recommended{Colors.ENDC}\n"
             )
             return 0
-        else:
-            print(f"{Colors.FAIL}{Colors.BOLD}❌ VALIDATION FAILED{Colors.ENDC}")
-            print(f"{Colors.FAIL}Please fix the critical issues above{Colors.ENDC}\n")
-            return 1
+        print(f"{Colors.FAIL}{Colors.BOLD}❌ VALIDATION FAILED{Colors.ENDC}")
+        print(f"{Colors.FAIL}Please fix the critical issues above{Colors.ENDC}\n")
+        return 1
 
 
 def main():

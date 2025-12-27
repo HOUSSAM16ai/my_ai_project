@@ -40,8 +40,8 @@ def log_function_call(logger: logging.Logger, func_name: str, **kwargs: Any) -> 
 
 
 def log_exception(
-    logger: logging.Logger, 
-    message: str, 
+    logger: logging.Logger,
+    message: str,
     exc: Exception,
     **context: Any
 ) -> None:
