@@ -110,10 +110,9 @@ class ContextAnalyzer:
         word_count = len(objective.split())
         if word_count < 5:
             return "simple"
-        elif word_count < 15:
+        if word_count < 15:
             return "medium"
-        else:
-            return "complex"
+        return "complex"
 
     def _detect_language(self, text: str) -> str:
         """Detect text language."""

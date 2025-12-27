@@ -1,38 +1,32 @@
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, ANY
-from dataclasses import asdict
-import sys
 
 # We need to ensure we patch BEFORE import or patch the imported name in factory_core
 # The problem might be that instantiate_all_planners is imported as a function
 # so patching "app.services.overmind.planning.factory_core.instantiate_all_planners"
 # should work if the test file imports factory_core directly.
-
 from app.services.overmind.planning import factory_core
+from app.services.overmind.planning.base_planner import BasePlanner
+from app.services.overmind.planning.exceptions import NoActivePlannersError, PlannerNotFound
 from app.services.overmind.planning.factory_core import (
+    _GLOBAL_FACTORY,
+    FactoryState,
     PlannerFactory,
     PlannerRecord,
-    FactoryState,
-    get_planner,
-    select_best_planner,
-    list_planners,
-    get_all_planners,
+    a_get_planner,
+    a_select_best_planner,
     diagnostics_json,
     diagnostics_report,
     export_diagnostics,
-    list_quarantined,
-    reload_planners,
-    a_get_planner,
-    a_select_best_planner,
-    selection_profiles,
+    get_all_planners,
     instantiation_profiles,
     list_planner_metadata,
-    _GLOBAL_FACTORY
+    list_quarantined,
+    selection_profiles,
 )
-from app.services.overmind.planning.base_planner import BasePlanner
-from app.services.overmind.planning.exceptions import PlannerNotFound, NoActivePlannersError
-from app.services.overmind.planning.schemas import PlanningContext
+
 
 # Mock BasePlanner subclass for testing
 class MockPlanner(BasePlanner):

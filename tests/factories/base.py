@@ -1,6 +1,8 @@
 
 import factory
-from app.models import User, Mission
+
+from app.models import Mission, User
+
 
 class UserFactory(factory.Factory):
     class Meta:

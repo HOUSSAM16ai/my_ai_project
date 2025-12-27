@@ -3,8 +3,8 @@
 Circuit Breaker to protect the service from cascading failures.
 """
 
-import time
 import threading
+import time
 from typing import ClassVar
 
 from app.core.logging import get_logger

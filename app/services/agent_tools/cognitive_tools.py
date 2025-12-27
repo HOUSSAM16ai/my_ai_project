@@ -7,6 +7,8 @@ Reasoning, summarization, and refinement tools bridging to the LLM backend.
 import logging
 import os
 
+from app.core.ai_gateway import ai_gateway
+
 from .core import tool
 from .definitions import (
     CANON_THINK,
@@ -16,16 +18,6 @@ from .definitions import (
 )
 
 logger = logging.getLogger("agent_tools")
-
-# LLM / Cognitive ------------------------------------------------------------
-try:
-    from app.services import generation_service as maestro
-except Exception:
-    maestro = None
-    logger.warning(
-        "LLM backend (generation_service) not available; generic_think fallback mode active."
-    )
-
 
 @tool(
     name=CANON_THINK,
@@ -41,7 +33,7 @@ except Exception:
         "required": ["prompt"],
     },
 )
-def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
+async def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
     clean = (prompt or "").strip()
     if not clean:
         return ToolResult(ok=False, error="EMPTY_PROMPT")
@@ -49,51 +41,28 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
     if len(clean) > GENERIC_THINK_MAX_CHARS:
         clean = clean[:GENERIC_THINK_MAX_CHARS] + "\n[TRUNCATED_INPUT]"
         truncated = True
-    if not maestro:
-        answer = f"[fallback-{mode}] {clean[:400]}"
+
+    try:
+        model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
+        response = await ai_gateway.generate_text(
+            prompt=clean,
+            model=model_override,
+            system_prompt=f"You are a helpful assistant running in {mode} mode.",
+        )
+        answer = response.content
+    except Exception as e:
+        answer = f"[fallback-{mode}] AI Gateway Error: {str(e)}"
         return ToolResult(
-            ok=True,
+            ok=False,
             data={
                 "answer": answer,
                 "content": answer,
                 "mode": mode,
                 "fallback": True,
                 "truncated_input": truncated,
+                "error": str(e)
             },
         )
-    model_override = os.getenv("GENERIC_THINK_MODEL_OVERRIDE")
-    candidate_methods = ["generate_text", "forge_new_code", "run", "complete", "structured"]
-    response = None
-    last_err = None
-    for m in candidate_methods:
-        if hasattr(maestro, m):
-            try:
-                method = getattr(maestro, m)
-                kwargs = {"prompt": clean}
-                if model_override:
-                    kwargs["model"] = model_override
-                response = method(**kwargs)
-                break
-            except Exception as e:
-                last_err = e
-                continue
-    if response is None:
-        return ToolResult(
-            ok=False, error=f"LLM_BACKEND_FAILURE: {last_err}" if last_err else "NO_LLM_METHOD"
-        )
-
-    if isinstance(response, str):
-        answer = response
-    elif isinstance(response, dict):
-        answer = (
-            response.get("answer")
-            or response.get("content")
-            or response.get("text")
-            or response.get("output")
-            or ""
-        )
-    else:
-        answer = str(response)
 
     if not answer.strip():
         return ToolResult(ok=False, error="EMPTY_ANSWER")
@@ -125,13 +94,13 @@ def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         "required": ["text"],
     },
 )
-def summarize_text(text: str, style: str = "concise") -> ToolResult:
+async def summarize_text(text: str, style: str = "concise") -> ToolResult:
     t = (text or "").strip()
     if not t:
         return ToolResult(ok=False, error="EMPTY_TEXT")
     snippet = t[:8000]
     prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
-    return generic_think(prompt=prompt, mode="summary")
+    return await generic_think(prompt=prompt, mode="summary")
 
 
 @tool(
@@ -148,7 +117,7 @@ def summarize_text(text: str, style: str = "concise") -> ToolResult:
         "required": ["text"],
     },
 )
-def refine_text(text: str, tone: str = "professional") -> ToolResult:
+async def refine_text(text: str, tone: str = "professional") -> ToolResult:
     t = (text or "").strip()
     if not t:
         return ToolResult(ok=False, error="EMPTY_TEXT")
@@ -156,4 +125,4 @@ def refine_text(text: str, tone: str = "professional") -> ToolResult:
         f"Refine the following text to a {tone} tone while preserving meaning. "
         f"Return only the improved text without commentary:\n---\n{t[:8000]}\n---"
     )
-    return generic_think(prompt=prompt, mode="refine")
+    return await generic_think(prompt=prompt, mode="refine")

@@ -13,7 +13,7 @@ from typing import Any
 
 from app.services.agent_tools.domain.context import ContextAwarenessTool
 from app.services.agent_tools.domain.metrics import FileCountTool, ProjectMetricsTool
-from app.services.agent_tools.refactored.registry import get_tool_registry
+from app.services.agent_tools.registry import get_tool_registry
 
 # Legacy Imports
 from .cognitive_tools import (

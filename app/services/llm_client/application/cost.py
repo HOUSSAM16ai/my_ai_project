@@ -3,8 +3,9 @@
 Cost Manager for tracking token usage.
 """
 
-from typing import Any
 import threading
+from typing import Any
+
 from app.core.logging import get_logger
 
 _LOG = get_logger(__name__)

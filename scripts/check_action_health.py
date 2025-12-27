@@ -124,7 +124,7 @@ class ActionHealthChecker:
             try:
                 result = subprocess.run(
                     [tool, "--version"],
-                    capture_output=True,
+                    check=False, capture_output=True,
                     text=True,
                     timeout=5,
                 )
@@ -155,7 +155,7 @@ class ActionHealthChecker:
         try:
             result = subprocess.run(
                 ["black", "--check", "--line-length=100", "app/", "tests/"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 cwd=self.project_root,
                 timeout=30,
@@ -183,7 +183,7 @@ class ActionHealthChecker:
                     "app/",
                     "tests/",
                 ],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 cwd=self.project_root,
                 timeout=30,
@@ -203,7 +203,7 @@ class ActionHealthChecker:
         try:
             result = subprocess.run(
                 ["ruff", "check", "app/", "tests/", "--output-format=concise"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 cwd=self.project_root,
                 timeout=30,

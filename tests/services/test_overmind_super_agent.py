@@ -1,13 +1,15 @@
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock
-from app.services.overmind.domain.cognitive import SuperBrain, CognitiveState
-from app.services.overmind.agents.strategist import StrategistAgent
-from app.services.overmind.agents.architect import ArchitectAgent
-from app.services.overmind.agents.operator import OperatorAgent
-from app.services.overmind.agents.auditor import AuditorAgent
+
 from app.models import Mission
+from app.services.overmind.agents.architect import ArchitectAgent
+from app.services.overmind.agents.auditor import AuditorAgent
+from app.services.overmind.agents.operator import OperatorAgent
+from app.services.overmind.agents.strategist import StrategistAgent
+from app.services.overmind.domain.cognitive import SuperBrain
+
 
 @pytest.mark.asyncio
 async def test_council_of_wisdom_flow():

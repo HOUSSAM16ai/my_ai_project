@@ -12,7 +12,7 @@ Usage:
 
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +38,7 @@ def run_command(cmd: str, capture_output: bool = True) -> tuple[int, str]:
     try:
         result = subprocess.run(
             cmd,
-            shell=True,  # Safe: All commands are hardcoded, no user input
+            check=False, shell=True,  # Safe: All commands are hardcoded, no user input
             capture_output=capture_output,
             text=True,
             timeout=120,
@@ -367,7 +367,7 @@ def main():
 
     # Collect all metrics
     metrics = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "code": get_code_metrics(),
         "test": get_test_metrics(),
         "security": get_security_metrics(),

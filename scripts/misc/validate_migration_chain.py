@@ -114,7 +114,7 @@ def validate_migration_chain():
     if len(heads) == 0:
         print("  ❌ ERROR: No head found (circular dependency?)")
         return False
-    elif len(heads) > 1:
+    if len(heads) > 1:
         print(f"  ⚠️  WARNING: Found {len(heads)} heads (expected 1):")
         for head in heads:
             print(f"     - {head}")
@@ -123,10 +123,9 @@ def validate_migration_chain():
         print("  Consider creating a merge migration.")
         print()
         return False
-    else:
-        head = heads[0]
-        print(f"  ✅ Found exactly 1 head: {head}")
-        print(f"     File: {migrations[head]['file']}\n")
+    head = heads[0]
+    print(f"  ✅ Found exactly 1 head: {head}")
+    print(f"     File: {migrations[head]['file']}\n")
 
     # Check 3: Trace the chain from head
     print("🔄 Tracing migration chain...")

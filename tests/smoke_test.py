@@ -2,10 +2,13 @@
 Smoke Test for Reality Kernel and Overmind Assembly.
 This test verifies that the core components can be instantiated without runtime errors.
 """
+from unittest.mock import AsyncMock
+
 import pytest
+
 from app.kernel import RealityKernel
 from app.services.overmind.factory import create_overmind
-from unittest.mock import AsyncMock
+
 
 @pytest.mark.asyncio
 async def test_kernel_initialization():

@@ -45,25 +45,8 @@ class ServiceLocator:
 
         try:
             # Lazy import to avoid circular dependencies
-            # Only active services after simplification
-            if service_name == "master_agent_service":
-                from app.services import master_agent_service as service_module
-            elif service_name == "generation_service":
-                from app.services import generation_service as service_module
-            elif service_name == "database_service":
+            if service_name == "database_service":
                 from app.services.system.database_service import database_service as service_module
-            elif service_name == "api_security_service":
-                from app.services.api.api_security_service import security_service as service_module
-            elif service_name == "api_governance_service":
-                from app.services.api.api_governance_service import (
-                    governance_service as service_module,
-                )
-            elif service_name == "api_config_secrets_service":
-                from app.services.api.api_config_secrets_service import (
-                    config_secrets_service as service_module,
-                )
-            elif service_name == "admin_ai_service":
-                from app.services import admin_ai_service as service_module
             else:
                 logger.warning(f"Unknown service: {service_name}")
                 return None
@@ -97,21 +80,6 @@ class ServiceLocator:
         return cls.get_service(service_name) is not None
 
 
-# Convenience functions for commonly used services
-def get_overmind():
-    """Get the master agent (overmind) service."""
-    return ServiceLocator.get_service("master_agent_service")
-
-
-def get_maestro():
-    """Get the generation (maestro) service."""
-    return ServiceLocator.get_service("generation_service")
-
-
 def get_database_service():
     """Get the database service."""
     return ServiceLocator.get_service("database_service")
-
-def get_admin_ai():
-    """Get the admin AI service."""
-    return ServiceLocator.get_service("admin_ai_service")

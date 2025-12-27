@@ -1,17 +1,16 @@
-import pytest
 import subprocess
-from unittest.mock import MagicMock, patch, AsyncMock
-from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from app.services.agent_tools.domain.context import ContextAwarenessTool, context_awareness_handler
 from app.services.agent_tools.domain.metrics import (
-    get_project_metrics_handler,
-    count_files_handler,
+    FileCountTool,
     ProjectMetricsTool,
-    FileCountTool
+    count_files_handler,
+    get_project_metrics_handler,
 )
-from app.services.agent_tools.domain.context import (
-    context_awareness_handler,
-    ContextAwarenessTool
-)
+
 
 @pytest.fixture
 def mock_subprocess_run():

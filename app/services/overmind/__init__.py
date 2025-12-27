@@ -14,24 +14,14 @@
 #
 # 🧬 EXPORTS (الصادرات):
 #   - orchestrator: The main service for running missions.
-#   - planning: Access to the planning sub-system (e.g., for getting planners).
 #   - schemas: Core Pydantic schemas for tasks and plans.
 #
 # ===============================================================================
 
-# --- [FUTURE] Import and expose the main orchestrator service ---
-# When you create `orchestrator.py`, you will uncomment this line.
 # from . import orchestrator
+# from . import schemas
 
-# --- Import and expose the entire planning sub-package ---
-from . import planning
-
-# --- Import and expose the core schemas for easy access ---
-from .planning import schemas
-
-# --- Define what is publicly available when someone does `from app.overmind import *` ---
 __all__ = [
-    # "orchestrator", # Uncomment when ready
-    "planning",
-    "schemas",
+    # "orchestrator",
+    # "schemas",
 ]

@@ -3,8 +3,9 @@
 OpenAI Client Factory and Infrastructure.
 """
 
-from typing import Any, Protocol
 import threading
+from typing import Any, Protocol
+
 from app.config.settings import get_settings
 from app.core.logging import get_logger
 

@@ -1,6 +1,6 @@
 
-import pytest
 from app.api.routers.security import UserResponse
+
 
 def test_user_response_strictness():
     """

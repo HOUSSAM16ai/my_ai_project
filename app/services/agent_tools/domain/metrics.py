@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from app.services.agent_tools.refactored.tool import Tool, ToolConfig
+from app.services.agent_tools.tool_model import Tool, ToolConfig
 
 
 def get_project_root() -> Path:

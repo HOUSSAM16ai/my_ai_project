@@ -140,6 +140,6 @@ class AuditorAgent(AgentReflector):
             # في حال فشل المدقق الذكي، نعود للمنطق الدفاعي (رفض لضمان الأمان)
             return {
                 "approved": False,
-                "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {str(e)}",
+                "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {e!s}",
                 "confidence": 0.0
             }

@@ -81,7 +81,7 @@ class TestYamlRCEProtection:
         # Grep for yaml.load( in all python files
         try:
             cmd = ["grep", "-r", "yaml\\.load(", "."]
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, check=False, capture_output=True, text=True)
 
             output = result.stdout
             lines = output.splitlines()

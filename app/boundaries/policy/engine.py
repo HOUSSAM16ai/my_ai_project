@@ -236,15 +236,15 @@ class PolicyEngine:
         # تقييم المقارنة
         if operator == "==":
             return str(actual_value) == value
-        elif operator == "!=":
+        if operator == "!=":
             return str(actual_value) != value
-        elif operator == ">":
+        if operator == ">":
             return float(actual_value) > float(value)
-        elif operator == "<":
+        if operator == "<":
             return float(actual_value) < float(value)
-        elif operator == ">=":
+        if operator == ">=":
             return float(actual_value) >= float(value)
-        elif operator == "<=":
+        if operator == "<=":
             return float(actual_value) <= float(value)
 
         return False

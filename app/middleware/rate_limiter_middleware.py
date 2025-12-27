@@ -115,14 +115,13 @@ class TokenBucketRateLimiter:
             metadata = {'client_id': client_id, 'remaining': int(tokens -
                 1.0), 'reset_at': int(now + self.window_seconds)}
             return True, metadata
-        else:
-            reset_in = max(0, (1.0 - tokens) / self._refill_rate)
-            metadata = {'client_id': client_id, 'remaining': 0, 'reset_at':
-                int(now + reset_in), 'retry_after': int(reset_in) + 1}
-            logger.warning(
-                f'Rate limit exceeded for {client_id}. Retry after {int(reset_in)}s'
-                )
-            return False, metadata
+        reset_in = max(0, (1.0 - tokens) / self._refill_rate)
+        metadata = {'client_id': client_id, 'remaining': 0, 'reset_at':
+            int(now + reset_in), 'retry_after': int(reset_in) + 1}
+        logger.warning(
+            f'Rate limit exceeded for {client_id}. Retry after {int(reset_in)}s'
+            )
+        return False, metadata
 
 
 _rate_limiters: dict[str, TokenBucketRateLimiter] = {'default':

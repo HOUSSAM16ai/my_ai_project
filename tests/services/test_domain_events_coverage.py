@@ -1,36 +1,37 @@
 
-import pytest
-from datetime import datetime
 from dataclasses import dataclass
-from app.services.domain_events import (
-    DomainEvent,
-    UserCreated,
-    UserUpdated,
-    UserDeleted,
-    MissionCreated,
-    MissionStarted,
-    MissionCompleted,
-    MissionFailed,
-    TaskCreated,
-    TaskAssigned,
-    TaskStarted,
-    TaskCompleted,
-    TaskFailed,
-    SecurityThreatDetected,
+from datetime import datetime
+
+from app.core.domain_events import (
     AccessDenied,
     ApiRequestReceived,
     ApiResponseSent,
-    RateLimitExceeded,
-    ChatIntentDetected,
-    ToolExecutionStarted,
-    ToolExecutionCompleted,
-    MissionCreatedFromChat,
-    NotificationRequested,
-    DataExportRequested,
-    DomainEventRegistry,
     BoundedContext,
-    EventCategory
+    ChatIntentDetected,
+    DataExportRequested,
+    DomainEvent,
+    DomainEventRegistry,
+    EventCategory,
+    MissionCompleted,
+    MissionCreated,
+    MissionCreatedFromChat,
+    MissionFailed,
+    MissionStarted,
+    NotificationRequested,
+    RateLimitExceeded,
+    SecurityThreatDetected,
+    TaskAssigned,
+    TaskCompleted,
+    TaskCreated,
+    TaskFailed,
+    TaskStarted,
+    ToolExecutionCompleted,
+    ToolExecutionStarted,
+    UserCreated,
+    UserDeleted,
+    UserUpdated,
 )
+
 
 class TestDomainEvents:
 
@@ -47,7 +48,8 @@ class TestDomainEvents:
     def test_event_post_init_sets_type(self):
         @dataclass
         class CustomEvent(DomainEvent):
-            pass
+            def __init__(self):
+                super().__init__(event_type="")
 
         event = CustomEvent()
         assert event.event_type == "CustomEvent"

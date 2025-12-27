@@ -7,9 +7,9 @@ Runs quality metrics collection and updates PROJECT_METRICS.md.
 
 import json
 import subprocess
-import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
 
 def main():
     print("🚀 Collecting quality metrics...")
@@ -17,7 +17,7 @@ def main():
     # Run the quality metrics script
     result = subprocess.run(
         ["python", "scripts/quality_metrics.py", "--json"],
-        capture_output=True,
+        check=False, capture_output=True,
         text=True
     )
 
@@ -37,7 +37,7 @@ def main():
         return
 
     # Extract metrics
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     code = data.get("code", {})
     test = data.get("test", {})

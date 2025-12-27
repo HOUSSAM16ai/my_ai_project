@@ -1,8 +1,10 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from app.kernel import RealityKernel
+
 from app.config.settings import AppSettings
+from app.kernel import RealityKernel
+
 
 @pytest.fixture
 def app_settings():

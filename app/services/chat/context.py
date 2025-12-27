@@ -3,7 +3,7 @@ Chat context for intent handlers.
 """
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

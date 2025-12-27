@@ -1,9 +1,11 @@
-import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock
-from app.services.chat.orchestrator import ChatOrchestrator
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from app.services.chat.context import ChatContext
-from app.services.chat.handlers.strategy_handlers import MissionComplexHandler
+from app.services.chat.orchestrator import ChatOrchestrator
+
 
 @pytest.mark.asyncio
 async def test_process_passes_session_factory():

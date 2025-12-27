@@ -1,8 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.chat.orchestrator import ChatOrchestrator
+
+import pytest
+
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import MissionComplexHandler
+from app.services.chat.orchestrator import ChatOrchestrator
+
 
 @pytest.mark.asyncio
 async def test_chat_orchestrator_passes_session_factory():
@@ -92,7 +95,7 @@ async def test_chat_orchestrator_passes_session_factory():
         assert "بدء المهمة الخارقة" in first_chunk
 
         # If it didn't raise StopAsyncIteration or fail with "Missing Session Factory", we are good.
-    except Exception as e:
+    except Exception:
         # It might fail later due to DB mocks, but we want to ensure it passes the first check
         pass
 

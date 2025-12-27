@@ -133,10 +133,9 @@ class PerformanceMonitor:
             return 'unknown'
         if value <= thresholds['good']:
             return 'good'
-        elif value <= thresholds['poor']:
+        if value <= thresholds['poor']:
             return 'needs-improvement'
-        else:
-            return 'poor'
+        return 'poor'
 
     def get_vital_score(self) ->dict[str, Any]:
         """

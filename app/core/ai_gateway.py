@@ -48,6 +48,7 @@ __all__ = [
     "NeuralNode",
     "NeuralRoutingMesh",
     "get_ai_client",
+    "ai_gateway",
     "get_performance_report",
     "get_recommended_model",
 ]
@@ -82,3 +83,27 @@ def get_recommended_model(available_models: list[str], context: str = "") -> str
         اسم النموذج الموصى به
     """
     return _performance_optimizer.get_recommended_model(available_models, context)
+
+class AIGatewayFacade:
+    """Facade for AI Gateway operations."""
+
+    def __init__(self):
+        self._client = None
+
+    @property
+    def client(self) -> AIClient:
+        if not self._client:
+            self._client = get_ai_client()
+        return self._client
+
+    async def generate_text(self, prompt: str, **kwargs) -> Any:
+        return await self.client.generate_text(prompt, **kwargs)
+
+    async def forge_new_code(self, **kwargs) -> Any:
+        return await self.client.forge_new_code(**kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.client, name)
+
+# Singleton instance
+ai_gateway = AIGatewayFacade()

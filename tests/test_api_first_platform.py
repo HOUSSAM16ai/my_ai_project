@@ -1,9 +1,11 @@
 # tests/test_api_first_platform.py
-from fastapi.testclient import TestClient
-from app.api.schemas.system.responses import HealthResponse
-from app.kernel import RealityKernel
-from app.config.settings import AppSettings
 import os
+
+from fastapi.testclient import TestClient
+
+from app.api.schemas.system.responses import HealthResponse
+from app.config.settings import AppSettings
+from app.kernel import RealityKernel
 
 # نحن بحاجة لضبط متغيرات البيئة قبل إنشاء الإعدادات
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"

@@ -1,1 +1,1 @@
-from .base import UserFactory, MissionFactory
+from .base import MissionFactory, UserFactory

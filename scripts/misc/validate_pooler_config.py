@@ -141,15 +141,14 @@ def validate_pooler_config():
         if pooler_recommended:
             print_success("Using recommended Pooler connection 🎉")
         return True
-    elif pooler_recommended:
+    if pooler_recommended:
         print_warning("Using Pooler connection with minor issues")
         print_info("Please fix the warnings above")
         return True
-    else:
-        print_warning("Using Direct connection (not recommended for Codespaces/Gitpod)")
-        print_info("Consider migrating to Pooler connection")
-        print_info("See: POOLER_MIGRATION_GUIDE.md")
-        return False
+    print_warning("Using Direct connection (not recommended for Codespaces/Gitpod)")
+    print_info("Consider migrating to Pooler connection")
+    print_info("See: POOLER_MIGRATION_GUIDE.md")
+    return False
 
 
 def show_recommendations():
@@ -192,10 +191,9 @@ def main():
     if result:
         print_success("Configuration is valid and ready to use!")
         return 0
-    else:
-        print_warning("Configuration needs attention")
-        print_info("See recommendations above")
-        return 1
+    print_warning("Configuration needs attention")
+    print_info("See recommendations above")
+    return 1
 
 
 if __name__ == "__main__":
