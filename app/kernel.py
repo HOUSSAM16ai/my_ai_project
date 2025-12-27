@@ -26,6 +26,7 @@ from starlette.types import ASGIApp
 from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
+from app.core.static_handler import setup_static_files
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -92,7 +93,6 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
 
     # إضافة تحديد المعدل فقط في غير بيئة الاختبار
     if settings.ENVIRONMENT != "testing":
-        # ملاحظة: RateLimitMiddleware يجب أن يُضاف بعناية حسب تصميمه (إذا كان BaseHTTPMiddleware)
         stack.insert(3, (RateLimitMiddleware, {}))
 
     return stack
@@ -106,7 +106,8 @@ def _get_router_registry() -> list[RouterSpec]:
         list[RouterSpec]: قائمة (الموجه، البادئة).
     """
     return [
-        (system.router, ""),
+        (system.root_router, ""), # Root Level (e.g., /health)
+        (system.router, ""),      # /system prefix is inside the router
         (admin.router, ""),
         (security.router, "/api/security"),
         (data_mesh.router, "/api/v1/data-mesh"),
@@ -119,17 +120,8 @@ def _get_router_registry() -> list[RouterSpec]:
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
     Combinator: تطبيق قائمة الميدل وير على التطبيق.
-
-    هذا هو المعادل الوظيفي لحلقة تكرارية تقوم بـ 'add_middleware'.
-
-    Args:
-        app: تطبيق FastAPI.
-        stack: قائمة مواصفات الميدل وير.
-
-    Returns:
-        FastAPI: التطبيق بعد التعديل.
     """
-    for mw_cls, mw_options in reversed(stack): # FastAPI applies in reverse order of addition
+    for mw_cls, mw_options in reversed(stack):
         app.add_middleware(mw_cls, **mw_options)
     return app
 
@@ -137,13 +129,6 @@ def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
 def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
     """
     Combinator: ربط الموجهات بالتطبيق.
-
-    Args:
-        app: تطبيق FastAPI.
-        registry: سجل الموجهات.
-
-    Returns:
-        FastAPI: التطبيق بعد الربط.
     """
     for router, prefix in registry:
         app.include_router(router, prefix=prefix)
@@ -159,7 +144,7 @@ class RealityKernel:
     نواة الواقع الإدراكي (Cognitive Reality Weaver).
 
     تعمل هذه الفئة الآن كـ "مُنسق" (Orchestrator) يقوم بتجميع التطبيق من خلال
-    تطبيق دوال نقية على حالة النظام، بدلاً من احتوائها على منطق إجرائي معقد.
+    تطبيق دوال نقية على حالة النظام.
     """
 
     def __init__(self, *, settings: AppSettings | dict[str, Any]) -> None:
@@ -170,18 +155,13 @@ class RealityKernel:
             settings (AppSettings | dict[str, Any]): الإعدادات.
         """
         if isinstance(settings, dict):
-            # Fail Fast: يجب أن يفشل التحقق فوراً إذا كانت الإعدادات غير صالحة
             self.settings_obj = AppSettings(**settings)
             self.settings_dict = self.settings_obj.model_dump()
         else:
             self.settings_obj = settings
             self.settings_dict = settings.model_dump()
 
-        # The Functional Pipeline:
-        # 1. Create Base App
-        # 2. Get Specs (Data)
-        # 3. Apply Transformations (Functions)
-
+        # بناء التطبيق فور الإنشاء
         self.app: Final[FastAPI] = self._construct_app()
 
 
@@ -193,6 +173,12 @@ class RealityKernel:
     def _construct_app(self) -> FastAPI:
         """
         بناء التطبيق باستخدام منهجية Pipeline.
+
+        الخطوات:
+        1. الحالة الأساسية (Base State)
+        2. الحصول على المواصفات (Data Acquisition)
+        3. تحويل الحالة (Transformations)
+        4. إعداد الواجهة الأمامية (Side Effects)
         """
         # 1. Base State
         app = self._create_base_app_instance()
@@ -203,10 +189,16 @@ class RealityKernel:
         )
         router_registry = _get_router_registry()
 
-        # 3. Transformations (Side-effects confined here)
+        # 3. Transformations
         app = _apply_middleware(app, middleware_stack)
-        add_error_handlers(app)  # Legacy helper, treated as a transformer
-        return _mount_routers(app, router_registry)
+        add_error_handlers(app)  # Legacy helper
+        app = _mount_routers(app, router_registry)
+
+        # 4. Static Files (Frontend)
+        # يتم الإعداد أخيراً لضمان عدم تداخل المسارات مع API
+        setup_static_files(app)
+
+        return app
 
 
     def _create_base_app_instance(self) -> FastAPI:
@@ -223,7 +215,7 @@ class RealityKernel:
 
         return FastAPI(
             title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),
-            version=self.settings_dict.get("VERSION", "v4.1-SICP-Edition"),
+            version=self.settings_dict.get("VERSION", "v4.2-Strict-Core"),
             docs_url="/docs" if is_dev else None,
             redoc_url="/redoc" if is_dev else None,
             lifespan=lifespan,
@@ -234,7 +226,7 @@ class RealityKernel:
         """
         معالجة أحداث النظام الحيوية.
         """
-        logger.info("🚀 CogniForge System Initializing... (SICP Boot Sequence)")
+        logger.info("🚀 CogniForge System Initializing... (Strict Mode Active)")
 
         if self.settings_dict.get("ENVIRONMENT") != "testing":
             try:

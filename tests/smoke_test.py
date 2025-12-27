@@ -14,7 +14,8 @@ from app.services.overmind.factory import create_overmind
 async def test_kernel_initialization():
     """Verify RealityKernel initializes with valid settings."""
     settings = {"DATABASE_URL": "sqlite+aiosqlite:///:memory:", "SECRET_KEY": "x" * 32, "ENVIRONMENT": "testing"}
-    kernel = RealityKernel(settings)
+    # Fix: RealityKernel requires keyword-only arguments (*)
+    kernel = RealityKernel(settings=settings)
     app = kernel.get_app()
     # Adjust expectation based on testing environment override
     assert "CogniForge" in app.title
