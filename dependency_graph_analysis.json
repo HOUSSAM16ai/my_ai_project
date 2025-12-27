@@ -1,0 +1,152 @@
+{
+  "summary": {
+    "total_modules": 143,
+    "total_dependencies": 368,
+    "isolated_modules": 0,
+    "highly_coupled_modules": 1,
+    "hub_modules": 15
+  },
+  "isolated_modules": [],
+  "highly_coupled_modules": [
+    {
+      "module": "app.services.overmind.factory",
+      "imports": 10
+    }
+  ],
+  "hub_modules": [
+    {
+      "module": "app.models",
+      "imported_by": 19
+    },
+    {
+      "module": "app.middleware.core.base_middleware",
+      "imported_by": 15
+    },
+    {
+      "module": "app.middleware.core.context",
+      "imported_by": 15
+    },
+    {
+      "module": "app.middleware.core.result",
+      "imported_by": 15
+    },
+    {
+      "module": "app.core.protocols",
+      "imported_by": 13
+    },
+    {
+      "module": "app.services.serving.domain.models",
+      "imported_by": 12
+    },
+    {
+      "module": "app.core.ai_gateway",
+      "imported_by": 11
+    },
+    {
+      "module": "app.config.settings",
+      "imported_by": 10
+    },
+    {
+      "module": "app.core.database",
+      "imported_by": 9
+    },
+    {
+      "module": "app.services.adaptive.domain.models",
+      "imported_by": 7
+    },
+    {
+      "module": "app.services.chat.security",
+      "imported_by": 6
+    },
+    {
+      "module": "app.services.project_context.domain.models",
+      "imported_by": 6
+    },
+    {
+      "module": "app.core.di",
+      "imported_by": 6
+    },
+    {
+      "module": "app.core.logging",
+      "imported_by": 5
+    },
+    {
+      "module": "app.services.agent_tools.tool_model",
+      "imported_by": 5
+    }
+  ],
+  "suspicious_modules": {
+    "app.boundaries.service_boundaries": {
+      "imported_by": [
+        "app.boundaries.__init__"
+      ],
+      "imports": [],
+      "imported_by_count": 1,
+      "imports_count": 0
+    },
+    "app.boundaries.policy_boundaries": {
+      "imported_by": [
+        "app.boundaries.__init__"
+      ],
+      "imports": [
+        "app.boundaries.policy"
+      ],
+      "imported_by_count": 1,
+      "imports_count": 1
+    },
+    "app.boundaries.data_boundaries": {
+      "imported_by": [
+        "app.boundaries.__init__"
+      ],
+      "imports": [
+        "app.boundaries.data.core",
+        "app.boundaries.data.events",
+        "app.boundaries.data.database",
+        "app.boundaries.data.saga"
+      ],
+      "imported_by_count": 1,
+      "imports_count": 4
+    },
+    "app.core.base_profiler": {
+      "imported_by": [],
+      "imports": [],
+      "imported_by_count": 0,
+      "imports_count": 0
+    },
+    "app.core.base_repository": {
+      "imported_by": [],
+      "imports": [],
+      "imported_by_count": 0,
+      "imports_count": 0
+    },
+    "app.core.base_service": {
+      "imported_by": [],
+      "imports": [],
+      "imported_by_count": 0,
+      "imports_count": 0
+    },
+    "app.services.data_mesh.facade": {
+      "imported_by": [
+        "app.services.data_mesh.__init__"
+      ],
+      "imports": [
+        "app.services.data_mesh.application.mesh_manager",
+        "app.services.data_mesh.domain.models"
+      ],
+      "imported_by_count": 1,
+      "imports_count": 2
+    },
+    "app.services.api.api_config_secrets_service": {
+      "imported_by": [],
+      "imports": [
+        "app.services.api_config_secrets.application.config_secrets_manager",
+        "app.services.api_config_secrets.domain.ports",
+        "app.services.api_config_secrets.infrastructure.memory_adapters",
+        "app.services.api_config_secrets.domain.models",
+        "app.services.api_config_secrets.infrastructure.vault_adapters"
+      ],
+      "imported_by_count": 0,
+      "imports_count": 5
+    }
+  }
+}

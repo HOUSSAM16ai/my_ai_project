@@ -22,8 +22,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-# استيراد الموجهات بشكل صريح
-from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
+# الموجهات محذوفة - سيتم استخدام API البسيط
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -105,15 +104,8 @@ def _get_router_registry() -> list[RouterSpec]:
     Returns:
         list[RouterSpec]: قائمة (الموجه، البادئة).
     """
-    return [
-        (system.router, ""),
-        (admin.router, ""),
-        (security.router, "/api/security"),
-        (data_mesh.router, "/api/v1/data-mesh"),
-        (observability.router, "/api/observability"),
-        (crud.router, "/api/v1"),
-        (overmind.router, ""),
-    ]
+    # الموجهات محذوفة - سيتم استخدام API البسيط من app.api.main
+    return []
 
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:

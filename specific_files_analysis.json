@@ -1,0 +1,1966 @@
+{
+  "app/boundaries/service_boundaries.py": {
+    "analysis": {
+      "filepath": "app/boundaries/service_boundaries.py",
+      "total_lines": 433,
+      "functions": [
+        {
+          "name": "get_service_boundary",
+          "lineno": 428,
+          "end_lineno": 433,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [],
+          "args": [],
+          "docstring": "الحصول على مثيل عام من حدود الخدمة"
+        },
+        {
+          "name": "__init__",
+          "lineno": 53,
+          "end_lineno": 57,
+          "lines": 5,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "context_name"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_ubiquitous_language",
+          "lineno": 60,
+          "end_lineno": 62,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [
+            "abstractmethod"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": "الحصول على اللغة المحددة خاصة بالمجال"
+        },
+        {
+          "name": "validate_business_rules",
+          "lineno": 65,
+          "end_lineno": 67,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [
+            "abstractmethod"
+          ],
+          "args": [
+            "self",
+            "data"
+          ],
+          "docstring": "التحقق من قواعد العمل الخاصة بهذا المجال"
+        },
+        {
+          "name": "publish",
+          "lineno": 117,
+          "end_lineno": 119,
+          "lines": 3,
+          "is_async": true,
+          "decorators": [
+            "abstractmethod"
+          ],
+          "args": [
+            "self",
+            "event"
+          ],
+          "docstring": "نشر حدث على الناقل"
+        },
+        {
+          "name": "subscribe",
+          "lineno": 122,
+          "end_lineno": 125,
+          "lines": 4,
+          "is_async": true,
+          "decorators": [
+            "abstractmethod"
+          ],
+          "args": [
+            "self",
+            "event_type",
+            "handler"
+          ],
+          "docstring": "الاشتراك في نوع معين من الأحداث"
+        },
+        {
+          "name": "__init__",
+          "lineno": 135,
+          "end_lineno": 137,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "publish",
+          "lineno": 139,
+          "end_lineno": 152,
+          "lines": 14,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "event"
+          ],
+          "docstring": "نشر حدث وإشعار جميع المشتركين"
+        },
+        {
+          "name": "subscribe",
+          "lineno": 154,
+          "end_lineno": 160,
+          "lines": 7,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "event_type",
+            "handler"
+          ],
+          "docstring": "الاشتراك في نوع معين من الأحداث"
+        },
+        {
+          "name": "get_event_history",
+          "lineno": 162,
+          "end_lineno": 168,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "aggregate_id"
+          ],
+          "docstring": "الحصول على تاريخ الأحداث (للتدقيق والتحليل)"
+        },
+        {
+          "name": "__init__",
+          "lineno": 192,
+          "end_lineno": 195,
+          "lines": 4,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "register_service",
+          "lineno": 197,
+          "end_lineno": 202,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "service"
+          ],
+          "docstring": "تسجيل خدمة جديدة"
+        },
+        {
+          "name": "get_service",
+          "lineno": 204,
+          "end_lineno": 206,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_name"
+          ],
+          "docstring": "الحصول على تعريف خدمة"
+        },
+        {
+          "name": "aggregate_response",
+          "lineno": 208,
+          "end_lineno": 231,
+          "lines": 24,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_calls"
+          ],
+          "docstring": "تجميع استجابات من خدمات متعددة\n\nArgs:\n    service_calls: قائمة من (service_name, endpoint, params)\n\nReturns:\n    استجابة مجمعة من جميع الخدمات"
+        },
+        {
+          "name": "_call_service",
+          "lineno": 233,
+          "end_lineno": 248,
+          "lines": 16,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_name",
+            "endpoint",
+            "params"
+          ],
+          "docstring": "استدعاء خدمة (مثال بسيط)"
+        },
+        {
+          "name": "__init__",
+          "lineno": 277,
+          "end_lineno": 284,
+          "lines": 8,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "config"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "call",
+          "lineno": 286,
+          "end_lineno": 314,
+          "lines": 29,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "func"
+          ],
+          "docstring": "استدعاء دالة عبر قاطع الدائرة\n\nArgs:\n    func: الدالة المراد استدعاؤها\n    *args, **kwargs: معاملات الدالة\n\nReturns:\n    نتيجة الدالة\n\nRaises:\n    Exception: إذا كانت الدائرة مفتوحة أو حدث فشل"
+        },
+        {
+          "name": "_on_success",
+          "lineno": 316,
+          "end_lineno": 324,
+          "lines": 9,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": "معالجة نجاح الاستدعاء"
+        },
+        {
+          "name": "_on_failure",
+          "lineno": 326,
+          "end_lineno": 336,
+          "lines": 11,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": "معالجة فشل الاستدعاء"
+        },
+        {
+          "name": "_should_attempt_reset",
+          "lineno": 338,
+          "end_lineno": 343,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": "التحقق مما إذا كان يجب محاولة إعادة التعيين"
+        },
+        {
+          "name": "__init__",
+          "lineno": 356,
+          "end_lineno": 362,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "max_concurrent",
+            "queue_size"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "execute",
+          "lineno": 364,
+          "end_lineno": 387,
+          "lines": 24,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "func"
+          ],
+          "docstring": "تنفيذ دالة عبر الحاجز\n\nArgs:\n    func: الدالة المراد تنفيذها\n    *args, **kwargs: معاملات الدالة\n\nReturns:\n    نتيجة الدالة"
+        },
+        {
+          "name": "__init__",
+          "lineno": 402,
+          "end_lineno": 407,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_name"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_or_create_circuit_breaker",
+          "lineno": 409,
+          "end_lineno": 414,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "config"
+          ],
+          "docstring": "الحصول على أو إنشاء قاطع دائرة"
+        },
+        {
+          "name": "get_or_create_bulkhead",
+          "lineno": 416,
+          "end_lineno": 422,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "max_concurrent",
+            "queue_size"
+          ],
+          "docstring": "الحصول على أو إنشاء حاجز"
+        }
+      ],
+      "classes": [
+        {
+          "name": "BoundedContext",
+          "lineno": 42,
+          "end_lineno": 67,
+          "lines": 26,
+          "bases": [
+            "ABC"
+          ],
+          "methods": [
+            "__init__",
+            "get_ubiquitous_language",
+            "validate_business_rules"
+          ],
+          "docstring": "المجال الفرعي المحدود (Bounded Context)\n\nكل خدمة تعمل ضمن سياق محدد مع:\n- لغة محددة خاصة بالمجال (Ubiquitous Language)\n- نماذج بيانات مستقلة (Domain Models)\n- قواعد عمل خاصة (Business Rules)\n- واجهات محددة بوضوح (Well-defined Interfaces)"
+        },
+        {
+          "name": "EventType",
+          "lineno": 70,
+          "end_lineno": 85,
+          "lines": 16,
+          "bases": [
+            "Enum"
+          ],
+          "methods": [],
+          "docstring": "أنواع الأحداث في النظام"
+        },
+        {
+          "name": "DomainEvent",
+          "lineno": 89,
+          "end_lineno": 103,
+          "lines": 15,
+          "bases": [],
+          "methods": [],
+          "docstring": "حدث مجال (Domain Event)\n\nالأحداث تمثل شيء حدث في الماضي وهي غير قابلة للتغيير"
+        },
+        {
+          "name": "EventBus",
+          "lineno": 106,
+          "end_lineno": 125,
+          "lines": 20,
+          "bases": [
+            "ABC"
+          ],
+          "methods": [
+            "publish",
+            "subscribe"
+          ],
+          "docstring": "ناقل الأحداث (Event Bus)\n\nيوفر الفصل الزمني بين الناشرين والمستهلكين:\n- الناشر لا يعرف من المستهلكين\n- يمكن إضافة مستهلكين جدد دون تعديل الناشر\n- مرونة في معالجة الفشل والإعادة"
+        },
+        {
+          "name": "InMemoryEventBus",
+          "lineno": 128,
+          "end_lineno": 168,
+          "lines": 41,
+          "bases": [
+            "EventBus"
+          ],
+          "methods": [
+            "__init__",
+            "publish",
+            "subscribe",
+            "get_event_history"
+          ],
+          "docstring": "ناقل أحداث في الذاكرة (للتطوير والاختبار)\n\nفي الإنتاج، استخدم RabbitMQ أو Kafka أو AWS EventBridge"
+        },
+        {
+          "name": "ServiceDefinition",
+          "lineno": 172,
+          "end_lineno": 178,
+          "lines": 7,
+          "bases": [],
+          "methods": [],
+          "docstring": "تعريف خدمة في Gateway"
+        },
+        {
+          "name": "APIGateway",
+          "lineno": 181,
+          "end_lineno": 248,
+          "lines": 68,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "register_service",
+            "get_service",
+            "aggregate_response",
+            "_call_service"
+          ],
+          "docstring": "بوابة API (API Gateway)\n\nتوفر الفصل بين العميل والخدمات الداخلية مع:\n- المصادقة والترخيص\n- تجميع الاستجابات (Response Aggregation)\n- تحويل البروتوكولات\n- التخزين المؤقت (Caching)"
+        },
+        {
+          "name": "CircuitState",
+          "lineno": 251,
+          "end_lineno": 255,
+          "lines": 5,
+          "bases": [
+            "Enum"
+          ],
+          "methods": [],
+          "docstring": "حالات قاطع الدائرة"
+        },
+        {
+          "name": "CircuitBreakerConfig",
+          "lineno": 259,
+          "end_lineno": 264,
+          "lines": 6,
+          "bases": [],
+          "methods": [],
+          "docstring": "تكوين قاطع الدائرة"
+        },
+        {
+          "name": "CircuitBreaker",
+          "lineno": 267,
+          "end_lineno": 343,
+          "lines": 77,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "call",
+            "_on_success",
+            "_on_failure",
+            "_should_attempt_reset"
+          ],
+          "docstring": "قاطع الدائرة (Circuit Breaker)\n\nيمنع الفشل المتسلسل عبر:\n- فتح الدائرة عند فشل متكرر\n- إعادة المحاولة بعد مهلة زمنية\n- استجابة بديلة عند فتح الدائرة"
+        },
+        {
+          "name": "BulkheadExecutor",
+          "lineno": 346,
+          "end_lineno": 387,
+          "lines": 42,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "execute"
+          ],
+          "docstring": "نمط الحاجز (Bulkhead Pattern)\n\nيعزل الموارد لمنع استنزاف موارد الخدمة بالكامل:\n- Thread pool محدد لكل خدمة\n- حد أقصى للطلبات المتزامنة\n- قائمة انتظار محدودة"
+        },
+        {
+          "name": "ServiceBoundary",
+          "lineno": 390,
+          "end_lineno": 422,
+          "lines": 33,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "get_or_create_circuit_breaker",
+            "get_or_create_bulkhead"
+          ],
+          "docstring": "حدود الخدمة (Service Boundary)\n\nيجمع كل أنماط فصل الخدمات في واجهة موحدة:\n- BoundedContext للفصل المجالي\n- EventBus للفصل الزمني\n- APIGateway للفصل بين العميل والخدمات\n- CircuitBreaker للحماية من الفشل\n- BulkheadExecutor لعزل الموارد"
+        }
+      ],
+      "imports": [
+        {
+          "type": "from",
+          "module": "__future__",
+          "name": "annotations",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "asyncio",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "logging",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "abc",
+          "name": "ABC",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "abc",
+          "name": "abstractmethod",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections.abc",
+          "name": "Awaitable",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections.abc",
+          "name": "Callable",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "dataclasses",
+          "name": "dataclass",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "dataclasses",
+          "name": "field",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "timedelta",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "enum",
+          "name": "Enum",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "Any",
+          "alias": null
+        }
+      ],
+      "stats": {
+        "total_functions": 25,
+        "total_classes": 12,
+        "total_imports": 13,
+        "avg_function_lines": 8.84,
+        "avg_class_lines": 29.666666666666668
+      }
+    },
+    "unused_classes": [
+      {
+        "name": "InMemoryEventBus",
+        "lineno": 128,
+        "end_lineno": 168,
+        "lines": 41,
+        "bases": [
+          "EventBus"
+        ],
+        "methods": [
+          "__init__",
+          "publish",
+          "subscribe",
+          "get_event_history"
+        ],
+        "docstring": "ناقل أحداث في الذاكرة (للتطوير والاختبار)\n\nفي الإنتاج، استخدم RabbitMQ أو Kafka أو AWS EventBridge"
+      }
+    ],
+    "unused_functions": [
+      {
+        "name": "get_ubiquitous_language",
+        "lineno": 60,
+        "end_lineno": 62,
+        "lines": 3,
+        "is_async": false,
+        "decorators": [
+          "abstractmethod"
+        ],
+        "args": [
+          "self"
+        ],
+        "docstring": "الحصول على اللغة المحددة خاصة بالمجال"
+      },
+      {
+        "name": "validate_business_rules",
+        "lineno": 65,
+        "end_lineno": 67,
+        "lines": 3,
+        "is_async": false,
+        "decorators": [
+          "abstractmethod"
+        ],
+        "args": [
+          "self",
+          "data"
+        ],
+        "docstring": "التحقق من قواعد العمل الخاصة بهذا المجال"
+      },
+      {
+        "name": "get_event_history",
+        "lineno": 162,
+        "end_lineno": 168,
+        "lines": 7,
+        "is_async": false,
+        "decorators": [],
+        "args": [
+          "self",
+          "aggregate_id"
+        ],
+        "docstring": "الحصول على تاريخ الأحداث (للتدقيق والتحليل)"
+      },
+      {
+        "name": "aggregate_response",
+        "lineno": 208,
+        "end_lineno": 231,
+        "lines": 24,
+        "is_async": true,
+        "decorators": [],
+        "args": [
+          "self",
+          "service_calls"
+        ],
+        "docstring": "تجميع استجابات من خدمات متعددة\n\nArgs:\n    service_calls: قائمة من (service_name, endpoint, params)\n\nReturns:\n    استجابة مجمعة من جميع الخدمات"
+      }
+    ]
+  },
+  "app/telemetry/unified_observability.py": {
+    "analysis": {
+      "filepath": "app/telemetry/unified_observability.py",
+      "total_lines": 422,
+      "functions": [
+        {
+          "name": "get_unified_observability",
+          "lineno": 416,
+          "end_lineno": 422,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [],
+          "args": [],
+          "docstring": null
+        },
+        {
+          "name": "__init__",
+          "lineno": 29,
+          "end_lineno": 53,
+          "lines": 25,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_name",
+            "sample_rate",
+            "sla_target_ms"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "active_traces",
+          "lineno": 57,
+          "end_lineno": 58,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "active_spans",
+          "lineno": 61,
+          "end_lineno": 62,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "completed_traces",
+          "lineno": 65,
+          "end_lineno": 66,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "start_trace",
+          "lineno": 68,
+          "end_lineno": 70,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "operation_name",
+            "parent_context",
+            "tags",
+            "request"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "end_span",
+          "lineno": 72,
+          "end_lineno": 76,
+          "lines": 5,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "span_id",
+            "status",
+            "error_message",
+            "metrics"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "add_span_event",
+          "lineno": 78,
+          "end_lineno": 79,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "span_id",
+            "event_name",
+            "attributes"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "metrics_buffer",
+          "lineno": 83,
+          "end_lineno": 84,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "counters",
+          "lineno": 87,
+          "end_lineno": 88,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "gauges",
+          "lineno": 91,
+          "end_lineno": 92,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "histograms",
+          "lineno": 95,
+          "end_lineno": 96,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "trace_metrics",
+          "lineno": 99,
+          "end_lineno": 100,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "record_metric",
+          "lineno": 102,
+          "end_lineno": 104,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "value",
+            "labels",
+            "trace_id",
+            "span_id"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "increment_counter",
+          "lineno": 106,
+          "end_lineno": 107,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "amount",
+            "labels"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "set_gauge",
+          "lineno": 109,
+          "end_lineno": 110,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "name",
+            "value",
+            "labels"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_percentiles",
+          "lineno": 112,
+          "end_lineno": 113,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "metric_name"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "export_prometheus_metrics",
+          "lineno": 115,
+          "end_lineno": 116,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "logs_buffer",
+          "lineno": 120,
+          "end_lineno": 121,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "trace_logs",
+          "lineno": 124,
+          "end_lineno": 125,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [
+            "property"
+          ],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "log",
+          "lineno": 127,
+          "end_lineno": 130,
+          "lines": 4,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "level",
+            "message",
+            "context",
+            "exception",
+            "trace_id",
+            "span_id"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_trace_with_correlation",
+          "lineno": 134,
+          "end_lineno": 184,
+          "lines": 51,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "trace_id"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "find_traces_by_criteria",
+          "lineno": 186,
+          "end_lineno": 210,
+          "lines": 25,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "min_duration_ms",
+            "has_errors",
+            "operation_name",
+            "limit"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_correlate_trace",
+          "lineno": 212,
+          "end_lineno": 214,
+          "lines": 3,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "trace"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_golden_signals",
+          "lineno": 216,
+          "end_lineno": 275,
+          "lines": 60,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "time_window_seconds"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_check_sla_compliance",
+          "lineno": 277,
+          "end_lineno": 289,
+          "lines": 13,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "latency",
+            "errors"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "detect_anomalies",
+          "lineno": 291,
+          "end_lineno": 324,
+          "lines": 34,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_create_anomaly_alert",
+          "lineno": 326,
+          "end_lineno": 339,
+          "lines": 14,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "severity",
+            "anomaly_type",
+            "description",
+            "metrics"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_get_recommended_action",
+          "lineno": 341,
+          "end_lineno": 347,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "anomaly_type"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_service_dependencies",
+          "lineno": 349,
+          "end_lineno": 372,
+          "lines": 24,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_span_to_dict",
+          "lineno": 374,
+          "end_lineno": 388,
+          "lines": 15,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "span"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_generate_trace_id",
+          "lineno": 391,
+          "end_lineno": 392,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_generate_span_id",
+          "lineno": 394,
+          "end_lineno": 395,
+          "lines": 2,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "get_statistics",
+          "lineno": 397,
+          "end_lineno": 410,
+          "lines": 14,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        }
+      ],
+      "classes": [
+        {
+          "name": "UnifiedObservabilityService",
+          "lineno": 28,
+          "end_lineno": 410,
+          "lines": 383,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "active_traces",
+            "active_spans",
+            "completed_traces",
+            "start_trace",
+            "end_span",
+            "add_span_event",
+            "metrics_buffer",
+            "counters",
+            "gauges",
+            "histograms",
+            "trace_metrics",
+            "record_metric",
+            "increment_counter",
+            "set_gauge",
+            "get_percentiles",
+            "export_prometheus_metrics",
+            "logs_buffer",
+            "trace_logs",
+            "log",
+            "get_trace_with_correlation",
+            "find_traces_by_criteria",
+            "_correlate_trace",
+            "get_golden_signals",
+            "_check_sla_compliance",
+            "detect_anomalies",
+            "_create_anomaly_alert",
+            "_get_recommended_action",
+            "get_service_dependencies",
+            "_span_to_dict",
+            "_generate_trace_id",
+            "_generate_span_id",
+            "get_statistics"
+          ],
+          "docstring": null
+        }
+      ],
+      "imports": [
+        {
+          "type": "import",
+          "module": "statistics",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "threading",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "uuid",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections",
+          "name": "defaultdict",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections",
+          "name": "deque",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "dataclasses",
+          "name": "asdict",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "UTC",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "Any",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "fastapi",
+          "name": "Request",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.metrics",
+          "name": "MetricsManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "AlertSeverity",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "AnomalyAlert",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "CorrelatedLog",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "MetricSample",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "TraceContext",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "UnifiedSpan",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.models",
+          "name": "UnifiedTrace",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.structured_logging",
+          "name": "LoggingManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.tracing",
+          "name": "TracingManager",
+          "alias": null
+        }
+      ],
+      "stats": {
+        "total_functions": 34,
+        "total_classes": 1,
+        "total_imports": 21,
+        "avg_function_lines": 10.029411764705882,
+        "avg_class_lines": 383.0
+      }
+    },
+    "unused_classes": [],
+    "unused_functions": []
+  },
+  "app/core/gateway/mesh.py": {
+    "analysis": {
+      "filepath": "app/core/gateway/mesh.py",
+      "total_lines": 408,
+      "functions": [
+        {
+          "name": "get_ai_client",
+          "lineno": 393,
+          "end_lineno": 408,
+          "lines": 16,
+          "is_async": false,
+          "decorators": [],
+          "args": [],
+          "docstring": "Factory function to get AI client instance."
+        },
+        {
+          "name": "stream_chat",
+          "lineno": 49,
+          "end_lineno": 49,
+          "lines": 1,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "messages"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "send_message",
+          "lineno": 51,
+          "end_lineno": 56,
+          "lines": 6,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "system_prompt",
+            "user_message",
+            "temperature"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "__aiter__",
+          "lineno": 58,
+          "end_lineno": 59,
+          "lines": 2,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "__init__",
+          "lineno": 68,
+          "end_lineno": 80,
+          "lines": 13,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "api_key"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_initialize_nodes",
+          "lineno": 82,
+          "end_lineno": 110,
+          "lines": 29,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_register_nodes_with_omni_router",
+          "lineno": 112,
+          "end_lineno": 115,
+          "lines": 4,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_get_prioritized_nodes",
+          "lineno": 117,
+          "end_lineno": 149,
+          "lines": 33,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "prompt"
+          ],
+          "docstring": "Returns a list of nodes sorted by their Omni-Cognitive Score."
+        },
+        {
+          "name": "_calculate_quality_score",
+          "lineno": 151,
+          "end_lineno": 163,
+          "lines": 13,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "full_content"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_record_metrics",
+          "lineno": 165,
+          "end_lineno": 193,
+          "lines": 29,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "node",
+            "prompt",
+            "duration_ms",
+            "success",
+            "full_content",
+            "quality_score",
+            "empty_response"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "stream_chat",
+          "lineno": 195,
+          "end_lineno": 275,
+          "lines": 81,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "messages"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "_stream_from_node_with_retry",
+          "lineno": 277,
+          "end_lineno": 354,
+          "lines": 78,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "node",
+            "messages"
+          ],
+          "docstring": "Streams from a node with retry logic."
+        },
+        {
+          "name": "send_message",
+          "lineno": 356,
+          "end_lineno": 390,
+          "lines": 35,
+          "is_async": true,
+          "decorators": [],
+          "args": [
+            "self",
+            "system_prompt",
+            "user_message",
+            "temperature"
+          ],
+          "docstring": "دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).\n\nتستخدم stream_chat داخلياً وتجمع كل الأجزاء في نص واحد.\n\nArgs:\n    system_prompt: رسالة النظام (السياق).\n    user_message: رسالة المستخدم.\n    temperature: درجة الإبداع (0.0 = دقيق، 1.0 = إبداعي).\n    \nReturns:\n    str: الرد الكامل من النموذج."
+        }
+      ],
+      "classes": [
+        {
+          "name": "AIClient",
+          "lineno": 48,
+          "end_lineno": 59,
+          "lines": 12,
+          "bases": [
+            "Protocol"
+          ],
+          "methods": [
+            "stream_chat",
+            "send_message",
+            "__aiter__"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "NeuralRoutingMesh",
+          "lineno": 62,
+          "end_lineno": 390,
+          "lines": 329,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "_initialize_nodes",
+            "_register_nodes_with_omni_router",
+            "_get_prioritized_nodes",
+            "_calculate_quality_score",
+            "_record_metrics",
+            "stream_chat",
+            "_stream_from_node_with_retry",
+            "send_message"
+          ],
+          "docstring": "The 'Superhuman' Router (V7.2).\nRefactored for SRP and Modularity."
+        }
+      ],
+      "imports": [
+        {
+          "type": "import",
+          "module": "asyncio",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "hashlib",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "json",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "logging",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections.abc",
+          "name": "AsyncGenerator",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "Protocol",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "runtime_checkable",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "httpx",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.config.ai_models",
+          "name": "get_ai_config",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.cognitive_cache",
+          "name": "get_cognitive_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.circuit_breaker",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.connection",
+          "name": "BASE_TIMEOUT",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.connection",
+          "name": "ConnectionManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.exceptions",
+          "name": "AIAllModelsExhaustedError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.exceptions",
+          "name": "AIConnectionError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.exceptions",
+          "name": "AIRateLimitError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.node",
+          "name": "NeuralNode",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.math.omni_router",
+          "name": "get_omni_router",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.superhuman_performance_optimizer",
+          "name": "get_performance_optimizer",
+          "alias": null
+        }
+      ],
+      "stats": {
+        "total_functions": 13,
+        "total_classes": 2,
+        "total_imports": 20,
+        "avg_function_lines": 26.153846153846153,
+        "avg_class_lines": 170.5
+      }
+    },
+    "unused_classes": [],
+    "unused_functions": []
+  },
+  "app/core/error_handling.py": {
+    "analysis": {
+      "filepath": "app/core/error_handling.py",
+      "total_lines": 384,
+      "functions": [
+        {
+          "name": "safe_execute",
+          "lineno": 36,
+          "end_lineno": 74,
+          "lines": 39,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "default_return",
+            "log_error",
+            "error_message",
+            "raise_on_error"
+          ],
+          "docstring": "Decorator for safe function execution with automatic error handling.\n\nEliminates the need for repetitive try-except blocks.\n\nArgs:\n    default_return: Value to return on error\n    log_error: Whether to log the error\n    error_message: Custom error message\n    raise_on_error: Whether to re-raise the exception\n\nExample:\n    @safe_execute(default_return={}, log_error=True)\n    def risky_operation():\n        return dangerous_call()"
+        },
+        {
+          "name": "retry_on_failure",
+          "lineno": 77,
+          "end_lineno": 130,
+          "lines": 54,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "max_retries",
+            "delay",
+            "backoff",
+            "exceptions",
+            "log_retry"
+          ],
+          "docstring": "Decorator to retry function on failure with exponential backoff.\n\nArgs:\n    max_retries: Maximum number of retry attempts\n    delay: Initial delay between retries (seconds)\n    backoff: Multiplier for delay after each retry\n    exceptions: Tuple of exceptions to catch and retry\n    log_retry: Whether to log retry attempts\n\nExample:\n    @retry_on_failure(max_retries=3, delay=1.0)\n    def unstable_api_call():\n        return external_service.call()"
+        },
+        {
+          "name": "suppress_errors",
+          "lineno": 133,
+          "end_lineno": 159,
+          "lines": 27,
+          "is_async": false,
+          "decorators": [],
+          "args": [],
+          "docstring": "Decorator to suppress specific exceptions.\n\nArgs:\n    *exceptions: Exception types to suppress\n    log_error: Whether to log suppressed errors\n\nExample:\n    @suppress_errors(ValueError, KeyError, log_error=True)\n    def parse_data(data):\n        return data['key']  # Won't crash if key missing"
+        },
+        {
+          "name": "safe_context",
+          "lineno": 166,
+          "end_lineno": 192,
+          "lines": 27,
+          "is_async": false,
+          "decorators": [
+            "contextmanager"
+          ],
+          "args": [
+            "error_message",
+            "default_return",
+            "log_error",
+            "raise_on_error"
+          ],
+          "docstring": "Context manager for safe execution blocks.\n\nArgs:\n    error_message: Message to log on error\n    default_return: Value to yield on error\n    log_error: Whether to log the error\n    raise_on_error: Whether to re-raise the exception\n\nExample:\n    with safe_context(\"Database operation failed\", default_return=[]):\n        results = db.query(Model).all()\n    # results will be [] if error occurs"
+        },
+        {
+          "name": "capture_errors",
+          "lineno": 197,
+          "end_lineno": 215,
+          "lines": 19,
+          "is_async": false,
+          "decorators": [
+            "contextmanager"
+          ],
+          "args": [
+            "error_list"
+          ],
+          "docstring": "Context manager to capture errors without crashing.\n\nArgs:\n    error_list: List to append captured errors to\n\nExample:\n    errors = []\n    with capture_errors(errors):\n        dangerous_operation()\n    # Check errors list after"
+        },
+        {
+          "name": "log_exception",
+          "lineno": 282,
+          "end_lineno": 297,
+          "lines": 16,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "logger_instance",
+            "message",
+            "level"
+          ],
+          "docstring": "Log current exception with traceback.\n\nArgs:\n    logger_instance: Logger to use (or default)\n    message: Message to log\n    level: Log level"
+        },
+        {
+          "name": "format_exception",
+          "lineno": 300,
+          "end_lineno": 318,
+          "lines": 19,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "error",
+            "include_traceback"
+          ],
+          "docstring": "Format exception for display.\n\nArgs:\n    error: Exception to format\n    include_traceback: Whether to include full traceback\n\nReturns:\n    Formatted error string"
+        },
+        {
+          "name": "decorator",
+          "lineno": 59,
+          "end_lineno": 72,
+          "lines": 14,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "func"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "decorator",
+          "lineno": 100,
+          "end_lineno": 128,
+          "lines": 29,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "func"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "decorator",
+          "lineno": 147,
+          "end_lineno": 157,
+          "lines": 11,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "func"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "__init__",
+          "lineno": 224,
+          "end_lineno": 227,
+          "lines": 4,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "service_name"
+          ],
+          "docstring": null
+        },
+        {
+          "name": "handle",
+          "lineno": 229,
+          "end_lineno": 254,
+          "lines": 26,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "error",
+            "context",
+            "severity"
+          ],
+          "docstring": "Handle an error with logging and metrics.\n\nArgs:\n    error: The exception to handle\n    context: Additional context information\n    severity: Log severity level"
+        },
+        {
+          "name": "wrap_function",
+          "lineno": 256,
+          "end_lineno": 276,
+          "lines": 21,
+          "is_async": false,
+          "decorators": [],
+          "args": [
+            "self",
+            "func",
+            "default_return"
+          ],
+          "docstring": "Wrap a function with error handling.\n\nArgs:\n    func: Function to wrap\n    default_return: Value to return on error\n\nReturns:\n    Wrapped function"
+        },
+        {
+          "name": "wrapper",
+          "lineno": 61,
+          "end_lineno": 70,
+          "lines": 10,
+          "is_async": false,
+          "decorators": [
+            "functools.wraps"
+          ],
+          "args": [],
+          "docstring": null
+        },
+        {
+          "name": "wrapper",
+          "lineno": 102,
+          "end_lineno": 126,
+          "lines": 25,
+          "is_async": false,
+          "decorators": [
+            "functools.wraps"
+          ],
+          "args": [],
+          "docstring": null
+        },
+        {
+          "name": "wrapper",
+          "lineno": 149,
+          "end_lineno": 155,
+          "lines": 7,
+          "is_async": false,
+          "decorators": [
+            "functools.wraps"
+          ],
+          "args": [],
+          "docstring": null
+        },
+        {
+          "name": "wrapper",
+          "lineno": 269,
+          "end_lineno": 274,
+          "lines": 6,
+          "is_async": false,
+          "decorators": [
+            "functools.wraps"
+          ],
+          "args": [],
+          "docstring": null
+        }
+      ],
+      "classes": [
+        {
+          "name": "ErrorHandler",
+          "lineno": 221,
+          "end_lineno": 276,
+          "lines": 56,
+          "bases": [],
+          "methods": [
+            "__init__",
+            "handle",
+            "wrap_function"
+          ],
+          "docstring": "Centralized error handling with logging and metrics."
+        }
+      ],
+      "imports": [
+        {
+          "type": "import",
+          "module": "functools",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "logging",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "traceback",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "collections.abc",
+          "name": "Callable",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "contextlib",
+          "name": "contextmanager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "Any",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "TypeVar",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "cast",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "alias": null
+        }
+      ],
+      "stats": {
+        "total_functions": 17,
+        "total_classes": 1,
+        "total_imports": 9,
+        "avg_function_lines": 20.823529411764707,
+        "avg_class_lines": 56.0
+      }
+    },
+    "unused_classes": [],
+    "unused_functions": []
+  }
+}

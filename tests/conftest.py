@@ -149,25 +149,19 @@ async def db_session() -> AsyncSession:
 
 from unittest.mock import MagicMock
 
-from app.core.ai_gateway import get_ai_client
-from app.core.security import generate_service_token
+# الوحدات المحذوفة - سيتم استخدام mocks بسيطة
 from app.models import User
 
 
 @pytest.fixture
 def mock_ai_client(test_app):
+    """Mock AI client for testing"""
     mock_gateway = MagicMock()
 
     async def default_stream(messages):
         yield {"role": "assistant", "content": "Mocked response"}
 
     mock_gateway.stream_chat = default_stream
-
-    def mock_get_client():
-        return mock_gateway
-
-    original_override = test_app.dependency_overrides.get(get_ai_client)
-    test_app.dependency_overrides[get_ai_client] = mock_get_client
     yield mock_gateway
     if original_override:
         test_app.dependency_overrides[get_ai_client] = original_override

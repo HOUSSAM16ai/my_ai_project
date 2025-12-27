@@ -1,0 +1,6596 @@
+{
+  "summary": {
+    "total_files": 339,
+    "total_lines": 36023,
+    "total_functions": 1747,
+    "total_classes": 591,
+    "never_imported_files": 0,
+    "uncalled_functions": 447,
+    "unused_classes": 129,
+    "circular_dependencies": 0,
+    "duplicate_functions": 210,
+    "duplicate_classes": 35
+  },
+  "details": {
+    "never_imported": [],
+    "uncalled_functions": [
+      {
+        "name": "get_ubiquitous_language",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 60
+      },
+      {
+        "name": "validate_business_rules",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 65
+      },
+      {
+        "name": "subscribe",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 122
+      },
+      {
+        "name": "subscribe",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 154
+      },
+      {
+        "name": "subscribe",
+        "file": "app/core/event_bus.py",
+        "line": 92
+      },
+      {
+        "name": "get_event_history",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 162
+      },
+      {
+        "name": "register_service",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 197
+      },
+      {
+        "name": "register_service",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 139
+      },
+      {
+        "name": "register_service",
+        "file": "app/services/adaptive/facade.py",
+        "line": 43
+      },
+      {
+        "name": "aggregate_response",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 208
+      },
+      {
+        "name": "add_rule",
+        "file": "app/boundaries/policy/compliance.py",
+        "line": 43
+      },
+      {
+        "name": "get_policy",
+        "file": "app/boundaries/policy/governance.py",
+        "line": 62
+      },
+      {
+        "name": "should_encrypt",
+        "file": "app/boundaries/policy/governance.py",
+        "line": 67
+      },
+      {
+        "name": "is_location_allowed",
+        "file": "app/boundaries/policy/governance.py",
+        "line": 71
+      },
+      {
+        "name": "is_expired",
+        "file": "app/boundaries/policy/auth.py",
+        "line": 28
+      },
+      {
+        "name": "is_expired",
+        "file": "app/core/cognitive_cache.py",
+        "line": 45
+      },
+      {
+        "name": "authenticate",
+        "file": "app/boundaries/policy/auth.py",
+        "line": 47
+      },
+      {
+        "name": "authenticate",
+        "file": "app/security/secure_auth.py",
+        "line": 13
+      },
+      {
+        "name": "refresh_token",
+        "file": "app/boundaries/policy/auth.py",
+        "line": 61
+      },
+      {
+        "name": "revoke_token",
+        "file": "app/boundaries/policy/auth.py",
+        "line": 66
+      },
+      {
+        "name": "validate_access",
+        "file": "app/boundaries/data/database.py",
+        "line": 46
+      },
+      {
+        "name": "create_saga",
+        "file": "app/boundaries/data/core.py",
+        "line": 111
+      },
+      {
+        "name": "create_saga",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 139
+      },
+      {
+        "name": "get_data_boundary",
+        "file": "app/boundaries/data/core.py",
+        "line": 119
+      },
+      {
+        "name": "get_current_version",
+        "file": "app/boundaries/data/events.py",
+        "line": 46
+      },
+      {
+        "name": "get_current_version",
+        "file": "app/boundaries/data/events.py",
+        "line": 68
+      },
+      {
+        "name": "load_from_history",
+        "file": "app/boundaries/data/events.py",
+        "line": 95
+      },
+      {
+        "name": "add_step",
+        "file": "app/boundaries/data/saga.py",
+        "line": 66
+      },
+      {
+        "name": "execute_saga",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 202
+      },
+      {
+        "name": "get_saga_status",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 432
+      },
+      {
+        "name": "get_saga_events",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 458
+      },
+      {
+        "name": "get_metrics",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 474
+      },
+      {
+        "name": "get_metrics",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 186
+      },
+      {
+        "name": "get_metrics",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 267
+      },
+      {
+        "name": "get_metrics",
+        "file": "app/services/admin/streaming/service.py",
+        "line": 337
+      },
+      {
+        "name": "get_saga_orchestrator",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 501
+      },
+      {
+        "name": "get_governance_service",
+        "file": "app/services/api/api_governance_service.py",
+        "line": 14
+      },
+      {
+        "name": "get_security_service",
+        "file": "app/services/api/api_security_service.py",
+        "line": 14
+      },
+      {
+        "name": "vault",
+        "file": "app/services/api/api_config_secrets_service.py",
+        "line": 70
+      },
+      {
+        "name": "lock",
+        "file": "app/services/api/api_config_secrets_service.py",
+        "line": 74
+      },
+      {
+        "name": "get_config_secrets_service",
+        "file": "app/services/api/api_config_secrets_service.py",
+        "line": 136
+      },
+      {
+        "name": "calculate_advanced_risk_score",
+        "file": "app/services/security_metrics/facade.py",
+        "line": 35
+      },
+      {
+        "name": "add_finding",
+        "file": "app/services/security_metrics/facade.py",
+        "line": 47
+      },
+      {
+        "name": "get_security_metrics_engine",
+        "file": "app/services/security_metrics/facade.py",
+        "line": 70
+      },
+      {
+        "name": "register_llm_pre_hook",
+        "file": "app/services/llm_client/service.py",
+        "line": 26
+      },
+      {
+        "name": "register_llm_post_hook",
+        "file": "app/services/llm_client/service.py",
+        "line": 30
+      },
+      {
+        "name": "invoke_chat_stream",
+        "file": "app/services/llm_client/service.py",
+        "line": 201
+      },
+      {
+        "name": "get_task_by_id",
+        "file": "app/services/crud/crud_persistence.py",
+        "line": 122
+      },
+      {
+        "name": "get_project_context_for_ai",
+        "file": "app/services/project_context/__init__.py",
+        "line": 31
+      },
+      {
+        "name": "create_conversation",
+        "file": "app/services/users/admin_ai_service.py",
+        "line": 19
+      },
+      {
+        "name": "get_conversation_history",
+        "file": "app/services/users/admin_ai_service.py",
+        "line": 30
+      },
+      {
+        "name": "answer_question",
+        "file": "app/services/users/admin_ai_service.py",
+        "line": 65
+      },
+      {
+        "name": "get_recent_conversations",
+        "file": "app/services/users/history_service.py",
+        "line": 20
+      },
+      {
+        "name": "rate_message_in_db",
+        "file": "app/services/users/history_service.py",
+        "line": 50
+      },
+      {
+        "name": "ensure_admin_user_exists",
+        "file": "app/services/users/user_service.py",
+        "line": 112
+      },
+      {
+        "name": "get_all_users_async",
+        "file": "app/services/users/user_service.py",
+        "line": 177
+      },
+      {
+        "name": "create_new_user_async",
+        "file": "app/services/users/user_service.py",
+        "line": 188
+      },
+      {
+        "name": "bounded_contexts",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 52
+      },
+      {
+        "name": "data_contracts",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 56
+      },
+      {
+        "name": "data_products",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 60
+      },
+      {
+        "name": "governance_policies",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 64
+      },
+      {
+        "name": "quality_metrics",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 68
+      },
+      {
+        "name": "schema_evolutions",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 72
+      },
+      {
+        "name": "event_streams",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 76
+      },
+      {
+        "name": "get_data_mesh_service",
+        "file": "app/services/data_mesh/facade.py",
+        "line": 148
+      },
+      {
+        "name": "register_user",
+        "file": "app/services/boundaries/auth_boundary_service.py",
+        "line": 53
+      },
+      {
+        "name": "authenticate_user",
+        "file": "app/services/boundaries/auth_boundary_service.py",
+        "line": 93
+      },
+      {
+        "name": "get_current_user",
+        "file": "app/services/boundaries/auth_boundary_service.py",
+        "line": 164
+      },
+      {
+        "name": "extract_token_from_request",
+        "file": "app/services/boundaries/auth_boundary_service.py",
+        "line": 199
+      },
+      {
+        "name": "list_items",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 114
+      },
+      {
+        "name": "get_item",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 145
+      },
+      {
+        "name": "create_item",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 157
+      },
+      {
+        "name": "update_item",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 162
+      },
+      {
+        "name": "delete_item",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 166
+      },
+      {
+        "name": "get_system_health",
+        "file": "app/services/boundaries/observability_boundary_service.py",
+        "line": 29
+      },
+      {
+        "name": "get_performance_snapshot",
+        "file": "app/services/boundaries/observability_boundary_service.py",
+        "line": 51
+      },
+      {
+        "name": "get_endpoint_analytics",
+        "file": "app/services/boundaries/observability_boundary_service.py",
+        "line": 57
+      },
+      {
+        "name": "get_active_alerts",
+        "file": "app/services/boundaries/observability_boundary_service.py",
+        "line": 63
+      },
+      {
+        "name": "validate_auth_header",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 66
+      },
+      {
+        "name": "orchestrate_chat_stream",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 187
+      },
+      {
+        "name": "get_latest_conversation_details",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 219
+      },
+      {
+        "name": "list_user_conversations",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 241
+      },
+      {
+        "name": "get_conversation_details",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 257
+      },
+      {
+        "name": "get_superhuman_security_system",
+        "file": "app/services/ai_security/facade.py",
+        "line": 84
+      },
+      {
+        "name": "create_experiment",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 139
+      },
+      {
+        "name": "get_experiment_report",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 168
+      },
+      {
+        "name": "get_chaos_engineer",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 206
+      },
+      {
+        "name": "register_api_spec",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 155
+      },
+      {
+        "name": "get_api_specs",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 163
+      },
+      {
+        "name": "get_templates",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 173
+      },
+      {
+        "name": "update_service_health",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 182
+      },
+      {
+        "name": "get_service_health",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 192
+      },
+      {
+        "name": "get_service_health",
+        "file": "app/services/observability/aiops/service.py",
+        "line": 412
+      },
+      {
+        "name": "get_dependency_graph",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 196
+      },
+      {
+        "name": "get_catalog_metrics",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 207
+      },
+      {
+        "name": "get_service_catalog",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 227
+      },
+      {
+        "name": "inject",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 82
+      },
+      {
+        "name": "extract",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 96
+      },
+      {
+        "name": "add_span_tag",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 184
+      },
+      {
+        "name": "add_span_log",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 191
+      },
+      {
+        "name": "add_baggage",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 201
+      },
+      {
+        "name": "get_trace",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 236
+      },
+      {
+        "name": "get_recent_traces",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 241
+      },
+      {
+        "name": "get_service_dependencies",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 246
+      },
+      {
+        "name": "get_distributed_tracer",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 311
+      },
+      {
+        "name": "execute_safely",
+        "file": "app/services/system/distributed_resilience_service.py",
+        "line": 21
+      },
+      {
+        "name": "is_database_connected",
+        "file": "app/services/system/system_service.py",
+        "line": 31
+      },
+      {
+        "name": "verify_system_integrity",
+        "file": "app/services/system/system_service.py",
+        "line": 36
+      },
+      {
+        "name": "get_database_health",
+        "file": "app/services/system/database_service.py",
+        "line": 37
+      },
+      {
+        "name": "get_all_tables",
+        "file": "app/services/system/database_service.py",
+        "line": 40
+      },
+      {
+        "name": "get_table_schema",
+        "file": "app/services/system/database_service.py",
+        "line": 45
+      },
+      {
+        "name": "get_table_data",
+        "file": "app/services/system/database_service.py",
+        "line": 48
+      },
+      {
+        "name": "get_record",
+        "file": "app/services/system/database_service.py",
+        "line": 59
+      },
+      {
+        "name": "create_record",
+        "file": "app/services/system/database_service.py",
+        "line": 62
+      },
+      {
+        "name": "update_record",
+        "file": "app/services/system/database_service.py",
+        "line": 65
+      },
+      {
+        "name": "delete_record",
+        "file": "app/services/system/database_service.py",
+        "line": 70
+      },
+      {
+        "name": "execute_query",
+        "file": "app/services/system/database_service.py",
+        "line": 73
+      },
+      {
+        "name": "create_mission",
+        "file": "app/services/overmind/state.py",
+        "line": 43
+      },
+      {
+        "name": "persist_plan",
+        "file": "app/services/overmind/state.py",
+        "line": 105
+      },
+      {
+        "name": "mark_task_running",
+        "file": "app/services/overmind/state.py",
+        "line": 173
+      },
+      {
+        "name": "mark_task_running",
+        "file": "app/core/protocols.py",
+        "line": 230
+      },
+      {
+        "name": "mark_task_complete",
+        "file": "app/services/overmind/state.py",
+        "line": 182
+      },
+      {
+        "name": "mark_task_complete",
+        "file": "app/core/protocols.py",
+        "line": 234
+      },
+      {
+        "name": "mark_task_failed",
+        "file": "app/services/overmind/state.py",
+        "line": 194
+      },
+      {
+        "name": "mark_task_failed",
+        "file": "app/core/protocols.py",
+        "line": 238
+      },
+      {
+        "name": "monitor_mission_events",
+        "file": "app/services/overmind/state.py",
+        "line": 203
+      },
+      {
+        "name": "monitor_mission_events",
+        "file": "app/core/protocols.py",
+        "line": 242
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 48
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 61
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 106
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 131
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 150
+      },
+      {
+        "name": "priority",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 189
+      },
+      {
+        "name": "priority",
+        "file": "app/services/chat/handlers/strategy_handlers.py",
+        "line": 31
+      },
+      {
+        "name": "priority",
+        "file": "app/core/patterns/strategy.py",
+        "line": 29
+      },
+      {
+        "name": "add_strategy",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 258
+      },
+      {
+        "name": "remove_strategy",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 263
+      },
+      {
+        "name": "auto_scale",
+        "file": "app/services/adaptive/facade.py",
+        "line": 83
+      },
+      {
+        "name": "route_request",
+        "file": "app/services/adaptive/facade.py",
+        "line": 177
+      },
+      {
+        "name": "route_request",
+        "file": "app/core/gateway/routing.py",
+        "line": 141
+      },
+      {
+        "name": "get_service_status",
+        "file": "app/services/adaptive/facade.py",
+        "line": 186
+      },
+      {
+        "name": "get_adaptive_microservices",
+        "file": "app/services/adaptive/facade.py",
+        "line": 234
+      },
+      {
+        "name": "with_description",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 31
+      },
+      {
+        "name": "with_parameters",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 36
+      },
+      {
+        "name": "with_category",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 41
+      },
+      {
+        "name": "with_aliases",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 46
+      },
+      {
+        "name": "with_capabilities",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 51
+      },
+      {
+        "name": "allow_disable",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 56
+      },
+      {
+        "name": "with_handler",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 61
+      },
+      {
+        "name": "build",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 66
+      },
+      {
+        "name": "build",
+        "file": "app/core/patterns/builder.py",
+        "line": 25
+      },
+      {
+        "name": "name",
+        "file": "app/services/agent_tools/tool_model.py",
+        "line": 49
+      },
+      {
+        "name": "name",
+        "file": "app/core/protocols.py",
+        "line": 45
+      },
+      {
+        "name": "canonical_name",
+        "file": "app/services/agent_tools/tool_model.py",
+        "line": 53
+      },
+      {
+        "name": "has_tool",
+        "file": "app/services/agent_tools/core.py",
+        "line": 142
+      },
+      {
+        "name": "get_tool",
+        "file": "app/services/agent_tools/core.py",
+        "line": 146
+      },
+      {
+        "name": "list_tools",
+        "file": "app/services/agent_tools/core.py",
+        "line": 153
+      },
+      {
+        "name": "list_tools",
+        "file": "app/services/agent_tools/registry.py",
+        "line": 78
+      },
+      {
+        "name": "decorator",
+        "file": "app/services/agent_tools/core.py",
+        "line": 309
+      },
+      {
+        "name": "decorator",
+        "file": "app/services/system/resilience/service.py",
+        "line": 130
+      },
+      {
+        "name": "decorator",
+        "file": "app/core/error_handling.py",
+        "line": 59
+      },
+      {
+        "name": "decorator",
+        "file": "app/core/error_handling.py",
+        "line": 100
+      },
+      {
+        "name": "decorator",
+        "file": "app/core/error_handling.py",
+        "line": 147
+      },
+      {
+        "name": "decorator",
+        "file": "app/core/gateway/service.py",
+        "line": 185
+      },
+      {
+        "name": "decorator",
+        "file": "app/middleware/rate_limiter_middleware.py",
+        "line": 154
+      },
+      {
+        "name": "wrapper",
+        "file": "app/services/agent_tools/core.py",
+        "line": 316
+      },
+      {
+        "name": "wrapper",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 93
+      },
+      {
+        "name": "wrapper",
+        "file": "app/services/system/resilience/service.py",
+        "line": 132
+      },
+      {
+        "name": "wrapper",
+        "file": "app/core/error_handling.py",
+        "line": 61
+      },
+      {
+        "name": "wrapper",
+        "file": "app/core/error_handling.py",
+        "line": 102
+      },
+      {
+        "name": "wrapper",
+        "file": "app/core/error_handling.py",
+        "line": 149
+      },
+      {
+        "name": "wrapper",
+        "file": "app/core/error_handling.py",
+        "line": 269
+      },
+      {
+        "name": "wrapper",
+        "file": "app/middleware/rate_limiter_middleware.py",
+        "line": 157
+      },
+      {
+        "name": "get_tools_schema",
+        "file": "app/services/agent_tools/core.py",
+        "line": 345
+      },
+      {
+        "name": "unregister",
+        "file": "app/services/agent_tools/registry.py",
+        "line": 50
+      },
+      {
+        "name": "unregister",
+        "file": "app/core/registry/plugin_registry.py",
+        "line": 70
+      },
+      {
+        "name": "unregister",
+        "file": "app/middleware/core/hooks.py",
+        "line": 46
+      },
+      {
+        "name": "unregister",
+        "file": "app/middleware/core/registry.py",
+        "line": 44
+      },
+      {
+        "name": "get_canonical_name",
+        "file": "app/services/agent_tools/registry.py",
+        "line": 71
+      },
+      {
+        "name": "get_project_metrics_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 122
+      },
+      {
+        "name": "count_files_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 125
+      },
+      {
+        "name": "get_active_context_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 128
+      },
+      {
+        "name": "generic_think_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 135
+      },
+      {
+        "name": "summarize_text_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 139
+      },
+      {
+        "name": "refine_text_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 143
+      },
+      {
+        "name": "write_file_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 147
+      },
+      {
+        "name": "write_file_if_changed_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 151
+      },
+      {
+        "name": "append_file_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 155
+      },
+      {
+        "name": "read_file_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 159
+      },
+      {
+        "name": "file_exists_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 163
+      },
+      {
+        "name": "list_dir_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 167
+      },
+      {
+        "name": "delete_file_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 171
+      },
+      {
+        "name": "ensure_file_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 175
+      },
+      {
+        "name": "ensure_directory_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 179
+      },
+      {
+        "name": "introspect_tools_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 183
+      },
+      {
+        "name": "memory_put_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 187
+      },
+      {
+        "name": "memory_get_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 191
+      },
+      {
+        "name": "dispatch_tool_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 195
+      },
+      {
+        "name": "analyze_path_semantics_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 199
+      },
+      {
+        "name": "reload_deep_struct_map_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 203
+      },
+      {
+        "name": "read_bulk_files_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 207
+      },
+      {
+        "name": "code_index_project_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 211
+      },
+      {
+        "name": "code_search_lexical_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 215
+      },
+      {
+        "name": "code_search_semantic_tool",
+        "file": "app/services/agent_tools/__init__.py",
+        "line": 219
+      },
+      {
+        "name": "calculate_metrics",
+        "file": "app/services/security_metrics/application/metrics_calculator.py",
+        "line": 15
+      },
+      {
+        "name": "calculate_metrics",
+        "file": "app/services/security_metrics/domain/ports.py",
+        "line": 43
+      },
+      {
+        "name": "detect_anomalies",
+        "file": "app/services/security_metrics/domain/ports.py",
+        "line": 54
+      },
+      {
+        "name": "update_finding",
+        "file": "app/services/security_metrics/domain/ports.py",
+        "line": 72
+      },
+      {
+        "name": "update_finding",
+        "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+        "line": 39
+      },
+      {
+        "name": "collect_telemetry",
+        "file": "app/services/observability/aiops/service.py",
+        "line": 73
+      },
+      {
+        "name": "generate_capacity_plan",
+        "file": "app/services/observability/aiops/service.py",
+        "line": 308
+      },
+      {
+        "name": "analyze_root_cause",
+        "file": "app/services/observability/aiops/service.py",
+        "line": 341
+      },
+      {
+        "name": "get_state",
+        "file": "app/services/llm_client/application/circuit_breaker.py",
+        "line": 78
+      },
+      {
+        "name": "completions",
+        "file": "app/services/llm_client/infrastructure/client_factory.py",
+        "line": 34
+      },
+      {
+        "name": "completions",
+        "file": "app/core/ai_client_factory.py",
+        "line": 276
+      },
+      {
+        "name": "completions",
+        "file": "app/core/ai_client_factory.py",
+        "line": 334
+      },
+      {
+        "name": "reset_llm_client",
+        "file": "app/services/llm_client/infrastructure/client_factory.py",
+        "line": 94
+      },
+      {
+        "name": "is_mock_client",
+        "file": "app/services/llm_client/infrastructure/client_factory.py",
+        "line": 104
+      },
+      {
+        "name": "generate_context_for_ai",
+        "file": "app/services/project_context/application/context_analyzer.py",
+        "line": 147
+      },
+      {
+        "name": "invalidate_cache",
+        "file": "app/services/project_context/application/context_analyzer.py",
+        "line": 221
+      },
+      {
+        "name": "intelligent_code_search",
+        "file": "app/services/project_context/application/context_analyzer.py",
+        "line": 230
+      },
+      {
+        "name": "get_comprehensive_analysis",
+        "file": "app/services/project_context/application/context_analyzer.py",
+        "line": 238
+      },
+      {
+        "name": "delete_secret",
+        "file": "app/services/api_config_secrets/domain/ports.py",
+        "line": 23
+      },
+      {
+        "name": "delete_secret",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 58
+      },
+      {
+        "name": "delete_secret",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 91
+      },
+      {
+        "name": "delete_secret",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 115
+      },
+      {
+        "name": "list_secrets",
+        "file": "app/services/api_config_secrets/domain/ports.py",
+        "line": 28
+      },
+      {
+        "name": "list_secrets",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 65
+      },
+      {
+        "name": "list_secrets",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 94
+      },
+      {
+        "name": "list_secrets",
+        "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+        "line": 118
+      },
+      {
+        "name": "analyze_payload",
+        "file": "app/services/ai_security/domain/ports.py",
+        "line": 33
+      },
+      {
+        "name": "analyze_payload",
+        "file": "app/services/ai_security/infrastructure/detectors/ml_threat_detector.py",
+        "line": 94
+      },
+      {
+        "name": "delete_profile",
+        "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+        "line": 33
+      },
+      {
+        "name": "is_blocked",
+        "file": "app/services/ai_security/infrastructure/responders/auto_responder.py",
+        "line": 60
+      },
+      {
+        "name": "get_comprehensive_stats",
+        "file": "app/services/system/resilience/service.py",
+        "line": 69
+      },
+      {
+        "name": "resilient",
+        "file": "app/services/system/resilience/service.py",
+        "line": 111
+      },
+      {
+        "name": "func_to_call",
+        "file": "app/services/system/resilience/service.py",
+        "line": 140
+      },
+      {
+        "name": "state",
+        "file": "app/services/system/resilience/circuit_breaker.py",
+        "line": 107
+      },
+      {
+        "name": "state",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 21
+      },
+      {
+        "name": "state",
+        "file": "app/core/resilience/circuit_breaker.py",
+        "line": 231
+      },
+      {
+        "name": "record_latency",
+        "file": "app/services/system/resilience/timeout.py",
+        "line": 44
+      },
+      {
+        "name": "register_handler",
+        "file": "app/services/system/resilience/fallback.py",
+        "line": 38
+      },
+      {
+        "name": "allow",
+        "file": "app/services/system/resilience/rate_limit.py",
+        "line": 36
+      },
+      {
+        "name": "allow",
+        "file": "app/services/system/resilience/rate_limit.py",
+        "line": 71
+      },
+      {
+        "name": "allow",
+        "file": "app/services/system/resilience/rate_limit.py",
+        "line": 103
+      },
+      {
+        "name": "process_next",
+        "file": "app/services/overmind/graph/nodes.py",
+        "line": 55
+      },
+      {
+        "name": "create_link",
+        "file": "app/services/overmind/graph/orchestrator.py",
+        "line": 25
+      },
+      {
+        "name": "dispatch",
+        "file": "app/services/overmind/graph/orchestrator.py",
+        "line": 31
+      },
+      {
+        "name": "dispatch",
+        "file": "app/middleware/remove_blocking_headers.py",
+        "line": 36
+      },
+      {
+        "name": "dispatch",
+        "file": "app/middleware/superhuman_security.py",
+        "line": 10
+      },
+      {
+        "name": "dispatch",
+        "file": "app/middleware/fastapi_observability.py",
+        "line": 11
+      },
+      {
+        "name": "dispatch",
+        "file": "app/middleware/core/base_middleware.py",
+        "line": 97
+      },
+      {
+        "name": "visit_ClassDef",
+        "file": "app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "line": 16
+      },
+      {
+        "name": "visit_AsyncFunctionDef",
+        "file": "app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "line": 51
+      },
+      {
+        "name": "visit_Import",
+        "file": "app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "line": 55
+      },
+      {
+        "name": "visit_ImportFrom",
+        "file": "app/services/overmind/code_intelligence/analyzers/complexity.py",
+        "line": 61
+      },
+      {
+        "name": "update_instance_score",
+        "file": "app/services/adaptive/application/intelligent_router.py",
+        "line": 109
+      },
+      {
+        "name": "list_by_service",
+        "file": "app/services/adaptive/domain/ports.py",
+        "line": 34
+      },
+      {
+        "name": "list_by_service",
+        "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+        "line": 48
+      },
+      {
+        "name": "store_metrics",
+        "file": "app/services/adaptive/domain/ports.py",
+        "line": 42
+      },
+      {
+        "name": "store_metrics",
+        "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+        "line": 60
+      },
+      {
+        "name": "get_recent_metrics",
+        "file": "app/services/adaptive/domain/ports.py",
+        "line": 46
+      },
+      {
+        "name": "get_recent_metrics",
+        "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+        "line": 67
+      },
+      {
+        "name": "get_metrics_in_range",
+        "file": "app/services/adaptive/domain/ports.py",
+        "line": 52
+      },
+      {
+        "name": "get_metrics_in_range",
+        "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+        "line": 74
+      },
+      {
+        "name": "predict_next_tokens",
+        "file": "app/services/admin/streaming/service.py",
+        "line": 152
+      },
+      {
+        "name": "predict_next_tokens",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 46
+      },
+      {
+        "name": "async_stream_response",
+        "file": "app/services/admin/streaming/service.py",
+        "line": 305
+      },
+      {
+        "name": "get_streaming_service",
+        "file": "app/services/admin/streaming/service.py",
+        "line": 346
+      },
+      {
+        "name": "stream_with_smart_chunking",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 23
+      },
+      {
+        "name": "get_or_compute",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 62
+      },
+      {
+        "name": "get_ab_results",
+        "file": "app/services/admin/performance/service.py",
+        "line": 161
+      },
+      {
+        "name": "get_optimization_suggestions",
+        "file": "app/services/admin/performance/service.py",
+        "line": 165
+      },
+      {
+        "name": "get_performance_service",
+        "file": "app/services/admin/performance/service.py",
+        "line": 244
+      },
+      {
+        "name": "context_awareness_handler",
+        "file": "app/services/agent_tools/domain/context.py",
+        "line": 9
+      },
+      {
+        "name": "write_file_handler",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 23
+      },
+      {
+        "name": "read_file_handler",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 36
+      },
+      {
+        "name": "list_dir_handler",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 48
+      },
+      {
+        "name": "delete_file_handler",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 57
+      },
+      {
+        "name": "start_shadow_deployment",
+        "file": "app/services/serving/application/shadow_deployment.py",
+        "line": 32
+      },
+      {
+        "name": "start_shadow_deployment",
+        "file": "app/services/serving/application/experiment_manager.py",
+        "line": 232
+      },
+      {
+        "name": "get_shadow_deployment_stats",
+        "file": "app/services/serving/application/shadow_deployment.py",
+        "line": 53
+      },
+      {
+        "name": "create_ensemble",
+        "file": "app/services/serving/application/ensemble_router.py",
+        "line": 30
+      },
+      {
+        "name": "create_ensemble_response",
+        "file": "app/services/serving/application/ensemble_router.py",
+        "line": 72
+      },
+      {
+        "name": "start_ab_test",
+        "file": "app/services/serving/application/experiment_manager.py",
+        "line": 71
+      },
+      {
+        "name": "start_ab_test",
+        "file": "app/services/serving/application/ab_test_engine.py",
+        "line": 36
+      },
+      {
+        "name": "serve_ab_test_request",
+        "file": "app/services/serving/application/experiment_manager.py",
+        "line": 122
+      },
+      {
+        "name": "get_ab_test",
+        "file": "app/services/serving/application/experiment_manager.py",
+        "line": 268
+      },
+      {
+        "name": "get_shadow_deployment",
+        "file": "app/services/serving/application/experiment_manager.py",
+        "line": 272
+      },
+      {
+        "name": "register_model",
+        "file": "app/services/serving/application/model_registry.py",
+        "line": 51
+      },
+      {
+        "name": "unload_model",
+        "file": "app/services/serving/application/model_registry.py",
+        "line": 83
+      },
+      {
+        "name": "list_models",
+        "file": "app/services/serving/application/model_registry.py",
+        "line": 120
+      },
+      {
+        "name": "end_test",
+        "file": "app/services/serving/application/ab_test_engine.py",
+        "line": 58
+      },
+      {
+        "name": "get_ab_test_status",
+        "file": "app/services/serving/application/ab_test_engine.py",
+        "line": 96
+      },
+      {
+        "name": "get_recent",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 70
+      },
+      {
+        "name": "get_recent",
+        "file": "app/services/serving/infrastructure/in_memory_repository.py",
+        "line": 93
+      },
+      {
+        "name": "health_check",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 103
+      },
+      {
+        "name": "health_check",
+        "file": "app/services/serving/infrastructure/mock_model_invoker.py",
+        "line": 114
+      },
+      {
+        "name": "health_check",
+        "file": "app/core/protocols.py",
+        "line": 54
+      },
+      {
+        "name": "calculate_cost",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 115
+      },
+      {
+        "name": "calculate_cost",
+        "file": "app/services/serving/infrastructure/metrics_collector.py",
+        "line": 49
+      },
+      {
+        "name": "collect_all_metrics",
+        "file": "app/services/serving/infrastructure/metrics_collector.py",
+        "line": 33
+      },
+      {
+        "name": "get_all_metrics",
+        "file": "app/services/serving/infrastructure/metrics_collector.py",
+        "line": 62
+      },
+      {
+        "name": "handle_code_search",
+        "file": "app/services/chat/handlers/search_handler.py",
+        "line": 15
+      },
+      {
+        "name": "handle_project_index",
+        "file": "app/services/chat/handlers/system_handler.py",
+        "line": 15
+      },
+      {
+        "name": "handle_help",
+        "file": "app/services/chat/handlers/system_handler.py",
+        "line": 86
+      },
+      {
+        "name": "handle_deep_analysis",
+        "file": "app/services/chat/handlers/mission_handler.py",
+        "line": 132
+      },
+      {
+        "name": "handle_mission",
+        "file": "app/services/chat/handlers/mission_handler.py",
+        "line": 213
+      },
+      {
+        "name": "failure_count",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 25
+      },
+      {
+        "name": "failure_count",
+        "file": "app/core/resilience/circuit_breaker.py",
+        "line": 236
+      },
+      {
+        "name": "available",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 32
+      },
+      {
+        "name": "available",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 52
+      },
+      {
+        "name": "handle_file_read",
+        "file": "app/services/chat/handlers/file_handler.py",
+        "line": 15
+      },
+      {
+        "name": "handle_file_write",
+        "file": "app/services/chat/handlers/file_handler.py",
+        "line": 82
+      },
+      {
+        "name": "enable",
+        "file": "app/core/base_profiler.py",
+        "line": 75
+      },
+      {
+        "name": "disable",
+        "file": "app/core/base_profiler.py",
+        "line": 79
+      },
+      {
+        "name": "enabled",
+        "file": "app/core/base_profiler.py",
+        "line": 84
+      },
+      {
+        "name": "sample_count",
+        "file": "app/core/base_profiler.py",
+        "line": 89
+      },
+      {
+        "name": "total_count",
+        "file": "app/core/base_profiler.py",
+        "line": 124
+      },
+      {
+        "name": "record_duration",
+        "file": "app/core/base_profiler.py",
+        "line": 158
+      },
+      {
+        "name": "increment",
+        "file": "app/core/base_profiler.py",
+        "line": 197
+      },
+      {
+        "name": "shutdown",
+        "file": "app/core/protocols.py",
+        "line": 32
+      },
+      {
+        "name": "version",
+        "file": "app/core/protocols.py",
+        "line": 50
+      },
+      {
+        "name": "plugin_type",
+        "file": "app/core/protocols.py",
+        "line": 67
+      },
+      {
+        "name": "dependencies",
+        "file": "app/core/protocols.py",
+        "line": 72
+      },
+      {
+        "name": "generate_plan",
+        "file": "app/core/protocols.py",
+        "line": 88
+      },
+      {
+        "name": "validate_plan",
+        "file": "app/core/protocols.py",
+        "line": 97
+      },
+      {
+        "name": "get_capabilities",
+        "file": "app/core/protocols.py",
+        "line": 101
+      },
+      {
+        "name": "get_name",
+        "file": "app/core/protocols.py",
+        "line": 117
+      },
+      {
+        "name": "is_applicable",
+        "file": "app/core/protocols.py",
+        "line": 121
+      },
+      {
+        "name": "find_by_id",
+        "file": "app/core/protocols.py",
+        "line": 138
+      },
+      {
+        "name": "find_all",
+        "file": "app/core/protocols.py",
+        "line": 142
+      },
+      {
+        "name": "generate",
+        "file": "app/core/protocols.py",
+        "line": 262
+      },
+      {
+        "name": "get_system_info",
+        "file": "app/core/protocols.py",
+        "line": 276
+      },
+      {
+        "name": "get_db",
+        "file": "app/core/database.py",
+        "line": 82
+      },
+      {
+        "name": "find_by_criteria",
+        "file": "app/core/base_repository.py",
+        "line": 83
+      },
+      {
+        "name": "build_bilingual_error_message",
+        "file": "app/core/error_messages.py",
+        "line": 192
+      },
+      {
+        "name": "chat",
+        "file": "app/core/ai_client_factory.py",
+        "line": 58
+      },
+      {
+        "name": "chat",
+        "file": "app/core/ai_client_factory.py",
+        "line": 280
+      },
+      {
+        "name": "chat",
+        "file": "app/core/ai_client_factory.py",
+        "line": 338
+      },
+      {
+        "name": "meta",
+        "file": "app/core/ai_client_factory.py",
+        "line": 62
+      },
+      {
+        "name": "meta",
+        "file": "app/core/ai_client_factory.py",
+        "line": 283
+      },
+      {
+        "name": "meta",
+        "file": "app/core/ai_client_factory.py",
+        "line": 341
+      },
+      {
+        "name": "clear_ai_client_cache",
+        "file": "app/core/ai_client_factory.py",
+        "line": 387
+      },
+      {
+        "name": "get_client_metadata",
+        "file": "app/core/ai_client_factory.py",
+        "line": 392
+      },
+      {
+        "name": "get_rate_limiter",
+        "file": "app/core/rate_limiter.py",
+        "line": 136
+      },
+      {
+        "name": "get_rate_limiter",
+        "file": "app/middleware/rate_limiter_middleware.py",
+        "line": 173
+      },
+      {
+        "name": "create_logger",
+        "file": "app/core/cli_logging.py",
+        "line": 7
+      },
+      {
+        "name": "generate_service_token",
+        "file": "app/core/security.py",
+        "line": 23
+      },
+      {
+        "name": "setup_static_files",
+        "file": "app/core/static_handler.py",
+        "line": 17
+      },
+      {
+        "name": "serve_root",
+        "file": "app/core/static_handler.py",
+        "line": 37
+      },
+      {
+        "name": "spa_fallback",
+        "file": "app/core/static_handler.py",
+        "line": 43
+      },
+      {
+        "name": "safe_execute",
+        "file": "app/core/error_handling.py",
+        "line": 36
+      },
+      {
+        "name": "retry_on_failure",
+        "file": "app/core/error_handling.py",
+        "line": 77
+      },
+      {
+        "name": "suppress_errors",
+        "file": "app/core/error_handling.py",
+        "line": 133
+      },
+      {
+        "name": "safe_context",
+        "file": "app/core/error_handling.py",
+        "line": 166
+      },
+      {
+        "name": "capture_errors",
+        "file": "app/core/error_handling.py",
+        "line": 197
+      },
+      {
+        "name": "wrap_function",
+        "file": "app/core/error_handling.py",
+        "line": 256
+      },
+      {
+        "name": "log_exception",
+        "file": "app/core/error_handling.py",
+        "line": 282
+      },
+      {
+        "name": "format_exception",
+        "file": "app/core/error_handling.py",
+        "line": 300
+      },
+      {
+        "name": "get_performance_report",
+        "file": "app/core/ai_gateway.py",
+        "line": 60
+      },
+      {
+        "name": "client",
+        "file": "app/core/ai_gateway.py",
+        "line": 94
+      },
+      {
+        "name": "validate_schema_on_startup",
+        "file": "app/core/db_schema.py",
+        "line": 159
+      },
+      {
+        "name": "get_http_client",
+        "file": "app/core/http_client_factory.py",
+        "line": 186
+      },
+      {
+        "name": "close_http_client",
+        "file": "app/core/http_client_factory.py",
+        "line": 221
+      },
+      {
+        "name": "close_all_http_clients",
+        "file": "app/core/http_client_factory.py",
+        "line": 226
+      },
+      {
+        "name": "get_http_client_stats",
+        "file": "app/core/http_client_factory.py",
+        "line": 231
+      },
+      {
+        "name": "reset_optimizer",
+        "file": "app/core/superhuman_performance_optimizer.py",
+        "line": 279
+      },
+      {
+        "name": "load_yaml_file_safely",
+        "file": "app/core/yaml_utils.py",
+        "line": 30
+      },
+      {
+        "name": "safe_import_models",
+        "file": "app/core/common_imports.py",
+        "line": 42
+      },
+      {
+        "name": "safe_import_db",
+        "file": "app/core/common_imports.py",
+        "line": 51
+      },
+      {
+        "name": "safe_import_ai_client",
+        "file": "app/core/common_imports.py",
+        "line": 60
+      },
+      {
+        "name": "has_module",
+        "file": "app/core/common_imports.py",
+        "line": 99
+      },
+      {
+        "name": "heal_async",
+        "file": "app/core/self_healing_db.py",
+        "line": 233
+      },
+      {
+        "name": "heal_api_error",
+        "file": "app/core/self_healing_db.py",
+        "line": 313
+      },
+      {
+        "name": "run_self_healing_sync",
+        "file": "app/core/self_healing_db.py",
+        "line": 342
+      },
+      {
+        "name": "get_db_service",
+        "file": "app/core/factories.py",
+        "line": 40
+      },
+      {
+        "name": "get_di_settings",
+        "file": "app/core/di.py",
+        "line": 40
+      },
+      {
+        "name": "get_di_db",
+        "file": "app/core/di.py",
+        "line": 50
+      },
+      {
+        "name": "get_health_check_service",
+        "file": "app/core/di.py",
+        "line": 68
+      },
+      {
+        "name": "get_system_service",
+        "file": "app/core/di.py",
+        "line": 81
+      },
+      {
+        "name": "get_by_type",
+        "file": "app/core/registry/plugin_registry.py",
+        "line": 63
+      },
+      {
+        "name": "discover_plugins",
+        "file": "app/core/registry/plugin_discovery.py",
+        "line": 21
+      },
+      {
+        "name": "get_event_class",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 66
+      },
+      {
+        "name": "list_events",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 70
+      },
+      {
+        "name": "address",
+        "file": "app/core/scaling/service_registry.py",
+        "line": 25
+      },
+      {
+        "name": "stop",
+        "file": "app/core/scaling/health_checker.py",
+        "line": 45
+      },
+      {
+        "name": "register_health_check",
+        "file": "app/core/scaling/health_checker.py",
+        "line": 87
+      },
+      {
+        "name": "setup_logging",
+        "file": "app/core/logging/spine.py",
+        "line": 5
+      },
+      {
+        "name": "final_handler",
+        "file": "app/core/patterns/command.py",
+        "line": 85
+      },
+      {
+        "name": "register_route",
+        "file": "app/core/gateway/service.py",
+        "line": 69
+      },
+      {
+        "name": "register_upstream_service",
+        "file": "app/core/gateway/service.py",
+        "line": 74
+      },
+      {
+        "name": "get_gateway_stats",
+        "file": "app/core/gateway/service.py",
+        "line": 149
+      },
+      {
+        "name": "gateway_process",
+        "file": "app/core/gateway/service.py",
+        "line": 172
+      },
+      {
+        "name": "decorated_function",
+        "file": "app/core/gateway/service.py",
+        "line": 187
+      },
+      {
+        "name": "get_gateway_service",
+        "file": "app/core/gateway/service.py",
+        "line": 211
+      },
+      {
+        "name": "update_provider_stats",
+        "file": "app/core/gateway/routing.py",
+        "line": 198
+      },
+      {
+        "name": "get_ngrams",
+        "file": "app/core/utils/text.py",
+        "line": 4
+      },
+      {
+        "name": "get_lcs_length",
+        "file": "app/core/utils/text.py",
+        "line": 12
+      },
+      {
+        "name": "reset_circuit_breaker",
+        "file": "app/core/resilience/circuit_breaker.py",
+        "line": 371
+      },
+      {
+        "name": "reset_all_circuit_breakers",
+        "file": "app/core/resilience/circuit_breaker.py",
+        "line": 377
+      },
+      {
+        "name": "get_all_circuit_breaker_stats",
+        "file": "app/core/resilience/circuit_breaker.py",
+        "line": 383
+      },
+      {
+        "name": "call_model",
+        "file": "app/core/gateway/providers/anthropic.py",
+        "line": 9
+      },
+      {
+        "name": "call_model",
+        "file": "app/core/gateway/providers/openai.py",
+        "line": 9
+      },
+      {
+        "name": "call_model",
+        "file": "app/core/gateway/providers/base.py",
+        "line": 9
+      },
+      {
+        "name": "transform_response",
+        "file": "app/core/gateway/protocols/grpc.py",
+        "line": 19
+      },
+      {
+        "name": "transform_response",
+        "file": "app/core/gateway/protocols/rest.py",
+        "line": 31
+      },
+      {
+        "name": "transform_response",
+        "file": "app/core/gateway/protocols/graphql.py",
+        "line": 32
+      },
+      {
+        "name": "transform_response",
+        "file": "app/core/gateway/protocols/base.py",
+        "line": 21
+      },
+      {
+        "name": "http_exception_handler",
+        "file": "app/middleware/fastapi_error_handlers.py",
+        "line": 8
+      },
+      {
+        "name": "validation_exception_handler",
+        "file": "app/middleware/fastapi_error_handlers.py",
+        "line": 20
+      },
+      {
+        "name": "general_exception_handler",
+        "file": "app/middleware/fastapi_error_handlers.py",
+        "line": 32
+      },
+      {
+        "name": "add_error_handlers",
+        "file": "app/middleware/fastapi_error_handlers.py",
+        "line": 44
+      },
+      {
+        "name": "rate_limit",
+        "file": "app/middleware/rate_limiter_middleware.py",
+        "line": 133
+      },
+      {
+        "name": "create_validation_error_response",
+        "file": "app/middleware/error_response_factory.py",
+        "line": 65
+      },
+      {
+        "name": "create_database_error_response",
+        "file": "app/middleware/error_response_factory.py",
+        "line": 85
+      },
+      {
+        "name": "create_internal_error_response",
+        "file": "app/middleware/error_response_factory.py",
+        "line": 109
+      },
+      {
+        "name": "create_unexpected_error_response",
+        "file": "app/middleware/error_response_factory.py",
+        "line": 141
+      },
+      {
+        "name": "log_login_success",
+        "file": "app/middleware/security_logger.py",
+        "line": 83
+      },
+      {
+        "name": "log_login_failure",
+        "file": "app/middleware/security_logger.py",
+        "line": 89
+      },
+      {
+        "name": "log_unauthorized_access",
+        "file": "app/middleware/security_logger.py",
+        "line": 96
+      },
+      {
+        "name": "get_recent_events",
+        "file": "app/middleware/security/telemetry_guard.py",
+        "line": 102
+      },
+      {
+        "name": "register_exception",
+        "file": "app/middleware/error_handling/exception_mapper.py",
+        "line": 28
+      },
+      {
+        "name": "remove_middleware",
+        "file": "app/middleware/core/pipeline.py",
+        "line": 78
+      },
+      {
+        "name": "run_async",
+        "file": "app/middleware/core/pipeline.py",
+        "line": 148
+      },
+      {
+        "name": "reset_statistics",
+        "file": "app/middleware/core/pipeline.py",
+        "line": 242
+      },
+      {
+        "name": "get_middleware_list",
+        "file": "app/middleware/core/pipeline.py",
+        "line": 261
+      },
+      {
+        "name": "trigger",
+        "file": "app/middleware/core/hooks.py",
+        "line": 62
+      },
+      {
+        "name": "get_hook_count",
+        "file": "app/middleware/core/hooks.py",
+        "line": 91
+      },
+      {
+        "name": "get_global_hooks",
+        "file": "app/middleware/core/hooks.py",
+        "line": 100
+      },
+      {
+        "name": "on_before_execution",
+        "file": "app/middleware/core/hooks.py",
+        "line": 105
+      },
+      {
+        "name": "on_after_success",
+        "file": "app/middleware/core/hooks.py",
+        "line": 118
+      },
+      {
+        "name": "on_after_failure",
+        "file": "app/middleware/core/hooks.py",
+        "line": 131
+      },
+      {
+        "name": "on_after_execution",
+        "file": "app/middleware/core/hooks.py",
+        "line": 144
+      },
+      {
+        "name": "set_user_context",
+        "file": "app/middleware/core/context.py",
+        "line": 105
+      },
+      {
+        "name": "make_error_response",
+        "file": "app/middleware/core/response_factory.py",
+        "line": 31
+      },
+      {
+        "name": "make_success_response",
+        "file": "app/middleware/core/response_factory.py",
+        "line": 46
+      },
+      {
+        "name": "register_middleware",
+        "file": "app/middleware/core/registry.py",
+        "line": 128
+      },
+      {
+        "name": "create_middleware",
+        "file": "app/middleware/core/registry.py",
+        "line": 141
+      },
+      {
+        "name": "bad_request",
+        "file": "app/middleware/core/result.py",
+        "line": 106
+      },
+      {
+        "name": "create_production_pipeline",
+        "file": "app/middleware/factory/middleware_factory.py",
+        "line": 35
+      },
+      {
+        "name": "create_development_pipeline",
+        "file": "app/middleware/factory/middleware_factory.py",
+        "line": 64
+      },
+      {
+        "name": "create_minimal_pipeline",
+        "file": "app/middleware/factory/middleware_factory.py",
+        "line": 85
+      },
+      {
+        "name": "hash_password",
+        "file": "app/security/secure_auth.py",
+        "line": 19
+      },
+      {
+        "name": "rotate_keys",
+        "file": "app/security/encryption.py",
+        "line": 122
+      },
+      {
+        "name": "validate_file",
+        "file": "app/security/owasp_validator.py",
+        "line": 313
+      },
+      {
+        "name": "generate_report",
+        "file": "app/security/owasp_validator.py",
+        "line": 344
+      }
+    ],
+    "unused_classes": [
+      {
+        "name": "EventType",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 70
+      },
+      {
+        "name": "ServiceDefinition",
+        "file": "app/boundaries/service_boundaries.py",
+        "line": 172
+      },
+      {
+        "name": "DataMeshBoundaryService",
+        "file": "app/services/data_mesh_service.py",
+        "line": 4
+      },
+      {
+        "name": "SagaStatus",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 33
+      },
+      {
+        "name": "StepStatus",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 44
+      },
+      {
+        "name": "SagaType",
+        "file": "app/services/saga_orchestrator.py",
+        "line": 55
+      },
+      {
+        "name": "APIContractService",
+        "file": "app/services/api/api_contract_service.py",
+        "line": 2
+      },
+      {
+        "name": "AuthBoundaryService",
+        "file": "app/services/boundaries/auth_boundary_service.py",
+        "line": 32
+      },
+      {
+        "name": "CrudBoundaryService",
+        "file": "app/services/boundaries/crud_boundary_service.py",
+        "line": 27
+      },
+      {
+        "name": "ObservabilityBoundaryService",
+        "file": "app/services/boundaries/observability_boundary_service.py",
+        "line": 13
+      },
+      {
+        "name": "AdminChatBoundaryService",
+        "file": "app/services/boundaries/admin_chat_boundary_service.py",
+        "line": 28
+      },
+      {
+        "name": "FaultType",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 15
+      },
+      {
+        "name": "ExperimentStatus",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 26
+      },
+      {
+        "name": "BlastRadiusLevel",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 35
+      },
+      {
+        "name": "SteadyStateHypothesis",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 44
+      },
+      {
+        "name": "FaultInjection",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 54
+      },
+      {
+        "name": "GameDay",
+        "file": "app/services/system/chaos_engineering.py",
+        "line": 86
+      },
+      {
+        "name": "ServiceType",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 12
+      },
+      {
+        "name": "ServiceLifecycle",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 23
+      },
+      {
+        "name": "ServiceMetadata",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 40
+      },
+      {
+        "name": "APISpec",
+        "file": "app/services/system/service_catalog_service.py",
+        "line": 60
+      },
+      {
+        "name": "SpanKind",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 13
+      },
+      {
+        "name": "SamplingStrategy",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 22
+      },
+      {
+        "name": "TraceContextPropagator",
+        "file": "app/services/system/distributed_tracing.py",
+        "line": 72
+      },
+      {
+        "name": "CanonicalStrategy",
+        "file": "app/services/overmind/tool_canonicalizer.py",
+        "line": 35
+      },
+      {
+        "name": "ToolBuilder",
+        "file": "app/services/agent_tools/builder.py",
+        "line": 14
+      },
+      {
+        "name": "LLMTool",
+        "file": "app/services/llm_client/domain/models.py",
+        "line": 11
+      },
+      {
+        "name": "LLMMessage",
+        "file": "app/services/llm_client/domain/models.py",
+        "line": 20
+      },
+      {
+        "name": "LLMClientProtocol",
+        "file": "app/services/llm_client/infrastructure/client_factory.py",
+        "line": 15
+      },
+      {
+        "name": "FileReadStep",
+        "file": "app/services/project_context/application/steps.py",
+        "line": 10
+      },
+      {
+        "name": "ParseStep",
+        "file": "app/services/project_context/application/steps.py",
+        "line": 26
+      },
+      {
+        "name": "ComplexityAnalysisStep",
+        "file": "app/services/project_context/application/steps.py",
+        "line": 47
+      },
+      {
+        "name": "FormatStep",
+        "file": "app/services/project_context/application/steps.py",
+        "line": 79
+      },
+      {
+        "name": "AgentState",
+        "file": "app/services/overmind/graph/nodes.py",
+        "line": 15
+      },
+      {
+        "name": "DecentralizedGraphOrchestrator",
+        "file": "app/services/overmind/graph/orchestrator.py",
+        "line": 11
+      },
+      {
+        "name": "EventLogger",
+        "file": "app/services/overmind/domain/cognitive.py",
+        "line": 35
+      },
+      {
+        "name": "MissionStatusEnum",
+        "file": "app/services/overmind/domain/api_schemas.py",
+        "line": 23
+      },
+      {
+        "name": "StepStatusEnum",
+        "file": "app/services/overmind/domain/api_schemas.py",
+        "line": 35
+      },
+      {
+        "name": "MissionStepResponse",
+        "file": "app/services/overmind/domain/api_schemas.py",
+        "line": 44
+      },
+      {
+        "name": "MissionCreate",
+        "file": "app/services/overmind/domain/api_schemas.py",
+        "line": 58
+      },
+      {
+        "name": "MissionEventResponse",
+        "file": "app/services/overmind/domain/api_schemas.py",
+        "line": 85
+      },
+      {
+        "name": "OvermindError",
+        "file": "app/services/overmind/domain/exceptions.py",
+        "line": 11
+      },
+      {
+        "name": "StreamingConfig",
+        "file": "app/services/admin/streaming/service.py",
+        "line": 40
+      },
+      {
+        "name": "StreamingConfig",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 12
+      },
+      {
+        "name": "BreakthroughStreamingService",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 18
+      },
+      {
+        "name": "AdaptiveCache",
+        "file": "app/services/admin/streaming/breakthrough.py",
+        "line": 51
+      },
+      {
+        "name": "PerformanceCategory",
+        "file": "app/services/admin/performance/service.py",
+        "line": 29
+      },
+      {
+        "name": "ABTestVariant",
+        "file": "app/services/admin/performance/service.py",
+        "line": 59
+      },
+      {
+        "name": "WriteFileTool",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 73
+      },
+      {
+        "name": "ReadFileTool",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 83
+      },
+      {
+        "name": "ListDirTool",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 93
+      },
+      {
+        "name": "DeleteFileTool",
+        "file": "app/services/agent_tools/domain/files/operations.py",
+        "line": 103
+      },
+      {
+        "name": "ShadowDeploymentManager",
+        "file": "app/services/serving/application/shadow_deployment.py",
+        "line": 18
+      },
+      {
+        "name": "EnsembleRouter",
+        "file": "app/services/serving/application/ensemble_router.py",
+        "line": 16
+      },
+      {
+        "name": "ModelInvoker",
+        "file": "app/services/serving/application/model_invoker.py",
+        "line": 23
+      },
+      {
+        "name": "ModelInvoker",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 84
+      },
+      {
+        "name": "ABTestEngine",
+        "file": "app/services/serving/application/ab_test_engine.py",
+        "line": 21
+      },
+      {
+        "name": "ModelRepository",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 26
+      },
+      {
+        "name": "CostCalculator",
+        "file": "app/services/serving/domain/ports.py",
+        "line": 108
+      },
+      {
+        "name": "MetricsCollector",
+        "file": "app/services/serving/infrastructure/metrics_collector.py",
+        "line": 16
+      },
+      {
+        "name": "IntentHandler",
+        "file": "app/services/chat/handlers/strategy_handlers.py",
+        "line": 19
+      },
+      {
+        "name": "CircuitBreakerProtocol",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 11
+      },
+      {
+        "name": "AsyncToolsProtocol",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 29
+      },
+      {
+        "name": "AsyncOvermindProtocol",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 49
+      },
+      {
+        "name": "RateLimiterProtocol",
+        "file": "app/services/chat/handlers/base.py",
+        "line": 62
+      },
+      {
+        "name": "BaseProfiler",
+        "file": "app/core/base_profiler.py",
+        "line": 52
+      },
+      {
+        "name": "BaseMetricsCollector",
+        "file": "app/core/base_profiler.py",
+        "line": 98
+      },
+      {
+        "name": "TimeProfiler",
+        "file": "app/core/base_profiler.py",
+        "line": 151
+      },
+      {
+        "name": "CountProfiler",
+        "file": "app/core/base_profiler.py",
+        "line": 190
+      },
+      {
+        "name": "LifecycleProtocol",
+        "file": "app/core/protocols.py",
+        "line": 24
+      },
+      {
+        "name": "BaseService",
+        "file": "app/core/protocols.py",
+        "line": 38
+      },
+      {
+        "name": "BaseService",
+        "file": "app/core/base_service.py",
+        "line": 17
+      },
+      {
+        "name": "PlannerProtocol",
+        "file": "app/core/protocols.py",
+        "line": 82
+      },
+      {
+        "name": "StrategyProtocol",
+        "file": "app/core/protocols.py",
+        "line": 107
+      },
+      {
+        "name": "RepositoryProtocol",
+        "file": "app/core/protocols.py",
+        "line": 127
+      },
+      {
+        "name": "BaseRepository",
+        "file": "app/core/base_repository.py",
+        "line": 24
+      },
+      {
+        "name": "_ChatWrapper",
+        "file": "app/core/ai_client_factory.py",
+        "line": 237
+      },
+      {
+        "name": "_ChatWrapper",
+        "file": "app/core/ai_client_factory.py",
+        "line": 300
+      },
+      {
+        "name": "_CompletionsWrapper",
+        "file": "app/core/ai_client_factory.py",
+        "line": 241
+      },
+      {
+        "name": "_CompletionsWrapper",
+        "file": "app/core/ai_client_factory.py",
+        "line": 304
+      },
+      {
+        "name": "_Message",
+        "file": "app/core/ai_client_factory.py",
+        "line": 311
+      },
+      {
+        "name": "_Choice",
+        "file": "app/core/ai_client_factory.py",
+        "line": 316
+      },
+      {
+        "name": "_Response",
+        "file": "app/core/ai_client_factory.py",
+        "line": 321
+      },
+      {
+        "name": "ErrorHandler",
+        "file": "app/core/error_handling.py",
+        "line": 221
+      },
+      {
+        "name": "ImportHelper",
+        "file": "app/core/common_imports.py",
+        "line": 69
+      },
+      {
+        "name": "FeatureFlags",
+        "file": "app/core/common_imports.py",
+        "line": 104
+      },
+      {
+        "name": "ColumnType",
+        "file": "app/core/self_healing_db.py",
+        "line": 35
+      },
+      {
+        "name": "ExecutionStrategy",
+        "file": "app/core/self_healing_db.py",
+        "line": 136
+      },
+      {
+        "name": "EventCategory",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 15
+      },
+      {
+        "name": "UserCreated",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 78
+      },
+      {
+        "name": "UserUpdated",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 91
+      },
+      {
+        "name": "UserDeleted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 104
+      },
+      {
+        "name": "MissionCreated",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 118
+      },
+      {
+        "name": "MissionStarted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 131
+      },
+      {
+        "name": "MissionCompleted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 144
+      },
+      {
+        "name": "MissionFailed",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 157
+      },
+      {
+        "name": "TaskCreated",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 171
+      },
+      {
+        "name": "TaskAssigned",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 184
+      },
+      {
+        "name": "TaskStarted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 197
+      },
+      {
+        "name": "TaskCompleted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 210
+      },
+      {
+        "name": "TaskFailed",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 223
+      },
+      {
+        "name": "SecurityThreatDetected",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 236
+      },
+      {
+        "name": "AccessDenied",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 247
+      },
+      {
+        "name": "ApiRequestReceived",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 260
+      },
+      {
+        "name": "ApiResponseSent",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 273
+      },
+      {
+        "name": "RateLimitExceeded",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 286
+      },
+      {
+        "name": "ChatIntentDetected",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 300
+      },
+      {
+        "name": "ToolExecutionStarted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 313
+      },
+      {
+        "name": "ToolExecutionCompleted",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 326
+      },
+      {
+        "name": "MissionCreatedFromChat",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 340
+      },
+      {
+        "name": "NotificationRequested",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 354
+      },
+      {
+        "name": "DataExportRequested",
+        "file": "app/core/domain_events/__init__.py",
+        "line": 365
+      },
+      {
+        "name": "LoadBalancingStrategy",
+        "file": "app/core/scaling/load_balancer.py",
+        "line": 16
+      },
+      {
+        "name": "RandomStrategy",
+        "file": "app/core/scaling/load_balancer.py",
+        "line": 44
+      },
+      {
+        "name": "WeightedRandomStrategy",
+        "file": "app/core/scaling/load_balancer.py",
+        "line": 55
+      },
+      {
+        "name": "LeastConnectionsStrategy",
+        "file": "app/core/scaling/load_balancer.py",
+        "line": 75
+      },
+      {
+        "name": "CommandMiddleware",
+        "file": "app/core/patterns/command.py",
+        "line": 95
+      },
+      {
+        "name": "ModelProvider",
+        "file": "app/core/gateway/models.py",
+        "line": 27
+      },
+      {
+        "name": "CognitiveFingerprint",
+        "file": "app/core/math/cognitive_fingerprint.py",
+        "line": 27
+      },
+      {
+        "name": "CompositeResiliencePolicy",
+        "file": "app/core/resilience/composite.py",
+        "line": 20
+      },
+      {
+        "name": "BaseRoutingStrategy",
+        "file": "app/core/gateway/strategies/implementations.py",
+        "line": 7
+      },
+      {
+        "name": "RemoveBlockingHeadersMiddleware",
+        "file": "app/middleware/remove_blocking_headers.py",
+        "line": 23
+      },
+      {
+        "name": "SuperhumanSecurityMiddleware",
+        "file": "app/middleware/superhuman_security.py",
+        "line": 9
+      },
+      {
+        "name": "MetricsMiddleware",
+        "file": "app/middleware/core/base_middleware.py",
+        "line": 216
+      },
+      {
+        "name": "SecureAuthenticationService",
+        "file": "app/security/secure_auth.py",
+        "line": 9
+      },
+      {
+        "name": "QuantumSafeEncryption",
+        "file": "app/security/encryption.py",
+        "line": 35
+      },
+      {
+        "name": "SecuritySeverity",
+        "file": "app/security/owasp_validator.py",
+        "line": 24
+      },
+      {
+        "name": "OWASPCategory",
+        "file": "app/security/owasp_validator.py",
+        "line": 33
+      },
+      {
+        "name": "OWASPValidator",
+        "file": "app/security/owasp_validator.py",
+        "line": 62
+      }
+    ],
+    "circular_dependencies": [],
+    "duplicate_functions": {
+      "publish": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 117
+        },
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 139
+        },
+        {
+          "file": "app/core/event_bus.py",
+          "line": 42
+        }
+      ],
+      "subscribe": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 122
+        },
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 154
+        },
+        {
+          "file": "app/core/event_bus.py",
+          "line": 92
+        }
+      ],
+      "register_service": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 197
+        },
+        {
+          "file": "app/services/system/service_catalog_service.py",
+          "line": 139
+        },
+        {
+          "file": "app/services/adaptive/facade.py",
+          "line": 43
+        }
+      ],
+      "get_service": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 204
+        },
+        {
+          "file": "app/services/system/service_catalog_service.py",
+          "line": 151
+        }
+      ],
+      "call": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 286
+        },
+        {
+          "file": "app/services/system/resilience/circuit_breaker.py",
+          "line": 85
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 17
+        }
+      ],
+      "execute": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 364
+        },
+        {
+          "file": "app/boundaries/data/saga.py",
+          "line": 75
+        },
+        {
+          "file": "app/services/agent_tools/tool_model.py",
+          "line": 61
+        },
+        {
+          "file": "app/services/project_context/application/steps.py",
+          "line": 17
+        },
+        {
+          "file": "app/services/project_context/application/steps.py",
+          "line": 33
+        },
+        {
+          "file": "app/services/project_context/application/steps.py",
+          "line": 54
+        },
+        {
+          "file": "app/services/project_context/application/steps.py",
+          "line": 86
+        },
+        {
+          "file": "app/services/system/resilience/fallback.py",
+          "line": 43
+        },
+        {
+          "file": "app/services/system/resilience/bulkhead.py",
+          "line": 59
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 41
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 74
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 92
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 123
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 144
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 166
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 274
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 295
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 113
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 140
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 157
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 172
+        },
+        {
+          "file": "app/core/patterns/chain.py",
+          "line": 63
+        },
+        {
+          "file": "app/core/patterns/command.py",
+          "line": 35
+        },
+        {
+          "file": "app/core/patterns/command.py",
+          "line": 62
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 24
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 52
+        },
+        {
+          "file": "app/core/resilience/timeout.py",
+          "line": 32
+        },
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 46
+        },
+        {
+          "file": "app/core/resilience/fallback.py",
+          "line": 24
+        },
+        {
+          "file": "app/core/resilience/bulkhead.py",
+          "line": 36
+        },
+        {
+          "file": "app/core/resilience/retry.py",
+          "line": 37
+        }
+      ],
+      "get_or_create_circuit_breaker": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 409
+        },
+        {
+          "file": "app/services/system/resilience/service.py",
+          "line": 41
+        }
+      ],
+      "get_or_create_bulkhead": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 416
+        },
+        {
+          "file": "app/services/system/resilience/service.py",
+          "line": 61
+        }
+      ],
+      "validate": [
+        {
+          "file": "app/boundaries/policy/compliance.py",
+          "line": 48
+        },
+        {
+          "file": "app/services/agent_tools/tool_model.py",
+          "line": 23
+        },
+        {
+          "file": "app/services/chat/security.py",
+          "line": 12
+        },
+        {
+          "file": "app/core/patterns/command.py",
+          "line": 39
+        }
+      ],
+      "_initialize_default_policies": [
+        {
+          "file": "app/boundaries/policy/governance.py",
+          "line": 42
+        },
+        {
+          "file": "app/core/gateway/service.py",
+          "line": 55
+        }
+      ],
+      "is_expired": [
+        {
+          "file": "app/boundaries/policy/auth.py",
+          "line": 28
+        },
+        {
+          "file": "app/core/cognitive_cache.py",
+          "line": 45
+        }
+      ],
+      "authenticate": [
+        {
+          "file": "app/boundaries/policy/auth.py",
+          "line": 47
+        },
+        {
+          "file": "app/security/secure_auth.py",
+          "line": 13
+        }
+      ],
+      "process": [
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 27
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 35
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 46
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 61
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 76
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 96
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 122
+        },
+        {
+          "file": "app/boundaries/policy/layers.py",
+          "line": 149
+        },
+        {
+          "file": "app/services/chat/orchestrator.py",
+          "line": 65
+        },
+        {
+          "file": "app/core/patterns/chain.py",
+          "line": 41
+        }
+      ],
+      "add_policy": [
+        {
+          "file": "app/boundaries/policy/engine.py",
+          "line": 60
+        },
+        {
+          "file": "app/core/gateway/policy.py",
+          "line": 27
+        },
+        {
+          "file": "app/middleware/security/policy_enforcer.py",
+          "line": 110
+        }
+      ],
+      "evaluate": [
+        {
+          "file": "app/boundaries/policy/engine.py",
+          "line": 67
+        },
+        {
+          "file": "app/core/gateway/policy.py",
+          "line": 32
+        }
+      ],
+      "get_by_id": [
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 27
+        },
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 71
+        },
+        {
+          "file": "app/core/base_repository.py",
+          "line": 43
+        }
+      ],
+      "create": [
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 32
+        },
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 75
+        },
+        {
+          "file": "app/services/llm_client/infrastructure/client_factory.py",
+          "line": 37
+        },
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 18
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 22
+        },
+        {
+          "file": "app/core/base_repository.py",
+          "line": 57
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 245
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 308
+        }
+      ],
+      "update": [
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 37
+        },
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 88
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 23
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 48
+        },
+        {
+          "file": "app/services/overmind/domain/context.py",
+          "line": 28
+        },
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 26
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 33
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 65
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 150
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 164
+        },
+        {
+          "file": "app/core/base_repository.py",
+          "line": 65
+        },
+        {
+          "file": "app/core/math/kalman.py",
+          "line": 38
+        },
+        {
+          "file": "app/core/math/omni_router.py",
+          "line": 50
+        }
+      ],
+      "delete": [
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 42
+        },
+        {
+          "file": "app/boundaries/data/database.py",
+          "line": 97
+        },
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 30
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 38
+        },
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 48
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 52
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 146
+        },
+        {
+          "file": "app/core/base_repository.py",
+          "line": 72
+        }
+      ],
+      "handle": [
+        {
+          "file": "app/boundaries/data/core.py",
+          "line": 23
+        },
+        {
+          "file": "app/boundaries/data/core.py",
+          "line": 44
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 229
+        },
+        {
+          "file": "app/core/patterns/chain.py",
+          "line": 25
+        }
+      ],
+      "create_saga": [
+        {
+          "file": "app/boundaries/data/core.py",
+          "line": 111
+        },
+        {
+          "file": "app/services/saga_orchestrator.py",
+          "line": 139
+        }
+      ],
+      "append_event": [
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 36
+        },
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 58
+        }
+      ],
+      "get_events": [
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 41
+        },
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 64
+        }
+      ],
+      "get_current_version": [
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 46
+        },
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 68
+        }
+      ],
+      "commit": [
+        {
+          "file": "app/boundaries/data/events.py",
+          "line": 106
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 144
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 160
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 175
+        }
+      ],
+      "create_data_contract": [
+        {
+          "file": "app/services/data_mesh_service.py",
+          "line": 10
+        },
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 85
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 94
+        }
+      ],
+      "get_mesh_metrics": [
+        {
+          "file": "app/services/data_mesh_service.py",
+          "line": 17
+        },
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 139
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 317
+        }
+      ],
+      "get_metrics": [
+        {
+          "file": "app/services/saga_orchestrator.py",
+          "line": 474
+        },
+        {
+          "file": "app/services/system/chaos_engineering.py",
+          "line": 186
+        },
+        {
+          "file": "app/services/system/distributed_tracing.py",
+          "line": 267
+        },
+        {
+          "file": "app/services/admin/streaming/service.py",
+          "line": 337
+        }
+      ],
+      "get_user_by_id": [
+        {
+          "file": "app/services/security/auth_persistence.py",
+          "line": 36
+        },
+        {
+          "file": "app/services/crud/crud_persistence.py",
+          "line": 86
+        },
+        {
+          "file": "app/services/boundaries/crud_boundary_service.py",
+          "line": 81
+        }
+      ],
+      "set_config": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 77
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 76
+        },
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 47
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 26
+        }
+      ],
+      "get_config": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 84
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 96
+        },
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 42
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 22
+        }
+      ],
+      "create_secret": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 89
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 103
+        }
+      ],
+      "get_secret": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 96
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 147
+        }
+      ],
+      "rotate_secret": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 101
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 162
+        },
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 33
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 71
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 97
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 121
+        }
+      ],
+      "check_rotation_needed": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 106
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 188
+        }
+      ],
+      "_calculate_next_rotation": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 110
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 198
+        }
+      ],
+      "_log_access": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 113
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 210
+        }
+      ],
+      "get_environment_config": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 118
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 233
+        }
+      ],
+      "get_audit_report": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 123
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 259
+        }
+      ],
+      "_initialize_environments": [
+        {
+          "file": "app/services/api/api_config_secrets_service.py",
+          "line": 128
+        },
+        {
+          "file": "app/services/api_config_secrets/application/config_secrets_manager.py",
+          "line": 41
+        }
+      ],
+      "predict_future_risk": [
+        {
+          "file": "app/services/security_metrics/facade.py",
+          "line": 41
+        },
+        {
+          "file": "app/services/security_metrics/application/predictive_analytics.py",
+          "line": 18
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 32
+        }
+      ],
+      "get_findings": [
+        {
+          "file": "app/services/security_metrics/facade.py",
+          "line": 52
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 68
+        },
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 21
+        }
+      ],
+      "save_metrics": [
+        {
+          "file": "app/services/security_metrics/facade.py",
+          "line": 57
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 80
+        },
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 54
+        }
+      ],
+      "get_historical_metrics": [
+        {
+          "file": "app/services/security_metrics/facade.py",
+          "line": 62
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 84
+        },
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 58
+        }
+      ],
+      "get_users": [
+        {
+          "file": "app/services/crud/crud_persistence.py",
+          "line": 29
+        },
+        {
+          "file": "app/services/boundaries/crud_boundary_service.py",
+          "line": 38
+        }
+      ],
+      "get_missions": [
+        {
+          "file": "app/services/crud/crud_persistence.py",
+          "line": 92
+        },
+        {
+          "file": "app/services/boundaries/crud_boundary_service.py",
+          "line": 90
+        }
+      ],
+      "get_mission_by_id": [
+        {
+          "file": "app/services/crud/crud_persistence.py",
+          "line": 104
+        },
+        {
+          "file": "app/services/boundaries/crud_boundary_service.py",
+          "line": 98
+        }
+      ],
+      "get_tasks": [
+        {
+          "file": "app/services/crud/crud_persistence.py",
+          "line": 110
+        },
+        {
+          "file": "app/services/boundaries/crud_boundary_service.py",
+          "line": 107
+        },
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 168
+        }
+      ],
+      "get_llm_client": [
+        {
+          "file": "app/services/users/admin_ai_service.py",
+          "line": 14
+        },
+        {
+          "file": "app/services/users/admin_ai_service.py",
+          "line": 58
+        },
+        {
+          "file": "app/services/llm_client/infrastructure/client_factory.py",
+          "line": 62
+        }
+      ],
+      "save_message": [
+        {
+          "file": "app/services/users/admin_ai_service.py",
+          "line": 39
+        },
+        {
+          "file": "app/services/boundaries/admin_chat_boundary_service.py",
+          "line": 136
+        },
+        {
+          "file": "app/services/admin/chat_persistence.py",
+          "line": 66
+        }
+      ],
+      "register_bounded_context": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 79
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 79
+        }
+      ],
+      "get_bounded_context": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 82
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 91
+        }
+      ],
+      "evolve_contract_schema": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 88
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 123
+        }
+      ],
+      "_validate_schema_compatibility": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 95
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 167
+        }
+      ],
+      "_detect_schema_compatibility": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 98
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 172
+        }
+      ],
+      "register_data_product": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 103
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 192
+        }
+      ],
+      "get_data_products_by_domain": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 106
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 211
+        }
+      ],
+      "add_governance_policy": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 109
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 214
+        }
+      ],
+      "_check_governance_compliance": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 112
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 220
+        }
+      ],
+      "_evaluate_governance_rule": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 115
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 238
+        }
+      ],
+      "record_quality_metrics": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 118
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 245
+        }
+      ],
+      "_check_quality_thresholds": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 121
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 250
+        }
+      ],
+      "_trigger_governance_action": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 124
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 272
+        }
+      ],
+      "get_quality_summary": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 127
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 276
+        }
+      ],
+      "_publish_event": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 130
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 296
+        }
+      ],
+      "subscribe_to_events": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 133
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 306
+        }
+      ],
+      "get_event_stream": [
+        {
+          "file": "app/services/data_mesh/facade.py",
+          "line": 136
+        },
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 313
+        }
+      ],
+      "get_aiops_metrics": [
+        {
+          "file": "app/services/boundaries/observability_boundary_service.py",
+          "line": 45
+        },
+        {
+          "file": "app/services/observability/aiops/service.py",
+          "line": 386
+        }
+      ],
+      "get_or_create_conversation": [
+        {
+          "file": "app/services/boundaries/admin_chat_boundary_service.py",
+          "line": 115
+        },
+        {
+          "file": "app/services/admin/chat_persistence.py",
+          "line": 44
+        }
+      ],
+      "get_chat_history": [
+        {
+          "file": "app/services/boundaries/admin_chat_boundary_service.py",
+          "line": 140
+        },
+        {
+          "file": "app/services/admin/chat_persistence.py",
+          "line": 74
+        }
+      ],
+      "analyze_event": [
+        {
+          "file": "app/services/ai_security/facade.py",
+          "line": 44
+        },
+        {
+          "file": "app/services/ai_security/application/security_manager.py",
+          "line": 52
+        }
+      ],
+      "get_recent_threats": [
+        {
+          "file": "app/services/ai_security/facade.py",
+          "line": 56
+        },
+        {
+          "file": "app/services/ai_security/application/security_manager.py",
+          "line": 98
+        },
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 134
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+          "line": 58
+        }
+      ],
+      "get_user_profile": [
+        {
+          "file": "app/services/ai_security/facade.py",
+          "line": 68
+        },
+        {
+          "file": "app/services/ai_security/application/security_manager.py",
+          "line": 110
+        }
+      ],
+      "get_service_health": [
+        {
+          "file": "app/services/system/service_catalog_service.py",
+          "line": 192
+        },
+        {
+          "file": "app/services/observability/aiops/service.py",
+          "line": 412
+        }
+      ],
+      "_generate_trace_id": [
+        {
+          "file": "app/services/system/distributed_tracing.py",
+          "line": 298
+        },
+        {
+          "file": "app/services/agent_tools/utils.py",
+          "line": 44
+        }
+      ],
+      "check_health": [
+        {
+          "file": "app/services/system/distributed_resilience_service.py",
+          "line": 31
+        },
+        {
+          "file": "app/services/system/database_service.py",
+          "line": 24
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 271
+        }
+      ],
+      "execute_task": [
+        {
+          "file": "app/services/overmind/executor.py",
+          "line": 53
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 253
+        }
+      ],
+      "get_mission": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 55
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 214
+        }
+      ],
+      "update_mission_status": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 69
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 218
+        }
+      ],
+      "log_event": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 89
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 224
+        }
+      ],
+      "mark_task_running": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 173
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 230
+        }
+      ],
+      "mark_task_complete": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 182
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 234
+        }
+      ],
+      "mark_task_failed": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 194
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 238
+        }
+      ],
+      "monitor_mission_events": [
+        {
+          "file": "app/services/overmind/state.py",
+          "line": 203
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 242
+        }
+      ],
+      "can_handle": [
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 39
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 64
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 109
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 134
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 153
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 192
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 26
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 291
+        },
+        {
+          "file": "app/core/patterns/chain.py",
+          "line": 36
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 19
+        }
+      ],
+      "canonicalize": [
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 43
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 67
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 113
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 137
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 157
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 195
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 239
+        }
+      ],
+      "priority": [
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 48
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 61
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 106
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 131
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 150
+        },
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 189
+        },
+        {
+          "file": "app/services/chat/handlers/strategy_handlers.py",
+          "line": 31
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 29
+        }
+      ],
+      "canonicalize_tool_name": [
+        {
+          "file": "app/services/overmind/tool_canonicalizer.py",
+          "line": 280
+        },
+        {
+          "file": "app/services/agent_tools/core.py",
+          "line": 107
+        }
+      ],
+      "update_metrics": [
+        {
+          "file": "app/services/adaptive/facade.py",
+          "line": 62
+        },
+        {
+          "file": "app/services/llm_client/application/cost.py",
+          "line": 32
+        },
+        {
+          "file": "app/services/serving/infrastructure/metrics_collector.py",
+          "line": 38
+        }
+      ],
+      "route_request": [
+        {
+          "file": "app/services/adaptive/facade.py",
+          "line": 177
+        },
+        {
+          "file": "app/core/gateway/routing.py",
+          "line": 141
+        }
+      ],
+      "stream_response": [
+        {
+          "file": "app/services/admin/chat_streamer.py",
+          "line": 41
+        },
+        {
+          "file": "app/services/admin/streaming/service.py",
+          "line": 242
+        }
+      ],
+      "reset": [
+        {
+          "file": "app/services/agent_tools/builder.py",
+          "line": 25
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 128
+        },
+        {
+          "file": "app/core/rate_limiter.py",
+          "line": 117
+        },
+        {
+          "file": "app/core/patterns/builder.py",
+          "line": 20
+        },
+        {
+          "file": "app/core/math/omni_router.py",
+          "line": 179
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 221
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 305
+        }
+      ],
+      "build": [
+        {
+          "file": "app/services/agent_tools/builder.py",
+          "line": 66
+        },
+        {
+          "file": "app/core/patterns/builder.py",
+          "line": 25
+        }
+      ],
+      "name": [
+        {
+          "file": "app/services/agent_tools/tool_model.py",
+          "line": 49
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 45
+        }
+      ],
+      "can_execute": [
+        {
+          "file": "app/services/agent_tools/tool_model.py",
+          "line": 57
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 138
+        }
+      ],
+      "get_stats": [
+        {
+          "file": "app/services/agent_tools/tool_model.py",
+          "line": 74
+        },
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 86
+        },
+        {
+          "file": "app/services/llm_client/application/cost.py",
+          "line": 59
+        },
+        {
+          "file": "app/services/system/resilience/circuit_breaker.py",
+          "line": 136
+        },
+        {
+          "file": "app/services/system/resilience/timeout.py",
+          "line": 72
+        },
+        {
+          "file": "app/services/system/resilience/bulkhead.py",
+          "line": 96
+        },
+        {
+          "file": "app/services/system/resilience/retry.py",
+          "line": 120
+        },
+        {
+          "file": "app/services/admin/streaming/service.py",
+          "line": 200
+        },
+        {
+          "file": "app/core/cognitive_cache.py",
+          "line": 164
+        },
+        {
+          "file": "app/core/scaling/service_registry.py",
+          "line": 87
+        },
+        {
+          "file": "app/core/gateway/cache.py",
+          "line": 144
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 240
+        },
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 93
+        },
+        {
+          "file": "app/core/resilience/bulkhead.py",
+          "line": 61
+        }
+      ],
+      "write_file": [
+        {
+          "file": "app/services/agent_tools/fs_tools.py",
+          "line": 84
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 38
+        }
+      ],
+      "read_file": [
+        {
+          "file": "app/services/agent_tools/fs_tools.py",
+          "line": 229
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 35
+        }
+      ],
+      "to_dict": [
+        {
+          "file": "app/services/agent_tools/definitions.py",
+          "line": 28
+        },
+        {
+          "file": "app/services/ai_security/domain/models.py",
+          "line": 60
+        },
+        {
+          "file": "app/services/ai_security/domain/models.py",
+          "line": 95
+        },
+        {
+          "file": "app/services/adaptive/domain/models.py",
+          "line": 51
+        },
+        {
+          "file": "app/core/schemas.py",
+          "line": 44
+        },
+        {
+          "file": "app/core/superhuman_performance_optimizer.py",
+          "line": 85
+        },
+        {
+          "file": "app/middleware/config/middleware_settings.py",
+          "line": 53
+        },
+        {
+          "file": "app/middleware/core/context.py",
+          "line": 126
+        },
+        {
+          "file": "app/middleware/core/result.py",
+          "line": 133
+        }
+      ],
+      "list_tools": [
+        {
+          "file": "app/services/agent_tools/core.py",
+          "line": 153
+        },
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 78
+        }
+      ],
+      "decorator": [
+        {
+          "file": "app/services/agent_tools/core.py",
+          "line": 309
+        },
+        {
+          "file": "app/services/system/resilience/service.py",
+          "line": 130
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 59
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 100
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 147
+        },
+        {
+          "file": "app/core/gateway/service.py",
+          "line": 185
+        },
+        {
+          "file": "app/middleware/rate_limiter_middleware.py",
+          "line": 154
+        }
+      ],
+      "wrapper": [
+        {
+          "file": "app/services/agent_tools/core.py",
+          "line": 316
+        },
+        {
+          "file": "app/services/agent_tools/__init__.py",
+          "line": 93
+        },
+        {
+          "file": "app/services/system/resilience/service.py",
+          "line": 132
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 61
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 102
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 149
+        },
+        {
+          "file": "app/core/error_handling.py",
+          "line": 269
+        },
+        {
+          "file": "app/middleware/rate_limiter_middleware.py",
+          "line": 157
+        }
+      ],
+      "code_index_project": [
+        {
+          "file": "app/services/agent_tools/search_tools.py",
+          "line": 41
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 45
+        }
+      ],
+      "code_search_lexical": [
+        {
+          "file": "app/services/agent_tools/search_tools.py",
+          "line": 128
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 41
+        }
+      ],
+      "register": [
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 25
+        },
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 38
+        },
+        {
+          "file": "app/core/domain_events/__init__.py",
+          "line": 61
+        },
+        {
+          "file": "app/core/scaling/service_registry.py",
+          "line": 42
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 40
+        },
+        {
+          "file": "app/middleware/core/hooks.py",
+          "line": 36
+        },
+        {
+          "file": "app/middleware/core/registry.py",
+          "line": 29
+        }
+      ],
+      "unregister": [
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 50
+        },
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 70
+        },
+        {
+          "file": "app/middleware/core/hooks.py",
+          "line": 46
+        },
+        {
+          "file": "app/middleware/core/registry.py",
+          "line": 44
+        }
+      ],
+      "get": [
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 61
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 21
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 31
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 36
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 42
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 68
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 81
+        },
+        {
+          "file": "app/services/overmind/domain/context.py",
+          "line": 38
+        },
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 22
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 29
+        },
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 40
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 39
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 167
+        },
+        {
+          "file": "app/core/http_client_factory.py",
+          "line": 163
+        },
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 55
+        },
+        {
+          "file": "app/core/gateway/cache.py",
+          "line": 41
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 284
+        },
+        {
+          "file": "app/middleware/config/middleware_settings.py",
+          "line": 30
+        }
+      ],
+      "clear": [
+        {
+          "file": "app/services/agent_tools/registry.py",
+          "line": 93
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+          "line": 64
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 35
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 71
+        },
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 78
+        },
+        {
+          "file": "app/core/patterns/strategy.py",
+          "line": 64
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 330
+        },
+        {
+          "file": "app/middleware/core/hooks.py",
+          "line": 79
+        },
+        {
+          "file": "app/middleware/core/registry.py",
+          "line": 110
+        }
+      ],
+      "calculate_metrics": [
+        {
+          "file": "app/services/security_metrics/application/metrics_calculator.py",
+          "line": 15
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 43
+        }
+      ],
+      "calculate_risk_score": [
+        {
+          "file": "app/services/security_metrics/application/risk_calculator.py",
+          "line": 35
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 16
+        }
+      ],
+      "calculate_exposure_factor": [
+        {
+          "file": "app/services/security_metrics/application/risk_calculator.py",
+          "line": 68
+        },
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 23
+        }
+      ],
+      "save_finding": [
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 64
+        },
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 17
+        }
+      ],
+      "update_finding": [
+        {
+          "file": "app/services/security_metrics/domain/ports.py",
+          "line": 72
+        },
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 39
+        }
+      ],
+      "_detect_anomalies": [
+        {
+          "file": "app/services/observability/aiops/service.py",
+          "line": 105
+        },
+        {
+          "file": "app/services/adaptive/application/health_monitor.py",
+          "line": 72
+        }
+      ],
+      "add": [
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 15
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 20
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 26
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 30
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 35
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 24
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 39
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 55
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 65
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 78
+        },
+        {
+          "file": "app/core/patterns/chain.py",
+          "line": 53
+        }
+      ],
+      "get_by_service": [
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 16
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 28
+        }
+      ],
+      "get_all": [
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 17
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 22
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 27
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 32
+        },
+        {
+          "file": "app/services/observability/aiops/ports.py",
+          "line": 37
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 32
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 45
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 58
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 71
+        },
+        {
+          "file": "app/services/observability/aiops/repositories.py",
+          "line": 84
+        },
+        {
+          "file": "app/core/base_repository.py",
+          "line": 50
+        },
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 59
+        }
+      ],
+      "is_allowed": [
+        {
+          "file": "app/services/llm_client/application/circuit_breaker.py",
+          "line": 30
+        },
+        {
+          "file": "app/middleware/rate_limiter_middleware.py",
+          "line": 102
+        }
+      ],
+      "completions": [
+        {
+          "file": "app/services/llm_client/infrastructure/client_factory.py",
+          "line": 34
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 276
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 334
+        }
+      ],
+      "deep_search_issues": [
+        {
+          "file": "app/services/project_context/application/context_analyzer.py",
+          "line": 226
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/issues.py",
+          "line": 20
+        }
+      ],
+      "detect_code_smells": [
+        {
+          "file": "app/services/project_context/application/context_analyzer.py",
+          "line": 234
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/issues.py",
+          "line": 89
+        }
+      ],
+      "analyze": [
+        {
+          "file": "app/services/project_context/application/analyzers/architecture.py",
+          "line": 17
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/structure.py",
+          "line": 19
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/components.py",
+          "line": 19
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/stats.py",
+          "line": 19
+        },
+        {
+          "file": "app/services/project_context/application/analyzers/deep_analysis.py",
+          "line": 19
+        }
+      ],
+      "read_secret": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 13
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 45
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 85
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 109
+        }
+      ],
+      "write_secret": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 18
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 52
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 88
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 112
+        }
+      ],
+      "delete_secret": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 23
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 58
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 91
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 115
+        }
+      ],
+      "list_secrets": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 28
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 65
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 94
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 118
+        }
+      ],
+      "get_all_config": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 52
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 30
+        }
+      ],
+      "get_secret_metadata": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 61
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 40
+        }
+      ],
+      "save_secret_metadata": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 66
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 44
+        }
+      ],
+      "get_all_secrets": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 71
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 48
+        }
+      ],
+      "log_access": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 80
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 58
+        }
+      ],
+      "get_logs": [
+        {
+          "file": "app/services/api_config_secrets/domain/ports.py",
+          "line": 85
+        },
+        {
+          "file": "app/services/api_config_secrets/infrastructure/memory_adapters.py",
+          "line": 62
+        }
+      ],
+      "encrypt": [
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 26
+        },
+        {
+          "file": "app/security/encryption.py",
+          "line": 57
+        }
+      ],
+      "decrypt": [
+        {
+          "file": "app/services/api_config_secrets/infrastructure/vault_adapters.py",
+          "line": 30
+        },
+        {
+          "file": "app/security/encryption.py",
+          "line": 79
+        }
+      ],
+      "detect_threats": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 21
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/detectors/ml_threat_detector.py",
+          "line": 44
+        }
+      ],
+      "analyze_payload": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 33
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/detectors/ml_threat_detector.py",
+          "line": 94
+        }
+      ],
+      "analyze_behavior": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 53
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py",
+          "line": 28
+        }
+      ],
+      "update_profile": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 68
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/detectors/behavioral_analyzer.py",
+          "line": 62
+        }
+      ],
+      "execute_response": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 86
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/responders/auto_responder.py",
+          "line": 23
+        }
+      ],
+      "should_auto_block": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 98
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/responders/auto_responder.py",
+          "line": 47
+        }
+      ],
+      "get_profile": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 116
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+          "line": 25
+        }
+      ],
+      "save_profile": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 120
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+          "line": 29
+        }
+      ],
+      "log_threat": [
+        {
+          "file": "app/services/ai_security/domain/ports.py",
+          "line": 130
+        },
+        {
+          "file": "app/services/ai_security/infrastructure/repositories/in_memory_repos.py",
+          "line": 54
+        }
+      ],
+      "check": [
+        {
+          "file": "app/services/system/resilience/health.py",
+          "line": 59
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 64
+        },
+        {
+          "file": "app/core/rate_limiter.py",
+          "line": 80
+        }
+      ],
+      "is_healthy": [
+        {
+          "file": "app/services/system/resilience/health.py",
+          "line": 97
+        },
+        {
+          "file": "app/services/adaptive/domain/models.py",
+          "line": 94
+        }
+      ],
+      "state": [
+        {
+          "file": "app/services/system/resilience/circuit_breaker.py",
+          "line": 107
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 21
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 231
+        }
+      ],
+      "allow": [
+        {
+          "file": "app/services/system/resilience/rate_limit.py",
+          "line": 36
+        },
+        {
+          "file": "app/services/system/resilience/rate_limit.py",
+          "line": 71
+        },
+        {
+          "file": "app/services/system/resilience/rate_limit.py",
+          "line": 103
+        }
+      ],
+      "_calculate_delay": [
+        {
+          "file": "app/services/system/resilience/retry.py",
+          "line": 243
+        },
+        {
+          "file": "app/core/resilience/retry.py",
+          "line": 70
+        }
+      ],
+      "register_node": [
+        {
+          "file": "app/services/overmind/graph/orchestrator.py",
+          "line": 20
+        },
+        {
+          "file": "app/core/math/omni_router.py",
+          "line": 184
+        }
+      ],
+      "dispatch": [
+        {
+          "file": "app/services/overmind/graph/orchestrator.py",
+          "line": 31
+        },
+        {
+          "file": "app/middleware/remove_blocking_headers.py",
+          "line": 36
+        },
+        {
+          "file": "app/middleware/superhuman_security.py",
+          "line": 10
+        },
+        {
+          "file": "app/middleware/fastapi_observability.py",
+          "line": 11
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 97
+        }
+      ],
+      "design_solution": [
+        {
+          "file": "app/services/overmind/agents/architect.py",
+          "line": 37
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 183
+        }
+      ],
+      "_clean_json_block": [
+        {
+          "file": "app/services/overmind/agents/architect.py",
+          "line": 124
+        },
+        {
+          "file": "app/services/overmind/agents/strategist.py",
+          "line": 144
+        }
+      ],
+      "review_work": [
+        {
+          "file": "app/services/overmind/agents/auditor.py",
+          "line": 72
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 199
+        }
+      ],
+      "execute_tasks": [
+        {
+          "file": "app/services/overmind/agents/operator.py",
+          "line": 44
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 191
+        }
+      ],
+      "create_plan": [
+        {
+          "file": "app/services/overmind/agents/strategist.py",
+          "line": 37
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 175
+        }
+      ],
+      "list_by_service": [
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 34
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 48
+        }
+      ],
+      "store_metrics": [
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 42
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 60
+        }
+      ],
+      "get_recent_metrics": [
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 46
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 67
+        }
+      ],
+      "get_metrics_in_range": [
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 52
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 74
+        }
+      ],
+      "predict_next_tokens": [
+        {
+          "file": "app/services/admin/streaming/service.py",
+          "line": 152
+        },
+        {
+          "file": "app/services/admin/streaming/breakthrough.py",
+          "line": 46
+        }
+      ],
+      "get_statistics": [
+        {
+          "file": "app/services/admin/performance/service.py",
+          "line": 124
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 133
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 173
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 206
+        },
+        {
+          "file": "app/middleware/security/telemetry_guard.py",
+          "line": 114
+        },
+        {
+          "file": "app/middleware/security/waf_middleware.py",
+          "line": 76
+        },
+        {
+          "file": "app/middleware/security/zero_trust_middleware.py",
+          "line": 88
+        },
+        {
+          "file": "app/middleware/security/ai_threat_middleware.py",
+          "line": 97
+        },
+        {
+          "file": "app/middleware/security/policy_enforcer.py",
+          "line": 120
+        },
+        {
+          "file": "app/middleware/security/security_headers.py",
+          "line": 102
+        },
+        {
+          "file": "app/middleware/security/rate_limit_middleware.py",
+          "line": 113
+        },
+        {
+          "file": "app/middleware/error_handling/recovery_middleware.py",
+          "line": 80
+        },
+        {
+          "file": "app/middleware/observability/observability_middleware.py",
+          "line": 214
+        },
+        {
+          "file": "app/middleware/observability/telemetry_bridge.py",
+          "line": 152
+        },
+        {
+          "file": "app/middleware/observability/analytics_adapter.py",
+          "line": 119
+        },
+        {
+          "file": "app/middleware/observability/performance_profiler.py",
+          "line": 95
+        },
+        {
+          "file": "app/middleware/observability/anomaly_inspector.py",
+          "line": 96
+        },
+        {
+          "file": "app/middleware/observability/request_logger.py",
+          "line": 115
+        },
+        {
+          "file": "app/middleware/core/pipeline.py",
+          "line": 214
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 169
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 233
+        },
+        {
+          "file": "app/security/encryption.py",
+          "line": 132
+        }
+      ],
+      "start_shadow_deployment": [
+        {
+          "file": "app/services/serving/application/shadow_deployment.py",
+          "line": 32
+        },
+        {
+          "file": "app/services/serving/application/experiment_manager.py",
+          "line": 232
+        }
+      ],
+      "serve_request": [
+        {
+          "file": "app/services/serving/application/model_invoker.py",
+          "line": 37
+        },
+        {
+          "file": "app/services/serving/application/inference_router.py",
+          "line": 63
+        }
+      ],
+      "start_ab_test": [
+        {
+          "file": "app/services/serving/application/experiment_manager.py",
+          "line": 71
+        },
+        {
+          "file": "app/services/serving/application/ab_test_engine.py",
+          "line": 36
+        }
+      ],
+      "analyze_ab_test": [
+        {
+          "file": "app/services/serving/application/experiment_manager.py",
+          "line": 163
+        },
+        {
+          "file": "app/services/serving/application/ab_test_engine.py",
+          "line": 64
+        }
+      ],
+      "save": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 36
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 31
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 134
+        }
+      ],
+      "list_by_name": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 44
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 44
+        }
+      ],
+      "list_all": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 52
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 60
+        }
+      ],
+      "record": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 66
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 88
+        },
+        {
+          "file": "app/core/base_profiler.py",
+          "line": 110
+        }
+      ],
+      "get_recent": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 70
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 93
+        }
+      ],
+      "get_summary": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 74
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 99
+        }
+      ],
+      "invoke": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 95
+        },
+        {
+          "file": "app/services/serving/infrastructure/mock_model_invoker.py",
+          "line": 52
+        }
+      ],
+      "health_check": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 103
+        },
+        {
+          "file": "app/services/serving/infrastructure/mock_model_invoker.py",
+          "line": 114
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 54
+        }
+      ],
+      "calculate_cost": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 115
+        },
+        {
+          "file": "app/services/serving/infrastructure/metrics_collector.py",
+          "line": 49
+        }
+      ],
+      "select_model": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 140
+        },
+        {
+          "file": "app/core/superhuman_performance_optimizer.py",
+          "line": 111
+        }
+      ],
+      "failure_count": [
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 25
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 236
+        }
+      ],
+      "available": [
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 32
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 52
+        }
+      ],
+      "check_rate_limit": [
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 83
+        },
+        {
+          "file": "app/security/rate_limiter.py",
+          "line": 53
+        }
+      ],
+      "chat": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 58
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 280
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 338
+        }
+      ],
+      "meta": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 62
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 283
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 341
+        }
+      ],
+      "create_client": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 74
+        },
+        {
+          "file": "app/core/http_client_factory.py",
+          "line": 50
+        }
+      ],
+      "get_cached_clients": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 222
+        },
+        {
+          "file": "app/core/http_client_factory.py",
+          "line": 147
+        }
+      ],
+      "get_ai_client": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 355
+        },
+        {
+          "file": "app/core/gateway/mesh.py",
+          "line": 393
+        }
+      ],
+      "get_rate_limiter": [
+        {
+          "file": "app/core/rate_limiter.py",
+          "line": 136
+        },
+        {
+          "file": "app/middleware/rate_limiter_middleware.py",
+          "line": 173
+        }
+      ],
+      "verify_password": [
+        {
+          "file": "app/core/security.py",
+          "line": 45
+        },
+        {
+          "file": "app/security/secure_auth.py",
+          "line": 22
+        }
+      ],
+      "get_recommended_model": [
+        {
+          "file": "app/core/ai_gateway.py",
+          "line": 72
+        },
+        {
+          "file": "app/core/superhuman_performance_optimizer.py",
+          "line": 241
+        }
+      ],
+      "close": [
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 148
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 163
+        },
+        {
+          "file": "app/core/self_healing_db.py",
+          "line": 178
+        },
+        {
+          "file": "app/core/gateway/connection.py",
+          "line": 32
+        }
+      ],
+      "get_metadata": [
+        {
+          "file": "app/core/registry/plugin_registry.py",
+          "line": 83
+        },
+        {
+          "file": "app/middleware/core/context.py",
+          "line": 114
+        },
+        {
+          "file": "app/middleware/core/registry.py",
+          "line": 98
+        }
+      ],
+      "select": [
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 20
+        },
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 33
+        },
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 47
+        },
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 58
+        },
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 82
+        }
+      ],
+      "get_instance": [
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 119
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 275
+        },
+        {
+          "file": "app/middleware/core/registry.py",
+          "line": 86
+        }
+      ],
+      "on_success": [
+        {
+          "file": "app/core/patterns/command.py",
+          "line": 43
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 153
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 225
+        }
+      ],
+      "add_middleware": [
+        {
+          "file": "app/core/patterns/command.py",
+          "line": 58
+        },
+        {
+          "file": "app/middleware/core/pipeline.py",
+          "line": 57
+        }
+      ],
+      "process_request": [
+        {
+          "file": "app/core/gateway/service.py",
+          "line": 79
+        },
+        {
+          "file": "app/middleware/security/telemetry_guard.py",
+          "line": 37
+        },
+        {
+          "file": "app/middleware/security/waf_middleware.py",
+          "line": 39
+        },
+        {
+          "file": "app/middleware/security/zero_trust_middleware.py",
+          "line": 40
+        },
+        {
+          "file": "app/middleware/security/ai_threat_middleware.py",
+          "line": 39
+        },
+        {
+          "file": "app/middleware/security/policy_enforcer.py",
+          "line": 35
+        },
+        {
+          "file": "app/middleware/security/security_headers.py",
+          "line": 85
+        },
+        {
+          "file": "app/middleware/security/rate_limit_middleware.py",
+          "line": 40
+        },
+        {
+          "file": "app/middleware/cors/cors_middleware.py",
+          "line": 42
+        },
+        {
+          "file": "app/middleware/error_handling/recovery_middleware.py",
+          "line": 36
+        },
+        {
+          "file": "app/middleware/observability/observability_middleware.py",
+          "line": 39
+        },
+        {
+          "file": "app/middleware/observability/telemetry_bridge.py",
+          "line": 71
+        },
+        {
+          "file": "app/middleware/observability/analytics_adapter.py",
+          "line": 38
+        },
+        {
+          "file": "app/middleware/observability/performance_profiler.py",
+          "line": 36
+        },
+        {
+          "file": "app/middleware/observability/anomaly_inspector.py",
+          "line": 40
+        },
+        {
+          "file": "app/middleware/observability/request_logger.py",
+          "line": 37
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 67
+        }
+      ],
+      "record_success": [
+        {
+          "file": "app/core/gateway/circuit_breaker.py",
+          "line": 33
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 169
+        }
+      ],
+      "record_failure": [
+        {
+          "file": "app/core/gateway/circuit_breaker.py",
+          "line": 42
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 194
+        },
+        {
+          "file": "app/security/chrono_shield.py",
+          "line": 122
+        }
+      ],
+      "allow_request": [
+        {
+          "file": "app/core/gateway/circuit_breaker.py",
+          "line": 75
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 108
+        }
+      ],
+      "stream_chat": [
+        {
+          "file": "app/core/gateway/mesh.py",
+          "line": 49
+        },
+        {
+          "file": "app/core/gateway/mesh.py",
+          "line": 195
+        }
+      ],
+      "send_message": [
+        {
+          "file": "app/core/gateway/mesh.py",
+          "line": 51
+        },
+        {
+          "file": "app/core/gateway/mesh.py",
+          "line": 356
+        }
+      ],
+      "result": [
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 64
+        },
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 70
+        },
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 76
+        },
+        {
+          "file": "app/core/resilience/composite.py",
+          "line": 82
+        }
+      ],
+      "call_model": [
+        {
+          "file": "app/core/gateway/providers/anthropic.py",
+          "line": 9
+        },
+        {
+          "file": "app/core/gateway/providers/openai.py",
+          "line": 9
+        },
+        {
+          "file": "app/core/gateway/providers/base.py",
+          "line": 9
+        }
+      ],
+      "estimate_cost": [
+        {
+          "file": "app/core/gateway/providers/anthropic.py",
+          "line": 18
+        },
+        {
+          "file": "app/core/gateway/providers/openai.py",
+          "line": 18
+        },
+        {
+          "file": "app/core/gateway/providers/base.py",
+          "line": 14
+        }
+      ],
+      "estimate_latency": [
+        {
+          "file": "app/core/gateway/providers/anthropic.py",
+          "line": 23
+        },
+        {
+          "file": "app/core/gateway/providers/openai.py",
+          "line": 23
+        },
+        {
+          "file": "app/core/gateway/providers/base.py",
+          "line": 19
+        }
+      ],
+      "validate_request": [
+        {
+          "file": "app/core/gateway/protocols/grpc.py",
+          "line": 11
+        },
+        {
+          "file": "app/core/gateway/protocols/rest.py",
+          "line": 13
+        },
+        {
+          "file": "app/core/gateway/protocols/graphql.py",
+          "line": 12
+        },
+        {
+          "file": "app/core/gateway/protocols/base.py",
+          "line": 11
+        }
+      ],
+      "transform_request": [
+        {
+          "file": "app/core/gateway/protocols/grpc.py",
+          "line": 15
+        },
+        {
+          "file": "app/core/gateway/protocols/rest.py",
+          "line": 17
+        },
+        {
+          "file": "app/core/gateway/protocols/graphql.py",
+          "line": 22
+        },
+        {
+          "file": "app/core/gateway/protocols/base.py",
+          "line": 16
+        }
+      ],
+      "transform_response": [
+        {
+          "file": "app/core/gateway/protocols/grpc.py",
+          "line": 19
+        },
+        {
+          "file": "app/core/gateway/protocols/rest.py",
+          "line": 31
+        },
+        {
+          "file": "app/core/gateway/protocols/graphql.py",
+          "line": 32
+        },
+        {
+          "file": "app/core/gateway/protocols/base.py",
+          "line": 21
+        }
+      ],
+      "calculate_scores": [
+        {
+          "file": "app/core/gateway/strategies/implementations.py",
+          "line": 9
+        },
+        {
+          "file": "app/core/gateway/strategies/implementations.py",
+          "line": 14
+        },
+        {
+          "file": "app/core/gateway/strategies/implementations.py",
+          "line": 20
+        },
+        {
+          "file": "app/core/gateway/strategies/implementations.py",
+          "line": 26
+        },
+        {
+          "file": "app/core/gateway/strategies/implementations.py",
+          "line": 51
+        }
+      ],
+      "_setup": [
+        {
+          "file": "app/middleware/security/telemetry_guard.py",
+          "line": 28
+        },
+        {
+          "file": "app/middleware/security/waf_middleware.py",
+          "line": 33
+        },
+        {
+          "file": "app/middleware/security/zero_trust_middleware.py",
+          "line": 33
+        },
+        {
+          "file": "app/middleware/security/ai_threat_middleware.py",
+          "line": 32
+        },
+        {
+          "file": "app/middleware/security/policy_enforcer.py",
+          "line": 28
+        },
+        {
+          "file": "app/middleware/security/security_headers.py",
+          "line": 36
+        },
+        {
+          "file": "app/middleware/security/rate_limit_middleware.py",
+          "line": 34
+        },
+        {
+          "file": "app/middleware/cors/cors_middleware.py",
+          "line": 26
+        },
+        {
+          "file": "app/middleware/error_handling/recovery_middleware.py",
+          "line": 30
+        },
+        {
+          "file": "app/middleware/observability/observability_middleware.py",
+          "line": 34
+        },
+        {
+          "file": "app/middleware/observability/telemetry_bridge.py",
+          "line": 33
+        },
+        {
+          "file": "app/middleware/observability/analytics_adapter.py",
+          "line": 33
+        },
+        {
+          "file": "app/middleware/observability/performance_profiler.py",
+          "line": 28
+        },
+        {
+          "file": "app/middleware/observability/anomaly_inspector.py",
+          "line": 34
+        },
+        {
+          "file": "app/middleware/observability/request_logger.py",
+          "line": 32
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 59
+        }
+      ],
+      "on_error": [
+        {
+          "file": "app/middleware/security/telemetry_guard.py",
+          "line": 58
+        },
+        {
+          "file": "app/middleware/error_handling/recovery_middleware.py",
+          "line": 48
+        },
+        {
+          "file": "app/middleware/observability/observability_middleware.py",
+          "line": 179
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 157
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 229
+        }
+      ],
+      "on_complete": [
+        {
+          "file": "app/middleware/security/telemetry_guard.py",
+          "line": 77
+        },
+        {
+          "file": "app/middleware/observability/observability_middleware.py",
+          "line": 103
+        },
+        {
+          "file": "app/middleware/observability/telemetry_bridge.py",
+          "line": 88
+        },
+        {
+          "file": "app/middleware/observability/analytics_adapter.py",
+          "line": 54
+        },
+        {
+          "file": "app/middleware/observability/performance_profiler.py",
+          "line": 49
+        },
+        {
+          "file": "app/middleware/observability/anomaly_inspector.py",
+          "line": 53
+        },
+        {
+          "file": "app/middleware/observability/request_logger.py",
+          "line": 71
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 161
+        }
+      ],
+      "should_process": [
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 165
+        },
+        {
+          "file": "app/middleware/core/base_middleware.py",
+          "line": 191
+        }
+      ]
+    },
+    "duplicate_classes": {
+      "BoundedContext": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 42
+        },
+        {
+          "file": "app/services/data_mesh/domain/models.py",
+          "line": 84
+        },
+        {
+          "file": "app/core/domain_events/__init__.py",
+          "line": 22
+        }
+      ],
+      "DomainEvent": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 89
+        },
+        {
+          "file": "app/core/domain_events/__init__.py",
+          "line": 35
+        }
+      ],
+      "EventBus": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 106
+        },
+        {
+          "file": "app/core/event_bus.py",
+          "line": 27
+        }
+      ],
+      "CircuitState": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 251
+        },
+        {
+          "file": "app/core/gateway/circuit_breaker.py",
+          "line": 12
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 44
+        }
+      ],
+      "CircuitBreakerConfig": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 259
+        },
+        {
+          "file": "app/services/system/resilience/circuit_breaker.py",
+          "line": 27
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 53
+        }
+      ],
+      "CircuitBreaker": [
+        {
+          "file": "app/boundaries/service_boundaries.py",
+          "line": 267
+        },
+        {
+          "file": "app/services/llm_client/application/circuit_breaker.py",
+          "line": 15
+        },
+        {
+          "file": "app/services/system/resilience/circuit_breaker.py",
+          "line": 66
+        },
+        {
+          "file": "app/core/gateway/circuit_breaker.py",
+          "line": 19
+        },
+        {
+          "file": "app/core/resilience/circuit_breaker.py",
+          "line": 62
+        }
+      ],
+      "PolicyRule": [
+        {
+          "file": "app/boundaries/policy/engine.py",
+          "line": 22
+        },
+        {
+          "file": "app/core/gateway/models.py",
+          "line": 108
+        }
+      ],
+      "PolicyEngine": [
+        {
+          "file": "app/boundaries/policy/engine.py",
+          "line": 50
+        },
+        {
+          "file": "app/core/gateway/policy.py",
+          "line": 11
+        }
+      ],
+      "SagaStep": [
+        {
+          "file": "app/boundaries/data/saga.py",
+          "line": 24
+        },
+        {
+          "file": "app/services/saga_orchestrator.py",
+          "line": 66
+        }
+      ],
+      "SagaOrchestrator": [
+        {
+          "file": "app/boundaries/data/saga.py",
+          "line": 43
+        },
+        {
+          "file": "app/services/saga_orchestrator.py",
+          "line": 116
+        }
+      ],
+      "ServiceHealth": [
+        {
+          "file": "app/services/system/service_catalog_service.py",
+          "line": 85
+        },
+        {
+          "file": "app/services/adaptive/domain/models.py",
+          "line": 17
+        }
+      ],
+      "DistributedResilienceService": [
+        {
+          "file": "app/services/system/distributed_resilience_service.py",
+          "line": 15
+        },
+        {
+          "file": "app/services/system/resilience/service.py",
+          "line": 17
+        }
+      ],
+      "SystemService": [
+        {
+          "file": "app/services/system/system_service.py",
+          "line": 14
+        },
+        {
+          "file": "app/core/protocols.py",
+          "line": 274
+        }
+      ],
+      "ChatContext": [
+        {
+          "file": "app/services/chat/context.py",
+          "line": 14
+        },
+        {
+          "file": "app/services/chat/handlers/base.py",
+          "line": 68
+        }
+      ],
+      "InMemoryMetricsRepository": [
+        {
+          "file": "app/services/security_metrics/infrastructure/in_memory_repositories.py",
+          "line": 48
+        },
+        {
+          "file": "app/services/adaptive/infrastructure/in_memory_repository.py",
+          "line": 54
+        },
+        {
+          "file": "app/services/serving/infrastructure/in_memory_repository.py",
+          "line": 74
+        }
+      ],
+      "RetryStrategy": [
+        {
+          "file": "app/services/llm_client/application/retry.py",
+          "line": 9
+        },
+        {
+          "file": "app/services/system/resilience/retry.py",
+          "line": 14
+        }
+      ],
+      "MockClient": [
+        {
+          "file": "app/services/llm_client/infrastructure/client_factory.py",
+          "line": 23
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 291
+        }
+      ],
+      "DataMeshManager": [
+        {
+          "file": "app/services/data_mesh/application/mesh_manager.py",
+          "line": 24
+        },
+        {
+          "file": "app/services/data_mesh/application/manager.py",
+          "line": 6
+        }
+      ],
+      "ThreatDetection": [
+        {
+          "file": "app/services/ai_security/domain/models.py",
+          "line": 76
+        },
+        {
+          "file": "app/security/threat_detector.py",
+          "line": 9
+        }
+      ],
+      "HealthChecker": [
+        {
+          "file": "app/services/system/resilience/health.py",
+          "line": 43
+        },
+        {
+          "file": "app/core/scaling/health_checker.py",
+          "line": 15
+        }
+      ],
+      "RateLimitConfig": [
+        {
+          "file": "app/services/system/resilience/rate_limit.py",
+          "line": 10
+        },
+        {
+          "file": "app/core/rate_limiter.py",
+          "line": 18
+        }
+      ],
+      "BulkheadFullError": [
+        {
+          "file": "app/services/system/resilience/bulkhead.py",
+          "line": 32
+        },
+        {
+          "file": "app/core/resilience/bulkhead.py",
+          "line": 15
+        }
+      ],
+      "Bulkhead": [
+        {
+          "file": "app/services/system/resilience/bulkhead.py",
+          "line": 38
+        },
+        {
+          "file": "app/core/resilience/bulkhead.py",
+          "line": 21
+        }
+      ],
+      "RetryConfig": [
+        {
+          "file": "app/services/system/resilience/retry.py",
+          "line": 24
+        },
+        {
+          "file": "app/core/resilience/retry.py",
+          "line": 17
+        }
+      ],
+      "IntelligentRouter": [
+        {
+          "file": "app/services/adaptive/application/intelligent_router.py",
+          "line": 16
+        },
+        {
+          "file": "app/core/gateway/routing.py",
+          "line": 69
+        }
+      ],
+      "MetricsRepository": [
+        {
+          "file": "app/services/adaptive/domain/ports.py",
+          "line": 39
+        },
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 57
+        }
+      ],
+      "ServiceInstance": [
+        {
+          "file": "app/services/adaptive/domain/models.py",
+          "line": 82
+        },
+        {
+          "file": "app/core/scaling/service_registry.py",
+          "line": 14
+        }
+      ],
+      "StreamingConfig": [
+        {
+          "file": "app/services/admin/streaming/service.py",
+          "line": 40
+        },
+        {
+          "file": "app/services/admin/streaming/breakthrough.py",
+          "line": 12
+        }
+      ],
+      "ModelInvoker": [
+        {
+          "file": "app/services/serving/application/model_invoker.py",
+          "line": 23
+        },
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 84
+        }
+      ],
+      "LoadBalancer": [
+        {
+          "file": "app/services/serving/domain/ports.py",
+          "line": 130
+        },
+        {
+          "file": "app/core/scaling/load_balancer.py",
+          "line": 107
+        }
+      ],
+      "RoutingStrategy": [
+        {
+          "file": "app/services/serving/domain/models.py",
+          "line": 54
+        },
+        {
+          "file": "app/core/gateway/models.py",
+          "line": 16
+        }
+      ],
+      "BaseService": [
+        {
+          "file": "app/core/protocols.py",
+          "line": 38
+        },
+        {
+          "file": "app/core/base_service.py",
+          "line": 17
+        }
+      ],
+      "AIClientProtocol": [
+        {
+          "file": "app/core/protocols.py",
+          "line": 258
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 55
+        }
+      ],
+      "_ChatWrapper": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 237
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 300
+        }
+      ],
+      "_CompletionsWrapper": [
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 241
+        },
+        {
+          "file": "app/core/ai_client_factory.py",
+          "line": 304
+        }
+      ]
+    }
+  }
+}

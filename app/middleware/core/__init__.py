@@ -19,20 +19,12 @@ Architecture Philosophy:
 
 from .base_middleware import BaseMiddleware
 from .context import RequestContext
-from .hooks import LifecycleHooks
-from .pipeline import SmartPipeline
-from .registry import MiddlewareRegistry
-from .response_factory import ResponseFactory
 from .result import MiddlewareResult
 
 __all__ = [
     "BaseMiddleware",
-    "LifecycleHooks",
-    "MiddlewareRegistry",
     "MiddlewareResult",
     "RequestContext",
-    "ResponseFactory",
-    "SmartPipeline",
 ]
 
 __version__ = "1.0.0-aurora"

@@ -1,0 +1,3655 @@
+{
+  "summary": {
+    "total_test_files": 137,
+    "orphaned_tests": 38,
+    "total_issues": 181,
+    "tests_with_patterns": 2,
+    "total_patterns": 4
+  },
+  "orphaned_tests": [
+    {
+      "filepath": "tests/test_separation_of_concerns.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "asyncio",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.data_boundaries",
+          "name": "DataBoundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.data_boundaries",
+          "name": "InMemoryEventStore",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.data_boundaries",
+          "name": "StoredEvent",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.data_boundaries",
+          "name": "get_data_boundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "ComplianceRegulation",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "ComplianceRule",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "DataClassification",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "Effect",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "Policy",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "PolicyBoundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "PolicyRule",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "Principal",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.policy_boundaries",
+          "name": "get_policy_boundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "CircuitBreakerConfig",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "DomainEvent",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "EventType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "ServiceBoundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "get_service_boundary",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.service_boundaries",
+          "name": "ServiceDefinition",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.boundaries.data_boundaries",
+          "name": "EventSourcedAggregate",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.data_boundaries",
+          "entity": "DataBoundary",
+          "severity": "medium",
+          "message": "Entity 'DataBoundary' not found in 'app.boundaries.data_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.data_boundaries",
+          "entity": "InMemoryEventStore",
+          "severity": "medium",
+          "message": "Entity 'InMemoryEventStore' not found in 'app.boundaries.data_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.data_boundaries",
+          "entity": "StoredEvent",
+          "severity": "medium",
+          "message": "Entity 'StoredEvent' not found in 'app.boundaries.data_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.data_boundaries",
+          "entity": "get_data_boundary",
+          "severity": "medium",
+          "message": "Entity 'get_data_boundary' not found in 'app.boundaries.data_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "ComplianceRegulation",
+          "severity": "medium",
+          "message": "Entity 'ComplianceRegulation' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "ComplianceRule",
+          "severity": "medium",
+          "message": "Entity 'ComplianceRule' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "DataClassification",
+          "severity": "medium",
+          "message": "Entity 'DataClassification' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "Effect",
+          "severity": "medium",
+          "message": "Entity 'Effect' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "Policy",
+          "severity": "medium",
+          "message": "Entity 'Policy' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "PolicyBoundary",
+          "severity": "medium",
+          "message": "Entity 'PolicyBoundary' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "PolicyRule",
+          "severity": "medium",
+          "message": "Entity 'PolicyRule' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "Principal",
+          "severity": "medium",
+          "message": "Entity 'Principal' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.policy_boundaries",
+          "entity": "get_policy_boundary",
+          "severity": "medium",
+          "message": "Entity 'get_policy_boundary' not found in 'app.boundaries.policy_boundaries'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.boundaries.data_boundaries",
+          "entity": "EventSourcedAggregate",
+          "severity": "medium",
+          "message": "Entity 'EventSourcedAggregate' not found in 'app.boundaries.data_boundaries'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_overmind_fault_tolerance.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.base_planner",
+          "name": "BasePlanner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.fault_tolerance",
+          "name": "ResilientPlanner",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.base_planner",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.base_planner' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.fault_tolerance",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.fault_tolerance' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/database.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "sqlalchemy.orm",
+          "name": "sessionmaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "create_unified_sync_engine",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_analysis_module.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.anomaly_detector",
+          "name": "Anomaly",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.anomaly_detector",
+          "name": "AnomalyDetector",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.anomaly_detector",
+          "name": "AnomalySeverity",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.anomaly_detector",
+          "name": "AnomalyType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.pattern_recognizer",
+          "name": "Pattern",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.pattern_recognizer",
+          "name": "PatternRecognizer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis.pattern_recognizer",
+          "name": "PatternType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "UTC",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "UTC",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis",
+          "name": "AnomalyDetector",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis",
+          "name": "PatternRecognizer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis",
+          "name": "PredictiveAnalytics",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.analysis",
+          "name": "RootCauseAnalyzer",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.analysis.anomaly_detector",
+          "severity": "high",
+          "message": "Module 'app.analysis.anomaly_detector' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.anomaly_detector",
+          "severity": "high",
+          "message": "Module 'app.analysis.anomaly_detector' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.anomaly_detector",
+          "severity": "high",
+          "message": "Module 'app.analysis.anomaly_detector' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.anomaly_detector",
+          "severity": "high",
+          "message": "Module 'app.analysis.anomaly_detector' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.pattern_recognizer",
+          "severity": "high",
+          "message": "Module 'app.analysis.pattern_recognizer' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.pattern_recognizer",
+          "severity": "high",
+          "message": "Module 'app.analysis.pattern_recognizer' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis.pattern_recognizer",
+          "severity": "high",
+          "message": "Module 'app.analysis.pattern_recognizer' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis",
+          "severity": "high",
+          "message": "Module 'app.analysis' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis",
+          "severity": "high",
+          "message": "Module 'app.analysis' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis",
+          "severity": "high",
+          "message": "Module 'app.analysis' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.analysis",
+          "severity": "high",
+          "message": "Module 'app.analysis' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_overmind_planning_config.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.config",
+          "name": "DEFAULT_CONFIG",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.config",
+          "name": "_parse_bool",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.config",
+          "name": "_parse_csv",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.config",
+          "name": "_parse_float",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.config",
+          "name": "_parse_int",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.config",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.config' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.config",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.config' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.config",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.config' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.config",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.config' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.config",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.config' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_admin_chat_init_event.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "json",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.database",
+          "name": "get_db",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "tests.conftest",
+          "name": "TestingSessionLocal",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.main",
+          "name": "kernel",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.main",
+          "entity": "kernel",
+          "severity": "medium",
+          "message": "Entity 'kernel' not found in 'app.main'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/conftest.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "asyncio",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "shutil",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "tempfile",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "pathlib",
+          "name": "Path",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "bcrypt",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "sqlalchemy",
+          "name": null,
+          "alias": "sa"
+        },
+        {
+          "type": "from",
+          "module": "fastapi.testclient",
+          "name": "TestClient",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "AsyncSession",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "create_async_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.orm",
+          "name": "sessionmaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlmodel",
+          "name": "SQLModel",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.database",
+          "name": "get_db",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.ai_gateway",
+          "name": "get_ai_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.security",
+          "name": "generate_service_token",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "User",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "httpx",
+          "name": "AsyncClient",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "json",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "typing",
+          "name": "Any",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "tests.factories",
+          "name": "MissionFactory",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "tests.factories",
+          "name": "UserFactory",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "contextlib",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "app.main",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.main",
+          "name": "create_app",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy",
+          "name": "select",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "httpx",
+          "name": "ASGITransport",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.core.ai_gateway",
+          "entity": "get_ai_client",
+          "severity": "medium",
+          "message": "Entity 'get_ai_client' not found in 'app.core.ai_gateway'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_dependency_layer_smoke.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "logging",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest",
+          "name": "mock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy",
+          "name": "text",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "AsyncSession",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.config.settings",
+          "name": "AppSettings",
+          "alias": "Settings"
+        },
+        {
+          "type": "from",
+          "module": "app.core",
+          "name": "di",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.di",
+          "name": "get_logger",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.di",
+          "name": "get_session",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.core",
+          "entity": "di",
+          "severity": "medium",
+          "message": "Entity 'di' not found in 'app.core'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.core.di",
+          "entity": "get_logger",
+          "severity": "medium",
+          "message": "Entity 'get_logger' not found in 'app.core.di'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.core.di",
+          "entity": "get_session",
+          "severity": "medium",
+          "message": "Entity 'get_session' not found in 'app.core.di'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_refactored_architecture.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "ContextAnalyzer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "Plan",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "PlanOptimizer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "PlanValidator",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "RefactoredPlanner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "Task",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.planning.refactored_planner",
+          "name": "TaskGenerator",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.routing.routing_strategies",
+          "name": "LatencyBasedStrategy",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.routing.routing_strategies",
+          "name": "RoundRobinStrategy",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.routing.routing_strategies",
+          "name": "RoutingRequest",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.routing.routing_strategies",
+          "name": "ServiceEndpoint",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.use_cases.routing.routing_strategies",
+          "name": "StrategyFactory",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "CircuitBreakerConfig",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "CircuitState",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "DIContainer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "Event",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "EventBus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "RequestContext",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.patterns",
+          "name": "build_request_pipeline",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "CircuitBreaker",
+          "severity": "medium",
+          "message": "Entity 'CircuitBreaker' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "CircuitBreakerConfig",
+          "severity": "medium",
+          "message": "Entity 'CircuitBreakerConfig' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "CircuitState",
+          "severity": "medium",
+          "message": "Entity 'CircuitState' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "DIContainer",
+          "severity": "medium",
+          "message": "Entity 'DIContainer' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "Event",
+          "severity": "medium",
+          "message": "Entity 'Event' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "EventBus",
+          "severity": "medium",
+          "message": "Entity 'EventBus' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "RequestContext",
+          "severity": "medium",
+          "message": "Entity 'RequestContext' not found in 'app.infrastructure.patterns'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.patterns",
+          "entity": "build_request_pipeline",
+          "severity": "medium",
+          "message": "Entity 'build_request_pipeline' not found in 'app.infrastructure.patterns'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_unified_observability.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "unittest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.unified_observability",
+          "name": "TraceContext",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.unified_observability",
+          "name": "UnifiedObservabilityService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.telemetry.unified_observability",
+          "name": "get_unified_observability",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.telemetry.unified_observability",
+          "entity": "TraceContext",
+          "severity": "medium",
+          "message": "Entity 'TraceContext' not found in 'app.telemetry.unified_observability'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_refactored_modules.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "AnalysisPipeline",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "ComplexityAnalysisStep",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "FileReadStep",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "FormatStep",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "ParseStep",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "AnalysisPipeline",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "FileReadStep",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.services",
+          "name": "DefaultHealthCheckService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.repositories",
+          "name": "SQLAlchemyDatabaseRepository",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.services",
+          "name": "DefaultSystemService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.repositories",
+          "name": "SQLAlchemyDatabaseRepository",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "ast",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolBuilder",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.agent_tools.refactored",
+          "name": "ToolRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.refactored",
+          "name": "AnalysisPipeline",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.interfaces",
+          "name": "HealthCheckService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.interfaces",
+          "name": "SystemService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.application.interfaces",
+          "name": "HealthCheckService",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.repositories",
+          "entity": "SQLAlchemyDatabaseRepository",
+          "severity": "medium",
+          "message": "Entity 'SQLAlchemyDatabaseRepository' not found in 'app.infrastructure.repositories'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.repositories",
+          "entity": "SQLAlchemyDatabaseRepository",
+          "severity": "medium",
+          "message": "Entity 'SQLAlchemyDatabaseRepository' not found in 'app.infrastructure.repositories'"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.agent_tools.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.agent_tools.refactored' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.project_context.refactored",
+          "severity": "high",
+          "message": "Module 'app.services.project_context.refactored' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_engine_factory_comprehensive.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "threading",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "dataclasses",
+          "name": "FrozenInstanceError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "AdaptivePoolerDetector",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "DatabaseType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "DatabaseURLSanitizer",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "EngineDiagnostics",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "FatalEngineError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "PoolerSignature",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "PoolerType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "QuantumStatementNameGenerator",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "_configure_postgres_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "_configure_sqlite_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "_detect_database_type",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "_validate_postgres_security",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "create_unified_async_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "POOLER_SIGNATURES",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/test_overmind_planning.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "importlib",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning",
+          "name": "base_planner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning",
+          "name": "governance",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.base_planner",
+          "name": "BasePlanner",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.base_planner",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.base_planner' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/security/test_password_compat.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "passlib.context",
+          "name": "CryptContext",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "pwd_context",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.models",
+          "entity": "pwd_context",
+          "severity": "medium",
+          "message": "Entity 'pwd_context' not found in 'app.models'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/unit/test_enum_case_sensitivity.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy",
+          "name": "text",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "AsyncSession",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlmodel",
+          "name": "SQLModel",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlmodel",
+          "name": "select",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "create_unified_async_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "AdminConversation",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "AdminMessage",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "MessageRole",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "MissionStatus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "TaskStatus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "User",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/unit/test_prompts_async.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.prompts",
+          "name": "OVERMIND_SYSTEM_PROMPT",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.prompts",
+          "name": "get_static_system_prompt",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.prompts",
+          "name": "get_system_prompt",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.core.prompts",
+          "entity": "OVERMIND_SYSTEM_PROMPT",
+          "severity": "medium",
+          "message": "Entity 'OVERMIND_SYSTEM_PROMPT' not found in 'app.core.prompts'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/infrastructure/test_env_reader.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.config",
+          "name": "read_bool_env",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.config",
+          "name": "read_float_env",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.config",
+          "name": "read_int_env",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.config",
+          "name": "read_str_env",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.infrastructure.config",
+          "name": "env_reader",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.config",
+          "entity": "read_bool_env",
+          "severity": "medium",
+          "message": "Entity 'read_bool_env' not found in 'app.infrastructure.config'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.config",
+          "entity": "read_float_env",
+          "severity": "medium",
+          "message": "Entity 'read_float_env' not found in 'app.infrastructure.config'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.config",
+          "entity": "read_int_env",
+          "severity": "medium",
+          "message": "Entity 'read_int_env' not found in 'app.infrastructure.config'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.config",
+          "entity": "read_str_env",
+          "severity": "medium",
+          "message": "Entity 'read_str_env' not found in 'app.infrastructure.config'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.infrastructure.config",
+          "entity": "env_reader",
+          "severity": "medium",
+          "message": "Entity 'env_reader' not found in 'app.infrastructure.config'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/core/test_superhuman_ai_gateway.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.circuit_breaker",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.exceptions",
+          "name": "AIAllModelsExhaustedError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.mesh",
+          "name": "SAFETY_NET_MODEL_ID",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.mesh",
+          "name": "NeuralRoutingMesh",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.gateway.node",
+          "name": "NeuralNode",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.core.gateway.mesh",
+          "entity": "SAFETY_NET_MODEL_ID",
+          "severity": "medium",
+          "message": "Entity 'SAFETY_NET_MODEL_ID' not found in 'app.core.gateway.mesh'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/core/test_engine_factory_hardened.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest",
+          "name": "mock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "AsyncEngine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "FatalEngineError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "create_unified_async_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "DatabaseURLSanitizer",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "AdaptivePoolerDetector",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "PoolerType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "QuantumStatementNameGenerator",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/smoke/test_service_integration.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "fastapi.testclient",
+          "name": "TestClient",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.factories",
+          "name": "get_db_service",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.main",
+          "name": "app",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.system.database_service",
+          "name": "DatabaseService",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.main",
+          "entity": "app",
+          "severity": "medium",
+          "message": "Entity 'app' not found in 'app.main'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/regressions/test_streaming_event_type_bug.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.api.routers.admin",
+          "name": "get_current_user_id",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.api.routers.admin",
+          "name": "get_session_factory",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.ai_gateway",
+          "name": "get_ai_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.database",
+          "name": "get_db",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.core.ai_gateway",
+          "entity": "get_ai_client",
+          "severity": "medium",
+          "message": "Entity 'get_ai_client' not found in 'app.core.ai_gateway'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/regressions/test_stub_bug_fix.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "fastapi.testclient",
+          "name": "TestClient",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.main",
+          "name": "app",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.main",
+          "entity": "app",
+          "severity": "medium",
+          "message": "Entity 'app' not found in 'app.main'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/ai/test_circuit_breaker.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.circuit_breaker",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.circuit_breaker",
+          "name": "CircuitBreakerConfig",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.circuit_breaker",
+          "name": "CircuitBreakerOpenError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.circuit_breaker",
+          "name": "CircuitState",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.ai.application.circuit_breaker' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.ai.application.circuit_breaker' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.ai.application.circuit_breaker' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.ai.application.circuit_breaker' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/phase3_refactoring/test_model_serving_e2e.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "InferenceRouter",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "InMemoryModelRepository",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "MockModelInvoker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelStatus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelVersion",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "InferenceRouter",
+          "severity": "medium",
+          "message": "Entity 'InferenceRouter' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "InMemoryModelRepository",
+          "severity": "medium",
+          "message": "Entity 'InMemoryModelRepository' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "MockModelInvoker",
+          "severity": "medium",
+          "message": "Entity 'MockModelInvoker' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelRegistry",
+          "severity": "medium",
+          "message": "Entity 'ModelRegistry' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelStatus",
+          "severity": "medium",
+          "message": "Entity 'ModelStatus' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelType",
+          "severity": "medium",
+          "message": "Entity 'ModelType' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelVersion",
+          "severity": "medium",
+          "message": "Entity 'ModelVersion' not found in 'app.services.serving'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/phase3_refactoring/test_model_serving_refactored.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "InferenceRouter",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "InMemoryModelRepository",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "MockModelInvoker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelRegistry",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelStatus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving",
+          "name": "ModelVersion",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.serving.domain.models",
+          "name": "ModelRequest",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "InferenceRouter",
+          "severity": "medium",
+          "message": "Entity 'InferenceRouter' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "InMemoryModelRepository",
+          "severity": "medium",
+          "message": "Entity 'InMemoryModelRepository' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "MockModelInvoker",
+          "severity": "medium",
+          "message": "Entity 'MockModelInvoker' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelRegistry",
+          "severity": "medium",
+          "message": "Entity 'ModelRegistry' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelStatus",
+          "severity": "medium",
+          "message": "Entity 'ModelStatus' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelType",
+          "severity": "medium",
+          "message": "Entity 'ModelType' not found in 'app.services.serving'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.serving",
+          "entity": "ModelVersion",
+          "severity": "medium",
+          "message": "Entity 'ModelVersion' not found in 'app.services.serving'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/phase3_refactoring/test_llm_client_golden_master.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest",
+          "name": "mock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm.circuit_breaker",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm.cost_manager",
+          "name": "CostManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "get_llm_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "invoke_chat",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "is_mock_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "llm_health",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "reset_llm_client",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.llm.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.services.llm.circuit_breaker' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.services.llm.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_duplication_buster.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "app.services.system.duplication_buster",
+          "name": "DuplicationBuster",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.system.duplication_buster",
+          "severity": "high",
+          "message": "Module 'app.services.system.duplication_buster' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_kubernetes_orchestration_refactored.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.orchestration.application.pod_scheduler",
+          "name": "PodScheduler",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.orchestration.domain",
+          "name": "Node",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.orchestration.domain",
+          "name": "NodeState",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.orchestration.domain",
+          "name": "Pod",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.orchestration.application.pod_scheduler",
+          "severity": "high",
+          "message": "Module 'app.services.orchestration.application.pod_scheduler' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.orchestration.domain",
+          "severity": "high",
+          "message": "Module 'app.services.orchestration.domain' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.orchestration.domain",
+          "severity": "high",
+          "message": "Module 'app.services.orchestration.domain' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.orchestration.domain",
+          "severity": "high",
+          "message": "Module 'app.services.orchestration.domain' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_data_mesh_refactor.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "httpx",
+          "name": "AsyncClient",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.main",
+          "name": "app",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.main",
+          "entity": "app",
+          "severity": "medium",
+          "message": "Entity 'app' not found in 'app.main'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_system_service.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "AsyncMock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.exc",
+          "name": "OperationalError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.system.system_service",
+          "name": "system_service",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.system.system_service",
+          "entity": "system_service",
+          "severity": "medium",
+          "message": "Entity 'system_service' not found in 'app.services.system.system_service'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_api_security_service.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_security_service",
+          "name": "SuperhumanSecuritySystem",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_security_service",
+          "name": "get_security_service",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_security_service",
+          "name": "security_service",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.utils.service_locator",
+          "name": "ServiceLocator",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.api.api_security_service",
+          "entity": "SuperhumanSecuritySystem",
+          "severity": "medium",
+          "message": "Entity 'SuperhumanSecuritySystem' not found in 'app.services.api.api_security_service'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.api.api_security_service",
+          "entity": "security_service",
+          "severity": "medium",
+          "message": "Entity 'security_service' not found in 'app.services.api.api_security_service'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_config_secrets_hexagonal.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_config_secrets_service",
+          "name": "ConfigSecretsService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_config_secrets_service",
+          "name": "Environment",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_config_secrets_service",
+          "name": "SecretType",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.api.api_config_secrets_service",
+          "name": "get_config_secrets_service",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.api.api_config_secrets_service",
+          "entity": "Environment",
+          "severity": "medium",
+          "message": "Entity 'Environment' not found in 'app.services.api.api_config_secrets_service'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.services.api.api_config_secrets_service",
+          "entity": "SecretType",
+          "severity": "medium",
+          "message": "Entity 'SecretType' not found in 'app.services.api.api_config_secrets_service'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_llm_client_service.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "json",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "os",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest",
+          "name": "mock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.ai_client_factory",
+          "name": "SimpleFallbackClient",
+          "alias": "_HttpFallbackClient"
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm.circuit_breaker",
+          "name": "CircuitBreaker",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm.cost_manager",
+          "name": "CostManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "_POST_HOOKS",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "_PRE_HOOKS",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "MockLLMClient",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "get_llm_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "invoke_chat",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "invoke_chat_stream",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "is_mock_client",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "llm_health",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "register_llm_post_hook",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "register_llm_pre_hook",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.llm_client_service",
+          "name": "reset_llm_client",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.llm.circuit_breaker",
+          "severity": "high",
+          "message": "Module 'app.services.llm.circuit_breaker' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.services.llm.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.llm_client_service",
+          "severity": "high",
+          "message": "Module 'app.services.llm_client_service' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/test_project_context_service.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context",
+          "name": "ProjectContextService",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.project_context.domain.models",
+          "name": "CodeStatistics",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.services.project_context",
+          "entity": "ProjectContextService",
+          "severity": "medium",
+          "message": "Entity 'ProjectContextService' not found in 'app.services.project_context'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/unit/core/test_pure_functions.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "UTC",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "datetime",
+          "name": "datetime",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "MessageRole",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "MissionStatus",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "utc_now",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "fastapi.middleware.cors",
+          "name": "CORSMiddleware",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.kernel",
+          "name": "MiddlewareSpec",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "fastapi",
+          "name": "APIRouter",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.kernel",
+          "name": "RouterSpec",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_entity",
+          "module": "app.kernel",
+          "entity": "MiddlewareSpec",
+          "severity": "medium",
+          "message": "Entity 'MiddlewareSpec' not found in 'app.kernel'"
+        },
+        {
+          "type": "missing_entity",
+          "module": "app.kernel",
+          "entity": "RouterSpec",
+          "severity": "medium",
+          "message": "Entity 'RouterSpec' not found in 'app.kernel'"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/unit/services/test_database_service.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlalchemy.ext.asyncio",
+          "name": "AsyncSession",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "sqlmodel",
+          "name": "SQLModel",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.config.settings",
+          "name": "AppSettings",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.core.engine_factory",
+          "name": "create_unified_async_engine",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.models",
+          "name": "User",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.system.database_service",
+          "name": "DatabaseService",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.core.engine_factory",
+          "severity": "high",
+          "message": "Module 'app.core.engine_factory' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/ai/application/test_cost_manager.py",
+      "imports": [
+        {
+          "type": "import",
+          "module": "time",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "BudgetConfig",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "BudgetExceededError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "BudgetPeriod",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "CostManager",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "CostTier",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "ModelPricing",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.ai.application.cost_manager",
+          "name": "get_cost_manager",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.ai.application.cost_manager",
+          "severity": "high",
+          "message": "Module 'app.ai.application.cost_manager' does not exist"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/services/overmind/planning/test_factory_coverage.py",
+      "imports": [
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "MagicMock",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "unittest.mock",
+          "name": "patch",
+          "alias": null
+        },
+        {
+          "type": "import",
+          "module": "pytest",
+          "name": null,
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning",
+          "name": "factory_core",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.base_planner",
+          "name": "BasePlanner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.exceptions",
+          "name": "NoActivePlannersError",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.exceptions",
+          "name": "PlannerNotFound",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "_GLOBAL_FACTORY",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "FactoryState",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "PlannerFactory",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "PlannerRecord",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "a_get_planner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "a_select_best_planner",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "diagnostics_json",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "diagnostics_report",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "export_diagnostics",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "get_all_planners",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "instantiation_profiles",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "list_planner_metadata",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "list_quarantined",
+          "alias": null
+        },
+        {
+          "type": "from",
+          "module": "app.services.overmind.planning.factory_core",
+          "name": "selection_profiles",
+          "alias": null
+        }
+      ],
+      "issues": [
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.base_planner",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.base_planner' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.exceptions",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.exceptions' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.exceptions",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.exceptions' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        },
+        {
+          "type": "missing_module",
+          "module": "app.services.overmind.planning.factory_core",
+          "severity": "high",
+          "message": "Module 'app.services.overmind.planning.factory_core' does not exist"
+        }
+      ]
+    }
+  ],
+  "tests_with_patterns": [
+    {
+      "filepath": "tests/test_separation_of_concerns.py",
+      "patterns": [
+        {
+          "type": "suspicious_import",
+          "module": "app.boundaries.service_boundaries",
+          "message": "Test imports from potentially dead module: app.boundaries.service_boundaries"
+        },
+        {
+          "type": "suspicious_import",
+          "module": "app.boundaries.policy",
+          "message": "Test imports from potentially dead module: app.boundaries.policy"
+        },
+        {
+          "type": "suspicious_import",
+          "module": "app.boundaries.data",
+          "message": "Test imports from potentially dead module: app.boundaries.data"
+        }
+      ]
+    },
+    {
+      "filepath": "tests/core/test_duplication_elimination.py",
+      "patterns": [
+        {
+          "type": "suspicious_import",
+          "module": "app.core.base_profiler",
+          "message": "Test imports from potentially dead module: app.core.base_profiler"
+        }
+      ]
+    }
+  ]
+}

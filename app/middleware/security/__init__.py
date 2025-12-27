@@ -18,22 +18,12 @@ Security Philosophy:
     - Policy-based access control
 """
 
-from .ai_threat_middleware import AIThreatMiddleware
-from .policy_enforcer import PolicyEnforcer
 from .rate_limit_middleware import RateLimitMiddleware
 from .security_headers import SecurityHeadersMiddleware
-from .telemetry_guard import TelemetryGuard
-from .waf_middleware import WAFMiddleware
-from .zero_trust_middleware import ZeroTrustMiddleware
 
 __all__ = [
-    "AIThreatMiddleware",
-    "PolicyEnforcer",
     "RateLimitMiddleware",
     "SecurityHeadersMiddleware",
-    "TelemetryGuard",
-    "WAFMiddleware",
-    "ZeroTrustMiddleware",
 ]
 
 __version__ = "1.0.0-aurora"
