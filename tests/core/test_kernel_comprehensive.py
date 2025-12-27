@@ -31,7 +31,7 @@ class TestRealityKernel:
         WHEN RealityKernel is initialized
         THEN it should create a FastAPI app and weave routes.
         """
-        kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(settings=mock_settings)
         assert kernel.app is not None
         assert isinstance(kernel.app, FastAPI)
         assert kernel.app.title == "TestProject"
@@ -42,7 +42,7 @@ class TestRealityKernel:
         WHEN get_app() is called
         THEN it should return the FastAPI instance.
         """
-        kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(settings=mock_settings)
         app = kernel.get_app()
         assert isinstance(app, FastAPI)
         assert app == kernel.app
@@ -59,7 +59,7 @@ class TestRealityKernel:
         if "VERSION" in mock_settings:
             del mock_settings["VERSION"]
 
-        kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(settings=mock_settings)
         assert kernel.app.title == "TestProject"
         # Version should default to what's in code
         # The version in settings.py default is "4.0.0-legendary"
@@ -75,7 +75,7 @@ class TestRealityKernel:
         THEN it should explicitly include core routers.
         """
         # We can check the routes of the created app
-        kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(settings=mock_settings)
         routes = [r.path for r in kernel.app.routes]
 
         # Check for prefixes we expect
@@ -94,7 +94,7 @@ class TestRealityKernel:
         WHEN the lifespan context is entered
         THEN it should run startup validations and yield, then log shutdown.
         """
-        kernel = RealityKernel(mock_settings)
+        kernel = RealityKernel(settings=mock_settings)
 
         # We can test the generator manually
         lifespan_gen = kernel._handle_lifespan_events()
@@ -127,7 +127,7 @@ class TestRealityKernel:
             "BACKEND_CORS_ORIGINS": [], # Empty implies default logic
             "FRONTEND_URL": "http://localhost:3000"
         }
-        RealityKernel(dev_settings)
+        RealityKernel(settings=dev_settings)
         # Verify middleware configuration (complex to inspect directly in FastAPI,
         # but we can rely on no crash and basic property checks if exposed)
 
@@ -140,5 +140,5 @@ class TestRealityKernel:
             "BACKEND_CORS_ORIGINS": ["https://myprod.com"],
             "FRONTEND_URL": "https://myprod.com"
         }
-        kernel_prod = RealityKernel(prod_settings)
+        kernel_prod = RealityKernel(settings=prod_settings)
         assert kernel_prod.app.title == "Prod"

@@ -16,7 +16,7 @@ os.environ["ENVIRONMENT"] = "testing"
 settings = AppSettings()
 
 # إنشاء نواة التطبيق
-kernel = RealityKernel(settings)
+kernel = RealityKernel(settings=settings)
 app = kernel.get_app()
 
 client = TestClient(app)
@@ -66,7 +66,7 @@ class TestAPIFirstPlatform:
             # التأكد من وجود تعريفات Schemas
             assert "components" in schema
             assert "schemas" in schema["components"]
-            assert "HealthResponse" in schema["components"]["schemas"]
+            assert "HealthzResponse" in schema["components"]["schemas"]
             assert "SystemInfoResponse" in schema["components"]["schemas"]
         else:
             # إذا لم يكن متاحاً، نتخطى هذا التحقق أو نعتبره "ملاحظة"

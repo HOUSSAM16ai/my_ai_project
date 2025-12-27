@@ -20,10 +20,10 @@ async def test_admin_chat_returns_conversation_init_event(
     Regression test: Ensure that the admin chat stream starts with a 'conversation_init' event.
     This is critical for the frontend to know the conversation ID immediately, especially for new conversations.
     """
-    from app.main import kernel
+    from app.main import app
 
     # Apply override to async_client's app
-    kernel.app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
 
     # 1. Send chat request WITHOUT a conversation ID (Create New)
     # Using a non-existent ID now correctly returns 404, so we test the "Create New" flow
