@@ -5,6 +5,7 @@ class DataMeshBoundaryService:
     """
     Boundary Service for Data Mesh operations.
     Encapsulates logic for data contracts and mesh metrics.
+    Moved from root services to a dedicated location.
     """
 
     async def create_data_contract(self, contract: dict[str, Any]) -> dict[str, Any]:
