@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.schemas.crud import GenericResourceResponse, PaginatedResponse
 from app.core.database import get_db
 from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 
@@ -21,7 +22,11 @@ def get_crud_service(db: AsyncSession = Depends(get_db)) -> CrudBoundaryService:
     return CrudBoundaryService(db)
 
 
-@router.get("/resources/{resource_type}", summary="List Resources")
+@router.get(
+    "/resources/{resource_type}",
+    summary="List Resources",
+    response_model=PaginatedResponse[GenericResourceResponse],
+)
 async def list_resources(
     resource_type: str,
     page: int = Query(1, ge=1, description="Page number"),
@@ -30,7 +35,7 @@ async def list_resources(
     order: str | None = Query("asc", description="Sort order (asc/desc)"),
     search: str | None = Query(None, description="Search query"),
     service: CrudBoundaryService = Depends(get_crud_service),
-):
+) -> PaginatedResponse[GenericResourceResponse]:
     """
     عرض قائمة الموارد لنوع محدد مع دعم التصفح (Pagination) والترشيح (Filtering).
     """
@@ -38,7 +43,7 @@ async def list_resources(
     if search:
         filters["search"] = search
 
-    return await service.list_items(
+    result = await service.list_items(
         resource_type,
         page=page,
         per_page=per_page,
@@ -46,52 +51,74 @@ async def list_resources(
         order=order,
         filters=filters
     )
+    # Ensure result matches the PaginatedResponse structure
+    return PaginatedResponse[GenericResourceResponse].model_validate(result)
 
 
-@router.post("/resources/{resource_type}", summary="Create Resource")
+@router.post(
+    "/resources/{resource_type}",
+    summary="Create Resource",
+    response_model=GenericResourceResponse,
+)
 async def create_resource(
     resource_type: str,
     payload: dict[str, Any],
     service: CrudBoundaryService = Depends(get_crud_service),
-):
+) -> GenericResourceResponse:
     """
     إنشاء مورد جديد من نوع محدد.
     """
-    return await service.create_item(resource_type, payload)
+    result = await service.create_item(resource_type, payload)
+    return GenericResourceResponse.model_validate(result)
 
 
-@router.get("/resources/{resource_type}/{item_id}", summary="Get Resource")
+@router.get(
+    "/resources/{resource_type}/{item_id}",
+    summary="Get Resource",
+    response_model=GenericResourceResponse,
+)
 async def get_resource(
     resource_type: str,
     item_id: str,
     service: CrudBoundaryService = Depends(get_crud_service),
-):
+) -> GenericResourceResponse:
     """
     جلب مورد محدد بواسطة المعرف.
     """
-    return await service.get_item(resource_type, item_id)
+    result = await service.get_item(resource_type, item_id)
+    return GenericResourceResponse.model_validate(result)
 
 
-@router.put("/resources/{resource_type}/{item_id}", summary="Update Resource")
+@router.put(
+    "/resources/{resource_type}/{item_id}",
+    summary="Update Resource",
+    response_model=GenericResourceResponse,
+)
 async def update_resource(
     resource_type: str,
     item_id: str,
     payload: dict[str, Any],
     service: CrudBoundaryService = Depends(get_crud_service),
-):
+) -> GenericResourceResponse:
     """
     تحديث مورد موجود.
     """
-    return await service.update_item(resource_type, item_id, payload)
+    result = await service.update_item(resource_type, item_id, payload)
+    return GenericResourceResponse.model_validate(result)
 
 
-@router.delete("/resources/{resource_type}/{item_id}", summary="Delete Resource")
+@router.delete(
+    "/resources/{resource_type}/{item_id}",
+    summary="Delete Resource",
+    response_model=GenericResourceResponse,
+)
 async def delete_resource(
     resource_type: str,
     item_id: str,
     service: CrudBoundaryService = Depends(get_crud_service),
-):
+) -> GenericResourceResponse:
     """
     حذف مورد محدد.
     """
-    return await service.delete_item(resource_type, item_id)
+    result = await service.delete_item(resource_type, item_id)
+    return GenericResourceResponse.model_validate(result)

@@ -13,12 +13,15 @@
 """
 
 from collections.abc import Callable
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.schemas.admin import (
+    ConversationDetailsResponse,
+    ConversationSummaryResponse,
+)
 from app.api.v2.schemas import ChatRequest
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import async_session_factory, get_db
@@ -108,41 +111,66 @@ async def chat_stream(
     )
 
 
-@router.get("/api/chat/latest", summary="استرجاع آخر محادثة (Get Latest Conversation)")
+@router.get(
+    "/api/chat/latest",
+    summary="استرجاع آخر محادثة (Get Latest Conversation)",
+    response_model=ConversationDetailsResponse | None,
+)
 async def get_latest_chat(
     user_id: int = Depends(get_current_user_id),
     service: AdminChatBoundaryService = Depends(get_admin_service),
-) -> dict[str, Any]:
+) -> ConversationDetailsResponse | None:
     """
     استرجاع تفاصيل آخر محادثة للمستخدم الحالي.
     مفيد لاستعادة الحالة عند إعادة تحميل الصفحة.
     """
     conversation_data = await service.get_latest_conversation_details(user_id)
     if not conversation_data:
-        return {"conversation_id": None, "messages": []}
-    return conversation_data
-
-
-@router.get("/api/conversations", summary="سرد المحادثات (List Conversations)")
-async def list_conversations(
-    user_id: int = Depends(get_current_user_id),
-    service: AdminChatBoundaryService = Depends(get_admin_service),
-) -> list[dict[str, Any]]:
-    """
-    استرجاع قائمة بجميع محادثات المستخدم.
-    """
-    return await service.list_user_conversations(user_id)
+        return None
+    return ConversationDetailsResponse.model_validate(conversation_data)
 
 
 @router.get(
-    "/api/conversations/{conversation_id}", summary="تفاصيل المحادثة (Conversation Details)"
+    "/api/conversations",
+    summary="سرد المحادثات (List Conversations)",
+    response_model=list[ConversationSummaryResponse],
+)
+async def list_conversations(
+    user_id: int = Depends(get_current_user_id),
+    service: AdminChatBoundaryService = Depends(get_admin_service),
+) -> list[ConversationSummaryResponse]:
+    """
+    استرجاع قائمة بجميع محادثات المستخدم.
+    """
+    results = await service.list_user_conversations(user_id)
+    # Mapping 'id' to 'conversation_id' is needed if not handled automatically
+    # Assuming service returns 'id', and schema has 'conversation_id'
+    # RobustBaseModel allows aliasing but we need to match data.
+    # We will rename keys here for safety or rely on model validation if aliases set.
+    # Let's clean the data for the model:
+    cleaned = []
+    for r in results:
+        # Map id to conversation_id explicitly if needed, or rely on AliasChoices if model had it.
+        # But schema has 'conversation_id', data has 'id'.
+        r_mapped = r.copy()
+        if "id" in r_mapped and "conversation_id" not in r_mapped:
+            r_mapped["conversation_id"] = r_mapped["id"]
+        cleaned.append(ConversationSummaryResponse.model_validate(r_mapped))
+    return cleaned
+
+
+@router.get(
+    "/api/conversations/{conversation_id}",
+    summary="تفاصيل المحادثة (Conversation Details)",
+    response_model=ConversationDetailsResponse,
 )
 async def get_conversation(
     conversation_id: int,
     user_id: int = Depends(get_current_user_id),
     service: AdminChatBoundaryService = Depends(get_admin_service),
-) -> dict[str, Any]:
+) -> ConversationDetailsResponse:
     """
     استرجاع الرسائل والتفاصيل لمحادثة محددة.
     """
-    return await service.get_conversation_details(user_id, conversation_id)
+    data = await service.get_conversation_details(user_id, conversation_id)
+    return ConversationDetailsResponse.model_validate(data)

@@ -5,8 +5,7 @@
 """
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Response, status
 
 from app.api.routers.system.root import root_router
 from app.api.schemas.system.responses import HealthResponse, HealthzResponse, SystemInfoResponse
@@ -27,8 +26,9 @@ router = APIRouter(prefix="/system", tags=["System"])
     response_model=HealthResponse,
 )
 async def health_check(
+    response: Response,
     health_service: HealthCheckService = Depends(get_health_check_service),
-) -> HealthResponse | JSONResponse:
+) -> HealthResponse:
     """
     نقطة نهاية فحص الصحة (Health Check Endpoint).
     يعتمد على واجهة الخدمة (HealthCheckService Interface) وليس التنفيذ الملموس.
@@ -37,21 +37,15 @@ async def health_check(
 
     # التحقق من الحالة العامة
     is_healthy = health_data.get("status") == "healthy"
-    status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
 
-    response_content = HealthResponse(
+    if not is_healthy:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return HealthResponse(
         application="ok",
         database=health_data.get("database", {}).get("status", "unknown"),
         version="v4.0-clean",
     )
-
-    if not is_healthy:
-        return JSONResponse(
-            content=response_content.model_dump(),
-            status_code=status_code,
-        )
-
-    return response_content
 
 
 @router.get(
@@ -60,8 +54,9 @@ async def health_check(
     response_model=HealthzResponse,
 )
 async def healthz(
+    response: Response,
     health_service: HealthCheckService = Depends(get_health_check_service),
-) -> HealthzResponse | JSONResponse:
+) -> HealthzResponse:
     """
     فحص بسيط لحيوية النظام (Liveness Probe) لبيئة Kubernetes.
     يتحقق فقط من القدرة على الاتصال بقاعدة البيانات.
@@ -71,10 +66,8 @@ async def healthz(
     if health_data.get("connected"):
         return HealthzResponse(status="ok")
 
-    return JSONResponse(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        content=HealthzResponse(status="error", detail="Database connection failed").model_dump(),
-    )
+    response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return HealthzResponse(status="error", detail="Database connection failed")
 
 
 @router.get(
@@ -84,9 +77,9 @@ async def healthz(
 )
 async def system_info(
     system_service: SystemService = Depends(get_system_service),
-) -> dict[str, Any]:
+) -> SystemInfoResponse:
     """
     جلب معلومات النظام الأساسية.
     """
     info: dict[str, Any] = await system_service.get_system_info()
-    return info
+    return SystemInfoResponse.model_validate(info)
