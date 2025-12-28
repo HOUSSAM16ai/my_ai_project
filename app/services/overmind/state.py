@@ -50,6 +50,7 @@ class MissionStateManager:
         )
         self.session.add(mission)
         await self.session.flush()
+        await self.session.commit()
         return mission
 
     async def get_mission(self, mission_id: int) -> Mission | None:
@@ -178,6 +179,7 @@ class MissionStateManager:
         task.started_at = utc_now()
         task.attempt_count += 1
         await self.session.flush()
+        await self.session.commit()
 
     async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None):
         if meta is None:
@@ -190,6 +192,7 @@ class MissionStateManager:
         task.result_text = result_text
         task.result_meta_json = meta
         await self.session.flush()
+        await self.session.commit()
 
     async def mark_task_failed(self, task_id: int, error_text: str):
         stmt = select(Task).where(Task.id == task_id)
@@ -199,6 +202,7 @@ class MissionStateManager:
         task.finished_at = utc_now()
         task.error_text = error_text
         await self.session.flush()
+        await self.session.commit()
 
     async def monitor_mission_events(
         self, mission_id: int, poll_interval: float = 1.0

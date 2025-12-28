@@ -15,6 +15,10 @@ from app.services.chat import get_chat_orchestrator
 
 logger = logging.getLogger(__name__)
 
+# مجموعة عالمية للحفاظ على مراجع المهام الخلفية ومنع جمع القمامة (Garbage Collection)
+# هذا يضمن استمرار عمليات الحفظ حتى بعد انتهاء دالة البث
+_background_tasks: set[asyncio.Task] = set()
+
 
 class AdminChatStreamer:
     """
@@ -128,11 +132,10 @@ class AdminChatStreamer:
             finally:
                 # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
                 # هذا يضمن وصول إشارة [DONE] إلى العميل فوراً دون انتظار قاعدة البيانات
-                # RUF006: نحتفظ بمرجع للمهمة لمنع جمع القمامة المبكر
-                background_tasks: set[asyncio.Task] = set()
+                # RUF006: نحتفظ بمرجع للمهمة في المجموعة العالمية لمنع جمع القمامة المبكر
                 task = asyncio.create_task(safe_persist())
-                background_tasks.add(task)
-                task.add_done_callback(background_tasks.discard)
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
 
             # 5. إشارة الانتهاء (Completion Signal)
             # تصل للعميل فوراً بفضل فصل عملية الحفظ
