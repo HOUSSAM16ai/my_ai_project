@@ -47,8 +47,8 @@ __all__ = [
     "ConnectionManager",
     "NeuralNode",
     "NeuralRoutingMesh",
-    "get_ai_client",
     "ai_gateway",
+    "get_ai_client",
     "get_performance_report",
     "get_recommended_model",
 ]

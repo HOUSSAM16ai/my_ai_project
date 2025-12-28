@@ -55,15 +55,15 @@ class DomainEvent:
 class DomainEventRegistry:
     """Registry for domain events to allow dynamic loading/handling."""
 
-    _registry: ClassVar[dict[str, Type[DomainEvent]]] = {}
+    _registry: ClassVar[dict[str, type[DomainEvent]]] = {}
 
     @classmethod
-    def register(cls, event_class: Type[DomainEvent]):
+    def register(cls, event_class: type[DomainEvent]):
         cls._registry[event_class.__name__] = event_class
         return event_class
 
     @classmethod
-    def get_event_class(cls, name: str) -> Type[DomainEvent] | None:
+    def get_event_class(cls, name: str) -> type[DomainEvent] | None:
         return cls._registry.get(name)
 
     @classmethod

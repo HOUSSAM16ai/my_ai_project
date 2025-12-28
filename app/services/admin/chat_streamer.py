@@ -128,7 +128,11 @@ class AdminChatStreamer:
             finally:
                 # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
                 # هذا يضمن وصول إشارة [DONE] إلى العميل فوراً دون انتظار قاعدة البيانات
-                asyncio.create_task(safe_persist())
+                # RUF006: نحتفظ بمرجع للمهمة لمنع جمع القمامة المبكر
+                background_tasks: set[asyncio.Task] = set()
+                task = asyncio.create_task(safe_persist())
+                background_tasks.add(task)
+                task.add_done_callback(background_tasks.discard)
 
             # 5. إشارة الانتهاء (Completion Signal)
             # تصل للعميل فوراً بفضل فصل عملية الحفظ

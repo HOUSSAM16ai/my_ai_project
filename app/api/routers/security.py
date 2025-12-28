@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class TokenRequest(RobustBaseModel):
     user_id: int | None = None
-    scopes: list[str] = []
+    scopes: list[str] = Field(default_factory=list)
 
 
 class LoginRequest(RobustBaseModel):

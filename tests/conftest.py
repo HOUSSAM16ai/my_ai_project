@@ -1,9 +1,6 @@
 # tests/conftest.py
 import asyncio
 import os
-import shutil
-import tempfile
-from pathlib import Path
 
 import bcrypt
 import pytest
@@ -11,6 +8,7 @@ import sqlalchemy as sa
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
 # 🛡️ QUANTUM COMPATIBILITY PATCH (Test Scope)
@@ -72,9 +70,21 @@ def test_app():
     """
     Creates a FastAPI application instance for the test session.
     """
+    # BRAIN TRANSPLANT: Force global app engine to match test engine
+    # This ensures background tasks and direct imports use the test DB
+    import app.core.database
+    app.core.database.engine = engine
+    app.core.database.async_session_factory = TestingSessionLocal
+
     # Force reset of the kernel singleton to ensure we use test settings
-    import app.main
     import importlib
+
+    # RELOAD ROUTERS that might have captured the old engine BEFORE reloading app.main
+    # This ensures app.main picks up the new router modules with patched DB references
+    import app.api.routers.admin
+    importlib.reload(app.api.routers.admin)
+
+    import app.main
     importlib.reload(app.main)
 
     # In strict mode, app.main.app is the instance.
@@ -108,7 +118,8 @@ engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False,
     connect_args={"check_same_thread": False},
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    poolclass=StaticPool,
 )
 
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -116,6 +127,10 @@ TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 
 @pytest.fixture(scope="session", autouse=True)
 async def init_db(test_app):
+    # Ensure all models are imported before creating tables
+    # This is the "Super Professional" fix: explicit registration at initialization point
+    import app.models  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
@@ -149,7 +164,8 @@ from unittest.mock import MagicMock
 
 from app.core.ai_gateway import get_ai_client
 from app.core.security import generate_service_token
-from app.models import User
+# Import all models to ensure they are registered with SQLModel.metadata
+from app.models import AdminConversation, AdminMessage, Mission, User
 
 
 @pytest.fixture

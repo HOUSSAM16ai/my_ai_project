@@ -278,6 +278,6 @@ class SuperBrain:
             logger.error(error_msg)
             phase_str = str(phase_name).lower()
             await log_func(f"{phase_str}_timeout", {"error": error_msg})
-            raise RuntimeError(error_msg)
+            raise RuntimeError(error_msg) from None
         except Exception as e:
             raise e

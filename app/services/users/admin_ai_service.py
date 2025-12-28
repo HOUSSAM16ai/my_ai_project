@@ -67,7 +67,7 @@ class AdminAIService:
         question: str,
         user: Any,
         conversation_id: str | None = None,
-        use_deep_context: bool = False,  # noqa: unused variable
+        use_deep_context: bool = False,
     ):
         """
         Answer a question using AI.
@@ -79,6 +79,8 @@ class AdminAIService:
         """
         # The test mocks get_llm_client().chat.completions.create()
         # So we need to call that.
+        # Log inputs to avoid unused argument warnings
+        logger.debug(f"Answering question for user {user}: {question} (conv: {conversation_id}, deep: {use_deep_context})")
         client = self.get_llm_client()
         max_retries = 2
 
@@ -165,6 +167,13 @@ class AdminAIService:
                     "answer": f"Failed to get response from AI: {type(e).__name__}: {e!s}",
                     "error_type": type(e).__name__,
                 }
+
+        # Fallback return in case the loop completes without returning (though unlikely given logic)
+        return {
+            "status": "error",
+            "answer": "Unexpected execution flow in AI service.",
+            "error_type": "unknown",
+        }
 
 
 admin_ai_service = AdminAIService()

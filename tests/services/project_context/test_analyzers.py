@@ -2,11 +2,13 @@
 Tests for Project Context Analyzers.
 """
 
+
 import pytest
-from pathlib import Path
+
+from app.services.project_context.application.analyzers.issues import IssueAnalyzer
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
-from app.services.project_context.application.analyzers.issues import IssueAnalyzer
+
 
 @pytest.fixture
 def project_root(tmp_path):

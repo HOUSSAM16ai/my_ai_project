@@ -51,7 +51,7 @@ async def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         )
         answer = response.content
     except Exception as e:
-        answer = f"[fallback-{mode}] AI Gateway Error: {str(e)}"
+        answer = f"[fallback-{mode}] AI Gateway Error: {e!s}"
         return ToolResult(
             ok=False,
             data={

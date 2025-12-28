@@ -90,7 +90,7 @@ async def create_mission(
         return mission_db
     except Exception as e:
         logger.error(f"Failed to create mission: {e}")
-        raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة")
+        raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة") from e
 
 
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="استرجاع حالة مهمة")
