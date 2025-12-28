@@ -31,6 +31,7 @@ from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
+from app.middleware.time_warden import TimeWardenMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,10 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
         # 1. المضيف الموثوق (Trusted Host)
         (TrustedHostMiddleware, {"allowed_hosts": settings.ALLOWED_HOSTS}),
 
-        # 2. CORS
+        # 2. حارس الزمن (Time Warden) - يمنع التجمد
+        (TimeWardenMiddleware, {"timeout": 60.0}),
+
+        # 3. CORS
         (CORSMiddleware, {
             "allow_origins": allow_origins,
             "allow_credentials": True,
@@ -81,19 +85,20 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
             "expose_headers": ["Content-Length", "Content-Range"],
         }),
 
-        # 3. ترويسات الأمان (Security Headers)
+        # 4. ترويسات الأمان (Security Headers)
         (SecurityHeadersMiddleware, {}),
 
-        # 4. تنظيف الترويسات (Clean Headers)
+        # 5. تنظيف الترويسات (Clean Headers)
         (RemoveBlockingHeadersMiddleware, {}),
 
-        # 5. ضغط البيانات (GZip)
+        # 6. ضغط البيانات (GZip)
         (GZipMiddleware, {"minimum_size": 1000}),
     ]
 
     # إضافة تحديد المعدل فقط في غير بيئة الاختبار
     if settings.ENVIRONMENT != "testing":
-        stack.insert(3, (RateLimitMiddleware, {}))
+        # يتم إضافته في المنتصف
+        stack.insert(4, (RateLimitMiddleware, {}))
 
     return stack
 
