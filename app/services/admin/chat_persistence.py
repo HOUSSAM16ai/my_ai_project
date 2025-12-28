@@ -113,14 +113,21 @@ class AdminChatPersistence:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_conversation_messages(self, conversation_id: int) -> list[AdminMessage]:
+    async def get_conversation_messages(
+        self, conversation_id: int, limit: int = 100
+    ) -> list[AdminMessage]:
         """
-        Retrieves all messages for a specific conversation.
+        Retrieves messages for a specific conversation with a strict limit.
+        Implements the 'Safety Valve' pattern to prevent browser crashes on large histories.
         """
         stmt = (
             select(AdminMessage)
             .where(AdminMessage.conversation_id == conversation_id)
-            .order_by(AdminMessage.created_at, AdminMessage.id)
+            .order_by(AdminMessage.created_at.desc(), AdminMessage.id.desc())
+            .limit(limit)
         )
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        messages = list(result.scalars().all())
+        # Re-order to chronological order for display
+        messages.reverse()
+        return messages

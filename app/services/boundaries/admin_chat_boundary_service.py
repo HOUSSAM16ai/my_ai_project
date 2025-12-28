@@ -219,12 +219,14 @@ class AdminChatBoundaryService:
     async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
         """
         استرجاع تفاصيل آخر محادثة للوحة التحكم.
+        يفرض حداً أقصى للرسائل (100) لمنع انهيار المتصفح.
         """
         conversation = await self.persistence.get_latest_conversation(user_id)
         if not conversation:
             return None
 
-        messages = await self.persistence.get_conversation_messages(conversation.id)
+        # استخدام حد أقصى (Limit) لمنع تحميل آلاف الرسائل
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=100)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -257,9 +259,10 @@ class AdminChatBoundaryService:
     async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
         """
         استرجاع التفاصيل الكاملة لمحادثة محددة.
+        يفرض حداً أقصى للرسائل (100) لمنع انهيار المتصفح.
         """
         conversation = await self.verify_conversation_access(user_id, conversation_id)
-        messages = await self.persistence.get_conversation_messages(conversation.id)
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=100)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
