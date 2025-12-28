@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends
 
-from app.services.data_mesh_service import DataMeshBoundaryService
+from app.services.data_mesh.service import DataMeshBoundaryService
 
 router = APIRouter(tags=["Data Mesh"])
 
