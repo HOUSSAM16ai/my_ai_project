@@ -15,7 +15,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import Field, AliasChoices
+from pydantic import AliasChoices, Field
 
 from app.core.schemas import RobustBaseModel
 

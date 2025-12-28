@@ -1,5 +1,6 @@
 """Risk scoring use case - Single Responsibility Principle."""
 
+import typing
 from datetime import datetime
 
 from app.security_metrics.domain.entities import RiskScore, SecurityFinding
@@ -10,7 +11,7 @@ from app.security_metrics.domain.value_objects import RiskLevel, Severity
 class RiskScoreCalculator(RiskCalculator):
     """Risk score calculator - SRP: Only calculates risk scores."""
 
-    SEVERITY_WEIGHTS = {
+    SEVERITY_WEIGHTS: typing.ClassVar[dict[Severity, float]] = {
         Severity.CRITICAL: 10.0,
         Severity.HIGH: 7.5,
         Severity.MEDIUM: 5.0,

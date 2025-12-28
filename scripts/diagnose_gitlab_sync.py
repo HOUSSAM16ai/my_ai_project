@@ -54,12 +54,12 @@ except Exception as e:
 print_header("Test 2: Dependencies Check")
 try:
     print_success("requests library available")
-except:
+except Exception:
     print_warning("requests library not available (will be installed in CI)")
 
 try:
     print_success("pyyaml library available")
-except:
+except Exception:
     print_warning("pyyaml library not available (will be installed in CI)")
 
 # Test 3: Check git configuration

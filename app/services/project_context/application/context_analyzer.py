@@ -14,14 +14,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from app.services.project_context.domain.models import CodeStatistics, FileAnalysis, KeyComponent, ProjectStructure
+from app.services.project_context.application.analyzers.architecture import ArchitectureAnalyzer
+from app.services.project_context.application.analyzers.components import ComponentAnalyzer
+from app.services.project_context.application.analyzers.deep_analysis import DeepFileAnalyzer
+from app.services.project_context.application.analyzers.issues import IssueAnalyzer
+from app.services.project_context.application.analyzers.search import SearchAnalyzer
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
-from app.services.project_context.application.analyzers.components import ComponentAnalyzer
-from app.services.project_context.application.analyzers.issues import IssueAnalyzer
-from app.services.project_context.application.analyzers.deep_analysis import DeepFileAnalyzer
-from app.services.project_context.application.analyzers.search import SearchAnalyzer
-from app.services.project_context.application.analyzers.architecture import ArchitectureAnalyzer
+from app.services.project_context.domain.models import (
+    CodeStatistics,
+    FileAnalysis,
+    KeyComponent,
+    ProjectStructure,
+)
 
 logger = logging.getLogger(__name__)
 
